@@ -12,8 +12,7 @@ mod canonical_retirement_batch;
 mod canonical_snapshot_capture;
 mod canonical_snapshot_reconstruction;
 mod fork;
-mod fork_receipt;
-mod fork_resolution;
+mod fork_contract;
 mod fork_snapshot;
 mod fork_validation;
 mod lifecycle;
@@ -31,23 +30,29 @@ pub use crate::branch::{
     SignalBranchRetirementBatchDenial, SignalBranchRetirementBatchReceipt,
     SignalBranchRetirementDenial, SignalBranchRetirementReason, SignalBranchRetirementReceipt,
 };
-#[cfg(test)]
 pub use basis::{
     bridge_signal_branch_basis_trust_boundary, BoundaryBridgedSignalBranchBasisArtifact,
-};
-pub use basis::{
     SignalBranchBasis, SignalBranchBasisArtifact, SignalBranchBasisDenial,
     SignalBranchBasisIdentity, SignalBranchBasisReady, SignalBranchBasisValidationOutcome,
     SignalBranchHeadPosture, SignalBranchRestorePosture, StaleSignalBranchBasisArtifact,
     SIGNAL_BRANCH_BASIS_SCHEMA_VERSION,
 };
 pub use basis_canonical::SignalBranchBasisCompactExplanation;
+pub(in crate::logic::transaction::runtime) use basis_definition::signal_definition_basis_from_registry;
+pub(in crate::logic::transaction::runtime) use branches::BranchAncestryState;
 pub(in crate::logic::transaction::runtime::state) use branches::DEFAULT_MAXIMUM_STORED_SIGNAL_BRANCH_SNAPSHOTS;
 pub(in crate::logic::transaction::runtime) use branches::{
-    BranchAncestryState, BranchManager, BranchState,
+    BranchManager, SignalOwnerPartitionDenial,
 };
-pub use fork::{SignalBranchForkDenial, SignalBranchForkRequest, SignalBranchForkRequestBasis};
-pub use fork_receipt::SignalBranchForkReceipt;
+pub(crate) use branches::{
+    BranchState, SignalCanonicalCallerUnwind, SignalOwnerMetadataCloseBatch,
+    SignalOwnerMetadataState, SignalOwnerPartition, SignalOwnerRetirementCleanup,
+    SignalOwnerSnapshotReservationDenial, SnapshotBranchState, SnapshotStatePacket,
+};
+pub use fork_contract::{
+    SignalBranchForkDenial, SignalBranchForkReceipt, SignalBranchForkRequest,
+    SignalBranchForkRequestBasis,
+};
 pub(crate) use retirement::SignalBranchRetirementRequest;
 pub use targeted_transaction::{
     BranchTargetedTransactionDenial, BranchTargetedTransactionExecutionOutcome,

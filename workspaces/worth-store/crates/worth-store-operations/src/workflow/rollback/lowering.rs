@@ -1,13 +1,3 @@
-use sha2::{Digest, Sha256};
-use worth_store_physical_backend::{
-    LoweredNonCurrentStagingPlan, NonCurrentStagingArtifact, NonCurrentStagingLoweringDenial,
-    NonCurrentStagingPlanRequest, PhysicalRecoveryStagingOwner,
-};
-use worth_store_physical_isolation::RollbackReachabilityLease;
-use worth_store_recovery_physics::{
-    RecoveryPhysicsRollbackOwner, RollbackReplayDenial, RollbackReplayPlan,
-};
-
 use crate::authorization::{
     authorize_lowered_plan, AuthorizationReplayPolicy, AuthorizedOperationalPlan,
     LoweredOperationalPlan,
@@ -17,9 +7,18 @@ use crate::{
     AuthorizationDenial, AuthorizationRevocationObservation, ExternalOperatorAssertion,
     OperationalAuthorizationPort,
 };
+use sha2::{Digest, Sha256};
+use worth_store_physical_backend::{
+    LoweredNonCurrentStagingPlan, NonCurrentStagingArtifact, NonCurrentStagingLoweringDenial,
+    NonCurrentStagingPlanRequest, PhysicalRecoveryStagingOwner,
+};
+use worth_store_physical_isolation::RollbackReachabilityLease;
 
 use super::intent::operation_identity;
-use super::{EvidenceBoundRollbackPlan, RollbackOperation};
+use super::{
+    EvidenceBoundRollbackPlan, RollbackOperation, RollbackReplayDenial, RollbackReplayOwner,
+    RollbackReplayPlan,
+};
 
 #[derive(Debug)]
 pub enum RollbackLoweringDenial {
@@ -94,7 +93,7 @@ impl EvidenceBoundRollbackPlan {
             resolved.copy_buffer_bytes,
         ))
         .map_err(RollbackLoweringDenial::Backend)?;
-        let recovery = RecoveryPhysicsRollbackOwner::lower(&resolved.candidate, backend.binding())
+        let recovery = RollbackReplayOwner::lower(&resolved.candidate, backend.binding())
             .map_err(RollbackLoweringDenial::Recovery)?;
         let footprint = OwnerPlanFootprint::bounded(0, backend.binding().expected_bytes())
             .ok_or(RollbackLoweringDenial::InvalidFootprint)?;

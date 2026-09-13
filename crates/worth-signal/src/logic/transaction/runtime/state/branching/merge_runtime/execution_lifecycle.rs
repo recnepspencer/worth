@@ -3,6 +3,7 @@ use crate::logic::transaction::runtime::{
     BranchMergeExecutionSummary, BranchMergePlan, BranchMergeResult,
     LoweredFoundationalMergeRequest,
 };
+use crate::state::SignalSnapshotId;
 
 use super::super::super::runtime_state::SignalRuntime;
 use super::execution_application;
@@ -39,10 +40,11 @@ where
                 "Signal merge target generation cannot advance: {denial:?}"
             ))
         })?;
+    let snapshot_id = reserve_target_snapshot_identity(runtime, raw_request.target_branch.id)?;
     runtime
         .branches
         .mark_merge_participants(raw_request.source_branch.id, raw_request.target_branch.id);
-    let execution = execute_plan(runtime, request, plan);
+    let execution = execute_plan(runtime, request, plan, snapshot_id);
     runtime
         .branches
         .clear_merge_participants(raw_request.source_branch.id, raw_request.target_branch.id);
@@ -81,13 +83,16 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    execute_plan(runtime, request, plan)
+    let target_branch_id = request.normalized_request().request().target_branch.id;
+    let snapshot_id = reserve_target_snapshot_identity(runtime, target_branch_id)?;
+    execute_plan(runtime, request, plan, snapshot_id)
 }
 
 fn execute_plan<D, I, E, Ctx, T>(
     runtime: &mut SignalRuntime<D, I, E, Ctx, T>,
     request: &LoweredFoundationalMergeRequest,
     plan: &BranchMergePlan,
+    snapshot_id: SignalSnapshotId,
 ) -> Result<BranchMergeExecutionSummary, SignalError>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
@@ -97,7 +102,8 @@ where
     let raw_request = request.normalized_request().request();
     let mut prepared = execution_preparation::prepare(runtime, raw_request, plan)?;
     execution_application::apply_governed_merge(&mut prepared, plan)?;
-    let artifacts = execution_artifacts::finalize_artifacts(&mut prepared, raw_request, plan)?;
+    let artifacts =
+        execution_artifacts::finalize_artifacts(&mut prepared, raw_request, plan, snapshot_id)?;
     let finalization = execution_finalization::finalize_branch_state(
         runtime,
         raw_request,
@@ -109,4 +115,38 @@ where
         plan,
         finalization,
     ))
+}
+
+fn reserve_target_snapshot_identity<D, I, E, Ctx, T>(
+    runtime: &mut SignalRuntime<D, I, E, Ctx, T>,
+    target_branch_id: crate::state::SignalBranchId,
+) -> Result<SignalSnapshotId, SignalError>
+where
+    D: Copy + Ord + std::fmt::Debug + 'static,
+    I: Copy + Ord,
+    T: Copy + Ord,
+{
+    let next_snapshot_id = runtime
+        .branches
+        .replay_graph(
+            target_branch_id,
+            runtime.graph.current_branch().id,
+            &runtime.graph,
+        )
+        .ok_or_else(|| SignalError::unknown_branch(Some(target_branch_id), "merge-target"))?
+        .diagnostics_state()
+        .branch_snapshot_allocator_state()
+        .0;
+    runtime
+        .branches
+        .synchronize_snapshot_identity_high_water(next_snapshot_id);
+    runtime
+        .branches
+        .reserve_snapshot_identity()
+        .map_err(|snapshot_id| {
+            SignalError::invalid_input(format!(
+                "Signal merge snapshot identity exhausted at {} before movement",
+                snapshot_id.0
+            ))
+        })
 }

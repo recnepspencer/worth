@@ -7,19 +7,15 @@ use worth_store_lsm_authority::{
 use super::action::{
     CompactionVisibilityAction, LsmMembershipAction, LsmMembershipDenial, ModeledOutcome,
 };
-use crate::protocol_bindings::{
-    CompactionVisibilityMappedOwnerCase, CompactionVisibilityOwnerCase,
-};
-
 pub fn map_lsm_membership_observation(
     observation: LsmMembershipOwnerCaseObservation,
-) -> CompactionVisibilityMappedOwnerCase {
+) -> CompactionVisibilityAction {
     map_lsm_membership_case(observation.id())
 }
 
 pub(crate) fn map_lsm_membership_case(
     owner_case: LsmMembershipOwnerCaseId,
-) -> CompactionVisibilityMappedOwnerCase {
+) -> CompactionVisibilityAction {
     let operation = match owner_case.operation() {
         OwnerOperation::Open => LsmMembershipAction::Open,
         OwnerOperation::PersistRecord => LsmMembershipAction::PersistRecord,
@@ -33,10 +29,7 @@ pub(crate) fn map_lsm_membership_case(
         OwnerDisposition::Admitted => ModeledOutcome::Admitted,
         OwnerDisposition::Denied(denial) => ModeledOutcome::Denied(map_denial(denial)),
     };
-    CompactionVisibilityMappedOwnerCase::new(
-        CompactionVisibilityOwnerCase::LsmMembership(owner_case),
-        CompactionVisibilityAction::LsmMembership { operation, outcome },
-    )
+    CompactionVisibilityAction::LsmMembership { operation, outcome }
 }
 
 const fn map_denial(denial: OwnerDenial) -> LsmMembershipDenial {

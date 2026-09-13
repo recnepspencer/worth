@@ -118,10 +118,10 @@ fn every_threshold_and_contract_field_reports_its_first_semantic_drift() {
 #[test]
 fn aspect_filter_mask_is_compared_as_condition_meaning() {
     let current = install_fresh(with_condition(SignalConditionalCondition::AspectFilter(
-        mask(7),
+        mask(6),
     )));
     let candidate = install_fresh(with_condition(SignalConditionalCondition::AspectFilter(
-        mask(8),
+        mask(7),
     )));
 
     let mismatch = current.compare_semantic_continuity(&candidate).unwrap_err();

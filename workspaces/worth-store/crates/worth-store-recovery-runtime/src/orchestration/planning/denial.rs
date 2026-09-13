@@ -7,7 +7,7 @@ use worth_store_recovery_physics::{
 use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryBlockEvidence, PhysicalRecoveryBlockKind,
     PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure, PhysicalRecoveryOutcome,
-    PhysicalRecoveryPlanningDenial,
+    PhysicalRecoveryPlanningDenial, PhysicalRecoverySourceDenial,
 };
 use crate::handoff::block_unsupported_scope;
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
@@ -19,17 +19,21 @@ pub(super) fn redo_block(
     coordination: RecoveryCoordination,
     counters: PhysicalRecoveryDiscoveryCounters,
     planning_counters: RecoveryPlanningCounters,
+    root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
     limit: Option<PhysicalRecoveryLimitFailure>,
+    source_denials: Vec<PhysicalRecoverySourceDenial>,
 ) -> PhysicalRecoveryOutcome {
-    block_with_planning_attempt(
+    block_with_root_protocol_counters(
         authority,
         coordination,
         PhysicalRecoveryBlockKind::RedoPlanning,
         counters,
         planning_counters,
+        root_protocol_counters,
         "canonical-redo-plan",
         limit,
         None,
+        source_denials,
     )
 }
 
@@ -38,18 +42,22 @@ pub(super) fn redo_denial_block(
     coordination: RecoveryCoordination,
     counters: PhysicalRecoveryDiscoveryCounters,
     planning_counters: RecoveryPlanningCounters,
+    root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
     limit: Option<PhysicalRecoveryLimitFailure>,
     denial: PhysicalRedoPlanningDenial,
+    source_denials: Vec<PhysicalRecoverySourceDenial>,
 ) -> PhysicalRecoveryOutcome {
-    block_with_planning_attempt(
+    block_with_root_protocol_counters(
         authority,
         coordination,
         PhysicalRecoveryBlockKind::RedoPlanning,
         counters,
         planning_counters,
+        root_protocol_counters,
         "canonical-redo-plan",
         limit,
         Some(PhysicalRecoveryPlanningDenial::Redo(denial)),
+        source_denials,
     )
 }
 
@@ -58,18 +66,22 @@ pub(super) fn cost_denial_block(
     coordination: RecoveryCoordination,
     counters: PhysicalRecoveryDiscoveryCounters,
     planning_counters: RecoveryPlanningCounters,
+    root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
     denial: RecoveryPlanCostDenial,
     limit: PhysicalRecoveryLimitFailure,
+    source_denials: Vec<PhysicalRecoverySourceDenial>,
 ) -> PhysicalRecoveryOutcome {
-    block_with_planning_attempt(
+    block_with_root_protocol_counters(
         authority,
         coordination,
         PhysicalRecoveryBlockKind::RedoPlanning,
         counters,
         planning_counters,
+        root_protocol_counters,
         "recovery-plan-cost",
         Some(limit),
         Some(PhysicalRecoveryPlanningDenial::Cost(denial)),
+        source_denials,
     )
 }
 
@@ -109,6 +121,11 @@ pub(super) fn plan_cost_limit(
             cost.staging_bytes(),
             limits.staging_bytes(),
         ),
+        RecoveryPlanCostDenial::RecoveryMemoryBytes => (
+            PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
+            cost.peak_recovery_bytes(),
+            limits.recovery_memory_bytes(),
+        ),
         RecoveryPlanCostDenial::DirtyFrames => (
             PhysicalRecoveryLimitDimension::DirtyFrames,
             cost.dirty_frames(),
@@ -127,8 +144,10 @@ pub(super) fn block(
     coordination: RecoveryCoordination,
     kind: PhysicalRecoveryBlockKind,
     counters: PhysicalRecoveryDiscoveryCounters,
+    root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
     artifact: &str,
     limit: Option<PhysicalRecoveryLimitFailure>,
+    source_denials: Vec<PhysicalRecoverySourceDenial>,
 ) -> PhysicalRecoveryOutcome {
     block_unsupported_scope(
         authority,
@@ -137,8 +156,10 @@ pub(super) fn block(
         PhysicalRecoveryBlockEvidence {
             counters,
             planning_counters: Some(RecoveryPlanningCounters::default()),
+            root_protocol_counters: Some(root_protocol_counters),
             limit,
             artifact: Some(artifact.to_owned()),
+            source_denials,
             ..Default::default()
         },
     )
@@ -150,31 +171,38 @@ pub(super) fn block_with_planning_attempt_denial(
     kind: PhysicalRecoveryBlockKind,
     counters: PhysicalRecoveryDiscoveryCounters,
     planning_counters: RecoveryPlanningCounters,
+    root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
     artifact: &str,
     limit: Option<PhysicalRecoveryLimitFailure>,
     planning_denial: PhysicalRecoveryPlanningDenial,
+    source_denials: Vec<PhysicalRecoverySourceDenial>,
 ) -> PhysicalRecoveryOutcome {
-    block_with_planning_attempt(
+    block_with_root_protocol_counters(
         authority,
         coordination,
         kind,
         counters,
         planning_counters,
+        root_protocol_counters,
         artifact,
         limit,
         Some(planning_denial),
+        source_denials,
     )
 }
 
-fn block_with_planning_attempt(
+#[allow(clippy::too_many_arguments)]
+pub(super) fn block_with_root_protocol_counters(
     authority: AdmittedPlatformAuthority,
     coordination: RecoveryCoordination,
     kind: PhysicalRecoveryBlockKind,
     counters: PhysicalRecoveryDiscoveryCounters,
     planning_counters: RecoveryPlanningCounters,
+    root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
     artifact: &str,
     limit: Option<PhysicalRecoveryLimitFailure>,
     planning_denial: Option<PhysicalRecoveryPlanningDenial>,
+    source_denials: Vec<PhysicalRecoverySourceDenial>,
 ) -> PhysicalRecoveryOutcome {
     block_unsupported_scope(
         authority,
@@ -183,9 +211,11 @@ fn block_with_planning_attempt(
         PhysicalRecoveryBlockEvidence {
             counters,
             planning_counters: Some(planning_counters),
+            root_protocol_counters: Some(root_protocol_counters),
             limit,
             artifact: Some(artifact.to_owned()),
             planning_denial,
+            source_denials,
             ..Default::default()
         },
     )

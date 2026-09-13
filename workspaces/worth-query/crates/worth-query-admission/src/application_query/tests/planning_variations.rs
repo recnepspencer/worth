@@ -145,7 +145,9 @@ fn each_planning_dimension_changes_only_its_owned_evidence() {
     let query = installed_query();
     let parameters = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), 7_u64),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 7_u64)
+            .unwrap(),
     )
     .unwrap();
     let derive = |variation| {
@@ -172,7 +174,7 @@ fn each_planning_dimension_changes_only_its_owned_evidence() {
         relation_row(&baseline).relation_direction(),
         relation_row(&reverse).relation_direction()
     );
-    assert_ne!(
+    assert_eq!(
         relation_row(&baseline).kind(),
         relation_row(&reverse).kind()
     );

@@ -1,10 +1,10 @@
 use worth_proof::{DenialTransitionOutcome, TransitionOutcome};
 use worth_store_authority::{StoreCurrentAuthorityIdentity, StoreCurrentAuthorityWitness};
-use worth_store_recovery_physics::DurabilityReplayIdentity;
 use worth_store_security::StoreReadmittedSecurityScope;
 
 use crate::{
-    ReplicationCapsuleId, ReplicationLineageIdentity, ReplicationPeerId, ReplicationSourceEpoch,
+    DurabilityReplayIdentity, ReplicationCapsuleId, ReplicationLineageIdentity, ReplicationPeerId,
+    ReplicationSourceEpoch,
 };
 
 #[derive(Debug)]

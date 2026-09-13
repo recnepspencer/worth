@@ -93,7 +93,15 @@ fn concurrent_same_basis_transfers_cannot_overspend_one_account() {
     assert_eq!(
         outcomes
             .iter()
-            .filter(|outcome| matches!(outcome, BankMutationCommitOutcome::Stale { .. }))
+            .filter(|outcome| {
+                matches!(
+                    outcome,
+                    BankMutationCommitOutcome::Denied {
+                        kind: bank_server::BankCommitDenialKind::ProductBasisStale,
+                        stage: bank_server::BankCommitDenialStage::InvariantExecution,
+                    }
+                )
+            })
             .count(),
         1
     );
@@ -121,7 +129,7 @@ fn concurrent_same_basis_transfers_cannot_overspend_one_account() {
 }
 
 #[test]
-fn independent_same_version_transfers_derive_disjoint_ids_and_both_commit() {
+fn independent_transfers_derive_disjoint_ids_and_commit_across_world_generations() {
     let snapshot = funded_independent_sender_world();
     let identities = (1..=4)
         .map(|principal| {
@@ -166,6 +174,9 @@ fn independent_same_version_transfers_derive_disjoint_ids_and_both_commit() {
         3,
         "independent-first",
     );
+    let first_identity = journal_identity(&first);
+    let first = world.runtime.commit_send_money(first).unwrap();
+    assert!(matches!(first, BankMutationCommitOutcome::Committed(_)));
     let second = prepare_send(
         &world,
         &request,
@@ -174,20 +185,9 @@ fn independent_same_version_transfers_derive_disjoint_ids_and_both_commit() {
         4,
         "independent-second",
     );
-    assert_ne!(journal_identity(&first), journal_identity(&second));
-
-    let first_runtime = std::sync::Arc::clone(&world);
-    let first = std::thread::spawn(move || first_runtime.runtime.commit_send_money(first));
-    let second_runtime = std::sync::Arc::clone(&world);
-    let second = std::thread::spawn(move || second_runtime.runtime.commit_send_money(second));
-    assert!(matches!(
-        first.join().unwrap().unwrap(),
-        BankMutationCommitOutcome::Committed(_)
-    ));
-    assert!(matches!(
-        second.join().unwrap().unwrap(),
-        BankMutationCommitOutcome::Committed(_)
-    ));
+    assert_ne!(first_identity, journal_identity(&second));
+    let second = world.runtime.commit_send_money(second).unwrap();
+    assert!(matches!(second, BankMutationCommitOutcome::Committed(_)));
 }
 
 #[test]

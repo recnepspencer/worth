@@ -12,6 +12,12 @@ mod authorization_world_installation;
 #[path = "fixture/commit_snapshot_closeout.rs"]
 mod commit_snapshot_closeout;
 pub(in crate::domain_computation::primary_graph) use commit_snapshot_closeout::release_test_commit_snapshot;
+#[path = "fixture/product_publication.rs"]
+mod product_publication;
+pub(in crate::domain_computation::primary_graph) use product_publication::{
+    prepare_relational_mutation_on_application, publish_relational_mutation,
+    publish_relational_mutation_on_application,
+};
 #[path = "fixture/capability.rs"]
 pub(in crate::domain_computation) mod capability;
 #[path = "fixture/capability_access_fixture.rs"]
@@ -32,14 +38,16 @@ mod capability_status_mutation;
 pub(super) use capability::{
     canonical_governed_input_materialization_count, elevated_account_activity_parameters,
     ApproveCapabilityElevationOperation, ApproveElevationCapability, ApproveElevationInput,
-    CapabilityAction, CapabilityDisclosure, CapabilityElevationApprover, CapabilityElevationGrant,
-    CapabilityElevationIdentity, CapabilityElevationNotAfter, CapabilityElevationNotBefore,
-    CapabilityElevationReason, CapabilityElevationRequester, CapabilityElevationResource,
-    CapabilityElevationReview, CapabilityElevationStatus, CapabilityElevationStatusField,
+    CapabilityAction, CapabilityActionBinding, CapabilityDisclosure, CapabilityDisclosureBinding,
+    CapabilityElevationApprover, CapabilityElevationGrant, CapabilityElevationIdentity,
+    CapabilityElevationNotAfter, CapabilityElevationNotBefore, CapabilityElevationReason,
+    CapabilityElevationRequester, CapabilityElevationResource, CapabilityElevationReview,
+    CapabilityElevationStatus, CapabilityElevationStatusBinding, CapabilityElevationStatusField,
     CapabilityGovernedInputIdentity, CapabilityIdentity, CapabilityPurpose,
-    CapabilityRequestContext, CapabilityReviewIdentity, CapabilityReviewKindField,
-    CapabilityReviewResource, CapabilityReviewStatus, CapabilityReviewStatusField,
-    CapabilityReviewer, CapabilityStatus, CapabilityStatusField, CapabilityTouchInput,
+    CapabilityPurposeBinding, CapabilityRequestContext, CapabilityReviewIdentity,
+    CapabilityReviewKindField, CapabilityReviewResource, CapabilityReviewStatus,
+    CapabilityReviewStatusBinding, CapabilityReviewStatusField, CapabilityReviewer,
+    CapabilityStatus, CapabilityStatusBinding, CapabilityStatusField, CapabilityTouchInput,
     CapabilityTouchOperation, CloseElevationInput, CompleteCapabilityReviewOperation,
     CompleteElevationReviewCapability, CompleteElevationReviewInput, ElevatedAccountActivityCause,
     ElevatedAccountActivityQuery, ElevatedAccountActivityResult, ElevatedCapabilityTouchInput,
@@ -127,13 +135,11 @@ pub(in crate::domain_computation::primary_graph) use capability_world_installati
 };
 pub(in crate::domain_computation::primary_graph) use schema_types::*;
 pub(in crate::domain_computation::primary_graph) use world_installation::{
-    installed_authorization_world, installed_authorization_world_with_active_snapshot_limit,
-    installed_authorization_world_with_label, installed_authorization_world_with_resource_profile,
-    installed_blocked_authorization_world,
+    installed_authorization_world, installed_authorization_world_with_label,
+    installed_authorization_world_with_resource_profile, installed_blocked_authorization_world,
+    installed_two_principal_authorization_world,
 };
-pub(super) use world_installation::{
-    installed_two_principal_authorization_world, installed_world, installed_world_with_policy_fact,
-};
+pub(super) use world_installation::{installed_world, installed_world_with_policy_fact};
 
 use worth_query_admission::facade::authenticated_principal::*;
 use worth_query_declaration::facade::authentication::{
@@ -162,7 +168,7 @@ use crate::domain_computation::execution_runtime::{
 use crate::domain_computation::primary_graph::WorthQueryApplicationPrincipalKey;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityKey, WorthQueryApplicationEntitySeed,
-    WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphPublication,
+    WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 worth_query_application_schema! {
@@ -186,6 +192,8 @@ worth_query_application_schema! {
                 .field(Account::reference(), AccountLabel::reference())
                 .field(Account::reference(), AccountNote::reference())
                 .field(Account::reference(), AccountScore::reference())
+                .aspect(Account::reference(), AccountAnnotations::reference())
+                .field(Account::reference(), AccountAnnotation::reference())
                 .aspect(Activity::reference(), ActivityFacts::reference())
                 .field(Activity::reference(), ActivityIdentity::reference())
                 .field(Activity::reference(), ActivitySequence::reference())

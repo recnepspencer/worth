@@ -98,27 +98,6 @@ pub(crate) fn lineage_invalidation_workspace(
     Ok(workspace)
 }
 
-pub(crate) fn grouped_lineage_workflow_workspace(
-    name: &str,
-    scenarios: Vec<LineageEvidenceScenario>,
-) -> Result<
-    runtime::WorthQueryWorkspace,
-    worth_query::facade::consumer_kit::WorthQueryTestBackendError,
-> {
-    lineage_workflow_workspace_with_grouping(
-        name,
-        domain::WorthQueryOperationLineageContract::Evolve,
-        false,
-        scenarios,
-        domain::WorthQueryOperationGroupingContract::Grouped {
-            grouping_fields: vec![domain::WorthQueryOperationCollectionField::from_dotted(
-                "identity.id",
-            )
-            .expect("valid grouping field")],
-        },
-    )
-}
-
 fn lineage_workflow_workspace_with_grouping(
     name: &str,
     lineage: domain::WorthQueryOperationLineageContract,

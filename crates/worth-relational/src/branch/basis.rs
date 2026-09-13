@@ -145,6 +145,7 @@ impl PartialEq for AdmittedRelationalBranchBasis {
         self.inner.descriptor == other.inner.descriptor
             && self.inner.identity == other.inner.identity
             && self.inner.root.id() == other.inner.root.id()
+            && self.inner.admission_identity == other.inner.admission_identity
     }
 }
 
@@ -154,6 +155,7 @@ impl Eq for AdmittedRelationalBranchBasis {}
 pub(crate) struct AdmittedRelationalBranchBasisInner {
     pub(crate) descriptor: RelationalBranchBasisDescriptor,
     pub(crate) identity: RelationalBranchIdentity,
+    pub(crate) admission_identity: super::RelationalBranchBasisAdmissionIdentity,
     pub(crate) root: Arc<RelationalBranchRoot>,
     pub(crate) _authority: super::RelationalBranchObservationAuthority,
     pub(crate) retention: crate::history::retention::RelationalObservationRetentionObligation,
@@ -163,6 +165,14 @@ pub(crate) struct AdmittedRelationalBranchBasisInner {
 }
 
 impl AdmittedRelationalBranchBasis {
+    /// Identity issued by the Relational owner for this exact admission.
+    ///
+    /// The identity is descriptive binding for later composition; it is not
+    /// a descriptor and cannot be used to mint or authorize a basis.
+    pub fn admission_identity(&self) -> &super::RelationalBranchBasisAdmissionIdentity {
+        &self.inner.admission_identity
+    }
+
     pub fn descriptor(&self) -> &RelationalBranchBasisDescriptor {
         &self.inner.descriptor
     }

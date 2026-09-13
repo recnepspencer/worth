@@ -5,7 +5,6 @@ use super::TestExecutionUnit;
 pub(super) fn offline_observer_build(workspace_root: &Path) -> TestExecutionUnit {
     TestExecutionUnit::cargo(
         "00-prerequisite::physical-store-offline-observer".into(),
-        "C.5 independently linked observer prerequisite".into(),
         workspace_root,
         [
             "build",
@@ -17,6 +16,5 @@ pub(super) fn offline_observer_build(workspace_root: &Path) -> TestExecutionUnit
         .into_iter()
         .map(str::to_owned)
         .collect(),
-        None,
     )
 }

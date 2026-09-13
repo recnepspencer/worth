@@ -284,6 +284,13 @@ impl WorthUiMountedSessionState {
 }
 
 impl UiMountedObservationValidationBasis<'_> {
+    pub(crate) fn binding_requires_reconstruction(
+        self,
+        binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
+    ) -> bool {
+        self.presentation.binding_requires_reconstruction(binding)
+    }
+
     pub(crate) fn retention(&self) -> &crate::mounting::UiMountedFrameRetentionCoordinator {
         self.retention
     }

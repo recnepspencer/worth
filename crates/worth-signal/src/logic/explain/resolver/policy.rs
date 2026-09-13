@@ -30,14 +30,15 @@ pub(super) fn retained_explanation(
     graph: &SignalGraph,
     node: NodeId,
 ) -> Result<Option<NodeExplanation>, SignalError> {
-    let entry = graph.get_entry(node)?;
+    let validation = graph.node_explanation_storage_view(node)?;
     let Some(fact) = graph.explanation_fact(node) else {
         return Ok(None);
     };
-    let current_record = entry.historical_artifact_record(node);
     if (!fact.compact_projection || fact.explanation.rewiring.is_some())
-        && fact.explanation.state == *entry.get_state()
-        && fact.explanation.historical_artifact_record == current_record
+        && fact.explanation.state == validation.state()
+        && validation.matches_historical_artifact_record(
+            fact.explanation.historical_artifact_record.as_ref(),
+        )
     {
         return Ok(Some(fact.explanation.clone()));
     }

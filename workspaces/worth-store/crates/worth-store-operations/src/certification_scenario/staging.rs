@@ -10,18 +10,18 @@ impl crate::StagingAuthorizationContinuationPort for CurrentScenarioStagingPort 
     }
 }
 
-impl worth_store_recovery_physics::StagedWalApplicationPort for CurrentScenarioStagingPort {
+impl crate::workflow::StagedWalApplicationPort for CurrentScenarioStagingPort {
     fn apply_staged_wal(
         &self,
-        request: worth_store_recovery_physics::StagedWalApplicationRequest<'_>,
+        request: crate::workflow::StagedWalApplicationRequest<'_>,
     ) -> Result<
-        worth_store_recovery_physics::StagedWalApplicationProviderReceipt,
-        worth_store_recovery_physics::StagedWalApplicationDenial,
+        crate::workflow::StagedWalApplicationProviderReceipt,
+        crate::workflow::StagedWalApplicationDenial,
     > {
         let source = request.replay_source();
         let staging = request.staging();
         Ok(
-            worth_store_recovery_physics::StagedWalApplicationProviderReceipt::observed(
+            crate::workflow::StagedWalApplicationProviderReceipt::observed(
                 request.application_identity(),
                 staging.staging_plan_fingerprint(),
                 source.identity(),

@@ -100,6 +100,30 @@ fn initial_schema_installation_retains_existing_kinds_and_rejects_duplicates() {
     let mut runtime = RelationalRuntimeApi::builder()
         .schema_registry(initial)
         .build();
+    let identity = runtime.main_branch_identity();
+    let before_duplicate = runtime.observe_branch(&identity).unwrap().0;
+    let duplicate = runtime
+        .prepare_initial_schema_installation()
+        .unwrap()
+        .install(
+            RelationalSchemaRegistry::new()
+                .register_entity_kind(entity(KindId(4), "replacement"))
+                .unwrap(),
+        )
+        .unwrap_err();
+    assert_eq!(
+        duplicate.kind(),
+        RelationalInitialSchemaInstallationDenialKind::SchemaRejected
+    );
+    assert_eq!(runtime.config().schema.registry.entity_kinds.len(), 1);
+    assert_eq!(
+        runtime.config().schema.registry.entity_kinds[&KindId(4)].kind_name,
+        "existing"
+    );
+    assert_eq!(
+        runtime.observe_branch(&identity).unwrap().0,
+        before_duplicate
+    );
     let receipt = runtime
         .prepare_initial_schema_installation()
         .unwrap()
@@ -126,19 +150,17 @@ fn initial_schema_installation_retains_existing_kinds_and_rejects_duplicates() {
         .entity_kinds
         .contains_key(&KindId(8)));
 
-    let duplicate = runtime
+    let repeated = runtime
         .prepare_initial_schema_installation()
         .unwrap()
-        .install(
-            RelationalSchemaRegistry::new()
-                .register_entity_kind(entity(KindId(8), "replacement"))
-                .unwrap(),
-        )
+        .install(RelationalSchemaRegistry::new())
         .unwrap_err();
     assert_eq!(
-        duplicate.kind(),
-        RelationalInitialSchemaInstallationDenialKind::SchemaRejected
+        repeated.kind(),
+        RelationalInitialSchemaInstallationDenialKind::InitialInvariantsAlreadySealed
     );
+    assert_eq!(runtime.config().schema.registry.entity_kinds.len(), 2);
+    assert_eq!(runtime.config().schema.registry.relation_kinds.len(), 1);
 }
 
 #[test]

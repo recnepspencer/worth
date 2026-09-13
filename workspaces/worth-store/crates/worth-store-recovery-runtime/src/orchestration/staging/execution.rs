@@ -87,13 +87,11 @@ fn execute_commands(
                 PhysicalRecoveryStagingDenial::InvalidPlan,
             ));
         };
-        match input
+        let outcome = input
             .coordination
             .owner()
-            .execute_staging_command(&input.authority.media, declaration)
-        {
-            outcome => record_command_outcome(progress, command.ordinal(), outcome)?,
-        };
+            .execute_staging_command(&input.authority.media, declaration);
+        record_command_outcome(progress, command.ordinal(), outcome)?;
         if matches!(
             input.cancellation,
             super::RecoveryStagingCancellation::AfterSettledCommands(settled)
@@ -186,7 +184,8 @@ fn close_staging(
         progress
             .counters
             .artifacts_created
-            .saturating_add(progress.counters.artifacts_converged),
+            .saturating_add(progress.counters.artifacts_converged)
+            .saturating_add(progress.counters.artifacts_completed_from_prefix),
         progress
             .counters
             .bytes_written

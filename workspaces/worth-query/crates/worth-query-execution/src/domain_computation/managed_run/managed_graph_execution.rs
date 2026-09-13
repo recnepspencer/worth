@@ -24,6 +24,7 @@ pub(super) struct WorthQueryManagedGraphExecution {
     pub(super) applied_effect_count: u64,
     pub(super) peak_scratch_bytes: u64,
     pub(super) retained_bytes: u64,
+    pub(super) output_retained_bytes: u64,
     pub(super) projection: Option<WorthQueryGraphReadStreamAccumulator>,
     pub(super) artifact_context: Option<WorthQueryGraphProviderStepArtifactContext>,
     pub(super) produced_artifact_count: usize,
@@ -98,6 +99,7 @@ impl WorthQueryManagedGraphExecution {
             applied_effect_count: 0,
             peak_scratch_bytes: 0,
             retained_bytes: 0,
+            output_retained_bytes: 0,
             projection,
             artifact_context: parts.artifact_context,
             produced_artifact_count: 0,
@@ -109,6 +111,11 @@ impl WorthQueryManagedGraphExecution {
     }
 
     pub(super) fn restored(parts: WorthQueryRestoredManagedGraphExecutionParts) -> Self {
+        let output_retained_bytes = parts
+            .projection
+            .as_ref()
+            .map(|projection| u64::try_from(projection.retained_bytes()).unwrap_or(u64::MAX))
+            .unwrap_or(0);
         Self {
             call: parts.call,
             execution: WorthQueryOwnedGraphProviderExecution::new(parts.execution),
@@ -119,6 +126,7 @@ impl WorthQueryManagedGraphExecution {
             applied_effect_count: parts.applied_effect_count,
             peak_scratch_bytes: parts.peak_scratch_bytes,
             retained_bytes: parts.retained_bytes,
+            output_retained_bytes,
             projection: parts.projection,
             artifact_context: parts.artifact_context,
             produced_artifact_count: parts.produced_artifact_count,
@@ -144,11 +152,28 @@ impl WorthQueryManagedGraphExecution {
         &mut self,
         admission: super::provider_step_admission::WorthQueryAdmittedProviderStep,
     ) -> WorthQueryManagedProviderStep {
+        let managed_retained_bytes = if self.call.kind() == WorthQueryGraphProviderCallKind::Project
+        {
+            self.output_retained_bytes
+                .saturating_add(
+                    u64::try_from(
+                        WorthQueryGraphReadStreamAccumulator::chunk_node_allocation_bytes(),
+                    )
+                    .unwrap_or(u64::MAX),
+                )
+                .saturating_add(
+                    u64::try_from(WorthQueryGraphReadStreamAccumulator::stream_allocation_bytes())
+                        .unwrap_or(u64::MAX),
+                )
+        } else {
+            0
+        };
         let mut step = WorthQueryGraphProviderStep::new(
             self.call.kind(),
             self.contract.installed(),
             self.artifact_context.clone(),
             self.memory.clone(),
+            managed_retained_bytes,
         );
         let disposition = match self.execution.advance(&mut step) {
             WorthQueryProviderExecutionInvocation::Returned(Ok(disposition)) => disposition,
@@ -197,9 +222,13 @@ impl WorthQueryManagedGraphExecution {
             .applied_effect_count
             .saturating_add(report.applied_effect_count());
         self.peak_scratch_bytes = self.peak_scratch_bytes.max(report.peak_scratch_bytes());
-        self.retained_bytes = report.retained_bytes();
+        self.retained_bytes = report
+            .retained_bytes()
+            .saturating_add(self.output_retained_bytes);
         self.last_checkpoint_available = report.checkpoint_available();
         self.last_retained = report.retained_evidence();
+        self.last_retained
+            .retain_prior_output_bytes(self.output_retained_bytes);
         let artifacts = report.artifact_evidence();
         self.produced_artifact_count = self
             .produced_artifact_count
@@ -239,11 +268,43 @@ impl WorthQueryManagedGraphExecution {
         self.call.call_identity()
     }
 
-    pub(super) fn admit_projection_chunk(&mut self, material: &WorthQueryGraphReadMaterial) {
-        self.projection
+    pub(super) fn projection_chunk_fits_ceiling(&self) -> bool {
+        self.retained_bytes
+            .saturating_add(
+                u64::try_from(WorthQueryGraphReadStreamAccumulator::chunk_node_allocation_bytes())
+                    .unwrap_or(u64::MAX),
+            )
+            .saturating_add(
+                u64::try_from(WorthQueryGraphReadStreamAccumulator::stream_allocation_bytes())
+                    .unwrap_or(u64::MAX),
+            )
+            <= self.contract.installed().retained_bytes_ceiling()
+    }
+
+    pub(super) fn retain_projection_chunk(
+        &mut self,
+        material: WorthQueryGraphReadMaterial,
+    ) -> Option<(usize, usize)> {
+        let projection_bytes = material.owned_allocation_capacity_bytes();
+        let retained_bytes = self
+            .projection
             .as_mut()
             .expect("only projection executions admit projection chunks")
             .admit_chunk(material);
+        let additional_bytes = retained_bytes.checked_sub(projection_bytes)?;
+        if !self.last_retained.transfer_projection_to_output(
+            u64::try_from(projection_bytes).unwrap_or(u64::MAX),
+            u64::try_from(additional_bytes).unwrap_or(u64::MAX),
+        ) {
+            return None;
+        }
+        self.output_retained_bytes = self
+            .output_retained_bytes
+            .saturating_add(u64::try_from(retained_bytes).unwrap_or(u64::MAX));
+        self.retained_bytes = self
+            .retained_bytes
+            .saturating_add(u64::try_from(additional_bytes).unwrap_or(u64::MAX));
+        Some((projection_bytes, additional_bytes))
     }
 
     pub(super) fn release_projection_chunk(&mut self, retained_bytes: usize) -> bool {
@@ -261,7 +322,28 @@ impl WorthQueryManagedGraphExecution {
     pub(super) fn seal_completion(
         &mut self,
         report: &WorthQueryGraphProviderStepReport,
-    ) -> Result<WorthQueryBoundGraphExecutionReceipt, ()> {
+    ) -> Result<(WorthQueryBoundGraphExecutionReceipt, usize, usize), ()> {
+        let stream_allocation_bytes =
+            if self.call.kind() == WorthQueryGraphProviderCallKind::Project {
+                WorthQueryGraphReadStreamAccumulator::stream_allocation_bytes()
+            } else {
+                0
+            };
+        let stream_allocation_bytes_u64 =
+            u64::try_from(stream_allocation_bytes).unwrap_or(u64::MAX);
+        if self
+            .retained_bytes
+            .saturating_add(stream_allocation_bytes_u64)
+            > self.contract.installed().retained_bytes_ceiling()
+        {
+            return Err(());
+        }
+        self.retained_bytes = self
+            .retained_bytes
+            .saturating_add(stream_allocation_bytes_u64);
+        self.output_retained_bytes = self
+            .output_retained_bytes
+            .saturating_add(stream_allocation_bytes_u64);
         let provider_receipt = Arc::<str>::from(report.provider_receipt().ok_or(())?);
         let work = WorthQueryProviderWorkReport::new(
             self.completed_work_units,
@@ -269,6 +351,7 @@ impl WorthQueryManagedGraphExecution {
             usize::try_from(self.peak_scratch_bytes).unwrap_or(usize::MAX),
             usize::try_from(self.retained_bytes).unwrap_or(usize::MAX),
         )
+        .with_output_retention(usize::try_from(self.output_retained_bytes).unwrap_or(usize::MAX))
         .with_artifact_disposition(
             self.produced_artifact_count,
             self.retained_artifact_count,
@@ -283,6 +366,15 @@ impl WorthQueryManagedGraphExecution {
         } else {
             self.call.completed(provider_receipt, work)
         };
-        self.call.admit_receipt(receipt).map_err(|_| ())
+        let receipt = self.call.admit_receipt(receipt).map_err(|_| ())?;
+        Ok((
+            receipt,
+            usize::try_from(self.output_retained_bytes).unwrap_or(usize::MAX),
+            stream_allocation_bytes,
+        ))
+    }
+
+    pub(super) fn output_retained_bytes(&self) -> usize {
+        usize::try_from(self.output_retained_bytes).unwrap_or(usize::MAX)
     }
 }

@@ -57,32 +57,9 @@ impl WorthQueryMemoryWorkspace {
             .checked_add(insert_count as u64)
             .ok_or_else(|| WorthQueryWorkspaceError::new("batch client-key space exhausted"))?;
         let (batch, prepared) = self.prepare_batch(mutations)?;
-        let main_identity = self.runtime.main_branch_identity();
-        let options = self
-            .runtime
-            .admit_branch_basis(&main_identity)
-            .map_err(super::transaction_denial::basis)?;
-        let mut transaction = self
-            .runtime
-            .begin_branch_transaction(
-                &options,
-                worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-            )
-            .map_err(super::transaction_denial::admission)?;
-        transaction
-            .push_batch(batch)
-            .map_err(super::transaction_denial::staging)?;
-        let result = transaction
-            .commit(&self.runtime)
-            .map_err(super::transaction_denial::commit)?;
-        let published_snapshot = result.snapshot.clone();
+        let (result, snapshot) = self.commit_batch(batch)?;
         self.next_client_key = next_key;
-        let receipts = self.batch_receipts(result, prepared);
-        super::commit_snapshot_closeout::release_commit_snapshot(
-            &mut self.runtime,
-            &published_snapshot,
-        );
-        receipts
+        self.batch_receipts(result, snapshot, prepared)
     }
 
     fn prepare_batch(
@@ -183,13 +160,13 @@ impl WorthQueryMemoryWorkspace {
     fn batch_receipts(
         &self,
         result: worth_relational::facade::transactions::CommitResult,
+        snapshot_identity: super::WorthQuerySnapshotIdentity,
         mut prepared: Vec<PreparedMutation>,
     ) -> Result<Vec<WorthQueryMutationReceipt>, WorthQueryWorkspaceError> {
         self.attach_inserted_entities(&result, &mut prepared)?;
         let changed = changed_entity_ids(&result);
         let commit_identity =
             WorthQueryCommitIdentity::from_runtime_receipt_commit(result.commit.commit_id.0);
-        let snapshot_identity = self.snapshot_identity();
         Ok(prepared
             .into_iter()
             .map(|mutation| {

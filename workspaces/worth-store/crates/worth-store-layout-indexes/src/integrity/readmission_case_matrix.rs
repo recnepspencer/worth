@@ -1,6 +1,6 @@
 use super::readmission_test_support::{
-    authoritative_quarantine_record, current_authority, current_security_scope,
-    record_backed_witness_for_store,
+    authoritative_quarantine_observation, current_authority, current_security_scope,
+    observation_bound_witness_for_store,
 };
 use super::tests::{admitted_family, family};
 use super::{
@@ -9,20 +9,24 @@ use super::{
 };
 
 #[test]
-fn quarantine_readmission_rejects_equal_record_evidence_from_another_store() {
-    let record = authoritative_quarantine_record("cross-store-quarantine");
+fn quarantine_readmission_rejects_equal_observation_from_another_store() {
+    let observation = authoritative_quarantine_observation("cross-store-quarantine");
     let required = layout_corruption()
-        .require_record_backed_recovery_readmission(
-            layout_corruption().assess_physical_quarantine(admitted_family(), record.clone()),
+        .require_observation_bound_recovery_readmission(
+            layout_corruption().assess_quarantine_observation(
+                admitted_family(),
+                observation.identity().clone(),
+                observation.class(),
+            ),
             &current_authority("store.new.strategy", "cross-store-quarantine"),
             current_security_scope("store.new.strategy", "cross-store-quarantine").witnesses(),
         )
         .unwrap()
         .into_quarantine_readmission_requirement()
         .unwrap();
-    let foreign = record_backed_witness_for_store(
+    let foreign = observation_bound_witness_for_store(
         family(),
-        &record,
+        &observation,
         "store.new.corruption",
         "cross-store-quarantine",
     );

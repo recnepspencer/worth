@@ -1,14 +1,22 @@
 use std::collections::BTreeMap;
-use std::env;
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
 use stats_alloc::{Region, StatsAlloc, INSTRUMENTED_SYSTEM};
 
+use super::measurement_protocol::{case_resolution, PerfTimingPolicy};
+use super::regression_budgets::ACCESS_COUNTERS;
+
 static PERF_ALLOC_LOCK: Mutex<()> = Mutex::new(());
 
 #[global_allocator]
+#[cfg(not(feature = "test-peak-allocation"))]
 static GLOBAL_ALLOCATOR: &StatsAlloc<std::alloc::System> = &INSTRUMENTED_SYSTEM;
+
+#[global_allocator]
+#[cfg(feature = "test-peak-allocation")]
+static GLOBAL_ALLOCATOR: tracking_allocator::Allocator<&StatsAlloc<std::alloc::System>> =
+    tracking_allocator::Allocator::from_allocator(&INSTRUMENTED_SYSTEM);
 
 #[derive(Debug, Clone, Copy)]
 struct AllocationStats {
@@ -17,10 +25,9 @@ struct AllocationStats {
     pub(super) allocated_bytes: usize,
     deallocated_bytes: usize,
     live_bytes: usize,
-    pub(super) peak_live_bytes: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub(crate) struct PerfMeasurement {
     pub elapsed_micros: u128,
     pub metrics: serde_json::Value,
@@ -35,20 +42,14 @@ impl PerfMeasurement {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub(crate) enum PerfTimingPolicy {
-    StrictHeavy,
-    MedianOnly,
-    StructuralOnly,
-}
-
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub(crate) struct PerfCaseContract<'a> {
     pub suite: &'a str,
     pub profile: &'a str,
     pub executor: &'a str,
     pub timing_policy: PerfTimingPolicy,
     pub phase_metrics: &'a [&'a str],
+    pub scoped_allocation_metrics: &'a [&'a str],
     pub access_counter_maxima: &'a [(&'a str, u128)],
 }
 
@@ -59,6 +60,7 @@ impl<'a> PerfCaseContract<'a> {
         executor: &'a str,
         timing_policy: PerfTimingPolicy,
         phase_metrics: &'a [&'a str],
+        scoped_allocation_metrics: &'a [&'a str],
         access_counter_maxima: &'a [(&'a str, u128)],
     ) -> Self {
         Self {
@@ -67,6 +69,7 @@ impl<'a> PerfCaseContract<'a> {
             executor,
             timing_policy,
             phase_metrics,
+            scoped_allocation_metrics,
             access_counter_maxima,
         }
     }
@@ -97,21 +100,26 @@ struct PerfSummaryRecord<'a> {
     max_elapsed_micros: u128,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) struct PerfCaseSummary {
     pub(super) suite: String,
     pub(super) profile: String,
     pub(super) executor: String,
     pub(super) sample_count: usize,
     pub(super) elapsed_micros: NumericSummary,
+    #[serde(default)]
+    pub(super) allocation_calls: Option<NumericSummary>,
     pub(super) allocated_bytes: NumericSummary,
-    pub(super) peak_live_bytes: NumericSummary,
+    #[serde(alias = "peak_live_bytes")]
+    pub(super) end_live_bytes: NumericSummary,
     pub(super) access_counters: BTreeMap<String, NumericSummary>,
     #[serde(default)]
     pub(super) phase_metrics: BTreeMap<String, NumericSummary>,
+    #[serde(default)]
+    pub(super) scoped_allocation_metrics: BTreeMap<String, NumericSummary>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub(super) struct NumericSummary {
     pub(super) min: u128,
     pub(super) median: u128,
@@ -128,24 +136,33 @@ where
     F: FnMut() -> PerfMeasurement,
 {
     let sample_count = perf_sample_count(contract.timing_policy);
+    super::measurement_output::validate_capture_posture();
     let mut samples = Vec::with_capacity(sample_count);
     let _alloc_guard = PERF_ALLOC_LOCK
         .lock()
         .expect("perf allocation instrumentation lock should not be poisoned");
 
-    // Prime allocator pages, graph storage interners, and branch-local caches before
-    // we start recording cert samples. Without this, targeted perf runs can fail on
-    // cold-start noise even when the full suite passes under the same code.
+    // Prime allocator pages, graph interners, and branch-local caches before samples.
     for _ in 0..perf_warmup_count(contract.timing_policy) {
         let _ = measure();
     }
 
     for sample_index in 0..sample_count {
         let access_before = crate::data::access_counters::snapshot();
+        #[cfg(not(feature = "test-peak-allocation"))]
         let region = Region::new(GLOBAL_ALLOCATOR);
-        let mut measurement = measure();
+        #[cfg(feature = "test-peak-allocation")]
+        let region = Region::new(&INSTRUMENTED_SYSTEM);
+        #[cfg(not(feature = "test-peak-allocation"))]
+        let (mut measurement, measured_peak) = (measure(), None);
+        #[cfg(feature = "test-peak-allocation")]
+        let (mut measurement, measured_peak) = super::peak_allocation::measure(&mut measure);
         let access_after = crate::data::access_counters::snapshot();
-        attach_allocation_stats(&mut measurement.metrics, snapshot_allocation_stats(&region));
+        attach_allocation_stats(
+            &mut measurement.metrics,
+            snapshot_allocation_stats(&region),
+            measured_peak,
+        );
         attach_access_counters(
             &mut measurement.metrics,
             access_after.delta_since(access_before),
@@ -195,20 +212,17 @@ pub(super) fn summarize_perf_samples(
         .iter()
         .map(|sample| numeric_metric(&sample.metrics, &["allocation_metrics", "allocated_bytes"]))
         .collect::<Vec<_>>();
-    let peak_live_bytes = samples
+    let allocation_calls = samples
         .iter()
-        .map(|sample| numeric_metric(&sample.metrics, &["allocation_metrics", "peak_live_bytes"]))
+        .map(|sample| numeric_metric(&sample.metrics, &["allocation_metrics", "allocation_calls"]))
+        .collect::<Vec<_>>();
+    let end_live_bytes = samples
+        .iter()
+        .map(|sample| numeric_metric(&sample.metrics, &["allocation_metrics", "end_live_bytes"]))
         .collect::<Vec<_>>();
 
     let mut access_counters = BTreeMap::new();
-    for key in [
-        "materialized_entry_reads",
-        "materialized_entry_writes",
-        "runtime_artifact_warm_reads",
-        "runtime_artifact_state_reads",
-        "retained_artifact_reads",
-        "reconstructed_artifact_reads",
-    ] {
+    for key in ACCESS_COUNTERS {
         let values = samples
             .iter()
             .map(|sample| numeric_metric(&sample.metrics, &["access_counters", key]))
@@ -225,43 +239,40 @@ pub(super) fn summarize_perf_samples(
         phase_metrics.insert((*key).to_string(), summarize_u128(&values));
     }
 
+    let mut scoped_allocation_metrics = BTreeMap::new();
+    for key in contract.scoped_allocation_metrics {
+        let values = samples
+            .iter()
+            .map(|sample| numeric_metric(&sample.metrics, &[key]))
+            .collect::<Vec<_>>();
+        scoped_allocation_metrics.insert((*key).to_string(), summarize_u128(&values));
+    }
+
     let summary = PerfCaseSummary {
         suite: contract.suite.to_string(),
         profile: contract.profile.to_string(),
         executor: contract.executor.to_string(),
         sample_count: samples.len(),
         elapsed_micros: summarize_u128(&elapsed),
+        allocation_calls: Some(summarize_u128(&allocation_calls)),
         allocated_bytes: summarize_u128(&allocated_bytes),
-        peak_live_bytes: summarize_u128(&peak_live_bytes),
+        end_live_bytes: summarize_u128(&end_live_bytes),
         access_counters,
         phase_metrics,
+        scoped_allocation_metrics,
     };
 
+    super::measurement_output::record_case(contract, samples);
     emit(&summary);
     summary
 }
 
-fn perf_sample_count(timing_policy: PerfTimingPolicy) -> usize {
-    env::var("WORTH_SIGNAL_PERF_SAMPLES")
-        .ok()
-        .and_then(|raw| raw.parse::<usize>().ok())
-        .filter(|count| *count > 0)
-        .unwrap_or(match timing_policy {
-            PerfTimingPolicy::StrictHeavy => 5,
-            PerfTimingPolicy::MedianOnly => 7,
-            PerfTimingPolicy::StructuralOnly => 3,
-        })
+pub(super) fn perf_sample_count(timing_policy: PerfTimingPolicy) -> usize {
+    case_resolution(timing_policy).sample_count()
 }
 
-fn perf_warmup_count(timing_policy: PerfTimingPolicy) -> usize {
-    env::var("WORTH_SIGNAL_PERF_WARMUPS")
-        .ok()
-        .and_then(|raw| raw.parse::<usize>().ok())
-        .unwrap_or(match timing_policy {
-            PerfTimingPolicy::StrictHeavy => 0,
-            PerfTimingPolicy::MedianOnly => 2,
-            PerfTimingPolicy::StructuralOnly => 0,
-        })
+pub(super) fn perf_warmup_count(timing_policy: PerfTimingPolicy) -> usize {
+    case_resolution(timing_policy).warmup_count()
 }
 
 fn percentile(sorted: &[u128], percentile: usize) -> u128 {
@@ -316,18 +327,28 @@ fn snapshot_allocation_stats(region: &Region<'_, std::alloc::System>) -> Allocat
         allocated_bytes: stats.bytes_allocated,
         deallocated_bytes: stats.bytes_deallocated,
         live_bytes,
-        peak_live_bytes: live_bytes,
     }
 }
 
-fn attach_allocation_stats(metrics: &mut serde_json::Value, stats: AllocationStats) {
+fn attach_allocation_stats(
+    metrics: &mut serde_json::Value,
+    stats: AllocationStats,
+    measured_peak: Option<usize>,
+) {
+    let peak_status = if measured_peak.is_some() {
+        "measured-group requested object high-water; instrumented realloc allocates/copies/frees"
+    } else {
+        "unavailable: ordinary timing uses the unwrapped stats allocator"
+    };
     let allocation_metrics = serde_json::json!({
         "allocation_calls": stats.allocation_calls,
         "deallocation_calls": stats.deallocation_calls,
         "allocated_bytes": stats.allocated_bytes,
         "deallocated_bytes": stats.deallocated_bytes,
         "live_bytes": stats.live_bytes,
-        "peak_live_bytes": stats.peak_live_bytes,
+        "end_live_bytes": stats.live_bytes,
+        "peak_live_bytes": measured_peak,
+        "peak_live_status": peak_status,
     });
 
     match metrics {

@@ -7,32 +7,7 @@
 //! integration modules that implement it.
 
 pub mod adapters;
-pub mod branch {
-    pub use crate::branch::{
-        signal_branch_identity, signal_branch_observation, AdmittedSignalBranchBasis,
-        AdmittedSignalBranchSnapshot, PlannedSignalBranchRetirement,
-        PlannedSignalBranchRetirementBatch, SignalBranchAdvanceDenial,
-        SignalBranchAdvanceEngineDenial, SignalBranchAdvanceOutcome, SignalBranchBasisAuthority,
-        SignalBranchBasisAuthorityMarker, SignalBranchBasisCompatibilityDenial,
-        SignalBranchBasisDescriptor, SignalBranchBasisLifecyclePosture,
-        SignalBranchBasisObservationDenial, SignalBranchBasisOwnerProof, SignalBranchBasisProof,
-        SignalBranchBasisReadmissionDenial, SignalBranchComparisonBasis, SignalBranchForkBasis,
-        SignalBranchForkOperationDenial, SignalBranchForkOutcome, SignalBranchIdentity,
-        SignalBranchIdentityConstructionDenial, SignalBranchMergeDenial, SignalBranchMergeOutcome,
-        SignalBranchObservation, SignalBranchObservationConstructionDenial,
-        SignalBranchRestoreDenial, SignalBranchRetainedReadmissionDenial,
-        SignalBranchRetentionAcquisitionDenial, SignalBranchRetentionLease,
-        SignalBranchRetentionOwnerPosture, SignalBranchRetentionReleaseDenial,
-        SignalBranchRetentionReleaseOutcome, SignalBranchRetentionReleaseReceipt,
-        SignalBranchRetentionTerminalCounts, SignalBranchRetentionTerminalOutcome,
-        SignalBranchRetirementBatchDenial, SignalBranchRetirementBatchReceipt,
-        SignalBranchRetirementDenial, SignalBranchRetirementReason, SignalBranchRetirementReceipt,
-        SignalBranchSnapshotCaptureDenial, SignalBranchSnapshotCaptureOutcome,
-        SignalBranchSnapshotReconstructionDenial, SignalBranchSnapshotReconstructionOutcome,
-        SignalBranchTarget, SignalBranchTargetConstructionDenial,
-        SIGNAL_BRANCH_BASIS_DESCRIPTOR_SCHEMA_VERSION,
-    };
-}
+pub mod branch;
 pub mod core;
 pub mod diagnostics;
 pub mod history;

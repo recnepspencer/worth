@@ -10,8 +10,7 @@ use worth_query_declaration::facade::domain_computation::WorthQueryExecutionReso
 
 use super::{
     admit_execution_resource_plan, WorthQueryAdmittedWorkflowResourcePlan,
-    WorthQueryExecutionProviderSession, WorthQueryExecutionResourceAdmissionCounters,
-    WorthQueryExecutionResourceAdmissionDenial,
+    WorthQueryExecutionResourceAdmissionCounters, WorthQueryExecutionResourceAdmissionDenial,
     WorthQueryExecutionResourceAdmissionDenialKind as Kind,
     WorthQueryWorkflowExecutionResourceAttempt,
 };
@@ -40,8 +39,14 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryAdmittedWorkflowOperation<D, O, F
         self.resource_attempt.resources()
     }
 
-    pub fn provider_session(&self) -> &WorthQueryExecutionProviderSession {
-        self.resource_attempt.provider_session()
+    pub fn provider_session_identity(&self) -> &str {
+        self.resource_attempt.evidence().provider_session_identity()
+    }
+
+    pub fn provider_session_attempt_identity(&self) -> &str {
+        self.resource_attempt
+            .evidence()
+            .provider_session_attempt_identity()
     }
 }
 

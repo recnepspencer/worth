@@ -1,11 +1,11 @@
 use std::cell::Cell;
 
-use sha2::{Digest, Sha256};
-use worth_store_layout_indexes::DerivedIndexRepairRequest;
-use worth_store_physical_integrity::{
+use super::integrity_classification::{
     IntegrityRepairArtifactFamily, IntegrityRepairOwnerBinding, IntegrityRepairRegion,
     IntegrityRepairRegionClass,
 };
+use sha2::{Digest, Sha256};
+use worth_store_layout_indexes::DerivedIndexRepairRequest;
 
 use super::intent::physical_target_identity;
 use super::RepairCandidateSet;

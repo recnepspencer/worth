@@ -35,7 +35,13 @@ pub(super) fn admit_absent_targets(
     targets: Vec<&PhysicalRedoTarget>,
     selected_source: &RecoverySelectedSourceInventory,
     absence_identity: [u8; 32],
+    admitted_redo: &worth_store_recovery_physics::AdmittedPhysicalRedoMembers,
 ) -> Result<AdmittedAbsentTargets, PageObservationFailure> {
+    for target in &targets {
+        if !admitted_redo.contains_exact_observation_target(target) {
+            return Err(PageObservationFailure::InvalidTarget(target.identity()));
+        }
+    }
     if targets.is_empty() {
         return Ok(AdmittedAbsentTargets {
             observations: Vec::new(),
@@ -79,7 +85,7 @@ fn admit_extent_allocations(
         }
         extents.entry(extent).or_insert(*target);
     }
-    if !sequence_starts_at(extents.keys().copied(), header.next_extent()) {
+    if !allocation_sequence_above(extents.keys().copied(), header.next_extent()) {
         return Err(PageObservationFailure::InvalidTarget(
             extents
                 .into_values()
@@ -91,11 +97,13 @@ fn admit_extent_allocations(
     Ok(())
 }
 
-fn sequence_starts_at(values: impl IntoIterator<Item = u64>, first: u64) -> bool {
-    values
-        .into_iter()
-        .enumerate()
-        .all(|(ordinal, value)| first.checked_add(ordinal as u64) == Some(value))
+fn allocation_sequence_above(values: impl IntoIterator<Item = u64>, first: u64) -> bool {
+    let mut prior = None;
+    values.into_iter().all(|value| {
+        let admissible = value >= first && prior.is_none_or(|prior| value > prior);
+        prior = Some(value);
+        admissible
+    })
 }
 
 fn reusable_capacity(

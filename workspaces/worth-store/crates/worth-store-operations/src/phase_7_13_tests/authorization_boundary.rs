@@ -339,13 +339,13 @@ impl crate::StagingAuthorizationContinuationPort for RevokeBeforeFinalization {
     }
 }
 
-impl worth_store_recovery_physics::StagedWalApplicationPort for RevokeBeforeFinalization {
+impl crate::workflow::StagedWalApplicationPort for RevokeBeforeFinalization {
     fn apply_staged_wal(
         &self,
-        request: worth_store_recovery_physics::StagedWalApplicationRequest<'_>,
+        request: crate::workflow::StagedWalApplicationRequest<'_>,
     ) -> Result<
-        worth_store_recovery_physics::StagedWalApplicationProviderReceipt,
-        worth_store_recovery_physics::StagedWalApplicationDenial,
+        crate::workflow::StagedWalApplicationProviderReceipt,
+        crate::workflow::StagedWalApplicationDenial,
     > {
         super::apply_fixture_wal(request)
     }

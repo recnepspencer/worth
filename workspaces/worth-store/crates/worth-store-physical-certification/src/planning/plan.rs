@@ -11,7 +11,6 @@ use crate::{
     AdmittedDriverContractSet, ForbiddenShortcutSet, PhysicalResourceEnvelope,
     PhysicalSimulationCapabilitySet, RequiredCounterContractSet, YieldpointScheduleBinding,
 };
-use worth_store_physical_isolation::CompactionMutationLaneOrigin;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalSimulationPlan {
@@ -31,7 +30,6 @@ pub struct PhysicalSimulationPlan {
     fixture_classes: RequiredFixtureClassSet,
     evidence_policy: SimulationEvidencePolicy,
     forbidden_shortcuts: ForbiddenShortcutSet,
-    physical_isolation_compaction_mutation_origin: Option<CompactionMutationLaneOrigin>,
     blob_harness_metadata: Option<BlobHarnessScenarioMetadata>,
     blob_harness_topology: Option<BlobHarnessChunkTopology>,
 }
@@ -58,8 +56,6 @@ impl PhysicalSimulationPlan {
             fixture_classes: parts.fixture_classes,
             evidence_policy: parts.evidence_policy,
             forbidden_shortcuts: parts.forbidden_shortcuts,
-            physical_isolation_compaction_mutation_origin: parts
-                .physical_isolation_compaction_mutation_origin,
             blob_harness_metadata: parts.blob_harness_metadata,
             blob_harness_topology: parts.blob_harness_topology,
         })
@@ -129,12 +125,6 @@ impl PhysicalSimulationPlan {
         &self.forbidden_shortcuts
     }
 
-    pub const fn physical_isolation_compaction_mutation_origin(
-        &self,
-    ) -> Option<&CompactionMutationLaneOrigin> {
-        self.physical_isolation_compaction_mutation_origin.as_ref()
-    }
-
     pub const fn blob_harness_metadata(&self) -> Option<BlobHarnessScenarioMetadata> {
         self.blob_harness_metadata
     }
@@ -167,7 +157,6 @@ pub(crate) struct PhysicalSimulationPlanParts {
     pub(crate) fixture_classes: RequiredFixtureClassSet,
     pub(crate) evidence_policy: SimulationEvidencePolicy,
     pub(crate) forbidden_shortcuts: ForbiddenShortcutSet,
-    pub(crate) physical_isolation_compaction_mutation_origin: Option<CompactionMutationLaneOrigin>,
     pub(crate) blob_harness_metadata: Option<BlobHarnessScenarioMetadata>,
     pub(crate) blob_harness_topology: Option<BlobHarnessChunkTopology>,
 }

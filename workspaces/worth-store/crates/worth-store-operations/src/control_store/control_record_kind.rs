@@ -17,6 +17,29 @@ pub enum OperationalWorkflowKind {
     ForensicAcquisition,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OperationalOwnerReceiptKind {
+    Backend,
+    Recovery,
+}
+
+impl OperationalOwnerReceiptKind {
+    pub const fn tag(self) -> u8 {
+        match self {
+            Self::Backend => 1,
+            Self::Recovery => 2,
+        }
+    }
+
+    pub const fn from_tag(tag: u8) -> Option<Self> {
+        match tag {
+            1 => Some(Self::Backend),
+            2 => Some(Self::Recovery),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OperationalControlRecordKind {
     WorkflowOpened {
@@ -70,7 +93,7 @@ pub enum OperationalControlRecordKind {
         workflow: OperationalWorkflowKind,
         plan_fingerprint: [u8; 32],
         receipt_fingerprint: [u8; 32],
-        owner_tag: u8,
+        owner_kind: OperationalOwnerReceiptKind,
     },
     ReplicaBootstrapTransferRecorded {
         authorization_plan_fingerprint: [u8; 32],

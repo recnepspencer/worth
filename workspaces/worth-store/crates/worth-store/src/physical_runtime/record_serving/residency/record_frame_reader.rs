@@ -24,6 +24,17 @@ enum RecordFrameReadRoute<'media> {
 }
 
 impl<'media> RecordFrameReader<'media> {
+    pub(in crate::physical_runtime::record_serving) fn resident_admission_context(
+        &self,
+    ) -> Option<crate::physical_runtime::integrity::ResidentAdmissionContext<'_>> {
+        match &self.route {
+            RecordFrameReadRoute::Serving(residency) => {
+                Some(residency.resident_admission_context())
+            }
+            RecordFrameReadRoute::Bootstrap { .. } => None,
+        }
+    }
+
     pub(in crate::physical_runtime::record_serving) const fn bootstrap(
         media: &'media QualifiedFilesystemMedia,
         loader: &'media (dyn FrameLoadPort + Send + Sync),

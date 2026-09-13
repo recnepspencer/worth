@@ -27,38 +27,6 @@ pub enum OperationalRecoveryActionKind {
     OldPrimaryRejoinCompleted,
 }
 
-impl OperationalRecoveryActionKind {
-    pub(super) const fn stable_tag(self) -> u8 {
-        match self {
-            Self::WorkflowOpened => 1,
-            Self::SourceLeasePersisted => 2,
-            Self::MaterializationOpened => 3,
-            Self::MaterializationRecorded => 4,
-            Self::IndependentVerificationRecorded => 5,
-            Self::Abandoned => 6,
-            Self::AuthorizationConsumed => 7,
-            Self::OwnerExecutionOpened => 8,
-            Self::OwnerEffectStarted => 9,
-            Self::OwnerReceiptPersisted => 10,
-            Self::WorkflowOwnerReceiptPersisted => 11,
-            Self::DispositionRecorded => 12,
-            Self::StagingCompleted => 13,
-            Self::PublicationPrepared => 14,
-            Self::PublicationPending => 15,
-            Self::PublicationDisposition => 16,
-            Self::FenceReleased => 17,
-            Self::ReplicaBootstrapTransferRecorded => 18,
-            Self::ReplicaBootstrapCompleted => 19,
-            Self::ReplicaPromotionFenceRecorded => 20,
-            Self::ReplicaPromotionRecorded => 21,
-            Self::ReplicaPromotionPublished => 22,
-            Self::ReplicaPromotionReadmitted => 23,
-            Self::OldPrimaryRejoinPlanned => 24,
-            Self::OldPrimaryRejoinCompleted => 25,
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OperationalRecoveryAction {
     pub(super) authority_identity: [u8; 32],
@@ -67,65 +35,27 @@ pub struct OperationalRecoveryAction {
     pub(super) kind: OperationalRecoveryActionKind,
     pub(super) owner_tag: Option<u8>,
     pub(super) binding: super::binding::OperationalRecoveryActionBinding,
-    pub(super) evidence_identity: [u8; 32],
 }
 
 impl OperationalRecoveryAction {
-    #[cfg(test)]
-    pub(super) fn controlled_defect_probe(
-        operation_identity: &str,
-        transition_identity: &str,
-        kind: OperationalRecoveryActionKind,
-    ) -> Self {
-        let mut digest = sha2::Sha256::new();
-        use sha2::Digest;
-        digest.update(b"worth-store-controlled-defect-probe-v1");
-        digest.update(operation_identity.as_bytes());
-        digest.update(transition_identity.as_bytes());
-        digest.update([kind.stable_tag()]);
-        Self {
-            authority_identity: [0; 32],
-            operation_identity: operation_identity.to_owned(),
-            transition_identity: transition_identity.to_owned(),
-            kind,
-            owner_tag: None,
-            binding: super::binding::OperationalRecoveryActionBinding::None,
-            evidence_identity: digest.finalize().into(),
-        }
+    pub const fn authority_identity(&self) -> [u8; 32] {
+        self.authority_identity
     }
 
     pub fn operation_identity(&self) -> &str {
         &self.operation_identity
     }
 
-    #[cfg(test)]
-    pub(super) fn controlled_owner_receipt_probe(
-        operation_identity: &str,
-        transition_identity: &str,
-        owner_tag: u8,
-    ) -> Self {
-        let mut action = Self::controlled_defect_probe(
-            operation_identity,
-            transition_identity,
-            OperationalRecoveryActionKind::WorkflowOwnerReceiptPersisted,
-        );
-        action.owner_tag = Some(owner_tag);
-        action
-    }
-    pub const fn authority_identity(&self) -> [u8; 32] {
-        self.authority_identity
-    }
     pub fn transition_identity(&self) -> &str {
         &self.transition_identity
     }
+
     pub const fn kind(&self) -> OperationalRecoveryActionKind {
         self.kind
     }
+
     pub const fn owner_tag(&self) -> Option<u8> {
         self.owner_tag
-    }
-    pub const fn evidence_identity(&self) -> [u8; 32] {
-        self.evidence_identity
     }
 }
 
@@ -133,39 +63,24 @@ impl OperationalRecoveryAction {
 mod tests {
     use super::{OperationalRecoveryAction, OperationalRecoveryActionKind as Action};
     use crate::protocols::operational_recovery::{
-        OperationalRecoveryControlledDefect, OperationalRecoveryInvariant, OperationalRecoveryModel,
+        OperationalRecoveryInvariant, OperationalRecoveryModel,
     };
 
     #[test]
-    fn promotion_without_a_durable_external_fence_is_localized() {
+    fn promotion_without_a_durable_external_fence_is_rejected() {
         let mut model = OperationalRecoveryModel::default();
         model
-            .apply(&action("authorize", Action::AuthorizationConsumed), None)
+            .apply(&action("authorize", Action::AuthorizationConsumed))
             .unwrap();
 
         let denial = model
-            .apply(&action("promote", Action::ReplicaPromotionRecorded), None)
+            .apply(&action("promote", Action::ReplicaPromotionRecorded))
             .unwrap_err();
 
         assert_eq!(
             denial.invariant(),
             OperationalRecoveryInvariant::ExternalFenceBeforePromotion
         );
-    }
-
-    #[test]
-    fn controlled_defect_demonstrates_sensitivity_to_the_exact_edge() {
-        let mut model = OperationalRecoveryModel::default();
-        model
-            .apply(&action("authorize", Action::AuthorizationConsumed), None)
-            .unwrap();
-
-        model
-            .apply(
-                &action("promote", Action::ReplicaPromotionRecorded),
-                Some(OperationalRecoveryControlledDefect::PromotionWithoutExternalFence),
-            )
-            .expect("the controlled defect removes exactly the fence invariant");
     }
 
     #[test]
@@ -180,20 +95,20 @@ mod tests {
             action("rejoin", Action::OldPrimaryRejoinPlanned),
             action("rejoin-complete", Action::OldPrimaryRejoinCompleted),
         ] {
-            model.apply(&event, None).unwrap();
+            model.apply(&event).unwrap();
         }
 
         assert_eq!(model.reached_transitions().len(), 7);
     }
 
     #[test]
-    fn bootstrap_completion_without_transfer_is_localized() {
+    fn bootstrap_completion_without_transfer_is_rejected() {
         let mut model = OperationalRecoveryModel::default();
         model
-            .apply(&action("authorize", Action::AuthorizationConsumed), None)
+            .apply(&action("authorize", Action::AuthorizationConsumed))
             .unwrap();
         let denial = model
-            .apply(&action("complete", Action::ReplicaBootstrapCompleted), None)
+            .apply(&action("complete", Action::ReplicaBootstrapCompleted))
             .unwrap_err();
         assert_eq!(
             denial.invariant(),
@@ -202,22 +117,17 @@ mod tests {
     }
 
     #[test]
-    fn promotion_readmission_without_publication_is_localized() {
+    fn promotion_readmission_without_publication_is_rejected() {
         let mut model = OperationalRecoveryModel::default();
-        model
-            .apply(&action("authorize", Action::AuthorizationConsumed), None)
-            .unwrap();
-        model
-            .apply(
-                &action("fence", Action::ReplicaPromotionFenceRecorded),
-                None,
-            )
-            .unwrap();
-        model
-            .apply(&action("promote", Action::ReplicaPromotionRecorded), None)
-            .unwrap();
+        for event in [
+            action("authorize", Action::AuthorizationConsumed),
+            action("fence", Action::ReplicaPromotionFenceRecorded),
+            action("promote", Action::ReplicaPromotionRecorded),
+        ] {
+            model.apply(&event).unwrap();
+        }
         let denial = model
-            .apply(&action("readmit", Action::ReplicaPromotionReadmitted), None)
+            .apply(&action("readmit", Action::ReplicaPromotionReadmitted))
             .unwrap_err();
         assert_eq!(
             denial.invariant(),
@@ -226,13 +136,13 @@ mod tests {
     }
 
     #[test]
-    fn owner_receipt_without_open_execution_is_localized() {
+    fn owner_receipt_without_open_execution_is_rejected() {
         let mut model = OperationalRecoveryModel::default();
         model
-            .apply(&action("authorize", Action::AuthorizationConsumed), None)
+            .apply(&action("authorize", Action::AuthorizationConsumed))
             .unwrap();
         let denial = model
-            .apply(&action("receipt", Action::OwnerReceiptPersisted), None)
+            .apply(&action("receipt", Action::OwnerReceiptPersisted))
             .unwrap_err();
         assert_eq!(
             denial.invariant(),
@@ -244,36 +154,24 @@ mod tests {
     fn staging_requires_both_distinct_workflow_owner_receipts() {
         let mut model = OperationalRecoveryModel::default();
         model
-            .apply(&action("authorize", Action::AuthorizationConsumed), None)
+            .apply(&action("authorize", Action::AuthorizationConsumed))
             .unwrap();
         for owner_tag in [1, 2] {
-            model
-                .apply(
-                    &OperationalRecoveryAction::controlled_owner_receipt_probe(
-                        "promotion-1",
-                        &format!("owner-{owner_tag}"),
-                        owner_tag,
-                    ),
-                    None,
-                )
-                .unwrap();
+            model.apply(&owner_receipt(owner_tag)).unwrap();
         }
         model
-            .apply(&action("staged", Action::StagingCompleted), None)
-            .expect("complete owner evidence admits aggregate staging completion");
+            .apply(&action("staged", Action::StagingCompleted))
+            .expect("both owner receipts admit staging completion");
     }
 
     #[test]
     fn backup_verification_requires_the_complete_materialization_prefix() {
         let mut model = OperationalRecoveryModel::default();
         model
-            .apply(&action("open", Action::WorkflowOpened), None)
+            .apply(&action("open", Action::WorkflowOpened))
             .unwrap();
         let denial = model
-            .apply(
-                &action("verify", Action::IndependentVerificationRecorded),
-                None,
-            )
+            .apply(&action("verify", Action::IndependentVerificationRecorded))
             .unwrap_err();
         assert_eq!(
             denial.invariant(),
@@ -291,10 +189,10 @@ mod tests {
             action("materialize", Action::MaterializationRecorded),
             action("verify", Action::IndependentVerificationRecorded),
         ] {
-            model.apply(&event, None).unwrap();
+            model.apply(&event).unwrap();
         }
         let denial = model
-            .apply(&action("late", Action::MaterializationRecorded), None)
+            .apply(&action("late", Action::MaterializationRecorded))
             .unwrap_err();
         assert_eq!(
             denial.invariant(),
@@ -310,7 +208,16 @@ mod tests {
             kind,
             owner_tag: None,
             binding: super::super::binding::OperationalRecoveryActionBinding::None,
-            evidence_identity: [7; 32],
+        }
+    }
+
+    fn owner_receipt(owner_tag: u8) -> OperationalRecoveryAction {
+        OperationalRecoveryAction {
+            owner_tag: Some(owner_tag),
+            ..action(
+                &format!("owner-{owner_tag}"),
+                Action::WorkflowOwnerReceiptPersisted,
+            )
         }
     }
 }

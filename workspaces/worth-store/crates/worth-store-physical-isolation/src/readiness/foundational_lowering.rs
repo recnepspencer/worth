@@ -1,11 +1,16 @@
+#[cfg(feature = "certification-authority")]
 use worth_foundational::{
     boundary_evidence, BoundaryArtifactField, BoundaryArtifactId, BoundaryArtifactLocator,
+    FoundationalBoundaryEvidenceProvenanceConstructionDenial,
+    FoundationalBoundaryEvidenceReceiptBoundary,
+};
+use worth_foundational::{
     FoundationalBoundaryEvidenceExecutedReceiptArtifact,
     FoundationalBoundaryEvidenceFreshnessPosture, FoundationalBoundaryEvidenceProvenanceArtifact,
-    FoundationalBoundaryEvidenceProvenanceConstructionDenial,
-    FoundationalBoundaryEvidenceReceiptBoundary, FoundationalBoundaryEvidenceSourceBasis,
+    FoundationalBoundaryEvidenceSourceBasis,
 };
 
+#[cfg(feature = "certification-authority")]
 use super::PhysicalIsolationEntryIdentity;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -17,6 +22,7 @@ pub struct PhysicalIsolationEntryFoundationalEvidence {
 }
 
 impl PhysicalIsolationEntryFoundationalEvidence {
+    #[cfg(feature = "certification-authority")]
     pub(crate) fn lower(
         identity: &PhysicalIsolationEntryIdentity,
     ) -> Result<Self, FoundationalBoundaryEvidenceProvenanceConstructionDenial> {
@@ -61,6 +67,7 @@ impl PhysicalIsolationEntryFoundationalEvidence {
     }
 }
 
+#[cfg(feature = "certification-authority")]
 fn source_basis(
     identity: &PhysicalIsolationEntryIdentity,
 ) -> FoundationalBoundaryEvidenceSourceBasis {
@@ -70,6 +77,7 @@ fn source_basis(
     ))
 }
 
+#[cfg(feature = "certification-authority")]
 fn receipt_boundary(
     identity: &PhysicalIsolationEntryIdentity,
 ) -> FoundationalBoundaryEvidenceReceiptBoundary {

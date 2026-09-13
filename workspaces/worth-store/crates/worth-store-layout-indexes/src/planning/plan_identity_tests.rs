@@ -13,6 +13,26 @@ use super::AccessPlanSelector;
 use crate::strategy::tests_support::admit_strategy_scope;
 
 #[test]
+fn selected_read_authority_is_a_compact_handle_to_native_plan_identity() {
+    use std::mem::size_of;
+
+    assert_eq!(size_of::<super::AccessPlanIdentity>(), size_of::<usize>());
+    for (name, size) in [
+        ("B-tree lookup", size_of::<super::SelectedBTreeLookup>()),
+        ("LSM lookup", size_of::<super::SelectedLsmLookup>()),
+        (
+            "degraded exact scan",
+            size_of::<super::SelectedDegradedExactScan>(),
+        ),
+    ] {
+        assert!(
+            size <= 256,
+            "{name} selected authority embedded {size} bytes instead of retaining a compact identity handle"
+        );
+    }
+}
+
+#[test]
 fn plan_identity_equality_includes_exact_admitted_budget_posture() {
     let (family, domain) = admit_strategy_scope(
         DurableArtifactFamilyId::PhysicalPage,

@@ -69,6 +69,14 @@ pub(crate) fn record_semantic_execution(
             .recent_history()
             .back()
             .cloned()
+            .or_else(|| {
+                ExecutionHistorySummary::from_complete_execution_facts(
+                    graph,
+                    report,
+                    profile,
+                    retention_budget.detail_limit,
+                )
+            })
             .unwrap_or_else(|| {
                 ExecutionHistorySummary::from_graph(
                     graph,
@@ -79,13 +87,21 @@ pub(crate) fn record_semantic_execution(
                 )
             })
     } else {
-        ExecutionHistorySummary::from_graph(
+        ExecutionHistorySummary::from_complete_execution_facts(
             graph,
+            report,
             profile,
             retention_budget.detail_limit,
-            retention_budget.retain_history_details,
-            OrdinaryAccessLane,
         )
+        .unwrap_or_else(|| {
+            ExecutionHistorySummary::from_graph(
+                graph,
+                profile,
+                retention_budget.detail_limit,
+                retention_budget.retain_history_details,
+                OrdinaryAccessLane,
+            )
+        })
     };
     let _ = retention_budget;
     let _ = profile;

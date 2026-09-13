@@ -19,6 +19,12 @@ impl<'run> WorthQueryManagedWorkflowArtifactAuthority<'run> {
         self.authority.run_identity()
     }
 
+    pub fn registry(
+        &self,
+    ) -> Arc<crate::domain_computation::artifact_owner::WorthQueryWorkflowArtifactRegistry> {
+        self.authority.registry()
+    }
+
     pub fn production_authority(
         &self,
         stage_identity: &str,

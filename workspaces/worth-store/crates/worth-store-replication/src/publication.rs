@@ -72,9 +72,7 @@ impl ReplicationPublicationReadiness {
         self.progress.delivery_kind()
     }
 
-    pub(crate) const fn prior_replay(
-        &self,
-    ) -> Option<&worth_store_recovery_physics::DurabilityReplayIdentity> {
+    pub(crate) const fn prior_replay(&self) -> Option<&crate::DurabilityReplayIdentity> {
         self.progress.prior_replay()
     }
 }

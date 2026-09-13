@@ -1,18 +1,4 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OperationalRecoveryControlledDefect {
-    VerificationWithoutMaterialization,
-    ExecutionWithoutAuthorization,
-    OwnerReceiptWithoutEffectStart,
-    PublicationWithoutPreparation,
-    PromotionWithoutExternalFence,
-    StagingWithoutOwnerReceipts,
-    MaterializationWithoutSourceLease,
-    BootstrapCompletionWithoutTransfer,
-    PromotionPublicationWithoutPromotion,
-    RejoinCompletionWithoutPlan,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperationalRecoveryInvariant {
     UniqueTransitionIdentity,
     SingleWorkflowOpen,

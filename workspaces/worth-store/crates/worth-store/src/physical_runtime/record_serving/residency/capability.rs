@@ -25,24 +25,46 @@ pub(in crate::physical_runtime::record_serving) struct PhysicalResidencyWorkPort
 struct PhysicalResidencyWorkAccess {
     frame_ports: RecordFramePorts,
     writeback: FrameWritebackPort,
+    lifecycle: Arc<crate::physical_runtime::lifecycle::LifecycleState>,
 }
 
 const _: () =
     assert!(std::mem::size_of::<PhysicalResidencyWorkPort>() <= std::mem::size_of::<usize>() * 4);
 
 impl PhysicalResidencyWorkPort {
+    pub(in crate::physical_runtime::record_serving) fn store_identity(
+        &self,
+    ) -> worth_store_physical_format::store_namespace::StableStoreIdentity {
+        self.access.frame_ports.store_identity()
+    }
+
     pub(in crate::physical_runtime::record_serving) fn new(
         frame_ports: RecordFramePorts,
         source: CanonicalFrameReadSource,
         writeback: FrameWritebackPort,
+        lifecycle: Arc<crate::physical_runtime::lifecycle::LifecycleState>,
     ) -> Self {
         Self {
             access: Arc::new(PhysicalResidencyWorkAccess {
                 frame_ports,
                 writeback,
+                lifecycle,
             }),
             source,
         }
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn resident_admission_context(
+        &self,
+    ) -> crate::physical_runtime::integrity::resident_admission::load::ResidentAdmissionContext<
+        'static,
+    > {
+        crate::physical_runtime::integrity::resident_admission::load::ResidentAdmissionContext::from_shared(
+            Arc::clone(&self.access.lifecycle),
+            self.access
+                .frame_ports
+                .resident_integrity_counter_owner(),
+        )
     }
 
     pub(in crate::physical_runtime::record_serving) fn for_scan(mut self) -> Self {

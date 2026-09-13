@@ -1,5 +1,5 @@
+use crate::OfflinePhysicalArtifactFamily;
 use sha2::{Digest, Sha256};
-use worth_store_physical_format::OfflinePhysicalArtifactFamily;
 
 use super::{OfflineInspectionCounters, OfflineStructuralIdentification, StructurallyWalkedMedia};
 

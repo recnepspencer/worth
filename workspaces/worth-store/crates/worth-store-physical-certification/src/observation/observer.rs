@@ -3,8 +3,6 @@ use super::{
     CompactionInterlockObservation, ObservationDenial, ObservedPhysicalEvidence,
     ObservedPhysicalTrace, PhysicalIsolationCheckpointPublicationCrashLaneOutput,
     PhysicalIsolationCheckpointPublicationScheduledLaneOutput,
-    PhysicalIsolationCheckpointPublicationShortcutRejectionOutput,
-    PhysicalIsolationCompactionMutationObservationSet,
 };
 use crate::{
     BlobHarnessOracleObservation, IndependentVerifierObservation, IoPressureOracleObservation,
@@ -29,7 +27,6 @@ pub struct PhysicalObservationBuilder<'plan> {
     checkpoint_crash_replay: Option<CheckpointCrashReplayObservation>,
     checkpoint_interlock: Option<CheckpointInterlockObservation>,
     compaction_interlock: Option<CompactionInterlockObservation>,
-    compaction_mutations: Option<PhysicalIsolationCompactionMutationObservationSet>,
     io_pressure: Option<IoPressureOracleObservation>,
     blob_harness: Option<BlobHarnessOracleObservation>,
     shortcut_rejections: Vec<ShortcutRejectionObservation>,
@@ -77,7 +74,6 @@ impl PhysicalSimulationObserver {
             checkpoint_crash_replay: None,
             checkpoint_interlock: None,
             compaction_interlock: None,
-            compaction_mutations: None,
             io_pressure: None,
             blob_harness: None,
             shortcut_rejections: Vec::new(),
@@ -161,25 +157,6 @@ impl<'plan> PhysicalObservationBuilder<'plan> {
         Ok(self)
     }
 
-    pub fn with_scheduled_checkpoint_shortcut_rejection_lane(
-        mut self,
-        output: PhysicalIsolationCheckpointPublicationShortcutRejectionOutput,
-    ) -> Result<Self, ObservationDenial> {
-        if output.plan_identity() != self.plan.identity().digest_bytes() {
-            return Err(ObservationDenial::CheckpointPublicationLanePlanMismatch);
-        }
-        self = self.with_shortcut_rejection_observation(output.observation());
-        Ok(self)
-    }
-
-    pub fn with_scheduled_compaction_mutation_lanes(
-        mut self,
-        observations: PhysicalIsolationCompactionMutationObservationSet,
-    ) -> Self {
-        self.compaction_mutations = Some(observations);
-        self
-    }
-
     pub fn with_io_pressure_observation(
         mut self,
         observation: IoPressureOracleObservation,
@@ -236,7 +213,6 @@ impl<'plan> PhysicalObservationBuilder<'plan> {
                 checkpoint_crash_replay: self.checkpoint_crash_replay,
                 checkpoint_interlock: self.checkpoint_interlock,
                 compaction_interlock: self.compaction_interlock,
-                compaction_mutations: self.compaction_mutations,
                 io_pressure: self.io_pressure,
                 blob_harness: self.blob_harness,
                 shortcut_rejections: self.shortcut_rejections,

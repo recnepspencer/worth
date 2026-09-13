@@ -12,9 +12,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
-    ApplicationSchema, ApplicationSchemaBindingIdentity, TypedApplicationReadableValue,
-    WritePosture,
+    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationReadableScalarValueBinding, ApplicationRelationRef, ApplicationSchema,
+    ApplicationSchemaBindingIdentity, DeclaredApplicationFieldValue, WritePosture,
 };
 use worth_relational::facade::identity::{EntityId, KindId, RelationId, VersionId};
 use worth_relational::facade::storage::RecordLifecycleState;
@@ -95,6 +95,12 @@ pub struct WorthQueryInvariantEntityIdentity<Schema, Entity> {
 pub struct WorthQueryInvariantMutationTarget<Schema, Entity> {
     pub(in crate::domain_computation::primary_graph) entity_id: EntityId,
     pub(in crate::domain_computation::primary_graph) entity: Arc<str>,
+    pub(in crate::domain_computation::primary_graph) runtime_authority:
+        WorthQueryRuntimeAuthorityIdentity,
+    pub(in crate::domain_computation::primary_graph) binding_identity:
+        ApplicationSchemaBindingIdentity,
+    pub(in crate::domain_computation::primary_graph) admission_identity:
+        crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
@@ -213,7 +219,8 @@ where
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Option<Value>
     where
-        Value: TypedApplicationReadableValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -236,7 +243,7 @@ where
                     &locator,
                 )
             })
-            .and_then(|value| Value::from_foundational_value(&value))
+            .and_then(|value| Field::Binding::decode(&value).ok())
     }
 
     pub fn relations<Relation, From, To>(
@@ -284,6 +291,7 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn into_lease(
         mut self,
+        product: crate::basis::WorthQueryProductBranchLease,
     ) -> super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease {
         let basis = self
             .basis
@@ -298,17 +306,19 @@ where
             Arc::clone(&self.layout),
             basis,
             snapshot,
+            product,
         )
     }
 
     pub(in crate::domain_computation::primary_graph) fn into_lease_and_realized_scope(
         mut self,
+        product: crate::basis::WorthQueryProductBranchLease,
     ) -> (
         super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         WorthQueryRealizedProjectionScope,
     ) {
         let realized_scope = std::mem::take(&mut self.realized_scope);
-        (self.into_lease(), realized_scope)
+        (self.into_lease(product), realized_scope)
     }
 
     fn snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
@@ -365,6 +375,10 @@ impl<Schema, Relation, From, To> WorthQueryInvariantRelation<Schema, Relation, F
 
     pub const fn to(&self) -> &WorthQueryInvariantEntityIdentity<Schema, To> {
         &self.to
+    }
+
+    pub fn into_to(self) -> WorthQueryInvariantEntityIdentity<Schema, To> {
+        self.to
     }
 
     pub const fn relation_id(&self) -> RelationId {

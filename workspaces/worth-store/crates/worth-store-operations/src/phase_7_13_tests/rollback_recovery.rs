@@ -3,13 +3,12 @@ use crate::{
     AuthorizationReplayPolicy, AuthorizationRevocationObservation, OperationalOperationId,
     OperationalTransitionId, RollbackIntent,
 };
+use crate::{
+    PitrCandidatePosture, PitrRoundingPolicy, RecoveryTimelineAdmission, RecoveryTimelineOwner,
+    RollbackReplayOwner,
+};
 use worth_store_authority::report_retained_store_authority_evidence;
 use worth_store_physical_isolation::RecoverySourceLeaseRegistry;
-use worth_store_recovery_physics::{
-    PitrCandidatePosture, PitrRoundingPolicy, RecoveryPhysicsRollbackOwner,
-    RecoveryPhysicsTimelineAuthority,
-};
-
 #[test]
 fn retained_authority_rollback_stages_forward_without_mutating_current_media() {
     let world = restore_world("phase-10-retained-rollback");
@@ -26,23 +25,23 @@ fn retained_authority_rollback_stages_forward_without_mutating_current_media() {
     let materialized = world.admissible.custody().structural().materialized();
     let manifest = materialized.manifest();
     let wal_end = manifest.wal_half_open_interval().1;
-    let lineage = RecoveryPhysicsRollbackOwner::source_lineage(&retained, manifest);
-    let frontier = RecoveryPhysicsTimelineAuthority::admit_observation(
-        100,
-        0,
-        0,
-        manifest.durable_checkpoint_lsn(),
-        wal_end,
-        wal_end,
-        manifest.acknowledged_frontier(),
-        manifest.acknowledged_frontier(),
-        world.admissible.admission().admitting_authority(),
-        lineage,
-        materialized.manifest_digest(),
-        PitrCandidatePosture::Available,
-    )
+    let lineage = RollbackReplayOwner::source_lineage(&retained, manifest);
+    let frontier = RecoveryTimelineOwner::admit_observation(RecoveryTimelineAdmission {
+        observed_time: 100,
+        uncertainty_before: 0,
+        uncertainty_after: 0,
+        checkpoint_durability: manifest.durable_checkpoint_lsn(),
+        wal_structural: wal_end,
+        local_durable_commit: wal_end,
+        client_acknowledged: manifest.acknowledged_frontier(),
+        replication_acknowledged: manifest.acknowledged_frontier(),
+        authority_identity: world.admissible.admission().admitting_authority(),
+        source_lineage: lineage,
+        source_identity: materialized.manifest_digest(),
+        posture: PitrCandidatePosture::Available,
+    })
     .unwrap();
-    let frontier = RecoveryPhysicsTimelineAuthority::resolve_candidates(
+    let frontier = RecoveryTimelineOwner::resolve_candidates(
         100,
         PitrRoundingPolicy::ExactOnly,
         vec![frontier],

@@ -1,7 +1,10 @@
 use std::marker::PhantomData;
 
 use worth_foundational::facade::AspectValue;
-use worth_query_declaration::facade::application_schema::TypedApplicationValue;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationIdentityScalarValueBinding, ApplicationScalarValueBinding,
+    ApplicationValueEncodeDenial, U64ApplicationValueBinding,
+};
 
 use super::WorthQueryClockCoordinate;
 
@@ -121,18 +124,18 @@ pub struct WorthQueryTemporalIntentCandidate<Clock, Input> {
 }
 
 impl<Clock, Input> WorthQueryTemporalIntentCandidate<Clock, Input> {
-    pub fn active<RecordIdentity: TypedApplicationValue>(
+    pub fn active<RecordIdentityBinding: ApplicationIdentityScalarValueBinding>(
         identity: WorthQueryTemporalIntentIdentity,
-        record_identity: RecordIdentity,
+        record_identity: RecordIdentityBinding::Value,
         revision: u64,
         due: WorthQueryClockCoordinate<Clock>,
         input: Input,
         input_identity: WorthQueryTemporalOperationInputIdentity,
         idempotency: WorthQueryTemporalIntentIdempotencyRelation,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, ApplicationValueEncodeDenial> {
+        Ok(Self {
             identity,
-            record_identity: record_identity.into_foundational_value(),
+            record_identity: RecordIdentityBinding::encode(&record_identity)?,
             revision,
             due,
             input,
@@ -140,21 +143,21 @@ impl<Clock, Input> WorthQueryTemporalIntentCandidate<Clock, Input> {
             idempotency,
             lifecycle: WorthQueryTemporalIntentLifecycle::Active,
             marker: PhantomData,
-        }
+        })
     }
 
-    pub fn cancelled<RecordIdentity: TypedApplicationValue>(
+    pub fn cancelled<RecordIdentityBinding: ApplicationIdentityScalarValueBinding>(
         identity: WorthQueryTemporalIntentIdentity,
-        record_identity: RecordIdentity,
+        record_identity: RecordIdentityBinding::Value,
         revision: u64,
         due: WorthQueryClockCoordinate<Clock>,
         input: Input,
         input_identity: WorthQueryTemporalOperationInputIdentity,
         idempotency: WorthQueryTemporalIntentIdempotencyRelation,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, ApplicationValueEncodeDenial> {
+        Ok(Self {
             identity,
-            record_identity: record_identity.into_foundational_value(),
+            record_identity: RecordIdentityBinding::encode(&record_identity)?,
             revision,
             due,
             input,
@@ -162,21 +165,21 @@ impl<Clock, Input> WorthQueryTemporalIntentCandidate<Clock, Input> {
             idempotency,
             lifecycle: WorthQueryTemporalIntentLifecycle::Cancelled,
             marker: PhantomData,
-        }
+        })
     }
 
-    pub fn completed<RecordIdentity: TypedApplicationValue>(
+    pub fn completed<RecordIdentityBinding: ApplicationIdentityScalarValueBinding>(
         identity: WorthQueryTemporalIntentIdentity,
-        record_identity: RecordIdentity,
+        record_identity: RecordIdentityBinding::Value,
         revision: u64,
         due: WorthQueryClockCoordinate<Clock>,
         input: Input,
         input_identity: WorthQueryTemporalOperationInputIdentity,
         idempotency: WorthQueryTemporalIntentIdempotencyRelation,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, ApplicationValueEncodeDenial> {
+        Ok(Self {
             identity,
-            record_identity: record_identity.into_foundational_value(),
+            record_identity: RecordIdentityBinding::encode(&record_identity)?,
             revision,
             due,
             input,
@@ -184,7 +187,7 @@ impl<Clock, Input> WorthQueryTemporalIntentCandidate<Clock, Input> {
             idempotency,
             lifecycle: WorthQueryTemporalIntentLifecycle::Completed,
             marker: PhantomData,
-        }
+        })
     }
 
     pub fn identity(&self) -> &WorthQueryTemporalIntentIdentity {
@@ -277,12 +280,12 @@ pub trait WorthQueryTemporalIntentProjector<Node, Clock, QueryResult, Input>:
 
 /// Application scalar conversion for the authoritative intent revision field.
 /// This is value meaning only and grants no mutation authority.
-pub trait WorthQueryTemporalIntentRevisionValue: TypedApplicationValue {
-    fn from_revision(revision: u64) -> Option<Self>;
+pub trait WorthQueryTemporalIntentRevisionValue: ApplicationScalarValueBinding {
+    fn from_revision(revision: u64) -> Option<Self::Value>;
 }
 
-impl WorthQueryTemporalIntentRevisionValue for u64 {
-    fn from_revision(revision: u64) -> Option<Self> {
+impl WorthQueryTemporalIntentRevisionValue for U64ApplicationValueBinding {
+    fn from_revision(revision: u64) -> Option<Self::Value> {
         Some(revision)
     }
 }

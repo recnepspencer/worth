@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::state::{SignalBranchHandle, SignalBranchId, SignalSnapshotId};
 
-use super::AdmittedSignalBranchBasis;
+use super::{AdmittedSignalBranchBasis, SignalOwnerUnavailable};
 
 /// Descriptive lifecycle posture bound into a transported Signal basis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -22,7 +22,25 @@ pub enum SignalBranchRetirementReason {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SignalBranchRetirementDenial {
+    OwnerUnavailable(SignalOwnerUnavailable),
+    OperationCapacityExhausted {
+        maximum_in_flight_operations: usize,
+    },
+    OwnerReentry,
+    CancelledNoMovement,
     UnknownBranch {
+        branch_id: SignalBranchId,
+    },
+    RetirementInProgress {
+        branch_id: SignalBranchId,
+    },
+    RetiredBranch {
+        branch_id: SignalBranchId,
+    },
+    QuarantinedBranch {
+        branch_id: SignalBranchId,
+    },
+    OwnerCellMisuse {
         branch_id: SignalBranchId,
     },
     CurrentBranch {
@@ -62,6 +80,12 @@ pub enum SignalBranchRetirementDenial {
     RetirementSnapshotBranchMismatch {
         branch_id: SignalBranchId,
         snapshot_branch_id: SignalBranchId,
+    },
+    RetirementReceiptCapacityExhausted {
+        maximum_retained_receipts: usize,
+    },
+    OwnerInvariantViolation {
+        branch_id: SignalBranchId,
     },
 }
 

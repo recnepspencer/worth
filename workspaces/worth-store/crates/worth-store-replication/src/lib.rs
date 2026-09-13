@@ -61,6 +61,7 @@ mod progress_store;
 mod promotion;
 mod publication;
 mod rejoin;
+mod replay_identity;
 mod runtime;
 mod split_brain_reconciliation;
 #[cfg(test)]
@@ -113,6 +114,9 @@ pub use rejoin::{
     OldPrimaryDivergenceDisposition, OldPrimaryRejoinDenial, OldPrimaryRejoinExecutionDenial,
     OldPrimaryRejoinExecutionPort, OldPrimaryRejoinExecutionRequest, OldPrimaryRejoinPlan,
     OldPrimaryRejoinReceipt, ReplicationRejoinOwner,
+};
+pub use replay_identity::{
+    DurabilityReplayIdentity, DurabilityReplayIdentityDenial, DurabilityReplayKind,
 };
 pub use runtime::ReplicationAdmissionRuntime;
 pub use split_brain_reconciliation::{

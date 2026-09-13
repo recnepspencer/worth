@@ -1,0 +1,32 @@
+error[E0624]: associated function `issue` is private
+ --> tests/ui/private_component_identity_issue.rs:6:53
+  |
+6 |     let _ = RelationalBranchBasisAdmissionIdentity::issue();
+  |                                                     ^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-relational/src/branch/basis_admission_identity.rs
+  |
+  |     pub(crate) fn issue() -> Self {
+  |     ----------------------------- private associated function defined here
+
+error[E0624]: associated function `issue` is private
+ --> tests/ui/private_component_identity_issue.rs:7:49
+  |
+7 |     let _ = SignalBranchBasisAdmissionIdentity::issue();
+  |                                                 ^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-signal/src/branch/basis_admission_identity.rs
+  |
+  |     pub(crate) fn issue() -> Self {
+  |     ----------------------------- private associated function defined here
+
+error[E0624]: associated function `issue` is private
+ --> tests/ui/private_component_identity_issue.rs:8:52
+  |
+8 |     let _ = BridgeCorrespondenceAdmissionIdentity::issue();
+  |                                                    ^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-runtime-bridge/src/correspondence/admission_identity.rs
+  |
+  |     pub(crate) fn issue() -> Self {
+  |     ----------------------------- private associated function defined here

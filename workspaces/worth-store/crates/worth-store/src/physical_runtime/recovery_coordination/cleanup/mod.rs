@@ -33,13 +33,13 @@ use crate::physical_runtime::{
 };
 
 impl PhysicalRecoveryCoordination {
-    pub fn admit_cleanup_plan<'e>(
+    pub fn admit_cleanup_plan(
         &self,
         media: &worth_store_physical_backend::AdmittedRecoveryFilesystemMedia,
         reopened: CompletedPhysicalRecoveryFreshReopen,
-        checkpoint: std::sync::Arc<worth_store_physical_format::VerifiedCheckpointStream>,
+        checkpoint: std::sync::Arc<worth_store_physical_integrity::VerifiedCheckpointStream>,
         descriptive_plan_identity: [u8; 32],
-        wal: impl IntoIterator<Item = worth_store_wal::VerifiedWalArtifact>,
+        wal: impl IntoIterator<Item = crate::physical_runtime::IntegrityAdmittedRecoveryWalSegment>,
     ) -> Result<StoreRecoveryCleanupPlan, StoreRecoveryCleanupPlanAdmissionFailure> {
         crate::physical_runtime::recovery_freshness::admit_cleanup_plan(
             self,
@@ -71,8 +71,9 @@ impl PhysicalRecoveryCoordination {
     pub(in crate::physical_runtime) fn read_cleanup_current_selector(
         &self,
         media: &worth_store_physical_backend::AdmittedRecoveryFilesystemMedia,
+        format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
     ) -> PhysicalRecoveryCleanupFreshnessReadOutcome {
-        freshness::read(self, media)
+        freshness::read(self, media, format)
     }
 
     pub fn execute_cleanup_candidate(

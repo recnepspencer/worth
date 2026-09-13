@@ -34,7 +34,6 @@ impl WorthQueryLiveDeliveryControls {
         self.buffer_capacity.get()
     }
 
-    #[cfg(test)]
     pub(crate) fn replace_request(&mut self, request: WorthQueryRequestScope) {
         self.request = request;
     }

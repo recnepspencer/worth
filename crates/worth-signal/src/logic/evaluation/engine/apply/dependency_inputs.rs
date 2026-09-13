@@ -1,3 +1,6 @@
+mod capture_work;
+#[cfg(test)]
+mod tests;
 use crate::data::dependency::{
     CommittedSnapshotUpdate, DependencyEdge, DependencyInputScan, DependencySnapshot,
     ReplacementSnapshotUpdate, SnapshotDeltaRecord, SnapshotShapeHandle, StableShapeSnapshotBasis,
@@ -6,6 +9,7 @@ use crate::data::dependency::{
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
+use crate::logic::evaluation::EvaluationWork;
 use crate::logic::evaluation::{DependencyInputContext, EffectDependencyInputs};
 
 use super::telemetry;
@@ -14,6 +18,7 @@ pub(super) fn resolve_effect_dependency_inputs(
     graph: &mut SignalGraph,
     node: NodeId,
     dependency_inputs: Option<EffectDependencyInputs>,
+    work: &mut EvaluationWork<'_>,
 ) -> Result<EffectDependencyInputs, SignalError> {
     match dependency_inputs {
         Some(inputs) if dependency_inputs_match_graph(graph, node, &inputs)? => {
@@ -22,9 +27,9 @@ pub(super) fn resolve_effect_dependency_inputs(
         }
         Some(_) => {
             telemetry::record_dependency_input_rebuild(graph);
-            build_effect_dependency_inputs(graph, node)
+            build_effect_dependency_inputs(graph, node, work)
         }
-        None => build_effect_dependency_inputs(graph, node),
+        None => build_effect_dependency_inputs(graph, node, work),
     }
 }
 
@@ -43,15 +48,24 @@ fn dependency_inputs_match_graph(
 fn build_effect_dependency_inputs(
     graph: &mut SignalGraph,
     node: NodeId,
+    work: &mut EvaluationWork<'_>,
 ) -> Result<EffectDependencyInputs, SignalError> {
     let (dependency_set_id, dependency_snapshot_id) = graph.node_dependency_ids(node)?;
     let context = DependencyInputContext {
         dependency_set_id,
         dependency_snapshot_id,
     };
-    graph.refresh_runtime_dependencies_of(node)?;
-    let dependencies = graph.current_runtime_dependencies_of(node)?.to_vec();
-    build_effect_dependency_inputs_for_dependencies(graph, node, context, dependencies.as_slice())
+    graph.refresh_runtime_dependencies_with_work(node, work)?;
+    let dependencies = graph.current_runtime_dependencies_of(node)?;
+    capture_work::dependencies(dependencies, work)?;
+    let dependencies = dependencies.to_vec();
+    build_effect_dependency_inputs_for_dependencies(
+        graph,
+        node,
+        context,
+        dependencies.as_slice(),
+        work,
+    )
 }
 
 pub(crate) fn collect_effect_dependency_inputs_iter<I>(
@@ -63,7 +77,7 @@ where
 {
     nodes
         .into_iter()
-        .map(|node| build_effect_dependency_inputs(graph, node))
+        .map(|node| build_effect_dependency_inputs(graph, node, &mut EvaluationWork::Ordinary))
         .collect()
 }
 
@@ -72,15 +86,16 @@ pub(crate) fn build_effect_dependency_inputs_for_dependencies(
     node: NodeId,
     context: DependencyInputContext,
     dependencies: &[DependencyEdge],
+    work: &mut EvaluationWork<'_>,
 ) -> Result<EffectDependencyInputs, SignalError> {
     let shape_handle_lookup_start = crate::clock::RuntimeInstant::now();
-    let previous_shape_handle =
-        graph.dependency_snapshot_shape_handle(context.dependency_snapshot_id);
+    let previous_shape_handle = graph
+        .dependency_snapshot_shape_handle_for_evaluation(context.dependency_snapshot_id, work)?;
     let shape_handle_lookup_nanos = shape_handle_lookup_start.elapsed().as_nanos();
     let previous_snapshot_fetch_start = crate::clock::RuntimeInstant::now();
     let previous_snapshot = graph.get_dep_snapshot(node)?.clone();
     let previous_snapshot_fetch_nanos = previous_snapshot_fetch_start.elapsed().as_nanos();
-    let shape_scan = scan_dependency_shape(graph, dependencies, previous_snapshot.entries())?;
+    let shape_scan = scan_dependency_shape(graph, dependencies, previous_snapshot.entries(), work)?;
     let (stable_shape_proved, inputs) = {
         if shape_scan.shape_stable
             && shape_scan.matched_entry_count == previous_snapshot.entries().len()
@@ -97,6 +112,7 @@ pub(crate) fn build_effect_dependency_inputs_for_dependencies(
                 shape_handle_lookup_nanos,
                 previous_snapshot_fetch_nanos,
                 shape_scan.version_scan_nanos,
+                work,
             )?;
             (true, inputs)
         } else {
@@ -113,6 +129,7 @@ pub(crate) fn build_effect_dependency_inputs_for_dependencies(
                 shape_handle_lookup_nanos,
                 previous_snapshot_fetch_nanos,
                 shape_scan.version_scan_nanos,
+                work,
             )?;
             (false, inputs)
         }
@@ -133,15 +150,20 @@ fn scan_dependency_shape(
     graph: &mut SignalGraph,
     dependencies: &[DependencyEdge],
     previous_entries: &[crate::data::dependency::DependencySnapshotEntry],
+    work: &mut EvaluationWork<'_>,
 ) -> Result<DependencyShapeScan, SignalError> {
     let mut matched_entry_count = 0usize;
     let mut shape_stable = dependencies.len() == previous_entries.len();
     let mut changes = 0_u32;
+    work.reserve(
+        dependencies
+            .len()
+            .checked_mul(std::mem::size_of::<u64>() + 2),
+    )?;
     let mut stable_shape_versions = Vec::with_capacity(dependencies.len());
     let version_scan_start = crate::clock::RuntimeInstant::now();
     for dep in dependencies {
         let source = dep.source();
-        let aspect = dep.aspect();
         let Some(previous_entry) = previous_entries.get(matched_entry_count) else {
             shape_stable = false;
             break;
@@ -151,9 +173,10 @@ fn scan_dependency_shape(
             break;
         }
 
-        let version = graph.node_version_for_scope(source, aspect, dep.scope_ref())?;
+        let version = capture_work::version(graph, dep, work)?;
         stable_shape_versions.push(version);
-        if previous_entry.sort_key() != dep.sort_key() {
+        capture_work::scope_comparison(dep.scope_ref(), work)?;
+        if !previous_entry.compare_dependency(dep).is_eq() {
             shape_stable = false;
             break;
         }
@@ -183,7 +206,15 @@ fn build_stable_shape_dependency_inputs(
     shape_handle_lookup_nanos: u128,
     previous_snapshot_fetch_nanos: u128,
     version_scan_nanos: u128,
+    work: &mut EvaluationWork<'_>,
 ) -> Result<EffectDependencyInputs, SignalError> {
+    work.reserve(
+        previous_snapshot
+            .entries()
+            .len()
+            .checked_mul(3)
+            .and_then(|n| n.checked_add(16)),
+    )?;
     let stable_proof_start = crate::clock::RuntimeInstant::now();
     let scan = DependencyInputScan::stable_shape(
         node,
@@ -232,17 +263,19 @@ fn build_replacement_dependency_inputs(
     shape_handle_lookup_nanos: u128,
     previous_snapshot_fetch_nanos: u128,
     version_scan_nanos: u128,
+    work: &mut EvaluationWork<'_>,
 ) -> Result<EffectDependencyInputs, SignalError> {
     let replacement_build_start = crate::clock::RuntimeInstant::now();
     let (snapshot, changes) =
-        build_replacement_dependency_snapshot(graph, dependencies, previous_snapshot)?;
+        build_replacement_dependency_snapshot(graph, dependencies, previous_snapshot, work)?;
 
     let replacement_snapshot =
         crate::data::dependency::SharedDependencySnapshot::new(snapshot.clone());
+    capture_work::snapshot_comparison(previous_snapshot.entries(), snapshot.entries(), work)?;
     let snapshot_delta =
         SnapshotDeltaRecord::between(node, previous_snapshot, &replacement_snapshot);
     let dependency_snapshot_update = CommittedSnapshotUpdate::Replace(
-        ReplacementSnapshotUpdate::from_snapshot(snapshot, graph.dependency_snapshot_shapes_mut()),
+        ReplacementSnapshotUpdate::from_snapshot_with_work(snapshot, work)?,
     );
     let replacement_build_nanos = replacement_build_start.elapsed().as_nanos();
     telemetry::record_replacement_timing(
@@ -264,8 +297,17 @@ fn build_replacement_dependency_snapshot(
     graph: &mut SignalGraph,
     dependencies: &[DependencyEdge],
     previous_snapshot: &DependencySnapshot,
+    work: &mut EvaluationWork<'_>,
 ) -> Result<(DependencySnapshot, u32), SignalError> {
-    let mut snapshot = DependencySnapshot::empty();
+    work.reserve(
+        dependencies
+            .len()
+            .checked_mul(
+                std::mem::size_of::<crate::data::dependency::DependencySnapshotEntry>() + 2,
+            )
+            .filter(|n| *n <= isize::MAX as usize),
+    )?;
+    let mut entries = Vec::with_capacity(dependencies.len());
     let snapshot_entries = previous_snapshot.entries();
     let mut snapshot_index = 0usize;
     let mut changes = 0_u32;
@@ -273,15 +315,29 @@ fn build_replacement_dependency_snapshot(
         let source = dep.source();
         let aspect = dep.aspect();
         if graph.is_alive(source) {
-            let ver = graph.node_version_for_scope(source, aspect, dep.scope_ref())?;
-            snapshot.record(source, aspect, ver, dep.scope_ref().cloned());
-            while snapshot_index < snapshot_entries.len()
-                && snapshot_entries[snapshot_index].sort_key() < dep.sort_key()
-            {
+            let ver = capture_work::version(graph, dep, work)?;
+            capture_work::scope_copy(dep.scope_ref(), work)?;
+            entries.push(crate::data::dependency::DependencySnapshotEntry {
+                source,
+                aspect,
+                cached_version: ver,
+                scope: dep.scope_ref().cloned(),
+            });
+            while snapshot_index < snapshot_entries.len() {
+                capture_work::scope_comparison(dep.scope_ref(), work)?;
+                if !snapshot_entries[snapshot_index]
+                    .compare_dependency(dep)
+                    .is_lt()
+                {
+                    break;
+                }
                 snapshot_index += 1;
             }
+            capture_work::scope_comparison(dep.scope_ref(), work)?;
             if snapshot_index < snapshot_entries.len()
-                && snapshot_entries[snapshot_index].sort_key() == dep.sort_key()
+                && snapshot_entries[snapshot_index]
+                    .compare_dependency(dep)
+                    .is_eq()
             {
                 if snapshot_entries[snapshot_index].cached_version != ver {
                     changes += 1;
@@ -292,5 +348,6 @@ fn build_replacement_dependency_snapshot(
             changes += 1;
         }
     }
-    Ok((snapshot, changes))
+    capture_work::snapshot_comparison(&entries, &[], work)?;
+    Ok((DependencySnapshot::from_ordered_unique(entries), changes))
 }

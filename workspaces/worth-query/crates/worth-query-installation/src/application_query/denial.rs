@@ -1,5 +1,14 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationQueryInstallationDenialKind {
+    BindingIdentityCollision,
+    BindingMeaningChanged,
+    BindingPrincipalMeaningChanged,
+    BindingQueryMeaningChanged,
+    BindingQueryNotInstalled,
+    BindingResultLimitIsZero,
+    BindingScopeMeaningChanged,
+    BindingWorkLimitIsZero,
+    InvalidBindingIdentity,
     QueryNotInstalled,
     QueryMeaningChanged,
     AuthorizationNotInstalled,

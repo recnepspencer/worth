@@ -1,11 +1,3 @@
-//! S.7 digest-derived blob identity cannot satisfy S.3 chunk integrity:
-//! ```compile_fail
-//! use worth_store_blob_chunks::BlobChunkIdentity;
-//! use worth_store_physical_integrity::ChunkIntegrityReport;
-//! fn requires_chunk_integrity(_: ChunkIntegrityReport) {}
-//! let identity: BlobChunkIdentity = todo!();
-//! requires_chunk_integrity(identity);
-//! ```
 //! Digest-derived blob identity cannot satisfy blob security scope:
 //! ```compile_fail
 //! use worth_store_blob_chunks::{BlobChunkIdentity, BlobChunkSecurityScope};

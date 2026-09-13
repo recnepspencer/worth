@@ -29,6 +29,8 @@ pub(super) fn compare_semantic_correspondences(
             return Err(BridgeConditionalContinuityMismatch::DependencyMeaning { ordinal });
         }
         if current_dependency.source_record_identity != candidate_dependency.source_record_identity
+            || current_dependency.observation_record_identity
+                != candidate_dependency.observation_record_identity
         {
             return Err(BridgeConditionalContinuityMismatch::DependencySource { ordinal });
         }
@@ -37,9 +39,10 @@ pub(super) fn compare_semantic_correspondences(
         if current_basis.graph_adapter_identity != candidate_basis.graph_adapter_identity {
             return Err(BridgeConditionalContinuityMismatch::GraphAdapter { ordinal });
         }
-        if current_basis.authoritative_source_profile
-            != candidate_basis.authoritative_source_profile
-        {
+        if !source_profiles_share_semantic_identity(
+            current_basis.authoritative_source_profile.as_ref(),
+            candidate_basis.authoritative_source_profile.as_ref(),
+        ) {
             return Err(BridgeConditionalContinuityMismatch::SourceProfile { ordinal });
         }
         let current_targets = current.targets.as_slice();
@@ -81,6 +84,8 @@ pub(super) fn compare_exact_correspondences(
             || current_basis.source_authority_binding_identity
                 != candidate_basis.source_authority_binding_identity
             || current_basis.source_basis != candidate_basis.source_basis
+            || current_basis.authoritative_source_profile
+                != candidate_basis.authoritative_source_profile
             || current_basis.bridge_runtime_key != candidate_basis.bridge_runtime_key
         {
             return Err(
@@ -122,4 +127,42 @@ pub(super) fn compare_exact_correspondences(
         }
     }
     Ok(())
+}
+
+fn source_profiles_share_semantic_identity(
+    current: Option<&crate::input::envelope::BridgeAuthoritativeSourceProfile>,
+    candidate: Option<&crate::input::envelope::BridgeAuthoritativeSourceProfile>,
+) -> bool {
+    match (current, candidate) {
+        (Some(current), Some(candidate)) => {
+            current.adapter_semantic_identity() == candidate.adapter_semantic_identity()
+        }
+        (None, None) => true,
+        _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::input::envelope::BridgeAuthoritativeSourceProfile;
+
+    use super::source_profiles_share_semantic_identity;
+
+    #[test]
+    fn source_continuity_compares_adapter_semantics_independently_of_runtime_occurrence() {
+        let current = BridgeAuthoritativeSourceProfile::new(17, "relational-adapter-v1").unwrap();
+        let replacement =
+            BridgeAuthoritativeSourceProfile::new(29, "relational-adapter-v1").unwrap();
+        let different_adapter =
+            BridgeAuthoritativeSourceProfile::new(29, "relational-adapter-v2").unwrap();
+
+        assert!(source_profiles_share_semantic_identity(
+            Some(&current),
+            Some(&replacement)
+        ));
+        assert!(!source_profiles_share_semantic_identity(
+            Some(&current),
+            Some(&different_adapter)
+        ));
+    }
 }

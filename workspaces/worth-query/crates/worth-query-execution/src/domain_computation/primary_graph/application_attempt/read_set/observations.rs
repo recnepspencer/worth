@@ -2,8 +2,8 @@ use std::marker::PhantomData;
 
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationOperationDecisionReadTarget, ApplicationRelationRef, OperationReads,
-    TypedApplicationReadableValue, WritePosture,
+    ApplicationOperationDecisionReadTarget, ApplicationReadableScalarValueBinding,
+    ApplicationRelationRef, DeclaredApplicationFieldValue, OperationReads, WritePosture,
 };
 
 use super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
@@ -53,8 +53,8 @@ impl<Schema, Operation, Input, Scope, Phase>
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Result<Value, WorthQueryApplicationAttemptDenial>
     where
-        Field: OperationReads<Operation>,
-        Value: TypedApplicationReadableValue,
+        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -91,7 +91,7 @@ impl<Schema, Operation, Input, Scope, Phase>
                     field.field(),
                 )
             })?;
-        let typed = Value::from_foundational_value(&value).ok_or_else(|| {
+        let typed = Field::Binding::decode(&value).map_err(|_| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::InvalidAuthoritativeValue,
                 field.field(),

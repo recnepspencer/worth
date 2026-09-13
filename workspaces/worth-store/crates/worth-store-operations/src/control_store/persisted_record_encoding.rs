@@ -116,13 +116,13 @@ pub(super) fn encode_kind(
             workflow,
             plan_fingerprint,
             receipt_fingerprint,
-            owner_tag,
+            owner_kind,
         } => {
             output.u8(22)?;
             output.u8(workflow_tag(*workflow))?;
             output.bytes(plan_fingerprint)?;
             output.bytes(receipt_fingerprint)?;
-            output.u8(*owner_tag)
+            output.u8(owner_kind.tag())
         }
         Kind::ReplicaBootstrapTransferRecorded {
             authorization_plan_fingerprint,

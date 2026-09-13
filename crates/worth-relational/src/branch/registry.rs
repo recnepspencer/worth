@@ -18,8 +18,13 @@ pub(crate) struct RelationalBranchReferenceRegistry {
     state: Arc<RwLock<RelationalBranchRegistryState>>,
 }
 
+/// Move-only owner-issued custody for one exact Relational fork destination.
+///
+/// The registry and active bit are intentionally private. A caller can carry
+/// or drop this reservation, but cannot forge, clone, serialize, or install it
+/// outside the owner that issued it.
 #[derive(Debug)]
-pub(crate) struct RelationalForkTargetReservation {
+pub struct RelationalForkTargetReservation {
     registry: RelationalBranchReferenceRegistry,
     branch_id: BranchId,
     active: bool,
@@ -32,6 +37,14 @@ pub(crate) enum RelationalForkTargetReservationDenial {
 }
 
 impl RelationalBranchReferenceRegistry {
+    pub(crate) fn owns_reservation(&self, reservation: &RelationalForkTargetReservation) -> bool {
+        self.same_owner(&reservation.registry)
+    }
+
+    fn same_owner(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.state, &other.state)
+    }
+
     pub(crate) fn detached_owner_snapshot(&self) -> Self {
         let state = self.read();
         Self {
@@ -158,6 +171,11 @@ impl RelationalBranchReferenceRegistry {
 }
 
 impl RelationalForkTargetReservation {
+    /// Exact destination name reserved by the issuing Relational owner.
+    pub fn branch_id(&self) -> &BranchId {
+        &self.branch_id
+    }
+
     pub(crate) fn install(mut self, cell: RelationalBranchReferenceCell) {
         let mut state = self.registry.write();
         assert_eq!(cell.identity().branch_id(), &self.branch_id);

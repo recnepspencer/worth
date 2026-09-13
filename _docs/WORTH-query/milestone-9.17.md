@@ -3,7 +3,7 @@
 ## Governing Role
 
 Milestone 9.17 is the governing umbrella for the ordinary composite product-
-branch foundation. It is implemented through four authority-aligned
+branch foundation. It is implemented through five authority-aligned
 submilestones:
 
 1. [Milestone 9.17.1](./milestone-9.17.1.md) first establishes the causal
@@ -14,10 +14,14 @@ submilestones:
    concurrency, performed-settlement recovery, exact Signal retention,
    facade, evidence-lane, and documentation defects discovered after 9.17.1
    closure without reopening its historical phase record. Closed on
-   2026-08-29, which is what allows 9.17.2 to begin.
-3. [Milestone 9.17.2](./milestone-9.17.2.md) establishes Runtime Bridge-owned
-   in-memory composite runtime-world history and coordinated publication.
-4. [Milestone 9.17.3](./milestone-9.17.3.md) carries that authority through
+   2026-08-29.
+3. [Milestone 9.17.1.2](./milestone-9.17.1.2.md) completes the Relational bundle
+   and Signal operation services, including independent branch progress. It is
+   the required entry gate to 9.17.2.
+4. [Milestone 9.17.2](./milestone-9.17.2.md) establishes in-memory composite
+   runtime-world history and coordinated publication in the dedicated
+   `worth-runtime-world` composition owner.
+5. [Milestone 9.17.3](./milestone-9.17.3.md) carries that authority through
    Query, gates existing-outbox eligibility on performed composite publication,
    cuts the public facade over, and certifies the product boundary.
 
@@ -26,22 +30,24 @@ The dependency order is strict:
 ```text
 9.17.1 owner component bases and Relational MVCC
     -> 9.17.1.1 owner-port concurrency and lifecycle closure
-        -> 9.17.2 composite history and coordinated publication
-            -> 9.17.3 Query carriage, facade, and certification
-                -> 9.18 tree-based semantic undo and redo
+        -> 9.17.1.2 final owner services and Signal independent progress
+            -> 9.17.2 composite history and coordinated publication
+                -> 9.17.3 Query carriage, facade, and certification
+                    -> 9.17.4 application API hardening (post-closure)
+                        -> 9.18 tree-based semantic undo and redo
 ```
 
-This partition is not four interpretations of one feature. The three product
-steps own distinct authority boundaries; corrective 9.17.1.1 closes the
-owner-facing concurrency and lifecycle contract without adding a new owner.
-Each reaches a useful, independently reviewable completion state. Milestone
-9.17 closes only when all four close and the cumulative courtroom passes
+This partition is not five interpretations of one feature. The product steps
+own distinct authority boundaries; corrective 9.17.1.1 and 9.17.1.2 close the
+owner-facing service, concurrency, and lifecycle contracts without adding a
+new semantic owner. Each reaches a useful, independently reviewable completion
+state. Milestone 9.17 closes only when all five close and the cumulative courtroom passes
 through the real public Query composition root.
 
 ## Goal
 
-Establish one ordinary product branch as a Runtime Bridge-owned reference to an
-exact composite Relational-plus-Signal world commit while preserving distinct
+Establish one ordinary product branch as a Runtime World owner-issued reference
+to an exact composite Relational-plus-Signal world commit while preserving distinct
 branch, basis, version, history, and publication authority inside Relational
 and Signal.
 
@@ -89,7 +95,7 @@ owner-issued Signal branch basis --------/             |
                        +------------ owner-issued results ----------------+
                                                        |
                                                        v
-                                  Bridge coordinated compare-and-publish
+                              Runtime World coordinated compare-and-publish
                                                        |
                                                        v
                                      new composite commit and branch head
@@ -111,9 +117,10 @@ recovery, and physical residency under the completed semantic owners.
 - Signal owns branch-local derived execution state, exact snapshot and restore
   posture, definition-bound evaluation, and branch lifecycle. Its existing
   branch basis is materially stronger than a raw branch id or numeric version.
-- Runtime Bridge owns cross-runtime correspondence and protocol admission, but
-  does not yet own an ordinary composite commit graph or product-branch
-  reference store.
+- Runtime Bridge owns cross-runtime correspondence and protocol admission. It
+  does not and, because Relational already depends on it, cannot legally absorb
+  the concrete cross-owner composition graph. The dedicated Runtime World owner
+  does not yet exist.
 - Query carries branch affinity, but some current surfaces derive product truth
   identity from Relational branch identity and therefore cannot represent an
   independently selected Signal basis honestly.
@@ -175,8 +182,8 @@ The independent oracle must observe:
 - no public or historical observation sees a half-current product world;
 - no copied, stale, foreign, equal-ordinal, or representation-equal artifact
   substitutes for owner authority;
-- failed preparation leaves complete cleanup or a typed bounded retained-
-  candidate posture; and
+- owner work without product movement leaves either complete cleanup or typed,
+  bounded `ProductUnpublishedOwnerEffects`; and
 - the same exact product-world basis reaches Query planning, execution,
   publication, receipts, history, and live observation; and
 - an existing Relational outbox fact is dispatchable only when its exact
@@ -194,30 +201,34 @@ publication, or Query-restamped authority must fail this courtroom.
 2. Signal owns Signal branch identity, exact bases, snapshots, restore,
    definition-bound execution state, derived lifecycle, and owner-local
    advancement.
-3. Runtime Bridge owns admitted exact component correspondence, immutable
-   composite runtime-world commits, product branch references, composite head
-   generations, and cross-runtime publication orchestration. It owns
-   composition currentness, not component truth.
+3. Runtime Bridge owns installed semantic correspondence. The dedicated
+   Runtime World owner admits exact component composition, owns immutable
+   composite commits, product references and generations, and coordinates
+   publication. It owns composition currentness, not component truth.
 4. Query owns branch workflow declaration, fresh admission, public progression,
    DX, and outcome projection. It cannot mint a component basis,
    correspondence, composite commit, or product-head movement.
 5. Product, Relational, and Signal branch identities are distinct meanings and
    types. Equal text, digests, or version ordinals grant no correspondence.
 6. A composite basis names exact owner-issued component bases. No component is
-   selected by ambient branch state or a `latest` lookup.
+   selected by ambient branch state or a `latest` lookup. The first root and
+   product reference require explicit exact-basis bootstrap; construction does
+   not infer an initial head.
 7. A composite world commit is immutable composition truth with one ordinary
    parent, exact component bases, component-change posture, correspondence,
-   provenance, and publication outcome.
+   and publication-attempt provenance. The performed-publication envelope
+   separately binds the commit to the reference movement that selected it.
 8. A product branch is a mutable compare-and-publish reference to one composite
    commit. Component heads do not independently define product currentness.
 9. Component reuse is exact immutable-basis reuse. Component mutation requires
    owner-issued advancement or fork authority.
 10. Unchanged components remain at the exact carried basis and are never
     opportunistically refreshed.
-11. Owner-local results remain candidates until Bridge compatibility admission
-    and composite-head compare-and-publish succeed.
-12. Failed or losing preparation moves no product head. Retained immutable
-    candidates have typed bounded owner-managed lifecycle posture.
+11. Owner-local results remain component evidence until Runtime World
+    compatibility admission and product-head compare-and-publish succeed.
+12. Failed or losing work moves no product head. If any owner effect occurred,
+    bounded `ProductUnpublishedOwnerEffects` records the exact recovery
+    obligation; pre-effect denial is exact no-effect.
 13. Independent branches are never serialized by an ordinary global commit
     lock. Shared mechanical storage cannot erase logical ownership.
 14. Relational forks reuse exact immutable ancestry without duplicating truth;
@@ -244,9 +255,10 @@ publication, or Query-restamped authority must fail this courtroom.
 20. Merge, rebase, multi-parent publication, tags, offline synchronization,
     Store-native replication, durability, and distributed recovery remain
     governed elsewhere.
-21. Relational and Signal own component state; Runtime Bridge owns composite
-    history/currentness; Query owns fresh dispatch admission. No physical
-    adapter participates in this milestone.
+21. Relational and Signal own component state; the Runtime World composition
+    owner owns composite history/currentness; the base Runtime Bridge owns
+    installed semantic correspondence; Query owns fresh dispatch admission.
+    No physical adapter participates in this milestone.
 22. Query's existing outbox payload remains in the Relational component commit,
     but only performed Bridge composite publication can make it product-
     dispatchable after 9.17.3.
@@ -257,13 +269,14 @@ publication, or Query-restamped authority must fail this courtroom.
 | --- | --- | --- | --- |
 | [9.17.1](./milestone-9.17.1.md) | Causal merge-ready Relational certification world, exact component basis contracts, and structurally shared concurrent Relational branch-local MVCC | Relational and Signal, each for its own basis; Relational certification for the world/oracle | No merge behavior, composite product branch, persistence, or public Query workflow |
 | [9.17.1.1](./milestone-9.17.1.1.md) | Independently borrowable Relational owner services, pre-effect recoverable Relational settlement, exact non-current Signal retention, terminal lease lifecycle, and executable owner evidence | Relational and Signal, each for its own component contract and lifecycle | No composite history, Query carriage, persistence, or reinterpretation of historical 9.17.1 phases |
-| [9.17.2](./milestone-9.17.2.md) | Memory-resident immutable composite history, product branch references, and coordinated compare-and-publish | Runtime Bridge | No Query-owned history, persistence, or public facade cutover |
+| [9.17.1.2](./milestone-9.17.1.2.md) | Complete Relational service bundle plus concrete Signal services and independent branch execution | Relational and Signal | No composite history, product currentness, Query carriage, or changed owner meaning |
+| [9.17.2](./milestone-9.17.2.md) | Memory-resident immutable composite history, product branch references, and coordinated compare-and-publish | `worth-runtime-world` composition owner in the Runtime Bridge authority band | No Query-owned history, persistence, or public facade cutover |
 | [9.17.3](./milestone-9.17.3.md) | End-to-end Query carriage, live-runtime existing-outbox composite gating, public branch facade, lifecycle docs, and hostile certification | Query as audience/admission facade and certification owner | No new component, composition, or physical-storage authority |
 
 No submilestone may claim the next submilestone's product. In particular,
-9.17.1 and 9.17.1.1 do not ship a product branch, 9.17.2 does not claim public
-Query completion, and 9.17.3 does not repair missing owner-local MVCC or Bridge
-history with facade glue.
+9.17.1, 9.17.1.1, and 9.17.1.2 do not ship a product branch; 9.17.2 does not
+claim public Query completion; and 9.17.3 does not repair missing owner-local
+MVCC, owner services, or composition history with facade glue.
 
 ## Governing Destination Topology
 
@@ -275,13 +288,19 @@ worth-relational/
 
 worth-signal/
     branch/
+        owner_services/
 
 worth-runtime-bridge/
-    runtime_world/
-        basis/
-        history/
-        branch/
-        publication/
+    correspondence/
+
+worth-runtime-world/
+    basis/
+    identity/
+    history/
+    branch/
+    publication/
+    retention/
+    recovery/
 
 worth-query-execution/
     basis/
@@ -319,13 +338,14 @@ persistence hook, and adapter-minted performed publication are also forbidden.
 - Ancestry traversal, historical comparison, retention reclamation, and orphan
   cleanup remain explicit history or maintenance lanes.
 - Component publication and composite publication expose exact owner contacts,
-  comparison attempts, retained candidates, and cleanup work; unrelated
-  branches contribute zero synchronous semantic coordination.
+  comparison attempts, owner-local candidates, product-unpublished owner
+  effects, and cleanup work; unrelated branches contribute zero synchronous
+  semantic coordination.
 - Pending dispatch lookup is indexed and joins one outbox locator to one exact
   performed composite publication; it does not scan histories.
 - Receipts expose exact owner preparation, component basis validation,
-  composite comparison, same-branch retry, unrelated-branch wait, retained-
-  candidate, cleanup, and Query carriage counters.
+  composite comparison, same-branch retry, unrelated-branch wait,
+  product-unpublished-owner-effects, cleanup, and Query carriage counters.
 
 ## Must Preserve
 
@@ -336,7 +356,8 @@ persistence hook, and adapter-minted performed publication are also forbidden.
   boundary, while keeping branch authority outside archive bytes and release
   metadata;
 - Relational and Signal component authority;
-- Bridge composition authority without component-truth absorption;
+- base Bridge correspondence authority and Runtime World composition authority
+  without component-truth absorption;
 - Query's inability to mint lower authority;
 - Foundational canonical and boundary vocabulary without authority promotion;
 - Proof phase, freshness, readmission, performed-effect, and structural-fact
@@ -383,14 +404,17 @@ explicit Store or cross-runtime work.
 - each submilestone owns its current boundary, courtroom, decision lock,
   destination topology, phase plan, proof obligations, and handoff;
 - 9.17.1.1 corrects the owner-facing Relational and Signal guides and evidence
-  commands before Runtime Bridge may consume them;
+  commands;
+- 9.17.1.2 documents the complete Relational bundle and Signal owner-service
+  lifecycle, per-branch boundary, and executable independent progress;
 - public Query branch documentation lands only in 9.17.3 after the real facade
   exists;
 - `worth-foundational` and `worth-proof` docs are linked where their shared
   vocabulary or progression law is used, without teaching them as operational
   owners; and
-- successor documents identify 9.17.3 as the final implementation prerequisite
-  while retaining 9.17 as the semantic umbrella.
+- successor documents identify 9.17.3 as the final branching-umbrella
+  prerequisite and 9.17.4 as subsequent application API hardening, while
+  retaining 9.17 as the branching semantic umbrella.
 
 ## Umbrella Acceptance
 
@@ -405,6 +429,9 @@ Milestone 9.17 closes only when:
   non-current exact Signal bases remain retainable; lease drop is terminal;
   and the facade, docs, feature lane, scheduled proofs, and contention court
   execute the same contract;
+- 9.17.1.2 proves complete concrete owner bundles, exactly one same-basis Signal
+  movement, unrelated progress without a whole-runtime mutex, and lifecycle-
+  total closure, cancellation, panic, and capacity denial;
 - 9.17.2 proves exact composite correspondence, immutable single-parent
   history, product branch references, retention, product-head comparison, and
   no-half-publication compare-and-publish;
@@ -422,13 +449,20 @@ Milestone 9.17 closes only when:
   integration evidence exists.
 
 The decisive product observation is the product branch head and exact
-owner-observed component bases. A green Relational commit, Bridge unit test, or
-Query facade compile alone is not umbrella closure.
+owner-observed component bases. A green Relational commit, Bridge unit test,
+Runtime World unit test, or Query facade compile alone is not umbrella closure.
 
 ## Handoff
 
-[Milestone 9.18](./milestone-9.18.md) begins only after 9.17.3 and therefore the
-entire 9.17 umbrella close. It consumes exact product branches, immutable
+[Milestone 9.17.4](./milestone-9.17.4.md) follows the certified 9.17.3 foundation
+as application API hardening; it does not reopen this umbrella's historical
+certification. Its planned post-M0
+[Milestone 9.17.4.1](./milestone-9.17.4.1.md) semantic authoring correction
+begins after the proprietary CAD M0 demo closes. It uses M0 and Bank as real
+consumer evidence, then compiles their high-level feature meaning through one
+public core application IR before the remaining consumer cutover.
+[Milestone 9.18](./milestone-9.18.md) begins after that consumer
+cutover and the completed 9.17 umbrella. It consumes exact product branches, immutable
 single-parent composite commits, component bases, ancestry, retention, and
 coordinated compare-and-publish authority and performed-publication-gated
 aftermath to define tree-based semantic undo and

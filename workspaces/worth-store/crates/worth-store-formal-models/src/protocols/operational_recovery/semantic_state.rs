@@ -2,8 +2,7 @@ use std::collections::BTreeMap;
 
 use super::{
     binding::{OperationalRecoveryActionBinding as Binding, PublicationBinding},
-    OperationalRecoveryAction, OperationalRecoveryControlledDefect as Defect,
-    OperationalRecoveryInvariant as Invariant,
+    OperationalRecoveryAction, OperationalRecoveryInvariant as Invariant,
 };
 
 mod promotion;
@@ -39,16 +38,7 @@ struct RejoinBinding {
 }
 
 impl OperationalRecoverySemanticState {
-    #[cfg(test)]
     pub(super) fn apply(&mut self, action: &OperationalRecoveryAction) -> Result<(), Invariant> {
-        self.apply_with_defect(action, None)
-    }
-
-    pub(super) fn apply_with_defect(
-        &mut self,
-        action: &OperationalRecoveryAction,
-        defect: Option<Defect>,
-    ) -> Result<(), Invariant> {
         match &action.binding {
             Binding::None => Ok(()),
             Binding::Authorization {
@@ -57,7 +47,7 @@ impl OperationalRecoverySemanticState {
                 replayed,
             } => self.authorization(*plan, *execution, *replayed),
             Binding::PublicationPrepared(binding) => self.prepare_publication(*binding),
-            Binding::PublicationPending(binding) => self.require_publication(*binding, defect),
+            Binding::PublicationPending(binding) => self.require_publication(*binding),
             Binding::PublicationDisposition {
                 publication,
                 observed_authority,
@@ -83,19 +73,18 @@ impl OperationalRecoverySemanticState {
                 *receipt,
                 *source_lease,
                 *target,
-                defect,
             ),
             Binding::BootstrapCompleted {
                 receipt,
                 source_lease,
                 verification,
-            } => self.bootstrap_complete(*receipt, *source_lease, *verification, defect),
+            } => self.bootstrap_complete(*receipt, *source_lease, *verification),
             Binding::PromotionFence {
                 authorization_plan,
                 execution_plan,
                 fence,
                 epoch,
-            } => self.promotion_fence(*authorization_plan, *execution_plan, *fence, *epoch, defect),
+            } => self.promotion_fence(*authorization_plan, *execution_plan, *fence, *epoch),
             Binding::PromotionRecorded {
                 authorization_plan,
                 execution_plan,
@@ -108,7 +97,6 @@ impl OperationalRecoverySemanticState {
                 *receipt,
                 *fence,
                 *epoch,
-                defect,
             ),
             Binding::PromotionPublished {
                 receipt,
@@ -116,14 +104,7 @@ impl OperationalRecoverySemanticState {
                 verification,
                 target,
                 epoch,
-            } => self.promotion_publish(
-                *receipt,
-                *publication,
-                *verification,
-                *target,
-                *epoch,
-                defect,
-            ),
+            } => self.promotion_publish(*receipt, *publication, *verification, *target, *epoch),
             Binding::PromotionReadmitted {
                 publication,
                 serve_lease,
@@ -146,7 +127,6 @@ impl OperationalRecoverySemanticState {
                 *forensic_retention,
                 *rebootstrap_target,
                 *disposition,
-                defect,
             ),
         }
     }
@@ -176,16 +156,8 @@ impl OperationalRecoverySemanticState {
         Ok(())
     }
 
-    fn require_publication(
-        &mut self,
-        binding: PublicationBinding,
-        defect: Option<Defect>,
-    ) -> Result<(), Invariant> {
+    fn require_publication(&mut self, binding: PublicationBinding) -> Result<(), Invariant> {
         if self.publication != Some(binding) {
-            if defect == Some(Defect::PublicationWithoutPreparation) {
-                self.publication = Some(binding);
-                return Ok(());
-            }
             return Err(Invariant::PublicationBindingPreserved);
         }
         Ok(())
@@ -230,9 +202,8 @@ impl OperationalRecoverySemanticState {
         receipt: [u8; 32],
         source_lease: [u8; 32],
         target: [u8; 32],
-        defect: Option<Defect>,
     ) -> Result<(), Invariant> {
-        self.require_authorization(authorization_plan, execution_plan, defect)?;
+        self.require_authorization(authorization_plan, execution_plan)?;
         for identity in [receipt, source_lease, target] {
             require_nonzero(identity)?;
         }
@@ -248,13 +219,9 @@ impl OperationalRecoverySemanticState {
         receipt: [u8; 32],
         source_lease: [u8; 32],
         verification: [u8; 32],
-        defect: Option<Defect>,
     ) -> Result<(), Invariant> {
         require_nonzero(verification)?;
         let Some(binding) = self.bootstrap else {
-            if defect == Some(Defect::BootstrapCompletionWithoutTransfer) {
-                return Ok(());
-            }
             return Err(Invariant::BootstrapBindingPreserved);
         };
         if (binding.receipt, binding.source_lease) != (receipt, source_lease) {
@@ -267,16 +234,12 @@ impl OperationalRecoverySemanticState {
         &self,
         authorization_plan: [u8; 32],
         execution_plan: [u8; 32],
-        defect: Option<Defect>,
     ) -> Result<(), Invariant> {
         if self
             .authorizations
             .get(&authorization_plan)
             .is_none_or(|expected| expected.is_some_and(|value| value != execution_plan))
         {
-            if defect == Some(Defect::ExecutionWithoutAuthorization) {
-                return Ok(());
-            }
             return Err(Invariant::AuthorizationPlanBindingPreserved);
         }
         Ok(())

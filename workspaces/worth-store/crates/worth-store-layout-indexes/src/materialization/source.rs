@@ -43,7 +43,7 @@ enum LayoutMaterializationSourceAuthority {
     BootstrapCatalog(std::sync::Arc<worth_store_physical_format::PhysicalBootstrapCatalogIdentity>),
     BTreePublication(worth_store_physical_format::RootPublicationValidationWitness),
     BTreeLookup(std::sync::Arc<crate::strategy::btree::execution::BaselineBTreeReadSourceReceipt>),
-    BTreeReplay(std::sync::Arc<worth_store_recovery_physics::AdmittedBTreeReplayPhysicalSource>),
+    BTreeReplay(std::sync::Arc<crate::AdmittedBTreeReplayPhysicalSource>),
     LsmPublication(std::sync::Arc<worth_store_lsm_authority::PublishedLsmMembershipReplacement>),
     LsmReplay(std::sync::Arc<worth_store_lsm_authority::AdmittedLsmReplaySource>),
     ImportedBlob(std::sync::Arc<worth_store_blob_chunks::ImportedBlobWitness>),
@@ -98,7 +98,7 @@ impl LayoutMaterializationSourceIdentity {
 
     pub(super) fn from_btree_replay_source(
         catalog: &BootstrapCatalogReadAdmission,
-        source: &worth_store_recovery_physics::AdmittedBTreeReplayPhysicalSource,
+        source: &crate::AdmittedBTreeReplayPhysicalSource,
     ) -> Self {
         Self {
             root_owner: source.root_reference().generation_owner(),
@@ -197,7 +197,7 @@ impl LayoutMaterializationSourceIdentity {
 
     pub(super) fn matches_btree_replay_source(
         &self,
-        source: &worth_store_recovery_physics::AdmittedBTreeReplayPhysicalSource,
+        source: &crate::AdmittedBTreeReplayPhysicalSource,
     ) -> bool {
         matches!(
             &self.authority,

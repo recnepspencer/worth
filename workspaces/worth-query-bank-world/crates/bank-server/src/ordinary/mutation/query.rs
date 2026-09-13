@@ -7,8 +7,9 @@ use super::BankMutationControls;
 use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime};
 use bank_domain::schema::BankSchema;
 use worth_query_host::facade::declaration::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, OperationExpectsFact, OperationExpectsVersion,
-    TypedApplicationValue, TypedMutationPreconditions,
+    ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationValueEncodeDenial, DeclaredApplicationFieldValue, OperationExpectsFact,
+    OperationExpectsVersion, TypedMutationPreconditions,
 };
 
 pub struct BankMutation<'runtime, Mutation> {
@@ -114,28 +115,28 @@ impl<'runtime, 'principal, Mutation, Operation, Scope>
         mut self,
         field: ApplicationFieldRef<BankSchema, Scope, Aspect, Field, Value, Write, Equality, Unit>,
         expected: Value,
-    ) -> Self
+    ) -> Result<Self, ApplicationValueEncodeDenial>
     where
-        Field: OperationExpectsVersion<Operation>,
-        Value: TypedApplicationValue,
+        Field: OperationExpectsVersion<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
+        let expected = ApplicationEncodedScalarValue::<Field::Binding>::try_new(expected)?;
         self.preconditions = self.preconditions.expect_version(field, expected);
-        self
+        Ok(self)
     }
 
     pub fn expect_fact<Aspect, Field, Value, Write, Equality, Unit>(
         mut self,
         field: ApplicationFieldRef<BankSchema, Scope, Aspect, Field, Value, Write, Equality, Unit>,
         expected: Value,
-    ) -> Self
+    ) -> Result<Self, ApplicationValueEncodeDenial>
     where
-        Field: OperationExpectsFact<Operation>,
-        Value: TypedApplicationValue,
+        Field: OperationExpectsFact<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
+        let expected = ApplicationEncodedScalarValue::<Field::Binding>::try_new(expected)?;
         self.preconditions = self.preconditions.expect_fact(field, expected);
-        self
+        Ok(self)
     }
 
     pub fn controls(

@@ -8,6 +8,9 @@ pub(in crate::domain_computation) enum WorthQueryPrimaryGraphApplicationDecision
         read_scope: worth_query_installation::facade::WorthQueryOperationGraphReadScope,
         fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
     },
+    ObservedSource {
+        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
+    },
     Principal(WorthQueryPrincipalCurrentnessDependency),
     Authorization {
         session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
@@ -28,6 +31,12 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         dependency: WorthQueryPrincipalCurrentnessDependency,
     ) -> Self {
         Self::Principal(dependency)
+    }
+
+    pub(in crate::domain_computation) const fn observed_source(
+        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
+    ) -> Self {
+        Self::ObservedSource { fact }
     }
 
     pub(in crate::domain_computation) fn authorization(
@@ -53,12 +62,14 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
             Self::Principal(dependency) => Some(dependency.session_identity()),
             Self::Authorization { session, .. } => Some(*session),
             Self::Application { .. } => None,
+            Self::ObservedSource { .. } => None,
         }
     }
 
     pub(in crate::domain_computation) fn locator_identity(&self) -> String {
         match self {
             Self::Application { fact, .. } => fact.locator_identity(),
+            Self::ObservedSource { fact } => fact.locator_identity(),
             Self::Principal(_) => "application-principal-currentness".to_string(),
             Self::Authorization { locator, .. } => locator.to_string(),
         }
@@ -71,6 +82,7 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
     ) -> bool {
         match self {
             Self::Application { fact, .. } => fact.remains_equal_in(runtime, snapshot),
+            Self::ObservedSource { fact } => fact.remains_equal_in(runtime, snapshot),
             Self::Principal(dependency) => dependency.remains_current_in(runtime, snapshot),
             Self::Authorization { decision, .. } => decision.remains_equal_in(runtime, snapshot),
         }

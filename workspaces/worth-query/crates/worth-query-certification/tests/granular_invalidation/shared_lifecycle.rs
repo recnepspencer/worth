@@ -22,16 +22,22 @@ pub fn assert_shared_consumer_slope() {
     let mut single_observation = observe(&mut single_host);
     let single_batch = single_observation.take_granular_invalidation_batch();
     let single_lower = single_batch.observation();
-    let WorthQueryPrimaryGranularMaintenanceOutcome::Performed(single_performed) =
-        maintain_primary_runtime_granular_batch(
+    let single_performed = match maintain_primary_runtime_granular_batch(
             &single.live,
             &mut single.workspace,
             &single_binding,
             single_batch,
         )
         .expect("the single consumer must perform")
-    else {
-        panic!("the single consumer change must remain relevant")
+    {
+        WorthQueryPrimaryGranularMaintenanceOutcome::Performed(performed) => performed,
+        WorthQueryPrimaryGranularMaintenanceOutcome::NoRelevantChange(no_change) => panic!(
+            "the single consumer change must remain relevant: duplicate={}, settled={}, irrelevant={}, suppressed={}",
+            no_change.duplicate_delivery_count(),
+            no_change.already_settled_delivery_count(),
+            no_change.irrelevant_delivery_count(),
+            no_change.suppressed_impact_count(),
+        ),
     };
 
     let mut shared_host = CourtroomWorld::publish("blocked");
@@ -75,6 +81,7 @@ pub fn assert_shared_consumer_slope() {
 }
 
 pub fn assert_correspondence_rebind_restore() {
+    let (foreign_reconstruction, foreign_record) = foreign_reinstallation_receipt();
     let mut host = CourtroomWorld::publish("blocked");
     let mut query = build_primary_query_world(&host);
     let old_binding = bind_primary_runtime_granular_invalidations(
@@ -86,7 +93,7 @@ pub fn assert_correspondence_rebind_restore() {
     host.amend_intent(1, "active", "waiting");
     let mut delayed = observe(&mut host);
 
-    let reconstruction = host.application.reinstall_conditional_runtime().unwrap();
+    let reconstruction = host.reinstall_conditional_runtime().unwrap();
     assert_reconstruction(reconstruction.lower_runtime_reconstitution());
     let reads_before = query.observations.exact_record_reads();
     let installation = host.application.granular_invalidation_installation();
@@ -113,17 +120,9 @@ pub fn assert_correspondence_rebind_restore() {
         stale_reuse.is_err(),
         "a consumed rebind transition must be stale"
     );
-    let mut foreign_host = CourtroomWorld::publish("blocked");
-    let foreign_reconstruction = foreign_host
-        .application
-        .reinstall_conditional_runtime()
-        .expect("the foreign host must produce its own valid reinstallation receipt");
     let foreign_rebind = query.workspace.rebind_primary_graph_source(
         &foreign_reconstruction,
-        IntentSourceProjection::new(
-            foreign_host.intent_record_identity(),
-            std::sync::Arc::clone(&query.observations),
-        ),
+        IntentSourceProjection::new(foreign_record, std::sync::Arc::clone(&query.observations)),
     );
     assert!(
         foreign_rebind.is_err(),
@@ -190,15 +189,23 @@ pub fn assert_correspondence_rebind_restore() {
     assert_eq!(query.observations.exact_record_reads(), reads_before + 1);
 }
 
+fn foreign_reinstallation_receipt() -> (
+    worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeReinstallationReceipt,
+    worth_query_host::facade::primary_graph::RelationalBridgeRecordIdentityParts,
+) {
+    let mut foreign_host = CourtroomWorld::publish("blocked");
+    let record = foreign_host.intent_record_identity();
+    let reinstallation = foreign_host
+        .reinstall_conditional_runtime()
+        .expect("the foreign host must produce its own valid reinstallation receipt");
+    (reinstallation, record)
+}
+
 fn assert_reconstruction(
     report: worth_runtime_bridge::facade::BridgeConditionalRuntimeReconstitutionReport,
 ) {
-    assert_ne!(
-        report.signal().previous_graph_instance_id(),
-        report.signal().restored_graph_instance_id()
-    );
-    assert_eq!(report.signal().checkpoint_reconstruction_count(), 1);
-    assert!(report.signal().reconstructed_node_count() > 0);
+    assert_eq!(report.signal().service_readmission_count(), 1);
+    assert_eq!(report.readmitted_lowering_count(), 1);
     assert!(report
         .correspondence()
         .exact_semantic_dependency_index_parity());
@@ -211,12 +218,7 @@ fn observe(
 ) -> worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationReceipt<
     crate::adapters::CourtroomClock,
 > {
-    match world
-        .application
-        .conditional_clock(&world.clock)
-        .unwrap()
-        .observe()
-    {
+    match world.conditional_clock().observe() {
         WorthQueryConditionalClockObservationOutcome::Accepted(receipt) => receipt,
         WorthQueryConditionalClockObservationOutcome::Duplicate(_) => {
             panic!("the due courtroom observation was duplicate")

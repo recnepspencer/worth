@@ -112,7 +112,7 @@ fn guarded_employee_path(
         employee_allow_path(role),
         [ApplicationCapabilityAcceptedValues::one_of(
             CapabilityDisclosureField::reference(),
-            fields,
+            fields.into_iter().map(crate::schema::encoded_bank_value),
         )],
     )
 }
@@ -127,7 +127,10 @@ fn employee_path(
 ) -> ApplicationAuthorizationPath {
     let path = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .reverse(AssignmentPrincipal::reference())
-        .where_equal(AssignmentRole::reference(), role)
+        .where_equal(
+            AssignmentRole::reference(),
+            crate::schema::encoded_bank_value(role),
+        )
         .forward(EstateAssignment::reference());
     match effect {
         ApplicationAuthorizationPathEffect::Allow => path.allow(EstateCase::reference()),
@@ -280,7 +283,9 @@ fn disclosure_rule(
     ApplicationCapabilityDisclosureRule::permit([ApplicationCapabilityScopeGuard::requiring([
         ApplicationCapabilityAcceptedValues::one_of(
             CapabilityDisclosureField::reference(),
-            permitted_fields(purpose),
+            permitted_fields(purpose)
+                .into_iter()
+                .map(crate::schema::encoded_bank_value),
         ),
     ])])
 }

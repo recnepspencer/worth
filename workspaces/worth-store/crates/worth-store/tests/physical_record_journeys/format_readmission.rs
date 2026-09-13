@@ -1,13 +1,50 @@
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     AdmittedPhysicalRecordFormat, PhysicalPageSizeClass, PhysicalRecordAccessPolicy,
-    PhysicalRecordFormatDeclaration, PhysicalRecordOpen, RecordBootstrapDenial,
-    RecordServingRebindReason, RecordServingStaleReason,
+    PhysicalRecordFormatDeclaration, PhysicalRecordOpen, PhysicalRootProtocolRoute,
+    RecordBootstrapDenial, RecordServingRebindReason,
 };
 use worth_store_physical_backend::MediaOperationRole;
 use worth_store_physical_format::PhysicalRecordFormatDenial;
 
 use super::{configuration, media, serving_from_initialization};
+
+#[test]
+fn poisoned_root_is_rejected_before_ordinary_interpretation_entry() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("poisoned-root");
+    serving_from_initialization(&root).close();
+    let artifact = root.join("families/records/roots/root-0000000000000001.manifest");
+    let mut bytes = std::fs::read(&artifact).unwrap();
+    bytes[28..36].copy_from_slice(&2_u64.to_le_bytes());
+    reseal(&mut bytes);
+    std::fs::write(&artifact, bytes).unwrap();
+
+    let (format, _, access) = configuration();
+    let outcome = open_record_store!(media(&root), |durability| {
+        PhysicalRecordOpen::new(format, access, durability)
+    })
+    .into_raw();
+    let TransitionOutcome::Denied(denial) = outcome else {
+        panic!("a checksum-valid wrong-generation root must be denied before interpretation")
+    };
+    assert_eq!(denial.reason(), RecordBootstrapDenial::CurrentRootDamaged);
+    let runtime = denial.into_runtime();
+    let counters = runtime.root_protocol_counters();
+    assert_eq!(
+        counters.root_entries(PhysicalRootProtocolRoute::OrdinaryOpen),
+        0,
+    );
+    assert_eq!(
+        counters.selector_entries(PhysicalRootProtocolRoute::OrdinaryOpen),
+        0,
+    );
+    assert_eq!(
+        counters.publications(PhysicalRootProtocolRoute::OrdinaryOpen),
+        0,
+    );
+    runtime.close();
+}
 
 #[test]
 fn current_version_reopens_and_every_unimplemented_version_fails_typed() {
@@ -160,7 +197,7 @@ fn unsupported_catalog_format_dimensions_localize_before_root_traversal() {
 }
 
 #[test]
-fn selected_stale_root_and_foreign_store_use_distinct_proof_outcomes() {
+fn selected_wrong_generation_root_is_damaged_before_foreign_store_rebind() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("stale");
     serving_from_initialization(&root).close();
@@ -182,14 +219,18 @@ fn selected_stale_root_and_foreign_store_use_distinct_proof_outcomes() {
         format, access, durability
     ))
     .into_raw();
-    let TransitionOutcome::Stale(stale) = outcome else {
-        panic!("selected stale root must be stale")
+    let TransitionOutcome::Denied(denial) = outcome else {
+        panic!("selected wrong-generation root must be denied before owner interpretation")
     };
+    assert_eq!(denial.reason(), RecordBootstrapDenial::CurrentRootDamaged,);
+    let denied_runtime = denial.into_runtime();
     assert_eq!(
-        stale.reason(),
-        RecordServingStaleReason::CatalogSelectedRootGenerationMismatch
+        denied_runtime
+            .root_protocol_counters()
+            .root_entries(PhysicalRootProtocolRoute::OrdinaryOpen),
+        0,
     );
-    stale.into_runtime().close();
+    denied_runtime.close();
 
     let foreign_root = parent.path().join("foreign");
     serving_from_initialization(&foreign_root).close();

@@ -3,20 +3,17 @@ use std::path::Path;
 use sha2::{Digest, Sha256};
 use worth_store_blob_chunks::certification_test_authority::blob_backup_artifact_for_bytes;
 use worth_store_layout_indexes::encode_baseline_btree_leaf_record;
+use worth_store_offline_verifier::checkpoint_backup_frontier_digest;
 use worth_store_physical_backend::observe_physical_backup_artifact;
 use worth_store_physical_format::{
-    BackupBundleArtifactFormat, InMemoryPhysicalFormatModel, PageGenerationCell,
-    PersistedExtentBytes, PersistedPageBytes, PhysicalGeneration, PhysicalGenerationAuthority,
-    PhysicalReferenceAuthority, PlatformPhysicalRootPublicationReport, RootPublicationCell,
+    BackupBundleArtifactFormat, CheckpointBackupArtifact, CheckpointBackupArtifactInput,
+    InMemoryPhysicalFormatModel, PageGenerationCell, PersistedExtentBytes, PersistedPageBytes,
+    PhysicalGeneration, PhysicalGenerationAuthority, PhysicalReferenceAuthority,
+    PlatformPhysicalRootPublicationReport, RootPublicationCell,
 };
 use worth_store_physical_isolation::{
     BackupArtifactCoverage, BackupArtifactFamily, BackupArtifactReference,
     CurrentGenerationPhysicalReference, UntrustedBackupArtifactClaim,
-};
-use worth_store_recovery_physics::{
-    CheckpointBackupArtifact, CheckpointCoveredLsnRange, CheckpointManifest,
-    CheckpointPageLsnFrontier, CheckpointRedoBoundary, CheckpointRootPosture, LogSequenceNumber,
-    PageLsn, SharpCheckpointCertificationMode,
 };
 
 use super::physical_reference::{
@@ -63,7 +60,7 @@ pub(super) fn materialize_canonical_backup_artifacts(
         root,
     ));
     let (checkpoint, checkpoint_identity) =
-        checkpoint_artifact(source, root, persisted_page.cell(), generation);
+        checkpoint_artifact(source, runtime, root, persisted_page.cell(), generation);
     references.push(checkpoint);
     references.push(wal_artifact(case, source, generation));
     references.push(page_artifact(source, persisted_page));
@@ -99,14 +96,46 @@ fn root_artifact(
 
 fn checkpoint_artifact(
     source: &Path,
+    runtime: &InMemoryPhysicalFormatModel,
     root: RootPublicationCell,
     checkpoint_page: PageGenerationCell,
     generation: PhysicalGeneration,
 ) -> (BackupArtifactReference, String) {
-    let manifest = checkpoint_manifest(root, checkpoint_page);
-    let checkpoint = CheckpointBackupArtifact::from_sharp_manifest(&manifest, 1, 10)
-        .expect("sharp checkpoint backup artifact");
+    let checkpoint_identity = format!(
+        "checkpoint:{}:{}",
+        generation.get(),
+        root.generation().get()
+    );
+    let manifest_generation = generation.get();
+    let durable_checkpoint_lsn = 10;
+    let covered_lsn = (10, 12);
+    let redo_lsn = 10;
+    let pages = vec![(checkpoint_page, redo_lsn)];
+    let root_reference = PhysicalReferenceAuthority::for_canonical_physical_format()
+        .admit_root_publication(root)
+        .reference();
+    let checkpoint = CheckpointBackupArtifact::from_input(CheckpointBackupArtifactInput {
+        checkpoint_identity: checkpoint_identity.clone(),
+        manifest_generation,
+        durable_checkpoint_lsn,
+        root: root_reference,
+        covered_lsn,
+        redo_lsn,
+        pages: pages.clone(),
+    })
+    .expect("sharp checkpoint backup artifact");
     let checkpoint_identity = checkpoint.checkpoint_identity().to_owned();
+    let authority_fingerprint = runtime.store_identity().authority_identity().fingerprint();
+    let frontier_digest = checkpoint_backup_frontier_digest(
+        authority_fingerprint,
+        &checkpoint_identity,
+        manifest_generation,
+        durable_checkpoint_lsn,
+        root,
+        covered_lsn,
+        redo_lsn,
+        &pages,
+    );
     let mut bytes = Vec::new();
     checkpoint.encode(&mut bytes).expect("checkpoint encoding");
     let reference = current_slot_reference(segment(200), page(1), record_slot(2), generation);
@@ -118,8 +147,14 @@ fn checkpoint_artifact(
             format: BackupBundleArtifactFormat::RecoveryCheckpointManifestV1,
             identity: checkpoint_identity.clone(),
             generation: reference.generation().get(),
-            coverage: BackupArtifactCoverage::checkpoint_manifest(&checkpoint_identity, 1, 10)
-                .expect("checkpoint coverage"),
+            coverage: BackupArtifactCoverage::checkpoint_manifest(
+                &checkpoint_identity,
+                manifest_generation,
+                durable_checkpoint_lsn,
+                authority_fingerprint,
+                frontier_digest,
+            )
+            .expect("checkpoint coverage"),
         },
         reference,
     );
@@ -238,21 +273,6 @@ fn blob_artifacts(
             )
         })
         .collect()
-}
-
-fn checkpoint_manifest(root: RootPublicationCell, page: PageGenerationCell) -> CheckpointManifest {
-    let references = PhysicalReferenceAuthority::for_canonical_physical_format();
-    let root_reference = references.admit_root_publication(root).reference();
-    let redo = LogSequenceNumber::new(10);
-    CheckpointManifest::sharp(
-        CheckpointRootPosture::root_present(root_reference),
-        CheckpointPageLsnFrontier::from_pages([(page, PageLsn::from_lsn(redo))])
-            .expect("page-LSN frontier"),
-        CheckpointCoveredLsnRange::new(redo, LogSequenceNumber::new(12)).expect("checkpoint range"),
-        CheckpointRedoBoundary::from_page_lsn(PageLsn::from_lsn(redo)),
-        SharpCheckpointCertificationMode::certified(),
-    )
-    .expect("sharp checkpoint")
 }
 
 struct FixtureArtifactMedia<'a> {

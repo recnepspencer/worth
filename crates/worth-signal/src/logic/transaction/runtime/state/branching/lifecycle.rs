@@ -4,9 +4,7 @@ use crate::state::{SignalBranchHandle, SignalBranchId, SignalSnapshotId};
 use super::super::runtime_state::{
     AuthorityTransferPacket, BranchLifecycleTransfer, SignalRuntime,
 };
-use super::SignalBranchForkDenial;
-#[cfg(test)]
-use super::SignalBranchForkRequest;
+use super::{SignalBranchForkDenial, SignalBranchForkRequest};
 
 impl<D, I, E, Ctx, T> SignalRuntime<D, I, E, Ctx, T>
 where
@@ -14,7 +12,6 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    #[cfg(test)]
     pub(crate) fn create_branch(
         &mut self,
         name: impl Into<String>,
@@ -33,6 +30,11 @@ where
     }
 
     pub fn switch_branch(&mut self, branch: SignalBranchHandle) -> Result<(), SignalError> {
+        if self.owner_services.is_sealed() {
+            return Err(SignalError::invalid_input(
+                "branch selection cannot change after owner-service sealing",
+            ));
+        }
         let current = self.graph.current_branch();
         let preserved_transaction = self.telemetry_snapshot().transaction;
         if branch.id == current.id {
@@ -79,22 +81,40 @@ where
     }
 
     pub fn current_branch(&self) -> SignalBranchHandle {
+        if self.owner_services.is_sealed() {
+            return self
+                .owner_services
+                .selected_branch_handle()
+                .expect("a sealed owner retains its selected branch identity");
+        }
         self.graph.current_branch()
     }
 
     pub fn known_branches(&self) -> Vec<SignalBranchHandle> {
+        if self.owner_services.is_sealed() {
+            return self.owner_services.known_branch_handles();
+        }
         self.branches.known_branches()
     }
 
     pub fn branch_handle(&self, branch_id: SignalBranchId) -> Option<SignalBranchHandle> {
+        if self.owner_services.is_sealed() {
+            return self.owner_services.branch_handle(branch_id);
+        }
         self.branches.branch_handle(branch_id)
     }
 
     pub fn branch_ancestry(&self, branch_id: SignalBranchId) -> Vec<SignalBranchHandle> {
+        if self.owner_services.is_sealed() {
+            return self.owner_services.branch_ancestry(branch_id);
+        }
         self.branches.branch_ancestry(branch_id)
     }
 
     pub fn branch_head_snapshot_id(&self, branch_id: SignalBranchId) -> Option<SignalSnapshotId> {
+        if self.owner_services.is_sealed() {
+            return self.owner_services.branch_head_snapshot_id(branch_id);
+        }
         self.branches.branch_head_snapshot_id(branch_id)
     }
 
@@ -120,7 +140,7 @@ where
         if self.graph.current_branch().id == branch_id {
             let mut state = self.capture_heavy_branch_state()?;
             state.clear_merge_boundary_proof();
-            self.branches.store_branch_state(state);
+            self.branches.observe_active_branch_state(&state);
             return Ok(());
         }
         let Some(()) = self

@@ -1,18 +1,6 @@
 schema_version = 1
 
 [[packages]]
-package = "worth-cert-adoption"
-dependencies = [
-    "toml",
-    "worth-proof",
-    "worth-schema-core",
-]
-
-[[packages]]
-package = "worth-pack-registry"
-dependencies = ["worth-schema-core"]
-
-[[packages]]
 package = "worth-query-certification"
 dependencies = [
     "worth-foundational",
@@ -22,6 +10,7 @@ dependencies = [
     "worth-query-decl",
     "worth-query-execution",
     "worth-query-host",
+    "worth-query-installation",
     "worth-query-replay",
     "worth-relational",
     "worth-runtime-bridge",

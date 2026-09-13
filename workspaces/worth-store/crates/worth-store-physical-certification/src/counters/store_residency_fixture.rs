@@ -17,7 +17,6 @@ use worth_store_physical_backend::FilesystemAccessPosture;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CertificationResidencyWorkload {
-    Blob,
     Maintenance,
 }
 
@@ -35,12 +34,6 @@ pub(crate) fn observe_real_store_residency(
     let serving = serving_runtime(root.path(), allocation_bytes);
     let allocations = serving.physical_allocations();
     let observation = match workload {
-        CertificationResidencyWorkload::Blob => {
-            let _allocation = allocations
-                .admit_blob(allocation_bytes)
-                .expect("real Store blob allocation should admit");
-            serving.residency_observation()
-        }
         CertificationResidencyWorkload::Maintenance => {
             let _allocation = allocations
                 .admit_maintenance(allocation_bytes)

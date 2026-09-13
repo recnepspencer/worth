@@ -9,20 +9,8 @@ fn blob_harness_envelope_raw_constructor_is_not_public() {
     run_case(
         "blob-harness-envelope",
         false,
-        false,
         "blob_harness_envelope_raw_constructor_is_private.rs",
         &["new", "private"],
-    );
-}
-
-#[test]
-fn blob_harness_synthetic_replay_helpers_are_not_public_api() {
-    run_case(
-        "blob-harness-replay",
-        true,
-        false,
-        "blob_harness_replay_helpers_are_not_public.rs",
-        &["replay_bundle_for_seed", "coverage_matrix_for_seed"],
     );
 }
 
@@ -30,7 +18,6 @@ fn blob_harness_synthetic_replay_helpers_are_not_public_api() {
 fn blob_harness_executed_witness_cannot_be_forged_from_raw_fields() {
     run_case(
         "blob-harness-witness",
-        false,
         true,
         "blob_harness_executed_witness_fields_are_private.rs",
         &["BlobHarnessExecutedWitness", "private"],
@@ -42,21 +29,14 @@ fn blob_harness_execution_authority_is_not_public_on_default_surface() {
     run_case(
         "blob-harness-default",
         false,
-        false,
         "blob_harness_execution_authority_is_not_public.rs",
         &["execute_blob_harness", "BlobHarnessExecutionInput"],
     );
 }
 
-fn run_case(
-    suite: &str,
-    include_physical_certification: bool,
-    blob_authority: bool,
-    fixture: &str,
-    expected: &[&str],
-) {
+fn run_case(suite: &str, blob_authority: bool, fixture: &str, expected: &[&str]) {
     let root = store_workspace_root();
-    let mut dependencies = vec![
+    let dependencies = vec![
         (
             "worth-store-blob-chunks",
             root.join("crates/worth-store-blob-chunks"),
@@ -70,13 +50,6 @@ fn run_case(
             Vec::new(),
         ),
     ];
-    if include_physical_certification {
-        dependencies.push((
-            "worth-store-physical-certification",
-            root.join("crates/worth-store-physical-certification"),
-            Vec::new(),
-        ));
-    }
     let borrowed = dependencies
         .iter()
         .map(|(name, path, features)| (*name, path.as_path(), features.as_slice()))

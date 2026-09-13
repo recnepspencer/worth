@@ -71,6 +71,7 @@ mod exports_subscription;
 mod preview_session_liveness;
 mod request;
 mod runtime;
+pub mod runtime_world;
 mod standard_path;
 
 pub use crate::authorization::{
@@ -83,6 +84,10 @@ pub use crate::authorization::{
     BridgeAuthorizationRuleContract, BridgeAuthorizationRuleDecisionEvidence,
     BridgeAuthorizationRuleEffect, BridgeAuthorizationRuleObservation, BridgeAuthorizationRuntime,
 };
+pub use crate::correspondence::{
+    AdmittedRuntimeWorldCorrespondenceBasis, BridgeCorrespondenceAdmissionIdentity,
+    RuntimeWorldCorrespondenceAdmissionDenial,
+};
 pub use crate::identity_authority::*;
 pub use exports_core::*;
 pub use exports_subscription::*;
@@ -91,6 +96,9 @@ pub use preview_session_liveness::{
 };
 pub use request::BridgeRouteRequest;
 pub use runtime::RuntimeBridge;
+pub use runtime_world::{
+    RuntimeWorldCorrespondenceInspectionCounters, RuntimeWorldCorrespondencePort,
+};
 pub use standard_path::{
     BridgeDiagnostics, BridgeEvaluationTarget, BridgeRoute, BridgeSpeculativeComparison,
     BridgeSpeculativeDiscardOutcome, BridgeSpeculativePromotionOutcome,

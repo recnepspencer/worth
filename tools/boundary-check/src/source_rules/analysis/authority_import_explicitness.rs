@@ -48,7 +48,7 @@ pub(super) fn production_glob_sources(graph: &ModuleGraph) -> BTreeSet<String> {
     sources
 }
 
-fn module_is_test_only(graph: &ModuleGraph, module_path: &[String]) -> bool {
+pub(super) fn module_is_test_only(graph: &ModuleGraph, module_path: &[String]) -> bool {
     for depth in 1..=module_path.len() {
         let parent_path = &module_path[..depth - 1];
         let Some(parent) = graph.modules.get(parent_path) else {

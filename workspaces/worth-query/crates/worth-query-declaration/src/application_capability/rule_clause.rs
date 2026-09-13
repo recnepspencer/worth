@@ -1,6 +1,7 @@
 use crate::application_schema::ApplicationAuthorizationPath;
 use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, TypedApplicationValue, WritePosture,
+    ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationFieldUnit,
+    DeclaredApplicationFieldValue, WritePosture,
 };
 use worth_foundational::facade::AspectValue;
 
@@ -24,16 +25,16 @@ pub struct ApplicationCapabilityAcceptedValues {
 impl ApplicationCapabilityAcceptedValues {
     pub fn one_of<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>(
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        values: impl IntoIterator<Item = Value>,
+        values: impl IntoIterator<Item = ApplicationEncodedScalarValue<Field::Binding>>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
         let mut values = values
             .into_iter()
-            .map(TypedApplicationValue::into_foundational_value)
+            .map(ApplicationEncodedScalarValue::into_foundational_value)
             .collect::<Vec<_>>();
         values.sort();
         values.dedup();

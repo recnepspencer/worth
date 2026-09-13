@@ -1,0 +1,5 @@
+error[E0423]: expected value, found struct `SignalOwnerUnavailable`
+ --> tests/signal_owner_services/ui/unavailable_is_not_constructible.rs:4:5
+  |
+4 |     SignalOwnerUnavailable
+  |     ^^^^^^^^^^^^^^^^^^^^^^ constructor is not visible here due to private fields

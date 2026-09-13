@@ -1,0 +1,16 @@
+error[E0382]: borrow of moved value: `outcome`
+  --> tests/signal_owner_services/ui/consumed_outcome_cannot_reuse.rs:20:24
+   |
+10 |     let outcome = services
+   |         ------- move occurs because `outcome` has type `SignalBranchAdvanceOutcome`, which does not implement the `Copy` trait
+...
+19 |     let _next_basis = outcome.into_basis();
+   |                               ------------ `outcome` moved due to this method call
+20 |     let _transaction = outcome.transaction();
+   |                        ^^^^^^^ value borrowed here after move
+   |
+note: `SignalBranchAdvanceOutcome::into_basis` takes ownership of the receiver `self`, which moves `outcome`
+  --> src/branch/advancement.rs
+   |
+   |     pub fn into_basis(self) -> AdmittedSignalBranchBasis {
+   |                       ^^^^

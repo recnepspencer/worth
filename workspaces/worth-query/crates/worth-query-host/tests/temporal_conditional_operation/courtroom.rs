@@ -1,13 +1,18 @@
-use worth_query_host::facade::primary_graph;
+#[path = "courtroom/clock_affinity.rs"]
+mod clock_affinity;
+pub use clock_affinity::{
+    duplicate_reordered_and_foreign_clocks_fail_closed,
+    provider_replacement_requires_fresh_runtime_publication,
+};
 
-use super::courtroom_support::{assert_authoritative_value, observe, raw_observe, wake_evidence};
+use super::courtroom_support::{assert_authoritative_value, observe, wake_evidence};
 use super::schema::{IntentEffectField, IntentLifecycleField};
 use super::world::CourtroomWorld;
 
 pub fn future_temporal_operation_waits_until_due() {
-    let mut world = CourtroomWorld::publish("ready");
+    let world = CourtroomWorld::publish("ready");
     world.clock_control.push(1, 4);
-    let future = observe(&mut world);
+    let future = observe(&world);
     assert_eq!(
         future.committed_operation_count(),
         0,
@@ -17,7 +22,7 @@ pub fn future_temporal_operation_waits_until_due() {
     assert_eq!(world.contacts.snapshot(), (0, 0, 0, 0));
 
     world.clock_control.push(2, 5);
-    let due = observe(&mut world);
+    let due = observe(&world);
     assert_eq!(
         due.committed_operation_count(),
         1,
@@ -32,22 +37,37 @@ pub fn future_temporal_operation_waits_until_due() {
 }
 
 pub fn unrelated_rows_do_not_expand_conditional_observation_work() {
-    let mut world = CourtroomWorld::publish_with_unrelated_rows("ready", 2_048);
+    let world = CourtroomWorld::publish_with_unrelated_rows("ready", 2_048);
     let before = world.application.inspect_conditional_runtime();
     world.clock_control.push(1, 4);
 
-    let receipt = observe(&mut world);
+    let receipt = observe(&world);
 
     assert_eq!(receipt.due_wake_count(), 0);
     assert_eq!(receipt.authoritative_commit_count(), 0);
     assert!(!receipt.authoritative_work_remaining());
     assert_eq!(world.contacts.snapshot(), (0, 0, 0, 0));
-    assert_eq!(world.application.inspect_conditional_runtime(), before);
+    let after = world.application.inspect_conditional_runtime();
+    assert_eq!(before.managed_clock_count(), 0);
+    assert_eq!(before.reconstructed_intent_count(), 0);
+    assert_eq!(after.managed_clock_count(), 1);
+    assert_eq!(after.reconstructed_intent_count(), 1);
+    assert_eq!(
+        after.installed_binding_count(),
+        before.installed_binding_count()
+    );
+    assert_eq!(after.provider_count(), before.provider_count());
+    assert_eq!(after.lease_count(), before.lease_count());
+    assert_eq!(after.signal_graph_count(), before.signal_graph_count());
+    assert_eq!(
+        after.installation_canonical_work(),
+        before.installation_canonical_work()
+    );
 }
 
 pub fn host_installs_and_executes_due_operation() {
-    let mut world = CourtroomWorld::publish("ready");
-    let receipt = observe(&mut world);
+    let world = CourtroomWorld::publish("ready");
+    let receipt = observe(&world);
     assert_eq!(
         receipt.committed_operation_count(),
         1,
@@ -62,12 +82,12 @@ pub fn host_installs_and_executes_due_operation() {
     assert_eq!(provenance.intent_revision(), 1);
     assert_eq!(
         provenance.signal_decision(),
-        Some(primary_graph::WorthQueryConditionalSignalDecision::Eligible)
+        Some(super::primary_graph::WorthQueryConditionalSignalDecision::Eligible)
     );
     assert!(provenance.application_attempt_ordinal().is_some());
     assert_eq!(
         provenance.terminal(),
-        primary_graph::WorthQueryConditionalExecutionTerminal::Committed
+        super::primary_graph::WorthQueryConditionalExecutionTerminal::Committed
     );
     assert_authoritative_value(
         &world,
@@ -82,7 +102,7 @@ pub fn host_installs_and_executes_due_operation() {
 }
 
 pub fn temporal_identity_work_is_cold_or_fresh_admission_only() {
-    let mut world = CourtroomWorld::publish("ready");
+    let world = CourtroomWorld::publish("ready");
     let binding = world.clock.binding_canonical_work();
     assert_eq!(binding.basis_preparations(), 1);
     assert_eq!(binding.digest_derivations(), 1);
@@ -98,7 +118,7 @@ pub fn temporal_identity_work_is_cold_or_fresh_admission_only() {
     assert_eq!(installation.canonical_entries(), 14);
     assert_eq!(installation.digest_text_materializations(), 2);
 
-    let receipt = observe(&mut world);
+    let receipt = observe(&world);
     let [provenance] = receipt.execution_provenance() else {
         panic!("one committed operation must expose one typed lineage")
     };
@@ -126,7 +146,7 @@ pub fn temporal_identity_work_is_cold_or_fresh_admission_only() {
 pub fn cancellation_after_publication_retires_stale_wake() {
     let mut world = CourtroomWorld::publish("ready");
     world.amend_intent(2, "cancelled", "ready");
-    let receipt = observe(&mut world);
+    let receipt = observe(&world);
     assert_eq!(
         receipt.committed_operation_count(),
         0,
@@ -162,7 +182,7 @@ pub fn active_successor_revision_replaces_predecessor_wake() {
     let mut world = CourtroomWorld::publish("ready");
     world.supersede_intent(2, 8, "active", "successor-payload", "ready");
     world.clock_control.push(1, 10);
-    let receipt = observe(&mut world);
+    let receipt = observe(&world);
     assert_eq!(
         receipt.committed_operation_count(),
         1,
@@ -186,7 +206,7 @@ pub fn active_successor_revision_replaces_predecessor_wake() {
 
 pub fn suppressed_wake_is_reconsidered_after_truth_change() {
     let mut world = CourtroomWorld::publish("blocked");
-    let suppressed = observe(&mut world);
+    let suppressed = observe(&world);
     assert_eq!(
         suppressed.committed_operation_count(),
         0,
@@ -204,14 +224,14 @@ pub fn suppressed_wake_is_reconsidered_after_truth_change() {
     };
     assert_eq!(
         provenance.signal_decision(),
-        Some(primary_graph::WorthQueryConditionalSignalDecision::Suppressed)
+        Some(super::primary_graph::WorthQueryConditionalSignalDecision::Suppressed)
     );
     assert_eq!(
         provenance.terminal(),
-        primary_graph::WorthQueryConditionalExecutionTerminal::SuppressedRetained
+        super::primary_graph::WorthQueryConditionalExecutionTerminal::SuppressedRetained
     );
     world.amend_intent(1, "active", "ready");
-    let mut reconsidered = observe(&mut world);
+    let mut reconsidered = observe(&world);
     assert_eq!(
         reconsidered.committed_operation_count(),
         1,
@@ -253,9 +273,9 @@ pub fn suppressed_wake_is_reconsidered_after_truth_change() {
 }
 
 pub fn precondition_panic_isolated_and_retry_succeeds() {
-    let mut world = CourtroomWorld::publish("ready");
+    let world = CourtroomWorld::publish("ready");
     world.preconditions_panic.set(true);
-    let failed = observe(&mut world);
+    let failed = observe(&world);
     assert_eq!(
         failed.committed_operation_count(),
         0,
@@ -269,7 +289,7 @@ pub fn precondition_panic_isolated_and_retry_succeeds() {
         wake_evidence(&failed)
     );
     world.preconditions_panic.set(false);
-    let retried = observe(&mut world);
+    let retried = observe(&world);
     assert_eq!(
         retried.committed_operation_count(),
         1,
@@ -284,9 +304,9 @@ pub fn precondition_panic_isolated_and_retry_succeeds() {
 }
 
 pub fn predicate_panic_does_not_corrupt_runtime_owners() {
-    let mut world = CourtroomWorld::publish("ready");
+    let world = CourtroomWorld::publish("ready");
     world.predicate_panic.set(true);
-    let failed = observe(&mut world);
+    let failed = observe(&world);
     assert_eq!(
         failed.committed_operation_count(),
         0,
@@ -305,10 +325,10 @@ pub fn predicate_panic_does_not_corrupt_runtime_owners() {
     assert_eq!(provenance.signal_decision(), None);
     assert_eq!(
         provenance.terminal(),
-        primary_graph::WorthQueryConditionalExecutionTerminal::Failed
+        super::primary_graph::WorthQueryConditionalExecutionTerminal::Failed
     );
     world.predicate_panic.set(false);
-    let next = observe(&mut world);
+    let next = observe(&world);
     assert_eq!(
         next.committed_operation_count(),
         0,
@@ -321,53 +341,4 @@ pub fn predicate_panic_does_not_corrupt_runtime_owners() {
         "{}",
         wake_evidence(&next)
     );
-}
-
-pub fn duplicate_reordered_and_foreign_clocks_fail_closed() {
-    let mut world = CourtroomWorld::publish("ready");
-    let _ = observe(&mut world);
-    world.clock_control.push(1, 10);
-    assert!(matches!(
-        raw_observe(&mut world),
-        primary_graph::WorthQueryConditionalClockObservationOutcome::Duplicate(_)
-    ));
-    world.clock_control.push(2, 9);
-    assert!(matches!(
-        raw_observe(&mut world),
-        primary_graph::WorthQueryConditionalClockObservationOutcome::Reordered
-    ));
-    world.clock_control.push(0, 10);
-    assert!(matches!(
-        raw_observe(&mut world),
-        primary_graph::WorthQueryConditionalClockObservationOutcome::Stale
-    ));
-    let foreign = CourtroomWorld::publish("ready");
-    let denial = world
-        .application
-        .conditional_clock(&foreign.clock)
-        .err()
-        .expect("foreign clock handle must fail closed");
-    assert_eq!(
-        denial.kind(),
-        primary_graph::WorthQueryConditionalClockObservationDenialKind::ForeignRuntime
-    );
-}
-
-pub fn provider_replacement_requires_fresh_runtime_publication() {
-    let incumbent = CourtroomWorld::publish("ready");
-    let mut replacement = CourtroomWorld::publish_replacement("ready");
-    let denial = replacement
-        .application
-        .conditional_clock(&incumbent.clock)
-        .err()
-        .expect("replacement runtime must reject incumbent provider clock affinity");
-    assert_eq!(
-        denial.kind(),
-        primary_graph::WorthQueryConditionalClockObservationDenialKind::ForeignRuntime
-    );
-    drop(incumbent);
-
-    let receipt = observe(&mut replacement);
-    assert_eq!(receipt.committed_operation_count(), 1);
-    assert_eq!(replacement.contacts.snapshot(), (1, 1, 1, 1));
 }

@@ -28,6 +28,10 @@ impl super::PhysicalSignalGraph {
             partition: partition.partition.clone(),
             detail: partition.detail.clone(),
         });
+        let expected_basis = self
+            .runtime
+            .observe_signal_branch_basis(self.runtime.current_branch())
+            .map_err(|_| PhysicalSignalDeltaApplicationFailure::SignalMutationRejected)?;
 
         self.locality.invalidate_scope(route, delta.scope());
         self.context.version = self
@@ -36,16 +40,20 @@ impl super::PhysicalSignalGraph {
             .checked_add(1)
             .ok_or(PhysicalSignalDeltaApplicationFailure::VersionExhausted)?;
         self.runtime
-            .transaction(&mut self.context, |transaction| match region.as_ref() {
-                Some(region) => transaction.mark_changed_with_regions(
-                    source,
-                    aspect,
-                    std::slice::from_ref(region),
-                ),
-                None => transaction.mark_changed(source, aspect),
-            })
+            .advance_signal_branch(
+                &mut self.context,
+                &expected_basis,
+                |transaction| match region.as_ref() {
+                    Some(region) => transaction.mark_changed_with_regions(
+                        source,
+                        aspect,
+                        std::slice::from_ref(region),
+                    ),
+                    None => transaction.mark_changed(source, aspect),
+                },
+            )
             .map_err(|_| PhysicalSignalDeltaApplicationFailure::SignalMutationRejected)?;
-        self.evaluate_dirty()
+        self.settle_dependency(source)
             .map_err(|_| PhysicalSignalDeltaApplicationFailure::SignalEvaluationRejected)
     }
 }

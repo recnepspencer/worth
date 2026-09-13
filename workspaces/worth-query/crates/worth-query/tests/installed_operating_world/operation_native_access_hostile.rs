@@ -20,7 +20,7 @@ fn direct_access_indexes_display_and_derived_values_across_committed_rows() {
     }
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, CollectionRead)
@@ -88,7 +88,7 @@ fn request_builder_denials_retain_contract_and_requested_field_context() {
     let workspace = workspace("installed-native-request-denials", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -110,7 +110,7 @@ fn request_builder_denials_retain_contract_and_requested_field_context() {
     );
 
     let unknown_bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -131,7 +131,7 @@ fn request_builder_denials_retain_contract_and_requested_field_context() {
     );
 
     let duplicate_bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -166,13 +166,13 @@ fn capability_denial_retains_exact_native_source_and_projection_context() {
         .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let owner = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
         .unwrap();
     let foreign = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)

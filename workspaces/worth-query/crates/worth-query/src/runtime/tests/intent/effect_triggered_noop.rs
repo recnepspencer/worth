@@ -3,20 +3,10 @@ use super::*;
 #[test]
 fn effect_triggered_idempotent_intent_noop_consumes_pending_work_without_feedback() {
     let routed = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .aspect_contracts(stateful_bridge_aspect_contracts())
-        .expect("intent test aspect contracts should install")
-        .runtime_bridge(test_bridge())
-        .schema_adapter(TestSchemaAdapter)
-        .source_adapter(TestSourceAdapter::default())
-        .snapshot_identity(TestSnapshotIdentityAdapter)
-        .write_authority(TestWriteAuthority)
+    let mut runtime = complete_backend_from_parts_builder()
         .signal_sink(CountingSignalSink {
             routed: routed.clone(),
         })
-        .subscription_activation(TestSubscriptionActivation)
-        .preview_basis(TestPreviewBasis)
-        .inspector_evidence(TestInspectorEvidence)
         .intent_authority(NoopIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()

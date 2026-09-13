@@ -1,6 +1,10 @@
 //! One-operation compilation authority shared by install and reinstallation.
 
+mod capability_demand;
+use capability_demand::{operation_capability_count, progression_support_fact_count};
+
 use worth_query_declaration::facade::application_aftermath::PortableApplicationAftermathContract;
+use worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationDecisionReadTarget, ApplicationSchemaBindingIdentity,
     ApplicationSchemaMember,
@@ -10,6 +14,7 @@ use crate::application_aftermath::{
     install_application_aftermath, InstalledExternalEffectContract,
     WorthQueryInstalledAftermathContract,
 };
+use crate::application_schema::WorthQueryInstalledApplicationInvariantDescriptor;
 use crate::application_schema::WorthQueryInstalledApplicationSchemaContractCatalog;
 use crate::domain_operation::{
     WorthQueryOperationGraphReadContract, WorthQueryOperationTouchContract,
@@ -27,7 +32,7 @@ use super::super::contract_resolution::{
 };
 use super::super::installed_contract_support::{operation_authorization, operation_denial};
 use super::super::{
-    WorthQueryApplicationOperationInstallationDenial,
+    WorthQueryApplicationCandidateDemand, WorthQueryApplicationOperationInstallationDenial,
     WorthQueryApplicationOperationInstallationDenialKind,
     WorthQueryCompiledApplicationOperationContracts, WorthQueryInstalledAbilityRequirement,
     WorthQueryInstalledApplicationOperationAuthorization,
@@ -52,6 +57,7 @@ pub(super) struct WorthQueryApplicationOperationCompilation<'a> {
     portable_aftermath: Option<PortableApplicationAftermathContract>,
     portable_contract: &'a WorthQueryPortableApplicationOperationContractRecord,
     members: &'a [ApplicationSchemaMember],
+    mutation_bindings: &'a [ApplicationMutationBindingDescriptor],
 }
 
 /// Opaque, whole-operation input accepted by the compiled-contract owner.
@@ -70,12 +76,15 @@ pub(in crate::application_operation) struct WorthQuerySealedOperationContractCom
     touches: WorthQueryOperationTouchContract,
     emissions: WorthQueryOperationEmissionContract,
     graph_mutation_count: usize,
+    candidate_demand: WorthQueryApplicationCandidateDemand,
+    invariant_invocations: Vec<WorthQueryInstalledApplicationInvariantDescriptor>,
 }
 
 impl<'a> WorthQueryApplicationOperationCompilation<'a> {
     pub(super) fn resolve(
         binding: ApplicationSchemaBindingIdentity,
         members: &'a [ApplicationSchemaMember],
+        mutation_bindings: &'a [ApplicationMutationBindingDescriptor],
         portable_contract: &'a WorthQueryPortableApplicationOperationContractRecord,
         operation: &str,
         input_type: &str,
@@ -143,6 +152,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             portable_aftermath,
             portable_contract,
             members,
+            mutation_bindings,
         })
     }
 
@@ -219,10 +229,55 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             touches,
             emissions,
             graph_mutation_count,
+            candidate_demand: WorthQueryApplicationCandidateDemand::derive(
+                self.mutation_bindings,
+                &self.operation,
+                &self.input_type,
+            ),
+            invariant_invocations: self
+                .members
+                .iter()
+                .filter_map(|member| {
+                    let ApplicationSchemaMember::ApplicationInvariant {
+                        invariant,
+                        major,
+                        minor,
+                        execution_point,
+                        maximum_work_units,
+                        enforcement,
+                        required_groups,
+                        read_closure,
+                        applicability,
+                        provider,
+                        cost_posture,
+                    } = member
+                    else {
+                        return None;
+                    };
+                    Some(
+                        WorthQueryInstalledApplicationInvariantDescriptor::from_installed_parts(
+                            invariant.clone(),
+                            *major,
+                            *minor,
+                            *execution_point,
+                            *maximum_work_units,
+                            *enforcement,
+                            required_groups.clone(),
+                            read_closure.clone(),
+                            applicability.clone(),
+                            provider.clone(),
+                            *cost_posture,
+                        ),
+                    )
+                })
+                .collect(),
         };
-        Ok(WorthQueryCompiledApplicationOperationContracts::compile(
-            sealed,
-        ))
+        WorthQueryCompiledApplicationOperationContracts::compile(sealed).map_err(|()| {
+            operation_denial(
+                WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract,
+                &self.operation,
+            )
+        })
     }
 
     fn compile_mutation_preconditions(
@@ -315,6 +370,8 @@ impl WorthQuerySealedOperationContractCompilation {
         WorthQueryOperationTouchContract,
         WorthQueryOperationEmissionContract,
         usize,
+        WorthQueryApplicationCandidateDemand,
+        Vec<WorthQueryInstalledApplicationInvariantDescriptor>,
     ) {
         (
             self.authorization,
@@ -331,53 +388,8 @@ impl WorthQuerySealedOperationContractCompilation {
             self.touches,
             self.emissions,
             self.graph_mutation_count,
+            self.candidate_demand,
+            self.invariant_invocations,
         )
     }
-}
-
-fn operation_capability_count(
-    members: &[ApplicationSchemaMember],
-    operation: &str,
-    input_type: &str,
-) -> usize {
-    members
-        .iter()
-        .filter(|member| match member {
-            ApplicationSchemaMember::ApplicationCapability { contract } => {
-                contract.operation() == operation && contract.input_type() == input_type
-            }
-            _ => false,
-        })
-        .count()
-}
-
-fn progression_support_fact_count(
-    members: &[ApplicationSchemaMember],
-    operation: &str,
-    input_type: &str,
-) -> usize {
-    usize::from(members.iter().any(|member| {
-        match member {
-            ApplicationSchemaMember::ApplicationCapability { contract } => {
-                contract.elevation().definition().is_some_and(|definition| {
-                    [
-                        definition.lifecycle().request(),
-                        definition.lifecycle().approve(),
-                    ]
-                    .into_iter()
-                    .any(|transition| {
-                        transition.operation().operation() == operation
-                            && transition.operation().input_type() == input_type
-                    })
-                }) || contract
-                    .delegation()
-                    .activation()
-                    .is_some_and(|activation| {
-                        activation.operation().operation() == operation
-                            && activation.operation().input_type() == input_type
-                    })
-            }
-            _ => false,
-        }
-    }))
 }

@@ -1,9 +1,15 @@
+#[cfg(test)]
 use sha2::{Digest, Sha256};
+use worth_store_physical_format::PhysicalPageLsn;
+#[cfg(test)]
 use worth_store_physical_format::{
-    decode_data_frame_page_lsn, DurableFrameKind, PhysicalPageLsn, PhysicalRecordFormatDeclaration,
+    decode_data_frame_page_lsn, DurableFrameKind, PhysicalRecordFormatDeclaration,
 };
 
-use super::{PhysicalDataFrameIdentity, PhysicalDataFrameKind};
+use super::PhysicalDataFrameIdentity;
+#[cfg(test)]
+use super::PhysicalDataFrameKind;
+use crate::physical_runtime::integrity::IntegrityAdmittedResidentPageBasis;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CertifiedPriorPageBasis {
@@ -32,6 +38,7 @@ impl CertifiedPriorPageBasis {
         }
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime) fn for_materialized_source(
         source: PhysicalDataFrameIdentity,
         format: PhysicalRecordFormatDeclaration,
@@ -45,6 +52,23 @@ impl CertifiedPriorPageBasis {
             image: CertifiedPriorPageImage::MaterializedSource(source),
             page_lsn,
             payload_digest: Sha256::digest(bytes).into(),
+        })
+    }
+
+    pub(in crate::physical_runtime) fn for_integrity_admitted_materialized_source(
+        admitted: IntegrityAdmittedResidentPageBasis,
+    ) -> Option<Self> {
+        let coordinate = admitted.coordinate();
+        let source = PhysicalDataFrameIdentity::inline_page(
+            admitted.page(),
+            coordinate.artifact(),
+            coordinate.offset(),
+            coordinate.length(),
+        )?;
+        Some(Self {
+            image: CertifiedPriorPageImage::MaterializedSource(source),
+            page_lsn: admitted.page_lsn(),
+            payload_digest: admitted.encoded_digest(),
         })
     }
 
@@ -85,6 +109,7 @@ impl CertifiedPriorPageImage {
     }
 }
 
+#[cfg(test)]
 const fn durable_kind(kind: PhysicalDataFrameKind) -> DurableFrameKind {
     match kind {
         PhysicalDataFrameKind::InlinePage => DurableFrameKind::InlinePage,

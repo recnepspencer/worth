@@ -1,31 +1,29 @@
 use worth_store::physical_runtime::{
     AdmittedRecoveryFilesystemMedia, CompletedPhysicalRecoveryFreshReopen,
-    PhysicalRecoveryCoordination,
+    IntegrityAdmittedRecoveryWalSegment, PhysicalRecoveryCoordination,
 };
-use worth_store_physical_format::VerifiedCheckpointStream;
-use worth_store_recovery_physics::VerifiedWalArtifact;
+use worth_store_physical_integrity::VerifiedCheckpointStream;
+use std::sync::Arc;
 
 fn reuse_fresh_reopen(
     coordination: &PhysicalRecoveryCoordination,
     media: &AdmittedRecoveryFilesystemMedia,
     reopened: CompletedPhysicalRecoveryFreshReopen,
-    checkpoint: VerifiedCheckpointStream,
-    first: VerifiedWalArtifact,
-    second: VerifiedWalArtifact,
+    checkpoint: Arc<VerifiedCheckpointStream>,
 ) {
     let _first = coordination.admit_cleanup_plan(
         media,
         reopened,
         checkpoint.clone(),
         [0x11; 32],
-        [first],
+        std::iter::empty::<IntegrityAdmittedRecoveryWalSegment>(),
     );
     let _second = coordination.admit_cleanup_plan(
         media,
         reopened,
         checkpoint,
         [0x22; 32],
-        [second],
+        std::iter::empty::<IntegrityAdmittedRecoveryWalSegment>(),
     );
 }
 

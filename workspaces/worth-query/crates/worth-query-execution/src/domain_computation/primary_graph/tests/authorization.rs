@@ -34,3 +34,5 @@ mod graph_work_capacity;
 mod ordinary_admission;
 #[path = "authorization/scope_mismatch.rs"]
 mod scope_mismatch;
+#[path = "authorization/structured_input_validation.rs"]
+mod structured_input_validation;

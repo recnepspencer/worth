@@ -25,7 +25,7 @@ pub(super) fn record_checkpoint_counters(
     checkpoint: &CheckpointDiscovery,
 ) {
     counters.checkpoint_candidates =
-        u64::from(matches!(checkpoint, CheckpointDiscovery::Admitted(_)));
+        u64::from(matches!(checkpoint, CheckpointDiscovery::Admitted { .. }));
     counters.checkpoints_admitted = counters.checkpoint_candidates;
     counters.checkpoints_rejected =
         u64::from(matches!(checkpoint, CheckpointDiscovery::Rejected(_)));
@@ -39,6 +39,14 @@ pub(super) fn record_wal_counters(
     wal_entries: u64,
 ) {
     counters.wal_entries = wal_entries;
+    counters.wal_integrity_attempts = wal.integrity_ingress.attempted;
+    counters.wal_integrity_admissions = wal.integrity_ingress.admitted;
+    counters.wal_integrity_rejections = wal
+        .integrity_ingress
+        .attempted
+        .saturating_sub(wal.integrity_ingress.admitted);
+    counters.wal_owner_projections = wal.integrity_ingress.owner_projection_entries;
+    counters.wal_owner_decoder_entries = wal.integrity_ingress.owner_decoder_entries;
     counters.wal_segments = wal.scanned_segments;
     counters.wal_segments_scanned = wal.scanned_segments;
     counters.valid_wal_segments = wal.valid_segments;
@@ -73,7 +81,7 @@ pub(super) fn record_wal_counters(
 fn admitted_root_count(observation: &PhysicalRootSlotObservation) -> u64 {
     u64::from(matches!(
         observation,
-        PhysicalRootSlotObservation::Admitted(_)
+        PhysicalRootSlotObservation::Candidate(_)
     ))
 }
 
@@ -87,10 +95,11 @@ fn root_posture(observation: &PhysicalRootSlotObservation, posture: RootPosture)
     u64::from(matches!(
         (observation, posture),
         (
-            PhysicalRootSlotObservation::Admitted(_),
+            PhysicalRootSlotObservation::Candidate(_),
             RootPosture::Admitted
         ) | (
-            PhysicalRootSlotObservation::Rejected { .. },
+            PhysicalRootSlotObservation::SelectorRejected(_)
+                | PhysicalRootSlotObservation::RootRejected { .. },
             RootPosture::Rejected
         ) | (PhysicalRootSlotObservation::Absent, RootPosture::Absent)
     ))

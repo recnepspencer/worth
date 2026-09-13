@@ -2,7 +2,8 @@ use bank_domain::{
     model::BankPrincipalId,
     queries::{
         EstateEmergencyAccessActivity, EstateEmergencyAccessActivityLiveCause,
-        EstateEmergencyAccessActivityQuery, EstateEmergencyAccessActivityQueryParameters,
+        EstateEmergencyAccessActivityQuery, EstateEmergencyAccessActivityQueryBinding,
+        EstateEmergencyAccessActivityQueryParameters,
     },
     schema::{
         BankSchema, EmergencyAccess, EstateCase, EstateCaseIdentityField, Principal,
@@ -165,10 +166,16 @@ impl<'runtime, 'principal>
         BankApplicationQueryDenial,
     > {
         let application = self.runtime.application_runtime();
-        let query = application
+        let selected = application
+            .on_branch(application.current_world())
+            .select()
+            .map_err(BankApplicationQueryDenial::from_product_selection)?;
+        let query_binding = application
             .installed_schema()
-            .application_query(EstateEmergencyAccessActivityQuery::reference())
+            .installed_query_binding::<EstateEmergencyAccessActivityQueryBinding>()
             .map_err(BankApplicationQueryDenial::from_installation)?;
+
+        let query = query_binding.into_query();
         let capability = application
             .installed_schema()
             .capability(
@@ -176,7 +183,7 @@ impl<'runtime, 'principal>
                 ViewRestrictedEstateOperation::reference(),
             )
             .map_err(BankApplicationQueryDenial::from_capability_installation)?;
-        let capability_access = application
+        let capability_access = selected
             .admit_approved_elevation_access(
                 self.approved.query(),
                 self.principal.query(),
@@ -185,7 +192,7 @@ impl<'runtime, 'principal>
                 controls.request(),
             )
             .map_err(BankApplicationQueryDenial::from_capability_admission)?;
-        let scope = application
+        let scope = selected
             .resolve_entity(
                 EstateCaseIdentityField::reference(),
                 self.request.estate(),
@@ -193,7 +200,7 @@ impl<'runtime, 'principal>
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .map_err(BankApplicationQueryDenial::from_scope_resolution)?;
-        let query = application
+        let query = selected
             .open_governed_application_query_live::<
                 EstateEmergencyAccessActivityQuery,
                 EstateEmergencyAccessActivityQueryParameters,

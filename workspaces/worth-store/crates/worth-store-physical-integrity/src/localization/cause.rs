@@ -1,0 +1,20 @@
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhysicalDamageCause {
+    WrongMagic,
+    FamilyMismatch,
+    FramingLengthMismatch,
+    ChecksumMismatch,
+    FormatMismatch,
+    StoreIdentityMismatch,
+    ArtifactIdentityMismatch,
+    PhysicalGenerationMismatch,
+    SelectorRoleMismatch,
+    RecordKindMismatch,
+    ChildReferenceMismatch,
+    SequenceMismatch,
+    AggregateMismatch,
+    MalformedStructure,
+    Truncated,
+    MissingArtifact,
+    DuplicateArtifact,
+}

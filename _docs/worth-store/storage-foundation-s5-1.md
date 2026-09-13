@@ -18,8 +18,8 @@ that make later security work impossible to forget or bolt on dishonestly.
 
 The hard part is not naming security fields. The hard part is placing them
 where later physical work cannot bypass them: in Store-owned authority
-vocabulary, in physical witnesses, in proof-carrying handoff types, and in the
-simulation/certification harness that later milestones already consume.
+vocabulary, in physical witnesses, in proof-carrying handoff types, and in
+direct tests of the production boundaries that later milestones consume.
 
 ## Governing Summaries
 
@@ -224,8 +224,9 @@ but the responsibility boundaries must remain visible:
   export, and repair readiness seeds where those artifacts already live.
 - `worth-store-readiness/src/s6_security_scope_readiness.rs` owns the S.6
   handoff that I/O QoS must consume.
-- `worth-store-certification/src/s5_1_security_scope_harness/` owns courtroom
-  scenarios and proof materialization, not the law itself.
+- `worth-store-certification` owns direct integration tests that exercise the
+  production security-scope boundaries; it does not own a parallel scenario,
+  oracle, transcript, or evidence authority.
 
 ## Phase Plan
 
@@ -932,144 +933,106 @@ milestones consume S.5.1 security scope instead of inventing local metadata.
 - Final names may follow implementation topology, but the five handoff
   responsibilities above must remain separate.
 
-### Phase 10: Security-Scope Simulation Harness
+### Phase 10: Direct Security-Boundary Verification
 
-Extend the S.4.5/S.5 harness path so security-scope failures can be modeled
+Exercise security-scope propagation and denial through production-owned
+admission, stable-read, publication, checkpoint, and repair-read boundaries
 before full S.11 encryption exists.
 
 **Relevant subsystems**
 
-- S.4.5 simulation harness
-- S.5 physical isolation scenarios
-- `worth-store-test-support`
+- S.5 physical isolation owners
+- Store certification integration tests
 - `worth-store-security`
 - `worth-store-readiness`
 
 **Relevant APIs**
 
-- scenario authoring APIs
-- schedule lowering
-- observer/oracle/evidence surfaces
-- transcript evidence
-- S.5 stable read scenarios
+- production security-scope admission APIs
+- stable-read and publication APIs
+- checkpoint and repair-read admission APIs
 - S.5.1 readiness handoffs from Phase 9
-- `worth_proof::prelude::{proof_flow, recipe, gate_ready, ready_now,
-  join_ready, compose_ready}` for runner-visible staged progression.
 
 **Warnings**
 
 - This is not S.11 certification. It is security-scope readiness that prevents
   later milestones from ignoring the metadata.
-- Do not add log-based proof or JSON-shaped verdicts.
-- Do not make the harness decide identity-provider semantics.
-- Do not combine scenario authoring, oracle comparison, evidence
-  materialization, and runner bookkeeping in one support module.
+- Do not add log-based proof, JSON-shaped verdicts, generated transcripts, or
+  synthetic oracle layers.
+- Tests do not decide identity-provider semantics.
 
 **Test requirements**
 
-- Adversarial simulation: hostile interleavings preserve key scope and tenant
-  scope across stable read plans, root swaps, checkpoint publication, and
-  repair-read admission.
-- Adversarial rejection: simulated stale key version, wrong tenant scope,
+- Adversarial execution: production APIs preserve key scope and tenant scope
+  across stable read plans, root swaps, checkpoint publication, and repair-read
+  admission.
+- Adversarial rejection: stale key version, wrong tenant scope,
   missing authenticity requirement, and replayed custody posture produce typed
   denials before logical decode.
-- Harness replay: a transcript that replays the same physical schedule with a
-  changed tenant scope, key-version posture, or authenticity requirement must
-  fail as drift instead of converging to the original readiness.
-- No-JSON proof: ordinary S.5.1 harness fixtures author native aspect values
-  and Store physical witnesses; JSON appears only in terminal projection or
-  hostile/readmission tests.
+- Re-admission tests change tenant scope, key-version posture, or authenticity
+  requirement at the real boundary and observe drift rather than reused
+  readiness.
+- JSON appears only in terminal projection or hostile/readmission tests.
 
 **Engineering decisions**
 
-- Add a phase-specific harness namespace such as
-  `s5_1_security_scope_harness` with scenario, schedule, oracle, evidence,
-  and counter modules split by responsibility.
-- Harness scenarios consume Store readiness contracts from lower crates; they
-  do not define the legal contract.
-- The JSON runner state remains progress-only; security evidence must live in
-  typed Store artifacts and Foundational evidence packages, with Proof used for
-  legal progression between states.
-- When the phase runner is used, keep QA discovery, QA planning, and QA fixing
-  as separate runner prompts so the model does not blur finding, designing, and
-  editing.
+- Tests call lower Store owners through their public production facades and
+  assert returned capabilities, denials, persisted state, and counters.
+- Shared test setup is limited to fixture construction; it cannot mint verdicts
+  or restate production authority.
 
 **Open questions**
 
-- None. Harness topology must model S.5.1 scope drift before later S.6/S.7/S.10
-  work depends on those scenarios.
+- None. Direct boundary tests must expose S.5.1 scope drift before later
+  S.6/S.7/S.10 work depends on those contracts.
 
-### Phase 11: Certification Evidence And Counter Closeout
+### Phase 11: Integration Verification And Cleanup
 
-Materialize certification evidence and counter-backed proof that the S.5.1
-contracts are enforced by Store-owned types, Foundational boundary packages,
-Proof progression, and exact work counters.
+Run the affected owner and integration suites, remove obsolete test support,
+and document the public security-scope contracts that later milestones consume.
 
 **Relevant subsystems**
 
-- Store certification crate
-- Proof progression vocabulary
-- Foundational boundary evidence vocabulary
-- Foundational performance vocabulary
-- `worth-store-test-support`
+- Store security and readiness owners
+- Store certification integration tests
+- downstream S.6/S.7/S.10/S.11 consumers
 - `worth-store-readiness`
 
 **Relevant APIs**
 
-- certification evidence materialization
-- transcript and counter evidence from Phase 10
+- focused owner and integration test targets
+- direct counters returned by production execution
 - S.5.1 readiness handoffs from Phase 9
-- `worth_foundational::performance_api::common_path` for performance claim
-  authoring and layout intent.
-- `worth_foundational::performance_api::lower_lane::policy` for pre-execution
-  budget/admission receipts.
-- `worth_foundational::performance_api::lower_lane::receipts` for
-  counter-backed performance receipts after execution.
-- `worth_foundational::performance_api::lower_lane::reports` for deliberate
-  report planning and materialization.
-- `worth_foundational::performance_api::stronger_lane` for certified or
-  readmitted performance bundles only when that stronger claim is real.
 
 **Warnings**
 
-- Do not make certification define the legal contract; certification consumes
-  Store security/readiness contracts and proves them adversarially.
-- Do not let descriptive performance claims stand in for counter-backed
-  execution receipts.
-- Do not let certification close on logs, summaries, successful completion, or
-  same-run self-comparison.
+- Integration tests consume Store security/readiness contracts; they do not
+  define them.
+- Do not create closeout rows, evidence bundles, generated reports, or
+  self-comparison machinery.
 
 **Test requirements**
 
-- Counter proof: exact counters cover security-scope admissions, denials,
+- Direct counter assertions cover security-scope admissions, denials,
   stale-key rejections, tenant-scope drifts, authenticity-unavailable results,
   and unsupported-capability denials.
-- Performance receipt proof: executed harness work produces Foundational
-  counter-backed performance receipts, not descriptive claims or elapsed-time
-  logs.
-- Certification boundary proof: certification can publish Foundational boundary
-  evidence but cannot construct Store readiness witnesses by itself.
-- API-adoption proof: ordinary S.5.1 evidence uses Foundational native aspect,
-  canonicalization, boundary artifact, boundary evidence, profile, and
-  performance lanes where the spec names them.
+- Compile-fail tests prove certification and test-support code cannot construct
+  Store readiness witnesses.
+- Integration tests execute the named production APIs and assert outcomes at
+  the consuming boundary.
 
 **Engineering decisions**
 
-- Keep proof materialization in certification, but keep constructors and
-  readiness admission in lower Store crates so the courtroom never becomes the
-  law.
-- Harness evidence must use Foundational counter-backed performance receipts
-  for executed work, not descriptive performance claims or elapsed-time-only
-  logs.
-- Certification closeout consumes the Phase 10 harness transcript, Phase 9
-  handoffs, and lower-crate Store witnesses; it does not define new authority
-  types.
-- Certified/readmitted Foundational performance bundles may be produced only
-  after lower-lane counter-backed receipts exist.
+- Keep constructors and readiness admission in lower Store crates.
+- Delete support code that only translates production outcomes into another
+  test-owned verdict or report.
+- A focused failing test is the evidence; no separate closeout artifact is
+  maintained.
 
 **Open questions**
 
-- None. Certification is the closeout evidence layer, not a source of law.
+- None. Later phases consume the production contracts, not a certification
+  artifact.
 
 ## Must Ship
 
@@ -1097,10 +1060,8 @@ Proof progression, and exact work counters.
 - Explicit Proof adoption surfaces for security-scope progression, freshness,
   readmission, readiness, execution, non-success outcome topology, and
   fixed-shape evidence binding.
-- Harness scenarios proving security-scope metadata survives physical
-  interleavings and rejects stale, missing, or wrong-scope inputs.
-- Certification closeout evidence and counter-backed performance receipts
-  proving the phase contracts are enforced by lower Store crates.
+- Direct integration tests proving security-scope metadata survives physical
+  execution and rejects stale, missing, or wrong-scope inputs.
 - Identity-provider claims and serde projections remain raw declarations until
   Store admission/readmission produces Store-owned witnesses.
 
@@ -1138,7 +1099,7 @@ Proof progression, and exact work counters.
 - Compile-fail tests proving `StoreCurrentAuthorityWitness`, copied proof ids,
   copied counter receipts, copied witness fields, and certification-only rows
   cannot mint S.5.1 readiness.
-- Runtime and simulation tests proving metadata carriers, stable read plans,
+- Runtime and integration tests proving metadata carriers, stable read plans,
   manifests, WAL/checkpoint records, blob readiness, backup/export readiness,
   repair readiness, and S.6/S.7/S.10/S.11 handoffs carry security scope through
   admitted physical paths.

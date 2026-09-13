@@ -1,40 +1,22 @@
 use worth_store_physical_backend::{
-    BackendDurabilityProfile, PosixFileFsyncDirFsyncProfile, WindowsFlushFileBuffersProfile,
+    WalDurabilityObservationDenial, WalDurabilityObservationDenialKind,
 };
 use worth_store_recovery_physics::{
-    CheckpointBaseAdmission, CheckpointCutoverReceipt, RecoveryCompletion, RedoExecutionReceipt,
-    RedoPlanningDenial, RedoPlanningDenialKind, WalDurabilityObservationDenial,
-    WalDurabilityObservationDenialKind,
+    ImmutablePhysicalRedoPlan, PhysicalCheckpointBase, PhysicalRedoDecisionKind,
+    PhysicalRedoPlanningDenial,
 };
-use worth_store_recovery_runtime::ReopenedPhysicalRecovery;
+use worth_store_recovery_runtime::{RecoveryCompletion, ReopenedPhysicalRecovery};
 
 use super::DurabilityRecoveryAction;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DurabilityOwnerMappingDenial {
-    CheckpointProfileDoesNotProveDirectorySync,
     WalFenceFailureRequired,
     ReplayGenerationMismatchRequired,
 }
 
-pub fn map_checkpoint_cutover(
-    receipt: &CheckpointCutoverReceipt,
-) -> Result<[DurabilityRecoveryAction; 4], DurabilityOwnerMappingDenial> {
-    if receipt.profile_id() != PosixFileFsyncDirFsyncProfile::ID
-        && receipt.profile_id() != WindowsFlushFileBuffersProfile::ID
-    {
-        return Err(DurabilityOwnerMappingDenial::CheckpointProfileDoesNotProveDirectorySync);
-    }
-    Ok([
-        DurabilityRecoveryAction::CheckpointBegun,
-        DurabilityRecoveryAction::CheckpointDurable,
-        DurabilityRecoveryAction::DirectorySyncCompleted,
-        DurabilityRecoveryAction::CheckpointPublished,
-    ])
-}
-
 pub const fn map_checkpoint_selection(
-    _selection: &CheckpointBaseAdmission,
+    _selection: &PhysicalCheckpointBase,
 ) -> DurabilityRecoveryAction {
     DurabilityRecoveryAction::CheckpointSelected
 }
@@ -52,25 +34,29 @@ pub fn map_failed_wal_fence(
     ])
 }
 
-pub fn map_redo_execution(receipt: &RedoExecutionReceipt) -> Vec<DurabilityRecoveryAction> {
+pub fn map_redo_execution(plan: &ImmutablePhysicalRedoPlan) -> Vec<DurabilityRecoveryAction> {
     let mut actions = vec![DurabilityRecoveryAction::RecoveryReplayRequired];
-    if receipt.applied_frame_count() > 0 {
+    let (applied, skipped) = plan.resolved_decisions().fold(
+        (false, false),
+        |(applied, skipped), decision| match decision.kind() {
+            PhysicalRedoDecisionKind::Apply => (true, skipped),
+            PhysicalRedoDecisionKind::SkipPageAlreadyAtOrBeyondLsn
+            | PhysicalRedoDecisionKind::SkipOperationAlreadyMaterialized => (applied, true),
+        },
+    );
+    if applied {
         actions.push(DurabilityRecoveryAction::RecoveryReplayApplied);
     }
-    if !receipt.skipped_frames().is_empty() {
+    if skipped {
         actions.push(DurabilityRecoveryAction::RecoveryReplaySkippedIdempotent);
     }
     actions
 }
 
 pub fn map_redo_generation_denial(
-    denial: &RedoPlanningDenial,
+    denial: &PhysicalRedoPlanningDenial,
 ) -> Result<DurabilityRecoveryAction, DurabilityOwnerMappingDenial> {
-    if matches!(
-        denial.kind(),
-        RedoPlanningDenialKind::RedoTargetPageGenerationMismatch { .. }
-            | RedoPlanningDenialKind::CursorPageGenerationMismatch { .. }
-    ) {
+    if matches!(denial, PhysicalRedoPlanningDenial::GenerationMismatch) {
         Ok(DurabilityRecoveryAction::RecoveryReplayRejectedGenerationMismatch)
     } else {
         Err(DurabilityOwnerMappingDenial::ReplayGenerationMismatchRequired)

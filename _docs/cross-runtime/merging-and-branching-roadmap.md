@@ -18,7 +18,8 @@ merge rules are not known today.
 This is a cross-runtime roadmap. It is ordered by implementation dependency,
 not by the repository containing each edit. A milestone may require changes in
 Worth Query, Worth Relational, Worth Signal, Worth Runtime Bridge, Worth
-Foundational, or Worth Proof when those changes are prerequisites for one
+Runtime World, Worth Foundational, or Worth Proof when those changes are
+prerequisites for one
 coherent semantic collaboration model. Store-backed realization consumes that
 model through the separate runtime-integration program rather than widening
 this roadmap into physical database implementation.
@@ -47,8 +48,9 @@ Query Milestone 9.3.8 Phase 35
 ## Current Substrate And Build Posture
 
 This is not a unification pass over complete per-crate branching and merging
-implementations. Query, Relational, Signal, and Runtime Bridge begin with
-different useful substrate fragments, but none currently supplies the complete
+implementations. Query, Relational, Signal, Runtime Bridge, and Runtime World
+begin with different useful substrate fragments, but none currently supplies
+the complete
 semantic-history, merge, collaboration, offline, or convergence model defined
 here. This roadmap builds the missing authority-owned capabilities in dependency
 order and then joins them through their public contracts.
@@ -65,9 +67,11 @@ order and then joins them through their public contracts.
   admitted by Query Milestone 9.17. Milestone 12 extends this into versioned
   Signal definition worlds and post-merge reconciliation without promoting
   derived values into authority.
-- Runtime Bridge begins with Milestone 9.17's exact component correspondence,
-  single-parent composite commits, product branch references, and coordinated
-  compare-and-publish. Milestones 2, 3, 13, and 14 extend those foundations into
+- Runtime Bridge begins with Milestone 9.17's exact installed component
+  correspondence. The dedicated `worth-runtime-world` composition owner begins
+  with its single-parent composite commits, product branch references, and
+  coordinated compare-and-publish. Milestones 2, 3, 13, and 14 extend those
+  foundations into
   complete semantic-world basis, multi-parent history, collaboration-specific
   phase protocol, publication continuity, incomplete-transition recovery, and
   Store-backed widening points.
@@ -141,8 +145,9 @@ session recovery.
 
 Query Milestone 9.16 contains a provisional linear current-head undo and redo
 implementation, but that code is not an accepted product contract. Query
-Milestone 9.17 establishes Runtime Bridge-owned composite product branches over
-exact Relational and Signal bases plus Relational branch-local MVCC. Query
+Milestone 9.17 establishes dedicated Runtime World-owned composite product
+branches over exact Relational and Signal bases plus Relational branch-local
+MVCC and base Bridge correspondence. Query
 Milestone 9.18 then accepts ordinary runtime-backed tree-based reversal and
 reapplication as freshly admitted new composite-history operations over exact
 source world commits and target product branch heads. It owns source/target
@@ -166,8 +171,9 @@ meaning.
 This roadmap extends that accepted capability in dependency order:
 
 - Query Milestone 9.17 establishes owner-local Relational and Signal branch
-  bases plus Runtime Bridge composition authority for initial single-parent
-  composite commits, product references, ancestry, and compare-and-publish;
+  bases plus base Runtime Bridge correspondence and dedicated Runtime World
+  composition authority for initial single-parent composite commits, product
+  references, ancestry, and compare-and-publish;
   cross-runtime Milestones 2 and 3 extend those authorities into the complete
   semantic-world basis and multi-parent history without replacing them.
 - Query Milestone 9.18 owns ordinary lawful inversion, compensation,
@@ -317,10 +323,11 @@ not grant completion credit to the current implementation.
 3. Worth Signal owns Signal component branches and bases, versioned
    definition-bound evaluation meaning, invalidation, branch-local derived
    state, and post-merge derived reconciliation.
-4. Worth Runtime Bridge owns exact component correspondence, composite runtime-
-   world commits and product references, and the causal protocol joining owner-
-   local publication to derived evaluation and cross-runtime continuity. It
-   coordinates component authorities without absorbing them.
+4. Worth Runtime Bridge owns exact installed component correspondence and
+   ordinary lowering. The dedicated Runtime World owner owns composite commits,
+   product references/currentness, and the causal publication protocol joining
+   owner-local outcomes into one product world. They coordinate component
+   authorities without absorbing them.
 5. The physical Store instance owns durable bytes, physical access,
    checkpoint/recovery physics, physical transfer, reclamation mechanics, and
    exact physical effect fate. It remains ignorant of branch identity, MVCC
@@ -384,8 +391,8 @@ or law:
    names, or branch labels do not substitute for either identity.
 2. A semantic world is the authoritative meaning observed at one admitted
    commit basis. It is not a copied map owned by a branch.
-3. A product branch is a Runtime Bridge-owned mutable reference to one
-   composite commit. Relational and Signal branches remain owner-local
+3. A product branch is a Runtime World-owned mutable reference to one composite
+   commit. Relational and Signal branches remain owner-local
    component references. Moving, protecting, archiving, or deleting any
    reference is distinct from creating, mutating, retaining, or reclaiming the
    commits and bases it can reach.
@@ -516,6 +523,12 @@ Signal authority
   merge_reconciliation/         post-authority rebuild and continuity
 
 Runtime Bridge authority
+  installed_correspondence/    exact cross-component semantic binding
+  ordinary_lowering/           installed correspondence consumption
+
+Runtime World authority
+  composite_world_basis/       exact admitted component composition
+  composite_branch_graph/      commits, product references, parents, ancestry
   collaboration_protocol/       cross-runtime causal phase progression
   merge_publication/            publication-to-derivation continuity
   collaboration_recovery/       typed incomplete-transition recovery
@@ -636,8 +649,9 @@ identity, reference movement, semantic-world basis, and canonical change.
   reference without caller-minted authority
 - boundary-check rules preventing Query from owning commit or reference truth,
   Signal or Relational component authority from moving composite product
-  references, Runtime Bridge composition authority from publishing component
-  truth, persisted representations from minting semantic authority, and
+  references, Runtime World composition authority from publishing component
+  truth, base Bridge correspondence from becoming product currentness,
+  persisted representations from minting semantic authority, and
   ordinary crates from consuming certification replay
 - one cross-roadmap handoff law stating that later Store-backed integration may
   consume these semantic contracts through Query provider and adapter
@@ -652,8 +666,8 @@ proof enter with the milestone that owns them.
 This milestone extends architectural contracts, not runtime authority.
 Foundational receives only genuinely shared vocabulary. Proof receives only
 sealed progression or authority types. Relational and Signal retain component
-truth, Runtime Bridge retains composition truth, and Query remains the product
-facade.
+truth, Runtime Bridge retains installed correspondence, Runtime World retains
+composition truth, and Query remains the product facade.
 
 ### DX Target
 
@@ -714,9 +728,10 @@ different things under different definition worlds.
 
 Relational owns the authoritative truth-version component. Signal owns its
 definition and execution-basis components. Each other definition or policy
-authority owns its component. Runtime Bridge joins exact owner-issued evidence
-and owns composite-basis admission/currentness without becoming any component
-owner. Query carries and projects the admitted basis. Foundational may carry
+authority owns its component. Runtime Bridge supplies exact installed
+correspondence. Runtime World joins exact owner-issued evidence and owns
+composite-basis admission/currentness without becoming any component owner.
+Query carries and projects the admitted basis. Foundational may carry
 shared locator and compatibility vocabulary; it may not decide currentness.
 
 ### DX Target
@@ -784,10 +799,11 @@ semantic parenthood, reference kind, or branch truth.
 
 ### Authority And Derivation
 
-Runtime Bridge owns composite semantic commits, product references, and product-
-branch currentness. Relational and Signal retain their component commit,
-reference, and branch truth; the bridge consumes only owner-issued component
-evidence. The Store-backed composition later preserves records and atomic
+The dedicated Runtime World owner owns composite semantic commits, product
+references, and product-branch currentness. Relational and Signal retain their
+component commit, reference, and branch truth; Runtime World consumes only
+owner-issued component evidence and base Bridge-installed correspondence. The
+Store-backed composition later preserves records and atomic
 physical evidence through the adapter without interpreting them. Ancestry
 accelerators are derived and rebuildable. Query exposes workflows but cannot
 move component or composite heads directly.

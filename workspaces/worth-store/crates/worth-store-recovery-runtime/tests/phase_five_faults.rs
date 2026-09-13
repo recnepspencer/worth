@@ -9,6 +9,7 @@ use worth_store::physical_runtime::certification::{
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalCheckpointDeadline,
     PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome, PhysicalCheckpointRequest,
+    RecoveryStagingIndeterminatePhysical,
 };
 use worth_store_recovery_runtime::{
     PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimits, PhysicalRecoveryOpenRequest,
@@ -57,9 +58,13 @@ fn partial_materialization_retains_the_exact_indeterminate_receipt() {
         *scheduler,
         Some(worth_store::physical_runtime::PhysicalWorkSchedulerPosture::Executed)
     );
-    assert_eq!(physical.physical().completed_bytes(), 31);
-    assert_ne!(physical.physical().create_operation().value(), 0);
-    assert!(physical.physical().write_operation().is_some());
+    assert!(matches!(
+        physical.evidence(),
+        RecoveryStagingIndeterminatePhysical::NewArtifact(new_artifact)
+            if new_artifact.completed_bytes() == 31
+                && new_artifact.create_operation().value() != 0
+                && new_artifact.write_operation().is_some()
+    ));
     assert_eq!(blocked.recovery_effects(), 1);
     drop(parent);
 }
@@ -352,6 +357,7 @@ fn ordinary_limits() -> PhysicalRecoveryLimits {
         distinct_pages_and_extents: 4_096,
         operation_bindings: 4_096,
         staging_bytes: 32 * 1024 * 1024,
+        recovery_memory_bytes: 32 * 1024 * 1024,
         dirty_frames: 4_096,
         concurrent_commands: 8,
         publication_effects: 64,

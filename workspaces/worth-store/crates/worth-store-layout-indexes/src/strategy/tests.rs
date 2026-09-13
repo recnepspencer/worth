@@ -89,7 +89,6 @@ fn denies_unsupported_or_incomplete_strategy_claims_before_declaration() {
         LayoutAdmissionDenial::StrategyVocabularyDenied(StrategyDenial::UnsupportedFamily,)
     );
 }
-
 #[test]
 fn admission_binds_counter_profiles_and_posture_to_strategy_families() {
     use super::tests_support::{admit_btree_page_strategy, admit_lsm_wal_strategy};
@@ -353,33 +352,4 @@ fn btree_strategy_counter_surface_requires_shape_specific_lookup_truth() {
         evidence.aggregate_profile(),
         crate::strategy::StrategyCounterProfile::new(1, 1, 1, 1, 3)
     );
-}
-
-#[test]
-fn strategy_admission_has_no_raw_witness_authority_lane() {
-    let authority_basis = include_str!("authority_basis.rs");
-    let admission = include_str!("admission.rs");
-    let registry_request = include_str!("registry/request.rs");
-
-    for forbidden in ["LegacyWitnesses", "StrategyAuthorityBasis::legacy"] {
-        assert!(
-            !authority_basis.contains(forbidden),
-            "strategy authority must not preserve the removed {forbidden} lane"
-        );
-    }
-    for forbidden in ["fn admit_strategy(", "fn declare_strategy("] {
-        assert!(
-            !admission.contains(forbidden),
-            "strategy admission must not accept raw lifecycle/domain witnesses through {forbidden}"
-        );
-    }
-    for forbidden in [
-        "StrategyAuthorityBasis::legacy",
-        "lifecycle: ArtifactFamilyLifecycleAdmission,\n        key_domain: PhysicalKeyDomainWitness,\n        family: LayoutStrategyFamily",
-    ] {
-        assert!(
-            !registry_request.contains(forbidden),
-            "registry requests must not recover raw strategy authority through {forbidden}"
-        );
-    }
 }

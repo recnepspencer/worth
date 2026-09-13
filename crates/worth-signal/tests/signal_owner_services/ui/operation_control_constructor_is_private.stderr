@@ -1,0 +1,10 @@
+error[E0624]: associated function `new` is private
+ --> tests/signal_owner_services/ui/operation_control_constructor_is_private.rs:4:34
+  |
+4 |     SignalOwnerOperationControl::new()
+  |                                  ^^^ private associated function
+  |
+ ::: src/branch/owner_services/operation_control.rs
+  |
+  |         pub(in crate::branch::owner_services) fn new() -> Self {
+  |         ------------------------------------------------------ private associated function defined here

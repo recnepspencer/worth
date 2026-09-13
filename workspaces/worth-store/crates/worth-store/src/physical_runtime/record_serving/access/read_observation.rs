@@ -131,6 +131,20 @@ impl RecordReadObservation {
         matches
     }
 
+    pub(in crate::physical_runtime::record_serving) fn check_page_identity_generation(
+        &mut self,
+        matches: bool,
+    ) -> bool {
+        self.check_generation(matches)
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn check_slot_generation(
+        &mut self,
+        matches: bool,
+    ) -> bool {
+        self.check_generation(matches)
+    }
+
     pub(in crate::physical_runtime::record_serving) fn observe_transfer(&mut self, bytes: usize) {
         self.transfer_count = self.transfer_count.saturating_add(1);
         self.peak_transfer_width = self.peak_transfer_width.max(bytes as u64);

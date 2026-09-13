@@ -232,6 +232,7 @@ mod operational_control;
 #[cfg(not(feature = "certification-test-authority"))]
 pub mod ordinary_authority_compile_fail;
 mod placement_observation;
+mod recovery_durability;
 #[cfg(feature = "recovery-runtime-owner")]
 mod recovery_media;
 mod recovery_staging;

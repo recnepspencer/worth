@@ -1,20 +1,10 @@
 use std::path::Path;
 
-use crate::catalog::TestCatalog;
-
 use super::TestExecutionUnit;
 
-pub(super) fn owner(
-    package: &str,
-    catalog: &TestCatalog,
-    workspace_root: &Path,
-) -> Result<Vec<TestExecutionUnit>, String> {
-    if !catalog.contains_package(package) {
-        return Err(format!("unknown Worth Store workspace package `{package}`"));
-    }
-    Ok(vec![TestExecutionUnit::cargo(
+pub(super) fn owner(package: &str, workspace_root: &Path) -> Vec<TestExecutionUnit> {
+    vec![TestExecutionUnit::cargo(
         format!("owner::{package}"),
-        "owner product".into(),
         workspace_root,
         vec![
             "nextest".into(),
@@ -26,16 +16,15 @@ pub(super) fn owner(
             "--examples".into(),
             "--benches".into(),
             "--no-fail-fast".into(),
+            "--no-tests=fail".into(),
         ],
-        None,
-    )])
+    )]
 }
 
 pub(super) fn owner_ci(workspace_root: &Path) -> Vec<TestExecutionUnit> {
     vec![
         TestExecutionUnit::cargo(
             "owner-unit::workspace-targets".into(),
-            "Cargo workspace unit targets".into(),
             workspace_root,
             [
                 "nextest",
@@ -46,21 +35,19 @@ pub(super) fn owner_ci(workspace_root: &Path) -> Vec<TestExecutionUnit> {
                 "--examples",
                 "--benches",
                 "--no-fail-fast",
+                "--no-tests=fail",
             ]
             .into_iter()
             .map(str::to_owned)
             .collect(),
-            None,
         ),
         TestExecutionUnit::cargo(
             "owner-unit::workspace-doctests".into(),
-            "Cargo workspace doctests".into(),
             workspace_root,
             ["test", "-q", "--workspace", "--doc"]
                 .into_iter()
                 .map(str::to_owned)
                 .collect(),
-            None,
         ),
     ]
 }

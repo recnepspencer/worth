@@ -2,7 +2,7 @@ use crate::data::aspect::PartitionVersionMap;
 use crate::data::node::CheckpointNodeImage;
 
 use super::layout::{NodeColdData, NodeHotData, NodeWarmData};
-use super::NodeEntry;
+use super::{NodeDefinitionData, NodeEntry};
 
 impl NodeEntry {
     pub(crate) fn to_checkpoint_image(&self) -> CheckpointNodeImage {
@@ -27,12 +27,14 @@ impl NodeEntry {
             pending_dependency_revalidation: self.warm.pending_dependency_revalidation.clone(),
             direct_invalidation_basis: self.warm.direct_invalidation_basis.clone(),
             direct_invalidation_generation: self.warm.direct_invalidation_generation,
-            tombstoned: self.warm.tombstoned,
+            tombstoned: self.definition.tombstoned,
+            conditional_contract_generation: self.definition.conditional_contract_generation,
+            conditional_contract_occurrence: self.definition.conditional_contract_occurrence,
             runtime_artifact_state: self.warm.runtime_artifact_state.clone(),
             retained_artifact: self.cold_artifact_record().cloned(),
             causality: self.get_causality().cloned(),
             execution_trace: self.execution_trace_stamp(),
-            eval_config: self.warm.eval_config.clone(),
+            eval_config: self.definition.eval_config.clone(),
         })
     }
 
@@ -42,6 +44,12 @@ impl NodeEntry {
         let (aspect_version_header, aspect_version_overrides) =
             image.aspect_versions.into_storage_parts();
         let mut entry = Self {
+            definition: NodeDefinitionData {
+                tombstoned: image.tombstoned,
+                conditional_contract_generation: image.conditional_contract_generation,
+                conditional_contract_occurrence: image.conditional_contract_occurrence,
+                eval_config: image.eval_config,
+            },
             hot: NodeHotData {
                 state: image.state,
                 dirty_aspects: image.dirty_aspects,
@@ -54,14 +62,12 @@ impl NodeEntry {
                 dependency_revision: image.dependency_revision,
             },
             warm: NodeWarmData {
-                tombstoned: image.tombstoned,
                 pending_dependency_revalidation: image.pending_dependency_revalidation,
                 direct_invalidation_basis: image.direct_invalidation_basis,
                 direct_invalidation_generation: image.direct_invalidation_generation,
                 aspect_version_overrides,
                 dirty_partition_scope_payload: image.dirty_partition_scopes.into_iter().collect(),
                 runtime_artifact_state: image.runtime_artifact_state,
-                eval_config: image.eval_config,
             },
             cold: None,
         };
@@ -73,16 +79,27 @@ impl NodeEntry {
     }
 
     pub(crate) fn from_storage_parts(
+        definition: NodeDefinitionData,
         hot: NodeHotData,
         warm: NodeWarmData,
         cold: Option<Box<NodeColdData>>,
     ) -> Self {
-        Self { hot, warm, cold }
+        Self {
+            definition,
+            hot,
+            warm,
+            cold,
+        }
     }
 
     pub(crate) fn into_storage_parts(
         self,
-    ) -> (NodeHotData, NodeWarmData, Option<Box<NodeColdData>>) {
-        (self.hot, self.warm, self.cold)
+    ) -> (
+        NodeDefinitionData,
+        NodeHotData,
+        NodeWarmData,
+        Option<Box<NodeColdData>>,
+    ) {
+        (self.definition, self.hot, self.warm, self.cold)
     }
 }

@@ -9,6 +9,7 @@ pub(in crate::tests::phase1_api) const BRANCHES_SOURCE: &str = concat!(
     include_str!("../../../logic/transaction/runtime/state/branching/branches/authority.rs"),
     include_str!("../../../logic/transaction/runtime/state/branching/branches/catalog.rs"),
     include_str!("../../../logic/transaction/runtime/state/branching/branches/lifecycle.rs"),
+    include_str!("../../../logic/transaction/runtime/state/branching/branches/owner_snapshot.rs"),
     include_str!("../../../logic/transaction/runtime/state/branching/branches/selection.rs"),
     include_str!("../../../logic/transaction/runtime/state/branching/branches/snapshot_storage.rs"),
     include_str!("../../../logic/transaction/runtime/state/branching/branches/transfer.rs"),
@@ -28,6 +29,9 @@ pub(in crate::tests::phase1_api) const SNAPSHOT_RESTORE_SOURCE: &str = concat!(
 pub(in crate::tests::phase1_api) const RUNTIME_SNAPSHOTTING_SOURCE: &str = concat!(
     include_str!("../../../logic/transaction/runtime/state/branching/snapshotting.rs"),
     include_str!("../../../logic/transaction/runtime/state/branching/snapshotting/capture.rs"),
+    include_str!(
+        "../../../logic/transaction/runtime/state/branching/snapshotting/restore_selection.rs"
+    ),
     include_str!("../../../logic/transaction/runtime/state/branching/snapshotting/validation.rs"),
 );
 pub(in crate::tests::phase1_api) const CHECKPOINT_IMAGE_SOURCE: &str =

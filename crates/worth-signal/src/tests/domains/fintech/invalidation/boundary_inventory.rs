@@ -56,6 +56,45 @@ const BOUNDARIES: &[DirtyEvidenceBoundary] = &[
         required_symbols: &["dirty_aspects", "merge_dirty_partition_scopes"],
     },
     DirtyEvidenceBoundary {
+        owner: "graph invalidation authority",
+        source: include_str!("../../../../data/graph/storage/entries/invalidation_authority.rs"),
+        required_symbols: &[
+            "node_direct_invalidation_basis",
+            "node_dirty_partition_scope_payload",
+            "replace_node_invalidation_cache",
+            "install_node_dependency_revalidation",
+        ],
+    },
+    DirtyEvidenceBoundary {
+        owner: "graph diagnostic scan",
+        source: include_str!("../../../../data/graph/storage/diagnostic_scan.rs"),
+        required_symbols: &[
+            "diagnostic_nodes",
+            "node_runtime_artifact_state_present",
+            "execution_record_present",
+            "causality_present",
+        ],
+    },
+    DirtyEvidenceBoundary {
+        owner: "node explanation storage view",
+        source: include_str!("../../../../data/graph/storage/entries/diagnostic_artifacts.rs"),
+        required_symbols: &[
+            "node_explanation_storage_view",
+            "historical_artifact_record",
+            "trace_summary",
+        ],
+    },
+    DirtyEvidenceBoundary {
+        owner: "graph deserialization shape validation",
+        source: include_str!("../../../../data/graph/runtime/graph.rs"),
+        required_symbols: &["validate_deserialized_lane_alignment"],
+    },
+    DirtyEvidenceBoundary {
+        owner: "diagnostic graph summary projection",
+        source: include_str!("../../../../diagnostics/model/summary/graph.rs"),
+        required_symbols: &["diagnostic_nodes", "execution_record_present"],
+    },
+    DirtyEvidenceBoundary {
         owner: "node checkpoint conversion",
         source: include_str!("../../../../data/node/entry/checkpoint.rs"),
         required_symbols: &["dirty_aspects", "dirty_partition_scopes"],
@@ -106,12 +145,12 @@ const BOUNDARIES: &[DirtyEvidenceBoundary] = &[
     DirtyEvidenceBoundary {
         owner: "explain analysis projection",
         source: include_str!("../../../../logic/explain/analysis.rs"),
-        required_symbols: &["dirty_aspects", "get_dirty_aspects"],
+        required_symbols: &["dirty_aspects"],
     },
     DirtyEvidenceBoundary {
         owner: "explain cause assembly",
         source: include_str!("../../../../logic/explain/resolver/assembly.rs"),
-        required_symbols: &["dirty_aspects", "get_dirty_aspects"],
+        required_symbols: &["node_explanation_storage_view", "dirty_aspects"],
     },
     DirtyEvidenceBoundary {
         owner: "explain evidence model",
@@ -161,7 +200,7 @@ const BOUNDARIES: &[DirtyEvidenceBoundary] = &[
 
 #[test]
 fn phase_5_inventory_confirms_operational_dirty_readers_cut_over() {
-    assert_eq!(BOUNDARIES.len(), 29, "inventory changed without review");
+    assert_eq!(BOUNDARIES.len(), 34, "inventory changed without review");
     for boundary in BOUNDARIES {
         for symbol in boundary.required_symbols {
             assert!(

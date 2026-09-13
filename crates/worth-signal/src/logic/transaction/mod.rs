@@ -7,23 +7,22 @@ mod tests;
 
 pub(crate) use runtime::admit_signal_observation_request;
 pub(crate) use runtime::RuntimeObservationRegistry;
+pub(crate) use runtime::SignalCanonicalCallerUnwind;
+pub(crate) use runtime::TemporalRuntimeState;
 pub use runtime::{branch_state_proof_report, canonical_digest};
-#[cfg(test)]
-pub use runtime::{
-    bridge_signal_branch_basis_trust_boundary, BoundaryBridgedSignalBranchBasisArtifact,
-};
 #[allow(unused_imports)]
 pub use runtime::{
-    bridge_signal_merge_compatibility_trust_boundary, lowered_strategy_bundle_digest,
-    merge_lineage_digest, merge_plan_proof_report, merge_result_proof_report,
-    replay_artifact_proof_report, replay_parity_proof_report, runtime_proof_report,
-    temporal_certification_builder, temporal_certification_bundle,
+    bridge_signal_branch_basis_trust_boundary, bridge_signal_merge_compatibility_trust_boundary,
+    lowered_strategy_bundle_digest, merge_lineage_digest, merge_plan_proof_report,
+    merge_result_proof_report, replay_artifact_proof_report, replay_parity_proof_report,
+    runtime_proof_report, temporal_certification_builder, temporal_certification_bundle,
     temporal_certification_bundle_parity_report, temporal_certification_record,
     temporal_replay_parity_report, AdvisoryRecord, ArtifactMergeAction, ArtifactMergeComparable,
     AspectMergeDecisionOutcome, AspectMergePolicy, AspectMergePolicyBinding,
     AspectMergePolicyDescriptor, AspectMergePolicyId, AspectMergePolicyName,
     AspectMergePolicyRegistration, AspectMergePolicySelectionBasis, AspectMergePolicyVersion,
-    BatchChangeSession, BoundaryBridgedSignalMergeCompatibilityArtifact, BoundedJournalSegment,
+    BatchChangeSession, BoundaryBridgedSignalBranchBasisArtifact,
+    BoundaryBridgedSignalMergeCompatibilityArtifact, BoundedJournalSegment,
     BranchConflictResolutionPlan, BranchMergeBase, BranchMergeConflictEvidence,
     BranchMergeConflictKind, BranchMergeConflictRecord, BranchMergeConflictSummary,
     BranchMergeCounters, BranchMergeDeletionFailureEvidence, BranchMergeDivergence,
@@ -122,6 +121,11 @@ pub use runtime::{
     SIGNAL_BRANCH_BASIS_SCHEMA_VERSION, SIGNAL_MERGE_COMPATIBILITY_SCHEMA_VERSION,
     TEMPORAL_CERTIFICATION_BUNDLE_PARITY_SCHEMA_VERSION,
     TEMPORAL_CERTIFICATION_BUNDLE_SCHEMA_VERSION, TEMPORAL_REPLAY_PARITY_SCHEMA_VERSION,
+};
+pub(crate) use runtime::{
+    BranchState, SignalOwnerMetadataCloseBatch, SignalOwnerMetadataState, SignalOwnerPartition,
+    SignalOwnerRetirementCleanup, SignalOwnerSnapshotReservationDenial, SnapshotBranchState,
+    SnapshotStatePacket,
 };
 pub(crate) use runtime::{
     SignalObservationCaptureGate, SignalObservationDropCleanup, SignalObservationSessionState,

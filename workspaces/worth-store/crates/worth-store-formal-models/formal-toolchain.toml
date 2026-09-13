@@ -1,10 +1,4 @@
 [tlc]
 version = "1.7.4"
 download_url = "https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar"
-sha1 = "bee4a54f3ee3d4afc347c3240ec2d9e93b075104"
 sha256 = "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88"
-main_class = "tlc2.TLC"
-
-[smoke_model]
-model = "src/runner/toolchain_smoke/ToolchainSmoke.tla"
-configuration = "src/runner/toolchain_smoke/ToolchainSmoke.cfg"

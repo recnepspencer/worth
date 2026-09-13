@@ -49,6 +49,7 @@ fn downstream_code_constructs_untrusted_typed_records_without_package_authority(
             name: "decoded".to_owned(),
             major: 1,
             minor: 0,
+            contributions: Vec::new(),
             members: vec![ApplicationSchemaMember::Entity {
                 entity: "item".to_owned(),
             }],

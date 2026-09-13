@@ -4,8 +4,6 @@ use crate::{PhysicalBoundarySeam, PhysicalBoundaryYieldpoint};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FaultObservedBoundaryKind {
-    PreDecodeIntegrityDenial,
-    PhysicalIntegrityBoundary,
     FreshRuntimeCrashRecovery,
     NoFaultProductionBoundary,
     IoPressureBoundary,

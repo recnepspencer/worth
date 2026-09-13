@@ -71,10 +71,10 @@ fn admitted_observation_reads_do_not_move_branch_cells() {
 #[test]
 fn publication_cannot_mint_a_missing_branch_cell() {
     let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
-    assert!(matches!(
-        world.runtime.branch_identity(&BranchId("ghost".to_owned())),
-        Err(_)
-    ));
+    assert!(world
+        .runtime
+        .branch_identity(&BranchId("ghost".to_owned()))
+        .is_err());
     let identity = world.runtime.main_branch_identity();
     let options = world
         .runtime

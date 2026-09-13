@@ -10,7 +10,7 @@ fn installed_dag_mints_one_query_owned_trace_and_publication() {
     let mut workspace = workflow_workspace("installed-workflow").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)
@@ -132,7 +132,7 @@ fn incomplete_completion_denial_retains_exact_run_work_without_deeper_execution(
     let mut workspace = workflow_workspace("installed-workflow-incomplete").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)
@@ -170,7 +170,7 @@ fn skipping_a_predecessor_denies_before_stage_executor_contact() {
     let mut workspace = workflow_workspace("installed-workflow-skip").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)
@@ -205,7 +205,7 @@ fn duplicate_stage_advancement_denies_without_a_second_executor_contact() {
     let mut workspace = workflow_workspace("installed-workflow-duplicate-advance").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)
@@ -244,7 +244,7 @@ fn copied_stage_label_is_only_a_candidate_and_cannot_invent_progression() {
     let mut workspace = workflow_workspace("installed-workflow-copied-stage-label").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)
@@ -279,7 +279,7 @@ fn foreign_runtime_denies_stage_progression_before_executor_contact() {
     let mut owner = workflow_workspace("installed-workflow-owner").unwrap();
     let installed_domain = owner.domain(GeometryDomain).unwrap();
     let run = owner
-        .observe_operating_world()
+        .observe_operating_world(owner.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)
@@ -324,7 +324,7 @@ fn complete_trace(name: &str, order: [&str; 2]) -> String {
     let mut workspace = workflow_workspace(name).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let mut run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)

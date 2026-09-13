@@ -98,7 +98,10 @@ impl WorthQueryDirectResourceReadmissionPending {
         _owner: &crate::domain_computation::managed_run::WorthQueryDirectReadmissionTransitionPermit,
     ) -> WorthQueryDirectProviderWorkRebinding {
         WorthQueryDirectProviderWorkRebinding {
-            yielded: self.yielded_attempt.provider_session().closed_identity(),
+            yielded: self
+                .yielded_attempt
+                .managed_provider_session()
+                .closed_identity(),
             fresh: self.fresh_provider_session.closed_identity(),
         }
     }

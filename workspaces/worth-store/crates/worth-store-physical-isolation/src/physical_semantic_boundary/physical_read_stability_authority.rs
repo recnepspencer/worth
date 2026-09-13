@@ -1,9 +1,6 @@
 use worth_proof::{AuthorityMarker, AuthorityWitness};
 
-use crate::{
-    CompactionCutoverStabilityProof, PhysicalIsolationEntryAdmission,
-    PhysicalIsolationRootEpochBasis,
-};
+use crate::{CompactionCutoverStabilityProof, PhysicalIsolationRootEpochBasis};
 
 #[derive(Debug, Clone)]
 pub struct PhysicalReadStabilityAuthority {
@@ -17,10 +14,22 @@ pub struct PhysicalReadStabilityCorrelationBasis {
 
 impl AuthorityMarker for PhysicalReadStabilityAuthority {}
 
-pub fn admit_physical_read_stability_authority(
-    entry: &PhysicalIsolationEntryAdmission,
-) -> Result<PhysicalReadStabilityAuthority, core::convert::Infallible> {
-    Ok(PhysicalReadStabilityAuthority::from_entry(entry))
+#[cfg(any(test, feature = "certification-authority"))]
+pub fn physical_read_stability_authority_for_certification_test(
+    root_seed: u64,
+    store_authority_identity: worth_store_authority::StoreCurrentAuthorityIdentity,
+) -> PhysicalReadStabilityAuthority {
+    let basis = crate::CurrentPhysicalRootBasis::new(
+        crate::epoch::root_epoch_from_entry_seed(root_seed),
+        crate::epoch::manifest_epoch_from_entry_seed(root_seed),
+        store_authority_identity,
+    );
+    let root = crate::CurrentPhysicalRoot::from_physical_isolation_entry(
+        basis,
+        crate::PhysicalOrderingContract::root_swap_acquire_release(),
+    )
+    .expect("certification root ordering should admit");
+    PhysicalReadStabilityAuthority::from_current_root(root)
 }
 
 pub fn admit_post_compaction_read_stability_authority(
@@ -40,12 +49,6 @@ pub fn admit_post_publication_read_stability_authority(
 }
 
 impl PhysicalReadStabilityAuthority {
-    fn from_entry(entry: &PhysicalIsolationEntryAdmission) -> Self {
-        Self {
-            root_epoch_basis: entry.root_epoch_basis(),
-        }
-    }
-
     fn from_current_root(root: crate::CurrentPhysicalRoot) -> Self {
         Self {
             root_epoch_basis: PhysicalIsolationRootEpochBasis::from_current_root(root),

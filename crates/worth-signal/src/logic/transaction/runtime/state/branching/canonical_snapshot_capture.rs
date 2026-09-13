@@ -23,6 +23,10 @@ where
         &mut self,
         expected: &AdmittedSignalBranchBasis,
     ) -> Result<SignalBranchSnapshotCaptureOutcome, SignalBranchSnapshotCaptureDenial> {
+        if let Some((_, mutation, _)) = self.sealed_owner_port_slots() {
+            let cancellation = crate::branch::SignalOwnerCancellationSource::new();
+            return mutation.capture_exact(expected, &cancellation.token());
+        }
         let preflight = self.preflight_signal_branch_snapshot_capture(expected)?;
         let snapshot = self
             .capture_branch_snapshot(preflight.branch.clone())
@@ -42,7 +46,7 @@ where
     }
 
     fn preflight_signal_branch_snapshot_capture(
-        &self,
+        &mut self,
         expected: &AdmittedSignalBranchBasis,
     ) -> Result<SignalBranchSnapshotCapturePreflight, SignalBranchSnapshotCaptureDenial> {
         let branch_id = expected.owner_branch_id();
@@ -66,6 +70,20 @@ where
                 } => SignalBranchSnapshotCaptureDenial::SnapshotCapacityExhausted {
                     maximum_stored_snapshots,
                 },
+            })?;
+        let target_graph = self
+            .branches
+            .replay_graph(branch_id, self.graph.current_branch().id, &self.graph)
+            .ok_or(SignalBranchSnapshotCaptureDenial::UnknownBranch { branch_id })?;
+        let (next_snapshot_id, _) = target_graph
+            .diagnostics_state()
+            .branch_snapshot_allocator_state();
+        self.branches
+            .synchronize_snapshot_identity_high_water(next_snapshot_id);
+        self.branches
+            .snapshot_identity_available()
+            .map_err(|next_snapshot_id| {
+                SignalBranchSnapshotCaptureDenial::SnapshotIdentityExhausted { next_snapshot_id }
             })?;
         let basis_retention = self
             .branches

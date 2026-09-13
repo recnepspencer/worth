@@ -1,4 +1,8 @@
 use super::*;
+use worth_store_physical_integrity::{
+    PhysicalArtifactScope, PhysicalByteRange, PhysicalIntegrityValidationDigest,
+    PhysicalIntegrityValidationMechanism, PhysicalIntegrityValidationRecord,
+};
 
 fn publish_complete(
     pool: &PhysicalResidencyPool,
@@ -110,6 +114,26 @@ fn legal_complete_artifact_promotion_retargets_exact_and_bounded_identity() {
     let source_coordinate = RecordFrameCoordinate::new(source_artifact, 0, 32).unwrap();
     let source = PhysicalFrameKey::new(identity, source_coordinate);
     publish_complete(&pool, &allocation, source, 5);
+    let source_lease = expect_hit(&pool, &allocation, source);
+    let validation = PhysicalIntegrityValidationRecord::for_test(
+        PhysicalArtifactScope::root_manifest(
+            identity,
+            worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+                .admit()
+                .unwrap(),
+            11,
+            PhysicalByteRange::new(0, 32).unwrap(),
+        )
+        .unwrap(),
+        PhysicalIntegrityValidationDigest::crc32c(41),
+        PhysicalIntegrityValidationDigest::crc32c(42),
+        PhysicalIntegrityValidationMechanism::Crc32cV1,
+    );
+    source_lease
+        .commit_integrity_validation(validation)
+        .unwrap();
+    assert_eq!(source_lease.integrity_validation(), Some(validation));
+    drop(source_lease);
     let target_artifact = RecordArtifactFile::RootManifest { generation: 12 };
     let target = PhysicalFrameKey::new(
         identity,
@@ -126,6 +150,7 @@ fn legal_complete_artifact_promotion_retargets_exact_and_bounded_identity() {
     };
     assert_eq!(&*hit, &[5; 32]);
     assert_eq!(hit.key(), target);
+    assert_eq!(hit.integrity_validation(), None);
     assert_eq!(pool.counters().source_loads(), source_loads);
     assert_eq!(pool.counters().identity_transitions(), 1);
 }

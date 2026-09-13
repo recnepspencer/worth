@@ -1,4 +1,9 @@
+mod retained_charge;
+
 use serde::{Deserialize, Serialize};
+
+mod retained_view;
+pub use retained_view::RetainedFlowSummaryView;
 
 use crate::data::aspect::Aspect;
 use crate::data::handle::NodeId;

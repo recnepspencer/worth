@@ -25,10 +25,7 @@ pub enum WorthQueryApplicationQueryAdmissionDenialKind {
     WrongProviderBasis,
     ExpiredBasis,
     BasisUnavailable,
-    TruthViewUnavailable,
     ForeignHistoricalReceipt,
-    ForeignPreviewSession,
-    StalePreviewSession,
     RuntimeSupportUnavailable,
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     SnapshotIdentityExhausted,
@@ -61,7 +58,7 @@ pub struct WorthQueryApplicationQueryAdmissionDenial {
 }
 
 impl WorthQueryApplicationQueryAdmissionDenial {
-    pub(super) fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         kind: WorthQueryApplicationQueryAdmissionDenialKind,
         subject: impl Into<String>,
     ) -> Self {

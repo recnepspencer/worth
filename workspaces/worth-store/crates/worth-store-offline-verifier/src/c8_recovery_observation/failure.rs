@@ -3,6 +3,18 @@ use std::path::{Path, PathBuf};
 use super::RecoveryObserverCounters;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecoveryObserverWalTopologyDenial {
+    MalformedFrame,
+    NonContiguousSegment,
+    DuplicateSegment,
+    GenerationMismatch,
+    SegmentIdentityMismatch,
+    NonContiguousLsn,
+    LsnGap,
+    LsnOverlap,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecoveryObserverObservationDenial {
     DirectoryEntryLimit { observed: u64, admitted: u64 },
     DirectoryLimit { observed: u64, admitted: u64 },
@@ -12,7 +24,9 @@ pub enum RecoveryObserverObservationDenial {
     UnsupportedFileType,
     NonUnicodePath,
     ArtifactChanged,
+    EvidenceBufferAllocationFailed,
     Media(std::io::ErrorKind),
+    WalTopology(RecoveryObserverWalTopologyDenial),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

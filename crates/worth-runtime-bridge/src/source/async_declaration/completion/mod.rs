@@ -12,6 +12,8 @@ mod supersession_evidence;
 mod supersession_receipt;
 mod supersession_rejection;
 
+pub(crate) use admission::map_owned_signal_report;
+
 pub use admitted::AdmittedBridgeAsyncCompletion;
 pub use completion::{
     BridgeAsyncCompletionAdmissionReport, BridgeAsyncCompletionClass,

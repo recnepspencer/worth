@@ -61,7 +61,7 @@ fn artifact_family_cannot_be_paired_with_an_unrelated_reclaim_domain() {
 #[test]
 fn cut_identity_binds_the_exact_physical_lease_owners() {
     let scenario = BackupScenario::new("lease-owner-identity");
-    let authority = crate::backup::export::current_authority("s10-lease-owner-identity");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let first = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-owner-one").expect("operation"),

@@ -6,11 +6,11 @@ use super::super::types::{
     reachability_staging::BlobReachabilityStaging, root_candidate::BlobRootCandidateForPublication,
 };
 use super::super::verification::pre_wal_replay as verify;
-use super::super::BlobPublicationDenial;
+use super::super::{BlobPublicationDenial, BlobPublicationReplayedCrashEdge};
 
 pub(crate) fn from_chunk_write_replay(
     digest: &LogicalContentDigest,
-    replay: &worth_store_recovery_physics::PartialPublicationReplayedCrashEdge,
+    replay: &BlobPublicationReplayedCrashEdge,
 ) -> Result<BlobPublicationPreWalReplayEvidence, BlobPublicationDenial> {
     verify::from_replayed_crash_edge(
         replay,
@@ -20,7 +20,7 @@ pub(crate) fn from_chunk_write_replay(
 
 pub(crate) fn from_checksum_admitted_replay(
     digest: &LogicalContentDigest,
-    replay: &worth_store_recovery_physics::PartialPublicationReplayedCrashEdge,
+    replay: &BlobPublicationReplayedCrashEdge,
 ) -> Result<BlobPublicationPreWalReplayEvidence, BlobPublicationDenial> {
     verify::from_replayed_crash_edge(
         replay,
@@ -30,7 +30,7 @@ pub(crate) fn from_checksum_admitted_replay(
 
 pub(crate) fn from_chunk_tree_node_durable_replay(
     root: &ChunkTreeRoot,
-    replay: &worth_store_recovery_physics::PartialPublicationReplayedCrashEdge,
+    replay: &BlobPublicationReplayedCrashEdge,
 ) -> Result<BlobPublicationPreWalReplayEvidence, BlobPublicationDenial> {
     verify::from_replayed_crash_edge(
         replay,
@@ -40,7 +40,7 @@ pub(crate) fn from_chunk_tree_node_durable_replay(
 
 pub(crate) fn from_root_candidate_replay(
     candidate: &BlobRootCandidateForPublication,
-    replay: &worth_store_recovery_physics::PartialPublicationReplayedCrashEdge,
+    replay: &BlobPublicationReplayedCrashEdge,
 ) -> Result<BlobPublicationPreWalReplayEvidence, BlobPublicationDenial> {
     verify::from_replayed_crash_edge(
         replay,
@@ -50,7 +50,7 @@ pub(crate) fn from_root_candidate_replay(
 
 pub(crate) fn from_reachability_staged_replay(
     staged: &BlobReachabilityStaging,
-    replay: &worth_store_recovery_physics::PartialPublicationReplayedCrashEdge,
+    replay: &BlobPublicationReplayedCrashEdge,
 ) -> Result<BlobPublicationPreWalReplayEvidence, BlobPublicationDenial> {
     verify::from_replayed_crash_edge(
         replay,

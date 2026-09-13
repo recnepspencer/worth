@@ -1,10 +1,9 @@
-use sha2::{Digest, Sha256};
 use worth_store_physical_format::{RecordArtifactFile, RecordFrameCoordinate};
 
 use crate::filesystem_media::{
-    ArtifactNewWriteOutcome, ArtifactNewWriteRange, ArtifactTreeFailure,
-    ArtifactTreePublicationEffectOutcome, CompletedArtifactNewWrite, CompletedArtifactRangeRead,
-    CompletedArtifactTreePublicationEffect, IndeterminateArtifactNewWrite,
+    ArtifactTreeFailure, ArtifactTreePublicationEffectOutcome, CompletedArtifactAppend,
+    CompletedArtifactNewWrite, CompletedArtifactRangeRead, CompletedArtifactTreePublicationEffect,
+    IndeterminateArtifactAppend, IndeterminateArtifactNewWrite,
     IndeterminateArtifactTreePublicationEffect,
 };
 use crate::{
@@ -14,10 +13,13 @@ use crate::{
 
 use super::AdmittedRecoveryFilesystemMedia;
 
+mod exact_prefix;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecoveryStagingWriteDisposition {
     Created,
     AlreadyMaterialized,
+    CompletedFromExactPrefix,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,12 +30,24 @@ pub struct CompletedRecoveryStagingWrite {
     disposition: RecoveryStagingWriteDisposition,
     created: Option<CompletedArtifactNewWrite>,
     verified: Option<CompletedArtifactRangeRead>,
+    prefix_verified: Option<CompletedArtifactRangeRead>,
+    appended: Option<CompletedArtifactAppend>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IndeterminateRecoveryStagingWrite {
     artifact: RecordArtifactFile,
-    physical: IndeterminateArtifactNewWrite,
+    payload_digest: [u8; 32],
+    physical: RecoveryStagingIndeterminatePhysical,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RecoveryStagingIndeterminatePhysical {
+    NewArtifact(IndeterminateArtifactNewWrite),
+    Append {
+        prefix_verified: Option<CompletedArtifactRangeRead>,
+        append: IndeterminateArtifactAppend,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -110,8 +124,10 @@ impl AdmittedRecoveryFilesystemMedia {
         };
         let media = self.parts.artifact_tree();
         let completed = match media.file_exists(&physical) {
-            Ok(true) => verify_existing(&media, artifact, physical, coordinate, bytes),
-            Ok(false) => create(&media, artifact, physical, coordinate, bytes),
+            Ok(true) => {
+                exact_prefix::complete_existing(&media, artifact, physical, coordinate, bytes)
+            }
+            Ok(false) => exact_prefix::create(&media, artifact, physical, coordinate, bytes),
             Err(failure) => Err(RecoveryStagingPhysicalFailure::Denied(failure)),
         };
         let queue = ticket.begin_completion().observe_queue_depth(1).complete();
@@ -190,64 +206,6 @@ impl AdmittedRecoveryFilesystemMedia {
                     IndeterminateScheduledRecoveryStagingSynchronization { physical, queue },
                 ))
             }
-        }
-    }
-}
-
-fn verify_existing(
-    media: &crate::filesystem_media::ArtifactTreeMedia<'_>,
-    artifact: RecordArtifactFile,
-    physical: crate::filesystem_media::ArtifactTreeFile,
-    coordinate: RecordFrameCoordinate,
-    expected: &[u8],
-) -> Result<CompletedRecoveryStagingWrite, RecoveryStagingPhysicalFailure> {
-    if media.file_length(&physical) != Ok(expected.len() as u64) {
-        return Err(RecoveryStagingPhysicalFailure::Denied(structural_denial()));
-    }
-    let mut observed = vec![0; expected.len()];
-    let verified = match media.read_exact_range(&physical, coordinate, &mut observed) {
-        crate::filesystem_media::ArtifactRangeReadOutcome::Completed(completed) => completed,
-        crate::filesystem_media::ArtifactRangeReadOutcome::DeniedBeforeEffect(failure) => {
-            return Err(RecoveryStagingPhysicalFailure::Denied(failure))
-        }
-    };
-    if observed != expected {
-        return Err(RecoveryStagingPhysicalFailure::Denied(structural_denial()));
-    }
-    Ok(CompletedRecoveryStagingWrite {
-        artifact,
-        coordinate,
-        payload_digest: Sha256::digest(expected).into(),
-        disposition: RecoveryStagingWriteDisposition::AlreadyMaterialized,
-        created: None,
-        verified: Some(verified),
-    })
-}
-
-fn create(
-    media: &crate::filesystem_media::ArtifactTreeMedia<'_>,
-    artifact: RecordArtifactFile,
-    physical: crate::filesystem_media::ArtifactTreeFile,
-    coordinate: RecordFrameCoordinate,
-    bytes: &[u8],
-) -> Result<CompletedRecoveryStagingWrite, RecoveryStagingPhysicalFailure> {
-    let range = ArtifactNewWriteRange::new(bytes.len() as u64).expect("nonempty coordinate");
-    match media.write_new_exact(&physical, range, bytes) {
-        ArtifactNewWriteOutcome::Completed(created) => Ok(CompletedRecoveryStagingWrite {
-            artifact,
-            coordinate,
-            payload_digest: created.payload_digest(),
-            disposition: RecoveryStagingWriteDisposition::Created,
-            created: Some(created),
-            verified: None,
-        }),
-        ArtifactNewWriteOutcome::DeniedBeforeEffect(failure) => {
-            Err(RecoveryStagingPhysicalFailure::Denied(failure))
-        }
-        ArtifactNewWriteOutcome::Indeterminate(physical) => {
-            Err(RecoveryStagingPhysicalFailure::Indeterminate(
-                IndeterminateRecoveryStagingWrite { artifact, physical },
-            ))
         }
     }
 }
@@ -335,16 +293,25 @@ impl CompletedRecoveryStagingWrite {
     pub const fn verified(&self) -> Option<CompletedArtifactRangeRead> {
         self.verified
     }
+    pub const fn prefix_verified(&self) -> Option<CompletedArtifactRangeRead> {
+        self.prefix_verified
+    }
+    pub const fn appended(&self) -> Option<&CompletedArtifactAppend> {
+        self.appended.as_ref()
+    }
 }
 
 impl IndeterminateRecoveryStagingWrite {
     pub const fn artifact(&self) -> RecordArtifactFile {
         self.artifact
     }
-    pub const fn physical(&self) -> &IndeterminateArtifactNewWrite {
+    pub const fn payload_digest(&self) -> [u8; 32] {
+        self.payload_digest
+    }
+    pub const fn evidence(&self) -> &RecoveryStagingIndeterminatePhysical {
         &self.physical
     }
-    pub fn into_physical(self) -> IndeterminateArtifactNewWrite {
+    pub fn into_physical(self) -> RecoveryStagingIndeterminatePhysical {
         self.physical
     }
 }

@@ -11,102 +11,108 @@ use super::entities::{
     PaymentIntent, Posting,
 };
 use super::governance::UsdCurrency;
-use super::values::{AccountKind, AccountStatus, PaymentStatus, PostingPurpose};
+use super::values::{
+    AccountAuthorizationIdBinding, AccountIdBinding, AccountJournalRevisionBinding, AccountKind,
+    AccountKindBinding, AccountNameBinding, AccountStatus, AccountStatusBinding, BusinessIdBinding,
+    CustomerRoleBinding, EmployeeAssignmentIdBinding, EmployeeRoleBinding, InstitutionIdBinding,
+    JournalEntryIdBinding, PaymentIdBinding, PaymentStatus, PaymentStatusBinding, PostingIdBinding,
+    PostingPurpose, PostingPurposeBinding, SignedUsdMoneyBinding, UsdMoneyBinding,
+};
 use super::BankSchema;
 
-worth_query_aspect!(pub Identity in BankSchema, Account; identity = AspectIdentity(0x9161100a), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub InstitutionIdentity in BankSchema, Institution; identity = AspectIdentity(0x9161100b), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub BusinessIdentity in BankSchema, Business; identity = AspectIdentity(0x9161100c), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub PaymentIdentity in BankSchema, PaymentIntent; identity = AspectIdentity(0x9161100d), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub AccountProfile in BankSchema, Account; identity = AspectIdentity(0x9161100e), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub AccountState in BankSchema, Account; identity = AspectIdentity(0x9161100f), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub AuthorizationScope in BankSchema, AccountAuthorization; identity = AspectIdentity(0x91611010), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub AuthorizationIdentity in BankSchema, AccountAuthorization; identity = AspectIdentity(0x91611011), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub EmployeeScope in BankSchema, EmployeeAssignment; identity = AspectIdentity(0x91611012), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub PostingValue in BankSchema, Posting; identity = AspectIdentity(0x91611013), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub PostingIdentity in BankSchema, Posting; identity = AspectIdentity(0x91611014), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub JournalIdentity in BankSchema, JournalEntry; identity = AspectIdentity(0x91611015), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub JournalState in BankSchema, JournalEntry; identity = AspectIdentity(0x91611016), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub PaymentState in BankSchema, PaymentIntent; identity = AspectIdentity(0x91611017), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub PaymentValue in BankSchema, PaymentIntent; identity = AspectIdentity(0x91611018), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub Identity for BankSchema, Account; identity = AspectIdentity(0x9161100a), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub InstitutionIdentity for BankSchema, Institution; identity = AspectIdentity(0x9161100b), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub BusinessIdentity for BankSchema, Business; identity = AspectIdentity(0x9161100c), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PaymentIdentity for BankSchema, PaymentIntent; identity = AspectIdentity(0x9161100d), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub AccountProfile for BankSchema, Account; identity = AspectIdentity(0x9161100e), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub AccountState for BankSchema, Account; identity = AspectIdentity(0x9161100f), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub AuthorizationScope for BankSchema, AccountAuthorization; identity = AspectIdentity(0x91611010), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub AuthorizationIdentity for BankSchema, AccountAuthorization; identity = AspectIdentity(0x91611011), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub EmployeeScope for BankSchema, EmployeeAssignment; identity = AspectIdentity(0x91611012), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PostingValue for BankSchema, Posting; identity = AspectIdentity(0x91611013), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PostingIdentity for BankSchema, Posting; identity = AspectIdentity(0x91611014), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub JournalIdentity for BankSchema, JournalEntry; identity = AspectIdentity(0x91611015), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub JournalState for BankSchema, JournalEntry; identity = AspectIdentity(0x91611016), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PaymentState for BankSchema, PaymentIntent; identity = AspectIdentity(0x91611017), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PaymentValue for BankSchema, PaymentIntent; identity = AspectIdentity(0x91611018), revision = AspectContractRevision(1),);
 
 worth_query_field!(
-    pub AccountIdentity in BankSchema, Account, Identity:
-    AccountId, read_only, equality
+    pub AccountIdentity for BankSchema, Account, Identity:
+    AccountId => AccountIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub InstitutionIdentityField in BankSchema, Institution, InstitutionIdentity:
-    InstitutionId, read_only, equality
+    pub InstitutionIdentityField for BankSchema, Institution, InstitutionIdentity:
+    InstitutionId => InstitutionIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub BusinessIdentityField in BankSchema, Business, BusinessIdentity:
-    BusinessId, read_only, equality
+    pub BusinessIdentityField for BankSchema, Business, BusinessIdentity:
+    BusinessId => BusinessIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub PaymentIdentityField in BankSchema, PaymentIntent, PaymentIdentity:
-    PaymentId, read_only, equality
+    pub PaymentIdentityField for BankSchema, PaymentIntent, PaymentIdentity:
+    PaymentId => PaymentIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub AccountDisplayName in BankSchema, Account, AccountProfile:
-    AccountName, read_write, equality
+    pub AccountDisplayName for BankSchema, Account, AccountProfile:
+    AccountName => AccountNameBinding, read_write, equality
 );
 worth_query_field!(
-    pub Kind in BankSchema, Account, AccountProfile:
-    AccountKind, read_write, equality
+    pub Kind for BankSchema, Account, AccountProfile:
+    AccountKind => AccountKindBinding, read_write, equality
 );
 worth_query_field!(
-    pub AccountingRevision in BankSchema, Account, AccountState:
-    AccountJournalRevision, read_write, equality
+    pub AccountingRevision for BankSchema, Account, AccountState:
+    AccountJournalRevision => AccountJournalRevisionBinding, read_write, equality
 );
 worth_query_field!(
-    pub Status in BankSchema, Account, AccountState:
-    AccountStatus, read_write, equality
+    pub Status for BankSchema, Account, AccountState:
+    AccountStatus => AccountStatusBinding, read_write, equality
 );
 worth_query_field!(
-    pub AuthorizationRole in BankSchema, AccountAuthorization, AuthorizationScope:
-    CustomerRole, read_write, equality
+    pub AuthorizationRole for BankSchema, AccountAuthorization, AuthorizationScope:
+    CustomerRole => CustomerRoleBinding, read_write, equality
 );
 worth_query_field!(
-    pub AccountAuthorizationIdentity in BankSchema, AccountAuthorization, AuthorizationIdentity:
-    AccountAuthorizationId, read_only, equality
+    pub AccountAuthorizationIdentity for BankSchema, AccountAuthorization, AuthorizationIdentity:
+    AccountAuthorizationId => AccountAuthorizationIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub EmployeeAssignmentIdentityField in BankSchema, EmployeeAssignment, EmployeeScope:
-    EmployeeAssignmentId, read_only, equality
+    pub EmployeeAssignmentIdentityField for BankSchema, EmployeeAssignment, EmployeeScope:
+    EmployeeAssignmentId => EmployeeAssignmentIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub AssignmentRole in BankSchema, EmployeeAssignment, EmployeeScope:
-    EmployeeRole, read_write, equality
+    pub AssignmentRole for BankSchema, EmployeeAssignment, EmployeeScope:
+    EmployeeRole => EmployeeRoleBinding, read_write, equality
 );
 worth_query_field!(
-    pub PostingAmount in BankSchema, Posting, PostingValue:
-    SignedMoney<USD>, unit UsdCurrency, read_write, no_equality
+    pub PostingAmount for BankSchema, Posting, PostingValue:
+    SignedMoney<USD> => SignedUsdMoneyBinding, unit UsdCurrency, read_write, no_equality
 );
 worth_query_field!(
-    pub PostingAccountSequence in BankSchema, Posting, PostingValue:
-    AccountJournalRevision, read_write, equality
+    pub PostingAccountSequence for BankSchema, Posting, PostingValue:
+    AccountJournalRevision => AccountJournalRevisionBinding, read_write, equality
 );
 worth_query_field!(
-    pub PostingIdentityField in BankSchema, Posting, PostingIdentity:
-    PostingId, read_only, equality
+    pub PostingIdentityField for BankSchema, Posting, PostingIdentity:
+    PostingId => PostingIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub Purpose in BankSchema, Posting, PostingValue:
-    PostingPurpose, read_write, equality
+    pub Purpose for BankSchema, Posting, PostingValue:
+    PostingPurpose => PostingPurposeBinding, read_write, equality
 );
 worth_query_field!(
-    pub PaymentStatusField in BankSchema, PaymentIntent, PaymentState:
-    PaymentStatus, read_write, equality
+    pub PaymentStatusField for BankSchema, PaymentIntent, PaymentState:
+    PaymentStatus => PaymentStatusBinding, read_write, equality
 );
 worth_query_field!(
-    pub JournalIdentityField in BankSchema, JournalEntry, JournalIdentity:
-    JournalEntryId, read_only, equality
+    pub JournalIdentityField for BankSchema, JournalEntry, JournalIdentity:
+    JournalEntryId => JournalEntryIdBinding, read_only, equality
 );
 worth_query_field!(
-    pub JournalPurpose in BankSchema, JournalEntry, JournalState:
-    PostingPurpose, read_write, equality
+    pub JournalPurpose for BankSchema, JournalEntry, JournalState:
+    PostingPurpose => PostingPurposeBinding, read_write, equality
 );
 worth_query_field!(
-    pub PaymentAmount in BankSchema, PaymentIntent, PaymentValue:
-    Money<USD>, unit UsdCurrency, read_write, no_equality
+    pub PaymentAmount for BankSchema, PaymentIntent, PaymentValue:
+    Money<USD> => UsdMoneyBinding, unit UsdCurrency, read_write, no_equality
 );

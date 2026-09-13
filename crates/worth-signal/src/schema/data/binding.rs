@@ -1,3 +1,8 @@
+use crate::data::retained_storage::{
+    RetainedStorageCharge as Charge, RetainedStorageMeasurement,
+    RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
+};
+
 use serde::{Deserialize, Serialize};
 
 use super::{SignalSchemaId, SignalSchemaName, SignalSchemaVersion};
@@ -39,5 +44,20 @@ impl SignalSchemaBinding {
 
     pub fn descriptor_digest(&self) -> &str {
         &self.descriptor_digest
+    }
+}
+
+impl RetainedStorageMeasurement for SignalSchemaBinding {
+    fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
+        work.visit()?;
+        let Self {
+            semantic_name,
+            descriptor_digest,
+            schema_id: _,
+            version: _,
+        } = self;
+        Ok(Charge::ZERO
+            .checked_add(semantic_name.retained_heap_charge(work)?)?
+            .checked_add(descriptor_digest.retained_heap_charge(work)?)?)
     }
 }

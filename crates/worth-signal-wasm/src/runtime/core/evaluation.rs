@@ -1,5 +1,12 @@
 use std::collections::BTreeMap;
 
+mod recipe_output;
+use recipe_output::finish_recipe_output;
+
+#[cfg(test)]
+#[path = "evaluation/commit_baseline_tests.rs"]
+mod commit_baseline_tests;
+
 #[cfg(target_arch = "wasm32")]
 use js_sys::Function;
 #[cfg(target_arch = "wasm32")]
@@ -157,12 +164,7 @@ pub(super) fn evaluate_node(
             if let Some(condition) = &spec.when {
                 match env.evaluate(&condition.expr) {
                     Ok(SignalValue::Bool(false)) if recipe.initialized => {
-                        let mut result = NodeEvaluationResult::from_version(recipe.version)
-                            .with_output_change(OutputChange::Unchanged);
-                        if let Some(identity) = &recipe.output_identity {
-                            result = result.with_output_identity(identity.clone());
-                        }
-                        return Ok(view.finish(result));
+                        return finish_recipe_output(view, recipe);
                     }
                     Ok(SignalValue::Bool(_)) => {}
                     Ok(_) => {
@@ -304,12 +306,7 @@ pub(super) fn evaluate_node(
         recipe.output_identity = next_identity.clone();
     }
 
-    let mut result =
-        NodeEvaluationResult::from_version(recipe.version).with_output_change(output_change);
-    if let Some(identity) = next_identity {
-        result = result.with_output_identity(identity);
-    }
-    Ok(view.finish(result))
+    finish_recipe_output(view, recipe)
 }
 
 pub(super) fn resolve_identity(

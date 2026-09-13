@@ -163,7 +163,14 @@ pub(in crate::physical_runtime::record_serving) fn plan_inline_segments(
         (None, 0)
     };
     let loaded_tail = if let (Some(last), Some(segment)) = (last_inline, active.as_ref()) {
-        let loaded = load_published_tail_page(allocation, &artifacts, format, last, segment)?;
+        let loaded = load_published_tail_page(
+            allocation,
+            &artifacts,
+            media.store_identity(),
+            format,
+            last,
+            segment,
+        )?;
         peak_read_width = peak_read_width.max(loaded.image.bytes().len());
         Some(loaded)
     } else {

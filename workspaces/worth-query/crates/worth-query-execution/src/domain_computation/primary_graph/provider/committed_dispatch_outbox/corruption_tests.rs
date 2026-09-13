@@ -66,6 +66,7 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
         let (outbox_intent, pending) = bind_dispatch_outbox_create_intent(
             Some(provider.graph.layout.provider_dispatch_outbox()),
             Some(&record),
+            worth_relational::facade::identity::PartitionId::main(),
         )
         .unwrap();
         let idempotency = WorthQueryApplicationIdempotencyBinding::new([91; 32], [92; 32]);
@@ -74,6 +75,7 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
             idempotency,
             WorthQueryApplicationCommitOutcomeIdentity::mint().unwrap(),
             0,
+            worth_relational::facade::identity::PartitionId::main(),
         );
         let mut transaction: BranchBoundRelationalTransaction = {
     let transaction_validation_input = runtime
@@ -131,6 +133,7 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
         let (intent, pending) = bind_dispatch_outbox_create_intent(
             Some(provider.graph.layout.provider_dispatch_outbox()),
             Some(&record),
+            worth_relational::facade::identity::PartitionId::main(),
         )
         .unwrap();
         let mut create: BranchBoundRelationalTransaction = {
@@ -207,7 +210,12 @@ fn committed_substituted_row(
     let branch = primary_relational_branch_id();
     let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(|runtime| {
         let (intent, pending) =
-            bind_dispatch_outbox_create_intent(Some(&layout), Some(&record)).unwrap();
+            bind_dispatch_outbox_create_intent(
+                Some(&layout),
+                Some(&record),
+                worth_relational::facade::identity::PartitionId::main(),
+            )
+            .unwrap();
         let MutationIntent::Create(CreateIntent::Entity(expected)) = intent.clone() else {
             panic!("outbox intent creates an entity")
         };

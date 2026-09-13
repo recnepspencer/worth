@@ -5,6 +5,7 @@ use std::sync::{Arc, Weak};
 use worth_proof::TransitionOutcome;
 use worth_store_io_scheduler::BackgroundPacingOutcome;
 
+use super::yieldpoint::PhysicalCheckpointYieldpointOwner;
 use crate::physical_runtime::instance::{
     PhysicalSchedulerAdmissionOwner, PhysicalStoreWorkRuntime,
 };
@@ -48,6 +49,7 @@ pub(in crate::physical_runtime) struct PhysicalCheckpointWorkPort {
     physical: PhysicalWorkAdmissionAuthority,
     scheduler: PhysicalSchedulerAdmissionOwner,
     record: Arc<RecordWorkAdmission>,
+    yieldpoints: Arc<PhysicalCheckpointYieldpointOwner>,
 }
 
 impl PhysicalCheckpointWorkPort {
@@ -64,7 +66,21 @@ impl PhysicalCheckpointWorkPort {
             physical,
             scheduler,
             record,
+            yieldpoints: PhysicalCheckpointYieldpointOwner::new(),
         }
+    }
+
+    pub(in crate::physical_runtime) fn yieldpoints(
+        &self,
+    ) -> Arc<PhysicalCheckpointYieldpointOwner> {
+        Arc::clone(&self.yieldpoints)
+    }
+
+    pub(in crate::physical_runtime) fn pause_after(
+        &self,
+        step: super::yieldpoint::PhysicalCheckpointStep,
+    ) {
+        self.yieldpoints.pause_after_step(step);
     }
 
     pub(in crate::physical_runtime) fn execute(
@@ -80,7 +96,7 @@ impl PhysicalCheckpointWorkPort {
             .execution
             .execute_physical_work(command)
             .map_err(|_denial| PhysicalCheckpointActionFailure::PreEffect)?;
-        match outcome.into_settled().into_evidence() {
+        let settled = match outcome.into_settled().into_evidence() {
             PhysicalWorkSettlementEvidence::Checkpoint { physical, .. }
                 if physical.action() == PhysicalCheckpointRecoveryAction::from(action) =>
             {
@@ -93,7 +109,9 @@ impl PhysicalCheckpointWorkPort {
                 Err(PhysicalCheckpointActionFailure::EffectRequiresInspection)
             }
             _ => Err(PhysicalCheckpointActionFailure::StaleOrForeignSettlement),
-        }
+        }?;
+        self.yieldpoints.pause_after(action);
+        Ok(settled)
     }
 
     fn prepare_command(

@@ -1,3 +1,8 @@
+use crate::data::retained_storage::{
+    RetainedStorageCharge as Charge, RetainedStorageMeasurement,
+    RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
+};
+
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
@@ -45,4 +50,12 @@ fn validate_non_empty(
         return Err(SignalSchemaRegistrationError { field });
     }
     Ok(())
+}
+
+impl RetainedStorageMeasurement for SignalSchemaRegistration {
+    fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
+        work.visit()?;
+        let Self { descriptor } = self;
+        Ok(Charge::ZERO.checked_add(descriptor.retained_heap_charge(work)?)?)
+    }
 }

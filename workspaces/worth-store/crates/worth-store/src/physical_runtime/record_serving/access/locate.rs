@@ -18,6 +18,8 @@ pub(super) mod failure_classification;
 mod inline;
 mod session;
 pub use cancellation::RecordReadCancellation;
+#[cfg(test)]
+pub(in crate::physical_runtime) use failure_classification::assert_actual_lifecycle_manifest_denial_maps_without_damage;
 use failure_classification::manifest_failure;
 
 #[allow(

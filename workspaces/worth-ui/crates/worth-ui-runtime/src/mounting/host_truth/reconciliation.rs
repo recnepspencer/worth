@@ -27,11 +27,14 @@ impl UiMountedHostTruthCoordinator {
         &mut self,
         binding: UiSurfaceBindingGeneration,
     ) {
-        let Some(requirement) = self.blocked_presentation_requirement(binding) else {
-            return;
-        };
-        let surface = requirement.semantic_surface();
-        self.clear_presentations_for_surface(surface);
+        // Retiring an unpublished candidate does not reconstruct the published
+        // predecessor on the same surface. Only discharge this binding's paint.
+        if let Some(blocked) = self.blocked.get_mut(&binding) {
+            blocked.clear_presentation();
+            if blocked.is_empty() {
+                self.blocked.remove(&binding);
+            }
+        }
     }
 
     pub(crate) fn reconciliation_covers(
@@ -91,5 +94,65 @@ impl UiMountedHostTruthCoordinator {
             requirement.binding() == replacement.replacement()
                 && requirement.semantic_surface() == blocked.semantic_surface()
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use worth_ui_host_contract::{
+        UiHostSurfaceIdentity, UiHostSurfacePresentationMode, UiHostSurfaceRegistrationInput,
+        UiHostSurfaceRegistrationRequest, UiMountedSurfaceBindingRequirement,
+        UiSemanticSurfaceIdentity,
+    };
+
+    #[test]
+    fn retiring_candidate_preserves_published_surface_reconstruction_obligation() {
+        let plan = crate::facade::prepared_application_authority::WorthUiHostSessionPlan::prepare(
+            crate::certification_support::UiCertificationBuilderHost,
+        );
+        let session = crate::facade::WorthUiHostSessionAuthority::activate(&plan).unwrap();
+        let report = session.capability_report();
+        let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+        let host_surface = UiHostSurfaceIdentity::mint_unbound().unwrap();
+        let requirement = || {
+            let request =
+                UiHostSurfaceRegistrationRequest::from_runtime(UiHostSurfaceRegistrationInput {
+                    host_session_identity: session.identity().as_u64(),
+                    semantic_surface_identity: surface,
+                    host_surface_identity: host_surface,
+                    binding_generation: UiSurfaceBindingGeneration::mint_unbound().unwrap(),
+                    protocol: session.protocol(),
+                    capability_generation: report.observation_generation(),
+                    capability_profile_digest: report.profile_identity_digest(),
+                    presentation_mode: UiHostSurfacePresentationMode::NativeDisplay,
+                });
+            UiMountedSurfaceBindingRequirement::with_baseline(
+                surface,
+                host_surface,
+                request.binding_generation(),
+                report.observation_generation(),
+                report.profile_identity_digest(),
+                request.presentation_mode(),
+                request.baseline_identity(),
+            )
+        };
+        let published = requirement();
+        let candidate = requirement();
+        let mut truth = UiMountedHostTruthCoordinator::default();
+        truth.block_presentation(published);
+        truth.block_presentation(candidate);
+
+        truth.reconcile_candidate_only_deregistration(candidate.binding());
+
+        assert_eq!(
+            truth.blocked_presentation_requirement(published.binding()),
+            Some(published)
+        );
+        assert_eq!(
+            truth.blocked_presentation_requirement(candidate.binding()),
+            None
+        );
+        assert!(truth.surface_requires_reconciliation(surface));
     }
 }

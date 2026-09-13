@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use super::super::policy::ResourcePolicyName;
 use super::descriptor::ResourcePolicyDescriptor;
@@ -15,10 +16,10 @@ use super::registration::ResourcePolicyRegistration;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FrozenResourcePolicyRegistry {
-    descriptors: Vec<ResourcePolicyDescriptor>,
-    index_by_id: BTreeMap<ResourcePolicyDescriptorId, usize>,
-    index_by_kind_name: BTreeMap<(ResourcePolicyKind, ResourcePolicyName), usize>,
-    freeze_report: ResourcePolicyRegistryFreezeReport,
+    descriptors: Arc<Vec<ResourcePolicyDescriptor>>,
+    index_by_id: Arc<BTreeMap<ResourcePolicyDescriptorId, usize>>,
+    index_by_kind_name: Arc<BTreeMap<(ResourcePolicyKind, ResourcePolicyName), usize>>,
+    freeze_report: Arc<ResourcePolicyRegistryFreezeReport>,
 }
 
 impl FrozenResourcePolicyRegistry {
@@ -66,10 +67,10 @@ impl FrozenResourcePolicyRegistry {
         );
 
         Ok(Self {
-            descriptors,
-            index_by_id,
-            index_by_kind_name,
-            freeze_report,
+            descriptors: Arc::new(descriptors),
+            index_by_id: Arc::new(index_by_id),
+            index_by_kind_name: Arc::new(index_by_kind_name),
+            freeze_report: Arc::new(freeze_report),
         })
     }
 
@@ -106,6 +107,14 @@ impl FrozenResourcePolicyRegistry {
 
     pub fn freeze_report(&self) -> &ResourcePolicyRegistryFreezeReport {
         &self.freeze_report
+    }
+
+    #[cfg(test)]
+    pub(crate) fn shares_storage_with(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.descriptors, &other.descriptors)
+            && Arc::ptr_eq(&self.index_by_id, &other.index_by_id)
+            && Arc::ptr_eq(&self.index_by_kind_name, &other.index_by_kind_name)
+            && Arc::ptr_eq(&self.freeze_report, &other.freeze_report)
     }
 
     pub(super) fn resolve_named(

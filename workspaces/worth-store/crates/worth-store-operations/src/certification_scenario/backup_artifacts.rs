@@ -5,7 +5,7 @@ use worth_store_contracts::{
 };
 use worth_store_physical_format::{
     InMemoryPhysicalFormatModel, InMemoryPhysicalFormatModelRequest, PhysicalGeneration,
-    PhysicalGenerationAuthority, PlatformPhysicalAppendRequest,
+    PhysicalGenerationAuthority, PhysicalStoreIdentity, PlatformPhysicalAppendRequest,
 };
 #[cfg(test)]
 use worth_store_physical_format::{
@@ -28,12 +28,14 @@ pub(crate) struct CanonicalBackupArtifacts {
     pub(crate) checkpoint_identity: String,
 }
 
+#[cfg(test)]
 pub(crate) fn canonical_backup_artifacts_at_root_generation(
     case: &str,
     source: &Path,
     root_generation: u64,
+    store_identity: PhysicalStoreIdentity,
 ) -> CanonicalBackupArtifacts {
-    canonical_backup_artifacts_with_blob_count(case, source, root_generation, 1)
+    canonical_backup_artifacts_with_blob_count(case, source, root_generation, 1, store_identity)
 }
 
 pub(crate) fn canonical_backup_artifacts_with_blob_count(
@@ -41,10 +43,11 @@ pub(crate) fn canonical_backup_artifacts_with_blob_count(
     source: &Path,
     root_generation: u64,
     blob_count: u64,
+    store_identity: PhysicalStoreIdentity,
 ) -> CanonicalBackupArtifacts {
     assert!(root_generation > 0, "fixture root generation is nonzero");
     assert!(blob_count > 0, "fixture blob count is nonzero");
-    let mut world = CanonicalBackupArtifactWorld::new(case, blob_count);
+    let mut world = CanonicalBackupArtifactWorld::new(case, blob_count, store_identity);
     let mut artifacts = None;
     for _ in 0..root_generation {
         artifacts = Some(world.publish(source));
@@ -57,8 +60,9 @@ pub(crate) fn canonical_backup_artifacts_across_one_root_publication(
     case: &str,
     older_source: &Path,
     newer_source: &Path,
+    store_identity: PhysicalStoreIdentity,
 ) -> (CanonicalBackupArtifacts, CanonicalBackupArtifacts) {
-    let mut world = CanonicalBackupArtifactWorld::new(case, 1);
+    let mut world = CanonicalBackupArtifactWorld::new(case, 1, store_identity);
     let older = world.publish(older_source);
     let newer = world.publish(newer_source);
     (older, newer)
@@ -72,8 +76,8 @@ struct CanonicalBackupArtifactWorld {
 }
 
 impl CanonicalBackupArtifactWorld {
-    fn new(case: &str, blob_count: u64) -> Self {
-        let mut runtime = open_physical_runtime();
+    fn new(case: &str, blob_count: u64, store_identity: PhysicalStoreIdentity) -> Self {
+        let mut runtime = open_physical_runtime_for_store(store_identity);
         let generations = PhysicalGenerationAuthority::for_canonical_physical_format();
         let generation = PhysicalGeneration::from_raw(1).expect("generation");
         let slot = generations
@@ -118,12 +122,23 @@ impl CanonicalBackupArtifactWorld {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn open_physical_runtime() -> InMemoryPhysicalFormatModel {
     InMemoryPhysicalFormatModel::start_empty_model(
         physical_readiness(),
         InMemoryPhysicalFormatModelRequest::physical_format_canonical(),
     )
     .expect("physical runtime")
+}
+
+fn open_physical_runtime_for_store(
+    store_identity: PhysicalStoreIdentity,
+) -> InMemoryPhysicalFormatModel {
+    InMemoryPhysicalFormatModel::start_empty_model(
+        physical_readiness(),
+        InMemoryPhysicalFormatModelRequest::physical_format_for_store(store_identity),
+    )
+    .expect("physical runtime for store")
 }
 
 #[cfg(test)]

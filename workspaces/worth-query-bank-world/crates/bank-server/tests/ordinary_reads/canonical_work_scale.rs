@@ -4,7 +4,6 @@ use bank_domain::model::{BusinessId, Money};
 use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::InitiateBusinessPayment;
 use bank_server::{mutations, queries, BankMutationControls, BankMutationStatus, BankReadControls};
-use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryControls;
 
 use super::canonical_scale_fixture::canonical_scale_world;
 use super::fixture::{
@@ -108,30 +107,20 @@ fn policy_fact_fanout_does_not_leak_into_closed_disclosure_evidence() {
     let fixture = canonical_scale_world();
     let baseline_actor = fixture.authenticate_baseline();
     let expanded_actor = fixture.authenticate_expanded();
-    let baseline_request = request_scope();
-    let expanded_request = request_scope();
 
     let baseline_result = fixture
         .world
         .runtime
         .account_activity(fixture.baseline_account)
         .as_principal(&baseline_actor)
-        .execute(WorthQueryApplicationQueryControls::current_one_shot(
-            std::num::NonZeroUsize::new(1).unwrap(),
-            std::num::NonZeroUsize::new(100_000).unwrap(),
-            &baseline_request,
-        ))
+        .execute(BankReadControls::current(request_scope(), 1, 100_000).unwrap())
         .expect("baseline guarded account query should execute");
     let expanded_result = fixture
         .world
         .runtime
         .account_activity(fixture.expanded_account)
         .as_principal(&expanded_actor)
-        .execute(WorthQueryApplicationQueryControls::current_one_shot(
-            std::num::NonZeroUsize::new(1).unwrap(),
-            std::num::NonZeroUsize::new(100_000).unwrap(),
-            &expanded_request,
-        ))
+        .execute(BankReadControls::current(request_scope(), 1, 100_000).unwrap())
         .expect("expanded guarded account query should execute");
 
     assert_eq!(baseline_result.rows().len(), 1);

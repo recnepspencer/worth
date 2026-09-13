@@ -1,0 +1,15 @@
+error[E0624]: associated function `issued` is private
+ --> tests/ui/private_identity_issue.rs:8:24
+  |
+8 |       CompositeBasisKey::issued(
+  |                          ^^^^^^ private associated function
+  |
+ ::: src/identity/basis_key.rs
+  |
+  | /     pub(super) fn issued(
+  | |         owner: RuntimeWorldOwnerIdentity,
+  | |         relational: RelationalBranchBasisAdmissionIdentity,
+  | |         signal: SignalBranchBasisAdmissionIdentity,
+  | |         correspondence: BridgeCorrespondenceAdmissionIdentity,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here

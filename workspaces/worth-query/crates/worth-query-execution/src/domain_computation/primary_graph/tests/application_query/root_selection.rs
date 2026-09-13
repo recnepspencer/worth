@@ -26,15 +26,19 @@ fn exact_scope_root_executes_without_an_invented_predicate() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -45,11 +49,11 @@ fn exact_scope_root_executes_without_an_invented_predicate() {
     let query = world
         .application
         .installed_schema()
-        .application_query(ScopedAccountSummaryQuery::reference())
+        .certification_query(ScopedAccountSummaryQuery::reference())
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
@@ -81,15 +85,19 @@ fn declared_root_paths_union_and_deduplicate_before_projection() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -100,11 +108,11 @@ fn declared_root_paths_union_and_deduplicate_before_projection() {
     let query = world
         .application
         .installed_schema()
-        .application_query(CrossRootQuery::reference())
+        .certification_query(CrossRootQuery::reference())
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,

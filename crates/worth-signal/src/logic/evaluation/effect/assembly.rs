@@ -109,7 +109,6 @@ mod tests {
 
     #[test]
     fn memoized_origin_is_runtime_metadata_not_diagnostic_payload() {
-        let mut shape_store = crate::data::dependency::DependencySnapshotShapeStore::default();
         let effect = EvaluationEffect {
             operational: OperationalEffect {
                 node: NodeId::new(0, 0),
@@ -138,10 +137,7 @@ mod tests {
                 }
                 .authority(),
                 dependency_snapshot_update: CommittedSnapshotUpdate::Replace(
-                    ReplacementSnapshotUpdate::from_snapshot(
-                        DependencySnapshot::empty(),
-                        &mut shape_store,
-                    ),
+                    ReplacementSnapshotUpdate::from_snapshot(DependencySnapshot::empty()),
                 ),
                 snapshot_delta: SnapshotDeltaRecord::between(
                     NodeId::new(0, 0),

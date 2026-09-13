@@ -1,14 +1,14 @@
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
-    TypedApplicationReadableValue, WorthQueryTemporalIntentRevisionValue, WritableCapability,
-    WritePosture,
+    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
+    ApplicationSchema, DeclaredApplicationFieldValue, OperationReads, OperationWrites,
+    WorthQueryTemporalIntentRevisionValue, WritableCapability, WritePosture,
 };
 
 use super::{WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker};
 use crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalReentryDenial;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryApplicationOperationInvariantProjectionReader,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
+    WorthQueryPrincipalResolutionMode, WorthQuerySelectedProductOperation,
 };
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) struct WorthQueryCurrentTemporalIntent<
@@ -30,15 +30,19 @@ impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityAspect, Ide
     WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityAspect, IdentityField, IdentityValue, IdentityWrite, IdentityUnit, RevisionAspect, RevisionField, RevisionValue, RevisionWrite, RevisionEquality, RevisionUnit, LifecycleAspect, LifecycleField, LifecycleValue, LifecycleWrite, LifecycleEquality, LifecycleUnit, Authorization>
 where
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
-    IdentityValue: TypedApplicationReadableValue,
+    IdentityField: DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField::Binding: ApplicationReadableScalarValueBinding<Value = IdentityValue>,
     IdentityWrite: WritePosture,
     IdentityUnit: ApplicationFieldUnit,
-    RevisionField: OperationWrites<Operation>,
-    RevisionValue: WorthQueryTemporalIntentRevisionValue,
+    RevisionField: OperationWrites<Operation>
+        + DeclaredApplicationFieldValue<Value = RevisionValue>,
+    RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue>
+        + WorthQueryTemporalIntentRevisionValue,
     RevisionWrite: WritableCapability,
     RevisionUnit: ApplicationFieldUnit,
     LifecycleField: OperationWrites<Operation>,
-    LifecycleValue: worth_query_installation::facade::TypedApplicationValue,
+    LifecycleField: DeclaredApplicationFieldValue<Value = LifecycleValue>,
+    LifecycleField::Binding: ApplicationScalarValueBinding<Value = LifecycleValue>,
     LifecycleWrite: WritableCapability,
     LifecycleUnit: ApplicationFieldUnit,
 {
@@ -53,9 +57,12 @@ where
         IdentityField: OperationReads<Operation>,
         IdentityValue: Clone,
         RevisionField: OperationReads<Operation>,
-        RevisionValue: TypedApplicationReadableValue + Clone,
+        RevisionField: DeclaredApplicationFieldValue<Value = RevisionValue>,
+        RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue> + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
+        RevisionValue: Clone,
         LifecycleField: OperationReads<Operation>,
-        LifecycleValue: TypedApplicationReadableValue + Clone,
+        LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
+        LifecycleValue: Clone,
     {
         let intent = reader
             .resolve_entity(self.identity_field, identity)
@@ -72,11 +79,15 @@ where
             .decision_field(&intent, self.lifecycle_field)
             .map_err(|denial| denial.to_string())?
             .ok_or_else(|| "temporal intent lifecycle is absent".to_string())?;
-        if revision.into_foundational_value() != expected_revision.clone().into_foundational_value() {
+        if RevisionField::Binding::encode(&revision).map_err(|denial| format!("{denial:?}"))?
+            != RevisionField::Binding::encode(expected_revision)
+                .map_err(|denial| format!("{denial:?}"))?
+        {
             return Err("temporal intent revision is no longer current".into());
         }
-        if lifecycle.into_foundational_value()
-            != self.active_lifecycle.clone().into_foundational_value()
+        if LifecycleField::Binding::encode(&lifecycle).map_err(|denial| format!("{denial:?}"))?
+            != LifecycleField::Binding::encode(&self.active_lifecycle)
+                .map_err(|denial| format!("{denial:?}"))?
         {
             return Err("temporal intent is no longer active".into());
         }
@@ -85,7 +96,7 @@ where
 
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn resolve_current_intent(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: &WorthQuerySelectedProductOperation<'_, Schema>,
         record_identity: &worth_foundational::facade::AspectValue,
         revision: u64,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -95,13 +106,16 @@ where
         IdentityField: OperationReads<Operation>,
         IdentityValue: Clone,
         RevisionField: OperationReads<Operation>,
-        RevisionValue: TypedApplicationReadableValue + Clone,
+        RevisionField: DeclaredApplicationFieldValue<Value = RevisionValue>,
+        RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue> + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
+        RevisionValue: Clone,
         LifecycleField: OperationReads<Operation>,
-        LifecycleValue: TypedApplicationReadableValue + Clone,
+        LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
+        LifecycleValue: Clone,
     {
-        let identity_value = IdentityValue::from_foundational_value(record_identity)
-            .ok_or_else(|| "temporal intent record identity changed scalar meaning".to_string())?;
-        let entity = runtime
+        let identity_value = IdentityField::Binding::decode(record_identity)
+            .map_err(|_| "temporal intent record identity changed scalar meaning".to_string())?;
+        let entity = product
             .resolve_entity(
                 self.identity_field,
                 identity_value.clone(),
@@ -109,11 +123,13 @@ where
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .map_err(WorthQueryTemporalReentryDenial::from_entity)?;
-        let expected_revision = RevisionValue::from_revision(revision)
+        let expected_revision = RevisionField::Binding::from_revision(revision)
             .ok_or_else(|| "temporal intent revision cannot be represented".to_string())?;
-        let current = self.invariant.project_operation::<Operation, _>(|reader| {
-            self.observe_current_intent(reader, identity_value.clone(), &expected_revision)
-        })
+        let current = self
+            .invariant
+            .project_operation_on_product::<Operation, _>(product.product(), |reader| {
+                self.observe_current_intent(reader, identity_value.clone(), &expected_revision)
+            })
         .map_err(WorthQueryTemporalReentryDenial::from_invariant)?;
         Ok(current.output().is_ok().then_some(WorthQueryCurrentTemporalIntent {
             identity_value,

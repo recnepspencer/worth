@@ -15,6 +15,16 @@ where
     pub(crate) fn capture_snapshot(&mut self) -> Result<SignalSnapshotV1, SignalError> {
         self.ensure_branch_snapshot_storage_available()?;
         Self::ensure_managed_queue_branch_transfer_allowed(&self.resource)?;
+        let (next_snapshot_id, _) = self
+            .graph
+            .diagnostics_state()
+            .branch_snapshot_allocator_state();
+        self.branches
+            .synchronize_snapshot_identity_high_water(next_snapshot_id);
+        let snapshot_id = self
+            .branches
+            .reserve_snapshot_identity()
+            .map_err(snapshot_identity_exhausted)?;
         let branch_id = self.graph.current_branch().id;
         let next_generation = self
             .branches
@@ -24,7 +34,7 @@ where
                     "Signal snapshot generation cannot advance: {denial:?}"
                 ))
             })?;
-        let mut snapshot = self.graph.capture_snapshot();
+        let mut snapshot = self.graph.capture_snapshot_with_reserved_id(snapshot_id);
         let retained_replay = self
             .graph
             .observe()
@@ -108,7 +118,7 @@ where
         self.branches.insert_snapshot(
             SnapshotBranchState::from_branch_state(&branch_state).packet(snapshot.meta.snapshot_id),
         );
-        self.branches.store_branch_state(branch_state);
+        self.branches.observe_active_branch_state(&branch_state);
         self.branches
             .commit_branch_head_generation(branch_id, next_generation);
         Ok(snapshot)
@@ -127,6 +137,16 @@ where
             .branch_state(branch.id)
             .ok_or_else(|| SignalError::unknown_branch(Some(branch.id), branch.name.clone()))?;
         Self::ensure_managed_queue_branch_transfer_allowed(stored_state.resource())?;
+        let (next_snapshot_id, _) = stored_state
+            .graph()
+            .diagnostics_state()
+            .branch_snapshot_allocator_state();
+        self.branches
+            .synchronize_snapshot_identity_high_water(next_snapshot_id);
+        let snapshot_id = self
+            .branches
+            .reserve_snapshot_identity()
+            .map_err(snapshot_identity_exhausted)?;
         let next_generation = self
             .branches
             .next_branch_head_generation(branch.id)
@@ -146,7 +166,11 @@ where
             let meta = state
                 .graph_mut()
                 .diagnostics_state_mut()
-                .allocate_snapshot_meta(request_metadata, artifact_retention);
+                .allocate_snapshot_meta_with_reserved_id(
+                    snapshot_id,
+                    request_metadata,
+                    artifact_retention,
+                );
             crate::diagnostics::recorder::record_snapshot_event(
                 state.graph_mut(),
                 crate::diagnostics::replay::ReplayEventKind::SnapshotCaptured,
@@ -281,4 +305,11 @@ where
                 ))
             })
     }
+}
+
+fn snapshot_identity_exhausted(snapshot_id: crate::state::SignalSnapshotId) -> SignalError {
+    SignalError::invalid_input(format!(
+        "Signal snapshot identity exhausted at {} before movement",
+        snapshot_id.0
+    ))
 }

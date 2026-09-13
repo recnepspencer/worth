@@ -1,7 +1,7 @@
-use sha2::{Digest, Sha256};
-use worth_store_physical_format::{
+use crate::{
     classify_offline_artifact_family, observe_bounded_physical_bytes, OfflinePhysicalArtifactFamily,
 };
+use sha2::{Digest, Sha256};
 
 use super::{OfflineInspectionDenial, OfflineInspectionProgress, OfflineInspectionSession};
 use crate::inspection::resume_revalidation::ResumeRevalidationOutcome;

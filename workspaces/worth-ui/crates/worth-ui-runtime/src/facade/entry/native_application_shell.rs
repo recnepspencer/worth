@@ -116,7 +116,12 @@ impl WorthUiNativeApplicationShell {
     }
 
     fn replace_native_surface_binding(&mut self, scale_factor_milli: u32) -> Result<(), ()> {
-        let affected = self.binding;
+        // An unpublished replacement may itself need recovery. Reconcile its
+        // successor against the still-published binding, not the failed candidate.
+        let affected = self
+            .pending_surface_reconciliation
+            .map(|replacement| replacement.affected())
+            .unwrap_or(self.binding);
         let scale_changed = self.scale_factor_milli != scale_factor_milli;
         let profile = UiSurfaceBindingProfile::new(
             scale_factor_milli,

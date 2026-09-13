@@ -26,7 +26,7 @@ fn over_budget_direct_request_denies_before_session_or_executor_contact() {
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -109,7 +109,7 @@ fn named_semantic_axes_are_admitted_and_rejected_independently() {
         .unwrap();
         let installed_domain = workspace.domain(GeometryDomain).unwrap();
         let bound = workspace
-            .observe_operating_world()
+            .observe_operating_world(workspace.current_world())
             .unwrap()
             .family(ReadFamily)
             .bind(&installed_domain, ReadVertex)
@@ -147,7 +147,7 @@ fn named_semantic_axes_are_admitted_and_rejected_independently() {
         .unwrap();
         let installed_domain = workspace.domain(GeometryDomain).unwrap();
         let bound = workspace
-            .observe_operating_world()
+            .observe_operating_world(workspace.current_world())
             .unwrap()
             .family(ReadFamily)
             .bind(&installed_domain, ReadVertex)

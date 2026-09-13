@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::data::dependency::{
-    CommittedSnapshotUpdate, DependencySnapshot, DependencySnapshotShapeStore,
-    ReplacementSnapshotUpdate, SharedDependencySnapshot, SnapshotDeltaRecord,
-    VersionOnlySnapshotUpdate,
+    CommittedSnapshotUpdate, DependencySnapshot, ReplacementSnapshotUpdate,
+    SharedDependencySnapshot, SnapshotDeltaRecord, VersionOnlySnapshotUpdate,
 };
 use crate::data::handle::NodeId;
 
@@ -53,7 +52,6 @@ impl PendingSnapshotBatch {
     }
 
     pub fn from_pairs(entries: impl IntoIterator<Item = (NodeId, DependencySnapshot)>) -> Self {
-        let mut shape_store = DependencySnapshotShapeStore::default();
         let entries = entries
             .into_iter()
             .map(|(node, snapshot)| {
@@ -66,10 +64,7 @@ impl PendingSnapshotBatch {
                         &snapshot,
                     ),
                     update: CommittedSnapshotUpdate::Replace(
-                        ReplacementSnapshotUpdate::from_snapshot(
-                            snapshot.into_snapshot(),
-                            &mut shape_store,
-                        ),
+                        ReplacementSnapshotUpdate::from_snapshot(snapshot.into_snapshot()),
                     ),
                 }
             })

@@ -7,6 +7,8 @@ use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
 use worth_store_physical_backend::QualifiedFilesystemMedia;
 
 mod checkpoint;
+mod scrub;
+pub(in crate::physical_runtime) use scrub::PhysicalScrubSchedulerAdmissionDenial;
 mod reclamation;
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use reclamation::PhysicalWalReclamationSchedulerAdmissionDenial;

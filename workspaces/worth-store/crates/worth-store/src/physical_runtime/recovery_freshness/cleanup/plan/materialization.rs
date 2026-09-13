@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
-use worth_store_physical_format::VerifiedCheckpointStream;
+use worth_store_physical_integrity::VerifiedCheckpointStream;
 use worth_store_wal::WalSegmentArtifactIdentity;
 
 use crate::physical_runtime::{
@@ -38,7 +38,7 @@ pub(super) fn materialize(
         policy_identity,
         &pending,
     );
-    let candidates = materialize_candidates(&common, pending, identity);
+    let candidates = materialize_candidates(&common, pending, identity, input.reopened.format());
     StoreRecoveryCleanupPlan {
         identity,
         descriptive_plan_identity: input.descriptive_plan_identity,
@@ -58,6 +58,7 @@ fn materialize_candidates(
     common: &super::admission::CommonBasis,
     pending: BTreeMap<WalSegmentArtifactIdentity, PendingCandidate>,
     identity: [u8; 32],
+    format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
 ) -> BTreeMap<WalSegmentArtifactIdentity, StoreRecoveryCleanupEligibility> {
     pending
         .into_iter()
@@ -72,6 +73,7 @@ fn materialize_candidates(
                         session: common.session,
                         plan: identity,
                         published_generation: common.published_generation,
+                        format,
                         sealed_publication_basis: common.sealed_publication_basis,
                         checkpoint: common.checkpoint,
                         compaction_generation: common.compaction_generation,

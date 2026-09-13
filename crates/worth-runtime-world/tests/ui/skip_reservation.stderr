@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> tests/ui/skip_reservation.rs:4:33
+  |
+4 |     port.execute_without_signal(intent,token);
+  |          ---------------------- ^^^^^^ expected `PreparedCompositePublicationWithoutSignal`, found `CompositePublicationIntent<...>`
+  |          |
+  |          arguments to this method are incorrect
+  |
+  = note: expected struct `PreparedCompositePublicationWithoutSignal`
+             found struct `worth_runtime_world::facade::CompositePublicationIntent<worth_runtime_world::facade::WithoutSignal>`
+note: method defined here
+ --> src/lifecycle/service_ports/publication.rs
+  |
+  |     pub fn execute_without_signal(
+  |            ^^^^^^^^^^^^^^^^^^^^^^

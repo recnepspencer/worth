@@ -31,6 +31,11 @@ fn cursor_advances_exact_successors_and_rejects_same_generation_cross_operation(
         [4; 32],
     );
     let mut cursor = RecoveryPageCursor::new(vec![prior]).unwrap();
+    assert_eq!(
+        cursor.observe(second.identity()),
+        Err(PhysicalRedoPlanningDenial::GenerationMismatch),
+        "MUTANT_PREDICATE:c8-redo-target-generation-ignored"
+    );
     cursor.advance([5; 32], &first, 10).unwrap();
     cursor.advance([6; 32], &second, 11).unwrap();
 
@@ -38,9 +43,12 @@ fn cursor_advances_exact_successors_and_rejects_same_generation_cross_operation(
     same_generation.advance([5; 32], &first, 10).unwrap();
     assert_eq!(
         same_generation.advance([6; 32], &first, 11),
-        Err(PhysicalRedoPlanningDenial::GenerationMismatch)
+        Err(PhysicalRedoPlanningDenial::GenerationMismatch),
+        "MUTANT_PREDICATE:c8-redo-target-generation-ignored"
     );
-    same_generation.advance([5; 32], &first, 11).unwrap();
+    same_generation
+        .advance([5; 32], &first, 11)
+        .expect("MUTANT_PREDICATE:c8-nonidempotent-redo-repeated");
 }
 
 #[test]

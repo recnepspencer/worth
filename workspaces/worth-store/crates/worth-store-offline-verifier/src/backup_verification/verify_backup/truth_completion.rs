@@ -1,14 +1,13 @@
-use worth_store_physical_format::MaterializedBackupBundle;
-use worth_store_recovery_physics::RecoveryCandidateObservation;
-
 use crate::backup_verification::verification_support::{
     backup_truth_evidence, map_owner_binding_denial, verification_identity,
 };
 use crate::inspection::OwnerDecodedArtifactBinding;
+use crate::truth_composition::RecoveryCandidateObservation;
 use crate::{
     truth_composition::compose_operational_truth_with_owner_candidates, OfflineInspectionBudget,
     OperationalTruthCompositionBudget, OperationalTruthReport, StructurallyWalkedMedia,
 };
+use worth_store_physical_format::MaterializedBackupBundle;
 
 use super::{BackupStructuralVerificationDenial, BackupVerificationAllocationPhase};
 

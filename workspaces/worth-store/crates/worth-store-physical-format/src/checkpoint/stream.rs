@@ -1,60 +1,61 @@
-use sha2::{Digest, Sha256};
-
+use super::binding_compaction::encode_binding_compaction_header;
+#[cfg(test)]
 use super::binding_compaction::{
-    decode_binding_compaction_header, encode_binding_compaction_header,
-    BINDING_COMPACTION_HEADER_PAYLOAD_BYTES,
+    decode_binding_compaction_header, BINDING_COMPACTION_HEADER_PAYLOAD_BYTES,
 };
-use super::dirty_basis::{decode_dirty_basis, encode_dirty_basis, DIRTY_BASIS_PAYLOAD_BYTES};
-use super::footer::{decode_footer, encode_footer, CheckpointStreamFooter, FOOTER_PAYLOAD_BYTES};
+use super::dirty_basis::encode_dirty_basis;
+#[cfg(test)]
+use super::dirty_basis::{decode_dirty_basis, DIRTY_BASIS_PAYLOAD_BYTES};
+#[cfg(test)]
+use super::footer::{decode_footer, FOOTER_PAYLOAD_BYTES};
+use super::footer::{encode_footer, CheckpointStreamFooter};
+#[cfg(test)]
+use super::record::{decode_bounded_record, decode_record};
 use super::record::{
-    decode_bounded_record, decode_record, encode_record, CheckpointStreamDecodeDenial,
-    BINDING_COMPACTION_HEADER_KIND, BINDING_RECORD_KIND, DIRTY_BASIS_KIND, FOOTER_KIND,
-    HEADER_KIND,
+    encode_record, CheckpointStreamDecodeDenial, BINDING_COMPACTION_HEADER_KIND,
+    BINDING_RECORD_KIND, DIRTY_BASIS_KIND, FOOTER_KIND, HEADER_KIND,
 };
-use super::source::{decode_header, encode_header, HEADER_PAYLOAD_BYTES};
+use super::source::encode_header;
+#[cfg(test)]
+use super::source::{decode_header, HEADER_PAYLOAD_BYTES};
 use super::{
-    CheckpointBindingCompactionHeader, CheckpointDirtyFrameBasis, PhysicalCheckpointSource,
+    CheckpointBindingCompactionHeader, CheckpointDirtyFrameBasis,
+    CheckpointSelectiveRecordAggregate, PhysicalCheckpointSource,
     MAX_CHECKPOINT_BINDING_RECORD_BYTES,
 };
 
 #[derive(Debug)]
 pub struct CheckpointStreamEncoder {
     source: PhysicalCheckpointSource,
-    dirty_record_count: u64,
-    dirty_digest: Sha256,
+    dirty_records: CheckpointSelectiveRecordAggregate,
     encoded_bytes: u64,
 }
 
 #[derive(Debug)]
 pub struct CheckpointBindingCompactionEncoder {
     source: PhysicalCheckpointSource,
-    dirty_record_count: u64,
-    dirty_digest: Sha256,
+    dirty_records: CheckpointSelectiveRecordAggregate,
     header: CheckpointBindingCompactionHeader,
     header_offset: u64,
-    binding_record_count: u64,
-    binding_record_bytes: u64,
-    binding_digest: Sha256,
+    binding_records: CheckpointSelectiveRecordAggregate,
 }
 
 #[derive(Debug)]
-pub struct CheckpointStreamDecoder {
+#[cfg(test)]
+pub(crate) struct CheckpointStreamDecoder {
     source: PhysicalCheckpointSource,
-    dirty_record_count: u64,
-    dirty_digest: Sha256,
+    dirty_records: CheckpointSelectiveRecordAggregate,
     encoded_bytes: u64,
 }
 
 #[derive(Debug)]
-pub struct CheckpointBindingCompactionDecoder {
+#[cfg(test)]
+pub(crate) struct CheckpointBindingCompactionDecoder {
     source: PhysicalCheckpointSource,
-    dirty_record_count: u64,
-    dirty_digest: Sha256,
+    dirty_records: CheckpointSelectiveRecordAggregate,
     header: CheckpointBindingCompactionHeader,
     header_offset: u64,
-    binding_record_count: u64,
-    binding_record_bytes: u64,
-    binding_digest: Sha256,
+    binding_records: CheckpointSelectiveRecordAggregate,
 }
 
 impl CheckpointStreamEncoder {
@@ -64,8 +65,7 @@ impl CheckpointStreamEncoder {
         (
             Self {
                 source,
-                dirty_record_count: 0,
-                dirty_digest: Sha256::new(),
+                dirty_records: CheckpointSelectiveRecordAggregate::new(),
                 encoded_bytes,
             },
             header,
@@ -74,11 +74,9 @@ impl CheckpointStreamEncoder {
 
     pub fn encode_dirty_basis(&mut self, basis: CheckpointDirtyFrameBasis) -> Vec<u8> {
         let record = encode_record(DIRTY_BASIS_KIND, &encode_dirty_basis(basis));
-        self.dirty_digest.update(&record);
-        self.dirty_record_count = self
-            .dirty_record_count
-            .checked_add(1)
-            .expect("a checkpoint record count fits the physical u64 format");
+        self.dirty_records
+            .include(&record)
+            .expect("a checkpoint record aggregate fits the physical u64 format");
         self.encoded_bytes = self
             .encoded_bytes
             .checked_add(record.len() as u64)
@@ -97,13 +95,10 @@ impl CheckpointStreamEncoder {
         (
             CheckpointBindingCompactionEncoder {
                 source: self.source,
-                dirty_record_count: self.dirty_record_count,
-                dirty_digest: self.dirty_digest,
+                dirty_records: self.dirty_records,
                 header,
                 header_offset: self.encoded_bytes,
-                binding_record_count: 0,
-                binding_record_bytes: 0,
-                binding_digest: Sha256::new(),
+                binding_records: CheckpointSelectiveRecordAggregate::new(),
             },
             record,
         )
@@ -122,42 +117,36 @@ impl CheckpointBindingCompactionEncoder {
             return Err(CheckpointStreamDecodeDenial::BindingRecordTooLarge);
         }
         let record = encode_record(BINDING_RECORD_KIND, payload);
-        self.binding_digest.update(&record);
-        self.binding_record_count = self
-            .binding_record_count
-            .checked_add(1)
-            .ok_or(CheckpointStreamDecodeDenial::RecordCountMismatch)?;
-        self.binding_record_bytes = self
-            .binding_record_bytes
-            .checked_add(record.len() as u64)
-            .ok_or(CheckpointStreamDecodeDenial::RecordByteCountMismatch)?;
+        self.binding_records.include(&record)?;
         Ok(record)
     }
 
     pub fn finish(self) -> (CheckpointStreamFooter, Vec<u8>) {
+        let dirty = self.dirty_records.summary();
+        let bindings = self.binding_records.summary();
         let footer = CheckpointStreamFooter {
             identity: self.source.identity(),
-            dirty_record_count: self.dirty_record_count,
-            dirty_records_digest: self.dirty_digest.finalize().into(),
+            dirty_record_count: dirty.record_count(),
+            dirty_records_digest: dirty.digest(),
             binding_compaction_header_offset: self.header_offset,
             binding_compaction_generation: self.header.generation(),
             binding_wal_cutoff_lsn_exclusive: self.header.wal_cutoff_lsn_exclusive(),
-            binding_record_count: self.binding_record_count,
-            binding_record_bytes: self.binding_record_bytes,
-            binding_records_digest: self.binding_digest.finalize().into(),
+            binding_record_count: bindings.record_count(),
+            binding_record_bytes: bindings.encoded_bytes(),
+            binding_records_digest: bindings.digest(),
         };
         let record = encode_record(FOOTER_KIND, &encode_footer(footer));
         (footer, record)
     }
 }
 
+#[cfg(test)]
 impl CheckpointStreamDecoder {
     pub fn begin(header: &[u8]) -> Result<Self, CheckpointStreamDecodeDenial> {
         let payload = decode_record(header, HEADER_KIND, HEADER_PAYLOAD_BYTES)?;
         Ok(Self {
             source: decode_header(payload)?,
-            dirty_record_count: 0,
-            dirty_digest: Sha256::new(),
+            dirty_records: CheckpointSelectiveRecordAggregate::new(),
             encoded_bytes: header.len() as u64,
         })
     }
@@ -172,11 +161,7 @@ impl CheckpointStreamDecoder {
     ) -> Result<CheckpointDirtyFrameBasis, CheckpointStreamDecodeDenial> {
         let payload = decode_record(record, DIRTY_BASIS_KIND, DIRTY_BASIS_PAYLOAD_BYTES)?;
         let basis = decode_dirty_basis(payload)?;
-        self.dirty_digest.update(record);
-        self.dirty_record_count = self
-            .dirty_record_count
-            .checked_add(1)
-            .ok_or(CheckpointStreamDecodeDenial::RecordCountMismatch)?;
+        self.dirty_records.include(record)?;
         self.encoded_bytes = self
             .encoded_bytes
             .checked_add(record.len() as u64)
@@ -195,17 +180,15 @@ impl CheckpointStreamDecoder {
         )?;
         Ok(CheckpointBindingCompactionDecoder {
             source: self.source,
-            dirty_record_count: self.dirty_record_count,
-            dirty_digest: self.dirty_digest,
+            dirty_records: self.dirty_records,
             header: decode_binding_compaction_header(payload)?,
             header_offset: self.encoded_bytes,
-            binding_record_count: 0,
-            binding_record_bytes: 0,
-            binding_digest: Sha256::new(),
+            binding_records: CheckpointSelectiveRecordAggregate::new(),
         })
     }
 }
 
+#[cfg(test)]
 impl CheckpointBindingCompactionDecoder {
     pub const fn header(&self) -> CheckpointBindingCompactionHeader {
         self.header
@@ -220,15 +203,7 @@ impl CheckpointBindingCompactionDecoder {
             BINDING_RECORD_KIND,
             MAX_CHECKPOINT_BINDING_RECORD_BYTES,
         )?;
-        self.binding_digest.update(record);
-        self.binding_record_count = self
-            .binding_record_count
-            .checked_add(1)
-            .ok_or(CheckpointStreamDecodeDenial::RecordCountMismatch)?;
-        self.binding_record_bytes = self
-            .binding_record_bytes
-            .checked_add(record.len() as u64)
-            .ok_or(CheckpointStreamDecodeDenial::RecordByteCountMismatch)?;
+        self.binding_records.include(record)?;
         Ok(payload)
     }
 
@@ -238,15 +213,17 @@ impl CheckpointBindingCompactionDecoder {
     ) -> Result<CheckpointStreamFooter, CheckpointStreamDecodeDenial> {
         let payload = decode_record(record, FOOTER_KIND, FOOTER_PAYLOAD_BYTES)?;
         let footer = decode_footer(payload)?;
+        let dirty = self.dirty_records.summary();
+        let bindings = self.binding_records.summary();
         if footer.identity != self.source.identity() {
             return Err(CheckpointStreamDecodeDenial::SourceIdentityMismatch);
         }
-        if footer.dirty_record_count != self.dirty_record_count
-            || footer.binding_record_count != self.binding_record_count
+        if footer.dirty_record_count != dirty.record_count()
+            || footer.binding_record_count != bindings.record_count()
         {
             return Err(CheckpointStreamDecodeDenial::RecordCountMismatch);
         }
-        if footer.binding_record_bytes != self.binding_record_bytes {
+        if footer.binding_record_bytes != bindings.encoded_bytes() {
             return Err(CheckpointStreamDecodeDenial::RecordByteCountMismatch);
         }
         if footer.binding_compaction_header_offset != self.header_offset
@@ -255,9 +232,9 @@ impl CheckpointBindingCompactionDecoder {
         {
             return Err(CheckpointStreamDecodeDenial::BindingCompactionMismatch);
         }
-        let dirty: [u8; 32] = self.dirty_digest.finalize().into();
-        let bindings: [u8; 32] = self.binding_digest.finalize().into();
-        if footer.dirty_records_digest != dirty || footer.binding_records_digest != bindings {
+        if footer.dirty_records_digest != dirty.digest()
+            || footer.binding_records_digest != bindings.digest()
+        {
             return Err(CheckpointStreamDecodeDenial::AggregateDigestMismatch);
         }
         Ok(footer)

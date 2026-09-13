@@ -122,3 +122,27 @@ impl<T> WalSecurityMetadataEnvelope<T> {
 pub type WalRecordSecurityMetadataEnvelope = WalSecurityMetadataEnvelope<StoreWalRecordIdentity>;
 pub type CheckpointRecordSecurityMetadataEnvelope =
     WalSecurityMetadataEnvelope<StoreCheckpointRecordIdentity>;
+
+impl worth_store_security::RecoveryWalRecordSecurityMetadataSource
+    for WalSecurityMetadataEnvelope<StoreWalRecordIdentity>
+{
+    fn recovery_sequence(&self) -> u64 {
+        self.record().sequence()
+    }
+
+    fn recovery_security_metadata(&self) -> StoreSecurityMetadata {
+        self.security_metadata().physical_metadata()
+    }
+}
+
+impl worth_store_security::RecoveryCheckpointRecordSecurityMetadataSource
+    for WalSecurityMetadataEnvelope<StoreCheckpointRecordIdentity>
+{
+    fn recovery_checkpoint_epoch(&self) -> u64 {
+        self.record().checkpoint_epoch()
+    }
+
+    fn recovery_security_metadata(&self) -> StoreSecurityMetadata {
+        self.security_metadata().physical_metadata()
+    }
+}

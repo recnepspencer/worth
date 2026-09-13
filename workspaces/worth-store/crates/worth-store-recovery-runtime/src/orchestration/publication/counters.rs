@@ -37,7 +37,8 @@ pub(super) fn indeterminate_counters(
 
     match outcome {
         Indeterminate::CandidateMaterialization { completed, .. }
-        | Indeterminate::CandidateMaterializationSettlement { completed, .. } => {
+        | Indeterminate::CandidateMaterializationSettlement { completed, .. }
+        | Indeterminate::CandidateMaterializationYieldpoint { completed, .. } => {
             prefix_counters(planned_effects, completed, None, None)
         }
         Indeterminate::CandidateSynchronization {
@@ -46,6 +47,11 @@ pub(super) fn indeterminate_counters(
             ..
         }
         | Indeterminate::CandidateSynchronizationSettlement {
+            materialization,
+            completed,
+            ..
+        } => prefix_counters(planned_effects, completed, Some(materialization), None),
+        Indeterminate::CandidateSynchronizationYieldpoint {
             materialization,
             completed,
             ..
@@ -61,6 +67,11 @@ pub(super) fn indeterminate_counters(
             ..
         }
         | Indeterminate::Signal {
+            candidates,
+            root_protocol,
+            ..
+        }
+        | Indeterminate::Yieldpoint {
             candidates,
             root_protocol,
             ..
@@ -81,12 +92,13 @@ fn prefix_counters(
             .iter()
             .map(CompletedPhysicalRecoveryPublicationCandidate::materialization)
             .chain(current_materialization)
-            .filter(|materialization| {
-                matches!(
-                    materialization,
+                .filter(|materialization| {
+                    matches!(
+                        materialization,
                     PhysicalRecoveryPublicationCandidateMaterialization::Created(_)
-                )
-            })
+                        | PhysicalRecoveryPublicationCandidateMaterialization::CompletedFromExactPrefix(_)
+                    )
+                })
             .count() as u64,
         candidate_synchronizations_performed: candidates.len() as u64,
         root_protocol_replacements_performed: u64::from(root_protocol.is_some()),

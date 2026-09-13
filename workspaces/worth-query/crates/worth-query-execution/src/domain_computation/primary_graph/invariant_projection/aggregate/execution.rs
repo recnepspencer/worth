@@ -10,23 +10,23 @@ use super::{
     WorthQueryInvariantAggregateDenial,
 };
 use crate::domain_computation::primary_graph::invariant_projection::WorthQueryApplicationInvariantProjectionReader;
-use worth_query_installation::facade::{ApplicationSchema, TypedApplicationSignedAggregateValue};
+use worth_query_installation::facade::{ApplicationSchema, ApplicationSignedAggregateValueBinding};
 
-pub(super) fn execute<Schema, Value>(
+pub(super) fn execute<Schema, Binding>(
     reader: &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
     plan: ValidatedAggregatePlan,
-) -> Result<WorthQueryInvariantAggregate<Value>, WorthQueryInvariantAggregateDenial>
+) -> Result<WorthQueryInvariantAggregate<Binding::Value>, WorthQueryInvariantAggregateDenial>
 where
     Schema: ApplicationSchema,
-    Value: TypedApplicationSignedAggregateValue,
+    Binding: ApplicationSignedAggregateValueBinding,
 {
     let cache = std::sync::Arc::clone(&reader.aggregate_projections);
     let mut accounting = AggregateWorkAccounting::new(&mut reader.work, &mut reader.work_budget);
     match cache_resolution::probe(&cache, plan, &mut accounting)?.resolve() {
-        Ok(hit) => Ok(hit.complete(&mut reader.realized_scope)),
+        Ok(hit) => hit.complete::<Binding>(&mut reader.realized_scope),
         Err(miss) => {
             completed_scan::complete(reader.runtime, reader.snapshot, miss, &mut accounting)
-                .map(|scan| scan.publish(&cache, &mut reader.realized_scope))
+                .and_then(|scan| scan.publish::<Binding>(&cache, &mut reader.realized_scope))
         }
     }
 }

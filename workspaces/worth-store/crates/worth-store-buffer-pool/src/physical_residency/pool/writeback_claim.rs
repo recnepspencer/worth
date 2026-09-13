@@ -237,6 +237,7 @@ impl PoolInner {
             entry.dirty = false;
             entry.dirty_generation = None;
             entry.writeback_claimed = false;
+            entry.invalidate_integrity_validation();
             if entry.origin.is_candidate() {
                 entry.origin = FrameOrigin::Fault;
                 published_candidates += 1;

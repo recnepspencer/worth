@@ -9,6 +9,7 @@ mod ordering;
 mod plan;
 mod readiness;
 mod receipt;
+mod recovery_replay;
 mod root_candidate;
 mod successor;
 
@@ -33,6 +34,10 @@ pub use readiness::{
 pub use receipt::{
     PhysicalPublicationCounterSnapshot, PhysicalPublicationReceipt,
     PhysicalPublicationReleasePosture,
+};
+pub use recovery_replay::{
+    ExecutedPublicationRecoveryReceipt, PublicationCrashStage, PublicationRecoveryReplayInput,
+    RecoveredPublicationStructure, RecoveredPublicationStructureKind,
 };
 pub use root_candidate::PublicationRootCandidate;
 pub use successor::PublicationRootSuccessorOwner;

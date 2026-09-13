@@ -80,7 +80,7 @@ pub(super) fn close_access_with_input(
         )
         .unwrap();
     world
-        .application
+        .selected_product()
         .admit_capability_access(principal, &capability, input, request)
 }
 
@@ -123,7 +123,7 @@ pub(super) fn review_access_with_input(
         )
         .unwrap();
     world
-        .application
+        .selected_product()
         .admit_capability_access(principal, &capability, input, request)
 }
 

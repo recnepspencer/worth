@@ -130,7 +130,8 @@ mod tests {
         );
         assert_eq!(
             reconcile_operation_fates(4, vec![input], 1),
-            Err(OperationReconciliationDenial::FreshnessMismatch)
+            Err(OperationReconciliationDenial::FreshnessMismatch),
+            "MUTANT_PREDICATE:c8-freshness-expiry-boundary-widened"
         );
     }
 }

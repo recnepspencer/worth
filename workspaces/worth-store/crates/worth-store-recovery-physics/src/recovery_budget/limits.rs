@@ -6,6 +6,7 @@ pub struct RecoveryPlanLimits {
     operation_bindings: u64,
     observation_bytes: u64,
     staging_bytes: u64,
+    recovery_memory_bytes: u64,
     dirty_frames: u64,
 }
 
@@ -17,6 +18,7 @@ impl RecoveryPlanLimits {
         operation_bindings: u64,
         observation_bytes: u64,
         staging_bytes: u64,
+        recovery_memory_bytes: u64,
         dirty_frames: u64,
     ) -> Option<Self> {
         if redo_targets == 0
@@ -25,6 +27,7 @@ impl RecoveryPlanLimits {
             || operation_bindings == 0
             || observation_bytes == 0
             || staging_bytes == 0
+            || recovery_memory_bytes == 0
             || dirty_frames == 0
         {
             return None;
@@ -36,6 +39,7 @@ impl RecoveryPlanLimits {
             operation_bindings,
             observation_bytes,
             staging_bytes,
+            recovery_memory_bytes,
             dirty_frames,
         })
     }
@@ -56,6 +60,9 @@ impl RecoveryPlanLimits {
     }
     pub const fn staging_bytes(self) -> u64 {
         self.staging_bytes
+    }
+    pub const fn recovery_memory_bytes(self) -> u64 {
+        self.recovery_memory_bytes
     }
     pub const fn dirty_frames(self) -> u64 {
         self.dirty_frames

@@ -1,7 +1,5 @@
 use std::marker::PhantomData;
 
-use worth_relational::facade::history::CommitId;
-
 use super::super::{
     WorthQueryApplicationProjectionDenialKind, WorthQueryApplicationQueryAccessReceipt,
     WorthQueryApplicationQueryAdmissionDenialKind,
@@ -68,7 +66,8 @@ impl WorthQueryApplicationLiveOpenDenial {
 }
 
 pub struct WorthQueryApplicationLiveUpdate<Query, QueryResult> {
-    commit_id: CommitId,
+    product_publication:
+        crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
     result: QueryResult,
     receipt: WorthQueryApplicationQueryAccessReceipt,
     _query: PhantomData<fn() -> Query>,
@@ -76,24 +75,22 @@ pub struct WorthQueryApplicationLiveUpdate<Query, QueryResult> {
 
 impl<Query, QueryResult> WorthQueryApplicationLiveUpdate<Query, QueryResult> {
     pub(super) fn new(
-        commit_id: CommitId,
+        product_publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
         result: QueryResult,
         receipt: WorthQueryApplicationQueryAccessReceipt,
     ) -> Self {
         Self {
-            commit_id,
+            product_publication,
             result,
             receipt,
             _query: PhantomData,
         }
     }
 
-    pub const fn commit_id(&self) -> CommitId {
-        self.commit_id
-    }
-
-    pub const fn commit_ordinal(&self) -> u64 {
-        self.commit_id.0
+    pub const fn product_publication(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+        &self.product_publication
     }
 
     pub const fn result(&self) -> &QueryResult {
@@ -107,21 +104,21 @@ impl<Query, QueryResult> WorthQueryApplicationLiveUpdate<Query, QueryResult> {
     pub fn into_parts(
         self,
     ) -> (
-        CommitId,
+        crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
         QueryResult,
         WorthQueryApplicationQueryAccessReceipt,
     ) {
-        (self.commit_id, self.result, self.receipt)
+        (self.product_publication, self.result, self.receipt)
     }
 
     pub fn into_admitted_disclosed(
         self,
     ) -> (
-        CommitId,
+        crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
         super::super::WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult>,
     ) {
         (
-            self.commit_id,
+            self.product_publication,
             super::super::WorthQueryAdmittedDisclosedApplicationResult::new(
                 vec![self.result],
                 self.receipt,

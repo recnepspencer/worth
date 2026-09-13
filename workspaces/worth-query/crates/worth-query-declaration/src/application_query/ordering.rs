@@ -1,6 +1,8 @@
 use worth_foundational::facade::ScalarAspectType;
 
-use crate::application_schema::{ApplicationFieldUnit, TypedApplicationValue};
+use crate::application_schema::{
+    ApplicationFieldUnit, ApplicationScalarValueBinding, RequiredApplicationFieldValue,
+};
 
 use super::{ApplicationQueryMarkerIdentity, ApplicationQueryResultFieldRef};
 use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
@@ -79,9 +81,9 @@ impl ApplicationQueryOrderingTerm {
         direction: ApplicationQueryOrderingDirection,
     ) -> Self
     where
-        Value: TypedApplicationValue + WorthQueryPortableType,
+        Field: RequiredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         Self {
@@ -92,7 +94,7 @@ impl ApplicationQueryOrderingTerm {
             field: selector.field().to_owned(),
             output_name: selector.output_name().to_owned(),
             scalar_family: selector.scalar_family(),
-            value_type: Value::PORTABLE_TYPE_IDENTITY,
+            value_type: Field::Binding::IDENTITY,
             direction,
         }
     }

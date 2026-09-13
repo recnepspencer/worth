@@ -31,7 +31,7 @@ fn changed_signal_decision_reenters_before_the_ordinary_executor() {
     let mut workspace = conditional_workspace("conditional-changed", node).unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&domain, ReadVertex)
@@ -131,7 +131,7 @@ fn compute_receives_the_exact_bound_query_context() {
     .unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&domain, ReadVertex)
@@ -193,7 +193,7 @@ fn workflow_stage_retains_the_same_signal_decision_in_its_receipt() {
         conditional_workflow_workspace("conditional-workflow-execution", stage_node).unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&domain, WorkflowRead)
@@ -259,7 +259,7 @@ fn suppressed_decision_runs_no_query_graph_or_domain_work() {
     .unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&domain, ReadVertex)
@@ -313,7 +313,7 @@ fn reverted_clean_retains_compute_cost_but_mints_no_query_consequence() {
     .unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&domain, ReadVertex)

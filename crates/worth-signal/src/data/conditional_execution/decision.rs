@@ -61,8 +61,9 @@ pub struct SignalConditionalDecisionEvidence {
     pub(crate) counters: SignalConditionalDecisionCounters,
     pub(crate) artifact_reuse_admitted: bool,
     pub(super) output_aspect: crate::data::aspect::Aspect,
+    pub(super) output_version: u64,
     pub(super) _dependency_versions:
-        Vec<super::dependency_versions::SignalConditionalDependencyVersion>,
+        super::dependency_versions::SignalConditionalDependencyVersions,
     pub(super) _execution: super::execution_proof::SignalConditionalExecutedRecipe,
 }
 
@@ -84,6 +85,9 @@ impl SignalConditionalDecisionEvidence {
     }
     pub const fn output_aspect(&self) -> crate::data::aspect::Aspect {
         self.output_aspect
+    }
+    pub const fn output_version(&self) -> u64 {
+        self.output_version
     }
     pub fn dependency_version_count(&self) -> usize {
         self._dependency_versions.len()

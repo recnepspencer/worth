@@ -21,8 +21,12 @@ where
         source: &AdmittedSignalBranchBasis,
     ) -> Result<SignalBranchForkOutcome, SignalBranchForkOperationDenial> {
         let name = name.into();
-        validate_signal_branch_name(name.clone())
+        let validated_name = validate_signal_branch_name(name.clone())
             .map_err(|denial| SignalBranchForkOperationDenial::InvalidIdentity { denial })?;
+        if let Some((_, mutation, _)) = self.sealed_owner_port_slots() {
+            let cancellation = crate::branch::SignalOwnerCancellationSource::new();
+            return mutation.fork_exact(validated_name, source, &cancellation.token());
+        }
         let branch_id = source.owner_branch_id();
         let branch = self
             .branches
@@ -67,9 +71,11 @@ where
         let created_basis = self
             .admit_signal_branch_with_retention(created_branch.clone(), retention)
             .expect("validated created branch must admit its canonical basis");
-        Ok(SignalBranchForkOutcome::owner_issued(
-            created_branch,
-            created_basis,
-        ))
+        Ok(
+            SignalBranchForkOutcome::owner_issued_without_service_reference(
+                created_branch,
+                created_basis,
+            ),
+        )
     }
 }

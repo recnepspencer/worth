@@ -23,12 +23,14 @@ use crate::physical_runtime::{
 };
 
 use super::super::super::{
-    PhysicalRecoveryPublicationCommand, PhysicalRecoveryPublicationCommandDenial,
-    PhysicalRecoveryPublicationCommandDenialKind, PhysicalRecoveryPublicationCommandIndeterminate,
+    PhysicalRecoveryPublicationCommand, PhysicalRecoveryPublicationCommandIndeterminate,
     PhysicalRecoveryPublicationCommandOutcome, PhysicalRecoveryPublicationCommandStage,
     PhysicalRecoveryPublicationSettlementFailure,
 };
 use super::materialization::MaterializedCandidate;
+use outcome::{attach_materialization, denied};
+
+mod outcome;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn execute(
@@ -116,6 +118,20 @@ pub(super) fn execute(
                     },
                 ));
             }
+            let wait = coordination.pause_at(
+                crate::physical_runtime::PhysicalRecoveryYieldpointStage::CandidateSynchronization,
+            );
+            if wait.is_interrupted() {
+                return Err(PhysicalRecoveryPublicationCommandOutcome::Indeterminate(
+                    PhysicalRecoveryPublicationCommandIndeterminate::CandidateSynchronizationYieldpoint {
+                        artifact: candidate.artifact(),
+                        physical,
+                        materialization,
+                        completed: completed.into_boxed_slice(),
+                        wait,
+                    },
+                ));
+            }
             let synchronization: PerformedRecoveryPhysicalEffect<
                 RecoveryPublicationCandidateSynchronizationAction,
             > = PerformedRecoveryPhysicalEffect::record_candidate_synchronization(
@@ -193,46 +209,6 @@ pub(super) fn execute(
                 },
             ))
         }
-    }
-}
-
-fn denied(
-    stage: PhysicalRecoveryPublicationCommandStage,
-    completed: Vec<CompletedPhysicalRecoveryPublicationCandidate>,
-    materialization: crate::physical_runtime::recovery_coordination::PhysicalRecoveryPublicationCandidateMaterialization,
-    scheduler: Option<PhysicalWorkSchedulerPosture>,
-) -> PhysicalRecoveryPublicationCommandOutcome {
-    PhysicalRecoveryPublicationCommandOutcome::DeniedBeforeEffect(
-        PhysicalRecoveryPublicationCommandDenial::new(
-            stage,
-            PhysicalRecoveryPublicationCommandDenialKind::Submission,
-            completed.into_boxed_slice(),
-            Some(materialization),
-            None,
-            scheduler,
-        ),
-    )
-}
-
-fn attach_materialization(
-    outcome: PhysicalRecoveryPublicationCommandOutcome,
-    completed: Vec<CompletedPhysicalRecoveryPublicationCandidate>,
-    materialization: crate::physical_runtime::recovery_coordination::PhysicalRecoveryPublicationCandidateMaterialization,
-) -> PhysicalRecoveryPublicationCommandOutcome {
-    match outcome {
-        PhysicalRecoveryPublicationCommandOutcome::DeniedBeforeEffect(denial) => {
-            PhysicalRecoveryPublicationCommandOutcome::DeniedBeforeEffect(
-                PhysicalRecoveryPublicationCommandDenial::new(
-                    denial.stage(),
-                    denial.denial(),
-                    completed.into_boxed_slice(),
-                    Some(materialization),
-                    None,
-                    denial.scheduler_posture(),
-                ),
-            )
-        }
-        other => other,
     }
 }
 

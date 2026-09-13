@@ -22,6 +22,7 @@ pub enum PhysicalExecutorCommandDenial {
 }
 
 pub enum PhysicalExecutorCommand {
+    Inspection(PhysicalInspectionExecutorCommand),
     Metadata(PhysicalMetadataExecutorCommand),
     Read(PhysicalReadExecutorCommand),
     ExactWrite(PhysicalWriteExecutorCommand),
@@ -90,6 +91,12 @@ pub struct PhysicalReadExecutorCommand {
     pub(in crate::physical_runtime) destination: Box<[u8]>,
 }
 
+pub struct PhysicalInspectionExecutorCommand {
+    pub(in crate::physical_runtime) work: ResourceAdmittedPhysicalWork,
+    pub(in crate::physical_runtime) range: worth_store_physical_format::PhysicalArtifactReadRange,
+    pub(in crate::physical_runtime) destination: Box<[u8]>,
+}
+
 pub struct PhysicalWriteExecutorCommand {
     pub(in crate::physical_runtime) work: ResourceAdmittedPhysicalWork,
     pub(in crate::physical_runtime) coordinate: RecordFrameCoordinate,
@@ -149,6 +156,7 @@ impl PhysicalExecutorCommand {
         &self,
     ) -> &super::super::super::PhysicalWorkIntent {
         match self {
+            Self::Inspection(command) => command.work.intent(),
             Self::Metadata(command) => command.work.intent(),
             Self::Read(command) => command.work.intent(),
             Self::ExactWrite(command) | Self::Publication(command) => command.work.intent(),
@@ -166,6 +174,7 @@ impl PhysicalExecutorCommand {
 
     pub(in crate::physical_runtime) fn is_cancelled(&self) -> bool {
         match self {
+            Self::Inspection(command) => command.work.is_cancelled(),
             Self::Metadata(command) => command.work.is_cancelled(),
             Self::Read(command) => command.work.is_cancelled(),
             Self::ExactWrite(command) | Self::Publication(command) => command.work.is_cancelled(),

@@ -8,10 +8,10 @@ use crate::application_schema::{
 
 struct RevocationOperation;
 struct Identity;
+declare_u64_field!(Identity);
 
-impl ApplicationOperationMarkerIdentity for RevocationOperation {
-    type Schema = Schema;
-    type Input = ();
+impl ApplicationOperationMarkerIdentity<Schema> for RevocationOperation {
+    type InputBinding = UnitOperationInputBinding;
     const IDENTIFIER: &'static str = "Revoke";
 }
 
@@ -105,7 +105,7 @@ fn one_operation_cannot_be_both_delegation_activation_and_revocation() {
             .with_revocation(ApplicationCapabilityRevocationDefinition::new(
                 ApplicationOperationRef::<Schema, RevocationOperation, ()>::from_declaration(),
                 binding::<Identity>("Identity"),
-                ApplicationCapabilityValueBinding::new(field::<Status>("Status"), 2_u64),
+                ApplicationCapabilityValueBinding::new(field::<Status>("Status"), encoded(2_u64)),
             )),
     )
     .composition(composition(true))
@@ -147,7 +147,7 @@ fn revocable_contract(revoked: u64) -> ErasedContract {
         ApplicationCapabilityRevocationDefinition::new(
             ApplicationOperationRef::<Schema, RevocationOperation, ()>::from_declaration(),
             binding::<Identity>("Identity"),
-            ApplicationCapabilityValueBinding::new(field::<Status>("Status"), revoked),
+            ApplicationCapabilityValueBinding::new(field::<Status>("Status"), encoded(revoked)),
         ),
     ))
     .composition(composition(true))
@@ -171,4 +171,12 @@ fn write(field: &str) -> ApplicationOperationProgramTarget {
         aspect: "Facts".to_owned(),
         field: field.to_owned(),
     }
+}
+
+fn encoded(
+    value: u64,
+) -> crate::application_schema::ApplicationEncodedScalarValue<
+    crate::application_schema::U64ApplicationValueBinding,
+> {
+    crate::application_schema::ApplicationEncodedScalarValue::try_new(value).unwrap()
 }

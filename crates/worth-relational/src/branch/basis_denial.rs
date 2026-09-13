@@ -40,5 +40,6 @@ pub enum RelationalBranchBasisDenial {
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
+    OwnerUnavailable,
     OwnerFailure,
 }

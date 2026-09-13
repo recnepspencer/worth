@@ -1,8 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::{
-    OperationalRecoveryAction, OperationalRecoveryActionKind, OperationalRecoveryControlledDefect,
-    OperationalRecoveryCounterexample, OperationalRecoveryInvariant,
+    OperationalRecoveryAction, OperationalRecoveryActionKind, OperationalRecoveryCounterexample,
+    OperationalRecoveryInvariant,
 };
 
 #[derive(Debug, Default)]
@@ -40,7 +40,6 @@ impl OperationalRecoveryModel {
     pub fn apply(
         &mut self,
         action: &OperationalRecoveryAction,
-        controlled_defect: Option<OperationalRecoveryControlledDefect>,
     ) -> Result<(), OperationalRecoveryCounterexample> {
         let state = self
             .operations
@@ -83,12 +82,7 @@ impl OperationalRecoveryModel {
                 state.source_lease_persisted = true;
             }
             Action::MaterializationOpened => {
-                if !state.source_lease_persisted
-                    && controlled_defect
-                        != Some(
-                            OperationalRecoveryControlledDefect::MaterializationWithoutSourceLease,
-                        )
-                {
+                if !state.source_lease_persisted {
                     return Err(counterexample(
                         action,
                         OperationalRecoveryInvariant::SourceLeaseBeforeMaterialization,
@@ -106,12 +100,7 @@ impl OperationalRecoveryModel {
                 state.materialization_recorded = true;
             }
             Action::IndependentVerificationRecorded => {
-                if !state.materialization_recorded
-                    && controlled_defect
-                        != Some(
-                            OperationalRecoveryControlledDefect::VerificationWithoutMaterialization,
-                        )
-                {
+                if !state.materialization_recorded {
                     return Err(counterexample(
                         action,
                         OperationalRecoveryInvariant::MaterializationBeforeVerification,
@@ -128,11 +117,11 @@ impl OperationalRecoveryModel {
                 state.authorized = true;
             }
             Action::OwnerExecutionOpened => {
-                require_authorized(action, state, controlled_defect)?;
+                require_authorized(action, state)?;
                 state.owner_execution_opened = true;
             }
             Action::OwnerEffectStarted => {
-                require_authorized(action, state, controlled_defect)?;
+                require_authorized(action, state)?;
                 if !state.owner_execution_opened {
                     return Err(counterexample(
                         action,
@@ -148,10 +137,7 @@ impl OperationalRecoveryModel {
                         OperationalRecoveryInvariant::OwnerExecutionBeforeReceipt,
                     ));
                 }
-                if !state.owner_effect_started
-                    && controlled_defect
-                        != Some(OperationalRecoveryControlledDefect::OwnerReceiptWithoutEffectStart)
-                {
+                if !state.owner_effect_started {
                     return Err(counterexample(
                         action,
                         OperationalRecoveryInvariant::OwnerEffectBeforeReceipt,
@@ -159,7 +145,7 @@ impl OperationalRecoveryModel {
                 }
             }
             Action::WorkflowOwnerReceiptPersisted => {
-                require_authorized(action, state, controlled_defect)?;
+                require_authorized(action, state)?;
                 if !state.workflow_opened {
                     return Err(counterexample(
                         action,
@@ -180,11 +166,8 @@ impl OperationalRecoveryModel {
                 }
             }
             Action::StagingCompleted => {
-                require_authorized(action, state, controlled_defect)?;
-                if state.workflow_owner_receipts != BTreeSet::from([1, 2])
-                    && controlled_defect
-                        != Some(OperationalRecoveryControlledDefect::StagingWithoutOwnerReceipts)
-                {
+                require_authorized(action, state)?;
+                if state.workflow_owner_receipts != BTreeSet::from([1, 2]) {
                     return Err(counterexample(
                         action,
                         OperationalRecoveryInvariant::CompleteOwnerReceiptsBeforeStaging,
@@ -192,16 +175,11 @@ impl OperationalRecoveryModel {
                 }
             }
             Action::ReplicaBootstrapTransferRecorded => {
-                require_authorized(action, state, controlled_defect)?;
+                require_authorized(action, state)?;
                 state.bootstrap_transferred = true;
             }
             Action::ReplicaBootstrapCompleted => {
-                if !state.bootstrap_transferred
-                    && controlled_defect
-                        != Some(
-                            OperationalRecoveryControlledDefect::BootstrapCompletionWithoutTransfer,
-                        )
-                {
+                if !state.bootstrap_transferred {
                     return Err(counterexample(
                         action,
                         OperationalRecoveryInvariant::BootstrapTransferBeforeCompletion,
@@ -210,10 +188,7 @@ impl OperationalRecoveryModel {
             }
             Action::PublicationPrepared => state.publication_prepared = true,
             Action::PublicationPending => {
-                if !state.publication_prepared
-                    && controlled_defect
-                        != Some(OperationalRecoveryControlledDefect::PublicationWithoutPreparation)
-                {
+                if !state.publication_prepared {
                     return Err(counterexample(
                         action,
                         OperationalRecoveryInvariant::PreparationBeforePublication,
@@ -239,15 +214,12 @@ impl OperationalRecoveryModel {
                 }
             }
             Action::ReplicaPromotionFenceRecorded => {
-                require_authorized(action, state, controlled_defect)?;
+                require_authorized(action, state)?;
                 state.promotion_fenced = true;
             }
             Action::ReplicaPromotionRecorded => {
-                require_authorized(action, state, controlled_defect)?;
-                if !state.promotion_fenced
-                    && controlled_defect
-                        != Some(OperationalRecoveryControlledDefect::PromotionWithoutExternalFence)
-                {
+                require_authorized(action, state)?;
+                if !state.promotion_fenced {
                     return Err(counterexample(
                         action,
                         OperationalRecoveryInvariant::ExternalFenceBeforePromotion,
@@ -256,12 +228,7 @@ impl OperationalRecoveryModel {
                 state.promotion_recorded = true;
             }
             Action::ReplicaPromotionPublished => {
-                if !state.promotion_recorded
-                    && controlled_defect
-                        != Some(
-                            OperationalRecoveryControlledDefect::PromotionPublicationWithoutPromotion,
-                        )
-                {
+                if !state.promotion_recorded {
                     return Err(counterexample(
                         action,
                         OperationalRecoveryInvariant::PromotionBeforePublication,
@@ -288,17 +255,14 @@ impl OperationalRecoveryModel {
                 state.rejoin_planned = true;
             }
             Action::OldPrimaryRejoinCompleted => {
-                if !state.rejoin_planned
-                    && controlled_defect
-                        != Some(OperationalRecoveryControlledDefect::RejoinCompletionWithoutPlan)
-                {
+                if !state.rejoin_planned {
                     return Err(counterexample(
                         action,
                         OperationalRecoveryInvariant::RejoinPlanBeforeCompletion,
                     ));
                 }
             }
-            _ => {}
+            Action::DispositionRecorded => {}
         }
         let semantic_state = self
             .semantic_operations
@@ -307,7 +271,7 @@ impl OperationalRecoveryModel {
                 action.operation_identity().to_owned(),
             ))
             .or_default();
-        if let Err(invariant) = semantic_state.apply_with_defect(action, controlled_defect) {
+        if let Err(invariant) = semantic_state.apply(action) {
             return Err(counterexample(action, invariant));
         }
         self.reached.insert(action.kind());
@@ -322,11 +286,8 @@ impl OperationalRecoveryModel {
 fn require_authorized(
     action: &OperationalRecoveryAction,
     state: &OperationState,
-    defect: Option<OperationalRecoveryControlledDefect>,
 ) -> Result<(), OperationalRecoveryCounterexample> {
-    if !state.authorized
-        && defect != Some(OperationalRecoveryControlledDefect::ExecutionWithoutAuthorization)
-    {
+    if !state.authorized {
         return Err(counterexample(
             action,
             OperationalRecoveryInvariant::AuthorizationBeforeExecution,

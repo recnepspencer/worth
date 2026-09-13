@@ -75,6 +75,14 @@ pub struct PhysicalCheckpointSecurityBinding {
 }
 
 impl PhysicalCheckpointSource {
+    pub fn decode_stream_header_record(
+        record: &[u8],
+    ) -> Result<Self, CheckpointStreamDecodeDenial> {
+        let payload =
+            super::record::decode_record(record, super::record::HEADER_KIND, HEADER_PAYLOAD_BYTES)?;
+        decode_header(payload)
+    }
+
     pub const fn concurrent(
         identity: PhysicalCheckpointIdentity,
         wal: CheckpointWalSourceRange,
@@ -208,15 +216,28 @@ pub(super) fn decode_header(
         ));
     }
     match payload[65] {
-        0 if payload[72..144] == [0; 72] => Ok(PhysicalCheckpointSource::concurrent(
-            identity,
-            wal,
-            root,
-            read_u64(payload, 56),
-        )),
+        0 => {
+            if let Some(index) = payload[72..144].iter().position(|byte| *byte != 0) {
+                return Err(CheckpointStreamDecodeDenial::AbsentSecurityBindingResidue {
+                    payload_offset: (72 + index) as u8,
+                });
+            }
+            Ok(PhysicalCheckpointSource::concurrent(
+                identity,
+                wal,
+                root,
+                read_u64(payload, 56),
+            ))
+        }
         SECURITY_BINDING_PRESENT => {
             let policy_identity = payload[72..104].try_into().unwrap();
             let retention = read_u64(payload, 104);
+            if policy_identity == [0; 32] {
+                return Err(CheckpointStreamDecodeDenial::InvalidSecurityPolicyIdentity);
+            }
+            if retention == 0 {
+                return Err(CheckpointStreamDecodeDenial::InvalidSecurityRetention);
+            }
             let source = PhysicalCheckpointSource::secured_concurrent(
                 identity,
                 wal,
@@ -225,13 +246,13 @@ pub(super) fn decode_header(
                 policy_identity,
                 retention,
             )
-            .ok_or(CheckpointStreamDecodeDenial::InvalidSecurityBinding)?;
+            .expect("nonzero decoded security fields satisfy the binding constructor");
             if source.security_binding().unwrap().digest() != payload[112..144] {
-                return Err(CheckpointStreamDecodeDenial::InvalidSecurityBinding);
+                return Err(CheckpointStreamDecodeDenial::SecurityBindingDigestMismatch);
             }
             Ok(source)
         }
-        _ => Err(CheckpointStreamDecodeDenial::InvalidSecurityBinding),
+        observed => Err(CheckpointStreamDecodeDenial::InvalidSecurityBindingPresence(observed)),
     }
 }
 

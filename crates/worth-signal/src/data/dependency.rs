@@ -19,6 +19,7 @@ pub use snapshot_shape::{
 pub use snapshot_storage::{
     DependencySnapshotId, DependencySnapshotStore, SharedDependencySnapshot,
 };
+pub(crate) use snapshot_storage::{DependencySnapshotIndexDenial, PreparedSnapshotInsertion};
 pub use snapshot_update::{
     CommittedSnapshotUpdate, ReplacementSnapshotUpdate, SnapshotStorageStrategy,
 };

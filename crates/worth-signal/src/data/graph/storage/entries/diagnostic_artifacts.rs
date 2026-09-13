@@ -1,14 +1,92 @@
 use crate::data::error::SignalError;
 use crate::data::graph::signal_graph::SignalGraph;
 use crate::data::handle::NodeId;
+use crate::data::node::{NodeEvaluationConfig, NodeState};
 use crate::data::trace::{
-    CausalityMetadata, ColdArtifactRecord, ExecutionTraceStamp, RetainedDiagnosticArtifact,
-    TraceSummary,
+    assemble_historical_artifact_record, assemble_trace_summary_with_execution, CausalityMetadata,
+    ColdArtifactRecord, ExecutionTraceStamp, HistoricalArtifactRecord, RetainedDiagnosticArtifact,
+    RuntimeArtifactState, TraceSummary,
 };
 
 use super::NodeReplayProjection;
 
+pub(crate) struct NodeExplanationStorageView<'a> {
+    node: NodeId,
+    state: NodeState,
+    dirty_aspects: crate::data::aspect::AspectMask,
+    evaluation_config: &'a NodeEvaluationConfig,
+    runtime: Option<&'a RuntimeArtifactState>,
+    retained: Option<&'a ColdArtifactRecord>,
+    execution: Option<ExecutionTraceStamp>,
+    causality: Option<&'a CausalityMetadata>,
+}
+
+impl NodeExplanationStorageView<'_> {
+    pub(crate) fn state(&self) -> NodeState {
+        self.state
+    }
+
+    pub(crate) fn dirty_aspects(&self) -> crate::data::aspect::AspectMask {
+        self.dirty_aspects
+    }
+
+    pub(crate) fn evaluation_config(&self) -> &NodeEvaluationConfig {
+        self.evaluation_config
+    }
+
+    pub(crate) fn historical_artifact_record(&self) -> Option<HistoricalArtifactRecord> {
+        assemble_historical_artifact_record(self.node, self.runtime, self.retained, self.causality)
+    }
+
+    pub(crate) fn trace_summary(&self) -> Option<TraceSummary> {
+        assemble_trace_summary_with_execution(self.runtime, self.retained, self.execution)
+    }
+
+    pub(crate) fn causality(&self) -> Option<&CausalityMetadata> {
+        self.causality
+    }
+
+    pub(crate) fn matches_historical_artifact_record(
+        &self,
+        expected: Option<&crate::data::trace::HistoricalArtifactRecord>,
+    ) -> bool {
+        match (self.runtime, expected) {
+            (None, None) => true,
+            (Some(runtime), Some(expected)) => {
+                expected.node == self.node
+                    && &expected.runtime == runtime
+                    && expected.retained.as_ref() == self.retained
+                    && expected.causality.as_ref() == self.causality
+            }
+            _ => false,
+        }
+    }
+}
+
 impl SignalGraph {
+    pub(crate) fn node_explanation_storage_view(
+        &self,
+        node: NodeId,
+    ) -> Result<NodeExplanationStorageView<'_>, SignalError> {
+        self.validate_handle(node)?;
+        let index = node.index() as usize;
+        let hot = self.arena.hot[index]
+            .as_ref()
+            .expect("validated live node must retain hot storage");
+        let warm = &self.arena.warm[index];
+        let cold = self.arena.cold[index].as_deref();
+        Ok(NodeExplanationStorageView {
+            node,
+            state: hot.state,
+            dirty_aspects: hot.dirty_aspects,
+            evaluation_config: &self.arena.definitions[index].eval_config,
+            runtime: warm.runtime_artifact_state.as_ref(),
+            retained: cold.and_then(|cold| cold.retained_artifact.as_ref()),
+            execution: cold.and_then(|cold| cold.execution_trace),
+            causality: cold.and_then(|cold| cold.causality.as_ref()),
+        })
+    }
+
     pub fn set_trace_summary(
         &mut self,
         id: NodeId,
@@ -94,12 +172,11 @@ impl SignalGraph {
         node: NodeId,
         causality: Option<CausalityMetadata>,
     ) -> Result<(), SignalError> {
-        if causality.is_some() {
-            self.cold_mut(node)?.causality = causality;
-        } else if let Some(cold) = self.arena.cold[node.index() as usize].as_mut() {
-            cold.causality = None;
-        }
-        self.trim_cold_if_empty(node);
+        self.validate_handle(node)?;
+        super::evaluation_payload::set_causality(
+            &mut self.arena.cold[node.index() as usize],
+            causality,
+        );
         self.record_branch_mutation_causality(node);
         Ok(())
     }
@@ -110,15 +187,20 @@ impl SignalGraph {
         artifact_id: crate::diagnostics::lineage::LineageArtifactId,
         execution_record_id: crate::logic::planner::ExecutionRecordId,
         semantic_segment_id: crate::logic::planner::SemanticSegmentId,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
     ) -> Result<(), SignalError> {
-        let Some(runtime) = self.warm_mut(node)?.runtime_artifact_state.as_mut() else {
-            return Ok(());
-        };
-        runtime.set_lineage_artifact_id(Some(artifact_id));
-        self.cold_mut(node)?.execution_trace = Some(ExecutionTraceStamp {
-            execution_record_id: Some(execution_record_id.0),
-            semantic_segment_id: Some(semantic_segment_id.0),
-        });
-        Ok(())
+        // Finalization already selected the artifact image. The mutation owner
+        // validates the handle and handles absent payloads without another read.
+        let growth = crate::data::retained_storage::RetainedStorageCharge::capacity::<
+            crate::data::node::NodeColdData,
+        >(1)
+        .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?;
+        self.mutate_evaluation_node(node, growth, work, |target| {
+            target.stamp_lineage_and_execution(
+                artifact_id,
+                execution_record_id,
+                semantic_segment_id,
+            );
+        })
     }
 }

@@ -19,6 +19,9 @@ use crate::BankAdmittedOperation;
 pub enum BankOperationProposalError {
     Authorization(crate::BankAuthorizationDenial),
     AuthorizationLineageUnavailable(crate::BankAuthorizationDenial),
+    InvariantAdmission(
+        worth_query_host::facade::primary_graph::WorthQueryInvariantProjectionDenialKind,
+    ),
     ProjectionWorkBudgetExceeded,
     Projection(BankProjectionDenial),
     Invariant(BankProposalDenial),
@@ -45,6 +48,9 @@ impl From<WorthQueryOperationProjectionDenial> for BankOperationProposalError {
                 )),
             WorthQueryOperationProjectionDenialKind::WorkBudgetExceeded => {
                 Self::ProjectionWorkBudgetExceeded
+            }
+            WorthQueryOperationProjectionDenialKind::InvariantAdmission(kind) => {
+                Self::InvariantAdmission(kind)
             }
         }
     }
@@ -81,6 +87,12 @@ impl std::fmt::Display for BankOperationProposalError {
             }
             Self::ProjectionWorkBudgetExceeded => {
                 formatter.write_str("bank projection work budget exceeded")
+            }
+            Self::InvariantAdmission(kind) => {
+                write!(
+                    formatter,
+                    "bank invariant projection admission denied: {kind:?}"
+                )
             }
             Self::Projection(denial) => denial.fmt(formatter),
             Self::Invariant(denial) => denial.fmt(formatter),

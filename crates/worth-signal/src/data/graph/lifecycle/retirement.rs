@@ -81,7 +81,7 @@ impl SignalGraph {
         self.arena.active_nodes = self.arena.active_nodes.saturating_sub(1);
         self.arena.record_retired_node();
         if !self.arena.nodes[id.index() as usize].is_retired() {
-            self.arena.free_list.push(id.index());
+            self.arena.free_list.push_back(id.index());
             self.arena.free_slots.mark(id.index() as usize);
         }
         Ok(())

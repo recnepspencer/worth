@@ -1,4 +1,4 @@
-use worth_store_recovery_physics::{BlobReplaySourceAdmission, BlobReplaySourceKind};
+use crate::{BlobReplaySourceAdmission, BlobReplaySourceKind};
 use worth_store_wal::PublicationDeclaration;
 
 use crate::{

@@ -32,6 +32,14 @@ impl PoolInner {
             } => (*waiters, *allocation_scope),
             _ => unreachable!("validated bounded loading remains loading"),
         };
+        let resident_generation = state.advance_resident_generation().map_err(|denial| {
+            let rejection = BoundedCompletionRejection {
+                denial,
+                terminal_kind: PhysicalFrameLoadTerminalKind::AllocationFailed,
+            };
+            self.reject_bounded_completion(&mut state, key, identity, rejection)
+                .expect_err("generation exhaustion rejects bounded completion")
+        })?;
         state.frames.resolve_bounded(
             key,
             coordinate,
@@ -49,6 +57,8 @@ impl PoolInner {
                 loading_identity: (waiters > 0).then_some(identity),
                 loading_waiters: waiters,
                 artifact_posture: FrameArtifactPosture::CompleteResident,
+                resident_generation: Some(resident_generation),
+                integrity_validation: None,
             },
         );
         state.accounting.resolve_bounded_frame(
@@ -63,6 +73,7 @@ impl PoolInner {
             owner: Arc::clone(self),
             key: PhysicalFrameKey::new(self.store, coordinate),
             bytes,
+            resident_generation,
         })
     }
 

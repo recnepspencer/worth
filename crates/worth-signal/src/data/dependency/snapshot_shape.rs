@@ -1,11 +1,18 @@
-use std::collections::HashMap;
+mod fork_growth;
+mod insertion;
+pub(super) use insertion::PreparedShapeInsertion;
+mod reserved_fork;
 use std::num::NonZeroU32;
 
 use serde::{Deserialize, Serialize};
 
+mod interning;
+mod retained_charge;
+mod retained_publication;
+
 use super::DependencySortKey;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default)]
 pub struct DependencySnapshotShape {
     keys: std::sync::Arc<Vec<DependencySortKey>>,
 }
@@ -46,17 +53,23 @@ impl SnapshotShapeHandle {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct DependencySnapshotShapeStore {
-    shapes: Vec<DependencySnapshotShape>,
+    shapes: crate::data::persistent_vector::PersistentVector<DependencySnapshotShape>,
     #[serde(skip, default)]
-    interner: HashMap<DependencySnapshotShape, SnapshotShapeHandle>,
+    interner: crate::data::persistent_ord_map::PersistentOrdMap<
+        DependencySnapshotShape,
+        SnapshotShapeHandle,
+    >,
 }
 
 impl DependencySnapshotShapeStore {
+    pub(super) fn retained_interner_is_complete(&self) -> bool {
+        self.interner.len() == self.shapes.len()
+    }
+
     fn rebuild_interner_if_needed(&mut self) {
         if !self.interner.is_empty() || self.shapes.is_empty() {
             return;
         }
-        self.interner.reserve(self.shapes.len());
         for (index, shape) in self.shapes.iter().cloned().enumerate() {
             self.interner
                 .insert(shape, SnapshotShapeHandle::from_index(index + 1));
@@ -64,18 +77,38 @@ impl DependencySnapshotShapeStore {
     }
 
     pub fn intern(&mut self, shape: DependencySnapshotShape) -> SnapshotShapeHandle {
-        if shape.as_slice().is_empty() {
-            return SnapshotShapeHandle::EMPTY;
+        self.intern_with_work(
+            shape,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )
+        .expect("ordinary shape interning must remain representable")
+    }
+
+    pub(crate) fn operational_clone(&self) -> Self {
+        Self {
+            shapes: self.shapes.operational_clone(),
+            interner: self.interner.operational_clone(),
         }
-        self.rebuild_interner_if_needed();
-        if let Some(handle) = self.interner.get(&shape).copied() {
-            return handle;
+    }
+
+    pub(crate) fn fork_persistent(&mut self) -> Self {
+        Self {
+            shapes: self.shapes.fork_persistent(),
+            interner: self.interner.fork_persistent(),
         }
-        self.shapes.push(shape);
-        let handle = SnapshotShapeHandle::from_index(self.shapes.len());
-        let shape = self.shapes[handle.index().expect("shape handle should index") - 1].clone();
-        self.interner.insert(shape, handle);
-        handle
+    }
+
+    #[cfg(test)]
+    pub(crate) fn fork_storage_identity(&self) -> Self {
+        Self {
+            shapes: self.shapes.clone(),
+            interner: self.interner.fork_storage_identity(),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn shares_storage_with(&self, other: &Self) -> bool {
+        self.shapes.shares_storage_with(&other.shapes) && self.interner.ptr_eq(&other.interner)
     }
 }
 

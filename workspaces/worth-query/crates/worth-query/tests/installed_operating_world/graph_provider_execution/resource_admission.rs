@@ -41,7 +41,7 @@ fn commit_provider_mismatch_denies_before_any_graph_contact() {
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .prepare_mutation_operating_world()
+        .prepare_mutation_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, FederatedRead)
@@ -80,7 +80,7 @@ fn graph_provider_mismatch_denies_before_any_graph_contact() {
         .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, FederatedRead)

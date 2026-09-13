@@ -20,13 +20,13 @@ pub(super) fn assemble(
     node: NodeId,
     comparator_resolver: &impl ComparatorPolicyResolver,
 ) -> Result<ExplanationResolution, SignalError> {
-    let entry = graph.get_entry(node)?;
-    let state = *entry.get_state();
-    let dirty_aspects = entry.get_dirty_aspects();
-    let contract = graph.get_contract(node)?.clone();
-    let condition = entry.get_eval_config().condition.clone();
-    let historical_artifact_record = entry.historical_artifact_record(node);
-    let trace_summary = entry.trace_summary();
+    let storage = graph.node_explanation_storage_view(node)?;
+    let state = storage.state();
+    let dirty_aspects = storage.dirty_aspects();
+    let contract = storage.evaluation_config().contract.clone();
+    let condition = storage.evaluation_config().condition.clone();
+    let historical_artifact_record = storage.historical_artifact_record();
+    let trace_summary = storage.trace_summary();
     let output_identity = trace_summary
         .as_ref()
         .and_then(|trace| trace.output_identity.clone());
@@ -54,9 +54,9 @@ pub(super) fn assemble(
         .as_ref()
         .and_then(|record| record.retained.as_ref())
         .and_then(|retained| retained.reuse_certification.clone());
-    let causality = entry.get_causality().cloned();
-    let comparator_override = entry.get_eval_config().comparator.clone();
-    let condition_decision = classify_condition_decision(graph, node, &condition);
+    let causality = storage.causality().cloned();
+    let comparator_override = storage.evaluation_config().comparator.clone();
+    let condition_decision = classify_condition_decision(graph, node, &condition, dirty_aspects);
 
     let mut lineage = ExplanationLineage::collect(graph, node)?;
     let upstream = resolve_upstream_causes(

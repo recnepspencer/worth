@@ -38,6 +38,10 @@ where
             self.telemetry.transaction.transaction_begin_count += 1;
         }
         self.config.sync_graph_capacity(&self.graph);
+        let current_branch = self.graph.current_branch();
+        let (branch_mutation_ledger, branch_head_generation, branch_restore_snapshot_id) = self
+            .branches
+            .transaction_branch_state_mut(current_branch.id, current_branch.head_snapshot_id);
         SignalTransaction {
             runtime_ctx,
             observations: &self.observations,
@@ -48,7 +52,10 @@ where
             resource: &mut self.resource,
             temporal: &mut self.temporal,
             telemetry: captures_telemetry.then_some(&mut self.telemetry),
-            branches: &mut self.branches,
+            branch_mutation_ledger,
+            branch_head_generation,
+            branch_restore_snapshot_id,
+            conditional_operation_scope: None,
             scratch: TransactionScratch::new(),
             rollback_packets: super::super::transaction::TransactionRollbackPacketSet::default(),
             poisoned: false,

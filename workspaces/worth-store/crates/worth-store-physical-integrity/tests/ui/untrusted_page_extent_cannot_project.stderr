@@ -1,0 +1,27 @@
+error[E0308]: mismatched types
+  --> tests/ui/untrusted_page_extent_cannot_project.rs:11:18
+   |
+11 |     consume_page(untrusted);
+   |     ------------ ^^^^^^^^^ expected `IntegrityValidatedPageFrame<'_>`, found `UntrustedPhysicalArtifact<'_>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/ui/untrusted_page_extent_cannot_project.rs:5:4
+   |
+ 5 | fn consume_page(_: IntegrityValidatedPageFrame<'_>) {}
+   |    ^^^^^^^^^^^^ ----------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/untrusted_page_extent_cannot_project.rs:12:20
+   |
+12 |     consume_extent(untrusted);
+   |     -------------- ^^^^^^^^^ expected `IntegrityValidatedExtentChunkFrame<'_>`, found `UntrustedPhysicalArtifact<'_>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/ui/untrusted_page_extent_cannot_project.rs:6:4
+   |
+ 6 | fn consume_extent(_: IntegrityValidatedExtentChunkFrame<'_>) {}
+   |    ^^^^^^^^^^^^^^ -----------------------------------------

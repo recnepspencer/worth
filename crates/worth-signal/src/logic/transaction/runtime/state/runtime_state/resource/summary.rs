@@ -14,10 +14,12 @@ where
     T: Copy + Ord,
 {
     pub fn resource_runtime_summary(&self) -> ResourceRuntimeSummary {
+        self.assert_construction_state_access();
         self.resource.summary()
     }
 
     pub fn resource_runtime_summary_read_report(&mut self) -> ResourceRuntimeSummaryReadReport {
+        self.assert_construction_state_access();
         let capture_telemetry = self.graph.captures_observation_surface(
             crate::logic::transaction::SignalObservationSurface::OptionalTelemetry,
         );
@@ -29,6 +31,7 @@ where
         &self,
         node: ResourceNodeId,
     ) -> Option<&LoweredResourceDescriptor> {
+        self.assert_construction_state_access();
         self.resource.descriptor_for_node(node)
     }
 
@@ -36,6 +39,7 @@ where
         &mut self,
         declaration: &ResourceNodeDeclaration,
     ) -> Result<ResourcePolicyCompatibilityReport, crate::data::error::SignalError> {
+        self.assert_construction_state_access();
         let capture_telemetry = self.graph.captures_observation_surface(
             crate::logic::transaction::SignalObservationSurface::OptionalTelemetry,
         );
@@ -52,6 +56,7 @@ where
         Result<ResourcePolicyRestoreCompatibilityProof, DeniedResourcePolicyRestoreCompatibility>,
         crate::data::error::SignalError,
     > {
+        self.assert_construction_state_access();
         let capture_telemetry = self.graph.captures_observation_surface(
             crate::logic::transaction::SignalObservationSurface::OptionalTelemetry,
         );
@@ -62,6 +67,7 @@ where
     }
 
     pub fn latest_resource_branch_restore_report(&self) -> Option<ResourceBranchRestoreReport> {
+        self.assert_construction_state_access();
         self.resource.latest_branch_restore_report()
     }
 }

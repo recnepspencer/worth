@@ -119,20 +119,24 @@ fn stale_manifest(
         ))
         .into_raw()
         {
-            TransitionOutcome::Stale(stale) => {
-                stale.into_runtime().close();
-                worth_store_offline_verifier::walk_current_durable_record_manifest(
-                    source,
-                    format.declaration(),
-                )
-                .is_err()
+            TransitionOutcome::Denied(denial) => {
+                // Substituting an old image at the selected root's address is
+                // persisted generation damage, not a stale caller request.
+                let damaged = denial.reason() == RecordBootstrapDenial::CurrentRootDamaged;
+                denial.into_runtime().close();
+                damaged
+                    && worth_store_offline_verifier::walk_current_durable_record_manifest(
+                        source,
+                        format.declaration(),
+                    )
+                    .is_err()
             }
             TransitionOutcome::Success(runtime) => {
                 runtime.close();
                 false
             }
-            TransitionOutcome::Denied(denial) => {
-                denial.into_runtime().close();
+            TransitionOutcome::Stale(stale) => {
+                stale.into_runtime().close();
                 false
             }
             _ => false,

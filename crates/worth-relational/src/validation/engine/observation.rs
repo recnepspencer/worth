@@ -78,6 +78,12 @@ impl<'runtime> CommittedInvariantView<'runtime> {
         }
     }
 
+    pub(crate) fn before_image_partition_access(&self) -> Option<&dyn PartitionAccess> {
+        self.enforcement
+            .as_ref()
+            .map(|_| self.committed_partition_access())
+    }
+
     pub(crate) fn enforcement_version_id(
         &self,
         fallback: crate::identity::data::VersionId,
@@ -95,22 +101,29 @@ impl<'runtime> CommittedInvariantView<'runtime> {
 #[derive(Clone)]
 pub(crate) struct SpeculativeInvariantView<'runtime> {
     state: OverlayStateView<'runtime, WorkingState>,
+    before_image_version_id: crate::identity::data::VersionId,
     proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
 }
 
 impl<'runtime> SpeculativeInvariantView<'runtime> {
     pub(crate) fn new(
         state: OverlayStateView<'runtime, WorkingState>,
+        before_image_version_id: crate::identity::data::VersionId,
         proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
     ) -> Self {
         Self {
             state,
+            before_image_version_id,
             proposal_identity,
         }
     }
 
     pub(crate) fn partition_access(&self) -> &dyn PartitionAccess {
         &self.state
+    }
+
+    pub(crate) fn before_image_partition_access(&self) -> &dyn PartitionAccess {
+        self.state.base_partition_access()
     }
 }
 
@@ -147,9 +160,14 @@ impl<'runtime> InvariantObservation<'runtime> {
 
     pub(crate) fn speculative_with_proposal(
         state: OverlayStateView<'runtime, WorkingState>,
+        before_image_version_id: crate::identity::data::VersionId,
         proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
     ) -> Self {
-        Self::Speculative(SpeculativeInvariantView::new(state, proposal_identity))
+        Self::Speculative(SpeculativeInvariantView::new(
+            state,
+            before_image_version_id,
+            proposal_identity,
+        ))
     }
 
     pub(crate) fn kind(&self) -> InvariantObservationKind {
@@ -170,6 +188,23 @@ impl<'runtime> InvariantObservation<'runtime> {
         match self {
             Self::Committed(view) => view.enforcement_partition_access(),
             Self::Speculative(view) => view.partition_access(),
+        }
+    }
+
+    pub(crate) fn before_image_partition_access(&self) -> Option<&dyn PartitionAccess> {
+        match self {
+            Self::Committed(view) => view.before_image_partition_access(),
+            Self::Speculative(view) => Some(view.before_image_partition_access()),
+        }
+    }
+
+    pub(crate) fn before_image_version_id(
+        &self,
+        fallback: crate::identity::data::VersionId,
+    ) -> crate::identity::data::VersionId {
+        match self {
+            Self::Committed(_) => fallback,
+            Self::Speculative(view) => view.before_image_version_id,
         }
     }
 

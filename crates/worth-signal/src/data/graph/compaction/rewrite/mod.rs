@@ -32,11 +32,12 @@ impl EdgeTopology {
     pub(in crate::data::graph) fn prune_dead_dependency_edges(
         graph: &mut SignalGraph,
         node: NodeId,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
     ) -> Result<(), crate::data::error::SignalError> {
         if graph.arena.compaction.tombstone_count == 0 {
             return Ok(());
         }
-        Self::prune_dependency_edges(graph, node)
+        Self::prune_dependency_edges(graph, node, work)
     }
 
     pub(in crate::data::graph) fn prune_dead_subscriber_edges(
@@ -52,7 +53,9 @@ impl EdgeTopology {
     fn prune_dependency_edges(
         graph: &mut SignalGraph,
         node: NodeId,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
     ) -> Result<(), crate::data::error::SignalError> {
+        work.reserve(graph.raw_dependencies_of(node)?.len().checked_mul(8))?;
         let has_stale = {
             let current = graph.raw_dependencies_of(node)?;
             current.iter().any(|edge| !graph.is_alive(edge.source()))
@@ -64,7 +67,7 @@ impl EdgeTopology {
                 .filter(|edge| graph.is_alive(edge.source()))
                 .cloned()
                 .collect::<Vec<_>>();
-            graph.set_dependency_edges_sorted(node, &updated)?;
+            graph.set_dependency_edges_sorted_with_work(node, &updated, work)?;
         }
         Ok(())
     }

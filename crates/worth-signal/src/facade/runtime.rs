@@ -159,6 +159,8 @@ pub use crate::logic::transaction::{
     ObservationListener, ObservationNotice, ObservationPolicy, ObservationReadContext,
     ObservationRegistrySummary, ObservationTrigger, ObservedNodeSet, ObserverId,
 };
+pub use crate::runtime_policy::SignalConditionalEvaluationBudget;
+pub use crate::runtime_policy::SignalConditionalTemporalBudget;
 pub use crate::runtime_policy::SignalObservationCapturePlan;
 pub use crate::runtime_policy::SignalRuntimePolicy;
 pub use crate::runtime_policy::SignalRuntimePolicy as RuntimePolicy;

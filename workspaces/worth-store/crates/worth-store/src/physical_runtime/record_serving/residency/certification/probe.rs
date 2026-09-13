@@ -102,6 +102,7 @@ impl PhysicalResidencyCertification {
                     std::sync::Arc::clone(&parts.record_work),
                 )),
                 writeback,
+                parts.core.lifecycle_state(),
             ),
         }
     }

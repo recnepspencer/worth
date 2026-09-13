@@ -45,6 +45,7 @@ pub struct StorageTelemetry {
     pub deferred_cold_artifact_bypass_count: u64,
     pub hot_node_inline_size_bytes: u64,
     pub warm_node_inline_size_bytes: u64,
+    pub definition_node_inline_size_bytes: u64,
     pub hot_runtime_artifact_inline_size_bytes: u64,
     pub warm_runtime_artifact_inline_size_bytes: u64,
     pub cold_artifact_record_inline_size_bytes: u64,

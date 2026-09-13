@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use worth_store_physical_integrity::{
+use super::integrity_classification::{
     IntegrityRepairArtifactFamily, IntegrityRepairOwnerBinding, IntegrityRepairRegion,
     IntegrityRepairRegionClass,
 };

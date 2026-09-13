@@ -4,42 +4,16 @@ name = "worth-store-recovery-physics"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
-description = "Roadmap 2 S.4 WAL, checkpoint, LSN, and physical recovery rules."
+description = "Pure C.8 WAL, checkpoint, LSN, source-precedence, and recovery planning laws."
 
 [dependencies]
 sha2 = "0.10"
-tempfile = { version = "3", optional = true }
-worth-foundational = { path = "../../../../crates/worth-foundational" }
-worth-proof = { path = "../../../../crates/worth-proof" }
-worth-store-aspect-native.workspace = true
-worth-store-authority.workspace = true
-worth-store-budgets.workspace = true
-worth-store-contracts.workspace = true
-worth-store-physical-backend.workspace = true
 worth-store-physical-format.workspace = true
 worth-store-physical-integrity.workspace = true
-worth-store-security.workspace = true
 worth-store-wal.workspace = true
-worth-store.workspace = true
 
 [features]
 default = []
-certification-test-authority = [
-    "dep:tempfile",
-    "worth-store-physical-backend/certification-test-authority",
-    "worth-store-wal/certification-authority",
-]
-
-[dev-dependencies]
-tempfile = "3"
-worth-store-authority.workspace = true
-worth-store-readiness.workspace = true
-worth-store-test-support = { workspace = true, features = ["physical-residency-fixtures"] }
 
 [lints]
 workspace = true
-
-[[test]]
-name = "layout_scenarios"
-path = "tests/layout_scenarios.rs"
-required-features = ["certification-test-authority"]

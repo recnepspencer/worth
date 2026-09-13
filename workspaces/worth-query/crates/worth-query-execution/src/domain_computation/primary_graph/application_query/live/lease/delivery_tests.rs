@@ -16,20 +16,25 @@ use crate::domain_computation::primary_graph::tests::{
     live_delivery_support::commit_live_activity,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationDisclosed, WorthQueryApplicationDisclosureReceiptPosture,
-    WorthQueryOperationAuthorizationDenialKind, WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationDisclosed,
+    WorthQueryApplicationDisclosureReceiptPosture, WorthQueryOperationAuthorizationDenialKind,
+    WorthQueryPrincipalResolutionMode,
 };
 
 #[test]
 fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
     let world = installed_authorization_world(true);
     let request = live_scope();
+    let retained_predecessor = world.selected_product();
+    let predecessor_commit = retained_predecessor.product().selected_commit().clone();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -37,10 +42,12 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
     let query = world
         .application
         .installed_schema()
-        .application_query(LiveAccountActivityQuery::reference())
+        .certification_query(LiveAccountActivityQuery::reference())
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -50,7 +57,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
         .unwrap();
     let observer = world.application.result_buffer_observer();
     let mut lease = world
-        .application
+        .selected_product()
         .open_application_query_live::<
             LiveAccountActivityQuery,
             AccountSummaryParameters,
@@ -70,10 +77,52 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
         .unwrap();
     let committed = commit_live_activity(&world, &principal, &request);
 
-    let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.poll() else {
+    assert_ne!(
+        committed.committed_product_publication().composite_commit(),
+        &predecessor_commit
+    );
+    retained_predecessor
+        .resolve_entity(
+            AccountIdentity::reference(),
+            "account-1".to_owned(),
+            &request,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .expect("the retained predecessor remains readable after its successor publishes");
+
+    let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.next(&principal, &request)
+    else {
         panic!("the committed installed live cause must deliver");
     };
-    assert_eq!(update.commit_id(), committed.commit_id());
+    assert_eq!(
+        update.product_publication(),
+        committed.committed_product_publication()
+    );
+    let WorthQueryApplicationBasisSelectionIdentity::Product(read_product) =
+        update.receipt().basis_identity().selection()
+    else {
+        panic!("live delivery must retain its exact World product occurrence")
+    };
+    assert_eq!(
+        read_product.branch_identity(),
+        update.product_publication().product_branch()
+    );
+    assert_eq!(
+        read_product.lifecycle_incarnation(),
+        update.product_publication().product_incarnation()
+    );
+    assert_eq!(
+        read_product.reference_generation(),
+        update.product_publication().product_generation()
+    );
+    assert_eq!(
+        read_product.selected_commit(),
+        update.product_publication().composite_commit()
+    );
+    assert_eq!(
+        update.receipt().basis_identity().branch_id(),
+        &update.product_publication().relational_commit().branch_id
+    );
     assert_eq!(update.result().account(), "account-1");
     assert_eq!(
         update.result().activities(),
@@ -104,9 +153,11 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -114,9 +165,11 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
     let committer_external = world.authenticate("bob", Duration::from_secs(60), &request);
     let committer = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            committer_external,
+            &committer_external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -124,10 +177,12 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
     let query = world
         .application
         .installed_schema()
-        .application_query(GovernedLiveAccountActivityQuery::reference())
+        .certification_query(GovernedLiveAccountActivityQuery::reference())
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -137,7 +192,7 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
         .unwrap();
     let capability = admit_touch_account_capability(&world, &principal, &request).unwrap();
     let mut lease = world
-        .application
+        .selected_product()
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
             AccountSummaryParameters,
@@ -161,10 +216,14 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
         .unwrap();
     let committed = commit_live_activity(&world, &committer, &request);
 
-    let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.poll() else {
+    let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.next(&principal, &request)
+    else {
         panic!("current governed authority must deliver the committed cause");
     };
-    assert_eq!(update.commit_id(), committed.commit_id());
+    assert_eq!(
+        update.product_publication(),
+        committed.committed_product_publication()
+    );
     assert_eq!(update.result().account(), "account-1");
     assert_eq!(
         update.result().activities(),
@@ -190,9 +249,11 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -200,9 +261,11 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     let committer_external = world.authenticate("bob", Duration::from_secs(60), &request);
     let committer = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            committer_external,
+            &committer_external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -210,10 +273,12 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     let query = world
         .application
         .installed_schema()
-        .application_query(GovernedLiveAccountActivityQuery::reference())
+        .certification_query(GovernedLiveAccountActivityQuery::reference())
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -223,7 +288,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
         .unwrap();
     let capability = admit_touch_account_capability(&world, &principal, &request).unwrap();
     let mut lease = world
-        .application
+        .selected_product()
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
             AccountSummaryParameters,
@@ -248,7 +313,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     commit_live_activity(&world, &committer, &request);
     revoke_current_capability(&world);
 
-    let outcome = lease.poll();
+    let outcome = lease.next(&principal, &request);
     let WorthQueryApplicationLiveOutcome::AuthorizationDenied(denial) = outcome else {
         let posture = match outcome {
             WorthQueryApplicationLiveOutcome::Delivered(_) => "delivered",

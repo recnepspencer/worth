@@ -1,39 +1,33 @@
-use worth_store_physical_format::{PageGenerationCell, RecordFrameCoordinate};
+use crate::physical_runtime::integrity::IntegrityAdmittedResidentPageBasis;
 
 pub(in crate::physical_runtime::record_serving) struct ExistingDataFrameImage {
-    page: PageGenerationCell,
-    coordinate: RecordFrameCoordinate,
     bytes: Vec<u8>,
+    admitted_prior_basis: IntegrityAdmittedResidentPageBasis,
 }
 
 impl ExistingDataFrameImage {
     pub(in crate::physical_runtime::record_serving) fn new(
-        page: PageGenerationCell,
-        coordinate: RecordFrameCoordinate,
         bytes: Vec<u8>,
+        admitted_prior_basis: IntegrityAdmittedResidentPageBasis,
     ) -> Option<Self> {
+        let coordinate = admitted_prior_basis.coordinate();
         if bytes.len() != coordinate.length() as usize {
             return None;
         }
         Some(Self {
-            page,
-            coordinate,
             bytes,
+            admitted_prior_basis,
         })
-    }
-
-    pub(in crate::physical_runtime::record_serving) const fn page(&self) -> PageGenerationCell {
-        self.page
-    }
-
-    pub(in crate::physical_runtime::record_serving) const fn coordinate(
-        &self,
-    ) -> RecordFrameCoordinate {
-        self.coordinate
     }
 
     pub(in crate::physical_runtime::record_serving) fn bytes(&self) -> &[u8] {
         &self.bytes
+    }
+
+    pub(in crate::physical_runtime::record_serving) const fn admitted_prior_basis(
+        &self,
+    ) -> IntegrityAdmittedResidentPageBasis {
+        self.admitted_prior_basis
     }
 
     pub(in crate::physical_runtime::record_serving) fn into_bytes(self) -> Vec<u8> {

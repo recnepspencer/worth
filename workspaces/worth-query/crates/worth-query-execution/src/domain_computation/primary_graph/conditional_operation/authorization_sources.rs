@@ -1,3 +1,10 @@
+use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
+use crate::domain_computation::primary_graph::{
+    WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
+    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryControls,
+    WorthQueryAuthenticatedPrincipal, WorthQueryOperationAuthorizationDenial,
+    WorthQueryPrimaryGraphApplicationRuntime,
+};
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_query::ApplicationQueryParameterSet,
@@ -7,25 +14,14 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationCapability, WorthQueryInstalledApplicationOperation,
     WorthQueryInstalledApplicationQuery,
 };
-
-use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryControls,
-    WorthQueryAuthenticatedPrincipal, WorthQueryOperationAuthorizationDenial,
-    WorthQueryPrimaryGraphApplicationRuntime,
-};
-
 #[cfg(test)]
 #[path = "authorization_sources/tests.rs"]
 mod tests;
-
 #[derive(Debug)]
 pub enum WorthQueryTemporalQueryAuthorizationDenial {
     Query(WorthQueryApplicationQueryAdmissionDenial),
     Authorization(WorthQueryOperationAuthorizationDenial),
 }
-
 impl std::fmt::Display for WorthQueryTemporalQueryAuthorizationDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -34,9 +30,7 @@ impl std::fmt::Display for WorthQueryTemporalQueryAuthorizationDenial {
         }
     }
 }
-
 impl std::error::Error for WorthQueryTemporalQueryAuthorizationDenial {}
-
 pub trait WorthQueryTemporalQueryAuthorization<
     Schema,
     Query,
@@ -202,13 +196,21 @@ impl<
 where
     Schema: ApplicationSchema,
     CapabilityInput: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>
-        + worth_query_declaration::facade::portable_identity::WorthQueryPortableType
         + Clone
         + Send
         + Sync
         + 'static,
     Capability: Send + Sync + 'static,
-    CapabilityOperation: Send + Sync + 'static,
+    CapabilityOperation:
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + Send
+            + Sync
+            + 'static,
+    <CapabilityOperation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = CapabilityInput,
+        >,
 {
     fn admit<'a>(
         &self,
@@ -242,14 +244,19 @@ where
         >,
         WorthQueryTemporalQueryAuthorizationDenial,
     > {
-        let capability = runtime
-            .admit_capability_access(
-                access.principal(),
-                &self.capability,
-                self.input.clone(),
-                controls.request_scope(),
-            )
-            .map_err(WorthQueryTemporalQueryAuthorizationDenial::Authorization)?;
+        let product = controls
+            .publication_product_branch()
+            .expect("temporal query authorization retains its selected product lease");
+        let capability = crate::domain_computation::authorization::admit_capability_access(
+            runtime,
+            product,
+            access.principal(),
+            &self.capability,
+            self.input.clone(),
+            controls.request_scope(),
+            None,
+        )
+        .map_err(WorthQueryTemporalQueryAuthorizationDenial::Authorization)?;
         runtime
             .admit_governed_application_query(query, access, capability, parameters, controls)
             .map_err(WorthQueryTemporalQueryAuthorizationDenial::Query)
@@ -263,7 +270,10 @@ where
 {
     fn authorize<Principal, PrincipalIdentity>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
             Schema,
@@ -287,24 +297,38 @@ impl<Schema, Operation, Input, Scope>
     for WorthQueryPublicTemporalOperationAuthorization
 where
     Schema: ApplicationSchema,
+    Operation:
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + 'static,
+    Operation::InputBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = Input,
+        >,
 {
     fn authorize<Principal, PrincipalIdentity>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
             Schema,
             Scope,
         >,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
-        _input: &Input,
+        input: &Input,
         preconditions: TypedMutationPreconditions<Schema, Operation, Scope>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<
         WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         WorthQueryOperationAuthorizationDenial,
     > {
-        runtime.authorize_operation(principal, scope, operation, preconditions, request)
+        super::input_validation::validate_operation_input::<Schema, Operation, Input>(
+            input, operation,
+        )?;
+        product.authorize_operation(principal, scope, operation, preconditions, request)
     }
 }
 
@@ -328,21 +352,28 @@ impl<Schema, Capability, Operation, Input, Scope>
 where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>
-        + worth_query_declaration::facade::portable_identity::WorthQueryPortableType
         + Clone
         + Send
         + Sync
         + 'static,
     Capability: Send + Sync + 'static,
     Operation:
-        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity
-            + Send
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + Send
             + Sync
             + 'static,
+    <Operation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = Input,
+        >,
 {
     fn authorize<Principal, PrincipalIdentity>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         _scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
             Schema,
@@ -357,7 +388,9 @@ where
         WorthQueryOperationAuthorizationDenial,
     > {
         let capability =
-            runtime.admit_capability_access(principal, &self.capability, input.clone(), request)?;
-        runtime.authorize_capability_operation(capability, operation, preconditions)
+            product.admit_capability_access(principal, &self.capability, input.clone(), request)?;
+        product
+            .application()
+            .authorize_capability_operation(capability, operation, preconditions)
     }
 }

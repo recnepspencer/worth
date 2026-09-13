@@ -1,19 +1,54 @@
 use super::PhysicalDirtyReplacementReservation;
+use crate::physical_residency::integrity_validation::CleanFrameIntegrityValidationDenial;
+use crate::physical_residency::integrity_validation::PhysicalResidentFrameGeneration;
 use crate::physical_residency::pool::PoolInner;
 use crate::physical_residency::PhysicalFrameKey;
 use crate::PhysicalResidencyDenial;
 use std::{ops::Deref, sync::Arc};
+use worth_store_physical_integrity::PhysicalIntegrityValidationRecord;
 
 #[derive(Debug)]
 pub struct PhysicalFrameLease {
     pub(crate) owner: Arc<PoolInner>,
     pub(crate) key: PhysicalFrameKey,
     pub(crate) bytes: Arc<Vec<u8>>,
+    pub(crate) resident_generation: PhysicalResidentFrameGeneration,
 }
 
 impl PhysicalFrameLease {
     pub const fn key(&self) -> PhysicalFrameKey {
         self.key
+    }
+
+    pub const fn resident_generation(&self) -> PhysicalResidentFrameGeneration {
+        self.resident_generation
+    }
+
+    pub fn commit_integrity_validation(
+        &self,
+        validation: PhysicalIntegrityValidationRecord,
+    ) -> Result<(), CleanFrameIntegrityValidationDenial> {
+        self.owner.commit_integrity_validation(
+            self.key,
+            &self.bytes,
+            self.resident_generation,
+            validation,
+        )
+    }
+
+    pub fn integrity_validation(&self) -> Option<PhysicalIntegrityValidationRecord> {
+        self.owner
+            .integrity_validation(self.key, &self.bytes, self.resident_generation)
+    }
+
+    /// Invalidates only the expected record on this exact resident incarnation.
+    pub fn invalidate_integrity_validation_if(&self, expected: PhysicalIntegrityValidationRecord) {
+        self.owner.invalidate_integrity_validation_if(
+            self.key,
+            &self.bytes,
+            self.resident_generation,
+            expected,
+        );
     }
 
     pub fn copy_range_into(&self, range: std::ops::Range<usize>, target: &mut [u8]) {

@@ -10,7 +10,7 @@ use crate::diagnostics::summary::{
     ExecutionHistorySummary, GraphSummary, TemporalDiagnosticsSummary,
 };
 use crate::diagnostics::{
-    FailureSummary, FlowSummary, ReplayView, RollbackDiagnostic, SynthesizedReplaySlice,
+    FailureSummary, ReplayView, RetainedFlowSummaryView, RollbackDiagnostic, SynthesizedReplaySlice,
 };
 use crate::logic::explain::{explain_with_policy_resolver, NodeExplanation};
 use crate::logic::transaction::ObservationBoundarySummary;
@@ -28,6 +28,7 @@ where
     T: Copy + Ord,
 {
     pub fn explain(&self, node: NodeId) -> Result<NodeExplanation, SignalError> {
+        self.runtime.assert_construction_graph_access();
         let resolver = TierPolicyResolver::new(
             self.runtime.config.node_meta(),
             self.runtime.config.tier_policies(),
@@ -58,6 +59,7 @@ where
     }
 
     pub fn checkpoint_record(&self) -> CheckpointRecord {
+        self.runtime.assert_construction_state_access();
         CheckpointRecord::from_checkpoint_telemetry(self.composed_checkpoint_telemetry())
     }
 
@@ -69,6 +71,7 @@ where
         &self,
         profile: DiagnosticsTier,
     ) -> TemporalDiagnosticsSummary {
+        self.runtime.assert_construction_state_access();
         TemporalDiagnosticsSummary::from_artifact(
             profile,
             self.runtime.temporal.frontier_snapshot(),
@@ -84,6 +87,7 @@ where
     }
 
     pub fn diagnostics(&self) -> RuntimeDiagnostics<'a> {
+        self.runtime.assert_construction_graph_access();
         crate::diagnostics::access::diagnostics_for_runtime(self.runtime)
     }
 
@@ -120,6 +124,7 @@ where
     }
 
     pub fn replay_for_branch(&self, branch_id: SignalBranchId) -> ReplayView {
+        self.runtime.assert_construction_graph_access();
         self.runtime
             .branches
             .replay_graph(
@@ -166,7 +171,7 @@ where
         self.graph().inspect_execution()
     }
 
-    pub fn latest_flow_diagnostics(&self) -> Option<&'a FlowSummary> {
+    pub fn latest_flow_diagnostics(&self) -> Option<RetainedFlowSummaryView<'a>> {
         self.graph().latest_flow_diagnostics()
     }
 
@@ -179,6 +184,7 @@ where
     }
 
     pub fn latest_observation_summary(&self) -> Option<&'a ObservationBoundarySummary> {
+        self.runtime.assert_construction_graph_access();
         self.runtime.graph.diagnostics_state().latest_observation()
     }
 
@@ -188,7 +194,7 @@ where
 
     pub fn recent_execution_history_diagnostics(
         &self,
-    ) -> &'a std::collections::VecDeque<ExecutionHistorySummary> {
+    ) -> crate::diagnostics::summary::RetainedExecutionHistoryView<'a> {
         self.graph().recent_execution_history_diagnostics()
     }
 

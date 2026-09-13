@@ -8,12 +8,12 @@ description = "Checked physical protocol semantics and owner-to-model refinement
 
 [dependencies]
 sha2 = "0.10"
+worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-store-layout-indexes.workspace = true
 worth-store-lsm-authority.workspace = true
 worth-store-operations.workspace = true
 worth-store-offline-verifier.workspace = true
 worth-store-physical-backend.workspace = true
-worth-store-physical-integrity.workspace = true
 worth-store-physical-isolation.workspace = true
 worth-store-recovery-physics.workspace = true
 worth-store-recovery-runtime.workspace = true
@@ -26,3 +26,5 @@ workspace = true
 
 [dev-dependencies]
 tempfile = "3"
+worth-store-contracts.workspace = true
+worth-store-test-support = { workspace = true, features = ["layout-fixtures", "physical-compaction-fixtures"] }

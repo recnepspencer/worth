@@ -1,8 +1,8 @@
 # Milestone 9.17.1.1: Owner-Port Concurrency And Lifecycle Closure
 
 > **Status:** Closed on 2026-08-29. Every phase is implemented, independently
-> reviewed, and verified on the integrated tree. The corrected owner-component
-> surface Milestone 9.17.2 consumes is frozen in the handoff below and,
+> reviewed, and verified on the integrated tree. Its corrected Relational,
+> retention, and lifecycle surface is frozen in the handoff below and,
 > normatively, in `crates/worth-relational/OWNER_COMPONENT_PORT.md` and
 > `crates/worth-signal/BRANCH_BASES.md`.
 >
@@ -10,11 +10,16 @@
 > corrective sub-milestone repairs the current owner-component contract exposed
 > by independent post-closure review; it does not amend, re-score, or recreate
 > the 9.17.1 phase record.
+>
+> **Successor clarification:** Milestone 9.17.1.2 ports the remaining direct
+> Relational basis/lifecycle calls and Signal operations before composition. It
+> preserves every meaning frozen here; 9.17.2 consumes only those concrete
+> owner bundles through `worth-runtime-world`.
 
 ## Goal
 
 Make the owner-component boundary delivered by Milestone 9.17.1 honest enough
-for Runtime Bridge composition:
+for Runtime World composition:
 
 - every Relational owner operation used by composition is independently
   borrowable and cannot serialize unrelated branches through
@@ -64,7 +69,7 @@ meaning while repairing implementation and evidence that contradict their
 explicit concurrency, lifecycle, facade, and documentation laws.
 
 Milestone 9.17.2 may not begin production implementation until this corrective
-milestone closes. Runtime Bridge relies on the ability to:
+milestone and Milestone 9.17.1.2 close. Runtime World relies on the ability to:
 
 - hold independently usable Relational owner services while coordinating
   Signal work;
@@ -194,7 +199,7 @@ cell is rootless, converting an invalid owner state into a later panic.
 | Exact Signal component retention | Signal | Exact-target `SignalBranchRetentionLease` backed by Signal owner state | Signal currentness, mutation, restore, or fork |
 | Portable basis/reference vocabulary | Foundational | Existing descriptive descriptors and mismatch axes | Any runtime operation |
 | Owner-specialized authority carrier | Proof plus private Relational marker | Public carrier alias, private witness issuance | Caller-selected generic authority |
-| Composite publication | Runtime Bridge in 9.17.2 | Not created here | Component truth or owner-local settlement |
+| Composite publication | Runtime World in 9.17.2 | Not created here | Component truth or owner-local settlement |
 
 All new ports are cloneable bindings to the narrow owner subsystems they use.
 They carry runtime affinity and owner lifecycle but no raw runtime reference,
@@ -616,7 +621,7 @@ registry, and outcome files separate public guard lifecycle, owner state, and
 typed result meaning.
 
 No `owner_ports`, `helpers`, `shared`, compatibility, or milestone-named source
-bucket is permitted. Runtime Bridge 9.17.2 enters only through the stable
+bucket is permitted. Runtime World 9.17.2 enters only through the stable
 facades and adds no file to either owner topology.
 
 ## Ordered Phase Plan
@@ -683,12 +688,12 @@ handoff consumed by 9.17.2.
   show the independently borrowable preparation/publication/settlement path,
   ordinary `&self` convenience path, concurrency boundary, patch-position
   deferral, and current memory-resident limits.
-- `crates/worth-relational/OWNER_COMPONENT_PORT.md`, for Runtime Bridge 9.17.2,
+- `crates/worth-relational/OWNER_COMPONENT_PORT.md`, for Runtime World 9.17.2,
   must define candidate consumption, fresh-attempt and still-admitted-basis
   retry posture, preinstalled pending settlement, lost-capability repair,
   deletion versus immutable retention, public authority names, and exact
   terminal outcomes.
-- `crates/worth-signal/BRANCH_BASES.md`, for Runtime Bridge 9.17.2, must show
+- `crates/worth-signal/BRANCH_BASES.md`, for Runtime World 9.17.2, must show
   retention of a non-current exact basis, explicit and drop release, owner-loss
   posture, and the distinction between residency and currentness.
 - `crates/worth-relational/TESTING_WORLDS.md`, for maintainers, must name valid
@@ -758,12 +763,12 @@ public examples and reconcile every guide with the facade.
 - Proof-owned concrete carriers specialized by private owner markers;
 - Query-agnostic owner crates, cert-only replay, tier direction, structural
   sharing, and memory-resident application state; and
-- the exact 9.17.2 rule that Runtime Bridge composes owner artifacts without
+- the exact 9.17.2 rule that Runtime World composes owner artifacts without
   restamping component authority.
 
 ## Explicit Non-Goals
 
-- Runtime Bridge composite commits or product branch references;
+- Runtime World composite commits or product branch references;
 - Query plan, session, receipt, live, history, or facade carriage;
 - persistence, restart recovery, distributed settlement, or Store integration;
 - semantic merge, rebase, multi-parent history, offline synchronization, or
@@ -797,16 +802,18 @@ Test counts are observations, not acceptance authority. A green suite that did
 not exercise the feature, ignored proof, contention schedule, capability-drop
 path, or non-current exact retention does not close the corresponding claim.
 
-## Exact Handoff To Milestone 9.17.2
+## Exact Relational And Retention Handoff Toward Milestone 9.17.2
 
-Runtime Bridge may depend only on public owner facades to:
+The Runtime World composition owner may depend only on public owner facades to:
 
 - obtain independently borrowable Relational preparation, fork, publication,
-  settlement, observation, retention, and lifecycle services, through
+  and settlement services through
   `facade::mvcc::{RelationalPreparationPort, RelationalPublicationPort,
   RelationalSettlementPort}` and `facade::branch::RelationalForkPort`, each
   taken by shared borrow;
-- obtain or readmit exact owner-issued Relational and Signal bases, through
+- after 9.17.1.2, obtain observation, readmission, retention, release, and
+  lifecycle through its added Relational ports and aggregate bundle;
+- carry exact owner-issued Relational and Signal bases through
   `facade::branch::{AdmittedRelationalBranchBasis,
   AdmittedRelationalForkSourceBasis}` and
   `worth_signal::facade::branch::AdmittedSignalBranchBasis`;
@@ -841,9 +848,10 @@ obligations, is frozen in `crates/worth-relational/OWNER_COMPONENT_PORT.md` and
 `crates/worth-signal/BRANCH_BASES.md`. Where this section and those guides could
 be read differently, the guides govern.
 
-Runtime Bridge may not inspect pending-settlement or retention registries,
+Runtime World may not inspect pending-settlement or retention registries,
 construct an owner authority, retain only a branch id, treat currentness as
 residency, retry a consumed candidate, settle by editing history, wrap an owner
 runtime in a global mutex, or create a compatibility representation. The next
-milestone begins with these corrected owner contracts as prerequisites; it does
-not repair them from the composition layer.
+9.17.1.2 completes the Relational bundle and Signal operation boundary without
+changing these contracts. Milestone 9.17.2 does not repair either owner from
+the composition layer.

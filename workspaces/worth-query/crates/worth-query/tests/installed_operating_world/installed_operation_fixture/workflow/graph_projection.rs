@@ -79,7 +79,7 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowRead,
         })?;
         let first_remote_identity = remote
             .rows()
-            .first()
+            .next()
             .map(domain::WorthQueryGraphReadRow::entity_identity)
             .ok_or_else(|| workflow_failure("the remote-a execution product contained no rows"))?;
         let completion = context.execute_installed_read("model", workspace)?;

@@ -1,17 +1,16 @@
 use super::{
     CompactionCandidateRangeSet, CompactionProtectedReferenceSet, CompactionReadInterlockCounters,
-    CompactionReadInterlockDenial,
+    CompactionReadInterlockDenial, CompactionSourceIntegrityAdmission,
 };
 use crate::{RootEpoch, StablePhysicalReadReceipt};
-use worth_store_physical_integrity::CompactionSourceIntegrityClearance;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CompactionSourceEvidencePosture {
     IntegrityClearedStableRead {
         receipt: StablePhysicalReadReceipt,
-        clearance: CompactionSourceIntegrityClearance,
+        admission: CompactionSourceIntegrityAdmission,
     },
-    Quarantined(CompactionSourceIntegrityClearance),
+    Quarantined(CompactionSourceIntegrityAdmission),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,33 +19,33 @@ pub struct CompactionSourceIntegrityEvidence {
 }
 
 impl CompactionSourceIntegrityEvidence {
-    pub fn from_stable_read_receipt_and_integrity_clearance(
+    pub fn from_stable_read_receipt_and_integrity_admission(
         receipt: StablePhysicalReadReceipt,
-        clearance: CompactionSourceIntegrityClearance,
+        admission: CompactionSourceIntegrityAdmission,
     ) -> Result<Self, CompactionReadInterlockDenial> {
         let release = receipt.read_plan_release();
         if release.protected_references_released() == 0 {
             return Err(CompactionReadInterlockDenial::EmptyCandidateRangeSet);
         }
-        if !clearance.permits_compaction_movement() {
+        if !admission.permits_compaction_movement() {
             return Ok(Self {
-                posture: CompactionSourceEvidencePosture::Quarantined(clearance),
+                posture: CompactionSourceEvidencePosture::Quarantined(admission),
             });
         }
-        if clearance.inspected_bytes() == 0 {
+        if admission.inspected_bytes() == 0 {
             return Err(CompactionReadInterlockDenial::SourceEvidenceMismatch);
         }
         Ok(Self {
             posture: CompactionSourceEvidencePosture::IntegrityClearedStableRead {
                 receipt,
-                clearance,
+                admission,
             },
         })
     }
 
-    pub const fn from_quarantine_clearance(clearance: CompactionSourceIntegrityClearance) -> Self {
+    pub const fn from_quarantine_admission(admission: CompactionSourceIntegrityAdmission) -> Self {
         Self {
-            posture: CompactionSourceEvidencePosture::Quarantined(clearance),
+            posture: CompactionSourceEvidencePosture::Quarantined(admission),
         }
     }
 
@@ -95,9 +94,9 @@ impl CompactionReadInterlockPlan {
             CompactionSourceEvidencePosture::Quarantined(_) => {
                 return Err(CompactionReadInterlockDenial::QuarantinedCandidateRange);
             }
-            CompactionSourceEvidencePosture::IntegrityClearedStableRead { receipt, clearance } => {
+            CompactionSourceEvidencePosture::IntegrityClearedStableRead { receipt, admission } => {
                 let release = receipt.read_plan_release();
-                let owner = clearance
+                let owner = admission
                     .locality_owner()
                     .ok_or(CompactionReadInterlockDenial::SourceEvidenceMismatch)?;
                 if !protected.contains_owner(owner) {

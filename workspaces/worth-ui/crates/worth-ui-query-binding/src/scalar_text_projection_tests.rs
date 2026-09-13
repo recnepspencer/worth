@@ -38,7 +38,7 @@ fn installed_scalar_text_meaning_executes_and_consumes_native_status() {
     assert_independent_detail_read(&mut workspace);
     let installed = workspace.worth_ui().expect("Worth UI domain installed");
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .expect("observation world")
         .family(WorthUiScalarTextProjectionFamily)
         .bind(installed.handle(), WorthUiScalarTextProjection)
@@ -162,7 +162,7 @@ fn scalar_text_consumer_contract_requires_query_async_and_recovery_support() {
     let workspace = projection_workspace(false);
     let installed = workspace.worth_ui().expect("Worth UI domain installed");
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .expect("observation world")
         .family(WorthUiScalarTextProjectionFamily)
         .bind(installed.handle(), WorthUiScalarTextProjection)
@@ -186,7 +186,7 @@ fn missing_exact_scalar_entity_fails_consumption_without_a_native_value() {
     let mut workspace = projection_workspace(true);
     let installed_domain = workspace.worth_ui().expect("Worth UI domain installed");
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .expect("observation world")
         .family(WorthUiScalarTextProjectionFamily)
         .bind(installed_domain.handle(), WorthUiScalarTextProjection)

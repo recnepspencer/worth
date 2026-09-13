@@ -315,7 +315,7 @@ fn promote(
 fn settle(workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace) -> SettledProjection {
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)

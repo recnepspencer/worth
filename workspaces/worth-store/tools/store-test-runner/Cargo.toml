@@ -4,26 +4,4 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish = false
-
-[dependencies]
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-sha2 = "0.10"
-tempfile = "3"
-worth-store = { workspace = true, optional = true }
-worth-store-physical-certification = { workspace = true, optional = true }
-
-[features]
-physical-work-evidence = [
-    "dep:worth-store",
-    "dep:worth-store-physical-certification",
-    "worth-store/certification-test-authority",
-]
-
-[dev-dependencies]
-proc-macro2 = "1"
-syn = { version = "2", features = ["clone-impls", "full", "visit"] }
-trybuild = "1.0"
-worth-proof = { path = "../../../../crates/worth-proof" }
-worth-store-io-scheduler.workspace = true
-worth-store-physical-isolation.workspace = true
+default-run = "store-test-runner"

@@ -1,3 +1,4 @@
+mod fork_growth;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::data::aspect::Aspect;
@@ -7,9 +8,24 @@ use crate::data::handle::NodeId;
 use crate::data::output::{
     DetailTokenId, InternedPartitionSubscription, PartitionMatchMode, PartitionTokenId,
 };
-use crate::data::proof::invalidation::output_commit::{ProducedAspectChange, ScopePrecision};
 
-use super::membership::remove_member;
+mod consumer_payload;
+mod discovery;
+mod flat_mutation;
+#[cfg(test)]
+mod fork_cost_tests;
+#[cfg(test)]
+mod fork_granule_tests;
+mod fork_overlay;
+#[cfg(test)]
+mod model_tests;
+mod operational_clone;
+mod persistent_fork;
+mod query;
+
+use consumer_payload::{ForkConsumerMembershipChange, ForkConsumerMemberships};
+use flat_mutation::{insert_flat_membership, remove_flat_consumer};
+use fork_overlay::{ReverseSubscriptionFlat, ReverseSubscriptionStorage};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum IndexedSubscriptionScope {
@@ -60,7 +76,11 @@ impl SignalGraph {
             consumers.extend(
                 self.topology
                     .reverse_subscriptions
-                    .query_whole_aspect(producer, aspect)
+                    .query_whole_aspect(
+                        producer,
+                        aspect,
+                        &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+                    )?
                     .candidates,
             );
         }
@@ -68,67 +88,6 @@ impl SignalGraph {
         consumers.dedup();
         consumers.retain(|consumer| self.is_alive(*consumer));
         Ok(consumers)
-    }
-
-    pub(crate) fn query_reverse_subscriptions(
-        &mut self,
-        producer: NodeId,
-        change: &ProducedAspectChange,
-        precision: ScopePrecision,
-    ) -> Result<ReverseSubscriptionQuery, SignalError> {
-        if !self.topology.reverse_subscriptions.is_valid() {
-            return Err(SignalError::internal(
-                "reverse subscription index requires authority rebuild",
-            ));
-        }
-        let mut result = if precision == ScopePrecision::ConservativeLegacyUnion
-            || change.changed_scopes.is_empty()
-        {
-            self.topology
-                .reverse_subscriptions
-                .query_whole_aspect(producer, change.aspect)
-        } else {
-            let mut candidates = Vec::new();
-            let mut bucket_probes = 0;
-            for scope in change.changed_scopes.as_slice() {
-                let Some(interned) = self
-                    .observation
-                    .partition_interner()
-                    .resolve_subscription(scope)
-                else {
-                    let query = self
-                        .topology
-                        .reverse_subscriptions
-                        .query_unscoped(producer, change.aspect);
-                    bucket_probes += query.bucket_probes;
-                    candidates.extend(query.candidates);
-                    continue;
-                };
-                let query = self.topology.reverse_subscriptions.query_scope(
-                    producer,
-                    change.aspect,
-                    interned,
-                );
-                bucket_probes += query.bucket_probes;
-                candidates.extend(query.candidates);
-            }
-            candidates.sort_unstable();
-            candidates.dedup();
-            ReverseSubscriptionQuery {
-                candidates,
-                bucket_probes,
-            }
-        };
-        if let Some(mut telemetry) = self.telemetry_mut() {
-            telemetry.invalidation.reverse_subscription_bucket_probes += result.bucket_probes;
-            telemetry
-                .invalidation
-                .reverse_subscription_candidates_returned += result.candidates.len() as u64;
-        }
-        result
-            .candidates
-            .retain(|candidate| self.is_alive(*candidate));
-        Ok(result)
     }
 }
 
@@ -158,7 +117,7 @@ impl IndexedSubscriptionMembership {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 struct SubscriberScopeBuckets {
     all: BTreeSet<NodeId>,
     unscoped: BTreeSet<NodeId>,
@@ -167,18 +126,25 @@ struct SubscriberScopeBuckets {
     partition_scoped: BTreeMap<PartitionTokenId, BTreeSet<NodeId>>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub(crate) struct ReverseSubscriptionIndex {
-    buckets: BTreeMap<ProducerAspectKey, SubscriberScopeBuckets>,
-    by_consumer: BTreeMap<NodeId, Vec<IndexedSubscriptionMembership>>,
+    storage: ReverseSubscriptionStorage,
     valid: bool,
+}
+
+impl Clone for ReverseSubscriptionIndex {
+    fn clone(&self) -> Self {
+        Self {
+            storage: self.storage.clone(),
+            valid: self.valid,
+        }
+    }
 }
 
 impl Default for ReverseSubscriptionIndex {
     fn default() -> Self {
         Self {
-            buckets: BTreeMap::new(),
-            by_consumer: BTreeMap::new(),
+            storage: ReverseSubscriptionStorage::Exclusive(ReverseSubscriptionFlat::default()),
             valid: true,
         }
     }
@@ -200,8 +166,7 @@ impl ReverseSubscriptionIndex {
     }
 
     pub(super) fn clear(&mut self) {
-        self.buckets.clear();
-        self.by_consumer.clear();
+        self.storage = ReverseSubscriptionStorage::Exclusive(ReverseSubscriptionFlat::default());
         self.valid = false;
     }
 
@@ -215,7 +180,21 @@ impl ReverseSubscriptionIndex {
             self.insert_membership(consumer, membership);
         }
         if !memberships.is_empty() {
-            self.by_consumer.insert(consumer, memberships);
+            match &mut self.storage {
+                ReverseSubscriptionStorage::Exclusive(flat) => {
+                    flat.by_consumer.insert(consumer, memberships);
+                }
+                ReverseSubscriptionStorage::ForkShared {
+                    consumer_changes, ..
+                } => {
+                    consumer_changes.insert(
+                        consumer,
+                        ForkConsumerMembershipChange::Replaced(
+                            ForkConsumerMemberships::from_owned(memberships),
+                        ),
+                    );
+                }
+            }
         }
     }
 
@@ -231,166 +210,72 @@ impl ReverseSubscriptionIndex {
         self.insert_membership(consumer, &membership);
     }
 
-    pub(crate) fn query_whole_aspect(
-        &self,
-        producer: NodeId,
-        aspect: Aspect,
-    ) -> ReverseSubscriptionQuery {
-        let key = ProducerAspectKey::from_committed_output(producer, aspect);
-        let Some(buckets) = self.buckets.get(&key) else {
-            return ReverseSubscriptionQuery {
-                candidates: Vec::new(),
-                bucket_probes: 1,
-            };
-        };
-        ReverseSubscriptionQuery {
-            candidates: buckets.all.iter().copied().collect(),
-            bucket_probes: 1,
-        }
-    }
-
-    fn query_unscoped(&self, producer: NodeId, aspect: Aspect) -> ReverseSubscriptionQuery {
-        let key = ProducerAspectKey::from_committed_output(producer, aspect);
-        let Some(buckets) = self.buckets.get(&key) else {
-            return ReverseSubscriptionQuery {
-                candidates: Vec::new(),
-                bucket_probes: 1,
-            };
-        };
-        ReverseSubscriptionQuery {
-            candidates: buckets.unscoped.iter().copied().collect(),
-            bucket_probes: 1,
-        }
-    }
-
-    pub(crate) fn query_scope(
-        &self,
-        producer: NodeId,
-        aspect: Aspect,
-        scope: InternedPartitionSubscription,
-    ) -> ReverseSubscriptionQuery {
-        let key = ProducerAspectKey::from_committed_output(producer, aspect);
-        let Some(buckets) = self.buckets.get(&key) else {
-            return ReverseSubscriptionQuery {
-                candidates: Vec::new(),
-                bucket_probes: match scope.match_mode {
-                    PartitionMatchMode::WholePartition => 2,
-                    PartitionMatchMode::PartitionAndDetail => 3,
-                },
-            };
-        };
-        let mut candidates = buckets.unscoped.iter().copied().collect::<Vec<_>>();
-        let bucket_probes = match scope.match_mode {
-            PartitionMatchMode::WholePartition => {
-                if let Some(scoped) = buckets.partition_scoped.get(&scope.partition) {
-                    candidates.extend(scoped.iter().copied());
-                }
-                2
-            }
-            PartitionMatchMode::PartitionAndDetail => {
-                if let Some(whole) = buckets.whole_partitions.get(&scope.partition) {
-                    candidates.extend(whole.iter().copied());
-                }
-                if let Some(detail) = scope.detail.and_then(|detail| {
-                    buckets.exact_details.get(&DetailScopeKey {
-                        partition: scope.partition,
-                        detail,
-                    })
-                }) {
-                    candidates.extend(detail.iter().copied());
-                }
-                3
-            }
-        };
-        candidates.sort_unstable();
-        candidates.dedup();
-        ReverseSubscriptionQuery {
-            candidates,
-            bucket_probes,
-        }
-    }
-
     fn insert_membership(&mut self, consumer: NodeId, membership: &IndexedSubscriptionMembership) {
-        let buckets = self.buckets.entry(membership.key).or_default();
-        buckets.all.insert(consumer);
-        match membership.scope {
-            IndexedSubscriptionScope::Unscoped => {
-                buckets.unscoped.insert(consumer);
+        match &mut self.storage {
+            ReverseSubscriptionStorage::Exclusive(flat) => {
+                insert_flat_membership(flat, consumer, membership);
             }
-            IndexedSubscriptionScope::WholePartition(partition) => {
-                buckets
-                    .whole_partitions
-                    .entry(partition)
-                    .or_default()
-                    .insert(consumer);
-                buckets
-                    .partition_scoped
-                    .entry(partition)
-                    .or_default()
-                    .insert(consumer);
-            }
-            IndexedSubscriptionScope::Detail(partition, detail) => {
-                buckets
-                    .exact_details
-                    .entry(DetailScopeKey { partition, detail })
-                    .or_default()
-                    .insert(consumer);
-                buckets
-                    .partition_scoped
-                    .entry(partition)
-                    .or_default()
-                    .insert(consumer);
+            ReverseSubscriptionStorage::ForkShared {
+                base,
+                bucket_changes,
+                ..
+            } => {
+                let base_bucket = base.buckets.get(&membership.key);
+                let mut delta = bucket_changes
+                    .get(&membership.key)
+                    .cloned()
+                    .unwrap_or_default();
+                delta.insert(base_bucket, consumer, &membership.scope);
+                if delta.is_empty() {
+                    bucket_changes.remove(&membership.key);
+                } else {
+                    bucket_changes.insert(membership.key, delta);
+                }
             }
         }
     }
 
     fn remove_consumer(&mut self, consumer: NodeId) {
-        let Some(memberships) = self.by_consumer.remove(&consumer) else {
-            return;
-        };
-        for membership in memberships {
-            let key = membership.key;
-            let Some(buckets) = self.buckets.get_mut(&key) else {
-                continue;
-            };
-            buckets.all.remove(&consumer);
-            match membership.scope {
-                IndexedSubscriptionScope::Unscoped => {
-                    buckets.unscoped.remove(&consumer);
+        match &mut self.storage {
+            ReverseSubscriptionStorage::Exclusive(flat) => remove_flat_consumer(flat, consumer),
+            ReverseSubscriptionStorage::ForkShared {
+                base,
+                bucket_changes,
+                consumer_changes,
+            } => {
+                let memberships = match consumer_changes.get(&consumer) {
+                    Some(ForkConsumerMembershipChange::Replaced(memberships)) => {
+                        Some(memberships.as_slice().to_vec())
+                    }
+                    Some(ForkConsumerMembershipChange::Removed) => None,
+                    None => base.by_consumer.get(&consumer).cloned(),
+                };
+                let Some(memberships) = memberships else {
+                    return;
+                };
+                if base.by_consumer.contains_key(&consumer) {
+                    consumer_changes.insert(consumer, ForkConsumerMembershipChange::Removed);
+                } else {
+                    consumer_changes.remove(&consumer);
                 }
-                IndexedSubscriptionScope::WholePartition(partition) => {
-                    remove_member(&mut buckets.whole_partitions, partition, consumer);
-                    refresh_partition_scoped(buckets, partition, consumer);
+                for membership in memberships {
+                    let base_bucket = base.buckets.get(&membership.key);
+                    let mut delta = bucket_changes
+                        .get(&membership.key)
+                        .cloned()
+                        .unwrap_or_default();
+                    delta.remove(base_bucket, consumer, &membership.scope);
+                    if delta.is_empty() {
+                        bucket_changes.remove(&membership.key);
+                    } else {
+                        bucket_changes.insert(membership.key, delta);
+                    }
                 }
-                IndexedSubscriptionScope::Detail(partition, detail) => {
-                    remove_member(
-                        &mut buckets.exact_details,
-                        DetailScopeKey { partition, detail },
-                        consumer,
-                    );
-                    refresh_partition_scoped(buckets, partition, consumer);
-                }
-            }
-            if buckets.all.is_empty() {
-                self.buckets.remove(&key);
             }
         }
     }
 }
+mod retained_charge;
 
-fn refresh_partition_scoped(
-    buckets: &mut SubscriberScopeBuckets,
-    partition: PartitionTokenId,
-    consumer: NodeId,
-) {
-    let remains = buckets
-        .whole_partitions
-        .get(&partition)
-        .is_some_and(|members| members.contains(&consumer))
-        || buckets.exact_details.iter().any(|(candidate, members)| {
-            candidate.partition == partition && members.contains(&consumer)
-        });
-    if !remains {
-        remove_member(&mut buckets.partition_scoped, partition, consumer);
-    }
-}
+#[cfg(test)]
+mod work_tests;

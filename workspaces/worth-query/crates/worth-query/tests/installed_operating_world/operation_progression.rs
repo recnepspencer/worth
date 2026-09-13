@@ -13,7 +13,7 @@ fn public_bound_execution_projection_and_settlement_remain_one_chain() {
     let mut workspace = workspace("installed-progression", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -86,7 +86,7 @@ fn non_publishing_execution_is_a_terminal_typed_outcome() {
     let mut workspace = workspace("installed-terminal", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, CountVertices)
@@ -111,7 +111,7 @@ fn installed_parameter_contract_denies_before_graph_or_executor_work() {
     let workspace = workspace("installed-parameter-denial", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, CountVertices)
@@ -140,7 +140,7 @@ fn declared_primary_read_cannot_be_skipped_by_a_terminal_executor() {
     let mut workspace = missing_read_execution_workspace("installed-skipped-read").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, CountVertices)
@@ -171,7 +171,7 @@ fn foreign_workspace_denies_before_graph_or_executor_work() {
     let owner = workspace("installed-execution-owner", false).unwrap();
     let installed_domain = owner.domain(GeometryDomain).unwrap();
     let bound = owner
-        .observe_operating_world()
+        .observe_operating_world(owner.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -204,7 +204,7 @@ fn admitted_direct_attempt_becomes_stale_before_any_execution_work() {
         .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let admitted = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -239,13 +239,13 @@ fn equivalent_but_distinct_bound_contract_cannot_splice_the_chain() {
     let mut workspace = workspace("installed-progression-splice", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let first = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
         .unwrap();
     let second = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -282,7 +282,7 @@ fn result_state_and_warning_postures_survive_through_settlement() {
         let mut workspace = workspace(&format!("installed-posture-{index}"), false).unwrap();
         let installed_domain = workspace.domain(GeometryDomain).unwrap();
         let bound = workspace
-            .observe_operating_world()
+            .observe_operating_world(workspace.current_world())
             .unwrap()
             .family(ReadFamily)
             .bind(&installed_domain, ReadVertex)

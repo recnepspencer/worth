@@ -115,6 +115,7 @@ impl<Terminate> ShutdownProtocol<CheckpointDrained, Terminate> {
             access: _access,
             publication,
             checkpoint,
+            root_protocol_counters: _root_protocol_counters,
             residency,
             durability,
         } = parts;

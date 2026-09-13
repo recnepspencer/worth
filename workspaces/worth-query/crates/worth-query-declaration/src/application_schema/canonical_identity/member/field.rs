@@ -14,6 +14,7 @@ pub(super) fn append_schema_field(
         scalar_family,
         value_type,
         unit,
+        frame,
         writable,
         equality_queryable,
     } = member
@@ -31,6 +32,7 @@ pub(super) fn append_schema_field(
     );
     basis.text(format!("{prefix}.value-type"), value_type);
     basis.optional_text(format!("{prefix}.unit"), unit.as_deref());
+    basis.optional_text(format!("{prefix}.frame"), frame.as_deref());
     basis.bool(format!("{prefix}.writable"), *writable);
     basis.bool(format!("{prefix}.equality-queryable"), *equality_queryable);
 }

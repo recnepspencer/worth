@@ -4,16 +4,8 @@ use crate::ProtocolFamily;
 
 use super::ProtocolCheckBounds;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PinnedTlcToolchain;
-
-impl PinnedTlcToolchain {
-    pub const VERSION: &'static str = "1.7.4";
-    pub const DOWNLOAD_URL: &'static str =
-        "https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar";
-    pub const SHA256: &'static str =
-        "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88";
-}
+pub const PINNED_TLC_SHA256: &str =
+    "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProtocolCheckInvocation {
@@ -38,20 +30,6 @@ impl ProtocolCheckInvocation {
             configuration_path: crate_root
                 .as_ref()
                 .join(configuration.replace('/', std::path::MAIN_SEPARATOR_STR)),
-            bounds,
-        }
-    }
-
-    pub fn for_controlled_defect(
-        protocol: ProtocolFamily,
-        model_path: impl Into<PathBuf>,
-        configuration_path: impl Into<PathBuf>,
-        bounds: ProtocolCheckBounds,
-    ) -> Self {
-        Self {
-            protocol,
-            model_path: model_path.into(),
-            configuration_path: configuration_path.into(),
             bounds,
         }
     }

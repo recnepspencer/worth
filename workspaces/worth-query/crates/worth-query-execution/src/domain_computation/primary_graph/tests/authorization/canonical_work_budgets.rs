@@ -1,6 +1,8 @@
 use std::time::Duration;
 
-use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEncodedScalarValue, StringApplicationValueBinding, TypedMutationPreconditions,
+};
 
 use super::super::fixture::{
     installed_authorization_world, live_scope, AccountStatus, TouchAccountOperation,
@@ -17,15 +19,19 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_owned(),
@@ -47,10 +53,22 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
     assert_eq!(budget.maximum_encoded_bytes(), 256 * 1_024);
 
     let duplicate_target = TypedMutationPreconditions::new()
-        .expect_fact(AccountStatus::reference(), "open".to_owned())
-        .expect_fact(AccountStatus::reference(), "open".to_owned());
+        .expect_fact(
+            AccountStatus::reference(),
+            ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                "open".to_owned(),
+            )
+            .expect("fixture account status must encode"),
+        )
+        .expect_fact(
+            AccountStatus::reference(),
+            ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                "open".to_owned(),
+            )
+            .expect("fixture account status must encode"),
+        );
     assert_precondition_rejected(
-        world.application.authorize_operation(
+        world.selected_product().authorize_operation(
             &principal,
             &account,
             &operation,
@@ -61,11 +79,14 @@ fn installed_precondition_entry_and_byte_budgets_fail_closed() {
     );
 
     let oversized_value = "x".repeat(budget.maximum_encoded_bytes());
-    let oversized =
-        TypedMutationPreconditions::new().expect_fact(AccountStatus::reference(), oversized_value);
+    let oversized = TypedMutationPreconditions::new().expect_fact(
+        AccountStatus::reference(),
+        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(oversized_value)
+            .expect("fixture account status must encode"),
+    );
     assert_precondition_rejected(
         world
-            .application
+            .selected_product()
             .authorize_operation(&principal, &account, &operation, oversized, &request),
         "canonical material beyond the installed byte ceiling must be denied",
     );

@@ -1,6 +1,7 @@
 mod denial;
 mod dirty_generation;
 mod frame_access;
+mod integrity_validation;
 mod lease;
 mod limits;
 mod observation;
@@ -23,6 +24,9 @@ pub use frame_access::{
     PhysicalFrameAccess, PhysicalFrameFaultError, PhysicalFrameFaultOwner,
     PhysicalFrameFaultWaiter, PhysicalFrameLoadTerminal, PhysicalFrameLoadTerminalKind,
     PhysicalFrameLoadingIdentity,
+};
+pub use integrity_validation::{
+    CleanFrameIntegrityValidationDenial, PhysicalResidentFrameGeneration,
 };
 pub use lease::{
     DirtyPhysicalFrame, PhysicalCandidateBatchAdmission, PhysicalCandidateBatchReservation,

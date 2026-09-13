@@ -56,13 +56,10 @@ impl BankReadControls {
         self.maximum_work
     }
 
-    pub(super) fn application_query_controls(
+    pub(crate) fn application_query_controls(
         &self,
-    ) -> worth_query_host::facade::primary_graph::WorthQueryApplicationQueryControls<
-        '_,
-        bank_domain::schema::BankSchema,
-    > {
-        worth_query_host::facade::primary_graph::WorthQueryApplicationQueryControls::current_one_shot(
+    ) -> worth_query_host::facade::primary_graph::WorthQueryProductQueryControls<'_> {
+        worth_query_host::facade::primary_graph::WorthQueryProductQueryControls::new(
             self.maximum_results,
             self.maximum_work,
             &self.request,

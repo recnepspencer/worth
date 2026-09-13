@@ -10,8 +10,6 @@ use worth_store_aspect_native::{
     StoreAspectFieldBoundaryLocator, StoreAspectIdentity, StoreAspectPatchAuthorityInput,
     StoreAspectPatchBoundaryFact, StoreAspectValueBoundaryLocator, StorePhysicalBoundaryWitness,
 };
-#[cfg(feature = "certification-world")]
-use worth_store_contracts::ROADMAP_2_REPLAY_PHYSICAL_BOUNDARY;
 use worth_store_contracts::{
     PhysicalAuthorityBoundaryInstance, StorePhysicalAuthorityWitness,
     ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE, ROADMAP_2_PRIMARY_PHYSICAL_BOUNDARY,
@@ -60,13 +58,6 @@ pub(crate) fn authored_segment_header_fixture(
 
 pub(crate) fn authored_scalar_string_fixture(value: &str) -> AuthoredNativeStoreAspectFixture {
     authored_scalar_string_fixture_on_boundary(value, ROADMAP_2_PRIMARY_PHYSICAL_BOUNDARY)
-}
-
-#[cfg(feature = "certification-world")]
-pub(crate) fn authored_replay_boundary_scalar_string_fixture(
-    value: &str,
-) -> AuthoredNativeStoreAspectFixture {
-    authored_scalar_string_fixture_on_boundary(value, ROADMAP_2_REPLAY_PHYSICAL_BOUNDARY)
 }
 
 fn authored_scalar_string_fixture_on_boundary(

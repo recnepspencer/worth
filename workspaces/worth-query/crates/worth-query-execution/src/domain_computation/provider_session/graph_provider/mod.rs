@@ -4,7 +4,7 @@ mod call_identity;
 mod call_kind;
 mod commit_call;
 mod failure;
-mod legacy_work_claim;
+mod materialization;
 mod provider_contract;
 mod read_material;
 mod read_product;
@@ -22,7 +22,7 @@ pub use failure::{
     WorthQueryGraphCallBindingDenial, WorthQueryGraphProviderFailure,
     WorthQueryGraphReceiptAdmissionDenial,
 };
-pub use legacy_work_claim::WorthQueryLegacyProviderWorkClaim;
+pub use materialization::WorthQueryGraphReadRows;
 pub use provider_contract::{
     WorthQueryGraphCommitProvider, WorthQueryGraphParticipationProvider,
     WorthQueryProviderSessionLifecycle,

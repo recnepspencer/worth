@@ -1,5 +1,5 @@
-use worth_store_physical_integrity::{QuarantineHandoffPosture, QuarantineRecord};
-use worth_store_recovery_physics::{
+use worth_foundational::PhysicalQuarantinePosture;
+use worth_store_layout_indexes::integrity::{
     RecoveryLayoutReadmissionAdmissionDenial, RecoveryLayoutReadmissionOutcomeView,
 };
 
@@ -7,9 +7,7 @@ use super::QuarantineReadmissionState;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuarantineRecordObservation {
-    receipt_digest: String,
-    handoff: QuarantineHandoffPosture,
-    proves_repair: bool,
+    posture: PhysicalQuarantinePosture,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -17,30 +15,19 @@ pub struct QuarantineReadmissionOutcomeObservation {
     states: [QuarantineReadmissionState; 2],
 }
 
-pub fn map_quarantine_record(record: &QuarantineRecord) -> QuarantineRecordObservation {
-    QuarantineRecordObservation {
-        receipt_digest: record
-            .receipt()
-            .foundational_basis()
-            .digest()
-            .as_str()
-            .to_owned(),
-        handoff: record.handoff_posture(),
-        proves_repair: record.proves_repair(),
-    }
+pub const fn map_quarantine_record(
+    posture: PhysicalQuarantinePosture,
+) -> QuarantineRecordObservation {
+    QuarantineRecordObservation { posture }
 }
 
 impl QuarantineRecordObservation {
-    pub fn receipt_digest(&self) -> &str {
-        &self.receipt_digest
-    }
-
-    pub const fn handoff(&self) -> QuarantineHandoffPosture {
-        self.handoff
+    pub const fn posture(&self) -> PhysicalQuarantinePosture {
+        self.posture
     }
 
     pub const fn proves_repair(&self) -> bool {
-        self.proves_repair
+        false
     }
 
     pub fn states(&self) -> impl Iterator<Item = QuarantineReadmissionState> {

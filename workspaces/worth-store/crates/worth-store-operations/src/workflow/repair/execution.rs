@@ -1,10 +1,10 @@
+use super::integrity_classification::{
+    IntegrityOperationalRepairOwner, IntegrityRepairClassificationReceipt,
+};
 use sha2::{Digest, Sha256};
 use worth_store_authority::{StoreCurrentAuthorityIdentity, StoreCurrentAuthorityWitness};
 use worth_store_layout_indexes::{
     DerivedIndexRepairExecutionDenial, DerivedIndexRepairReceipt, LayoutOperationalRepairOwner,
-};
-use worth_store_physical_integrity::{
-    IntegrityOperationalRepairOwner, IntegrityRepairClassificationReceipt,
 };
 
 use crate::authorization::{consume_authorization_through, recover_authorization_consumption};
@@ -32,7 +32,7 @@ pub struct ExecutionReadyRepair<'a> {
     authority_identity: StoreCurrentAuthorityIdentity,
     authorization: AuthorizationConsumptionReceipt,
     integrity_node: OwnerPlanNodeIdentity,
-    integrity: worth_store_physical_integrity::IntegrityRepairClassificationPlan,
+    integrity: super::integrity_classification::IntegrityRepairClassificationPlan,
     layout: Vec<(
         OwnerPlanNodeIdentity,
         worth_store_layout_indexes::DerivedIndexRepairPlan,

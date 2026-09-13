@@ -7,10 +7,6 @@ use worth_store_physical_isolation::{
     BlobOrphanReclaimProof, CurrentGenerationPhysicalReference, GenerationCountedPhysicalReference,
     ReclaimEligibilityProof,
 };
-use worth_store_recovery_physics::{
-    BlobReplaySourceAdmission, BlobResumeReplayReadmission, DurabilityReplayIdentity,
-    DurabilityReplayKind,
-};
 use worth_store_security::StoreTenantScope;
 use worth_store_wal::{
     BlobWalRecordEnvelope, BlobWalRecordIdentity, BlobWalRecordKind, LogSequenceNumber,
@@ -18,15 +14,17 @@ use worth_store_wal::{
     WalSegmentId,
 };
 
+use super::super::replay_source::{BlobReplaySourceIdentity, BlobReplaySourceIdentityKind};
 use crate::lifecycle::generation_registry_test_support::current_authority;
 use crate::publication::test_support::publication_inputs_with_bytes_and_chunk_size;
 use crate::test_support::{admitted_multichunk_sequence_for_scope, blob_scope};
 use crate::{
     BlobChunkSize, BlobChunkingRuleAdmission, BlobInterruptedIngestRecovery,
-    BlobResumeCheckpointStateKind, BlobResumeDenial, BlobResumeReadmissionAuthority,
-    BlobResumeReplay, BlobResumeReplayOutcome, BlobResumeRootPublicationReady,
-    BlobResumeSessionAbandoned, BlobResumeSessionAdmitted, BlobResumeSessionDeclaration,
-    BlobResumeStoreAuthority, BlobResumeUnfinishedState, BlobStreamingContentFrontier,
+    BlobReplaySourceAdmission, BlobResumeCheckpointStateKind, BlobResumeDenial,
+    BlobResumeReadmissionAuthority, BlobResumeReplay, BlobResumeReplayOutcome,
+    BlobResumeReplayReadmission, BlobResumeRootPublicationReady, BlobResumeSessionAbandoned,
+    BlobResumeSessionAdmitted, BlobResumeSessionDeclaration, BlobResumeStoreAuthority,
+    BlobResumeUnfinishedState, BlobStreamingContentFrontier,
 };
 
 #[path = "orphan_reclaim_tests.rs"]
@@ -348,8 +346,8 @@ fn readmission_authority_for_digest(
 }
 
 fn replay_source_for_checkpoint_digest(checkpoint_digest: &str) -> BlobReplaySourceAdmission {
-    let identity = DurabilityReplayIdentity::new(
-        DurabilityReplayKind::Checkpoint,
+    let identity = BlobReplaySourceIdentity::new(
+        BlobReplaySourceIdentityKind::Checkpoint,
         BackendTargetProfile::SimulatedStrictDurable,
         checkpoint_digest,
         1,

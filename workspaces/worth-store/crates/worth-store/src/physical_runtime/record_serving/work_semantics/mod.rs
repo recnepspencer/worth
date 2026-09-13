@@ -18,6 +18,7 @@ use super::RecordPublicationStage;
 
 mod durability;
 mod frame_writeback_basis;
+pub(in crate::physical_runtime) mod integrity_admission;
 mod publication_basis;
 mod read_basis;
 pub(in crate::physical_runtime) mod security_admission;

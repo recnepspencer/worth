@@ -35,23 +35,6 @@ pub(in crate::courtroom::protocol_models) fn execute_ordinary_lease_lifecycle_tr
     vec![release, revocation, owned_copy, expiry, reclaim_and_reuse]
 }
 
-pub(in crate::courtroom::protocol_models) fn replay_live_lease_reclaim_guard(
-    seed: u64,
-) -> Vec<LeaseReclaimAction> {
-    let generation = seed.max(1);
-    let fixture = ReclaimFixture::new(generation);
-    let mut table = one_slot_table();
-    let active = table.acquire(fixture.root, fixture.lease.clone()).unwrap();
-    let blocked = ReclaimEligibilityProof::admit(
-        fixture.executed_reachability(),
-        table.live_index_snapshot(),
-        BackupReachabilityLeaseIndexSnapshot::empty(),
-    )
-    .unwrap();
-    assert!(blocked.try_reclaim().is_err());
-    vec![map_active_lease(active), map_reclaim_eligibility(&blocked)]
-}
-
 fn execute_release(actions: &mut Vec<LeaseReclaimAction>) {
     let fixture = ReclaimFixture::new(4);
     let mut table = one_slot_table();

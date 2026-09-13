@@ -93,12 +93,10 @@ fn run_fixture(
     let source = fs::read(fixture.source_path()).map_err(|error| {
         UiRunFailure::FixtureRead(format!("{}: {error}", fixture.source_path().display()))
     })?;
-    let source_digest = digest_bytes(&source);
     let identity = UiFixtureIdentity {
         suite_identity: environment.declaration.suite_identity().to_owned(),
         case_identity: fixture.case_identity().to_owned(),
         source_path: normalized_path(environment.workspace_root, fixture.source_path()),
-        source_digest,
         environment_identity: environment.environment_identity.to_owned(),
         expected_denial_identity: digest_serialized(fixture.expected_denial())?,
     };

@@ -3,6 +3,7 @@ mod branch_state_capture;
 mod branch_transfer;
 mod construction;
 mod graph_mutation;
+mod owner_services;
 mod resource;
 mod telemetry;
 mod transfer_packets;
@@ -31,7 +32,7 @@ where
     T: Copy + Ord,
 {
     pub(in crate::logic::transaction::runtime) config: SignalRuntimeConfig<T>,
-    pub(in crate::logic::transaction::runtime) graph: SignalGraph,
+    pub(in crate::logic::transaction::runtime) graph: Box<SignalGraph>,
     pub(in crate::logic::transaction::runtime) schema_registry: SignalSchemaRegistry,
     pub(in crate::logic::transaction::runtime) merge_strategy_registry: FrozenMergeStrategyRegistry,
     pub(in crate::logic::transaction::runtime) merge_base_strategy_registry:
@@ -56,6 +57,10 @@ where
     pub(in crate::logic::transaction::runtime) temporal: TemporalRuntimeState,
     pub(in crate::logic::transaction::runtime) telemetry: RuntimeTelemetry,
     pub(in crate::logic::transaction::runtime) branches: BranchManager<D, I, T>,
+    pub(in crate::logic::transaction::runtime) basis_registry:
+        crate::branch::SignalBranchBasisRegistry,
+    pub(in crate::logic::transaction::runtime) owner_services:
+        crate::branch::owner_services::SignalOwnerRoot<D, I, T>,
 }
 pub use graph_mutation::SignalGraphMut;
 pub(in crate::logic::transaction::runtime) use transfer_packets::{

@@ -1,13 +1,13 @@
+use super::integrity_classification::{
+    IntegrityOperationalRepairOwner, IntegrityRepairClassificationReceipt,
+};
+use crate::workflow::restore::{
+    BackupRestoreReplayDenial, BackupRestoreReplayOwner, RecoveredBackupFrontierReceipt,
+};
 use worth_store_physical_backend::{
     ClosedNonCurrentStagingMedia, NonCurrentStagingExecutionDenial,
     NonCurrentStagingExecutionReceipt, NonCurrentStagingOwnerExecutionDenial,
     PhysicalRecoveryStagingOwner,
-};
-use worth_store_physical_integrity::{
-    IntegrityOperationalRepairOwner, IntegrityRepairClassificationReceipt,
-};
-use worth_store_recovery_physics::{
-    BackupRestoreReplayDenial, RecoveredBackupFrontierReceipt, RecoveryPhysicsBackupRestoreOwner,
 };
 
 use crate::authorization::StagingAuthorizationContinuation;
@@ -97,8 +97,8 @@ impl ExecutionReadyAuthorityAffectingRepair<'_> {
         ports: &Ports,
     ) -> Result<ExecutedAuthorityAffectingRepair, AuthorityAffectingRepairExecutionDenial>
     where
-        Ports: crate::StagingAuthorizationContinuationPort
-            + worth_store_recovery_physics::StagedWalApplicationPort,
+        Ports:
+            crate::StagingAuthorizationContinuationPort + crate::workflow::StagedWalApplicationPort,
     {
         self.execute_with_control(ports, &UninterruptedRepairExecution)
     }
@@ -109,8 +109,8 @@ impl ExecutionReadyAuthorityAffectingRepair<'_> {
         control: &impl RepairExecutionControlPort,
     ) -> Result<ExecutedAuthorityAffectingRepair, AuthorityAffectingRepairExecutionDenial>
     where
-        Ports: crate::StagingAuthorizationContinuationPort
-            + worth_store_recovery_physics::StagedWalApplicationPort,
+        Ports:
+            crate::StagingAuthorizationContinuationPort + crate::workflow::StagedWalApplicationPort,
     {
         self.journal
             .begin_owner_effect(self.nodes.integrity, 2)
@@ -165,9 +165,8 @@ impl ExecutionReadyAuthorityAffectingRepair<'_> {
                         RepairExecutionBoundaryMoment::BeforeOwnerEffect,
                     ))
                     .map_err(StagedRepairOwnerDenial::Interrupted)?;
-                let receipt =
-                    RecoveryPhysicsBackupRestoreOwner::execute(self.recovery, staging, ports)
-                        .map_err(StagedRepairOwnerDenial::Recovery)?;
+                let receipt = BackupRestoreReplayOwner::execute(self.recovery, staging, ports)
+                    .map_err(StagedRepairOwnerDenial::Recovery)?;
                 control
                     .observe(RepairExecutionBoundary::new(
                         self.nodes.recovery,

@@ -1,5 +1,5 @@
+use super::super::integrity_classification::IntegrityRepairRegionClass;
 use worth_store_offline_verifier::{OfflineAuthorityClass, OperationalTruthRegion};
-use worth_store_physical_integrity::IntegrityRepairRegionClass;
 
 pub(super) fn repair_class(
     region: &OperationalTruthRegion,

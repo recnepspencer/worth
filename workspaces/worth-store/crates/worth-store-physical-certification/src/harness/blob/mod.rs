@@ -6,8 +6,6 @@ mod heavy_qualification_tests;
 mod lowering;
 mod oracle_observation;
 mod profile;
-#[cfg(any(test, feature = "certification-test-support"))]
-mod replay;
 mod resume_recovery;
 mod scenario_seed;
 mod shortcut_denial;
@@ -20,13 +18,6 @@ pub use lowering::{
 };
 pub use oracle_observation::BlobHarnessOracleObservation;
 pub use profile::{BlobHarnessProfile, BlobHarnessProfileSet};
-#[cfg(any(test, feature = "certification-test-support"))]
-pub use replay::blob_harness_replay_artifacts_for_certification;
-#[cfg(any(test, feature = "certification-test-support"))]
-pub use replay::{
-    coverage_matrix_for_seed as synthetic_blob_harness_coverage_matrix_for_test_support,
-    replay_bundle_for_seed as synthetic_blob_harness_replay_bundle_for_test_support,
-};
 pub use resume_recovery::{
     BlobResumeCrashPoint, BlobResumeExpectedOutcome, BlobResumeRecoveryScenario,
 };

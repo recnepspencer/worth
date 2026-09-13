@@ -1,0 +1,31 @@
+error[E0277]: `Rc<()>` cannot be sent between threads safely
+ --> tests/signal_owner_services/ui/local_only_owner_issuance.rs:7:21
+  |
+7 |     let _ = runtime.owner_component_services();
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be sent between threads safely
+  |
+  = help: the trait `Send` is not implemented for `Rc<()>`
+note: required by a bound in `worth_signal::logic::transaction::runtime::state::runtime_state::owner_services::<impl SignalRuntime<D, I, E, Ctx, T>>::owner_component_services`
+ --> src/logic/transaction/runtime/state/runtime_state/owner_services.rs
+  |
+  |     pub fn owner_component_services(
+  |            ------------------------ required by a bound in this associated function
+...
+  |         Ctx: Send + Sync + 'static,
+  |              ^^^^ required by this bound in `worth_signal::logic::transaction::runtime::state::runtime_state::owner_services::<impl SignalRuntime<D, I, E, Ctx, T>>::owner_component_services`
+
+error[E0277]: `Rc<()>` cannot be shared between threads safely
+ --> tests/signal_owner_services/ui/local_only_owner_issuance.rs:7:21
+  |
+7 |     let _ = runtime.owner_component_services();
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be shared between threads safely
+  |
+  = help: the trait `Sync` is not implemented for `Rc<()>`
+note: required by a bound in `worth_signal::logic::transaction::runtime::state::runtime_state::owner_services::<impl SignalRuntime<D, I, E, Ctx, T>>::owner_component_services`
+ --> src/logic/transaction/runtime/state/runtime_state/owner_services.rs
+  |
+  |     pub fn owner_component_services(
+  |            ------------------------ required by a bound in this associated function
+...
+  |         Ctx: Send + Sync + 'static,
+  |                     ^^^^ required by this bound in `worth_signal::logic::transaction::runtime::state::runtime_state::owner_services::<impl SignalRuntime<D, I, E, Ctx, T>>::owner_component_services`

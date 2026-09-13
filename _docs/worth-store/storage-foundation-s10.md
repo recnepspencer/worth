@@ -207,7 +207,9 @@ The ownership split is fixed:
 - `worth-store-physical-integrity` owns checksum evaluation, damage
   localization, integrity classification, and physical quarantine mutation.
 - `worth-store-recovery-physics` owns recovery-source precedence, exact
-  checkpoint/WAL candidate evaluation, replay, and recovered-frontier receipts.
+  checkpoint/WAL admission, replay, and recovered-frontier receipts; the
+  offline verifier owns candidate-evaluation projection and canonical candidate
+  sets.
 - `worth-store-physical-isolation` owns stable-cut leases, staging isolation,
   copy-on-write publication, source-cut reachability leases, and reachability
   barriers.
@@ -752,11 +754,12 @@ worth-store-physical-integrity/src/
     verification_request.rs
     verification_result.rs
 
-worth-store-recovery-physics/src/
-  candidate_evaluation/
-    source_precedence.rs
-    exact_frontier.rs
+worth-store-offline-verifier/src/
+  truth_composition/candidate_evaluation/
+    mod.rs
     candidate_set.rs
+
+worth-store-recovery-physics/src/
   backup_restore/
     replay_plan.rs
     replay_execution.rs
@@ -881,10 +884,10 @@ The tree carries these placement laws:
   authorization or owner receipts.
 - support projection cannot be imported by resolution, lowering,
   authorization, execution, publication, or readmission modules.
-- Recovery Physics is the sole constructor owner of recovery candidates and
-  exact frontiers. The offline verifier may expose only read-only candidate
-  views/projections over sealed Recovery Physics values; it owns no candidate
-  type and performs no source selection.
+- The offline verifier is the constructor owner of observer recovery-candidate
+  projections and exact observed frontiers. Recovery Physics owns source
+  precedence and physical admission; it does not construct the observer's
+  candidate type or select a source for an operation.
 - test scenarios, drivers, faults, schedules, and oracles are different
   responsibilities and never share one `support` or `helpers` directory.
 - any S.10 work touching the current flat verifier facade or behavioral
@@ -1101,9 +1104,9 @@ promoting that report into mutation authority.
   equivalence authority.
 - Reports expose both trusted facts and explicit unknowns. Absence of evidence
   never serializes as a healthy or empty region.
-- Candidate discovery is owned by recovery physics and consumes sealed owner
-  observations; the offline verifier composes and presents candidates but
-  cannot construct them.
+- Candidate discovery is owned by the offline verifier and consumes sealed
+  owner observations; recovery physics owns source precedence and admission,
+  but cannot construct the observer's candidate projection.
 
 **Open questions**
 

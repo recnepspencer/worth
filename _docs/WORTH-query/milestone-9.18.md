@@ -5,11 +5,17 @@
 Replace Milestone 9.16's provisional linear current-head undo/redo experiment
 with an accepted tree-based correction product over the composite runtime-world
 history governed by [Milestone 9.17](./milestone-9.17.md) and completed through
-[Milestone 9.17.3](./milestone-9.17.3.md). Undo and redo
+[Milestone 9.17.3](./milestone-9.17.3.md), using the application contract hardened
+by [Milestone 9.17.4](./milestone-9.17.4.md) and its unified semantic authoring
+compiler in [Milestone 9.17.4.1](./milestone-9.17.4.1.md). Undo and redo
 select exact committed occurrences and publish newly admitted composite commits
 on an exact product branch. They never erase history, move a hidden stack
 cursor, replay old authority, reinterpret a receipt as permission, or assume
 that reversing Relational truth alone restores the selected Signal world.
+Semantic revision adoption cannot discard an already-performed occurrence's
+recovery obligation: the obligation remains exact-occurrence-bound and is
+usable only through current correction or recovery authority, without
+re-exposing the historical application API.
 
 One correction may advance Relational while retaining the exact Signal basis,
 advance or reconcile Signal while retaining Relational, or coordinate changes
@@ -28,7 +34,17 @@ publication while explicitly withholding product acceptance from its existing
 undo/redo lane. Milestone 9.17.1 supplies exact component bases and Relational
 branch-local MVCC; 9.17.2 supplies the product branch, composite single-parent
 history, and coordinated target-head authority; 9.17.3 supplies complete Query
-carriage and the public branch/history facade this milestone extends.
+carriage and public branch/history authority. Milestone 9.17.4 then supplies
+entry-owned bindings, fresh request execution, installed domain handlers, and
+the retained-history/recovery experience this milestone extends. Correction
+must use that same application entry, not restore caller-owned phase plumbing
+or the provisional API.
+
+9.17.4 retires Bank's provisional undo/redo server commands, HTTP routes,
+user-node actions and experimental-only tests together. Accepted aftermath
+inspection and owner recovery remain available. This milestone must install
+new tree-correction intents and complete Bank transport/user-node journeys;
+it cannot assume a supported linear correction route survived the cutover.
 
 ```text
 exact committed source occurrence
@@ -39,7 +55,7 @@ exact committed source occurrence
     -> owner-local inverse, compensation, reconciliation, or reapplication plans
     -> composite applicability and invariant admission
     -> owner-local preparation
-    -> Runtime Bridge coordinated compare-and-publish
+    -> Runtime World coordinated compare-and-publish
     -> new composite commit with exact component bases
     -> typed aftermath and next actions
 ```
@@ -52,7 +68,8 @@ exact committed source occurrence
   compensation inputs installed for those changes.
 - Signal owns Signal definition and derived-execution branch semantics; its
   branch state is not inferred from Relational history.
-- Runtime Bridge owns the exact composite branch correspondence and publication
+- the base Runtime Bridge owns installed semantic correspondence; the dedicated
+  Runtime World owner owns composite branches, history, and publication
   progression completed by Milestone 9.17.2 and carried through Query by
   Milestone 9.17.3.
 
@@ -106,8 +123,9 @@ publication, or Signal `latest` lookup must fail this courtroom.
 
 1. Undo and redo are canonical new-history operations. Neither deletes,
    rewrites, uncommits, or moves past history.
-2. Runtime Bridge owns composite commits, product branch references,
-   correspondence, composite currentness, and coordinated compare-and-publish.
+2. The base Runtime Bridge owns installed semantic correspondence. The Runtime
+   World owner owns composite commits, product branch references, composite
+   currentness, and coordinated compare-and-publish.
 3. Relational owns authoritative truth changes, Relational branch history,
    owner-local inverse inputs, conflicts, and publication candidates.
 4. Signal owns Signal branch history, definition-bound execution meaning,
@@ -115,8 +133,8 @@ publication, or Signal `latest` lookup must fail this courtroom.
 5. Query owns installed correction meaning, fresh admission, operation lowering,
    typed progression, public DX, and aftermath projection. It owns no component
    or composite head.
-6. Domain packages own semantic inverse and compensation meaning. Query and
-   Runtime Bridge cannot infer an inverse from touched scope, a before/after
+6. Domain packages own semantic inverse and compensation meaning. Query,
+   Runtime Bridge, and Runtime World cannot infer an inverse from touched scope, a before/after
    diff, or apparent component equality.
 7. Every correction names an exact source operation occurrence, source
    composite commit, target product branch, target composite head generation,
@@ -188,7 +206,7 @@ worth-query-execution/src/domain_computation/application_aftermath/
         alternatives.rs
         retention.rs
 
-worth-runtime-bridge/src/runtime_world/correction/
+worth-runtime-world/src/correction/
     preparation.rs
     component_outcomes.rs
     coordination.rs
@@ -216,7 +234,7 @@ worth-query-certification/tests/application_aftermath/
 
 The correction tree is organized by semantic meaning in Query, owner-local
 mechanics in Relational and Signal, and cross-runtime coordination in Runtime
-Bridge. Forbidden placements include a Query-local history store, a Bridge-
+World. Forbidden placements include a Query-local history store, a Runtime World-
 implemented domain inverse, a Relational-owned Signal selection, and a generic
 undo manager that hides component posture.
 
@@ -242,16 +260,17 @@ effects begin.
 
 Lower the admitted correction into explicit per-component retain, inverse,
 compensation, reconciliation, rebuild, reapplication, or denial plans. Each
-runtime validates and prepares only its own meaning. Query and Runtime Bridge
+runtime validates and prepares only its own meaning. Query and Runtime World
 may coordinate those plans but cannot recreate them.
 
 ### Phase 4: Coordinated Reversal And Compensation Publication
 
 Execute the owner-local plans through ordinary runtime boundaries and publish
-one new composite commit through Runtime Bridge's coordinated
+one new composite commit through Runtime World's coordinated
 compare-and-publish progression. Preserve the source and every descendant.
 Denial, cancellation, stale head, and conflict move no product head; retained
-candidates receive exact lifecycle posture.
+owner effects without product movement receive the exact
+`ProductUnpublishedOwnerEffects` lifecycle posture.
 
 ### Phase 5: Reapplication And Divergent Redo
 

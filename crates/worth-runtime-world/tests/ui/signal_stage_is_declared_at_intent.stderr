@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/signal_stage_is_declared_at_intent.rs:11:31
+   |
+11 |     requires_the_signal_stage(intent);
+   |     ------------------------- ^^^^^^ expected `CompositePublicationIntent<WithSignal>`, found `CompositePublicationIntent<...>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+   = note: expected struct `worth_runtime_world::facade::CompositePublicationIntent<WithSignal>`
+              found struct `worth_runtime_world::facade::CompositePublicationIntent<WithoutSignal>`
+note: function defined here
+  --> tests/ui/signal_stage_is_declared_at_intent.rs:5:4
+   |
+ 5 | fn requires_the_signal_stage(_: CompositePublicationIntent<WithSignal>) {}
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^ -----------------------------------------

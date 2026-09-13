@@ -1,0 +1,225 @@
+error: cannot construct `IntegrityValidatedCheckpointStreamHeader<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:12:19
+   |
+12 |     let _header = IntegrityValidatedCheckpointStreamHeader { scope };
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   ----- private field
+   |
+   = note: ...and other private fields `source`, `validation_record` and `inspected` that were not provided
+
+error: cannot construct `IntegrityValidatedCheckpointDirtyBasis<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:13:18
+   |
+13 |     let _dirty = IntegrityValidatedCheckpointDirtyBasis { scope };
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   ----- private field
+   |
+   = note: ...and other private fields `basis`, `validation_record` and `inspected` that were not provided
+
+error: cannot construct `IntegrityValidatedCheckpointBindingCompaction<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:14:23
+   |
+14 |     let _compaction = IntegrityValidatedCheckpointBindingCompaction { scope };
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   ----- private field
+   |
+   = note: ...and other private fields `header`, `validation_record` and `inspected` that were not provided
+
+error: cannot construct `IntegrityValidatedCheckpointBinding<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:15:20
+   |
+15 |     let _binding = IntegrityValidatedCheckpointBinding { scope };
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   ----- private field
+   |
+   = note: ...and other private fields `payload_bytes`, `payload_range`, `validation_record` and `inspected` that were not provided
+
+error: cannot construct `IntegrityValidatedCheckpointFooter<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:16:19
+   |
+16 |     let _footer = IntegrityValidatedCheckpointFooter { scope };
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   ----- private field
+   |
+   = note: ...and other private fields `footer`, `validation_record` and `inspected` that were not provided
+
+error: cannot construct `IntegrityValidatedCurrentRootSelector<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:20:19
+   |
+20 |     let _forged = IntegrityValidatedCurrentRootSelector {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+21 |         scope,
+   |         ----- private field
+22 |         inspected: todo!(),
+   |         ------------------ private field
+   |
+   = note: ...and other private fields `selector_identity`, `record_format`, `root_generation`, `linked_selector`, `linked_root_generation` and `validation_record` that were not provided
+
+warning: unreachable expression
+  --> tests/ui/proof_construction.rs:20:19
+   |
+20 |       let _forged = IntegrityValidatedCurrentRootSelector {
+   |  ___________________^
+21 | |         scope,
+22 | |         inspected: todo!(),
+   | |                    ------- any code following this expression is unreachable
+23 | |     };
+   | |_____^ unreachable expression
+   |
+   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error: cannot construct `IntegrityValidatedPreviousRootSelector<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:27:19
+   |
+27 |     let _forged = IntegrityValidatedPreviousRootSelector {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+28 |         scope,
+   |         ----- private field
+29 |         inspected: todo!(),
+   |         ------------------ private field
+   |
+   = note: ...and other private fields `selector_identity`, `record_format`, `root_generation`, `linked_selector`, `linked_root_generation` and `validation_record` that were not provided
+
+warning: unreachable expression
+  --> tests/ui/proof_construction.rs:27:19
+   |
+27 |       let _forged = IntegrityValidatedPreviousRootSelector {
+   |  ___________________^
+28 | |         scope,
+29 | |         inspected: todo!(),
+   | |                    ------- any code following this expression is unreachable
+30 | |     };
+   | |_____^ unreachable expression
+
+error: cannot construct `IntegrityValidatedRootManifest<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:34:19
+   |
+34 |     let _forged = IntegrityValidatedRootManifest {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+35 |         scope,
+   |         ----- private field
+36 |         inspected: todo!(),
+   |         ------------------ private field
+   |
+   = note: ...and other private fields that were not provided
+
+warning: unreachable expression
+  --> tests/ui/proof_construction.rs:34:19
+   |
+34 |       let _forged = IntegrityValidatedRootManifest {
+   |  ___________________^
+35 | |         scope,
+36 | |         inspected: todo!(),
+   | |                    ------- any code following this expression is unreachable
+37 | |     };
+   | |_____^ unreachable expression
+
+error: cannot construct `IntegrityValidatedPhysicalWorkObligation<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:41:19
+   |
+41 |     let _forged = IntegrityValidatedPhysicalWorkObligation {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+42 |         scope,
+   |         ----- private field
+43 |         inspected: todo!(),
+   |         ------------------ private field
+   |
+   = note: ...and other private fields `obligation` and `validation_record` that were not provided
+
+warning: unreachable expression
+  --> tests/ui/proof_construction.rs:41:19
+   |
+41 |       let _forged = IntegrityValidatedPhysicalWorkObligation {
+   |  ___________________^
+42 | |         scope,
+43 | |         inspected: todo!(),
+   | |                    ------- any code following this expression is unreachable
+44 | |     };
+   | |_____^ unreachable expression
+
+error: cannot construct `IntegrityValidatedExtentManifest<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:48:19
+   |
+48 |     let _forged = IntegrityValidatedExtentManifest {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+49 |         scope,
+   |         ----- private field
+50 |         inspected: todo!(),
+   |         ------------------ private field
+   |
+   = note: ...and other private fields that were not provided
+
+warning: unreachable expression
+  --> tests/ui/proof_construction.rs:48:19
+   |
+48 |       let _forged = IntegrityValidatedExtentManifest {
+   |  ___________________^
+49 | |         scope,
+50 | |         inspected: todo!(),
+   | |                    ------- any code following this expression is unreachable
+51 | |     };
+   | |_____^ unreachable expression
+
+error: cannot construct `IntegrityValidatedPageFrame<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:55:19
+   |
+55 |     let _forged = IntegrityValidatedPageFrame {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+56 |         scope,
+   |         ----- private field
+57 |         inspected: todo!(),
+   |         ------------------ private field
+   |
+   = note: ...and other private fields `record_format`, `page`, `slot_count`, `free_bytes`, `page_lsn` and `validation_record` that were not provided
+
+warning: unreachable expression
+  --> tests/ui/proof_construction.rs:55:19
+   |
+55 |       let _forged = IntegrityValidatedPageFrame {
+   |  ___________________^
+56 | |         scope,
+57 | |         inspected: todo!(),
+   | |                    ------- any code following this expression is unreachable
+58 | |     };
+   | |_____^ unreachable expression
+
+error: cannot construct `IntegrityValidatedWalFrame<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:62:19
+   |
+62 |     let _forged = IntegrityValidatedWalFrame {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+63 |         scope,
+   |         ----- private field
+64 |         inspected: todo!(),
+   |         ------------------ private field
+   |
+   = note: ...and other private fields `lsn_start`, `lsn_end`, `identity_digest`, `payload_digest`, `payload_range` and `validation_record` that were not provided
+
+warning: unreachable expression
+  --> tests/ui/proof_construction.rs:62:19
+   |
+62 |       let _forged = IntegrityValidatedWalFrame {
+   |  ___________________^
+63 | |         scope,
+64 | |         inspected: todo!(),
+   | |                    ------- any code following this expression is unreachable
+65 | |     };
+   | |_____^ unreachable expression
+
+error: cannot construct `IntegrityValidatedExtentChunkFrame<'_>` with struct literal syntax due to private fields
+  --> tests/ui/proof_construction.rs:69:19
+   |
+69 |     let _forged = IntegrityValidatedExtentChunkFrame {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+70 |         scope,
+   |         ----- private field
+71 |         inspected: todo!(),
+   |         ------------------ private field
+   |
+   = note: ...and other private fields `record_format`, `coordinate`, `payload_range`, `page_lsn` and `validation_record` that were not provided
+
+warning: unreachable expression
+  --> tests/ui/proof_construction.rs:69:19
+   |
+69 |       let _forged = IntegrityValidatedExtentChunkFrame {
+   |  ___________________^
+70 | |         scope,
+71 | |         inspected: todo!(),
+   | |                    ------- any code following this expression is unreachable
+72 | |     };
+   | |_____^ unreachable expression

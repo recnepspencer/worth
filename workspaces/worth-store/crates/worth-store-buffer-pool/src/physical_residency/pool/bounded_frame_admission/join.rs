@@ -46,6 +46,9 @@ impl PoolInner {
                         owner: Arc::clone(self),
                         key: PhysicalFrameKey::new(self.store, coordinate),
                         bytes,
+                        resident_generation: frame
+                            .resident_generation
+                            .expect("joined bounded frame has a byte-image generation"),
                     });
                 }
                 Some((BoundedJoinState::LoadFailed(terminal), Some(found), waiters))

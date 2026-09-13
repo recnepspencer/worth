@@ -1,10 +1,8 @@
-use worth_store_physical_integrity::{PreDecodePhysicalDenial, PreDecodePhysicalDenialKind};
-
 use super::damage_case::BlobDamageCase;
 use super::damage_decision_table::{
     classify_damage_case_from_detection_context,
     classify_streaming_read_damage_from_checksum_match, damage_case_for_localization_denial,
-    map_pre_decode_denial_kind, LocalizationEligibilityCase,
+    LocalizationEligibilityCase,
 };
 use crate::corruption::types::{BlobCorruptionDetectionSource, BlobCorruptionPlacementClass};
 
@@ -17,7 +15,7 @@ pub enum BlobDamageEvidence {
     },
     OrdinalNotInFrontier,
     GenerationFrontierMismatch,
-    PhysicalPreDecode(PreDecodePhysicalDenialKind),
+    PhysicalObservation(BlobDamageCase),
 }
 
 pub fn classify_blob_damage_before_decode(evidence: BlobDamageEvidence) -> BlobDamageCase {
@@ -32,7 +30,7 @@ pub fn classify_blob_damage_before_decode(evidence: BlobDamageEvidence) -> BlobD
         BlobDamageEvidence::GenerationFrontierMismatch => damage_case_for_localization_denial(
             LocalizationEligibilityCase::GenerationFrontierMismatch,
         ),
-        BlobDamageEvidence::PhysicalPreDecode(kind) => map_pre_decode_denial_kind(kind),
+        BlobDamageEvidence::PhysicalObservation(damage_case) => damage_case,
     }
 }
 
@@ -41,6 +39,8 @@ pub fn classify_streaming_damage_before_decode(checksums_match: bool) -> Option<
         .map(|_| classify_blob_damage_before_decode(BlobDamageEvidence::StreamingChecksumMismatch))
 }
 
-pub fn classify_physical_damage_before_decode(denial: &PreDecodePhysicalDenial) -> BlobDamageCase {
-    classify_blob_damage_before_decode(BlobDamageEvidence::PhysicalPreDecode(denial.kind()))
+pub const fn classify_physical_damage_before_decode(
+    observed_damage: BlobDamageCase,
+) -> BlobDamageCase {
+    observed_damage
 }

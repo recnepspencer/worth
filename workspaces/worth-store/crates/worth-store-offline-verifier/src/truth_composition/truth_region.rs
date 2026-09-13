@@ -1,12 +1,13 @@
 use std::path::Path;
 
+use crate::OfflinePhysicalArtifactFamily;
 use worth_store_physical_backend::OfflineMediaFileIdentity;
-use worth_store_physical_format::{OfflinePhysicalArtifactFamily, PhysicalGenerationOwner};
-use worth_store_physical_integrity::OfflineIntegrityPosture;
+use worth_store_physical_format::PhysicalGenerationOwner;
 use worth_store_security::{StoreSecurityScopeAdmissionReceiptId, StoreSecurityScopeIdentity};
 
 use super::{
-    OfflineFileTruthEvidence, OfflineRecoveryAvailability, OfflineSecurityEvidencePosture,
+    OfflineFileTruthEvidence, OfflineIntegrityPosture, OfflineRecoveryAvailability,
+    OfflineSecurityEvidencePosture,
 };
 use crate::OfflineStructuralIdentification;
 

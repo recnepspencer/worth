@@ -1,0 +1,10 @@
+error[E0624]: associated function `new` is private
+ --> tests/physical_adapter_authority/owner_disposition_forgery_is_rejected.rs:5:41
+  |
+5 |     IntactPhysicalAuthorityObservation::new(scope)
+  |                                         ^^^ private associated function
+  |
+ ::: src/physical_runtime/integrity/disposition/authority.rs
+  |
+  |     pub(super) const fn new(scope: PhysicalArtifactScope) -> Self {
+  |     ------------------------------------------------------------- private associated function defined here

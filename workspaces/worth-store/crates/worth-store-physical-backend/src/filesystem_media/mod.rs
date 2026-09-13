@@ -88,10 +88,11 @@ pub use artifact_tree::{
     CompletedScheduledArtifactNewWrite, CompletedScheduledArtifactRangeRead,
     CompletedScheduledArtifactRangeWrite, CompletedScheduledArtifactTreePublicationEffect,
     IndeterminateArtifactAppend, IndeterminateArtifactNewWrite, IndeterminateArtifactRangeWrite,
-    IndeterminateArtifactTreePublicationEffect, ScheduledArtifactAppendOutcome,
-    ScheduledArtifactMetadataReadOutcome, ScheduledArtifactNewWriteOutcome,
-    ScheduledArtifactRangeReadOutcome, ScheduledArtifactRangeWriteOutcome,
-    ScheduledArtifactTreePublicationEffectOutcome,
+    IndeterminateArtifactTreePublicationEffect, InspectionSourceVersion,
+    ObservedArtifactInspectionRead, ScheduledArtifactAppendOutcome,
+    ScheduledArtifactInspectionReadOutcome, ScheduledArtifactMetadataReadOutcome,
+    ScheduledArtifactNewWriteOutcome, ScheduledArtifactRangeReadOutcome,
+    ScheduledArtifactRangeWriteOutcome, ScheduledArtifactTreePublicationEffectOutcome,
 };
 pub use capability_profile::{
     CapabilityProfileError, CapabilitySupport, FilesystemBackendProfile, FilesystemLocation,
@@ -122,7 +123,10 @@ pub use fault_activation::{CertificationMediaFaultActivation, MediaFaultActivati
 pub use fault_schedule::{
     MediaFaultDirective, MediaFaultRule, MediaFaultSchedule, MediaFaultScheduleDenial,
 };
-#[cfg(feature = "certification-test-authority")]
+#[cfg(all(
+    feature = "certification-test-authority",
+    feature = "recovery-runtime-owner"
+))]
 pub(crate) use file_handle::CertificationRetainedMediaFileHandle;
 pub use file_handle::{
     MutableFileAccess, NamespaceFileHandle, NamespaceFileOpenKind, NamespaceFileOpenOutcome,

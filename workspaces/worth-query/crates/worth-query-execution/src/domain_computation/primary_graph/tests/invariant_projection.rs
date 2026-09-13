@@ -142,15 +142,19 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let scope = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -164,7 +168,7 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(&principal, &scope, &operation, Default::default(), &request)
         .unwrap();
 
@@ -188,15 +192,19 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let scope = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -211,7 +219,7 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
         .unwrap();
     assert_eq!(operation.contracts().projection_work_budget(), 32);
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(&principal, &scope, &operation, Default::default(), &request)
         .unwrap();
     let baseline = world.invariant.active_snapshot_count();

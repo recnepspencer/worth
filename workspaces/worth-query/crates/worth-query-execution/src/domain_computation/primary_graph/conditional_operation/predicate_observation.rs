@@ -16,7 +16,10 @@ pub struct QueryTemporalPredicateSemanticContract {
     provider_identity: &'static str,
 }
 
-pub(super) struct QueryTemporalPredicateProvider<Node, Provider> {
+pub(in crate::domain_computation::primary_graph) struct QueryTemporalPredicateProvider<
+    Node,
+    Provider,
+> {
     provider: Arc<Provider>,
     semantics: QueryTemporalPredicateSemanticContract,
     marker: PhantomData<fn() -> Node>,
@@ -26,7 +29,10 @@ impl<Node, Provider> QueryTemporalPredicateProvider<Node, Provider>
 where
     Provider: WorthQueryHostConditionalPredicateProvider<Node>,
 {
-    pub(super) fn new(provider: Arc<Provider>, node_authority: impl Into<Arc<str>>) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn new(
+        provider: Arc<Provider>,
+        node_authority: impl Into<Arc<str>>,
+    ) -> Self {
         Self {
             provider,
             semantics: QueryTemporalPredicateSemanticContract {
@@ -105,6 +111,23 @@ where
 
     fn semantic_contract(&self) -> Self::SemanticContract {
         self.semantics.clone()
+    }
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::try_from_parts(
+            [
+                worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::arc_allocation_bytes(self.provider.as_ref()),
+                self.provider.retained_heap_bytes().map_err(|_| worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow)?.bytes(),
+                worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::arc_allocation_bytes(self.semantics.node_authority.as_ref()),
+            ],
+            [],
+        )
     }
 }
 

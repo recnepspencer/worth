@@ -46,6 +46,7 @@ pub enum DurableFrameDenial {
     UnsupportedSchema(u8),
     UnsupportedFormat(PhysicalRecordFormatDenial),
     ReservedFieldNonZero,
+    NonDataPageLsnNonZero,
     LengthMismatch,
     IntegrityMismatch,
 }
@@ -202,15 +203,23 @@ pub(crate) fn decode_frame(
     if stored != actual {
         return Err(DurableFrameDenial::IntegrityMismatch);
     }
+    let page_lsn = PhysicalPageLsn::new(u64::from_le_bytes(
+        bytes[PAGE_LSN_OFFSET..PAGE_LSN_OFFSET + 8]
+            .try_into()
+            .unwrap(),
+    ));
+    if !matches!(
+        expected_kind,
+        DurableFrameKind::InlinePage | DurableFrameKind::Extent
+    ) && page_lsn != PhysicalPageLsn::GENESIS
+    {
+        return Err(DurableFrameDenial::NonDataPageLsnNonZero);
+    }
     Ok((
         format,
         DecodedFrame {
             identity: u64::from_le_bytes(bytes[28..36].try_into().unwrap()),
-            page_lsn: PhysicalPageLsn::new(u64::from_le_bytes(
-                bytes[PAGE_LSN_OFFSET..PAGE_LSN_OFFSET + 8]
-                    .try_into()
-                    .unwrap(),
-            )),
+            page_lsn,
             payload: &bytes[FRAME_HEADER_BYTES..],
         },
     ))

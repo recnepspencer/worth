@@ -5,6 +5,7 @@ use crate::domain_computation::WorthQueryDirectExecutionResourceAttempt;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedDirectRunAdmissionFailureKind {
     QueryAuthority,
+    ProductBasisMismatch,
     RelationalBasis,
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
@@ -44,6 +45,12 @@ impl WorthQueryManagedDirectRunAdmissionFailure {
 
     pub fn into_resource_attempt(self) -> WorthQueryDirectExecutionResourceAttempt {
         self.resource_attempt
+    }
+
+    pub fn release(
+        self,
+    ) -> crate::domain_computation::WorthQueryDirectExecutionAttemptReleaseReceipt {
+        self.resource_attempt.release()
     }
 }
 

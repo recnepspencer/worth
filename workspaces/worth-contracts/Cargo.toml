@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = ["crates/worth-schema-core", "crates/worth-schema-graph"]
+default-members = ["crates/worth-schema-core", "crates/worth-schema-graph"]
+
+[workspace.metadata.worth_topology]
+role = "road1_subworkspace"
+constitutional_lane = "worth-contracts"
+member_lane = "crates/*"
+allowed_crate_prefixes = ["worth-schema-"]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+license = "BUSL-1.1"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+result_large_err = "allow"

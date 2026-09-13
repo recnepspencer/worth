@@ -171,11 +171,15 @@ fn encode_coverage(
             checkpoint_identity,
             manifest_generation,
             durable_checkpoint_lsn,
+            authority_fingerprint,
+            frontier_digest,
         } => {
             output.u8(2)?;
             output.string(checkpoint_identity)?;
             output.u64(*manifest_generation)?;
-            output.u64(*durable_checkpoint_lsn)
+            output.u64(*durable_checkpoint_lsn)?;
+            output.bytes(authority_fingerprint)?;
+            output.bytes(frontier_digest)
         }
         BackupBundleArtifactCoverage::WalSegment {
             start_lsn,
@@ -204,6 +208,8 @@ fn decode_coverage(
             checkpoint_identity: input.string()?,
             manifest_generation: input.u64()?,
             durable_checkpoint_lsn: input.u64()?,
+            authority_fingerprint: input.array()?,
+            frontier_digest: input.array()?,
         },
         3 => BackupBundleArtifactCoverage::WalSegment {
             start_lsn: input.u64()?,

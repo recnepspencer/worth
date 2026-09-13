@@ -100,12 +100,7 @@ impl LsmStrategy {
         self,
         plan: &BaselineLsmCompactionPlan,
         checkpoint: Option<&CheckpointArtifactObservation>,
-        partial: Option<&worth_store_recovery_physics::PartialPublicationClassification>,
     ) -> Result<AdmittedLsmReplaySource, LsmReplaySourceDenial> {
-        AdmittedLsmReplaySource::admit_recovered_membership(
-            plan.replay_membership(),
-            checkpoint,
-            partial,
-        )
+        AdmittedLsmReplaySource::admit_recovered_membership(plan.replay_membership(), checkpoint)
     }
 }

@@ -250,8 +250,7 @@ fn effect_triggered_intent_receipt_identity_changes_with_nested_authoritative_re
 
 #[test]
 fn preview_intent_receipt_inspection_identity_keeps_basis_and_receipt_typed() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .write_authority(TestWriteAuthority)

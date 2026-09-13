@@ -8,8 +8,12 @@ description = "Roadmap 2 S.2 bounded buffer pool and resident-memory contracts."
 
 [dependencies]
 worth-store-contracts.workspace = true
+worth-store-physical-integrity.workspace = true
 worth-store-physical-format.workspace = true
 worth-store-security.workspace = true
+
+[dev-dependencies]
+worth-store-physical-integrity = { workspace = true, features = ["test-support"] }
 
 [features]
 certification-test-authority = []

@@ -4,9 +4,9 @@ error[E0382]: use of moved value: `session`
  7 |     session: PhysicalRecoveryRegisteredSessionAuthority,
    |     ------- move occurs because `session` has type `PhysicalRecoveryRegisteredSessionAuthority`, which does not implement the `Copy` trait
 ...
-11 |     let _first = session.admit_coordination(media, capacity);
-   |                          ----------------------------------- `session` moved due to this method call
-12 |     let _second = session.admit_coordination(media, capacity);
+11 |     let _first = session.admit_coordination(media, capacity, None);
+   |                          ----------------------------------------- `session` moved due to this method call
+12 |     let _second = session.admit_coordination(media, capacity, None);
    |                   ^^^^^^^ value used here after move
    |
 note: `physical_runtime::recovery_coordination::owner::<impl PhysicalRecoveryRegisteredSessionAuthority>::admit_coordination` takes ownership of the receiver `self`, which moves `session`

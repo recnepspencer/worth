@@ -71,6 +71,10 @@ pub(super) fn resolve_signal_runtime_policy(
         .parallel_admission
         .min_parallel_tasks_for_objective(request.execution_objective);
     ResolvedSignalRuntimePolicy {
+        maximum_waiter_resolution_visits: request.maximum_waiter_resolution_visits,
+        maximum_upstream_dependency_visits: request.maximum_upstream_dependency_visits,
+        conditional_evaluation_budget: request.conditional_evaluation_budget,
+        conditional_temporal_budget: request.conditional_temporal_budget,
         execution_objective: request.execution_objective,
         observation_activation: request.observation_activation,
         observation_capture_plan: super::observation::SignalObservationCapturePlan::from_activation(

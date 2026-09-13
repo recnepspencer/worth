@@ -18,7 +18,7 @@ pub(crate) struct RestoreWorld {
 
 pub(crate) fn restore_world(case: &str) -> RestoreWorld {
     let scenario = BackupScenario::new(case);
-    let authority = crate::backup::export::current_authority(case);
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let operation_id = OperationalOperationId::new(format!("backup-{case}")).unwrap();
     let admitted = OnlineBackupIntent::new(

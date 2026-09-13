@@ -1,15 +1,19 @@
 use std::ops::Range;
 use worth_store_physical_format::{
-    decode_extent_chunk, DurableExtentManifest, ExtentChunkCoordinate, ExtentFrameDenial,
-    PhysicalRecordFormatDeclaration, RecordArtifactFile, RecordFrameCoordinate,
-    DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
+    DurableExtentManifest, ExtentChunkCoordinate, PhysicalRecordFormatDeclaration,
+    RecordArtifactFile, RecordFrameCoordinate, DURABLE_EXTENT_FRAME_HEADER_BYTES,
+    EXTENT_CHUNK_METADATA_BYTES,
 };
+use worth_store_physical_integrity::IntegrityValidatedExtentMembership;
 
 use super::super::{
     residency::frame_loading::LoadedPhysicalFrame, RecordReadObservation, RecordStreamFailure,
     RecordStreamFailureKind,
 };
 use super::record_chunk_view::RecordReadIdentity;
+use crate::physical_runtime::record_serving::work_semantics::integrity_admission::{
+    admit_extent_chunk, CleanExtentAdmissionDenial,
+};
 
 pub(in crate::physical_runtime::record_serving) struct ExtentReadChunk<'session> {
     pub(in crate::physical_runtime::record_serving) bytes: &'session [u8],
@@ -30,6 +34,8 @@ pub(in crate::physical_runtime::record_serving) struct ExtentReadState {
     artifact: RecordArtifactFile,
     manifest: DurableExtentManifest,
     artifact_bytes: std::num::NonZeroU64,
+    integrity_membership: IntegrityValidatedExtentMembership,
+    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
     next_ordinal: u32,
     logical_offset: u64,
@@ -45,6 +51,8 @@ impl ExtentReadState {
         artifact: RecordArtifactFile,
         manifest: DurableExtentManifest,
         artifact_bytes: std::num::NonZeroU64,
+        integrity_membership: IntegrityValidatedExtentMembership,
+        store: worth_store_physical_format::store_namespace::StableStoreIdentity,
         format: PhysicalRecordFormatDeclaration,
     ) -> Self {
         Self {
@@ -52,6 +60,8 @@ impl ExtentReadState {
             artifact,
             manifest,
             artifact_bytes,
+            integrity_membership,
+            store,
             format,
             next_ordinal: 1,
             logical_offset: 0,
@@ -118,8 +128,8 @@ impl ExtentReadState {
         let plan = self.plan_chunk_read();
         self.frame = None;
         let frame = self.load_planned_chunk(allocation, plan, observation, identity)?;
-        let frame = self.admit_loaded_chunk(frame, plan, observation)?;
-        self.install_chunk(frame, plan)
+        let (frame, payload) = self.admit_loaded_chunk(frame, plan, observation)?;
+        self.install_chunk(frame, payload, plan)
     }
 
     fn plan_chunk_read(&self) -> ExtentChunkReadPlan {
@@ -178,7 +188,7 @@ impl ExtentReadState {
         frame: LoadedPhysicalFrame,
         plan: ExtentChunkReadPlan,
         observation: &mut RecordReadObservation,
-    ) -> Result<LoadedPhysicalFrame, RecordStreamFailure> {
+    ) -> Result<(LoadedPhysicalFrame, Range<usize>), RecordStreamFailure> {
         let coordinate = match ExtentChunkCoordinate::new(
             self.manifest.record(),
             self.manifest.extent_cell(),
@@ -195,41 +205,51 @@ impl ExtentReadState {
                 ));
             }
         };
-        let decoded = decode_extent_chunk(&frame, coordinate);
-        match &decoded {
-            Ok(_) => {
-                observation.check_generation(true);
-            }
-            Err(ExtentFrameDenial::GenerationMismatch) => {
-                observation.check_generation(false);
-            }
-            Err(_) => {}
-        }
-        let (chunk, format) = match decoded {
-            Ok(decoded) => decoded,
+        let context = self.artifacts.resident_admission_context().ok_or_else(|| {
+            RecordStreamFailure::during_read(
+                RecordStreamFailureKind::ArtifactDamaged,
+                plan.completed,
+            )
+        })?;
+        let admitted = admit_extent_chunk(
+            &frame,
+            context,
+            self.store,
+            self.format,
+            coordinate,
+            self.integrity_membership,
+        );
+        let admitted = match admitted {
+            Ok(admitted) => admitted,
             Err(denial) => {
-                frame.reject_projection_failure();
-                let kind = if denial == ExtentFrameDenial::GenerationMismatch {
-                    RecordStreamFailureKind::StalePlacement
-                } else {
-                    RecordStreamFailureKind::ArtifactDamaged
-                };
-                return Err(RecordStreamFailure::during_read(kind, plan.completed));
+                let stale = denial == CleanExtentAdmissionDenial::ExtentMembership;
+                if stale {
+                    observation.check_generation(false);
+                }
+                if !denial.preserves_resident_bytes() {
+                    frame.reject_projection_failure();
+                }
+                return Err(RecordStreamFailure::during_read(
+                    denial.stream_failure_kind(),
+                    plan.completed,
+                ));
             }
         };
-        if format != self.format || chunk.len() != plan.payload_bytes {
+        observation.check_generation(true);
+        if admitted.payload.len() != plan.payload_bytes {
             frame.reject_projection_failure();
             return Err(RecordStreamFailure::during_read(
                 RecordStreamFailureKind::FormatMismatch,
                 plan.completed,
             ));
         }
-        Ok(frame)
+        Ok((frame, admitted.payload))
     }
 
     fn install_chunk(
         &mut self,
         frame: LoadedPhysicalFrame,
+        payload: Range<usize>,
         plan: ExtentChunkReadPlan,
     ) -> Result<(), RecordStreamFailure> {
         let next_logical_offset = self.logical_offset + plan.payload_bytes as u64;
@@ -245,8 +265,7 @@ impl ExtentReadState {
         } else {
             self.next_ordinal
         };
-        self.payload = DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES
-            ..DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES + plan.payload_bytes;
+        self.payload = payload;
         self.payload_offset = 0;
         self.frame = Some(frame);
         self.artifact_offset += plan.frame_bytes as u64;
@@ -279,9 +298,15 @@ fn frame_load_stream_failure(
         super::super::RecordReadDenial::StalePlacement(_) => {
             RecordStreamFailureKind::StalePlacement
         }
-        super::super::RecordReadDenial::ArtifactUnavailable
-        | super::super::RecordReadDenial::ArtifactDamaged => {
-            RecordStreamFailureKind::ArtifactDamaged
+        super::super::RecordReadDenial::ArtifactUnavailable => {
+            RecordStreamFailureKind::ArtifactUnavailable
+        }
+        super::super::RecordReadDenial::ArtifactDamaged => RecordStreamFailureKind::ArtifactDamaged,
+        super::super::RecordReadDenial::PhysicalWork(
+            super::super::RecordReadWorkDenial::RuntimeReleased,
+        ) => RecordStreamFailureKind::RuntimeReleased,
+        super::super::RecordReadDenial::ResidencyUnavailable(residency) => {
+            RecordStreamFailureKind::ResidencyUnavailable(residency)
         }
         _ => RecordStreamFailureKind::Backend,
     };

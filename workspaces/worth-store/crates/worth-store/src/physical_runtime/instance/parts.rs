@@ -28,6 +28,8 @@ pub(in crate::physical_runtime) struct PhysicalStoreInstanceParts {
     pub(in crate::physical_runtime) publication: std::sync::Arc<RecordPublicationDirector>,
     pub(in crate::physical_runtime) checkpoint:
         std::sync::Arc<crate::physical_runtime::durability::PhysicalCheckpointRuntimeOwner>,
+    pub(in crate::physical_runtime) root_protocol_counters:
+        crate::physical_runtime::RootProtocolRouteCounters,
     pub(in crate::physical_runtime) residency: PhysicalResidencyOwner,
     pub(in crate::physical_runtime) durability:
         crate::physical_runtime::durability::ReopenedPhysicalDurabilityRuntimeOwner,

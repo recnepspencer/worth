@@ -1,5 +1,10 @@
-error[E0599]: no method named `current_branch_basis_artifact` found for mutable reference `&mut SignalRuntime<(), (), (), ()>` in the current scope
+error[E0624]: method `current_branch_basis_artifact` is private
  --> tests/ui/branch_reference/legacy_basis_methods_are_private.rs:4:21
   |
 4 |     let _ = runtime.current_branch_basis_artifact();
-  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `&mut SignalRuntime<(), (), (), ()>`
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private method
+  |
+ ::: src/logic/transaction/runtime/state/branching/basis_runtime.rs
+  |
+  |     pub(crate) fn current_branch_basis_artifact(&mut self) -> SignalBranchBasisArtifact {
+  |     ----------------------------------------------------------------------------------- private method defined here

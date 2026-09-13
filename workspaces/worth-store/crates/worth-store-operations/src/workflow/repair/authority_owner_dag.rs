@@ -1,7 +1,9 @@
+use super::integrity_classification::{
+    IntegrityRepairClassificationPlan, IntegrityRepairRegionClass,
+};
+use crate::workflow::restore::BackupRestoreReplayPlan;
 use sha2::{Digest, Sha256};
 use worth_store_physical_backend::LoweredNonCurrentStagingPlan;
-use worth_store_physical_integrity::IntegrityRepairClassificationPlan;
-use worth_store_recovery_physics::BackupRestoreReplayPlan;
 
 use crate::owner_plan_dag::{
     CanonicalOwnerPlanDag, OwnerPlanEffect, OwnerPlanFootprint, OwnerPlanNode,
@@ -70,10 +72,11 @@ pub(super) fn repair_dag(
 ) -> Result<(CanonicalOwnerPlanDag, RepairOwnerNodes), AuthorityAffectingRepairLoweringDenial> {
     let footprint = OwnerPlanFootprint::bounded(0, backend.binding().expected_bytes())
         .ok_or(AuthorityAffectingRepairLoweringDenial::InvalidFootprint)?;
-    let integrity_effect = if integrity.regions().iter().any(|region| {
-        region.class()
-            == worth_store_physical_integrity::IntegrityRepairRegionClass::QuarantineRequired
-    }) {
+    let integrity_effect = if integrity
+        .regions()
+        .iter()
+        .any(|region| region.class() == IntegrityRepairRegionClass::QuarantineRequired)
+    {
         OwnerPlanEffect::ClassifyQuarantine
     } else {
         OwnerPlanEffect::ValidatePhysicalIntegrity

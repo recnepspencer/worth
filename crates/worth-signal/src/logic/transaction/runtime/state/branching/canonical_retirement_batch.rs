@@ -29,6 +29,9 @@ where
         )>,
     ) -> TransitionOutcome<PlannedSignalBranchRetirementBatch, SignalBranchRetirementBatchDenial>
     {
+        if self.owner_services.is_sealed() {
+            return self.owner_services.plan_legacy_retirement_batch(requests);
+        }
         if requests.is_empty() {
             return TransitionOutcome::denied(SignalBranchRetirementBatchDenial::Empty);
         }
@@ -42,25 +45,30 @@ where
 
     /// Plan an atomic retirement batch while accounting for concrete admitted
     /// snapshots that will be released before execution.
-    pub fn plan_signal_branch_retirement_batch_releasing_snapshots<'a>(
+    pub fn plan_signal_branch_retirement_batch_releasing_snapshots(
         &mut self,
         requests: Vec<(
             SignalBranchHandle,
             AdmittedSignalBranchBasis,
-            Vec<&'a AdmittedSignalBranchSnapshot>,
+            Vec<&AdmittedSignalBranchSnapshot>,
             SignalBranchRetirementReason,
         )>,
     ) -> TransitionOutcome<PlannedSignalBranchRetirementBatch, SignalBranchRetirementBatchDenial>
     {
+        if self.owner_services.is_sealed() {
+            return self
+                .owner_services
+                .plan_legacy_retirement_batch_releasing_snapshots(requests);
+        }
         self.plan_signal_branch_retirement_batch_with_snapshot_releases(requests)
     }
 
-    fn plan_signal_branch_retirement_batch_with_snapshot_releases<'a>(
+    fn plan_signal_branch_retirement_batch_with_snapshot_releases(
         &mut self,
         requests: Vec<(
             SignalBranchHandle,
             AdmittedSignalBranchBasis,
-            Vec<&'a AdmittedSignalBranchSnapshot>,
+            Vec<&AdmittedSignalBranchSnapshot>,
             SignalBranchRetirementReason,
         )>,
     ) -> TransitionOutcome<PlannedSignalBranchRetirementBatch, SignalBranchRetirementBatchDenial>
@@ -68,17 +76,22 @@ where
         if requests.is_empty() {
             return TransitionOutcome::denied(SignalBranchRetirementBatchDenial::Empty);
         }
+        let mut unique = BTreeSet::new();
+        for (branch, ..) in &requests {
+            if !unique.insert(branch.id) {
+                return TransitionOutcome::denied(
+                    SignalBranchRetirementBatchDenial::DuplicateBranch {
+                        branch_id: branch.id,
+                    },
+                );
+            }
+        }
         let mut scheduled = BTreeSet::new();
         let mut plans = Vec::with_capacity(requests.len());
         for (position, (branch, basis, releasing_snapshots, reason)) in
             requests.into_iter().enumerate()
         {
             let branch_id = branch.id;
-            if scheduled.contains(&branch_id) {
-                return TransitionOutcome::denied(
-                    SignalBranchRetirementBatchDenial::DuplicateBranch { branch_id },
-                );
-            }
             let allowance =
                 match self.retirement_snapshot_allowance(branch_id, &releasing_snapshots) {
                     Ok(allowance) => allowance,
@@ -150,6 +163,9 @@ where
         plan: PlannedSignalBranchRetirementBatch,
     ) -> TransitionOutcome<SignalBranchRetirementBatchReceipt, SignalBranchRetirementBatchDenial>
     {
+        if self.owner_services.is_sealed() {
+            return self.owner_services.retire_legacy_batch(plan);
+        }
         self.retire_branch_batch(plan)
     }
 }

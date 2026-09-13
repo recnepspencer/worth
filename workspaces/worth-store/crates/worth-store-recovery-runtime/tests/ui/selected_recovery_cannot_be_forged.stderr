@@ -16,6 +16,32 @@ error[E0308]: mismatched types
 7 |         selection: (),
   |                    ^^ expected `PhysicalSourceSelection`, found `()`
 
+error: cannot construct `SelectedPhysicalRecovery` with struct literal syntax due to private fields
+ --> tests/ui/selected_recovery_cannot_be_forged.rs:4:5
+  |
+4 |     SelectedPhysicalRecovery {
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+5 |         authority: (),
+  |         ------------- private field
+6 |         coordination: (),
+  |         ---------------- private field
+7 |         selection: (),
+  |         ------------- private field
+8 |         counters: (),
+  |         ------------ private field
+  |
+  = note: ...and other private fields `integrity`, `root_protocol_denials` and `integrity_trace` that were not provided
+help: you might have meant to use the `new` associated function
+  |
+4 -     SelectedPhysicalRecovery {
+5 -         authority: (),
+6 -         coordination: (),
+7 -         selection: (),
+8 -         counters: (),
+9 -     }
+4 +     SelectedPhysicalRecovery::new(_, _, _, _, _, _, _)
+  |
+
 error[E0308]: mismatched types
  --> tests/ui/selected_recovery_cannot_be_forged.rs:8:19
   |

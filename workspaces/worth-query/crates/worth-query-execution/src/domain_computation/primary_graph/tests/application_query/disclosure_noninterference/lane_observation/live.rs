@@ -26,7 +26,7 @@ pub(super) fn observe(
         admit_touch_account_capability(context.world, context.principal, context.request).unwrap();
     let mut lease = context
         .world
-        .application
+        .selected_product()
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
             AccountSummaryParameters,
@@ -56,11 +56,16 @@ pub(super) fn observe(
         .unwrap();
     let committed =
         commit_live_activity_with_label(context.world, context.committer, context.request, label);
-    let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.poll() else {
+    let WorthQueryApplicationLiveOutcome::Delivered(update) =
+        lease.next(context.principal, context.request)
+    else {
         panic!("the symmetric live cause must produce one governed delivery");
     };
-    assert_eq!(update.commit_id(), committed.commit_id());
-    let live_commit_ordinal = update.commit_ordinal();
+    assert_eq!(
+        update.product_publication(),
+        committed.committed_product_publication()
+    );
+    let live_commit_ordinal = update.product_publication().composite_commit().ordinal();
     let lane = capture_lane(vec![update.result().clone()], update.receipt(), occurrences);
     let WorthQueryApplicationLiveCloseOutcome::Completed(completion) = lease.close() else {
         panic!("the opening live graph-work session must close cleanly");

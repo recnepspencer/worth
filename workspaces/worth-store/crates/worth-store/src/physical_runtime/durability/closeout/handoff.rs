@@ -2,13 +2,11 @@ use worth_store_physical_format::store_namespace::StableStoreIdentity;
 
 use super::{
     PhysicalArtifactResidueClassification, PhysicalBackendDurabilityCloseoutEvidence,
-    PhysicalDurabilitySourceProfileIdentity, PhysicalRecoveryAllocationAdmission,
-    PhysicalRecoveryCheckpointBasis, PhysicalRecoveryOperationFates, PhysicalRecoveryRootBasis,
-    PhysicalRecoveryWalTail,
+    PhysicalRecoveryAllocationAdmission, PhysicalRecoveryCheckpointBasis,
+    PhysicalRecoveryOperationFates, PhysicalRecoveryRootBasis, PhysicalRecoveryWalTail,
 };
 
 pub struct PhysicalDurabilityRecoveryHandoff {
-    source_profile: PhysicalDurabilitySourceProfileIdentity,
     policy: crate::physical_runtime::AdmittedPhysicalDurabilityPolicy,
     backend: PhysicalBackendDurabilityCloseoutEvidence,
     roots: PhysicalRecoveryRootBasis,
@@ -45,10 +43,6 @@ impl PhysicalDurabilityRecoveryHandoff {
             recovery_allocation.store_identity(),
             "closeout facts must remain bound to one Store"
         );
-        let source_profile = PhysicalDurabilitySourceProfileIdentity::bind(
-            policy.admission_basis_identity(),
-            policy.identity(),
-        );
         let backend = PhysicalBackendDurabilityCloseoutEvidence::new(
             policy.admission_basis_identity(),
             policy.profile(),
@@ -56,7 +50,6 @@ impl PhysicalDurabilityRecoveryHandoff {
             roots.namespace_evidence(),
         );
         Self {
-            source_profile,
             policy,
             backend,
             roots,
@@ -70,10 +63,6 @@ impl PhysicalDurabilityRecoveryHandoff {
 
     pub const fn store_identity(&self) -> StableStoreIdentity {
         self.policy.store_identity()
-    }
-
-    pub const fn source_profile_identity(&self) -> PhysicalDurabilitySourceProfileIdentity {
-        self.source_profile
     }
 
     pub const fn durability_policy(

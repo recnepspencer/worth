@@ -90,21 +90,6 @@ fn canonical_query_audience_matrix_is_exact() {
         assert_eq!(row.allowed_bands, bands);
         assert_eq!(row.guidance, guidance);
     }
-
-    let naming = fs::read_to_string(root.join("cad/docs/worthy-foundations/NAMING.md"))
-        .expect("read NAMING.md");
-    for package in [
-        "worth-query",
-        "worth-query-decl",
-        "worth-query-host",
-        "worth-query-replay",
-        "worth-query-certification",
-    ] {
-        assert!(
-            naming.contains(&format!("`{package}`")),
-            "NAMING.md must name {package}"
-        );
-    }
 }
 
 #[test]

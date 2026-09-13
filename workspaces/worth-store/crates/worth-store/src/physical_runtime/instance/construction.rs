@@ -95,12 +95,14 @@ impl PhysicalStoreInstanceParts {
             };
         let reopened = durability_reopen.install(durability);
         let installed_work = prepared_work.install(media);
+        let lifecycle_state = core.lifecycle_state();
         let record_serving = PhysicalRecordServingAssembly::new(
             bootstrap,
             allocation_frontier,
             frame_ports,
             lifecycle_generation,
             signal_profile,
+            lifecycle_state,
         )
         .install(&installed_work, &reopened);
 
@@ -116,6 +118,7 @@ impl PhysicalStoreInstanceParts {
             access: record_serving.access,
             publication: record_serving.publication,
             checkpoint: record_serving.checkpoint,
+            root_protocol_counters: record_serving.root_protocol_counters,
             residency,
             durability: reopened.durability,
         })

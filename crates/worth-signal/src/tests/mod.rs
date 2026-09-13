@@ -33,6 +33,7 @@ mod branch_lifecycle_retirement;
 mod branch_merge_candidate_scope;
 mod branch_merge_canonical_basis;
 mod branch_merge_compatibility_witness;
+pub(crate) use branch_merge_compatibility_witness::emitted_merge_replay_event;
 mod branch_merge_foundational_lowering;
 mod branch_merge_inspection_support;
 mod branch_merge_locator_diagnostics;
@@ -68,6 +69,7 @@ mod merge_certification;
 mod multi_aspect;
 mod node_conditions;
 mod observability;
+mod owner_contract_gate;
 mod partition_propagation;
 mod partition_validation;
 mod performance;
@@ -97,3 +99,7 @@ mod temporal_runtime;
 mod tier_policy;
 mod topology_repair;
 mod transaction_stress;
+
+pub(crate) mod explanation_retention_fixture;
+
+mod diagnostic_summary_charge;

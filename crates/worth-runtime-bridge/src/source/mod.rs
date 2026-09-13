@@ -14,9 +14,9 @@ mod row_set;
 mod validation;
 
 pub(crate) use async_declaration::{
-    admit_retry_lineage, admit_revalidation_lineage, retire_owned_async_declaration_for_lowering,
-    retire_owned_resource_declaration_for_lowering, with_async_request_signal_runtime,
-    BridgeAsyncDeclarationRegistry, BridgeSignalRuntime, SignalRuntimeThreadAffinityError,
+    admit_from_owned_signal_request, admit_owned_retry_lineage, admit_owned_revalidation_lineage,
+    admit_retry_lineage, admit_revalidation_lineage, map_owned_signal_report,
+    with_async_request_signal_runtime, BridgeSignalRuntime, SignalRuntimeThreadAffinityError,
 };
 pub use async_declaration::{
     AdmittedBridgeAsyncCompletion, AdmittedBridgeAsyncRequestIdentity,

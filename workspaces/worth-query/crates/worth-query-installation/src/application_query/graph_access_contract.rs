@@ -13,6 +13,7 @@ mod compilation;
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct WorthQueryInstalledGraphProjection {
     slot_key: Arc<ApplicationQueryResultSlotKey>,
+    parent_path: Arc<str>,
     result_path: Arc<str>,
     query_type: WorthQueryPortableTypeIdentity,
     slot_type: WorthQueryPortableTypeIdentity,
@@ -28,6 +29,10 @@ pub struct WorthQueryInstalledGraphProjection {
 impl WorthQueryInstalledGraphProjection {
     pub fn slot_key_identity(&self) -> Arc<ApplicationQueryResultSlotKey> {
         Arc::clone(&self.slot_key)
+    }
+
+    pub fn parent_path(&self) -> &str {
+        &self.parent_path
     }
 
     pub fn result_path(&self) -> &str {
@@ -94,6 +99,7 @@ impl WorthQueryInstalledGraphProjection {
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct WorthQueryInstalledGraphRelation {
     slot_key: Arc<ApplicationQueryResultSlotKey>,
+    parent_path: Arc<str>,
     result_path: Arc<str>,
     query_type: WorthQueryPortableTypeIdentity,
     slot_type: WorthQueryPortableTypeIdentity,
@@ -109,6 +115,10 @@ pub struct WorthQueryInstalledGraphRelation {
 impl WorthQueryInstalledGraphRelation {
     pub fn slot_key_identity(&self) -> Arc<ApplicationQueryResultSlotKey> {
         Arc::clone(&self.slot_key)
+    }
+
+    pub fn parent_path(&self) -> &str {
+        &self.parent_path
     }
 
     pub fn result_path(&self) -> &str {

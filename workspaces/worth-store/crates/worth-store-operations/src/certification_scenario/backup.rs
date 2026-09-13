@@ -17,8 +17,7 @@ use crate::{
 };
 
 use super::backup_artifacts::{
-    canonical_backup_artifacts_at_root_generation, canonical_backup_artifacts_with_blob_count,
-    CanonicalBackupArtifacts,
+    canonical_backup_artifacts_with_blob_count, CanonicalBackupArtifacts,
 };
 use super::poisoned_backup::{reject_poisoned_backup, RejectedPoisonedBackupScenario};
 
@@ -82,14 +81,22 @@ impl OwnerBackedBackupScenario {
         let control = workspace.path().join("control/operations.log");
         std::fs::create_dir_all(&source).expect("backup source directory");
         std::fs::create_dir_all(&target).expect("backup target directory");
+        let authority = crate::backup::export::current_authority(case);
+        let store_identity =
+            worth_store_physical_format::PhysicalStoreIdentity::from_aspect_identity(
+                authority.identity().clone(),
+            );
+        let artifacts = canonical_backup_artifacts_with_blob_count(
+            case,
+            &source,
+            1,
+            blob_count,
+            store_identity,
+        );
         Self {
-            artifacts: if blob_count == 1 {
-                canonical_backup_artifacts_at_root_generation(case, &source, 1)
-            } else {
-                canonical_backup_artifacts_with_blob_count(case, &source, 1, blob_count)
-            },
+            artifacts,
             leases: BackupReachabilityLeaseRegistry::for_store_runtime(),
-            authority: crate::backup::export::current_authority(case),
+            authority,
             workspace,
             source,
             target,

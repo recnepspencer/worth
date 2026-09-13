@@ -2,11 +2,7 @@ pub(crate) struct UiPresentationAsyncRuntime {
     owner: worth_ui_query_binding::WorthUiPresentationAsyncOwner,
     correspondence: worth_ui_query_binding::WorthUiPresentationCorrespondenceIssuer,
     last_current_presented: Option<UiDeferredPresentedCompletion>,
-    settled_frontiers: Vec<worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation>,
-    settled_frontier_trace_overflowed: bool,
 }
-
-const SETTLED_FRONTIER_CAPACITY: usize = 64;
 
 struct UiDeferredPresentedCompletion {
     receipt: worth_ui_query_binding::WorthUiPresentationPendingReceipt,
@@ -24,9 +20,6 @@ pub(crate) struct UiPresentationAsyncTerminalCleanup {
 
 pub(crate) struct UiPresentationAsyncTerminalCloseReceipt {
     query: worth_ui_query_binding::WorthUiPresentationAsyncCloseReceipt,
-    settled_frontiers:
-        Box<[worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation]>,
-    settled_frontier_trace_complete: bool,
 }
 
 impl std::fmt::Debug for UiPresentationAsyncTerminalCleanup {
@@ -61,8 +54,6 @@ impl UiPresentationAsyncRuntime {
             owner,
             correspondence,
             last_current_presented: None,
-            settled_frontiers: Vec::new(),
-            settled_frontier_trace_overflowed: false,
         }
     }
 
@@ -133,33 +124,20 @@ impl UiPresentationAsyncRuntime {
             .correspondence
             .certify_presented(&presented.receipt, presented.payload_byte_len);
         match self.owner.admit_presented(&presented.receipt, completion) {
-            Ok(receipt) => {
-                self.record_settled_frontiers(receipt.semantic_frontiers());
-                match receipt.observation().posture() {
-                    worth_ui_query_binding::WorthUiPresentationAsyncPosture::Current => {
-                        self.last_current_presented = Some(presented);
-                        Ok(UiPresentationAsyncPresentedAdmission::Current)
-                    }
-                    worth_ui_query_binding::WorthUiPresentationAsyncPosture::Superseded => {
-                        Ok(UiPresentationAsyncPresentedAdmission::Superseded)
-                    }
-                    posture => {
-                        unreachable!("presented completion cannot settle into {posture:?} posture")
-                    }
+            Ok(receipt) => match receipt.observation().posture() {
+                worth_ui_query_binding::WorthUiPresentationAsyncPosture::Current => {
+                    self.last_current_presented = Some(presented);
+                    Ok(UiPresentationAsyncPresentedAdmission::Current)
                 }
-            }
+                worth_ui_query_binding::WorthUiPresentationAsyncPosture::Superseded => {
+                    Ok(UiPresentationAsyncPresentedAdmission::Superseded)
+                }
+                posture => {
+                    unreachable!("presented completion cannot settle into {posture:?} posture")
+                }
+            },
             Err(denial) => Err((presented.receipt, denial)),
         }
-    }
-
-    fn record_settled_frontiers(
-        &mut self,
-        frontiers: &[worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation],
-    ) {
-        let remaining = SETTLED_FRONTIER_CAPACITY.saturating_sub(self.settled_frontiers.len());
-        self.settled_frontiers
-            .extend(frontiers.iter().take(remaining).cloned());
-        self.settled_frontier_trace_overflowed |= frontiers.len() > remaining;
     }
 
     pub(crate) fn admit_duplicate_owner_observation(
@@ -274,11 +252,7 @@ impl UiPresentationAsyncRuntime {
         mut self,
     ) -> Result<UiPresentationAsyncTerminalCloseReceipt, UiPresentationAsyncTerminalCleanup> {
         match self.close_terminal_resources() {
-            Ok(query) => Ok(UiPresentationAsyncTerminalCloseReceipt {
-                query,
-                settled_frontiers: self.settled_frontiers.into_boxed_slice(),
-                settled_frontier_trace_complete: !self.settled_frontier_trace_overflowed,
-            }),
+            Ok(query) => Ok(UiPresentationAsyncTerminalCloseReceipt { query }),
             Err(_) => Err(UiPresentationAsyncTerminalCleanup {
                 runtime: Box::new(self),
             }),
@@ -307,15 +281,5 @@ impl UiPresentationAsyncTerminalCloseReceipt {
 
     pub(crate) const fn transition_trace_complete(&self) -> bool {
         self.query.transition_trace_complete()
-    }
-
-    pub(crate) fn settled_frontiers(
-        &self,
-    ) -> &[worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation] {
-        &self.settled_frontiers
-    }
-
-    pub(crate) const fn settled_frontier_trace_complete(&self) -> bool {
-        self.settled_frontier_trace_complete
     }
 }

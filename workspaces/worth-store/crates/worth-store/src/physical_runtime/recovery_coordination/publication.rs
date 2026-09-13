@@ -73,12 +73,25 @@ pub enum PhysicalRecoveryPublicationCommandIndeterminate {
         completed: Box<[CompletedPhysicalRecoveryPublicationCandidate]>,
         failure: PhysicalRecoveryPublicationSettlementFailure,
     },
+    CandidateMaterializationYieldpoint {
+        artifact: RecordArtifactFile,
+        physical: worth_store_physical_backend::CompletedRecoveryStagingWrite,
+        completed: Box<[CompletedPhysicalRecoveryPublicationCandidate]>,
+        wait: crate::physical_runtime::PhysicalRecoveryYieldpointWaitResult,
+    },
     CandidateSynchronizationSettlement {
         artifact: RecordArtifactFile,
         physical: CompletedArtifactTreePublicationEffect,
         materialization: PhysicalRecoveryPublicationCandidateMaterialization,
         completed: Box<[CompletedPhysicalRecoveryPublicationCandidate]>,
         failure: PhysicalRecoveryPublicationSettlementFailure,
+    },
+    CandidateSynchronizationYieldpoint {
+        artifact: RecordArtifactFile,
+        physical: CompletedArtifactTreePublicationEffect,
+        materialization: PhysicalRecoveryPublicationCandidateMaterialization,
+        completed: Box<[CompletedPhysicalRecoveryPublicationCandidate]>,
+        wait: crate::physical_runtime::PhysicalRecoveryYieldpointWaitResult,
     },
     Media {
         stage: PhysicalRecoveryPublicationCommandStage,
@@ -102,6 +115,14 @@ pub enum PhysicalRecoveryPublicationCommandIndeterminate {
         root_protocol:
             Option<PerformedRecoveryPhysicalEffect<RecoveryRootProtocolReplacementAction>>,
         outcome: crate::physical_runtime::PhysicalSignalSettlementOutcome,
+    },
+    Yieldpoint {
+        stage: PhysicalRecoveryPublicationCommandStage,
+        physical: CompletedArtifactTreePublicationEffect,
+        candidates: Box<[CompletedPhysicalRecoveryPublicationCandidate]>,
+        root_protocol:
+            Option<PerformedRecoveryPhysicalEffect<RecoveryRootProtocolReplacementAction>>,
+        wait: crate::physical_runtime::PhysicalRecoveryYieldpointWaitResult,
     },
 }
 

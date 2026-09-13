@@ -1,3 +1,4 @@
+#[cfg(test)]
 use super::{CheckpointRootBasis, CheckpointWalSourceRange, PhysicalCheckpointIdentity};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -5,6 +6,7 @@ pub enum PersistedCompactionProductRole {
     OperationBindingIndex,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PersistedCompactionCutoverRecord {
     checkpoint: PhysicalCheckpointIdentity,
@@ -15,6 +17,7 @@ pub struct PersistedCompactionCutoverRecord {
     wal_cutoff_lsn_exclusive: u64,
 }
 
+#[cfg(test)]
 impl PersistedCompactionCutoverRecord {
     pub(super) const fn admitted_from_verified_checkpoint(
         checkpoint: PhysicalCheckpointIdentity,

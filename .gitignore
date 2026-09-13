@@ -52,6 +52,11 @@ mb_n4_log.txt
 # Repository-owned test control runtime evidence and attempt logs
 .store-proof/
 
+# Legacy runner state and local Store certification target directories
+/automation/phase_runner/
+/workspaces/worth-store/p8f/
+/workspaces/worth-store/p8m/
+
 # Cross-process Worth UI ledger settlement lock
 _docs/worth-ui/milestone-3.14.1-proof-ledger.lock
 

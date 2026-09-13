@@ -1,10 +1,11 @@
 #[cfg(feature = "certification-test-authority")]
 use worth_store_physical_backend::QualifiedFilesystemMedia;
 use worth_store_physical_format::{
-    durable_artifact_checksum, DurableFreeSpaceManifestHeader, FreeSpaceBlockReference,
-    FreeSpaceKey, PhysicalFreeSpaceMembershipBlock, RecordArtifactFile,
-    RecordFreeSpaceManifestEntry,
+    DurableFreeSpaceManifestHeader, FreeSpaceBlockReference, FreeSpaceKey,
+    FreeSpaceMembershipBlockScopeIdentity, PhysicalFreeSpaceMembershipBlock, PhysicalTreeIdentity,
+    RecordArtifactFile, RecordFreeSpaceManifestEntry,
 };
+use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalByteRange};
 
 use super::super::super::access::manifest_routing::{
     ManifestDiscoveryCounterSnapshot, ManifestLookupFailure,
@@ -19,6 +20,11 @@ pub(in crate::physical_runtime::record_serving) struct FreeSpaceReader<'media> {
     pub(super) format: AdmittedPhysicalRecordFormat,
     access: AdmittedRecordAccessPolicy,
     pub(super) header: &'media DurableFreeSpaceManifestHeader,
+    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
+    admission:
+        crate::physical_runtime::integrity::resident_admission::load::ResidentAdmissionContext<
+            'media,
+        >,
 }
 
 impl<'media> FreeSpaceReader<'media> {
@@ -31,12 +37,16 @@ impl<'media> FreeSpaceReader<'media> {
         format: AdmittedPhysicalRecordFormat,
         access: AdmittedRecordAccessPolicy,
         header: &'media DurableFreeSpaceManifestHeader,
+        lifecycle: std::sync::Arc<crate::physical_runtime::lifecycle::LifecycleState>,
+        counters: &'media crate::physical_runtime::ResidentAdmissionCounterCells,
     ) -> Self {
         Self {
             artifacts: RecordFrameReader::bootstrap(media, loader),
             format,
             access,
             header,
+            store: media.store_identity(),
+            admission: crate::physical_runtime::integrity::resident_admission::load::ResidentAdmissionContext::new(lifecycle, counters),
         }
     }
 
@@ -46,11 +56,15 @@ impl<'media> FreeSpaceReader<'media> {
         access: AdmittedRecordAccessPolicy,
         header: &'media DurableFreeSpaceManifestHeader,
     ) -> Self {
+        let admission = residency.resident_admission_context();
+        let store = residency.store_identity();
         Self {
             artifacts: RecordFrameReader::serving(residency),
             format,
             access,
             header,
+            store,
+            admission,
         }
     }
 
@@ -121,24 +135,43 @@ impl<'media> FreeSpaceReader<'media> {
                 frame_load_failure(failure)
             })?;
         counters.observe_block(bytes.len(), bytes.work_trace());
-        let checksum = durable_artifact_checksum(&bytes);
-        let (block, found_format) =
-            match PhysicalFreeSpaceMembershipBlock::decode(&bytes, self.header.node_capacity()) {
-                Ok(decoded) => decoded,
-                Err(_) => {
-                    bytes.reject_projection_failure();
-                    return Err(ManifestLookupFailure::Damaged);
-                }
-            };
-        if found_format != self.format.declaration()
-            || block.tree_identity() != self.header.tree_identity()
-            || block.level() != reference.level()
-            || block.reference(checksum) != reference
-        {
+        let Some(tree) = PhysicalTreeIdentity::new(self.header.tree_identity()) else {
             bytes.reject_projection_failure();
             return Err(ManifestLookupFailure::Damaged);
+        };
+        let Ok(range) = PhysicalByteRange::new(0, bytes.len() as u64) else {
+            bytes.reject_projection_failure();
+            return Err(ManifestLookupFailure::Damaged);
+        };
+        let scope = PhysicalArtifactScope::free_space_membership_block(
+            self.store,
+            self.format.declaration(),
+            FreeSpaceMembershipBlockScopeIdentity::new(tree, reference),
+            range,
+        );
+        let admitted = crate::physical_runtime::integrity::resident_admission::free_space::admit_resident_free_space_membership_block(
+            bytes.lease(),
+            scope,
+            self.admission.clone(),
+        );
+        let decoded = admitted.and_then(|admitted| {
+            admitted.with_owner_decoder(self.admission.clone(), |view| {
+                view.project_block(self.header.node_capacity())
+            })
+        });
+        match decoded {
+            Ok(Ok(block)) => Ok(block),
+            Ok(Err(_)) => {
+                bytes.reject_projection_failure();
+                Err(ManifestLookupFailure::Damaged)
+            }
+            Err(denial) => {
+                if !denial.preserves_resident_bytes() {
+                    bytes.reject_projection_failure();
+                }
+                Err(ManifestLookupFailure::ResidentAdmission(denial))
+            }
         }
-        Ok(block)
     }
 }
 

@@ -13,7 +13,7 @@ pub mod fixtures;
 pub mod layout;
 #[cfg(feature = "layout-fixtures")]
 pub mod layout_evolution;
-#[cfg(feature = "certification-world")]
+#[cfg(feature = "layout-fixtures")]
 mod lsm_execution_fixture;
 #[cfg(feature = "physical-isolation-fixtures")]
 pub mod physical_isolation;
@@ -31,12 +31,12 @@ pub mod production_facade;
 pub mod recovery;
 #[cfg(feature = "scheduling-fixtures")]
 pub mod scheduling;
-#[cfg(feature = "certification-world")]
-mod security_scope;
 #[cfg(feature = "physical-isolation-fixtures")]
 pub mod test_authority;
 
-#[cfg(feature = "certification-world")]
-pub use lsm_execution_fixture::{observe_lsm_owner_cases, LsmOwnerCaseObservations};
+#[cfg(feature = "layout-fixtures")]
+pub use lsm_execution_fixture::{
+    observe_lsm_maintenance_owner_cases, observe_lsm_owner_cases, LsmOwnerCaseObservations,
+};
 #[cfg(feature = "boundary-fixtures")]
 pub use production_facade::*;

@@ -1,16 +1,16 @@
 use worth_runtime_bridge::facade::{
     BridgeDeliveryReceipt, BridgeMappingId, BridgeMappingRegistration, BridgeWritebackEffectClass,
-    BridgeWritebackFamilyKind, BridgeWritebackOutcomeClass, CoarseRoutingMode,
-    CommittedPatchSource, InvalidationSink, MappingSelector, RelationalBridgeSourceError,
-    RelationalCommittedPatchRequest, RuntimeBridge, RuntimeBridgeBuilder, SignalBridgeSinkError,
-    SignalInvalidationScope, SnapshotReadContract, SnapshotReadSource, TruthPatchScope,
-    TruthSnapshotIdentity, TruthSnapshotReader, TruthWritebackAuthority,
+    BridgeWritebackFamilyKind, BridgeWritebackOutcomeClass, CoarseRoutingMode, InvalidationSink,
+    MappingSelector, RuntimeBridge, RuntimeBridgeBuilder, SignalBridgeSinkError,
+    SignalInvalidationScope, SnapshotReadContract, TruthPatchScope, TruthWritebackAuthority,
     TruthWritebackAuthorityError, TruthWritebackReceipt, TruthWritebackRequest,
 };
 
-pub(crate) fn platform_pulse_bridge() -> Result<RuntimeBridge, String> {
+pub(super) fn platform_pulse_bridge(
+    source: worth_relational::facade::bridge::RuntimeBridgeRelationalSource,
+) -> Result<RuntimeBridge, worth_runtime_bridge::facade::BridgeBuildError> {
     let mut builder = RuntimeBridgeBuilder::new()
-        .with_relational_source(ExternalScalarTruthSource)
+        .with_relational_source(source)
         .with_signal_sink(ExternalScalarSignalSink)
         .with_writeback_authority(ExternalScalarWritebackAuthority)
         .register_mapping(BridgeMappingRegistration::new(
@@ -36,47 +36,7 @@ pub(crate) fn platform_pulse_bridge() -> Result<RuntimeBridge, String> {
             .register_mapping(mapping)
             .register_aspect_mapping(aspect_mapping);
     }
-    builder.build().map_err(|error| error.to_string())
-}
-
-#[derive(Clone, Copy)]
-struct ExternalScalarTruthSource;
-
-impl CommittedPatchSource for ExternalScalarTruthSource {
-    fn authoritative_source_profile(
-        &self,
-    ) -> Option<worth_runtime_bridge::facade::BridgeAuthoritativeSourceProfile> {
-        Some(
-            worth_runtime_bridge::facade::BridgeAuthoritativeSourceProfile::new(
-                0x5755_4950,
-                "worth-ui-product-source",
-            )
-            .expect("static Worth UI product source profile must admit"),
-        )
-    }
-
-    fn load_committed_patch(
-        &self,
-        _request: RelationalCommittedPatchRequest,
-    ) -> Result<
-        worth_runtime_bridge::facade::BridgeCommittedPatchEnvelope,
-        RelationalBridgeSourceError,
-    > {
-        Err(RelationalBridgeSourceError::new(
-            "external scalar source does not expose relational patch IO",
-        ))
-    }
-}
-
-impl SnapshotReadSource for ExternalScalarTruthSource {
-    fn open_snapshot(
-        &self,
-        _identity: &TruthSnapshotIdentity,
-    ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
-        Err(RelationalBridgeSourceError::new(
-            "external scalar source does not expose snapshot IO",
-        ))
-    }
+    builder.build()
 }
 
 #[derive(Clone, Copy)]

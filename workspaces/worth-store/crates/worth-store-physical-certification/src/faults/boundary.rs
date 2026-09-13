@@ -1,10 +1,6 @@
 use super::denial::{FaultDeliveryDenial, FaultObservedBoundaryKind};
 use crate::{FreshRuntimeCrashRecoveryEvidence, ProductionBoundaryDriverTrace};
 use worth_foundational::FoundationalBoundaryEvidenceLocality;
-use worth_store_physical_integrity::{
-    PhysicalBoundaryLocalization, PhysicalContainerIntegrityDenial,
-    PhysicalContainerIntegrityDenialKind, PreDecodePhysicalDenial, PreDecodePhysicalDenialKind,
-};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NoFaultProductionBoundaryParity {
@@ -14,15 +10,6 @@ pub struct NoFaultProductionBoundaryParity {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ObservedFaultBoundary {
-    PreDecodeIntegrityDenial {
-        kind: PreDecodePhysicalDenialKind,
-        locality: FoundationalBoundaryEvidenceLocality,
-    },
-    PhysicalIntegrityBoundary {
-        kind: PhysicalContainerIntegrityDenialKind,
-        localization: PhysicalBoundaryLocalization,
-        locality: FoundationalBoundaryEvidenceLocality,
-    },
     FreshRuntimeCrashRecovery {
         locality: FoundationalBoundaryEvidenceLocality,
     },
@@ -59,39 +46,6 @@ impl NoFaultProductionBoundaryParity {
 }
 
 impl ObservedFaultBoundary {
-    pub fn pre_decode_integrity_denial(denial: &PreDecodePhysicalDenial) -> Self {
-        Self::PreDecodeIntegrityDenial {
-            kind: denial.kind(),
-            locality: FoundationalBoundaryEvidenceLocality::Current,
-        }
-    }
-
-    pub const fn pre_decode_integrity_denial_kind(kind: PreDecodePhysicalDenialKind) -> Self {
-        Self::PreDecodeIntegrityDenial {
-            kind,
-            locality: FoundationalBoundaryEvidenceLocality::Current,
-        }
-    }
-
-    pub fn physical_integrity_denial(denial: &PhysicalContainerIntegrityDenial) -> Self {
-        Self::PhysicalIntegrityBoundary {
-            kind: denial.kind(),
-            localization: denial.localization(),
-            locality: FoundationalBoundaryEvidenceLocality::Current,
-        }
-    }
-
-    pub const fn physical_integrity_boundary(
-        kind: PhysicalContainerIntegrityDenialKind,
-        localization: PhysicalBoundaryLocalization,
-    ) -> Self {
-        Self::PhysicalIntegrityBoundary {
-            kind,
-            localization,
-            locality: FoundationalBoundaryEvidenceLocality::Current,
-        }
-    }
-
     pub const fn fresh_runtime_crash_recovery(
         _evidence: &FreshRuntimeCrashRecoveryEvidence,
     ) -> Self {
@@ -115,9 +69,7 @@ impl ObservedFaultBoundary {
 
     pub const fn locality(&self) -> FoundationalBoundaryEvidenceLocality {
         match self {
-            Self::PreDecodeIntegrityDenial { locality, .. }
-            | Self::PhysicalIntegrityBoundary { locality, .. }
-            | Self::FreshRuntimeCrashRecovery { locality }
+            Self::FreshRuntimeCrashRecovery { locality }
             | Self::NoFaultProductionBoundary { locality, .. }
             | Self::IoPressureBoundary { locality } => *locality,
         }
@@ -125,12 +77,6 @@ impl ObservedFaultBoundary {
 
     pub const fn boundary_kind(&self) -> FaultObservedBoundaryKind {
         match self {
-            Self::PreDecodeIntegrityDenial { .. } => {
-                FaultObservedBoundaryKind::PreDecodeIntegrityDenial
-            }
-            Self::PhysicalIntegrityBoundary { .. } => {
-                FaultObservedBoundaryKind::PhysicalIntegrityBoundary
-            }
             Self::FreshRuntimeCrashRecovery { .. } => {
                 FaultObservedBoundaryKind::FreshRuntimeCrashRecovery
             }

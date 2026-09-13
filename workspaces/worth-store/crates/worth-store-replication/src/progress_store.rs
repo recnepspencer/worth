@@ -11,10 +11,10 @@ use worth_store_physical_backend::{
     reach_storage_boundary, ProductionStorageBoundaryControl, ProductionStorageBoundarySeam,
     StorageBoundaryRegion,
 };
-use worth_store_recovery_physics::DurabilityReplayIdentity;
 
 use crate::{
-    ReplicationLineageIdentity, ReplicationPeerId, ReplicationPeerProgress, ReplicationSourceEpoch,
+    DurabilityReplayIdentity, ReplicationLineageIdentity, ReplicationPeerId,
+    ReplicationPeerProgress, ReplicationSourceEpoch,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

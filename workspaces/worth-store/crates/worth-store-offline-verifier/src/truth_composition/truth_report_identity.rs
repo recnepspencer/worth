@@ -1,12 +1,10 @@
-use sha2::{Digest, Sha256};
-use worth_store_physical_format::OfflinePhysicalArtifactFamily;
-use worth_store_physical_integrity::OfflineIntegrityPosture;
-use worth_store_recovery_physics::ObservedRecoveryFrontier;
-
+use super::OfflineIntegrityPosture;
 use super::{
-    OfflineAuthorityClass, OfflineRecoveryAvailability, OfflineSecurityEvidencePosture,
-    OperationalTruthRegion, OperationalTruthReport,
+    ObservedRecoveryFrontier, OfflineAuthorityClass, OfflineRecoveryAvailability,
+    OfflineSecurityEvidencePosture, OperationalTruthRegion, OperationalTruthReport,
 };
+use crate::OfflinePhysicalArtifactFamily;
+use sha2::{Digest, Sha256};
 
 impl OperationalTruthReport {
     /// Stable identity for canonical semantic truth composition.
@@ -111,13 +109,21 @@ fn update_frontier(digest: &mut Sha256, frontier: ObservedRecoveryFrontier) {
             checkpoint_identity_digest,
             manifest_generation,
             durable_checkpoint_lsn,
+            root_reference,
             root_generation,
+            covered_lsn_start,
+            covered_lsn_end_exclusive,
+            redo_lsn,
         } => {
             digest.update([2]);
             digest.update(checkpoint_identity_digest);
             digest.update(manifest_generation.to_be_bytes());
             digest.update(durable_checkpoint_lsn.to_be_bytes());
+            digest.update(root_reference.to_be_bytes());
             digest.update(root_generation.to_be_bytes());
+            digest.update(covered_lsn_start.to_be_bytes());
+            digest.update(covered_lsn_end_exclusive.to_be_bytes());
+            digest.update(redo_lsn.to_be_bytes());
         }
         ObservedRecoveryFrontier::WalSegment {
             segment_id,

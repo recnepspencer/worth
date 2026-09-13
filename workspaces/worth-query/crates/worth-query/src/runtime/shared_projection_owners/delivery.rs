@@ -19,10 +19,6 @@ pub(super) struct WorthQuerySharedProjectionEpoch {
         Arc<crate::domain_installation::WorthQueryCompiledSemanticAspectDependencyClosure>,
     pub(super) conditional_provenance:
         Arc<[crate::domain_installation::WorthQueryConditionalProvenance]>,
-    pub(super) conditional_decision:
-        Option<Arc<crate::domain_installation::WorthQueryConditionalProvenance>>,
-    pub(super) owner_delivery_receipt:
-        Option<Arc<worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>>,
     pub(super) invalidation_seed: Arc<crate::domain_installation::WorthQuerySharedInvalidationSeed>,
     pub(super) admission: Arc<crate::domain_installation::WorthQueryAdmittedProjectionSharing>,
     pub(super) pending: BTreeSet<WorthQuerySharedProjectionLeaseIdentity>,
@@ -45,8 +41,6 @@ impl WorthQuerySharedProjectionEpoch {
                 impact: Arc::clone(&self.impact),
                 impact_closure: Arc::clone(&self.impact_closure),
                 conditional_provenance: Arc::clone(&self.conditional_provenance),
-                conditional_decision: self.conditional_decision.as_ref().map(Arc::clone),
-                owner_delivery_receipt: self.owner_delivery_receipt.as_ref().map(Arc::clone),
                 invalidation_seed: Arc::clone(&self.invalidation_seed),
                 sharing: Arc::clone(&self.admission),
                 counters: self.counters,
@@ -79,9 +73,6 @@ impl super::super::WorthQueryRuntime {
         impact: &Arc<crate::domain_installation::WorthQueryImpactDecision>,
         invalidation_seed: &Arc<crate::domain_installation::WorthQuerySharedInvalidationSeed>,
         sharing: &Arc<crate::domain_installation::WorthQueryAdmittedProjectionSharing>,
-        conditional_decision: Option<
-            &Arc<crate::domain_installation::WorthQueryConditionalProvenance>,
-        >,
     ) -> bool {
         if readmission.owner.runtime_authority() != self.authority_identity.as_u64()
             || readmission.lease.runtime_authority() != self.authority_identity.as_u64()
@@ -97,11 +88,6 @@ impl super::super::WorthQueryRuntime {
         let Some(epoch) = owner.epoch.as_ref() else {
             return false;
         };
-        let conditional_is_exact = match (&epoch.conditional_decision, conditional_decision) {
-            (Some(current), Some(candidate)) => Arc::ptr_eq(current, candidate),
-            (None, None) => true,
-            _ => false,
-        };
         record.source_identity == readmission.source_identity
             && record.affinity.binding_identity == readmission.binding_identity
             && record.affinity.capability_identity == readmission.capability_identity
@@ -110,7 +96,6 @@ impl super::super::WorthQueryRuntime {
             && Arc::ptr_eq(&epoch.impact, impact)
             && Arc::ptr_eq(&epoch.invalidation_seed, invalidation_seed)
             && Arc::ptr_eq(&epoch.admission, sharing)
-            && conditional_is_exact
             && owner.admission.readmits_lease(
                 readmission.source_identity,
                 &record.affinity,
@@ -353,8 +338,6 @@ fn compile_next_shared_owner_epoch(
         impact,
         impact_closure: Arc::clone(&owner.closure),
         conditional_provenance: Arc::clone(&owner.conditional_provenance),
-        conditional_decision: None,
-        owner_delivery_receipt: None,
         invalidation_seed,
         admission: Arc::clone(&owner.admission),
         pending,

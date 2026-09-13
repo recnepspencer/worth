@@ -21,3 +21,24 @@ impl PageLsnSkipApplyDecision {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use worth_store_wal::LogSequenceNumber;
+
+    use super::*;
+    use crate::PageLsn;
+
+    #[test]
+    fn current_page_lsn_skips_redo() {
+        let page_lsn = PageLsn::from_lsn(LogSequenceNumber::new(10));
+        let redo_lsn = PageLsn::from_lsn(LogSequenceNumber::new(9));
+        assert!(
+            matches!(
+                PageLsnSkipApplyDecision::decide(page_lsn, redo_lsn),
+                PageLsnSkipApplyDecision::SkipAlreadyApplied { .. }
+            ),
+            "MUTANT_PREDICATE:c8-page-lsn-skip-decision-inverted"
+        );
+    }
+}

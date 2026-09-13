@@ -1,8 +1,8 @@
-use super::{PhysicalPublicationDenial, PhysicalPublicationReceipt};
-use worth_store_recovery_physics::{
+use super::{
     ExecutedPublicationRecoveryReceipt, PublicationCrashStage, RecoveredPublicationStructure,
     RecoveredPublicationStructureKind,
 };
+use super::{PhysicalPublicationDenial, PhysicalPublicationReceipt};
 
 #[derive(Debug, Clone, Copy)]
 pub struct PublicationCrashRecoveryOutcome {

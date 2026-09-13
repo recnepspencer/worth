@@ -1,4 +1,3 @@
-use worth_store_physical_backend::BackendDurabilityProfileId;
 use worth_store_physical_format::PageGenerationCell;
 
 use super::{
@@ -15,7 +14,6 @@ pub enum PageRedoEligibilityKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PageRedoEligibility {
     kind: PageRedoEligibilityKind,
-    profile_id: BackendDurabilityProfileId,
     page_generation: PageGenerationCell,
     classified_page_lsn: PageLsn,
     redo_frontier: PageLsn,
@@ -23,9 +21,7 @@ pub struct PageRedoEligibility {
 }
 
 impl PageRedoEligibility {
-    #[cfg(feature = "certification-test-authority")]
     pub fn for_certification(
-        profile_id: BackendDurabilityProfileId,
         page_generation: PageGenerationCell,
         classified_page_lsn: PageLsn,
         redo_frontier: PageLsn,
@@ -42,7 +38,6 @@ impl PageRedoEligibility {
             } else {
                 PageRedoEligibilityKind::SkipAlreadyCurrent
             },
-            profile_id,
             page_generation,
             classified_page_lsn,
             redo_frontier,
@@ -95,10 +90,6 @@ impl PageRedoEligibility {
 
     pub const fn kind(&self) -> PageRedoEligibilityKind {
         self.kind
-    }
-
-    pub const fn profile_id(&self) -> BackendDurabilityProfileId {
-        self.profile_id
     }
 
     pub const fn page_generation(&self) -> PageGenerationCell {

@@ -77,6 +77,11 @@ fn observation_and_clones_share_one_repeatable_empty_basis() {
         basis.retention_reason(),
         crate::history::retention::RelationalBasisRetentionReason::Observation
     );
+    assert_eq!(
+        basis.admission_identity(),
+        cloned.admission_identity(),
+        "clones preserve the owner-issued admission identity"
+    );
 }
 
 #[test]
@@ -92,6 +97,11 @@ fn repeated_observation_shares_one_registry_entry_and_final_drop_removes_it() {
 
     let (_, first) = runtime.observe_branch(&identity).unwrap();
     let (_, second) = runtime.observe_branch(&identity).unwrap();
+    assert_eq!(
+        first.admission_identity(),
+        second.admission_identity(),
+        "the weak exact-basis registry reuses the live owner admission"
+    );
     assert_eq!(
         runtime
             .branch_basis_cost_counters()

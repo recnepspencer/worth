@@ -10,6 +10,17 @@ pub(crate) mod transitions;
 pub(crate) mod types;
 pub(crate) mod verification;
 
+pub(crate) use evidence::{
+    BlobPublicationCrashBoundaryReport, BlobPublicationCrashOutcome, BlobPublicationDurableWal,
+    BlobPublicationReplayCounterSnapshot, BlobPublicationReplayedCrashEdge,
+};
+
+#[cfg(test)]
+pub(crate) use evidence::{
+    BlobPublicationBeforeWalReplayRead, BlobPublicationObservationSet,
+    BlobPublicationReplayReadArtifact, BlobPublicationReplayReadDenial,
+};
+
 #[cfg(test)]
 pub(crate) mod test_support;
 #[cfg(test)]

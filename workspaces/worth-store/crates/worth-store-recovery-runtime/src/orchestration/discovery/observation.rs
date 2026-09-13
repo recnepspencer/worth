@@ -1,29 +1,34 @@
-use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, ObservedWalArtifact};
-use worth_store_physical_format::{
-    inspect_checkpoint_stream, BootstrapCatalog, DurableRootSelector, RootSelectorRole,
-    BOOTSTRAP_CATALOG_BYTES, ROOT_SELECTOR_BYTES,
-};
+use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store_physical_format::{PhysicalRecordFormatDeclaration, BOOTSTRAP_CATALOG_BYTES};
 use worth_store_recovery_physics::{
-    admit_physical_root_slot, inspect_physical_wal_artifacts, InspectedPhysicalWalArtifacts,
-    PhysicalRecoveryResidue, PhysicalRecoveryResidueKind, PhysicalRootSlotObservation,
+    PhysicalRecoveryResidue, PhysicalRootSelectorDenial, PhysicalRootSlotObservation,
 };
 
 use crate::entry::{
     PhysicalRecoveryBlockKind as PhysicalRecoveryBlock, PhysicalRecoveryLimitDimension,
-    PhysicalRecoveryLimits,
+    PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
+};
+use crate::integrity_ingress::{
+    admit_observed_bootstrap_catalog, IntegrityAdmittedRecoveryArtifact,
+    RecoveryIntegrityIngressCounters, RecoveryIntegrityIngressRejection,
 };
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
 use super::super::manifest_facts::{observe_manifest_facts, ManifestObservationBudget};
 use super::super::ManifestFactsDiscovery;
+use super::wal::{discover_wal_inventory, WalDiscoveryInventoryDenialKind};
 use super::{
-    discovery_limit, map_cumulative_discovery_failure, map_discovery_failure, BootstrapDiscovery,
-    CheckpointDiscovery, DiscoveryFailure, WalDiscovery,
+    discovery_limit, map_discovery_failure, BootstrapDiscovery, CheckpointDiscovery,
+    DiscoveryFailure, WalDiscovery,
 };
 
+mod checkpoint;
 mod counters;
+mod root_observation;
 
-use counters::{record_checkpoint_counters, record_root_counters, record_wal_counters};
+use checkpoint::observe_checkpoint;
+use counters::{record_checkpoint_counters, record_wal_counters};
+use root_observation::{observe_root_slots, RootObservations};
 
 pub(super) struct ObservedSources {
     pub(super) current: PhysicalRootSlotObservation,
@@ -34,33 +39,57 @@ pub(super) struct ObservedSources {
     pub(super) checkpoint: CheckpointDiscovery,
     pub(super) wal: WalDiscovery,
     pub(super) residue: Vec<PhysicalRecoveryResidue>,
-}
-
-struct RootObservations {
-    current: PhysicalRootSlotObservation,
-    previous: PhysicalRootSlotObservation,
-    remaining_manifest_bytes: u64,
+    pub(super) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
 }
 
 pub(super) fn observe_all(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    coordination: &super::super::RecoveryCoordination,
     limits: PhysicalRecoveryLimits,
+    record_format: PhysicalRecordFormatDeclaration,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
+    ingress_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<ObservedSources, DiscoveryFailure> {
     let declaration = limits.declaration();
-    let mut roots = observe_root_slots(discovery, limits, counters)?;
-    let bootstrap = observe_fallback_anchor(discovery, &roots)?;
+    let mut roots = observe_root_slots(discovery, limits, record_format, counters)?;
+    let root_protocol_denials = roots.denials.clone();
+    let preserve_root_denials =
+        |failure: DiscoveryFailure| failure.with_root_protocol_denials(&root_protocol_denials);
+    let bootstrap =
+        observe_fallback_anchor(discovery, &roots, record_format, counters, ingress_trace)
+            .map_err(&preserve_root_denials)?;
     let (current_manifest_facts, previous_manifest_facts) =
-        observe_root_manifest_facts(discovery, limits, &mut roots, counters)?;
-    let checkpoint = observe_checkpoint(discovery, limits)?;
+        observe_root_manifest_facts(discovery, limits, &mut roots, counters)
+            .map_err(&preserve_root_denials)?;
+    let preserve_manifest_observations = |failure| {
+        preserve_post_manifest_failure(
+            failure,
+            &root_protocol_denials,
+            &current_manifest_facts,
+            &previous_manifest_facts,
+        )
+    };
+    let checkpoint = observe_checkpoint(
+        discovery,
+        limits,
+        &mut roots.remaining_manifest_bytes,
+        counters,
+        ingress_trace,
+    )
+    .map_err(&preserve_manifest_observations)?;
+    counters.manifest_bytes = declaration.manifest_bytes - roots.remaining_manifest_bytes;
     record_checkpoint_counters(counters, &checkpoint);
-    let (wal, residue, wal_entries) = observe_wal(discovery, limits)?;
+    let (wal, residue, wal_entries) = observe_wal(discovery, coordination, limits, counters)
+        .map_err(&preserve_manifest_observations)?;
     record_wal_counters(counters, &wal, &residue, wal_entries);
     if discovery.counters().bytes_read > declaration.observation_bytes {
-        return Err(discovery_limit(
-            PhysicalRecoveryLimitDimension::ObservationBytes,
-            discovery.counters().bytes_read,
-            declaration.observation_bytes,
+        return Err(preserve_manifest_observations(
+            discovery_limit(
+                PhysicalRecoveryLimitDimension::ObservationBytes,
+                discovery.counters().bytes_read,
+                declaration.observation_bytes,
+            )
+            .with_integrity_observations(wal.integrity_observations()),
         ));
     }
     Ok(ObservedSources {
@@ -72,94 +101,102 @@ pub(super) fn observe_all(
         checkpoint,
         wal,
         residue,
+        root_protocol_denials,
     })
+}
+
+fn preserve_post_manifest_failure(
+    failure: DiscoveryFailure,
+    root_protocol_denials: &[PhysicalRecoverySourceDenial],
+    current: &ManifestFactsDiscovery,
+    previous: &ManifestFactsDiscovery,
+) -> DiscoveryFailure {
+    failure
+        .with_root_protocol_denials(root_protocol_denials)
+        .with_integrity_trace(current.integrity_trace().clone())
+        .with_integrity_trace(previous.integrity_trace().clone())
 }
 
 fn observe_fallback_anchor(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     roots: &RootObservations,
+    record_format: PhysicalRecordFormatDeclaration,
+    counters: &mut PhysicalRecoveryDiscoveryCounters,
+    ingress_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<BootstrapDiscovery, DiscoveryFailure> {
-    if !matches!(
-        roots.current,
-        PhysicalRootSlotObservation::Rejected { selector: None, .. }
-    ) || !matches!(roots.previous, PhysicalRootSlotObservation::Admitted(_))
+    if !current_requires_fallback_anchor(&roots.current)
+        || !matches!(roots.previous, PhysicalRootSlotObservation::Candidate(_))
     {
         return Ok(BootstrapDiscovery::NotRequired);
     }
     let artifact = discovery
         .read_bootstrap_catalog(BOOTSTRAP_CATALOG_BYTES as u64)
         .map_err(map_selector_discovery_failure)?;
-    let Some(bytes) = artifact.bytes() else {
-        return Ok(BootstrapDiscovery::Absent);
+    let mut ingress = crate::integrity_ingress::RecoveryIntegrityIngressTrace::new();
+    let attempt = admit_observed_bootstrap_catalog(
+        &artifact,
+        discovery.store_identity(),
+        record_format,
+        ingress.counters_mut(),
+    );
+    ingress.retain(attempt.observation());
+    let discovery = match attempt.into_outcome() {
+        Ok(IntegrityAdmittedRecoveryArtifact::BootstrapCatalog(admitted)) => {
+            let projection = admitted.project(ingress.counters_mut());
+            BootstrapDiscovery::Admitted(
+                worth_store_recovery_physics::PhysicalBootstrapFallbackAnchor::from_integrity_projection(
+                    admitted.scope().store_identity(),
+                    projection.record_format,
+                    projection.current_root_generation,
+                ),
+            )
+        }
+        Ok(_) => unreachable!("bootstrap ingress routes only the bootstrap family"),
+        Err(RecoveryIntegrityIngressRejection::Absent) => BootstrapDiscovery::Absent,
+        Err(rejection) => BootstrapDiscovery::Rejected(rejection),
     };
-    Ok(match BootstrapCatalog::decode(bytes) {
-        Ok(catalog) => BootstrapDiscovery::Admitted(catalog),
-        Err(denial) => BootstrapDiscovery::Rejected(denial),
-    })
+    record_bootstrap_counters(counters, ingress.counters());
+    ingress_trace.append(ingress);
+    Ok(discovery)
 }
 
-fn observe_root_slots(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    limits: PhysicalRecoveryLimits,
+fn record_bootstrap_counters(
     counters: &mut PhysicalRecoveryDiscoveryCounters,
-) -> Result<RootObservations, DiscoveryFailure> {
-    let declaration = limits.declaration();
-    let current_bytes = read_current_selector(discovery)?;
-    let previous_bytes = read_previous_selector(discovery)?;
-    counters.selector_slots = discovery.counters().fixed_slots_read;
-    let store = discovery.store_identity();
-    let mut remaining_manifest_bytes = declaration.manifest_bytes;
-    let current_manifest = read_addressed_manifest(
-        discovery,
-        current_bytes.as_deref(),
-        &mut remaining_manifest_bytes,
-        declaration.manifest_bytes,
-    )?;
-    let previous_manifest = read_addressed_manifest(
-        discovery,
-        previous_bytes.as_deref(),
-        &mut remaining_manifest_bytes,
-        declaration.manifest_bytes,
-    )?;
-    let maximum_manifest_entries = u16::try_from(declaration.manifest_entries).unwrap_or(u16::MAX);
-    let current = admit_physical_root_slot(
-        store,
-        RootSelectorRole::Current,
-        current_bytes.as_deref(),
-        current_manifest.as_deref(),
-        maximum_manifest_entries,
-    );
-    let previous = admit_physical_root_slot(
-        store,
-        RootSelectorRole::Previous,
-        previous_bytes.as_deref(),
-        previous_manifest.as_deref(),
-        maximum_manifest_entries,
-    );
-    record_root_counters(counters, &current, &previous);
-    Ok(RootObservations {
+    ingress: RecoveryIntegrityIngressCounters,
+) {
+    counters.bootstrap_integrity_attempts = ingress.attempted;
+    counters.bootstrap_integrity_admissions = ingress.admitted;
+    counters.bootstrap_absent = ingress.rejected_absent;
+    counters.bootstrap_integrity_rejections =
+        ingress.attempted - ingress.admitted - ingress.rejected_absent;
+    counters.bootstrap_owner_projections = ingress.owner_projection_entries;
+    counters.bootstrap_owner_decoder_entries = ingress.owner_decoder_entries;
+}
+
+fn current_requires_fallback_anchor(current: &PhysicalRootSlotObservation) -> bool {
+    matches!(
         current,
-        previous,
-        remaining_manifest_bytes,
-    })
+        PhysicalRootSlotObservation::SelectorRejected(
+            PhysicalRootSelectorDenial::Integrity | PhysicalRootSelectorDenial::AuthorityMismatch
+        )
+    )
 }
 
-fn read_current_selector(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-) -> Result<Option<Vec<u8>>, DiscoveryFailure> {
-    discovery
-        .read_current_selector(ROOT_SELECTOR_BYTES as u64)
-        .map_err(map_selector_discovery_failure)
-        .map(|artifact| artifact.into_bytes())
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-fn read_previous_selector(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-) -> Result<Option<Vec<u8>>, DiscoveryFailure> {
-    discovery
-        .read_previous_selector(ROOT_SELECTOR_BYTES as u64)
-        .map_err(map_selector_discovery_failure)
-        .map(|artifact| artifact.into_bytes())
+    #[test]
+    fn selector_conflict_never_requests_fallback_anchor_io() {
+        assert!(!current_requires_fallback_anchor(
+            &PhysicalRootSlotObservation::SelectorRejected(PhysicalRootSelectorDenial::Conflict)
+        ));
+        assert!(current_requires_fallback_anchor(
+            &PhysicalRootSlotObservation::SelectorRejected(
+                PhysicalRootSelectorDenial::AuthorityMismatch
+            )
+        ));
+    }
 }
 
 fn map_selector_discovery_failure(
@@ -215,72 +252,23 @@ fn observe_root_manifest_facts(
     );
     counters.manifest_bytes = declaration.manifest_bytes - roots.remaining_manifest_bytes;
     counters.manifest_entries = declaration.manifest_entries - remaining_manifest_entries;
-    let previous_manifest_facts = previous_manifest_facts_result?;
+    let previous_manifest_facts = match previous_manifest_facts_result {
+        Ok(facts) => facts,
+        Err(failure) => {
+            let (_, trace) = current_manifest_facts.into_parts();
+            return Err(failure.with_integrity_trace(trace));
+        }
+    };
     counters.manifest_blocks =
         current_manifest_facts.block_count() + previous_manifest_facts.block_count();
     Ok((current_manifest_facts, previous_manifest_facts))
 }
 
-fn read_addressed_manifest(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    selector_bytes: Option<&[u8]>,
-    remaining_bytes: &mut u64,
-    admitted_bytes: u64,
-) -> Result<Option<Vec<u8>>, DiscoveryFailure> {
-    let Some(selector) = selector_bytes.and_then(|bytes| DurableRootSelector::decode(bytes).ok())
-    else {
-        return Ok(None);
-    };
-    let bytes = discovery
-        .read_root_manifest(selector.root_generation(), *remaining_bytes)
-        .map_err(|failure| {
-            map_cumulative_discovery_failure(
-                failure,
-                PhysicalRecoveryLimitDimension::ManifestEntries,
-                PhysicalRecoveryLimitDimension::ManifestBytes,
-                admitted_bytes,
-                *remaining_bytes,
-            )
-        })
-        .map(|artifact| artifact.into_bytes())?;
-    *remaining_bytes = remaining_bytes
-        .checked_sub(bytes.as_ref().map_or(0, |bytes| bytes.len() as u64))
-        .ok_or(PhysicalRecoveryBlock::DiscoveryLimit)?;
-    Ok(bytes)
-}
-
-fn observe_checkpoint(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-    limits: PhysicalRecoveryLimits,
-) -> Result<CheckpointDiscovery, DiscoveryFailure> {
-    let declaration = limits.declaration();
-    let artifact = discovery
-        .read_current_checkpoint(declaration.observation_bytes)
-        .map_err(|failure| {
-            map_discovery_failure(
-                failure,
-                PhysicalRecoveryLimitDimension::ObservationBytes,
-                PhysicalRecoveryLimitDimension::ObservationBytes,
-            )
-        })?;
-    let Some(bytes) = artifact.bytes() else {
-        return Ok(CheckpointDiscovery::Absent);
-    };
-    Ok(
-        match inspect_checkpoint_stream(
-            bytes,
-            declaration.dirty_frames,
-            declaration.operation_bindings,
-        ) {
-            Ok(checkpoint) => CheckpointDiscovery::Admitted(checkpoint),
-            Err(denial) => CheckpointDiscovery::Rejected(denial),
-        },
-    )
-}
-
 fn observe_wal(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    coordination: &super::super::RecoveryCoordination,
     limits: PhysicalRecoveryLimits,
+    counters: &mut PhysicalRecoveryDiscoveryCounters,
 ) -> Result<(WalDiscovery, Vec<PhysicalRecoveryResidue>, u64), DiscoveryFailure> {
     let declaration = limits.declaration();
     let observed = discovery
@@ -293,80 +281,72 @@ fn observe_wal(
             )
         })?;
     let wal_entries = observed.len() as u64;
-    let (regular, mut residue) = partition_wal_entries(observed);
-    let inspected =
-        inspect_physical_wal_artifacts(regular, declaration.wal_frames).map_err(|denial| {
-            match denial {
-            worth_store_recovery_physics::PhysicalWalArtifactInspectionDenial::CounterOverflow => {
-                DiscoveryFailure::from(PhysicalRecoveryBlock::DiscoveryLimit)
-            }
-            worth_store_recovery_physics::PhysicalWalArtifactInspectionDenial::FrameLimitExceeded {
-                observed,
-                admitted,
-            } => discovery_limit(
-                PhysicalRecoveryLimitDimension::WalFrames,
-                observed,
-                admitted,
-            ),
+    let inspected = match discover_wal_inventory(
+        coordination.owner(),
+        observed,
+        discovery.store_identity(),
+        declaration.wal_frames,
+    ) {
+        Ok(inspected) => inspected,
+        Err(denial) => {
+            let (wal, residue) = finish_wal_inventory(denial.inventory);
+            record_wal_counters(counters, &wal, &residue, wal_entries);
+            let observations = wal.integrity_observations;
+            let failure = match denial.kind {
+                WalDiscoveryInventoryDenialKind::CounterOverflow => {
+                    DiscoveryFailure::from(PhysicalRecoveryBlock::DiscoveryLimit)
+                }
+                WalDiscoveryInventoryDenialKind::FrameLimitExceeded { observed, admitted } => {
+                    discovery_limit(
+                        PhysicalRecoveryLimitDimension::WalFrames,
+                        observed,
+                        admitted,
+                    )
+                }
+                WalDiscoveryInventoryDenialKind::SourceBinding => {
+                    DiscoveryFailure::from(PhysicalRecoveryBlock::WalInventory)
+                }
+            };
+            return Err(failure.with_integrity_observations(observations));
         }
-        })?;
-    validate_wal_limits(&inspected, limits)?;
-    residue.extend_from_slice(inspected.residue());
-    Ok((wal_discovery(inspected), residue, wal_entries))
-}
-
-fn partition_wal_entries(
-    observed: Vec<ObservedWalArtifact>,
-) -> (Vec<(String, Vec<u8>)>, Vec<PhysicalRecoveryResidue>) {
-    let mut regular = Vec::new();
-    let mut residue = Vec::new();
-    for artifact in observed {
-        let name = artifact.name().to_string_lossy().into_owned();
-        if artifact.entry_type()
-            != worth_store_physical_format::store_namespace::NamespaceEntryType::RegularFile
-        {
-            residue.push(PhysicalRecoveryResidue::new(
-                name,
-                PhysicalRecoveryResidueKind::NonRegularWalEntry,
-            ));
-            continue;
-        }
-        regular.push((name, artifact.bytes().unwrap_or_default().to_vec()));
-    }
-    (regular, residue)
-}
-
-fn validate_wal_limits(
-    inspected: &InspectedPhysicalWalArtifacts,
-    limits: PhysicalRecoveryLimits,
-) -> Result<(), DiscoveryFailure> {
-    let declaration = limits.declaration();
-    let wal_frames = inspected.frames_scanned();
-    let wal_bytes = inspected.byte_count();
-    if wal_bytes > declaration.wal_bytes {
+    };
+    if inspected.observed_bytes > declaration.wal_bytes {
+        let observed_bytes = inspected.observed_bytes;
+        let (wal, residue) = finish_wal_inventory(inspected);
+        record_wal_counters(counters, &wal, &residue, wal_entries);
         return Err(discovery_limit(
             PhysicalRecoveryLimitDimension::WalBytes,
-            wal_bytes,
+            observed_bytes,
             declaration.wal_bytes,
-        ));
+        )
+        .with_integrity_observations(wal.integrity_observations));
     }
-    debug_assert!(wal_frames <= declaration.wal_frames);
-    Ok(())
+    debug_assert!(inspected.frames_scanned <= declaration.wal_frames);
+    let (wal, residue) = finish_wal_inventory(inspected);
+    Ok((wal, residue, wal_entries))
 }
 
-fn wal_discovery(inspected: InspectedPhysicalWalArtifacts) -> WalDiscovery {
-    WalDiscovery {
-        candidates: inspected.candidates().to_vec(),
-        rejected: inspected.rejected(),
-        scanned_frames: inspected.frames_scanned(),
-        valid_frames: inspected.frame_count(),
-        valid_bytes: inspected.valid_byte_count(),
-        observed_bytes: inspected.byte_count(),
-        torn_suffix_frames: inspected.torn_suffix_frames(),
-        torn_suffix_bytes: inspected.torn_suffix_bytes(),
-        corruption_denials: inspected.corruption_denials(),
-        scanned_segments: inspected.canonical_segment_count(),
-        valid_segments: inspected.valid_segment_count(),
-        corruptions: inspected.corruptions().to_vec(),
-    }
+fn finish_wal_inventory(
+    inspected: super::wal::WalDiscoveryInventory,
+) -> (WalDiscovery, Vec<PhysicalRecoveryResidue>) {
+    let residue = inspected.residue;
+    let valid_segments = inspected.candidates.len() as u64;
+    let wal = WalDiscovery {
+        rejected: !inspected.corruptions.is_empty(),
+        candidates: inspected.candidates,
+        admitted: inspected.admitted,
+        integrity_observations: inspected.observations,
+        integrity_ingress: inspected.ingress,
+        scanned_frames: inspected.frames_scanned,
+        valid_frames: inspected.valid_frames,
+        valid_bytes: inspected.valid_bytes,
+        observed_bytes: inspected.observed_bytes,
+        torn_suffix_frames: inspected.torn_suffix_frames,
+        torn_suffix_bytes: inspected.torn_suffix_bytes,
+        corruption_denials: inspected.corruptions.len() as u64,
+        scanned_segments: inspected.canonical_segments,
+        valid_segments,
+        corruptions: inspected.corruptions,
+    };
+    (wal, residue)
 }

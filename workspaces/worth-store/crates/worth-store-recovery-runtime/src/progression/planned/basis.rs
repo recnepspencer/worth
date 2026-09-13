@@ -3,9 +3,8 @@ use worth_store::physical_runtime::StoreRecoveryBindingFreshnessSample;
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, CurrentPhysicalRecordPlacement,
     DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest, DurableRootSelector,
-    PersistedPhysicalDataFrameSubject, PersistedPhysicalRecoveryRootState,
-    PhysicalCheckpointIdentity, RecordArtifactFile, RecordFreeSpaceManifestEntry,
-    RecordSegmentPageManifestEntry,
+    PersistedPhysicalRecoveryRootState, PhysicalCheckpointIdentity, RecordArtifactFile,
+    RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
 };
 use worth_store_recovery_physics::{
     ImmutablePhysicalRedoPlan, PhysicalRedoDecisionKind, PhysicalRedoDecisionPrior,
@@ -13,19 +12,36 @@ use worth_store_recovery_physics::{
     ReconciledOperationFates, RecoveryPageObservation,
 };
 
+type SelectedRootTopologyEntry = (
+    worth_store_physical_format::ManifestBlockReference,
+    worth_store_physical_format::PhysicalRootRoutingBlock,
+);
+
 mod command;
 mod derivation;
+mod frame_identity;
 mod identity;
 mod publication_accessors;
 mod publication_candidate;
 mod staging_cost;
 
-pub(crate) use derivation::derive_execution_basis;
+pub(crate) use derivation::{derive_execution_basis, requires_successor_candidate};
+pub(crate) use publication_candidate::CandidateMaterializationCost;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ExecutionBasisDenial {
-    StagingBytes { observed: u64 },
-    DirtyFrames { observed: u64 },
+    StagingBytes {
+        observed: u64,
+    },
+    DirtyFrames {
+        observed: u64,
+    },
+    SuccessorCandidate(crate::entry::PhysicalRecoverySuccessorCandidateDenial),
+    RootProtocol {
+        artifact: crate::entry::PhysicalRecoveryRootProtocolArtifact,
+        denial: crate::entry::PhysicalRecoveryRootProtocolDenial,
+        counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
+    },
     Invalid,
 }
 
@@ -33,8 +49,29 @@ pub(crate) enum ExecutionBasisDenial {
 pub(crate) struct RecoverySelectedSourceInventory {
     pub(crate) free_space: DurableFreeSpaceManifestHeader,
     pub(crate) segment_pages: BTreeMap<(u64, u64), RecoverySelectedSegmentPage>,
+    pub(crate) segment_topology:
+        BTreeMap<(u64, u64), worth_store_physical_format::PhysicalSegmentMembershipBlock>,
     pub(crate) free_entries: Box<[RecordFreeSpaceManifestEntry]>,
+    pub(crate) free_topology:
+        BTreeMap<(u64, u64), worth_store_physical_format::PhysicalFreeSpaceMembershipBlock>,
     pub(crate) source_artifacts: Box<[RecordArtifactFile]>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct RecoveryObservedSuccessorCandidate {
+    pub(crate) root: DurablePhysicalRootManifest,
+    pub(crate) free_space: DurableFreeSpaceManifestHeader,
+    pub(crate) placements: Box<[CurrentPhysicalRecordPlacement]>,
+    pub(crate) segment_entries: Box<[RecordSegmentPageManifestEntry]>,
+    pub(crate) free_entries: Box<[RecordFreeSpaceManifestEntry]>,
+    pub(crate) referenced_artifacts: Box<[RecordArtifactFile]>,
+    pub(crate) artifacts: Box<[RecoveryObservedCandidateArtifact]>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct RecoveryObservedCandidateArtifact {
+    pub(crate) artifact: RecordArtifactFile,
+    pub(crate) bytes: Box<[u8]>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -73,6 +110,7 @@ pub struct RecoveryStagingCommandPlan {
 pub struct RecoveryBaseImagePlan {
     selected_selector: DurableRootSelector,
     selected_root: DurablePhysicalRootManifest,
+    selected_root_topology: Box<[SelectedRootTopologyEntry]>,
     destination_generation: u64,
     actions: Box<[RecoveryBaseImageAction]>,
     segment_updates: Box<[RecoverySegmentRoutingAction]>,
@@ -133,6 +171,7 @@ pub struct RecoveryPublicationPlan {
     root_protocol: worth_store::physical_runtime::RecoveryRootProtocolPublicationPlan,
     current_selector: worth_store_physical_format::DurableRootSelector,
     recovered_root: DurablePhysicalRootManifest,
+    referenced_artifacts: Box<[RecordArtifactFile]>,
     candidates: Box<[RecoveryPublicationCandidateArtifact]>,
     created_artifacts: Box<[RecordArtifactFile]>,
 }
@@ -154,6 +193,7 @@ pub struct RecoveryPublicationExpectation {
     root_protocol: worth_store::physical_runtime::RecoveryRootProtocolPublicationPlan,
     current_selector: worth_store_physical_format::DurableRootSelector,
     recovered_root: DurablePhysicalRootManifest,
+    referenced_artifacts: Box<[RecordArtifactFile]>,
     created_artifacts: Box<[RecordArtifactFile]>,
 }
 
@@ -232,6 +272,9 @@ impl RecoveryBaseImagePlan {
     pub const fn selected_root(&self) -> &DurablePhysicalRootManifest {
         &self.selected_root
     }
+    pub(crate) fn selected_root_topology(&self) -> &[SelectedRootTopologyEntry] {
+        &self.selected_root_topology
+    }
     pub const fn destination_generation(&self) -> u64 {
         self.destination_generation
     }
@@ -300,25 +343,6 @@ impl RecoveryStagingAction {
     }
     pub const fn destination_generation(&self) -> u64 {
         self.destination_generation
-    }
-}
-
-fn frame_identity(subject: PersistedPhysicalDataFrameSubject) -> PhysicalRedoTargetIdentity {
-    match subject {
-        PersistedPhysicalDataFrameSubject::InlinePage(page) => {
-            PhysicalRedoTargetIdentity::InlinePage {
-                segment: page.segment_id().get(),
-                page: page.page_id().get(),
-                generation: page.generation().get(),
-            }
-        }
-        PersistedPhysicalDataFrameSubject::ExtentChunk(chunk) => {
-            PhysicalRedoTargetIdentity::ExtentChunk {
-                extent: chunk.extent_cell().extent_id().get(),
-                generation: chunk.extent_cell().generation().get(),
-                chunk: chunk.ordinal(),
-            }
-        }
     }
 }
 

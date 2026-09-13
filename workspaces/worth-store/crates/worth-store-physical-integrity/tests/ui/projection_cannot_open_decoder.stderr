@@ -1,0 +1,115 @@
+error[E0308]: mismatched types
+  --> tests/ui/projection_cannot_open_decoder.rs:14:41
+   |
+14 |     let _ = inspect_inline_page(format, projected);
+   |             -------------------         ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedInlineRecordProjection<'_, '_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/page_record/durable_page.rs
+   |
+   | pub fn inspect_inline_page(
+   |        ^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/projection_cannot_open_decoder.rs:21:33
+   |
+21 |     let _ = decode_extent_chunk(projected, expected);
+   |             ------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedExtentChunkProjection<'_, '_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/extent_record/durable_extent.rs
+   |
+   | pub fn decode_extent_chunk(
+   |        ^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/projection_cannot_open_decoder.rs:25:41
+   |
+25 |     let _ = decode_bounded_wal_frame_v1(projected);
+   |             --------------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedWalPayloadProjection<'_, '_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/wal_frame/bounded_decode.rs
+   |
+   | pub fn decode_bounded_wal_frame_v1(
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/projection_cannot_open_decoder.rs:31:46
+   |
+31 |     let _ = decode_checkpoint_binding_record(projected);
+   |             -------------------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedCheckpointBindingPayloadProjection<'_, '_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/checkpoint/binding_compaction.rs
+   |
+   | pub fn decode_checkpoint_binding_record(
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `bytes` found for struct `IntegrityValidatedInlineRecordProjection<'view, 'media>` in the current scope
+  --> tests/ui/projection_cannot_open_decoder.rs:35:30
+   |
+35 |     let _: &[u8] = projected.bytes();
+   |                              ^^^^^ method not found in `IntegrityValidatedInlineRecordProjection<'_, '_>`
+
+error[E0599]: no method named `bytes` found for struct `IntegrityValidatedExtentChunkProjection<'view, 'media>` in the current scope
+  --> tests/ui/projection_cannot_open_decoder.rs:39:30
+   |
+39 |     let _: &[u8] = projected.bytes();
+   |                              ^^^^^ method not found in `IntegrityValidatedExtentChunkProjection<'_, '_>`
+
+error[E0599]: no method named `bytes` found for struct `IntegrityValidatedWalPayloadProjection<'view, 'media>` in the current scope
+  --> tests/ui/projection_cannot_open_decoder.rs:43:30
+   |
+43 |     let _: &[u8] = projected.bytes();
+   |                              ^^^^^ method not found in `IntegrityValidatedWalPayloadProjection<'_, '_>`
+
+error[E0599]: no method named `bytes` found for struct `IntegrityValidatedCheckpointBindingPayloadProjection<'view, 'media>` in the current scope
+  --> tests/ui/projection_cannot_open_decoder.rs:49:30
+   |
+49 |     let _: &[u8] = projected.bytes();
+   |                              ^^^^^ method not found in `IntegrityValidatedCheckpointBindingPayloadProjection<'_, '_>`
+
+error: lifetime may not live long enough
+  --> tests/ui/projection_cannot_open_decoder.rs:55:5
+   |
+52 | fn escape_page<'view, 'media>(
+   |                ----- lifetime `'view` defined here
+...
+55 |     projected
+   |     ^^^^^^^^^ returning this value requires that `'view` must outlive `'static`
+
+error: lifetime may not live long enough
+  --> tests/ui/projection_cannot_open_decoder.rs:61:5
+   |
+58 | fn escape_extent<'view, 'media>(
+   |                  ----- lifetime `'view` defined here
+...
+61 |     projected
+   |     ^^^^^^^^^ returning this value requires that `'view` must outlive `'static`
+
+error: lifetime may not live long enough
+  --> tests/ui/projection_cannot_open_decoder.rs:67:5
+   |
+64 | fn escape_wal<'view, 'media>(
+   |               ----- lifetime `'view` defined here
+...
+67 |     projected
+   |     ^^^^^^^^^ returning this value requires that `'view` must outlive `'static`
+
+error: lifetime may not live long enough
+  --> tests/ui/projection_cannot_open_decoder.rs:73:5
+   |
+70 | fn escape_checkpoint<'view, 'media>(
+   |                      ----- lifetime `'view` defined here
+...
+73 |     projected
+   |     ^^^^^^^^^ returning this value requires that `'view` must outlive `'static`

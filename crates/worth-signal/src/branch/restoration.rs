@@ -3,11 +3,29 @@ use worth_foundational::FoundationalBranchReferenceMismatchAxis;
 use crate::data::error::SignalError;
 use crate::state::{SignalBranchId, SignalSnapshotId};
 
-use super::SignalBranchRetentionAcquisitionDenial;
+use super::{SignalBranchRetentionAcquisitionDenial, SignalOwnerUnavailable};
 
 #[derive(Debug)]
 pub enum SignalBranchRestoreDenial {
+    OwnerUnavailable(SignalOwnerUnavailable),
+    OperationCapacityExhausted {
+        maximum_in_flight_operations: usize,
+    },
+    OwnerReentry,
+    CancelledNoMovement,
     UnknownBranch {
+        branch_id: SignalBranchId,
+    },
+    RetirementInProgress {
+        branch_id: SignalBranchId,
+    },
+    RetiredBranch {
+        branch_id: SignalBranchId,
+    },
+    QuarantinedBranch {
+        branch_id: SignalBranchId,
+    },
+    OwnerCellMisuse {
         branch_id: SignalBranchId,
     },
     BasisMismatch {

@@ -1,10 +1,8 @@
-use std::collections::BTreeMap;
-
 use serde::{Deserialize, Serialize};
 
+use super::PerformedWorkBuffer;
 use crate::data::handle::NodeId;
 use crate::data::output::PartitionInterner;
-use crate::data::proof::invalidation::progression::InvalidationWorkBindingAxes;
 use crate::data::telemetry::RuntimeTelemetry;
 use crate::diagnostics::state::DiagnosticsState;
 use crate::logic::transaction::{
@@ -29,9 +27,11 @@ pub(crate) struct RuntimeObservation {
     #[serde(default)]
     pub(in crate::data::graph) partition_interner: PartitionInterner,
     #[serde(default)]
-    pub(in crate::data::graph) branch_mutation_view: BTreeMap<NodeId, BranchMutationRecord>,
+    pub(in crate::data::graph) branch_mutation_view:
+        crate::data::persistent_ord_map::PersistentOrdMap<NodeId, BranchMutationRecord>,
     #[serde(default)]
-    pub(in crate::data::graph) branch_mutation_records: BTreeMap<NodeId, BranchMutationRecord>,
+    pub(in crate::data::graph) branch_mutation_records:
+        crate::data::persistent_ord_map::PersistentOrdMap<NodeId, BranchMutationRecord>,
     #[serde(skip, default)]
     pub(in crate::data::graph) diagnostics: DiagnosticsState,
     #[serde(default)]
@@ -41,15 +41,32 @@ pub(crate) struct RuntimeObservation {
 #[derive(Debug)]
 pub(crate) struct ObservationCaptureCleanup {
     counters: Arc<[AtomicU64; 24]>,
-    bindings: Arc<Mutex<Vec<InvalidationWorkBindingAxes>>>,
+    bindings: Arc<Mutex<PerformedWorkBuffer>>,
     completed_execution_boundaries: Arc<AtomicU64>,
     last_completion: Arc<AtomicU64>,
+    storage_custody:
+        Option<Arc<crate::data::retained_storage::SignalConditionalRetentionReservation>>,
 }
 
 impl ObservationCaptureCleanup {
+    pub(crate) fn initial_heap_charge() -> Result<
+        crate::data::retained_storage::RetainedStorageCharge,
+        crate::data::retained_storage::RetainedStoragePreparationDenial,
+    > {
+        crate::data::retained_storage::arc_allocation_charge::<Self>()
+    }
+
+    pub(crate) fn with_storage_custody(
+        mut self,
+        custody: Option<Arc<crate::data::retained_storage::SignalConditionalRetentionReservation>>,
+    ) -> Self {
+        self.storage_custody = custody;
+        self
+    }
+
     pub(crate) fn new(
         counters: Arc<[AtomicU64; 24]>,
-        bindings: Arc<Mutex<Vec<InvalidationWorkBindingAxes>>>,
+        bindings: Arc<Mutex<PerformedWorkBuffer>>,
         completed_execution_boundaries: Arc<AtomicU64>,
         last_completion: Arc<AtomicU64>,
     ) -> Self {
@@ -58,6 +75,7 @@ impl ObservationCaptureCleanup {
             bindings,
             completed_execution_boundaries,
             last_completion,
+            storage_custody: None,
         }
     }
 }
@@ -85,8 +103,41 @@ impl SignalObservationDropCleanup for ObservationCaptureCleanup {
 }
 
 impl RuntimeObservation {
+    pub(crate) fn operational_clone(&self) -> Self {
+        Self {
+            telemetry: self.telemetry,
+            reconstruction_counters: self.reconstruction_counters.clone(),
+            partition_interner: self.partition_interner.operational_clone(),
+            branch_mutation_view: self.branch_mutation_view.operational_clone(),
+            branch_mutation_records: self.branch_mutation_records.operational_clone(),
+            diagnostics: self.diagnostics.clone(),
+            installed_policy: self.installed_policy,
+        }
+    }
+
+    pub(crate) fn fork_branch_local(&mut self) -> Self {
+        Self {
+            telemetry: self.telemetry,
+            reconstruction_counters: self.reconstruction_counters.clone(),
+            partition_interner: self.partition_interner.fork_persistent(),
+            branch_mutation_view: Default::default(),
+            branch_mutation_records: Default::default(),
+            diagnostics: self.diagnostics.fork_branch_carrier(),
+            installed_policy: self.installed_policy,
+        }
+    }
+
+    pub(crate) fn partition_interner_mut(&mut self) -> &mut PartitionInterner {
+        &mut self.partition_interner
+    }
+
     pub(crate) fn partition_interner(&self) -> &PartitionInterner {
         &self.partition_interner
+    }
+
+    #[cfg(test)]
+    pub(crate) fn fork_storage_identity(&self) -> PartitionInterner {
+        self.partition_interner.fork_storage_identity()
     }
 
     pub(crate) fn installed_policy(&self) -> InstalledSignalRuntimePolicy {

@@ -13,7 +13,6 @@ use crate::physical_runtime::{
 pub(in crate::physical_runtime) struct PhysicalMutationRuntimeOwner {
     director: Weak<crate::physical_runtime::record_serving::RecordPublicationDirector>,
     state: Mutex<PhysicalMutationLifecycleState>,
-    #[cfg(feature = "certification-test-authority")]
     yieldpoint: super::yieldpoint::PhysicalMutationYieldpointOwner,
 }
 
@@ -56,23 +55,20 @@ impl PhysicalMutationRuntimeOwner {
                 records: 0,
                 peak_group_members: 0,
             }),
-            #[cfg(feature = "certification-test-authority")]
             yieldpoint: super::yieldpoint::PhysicalMutationYieldpointOwner::new(),
         })
     }
 
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn pause_at_for_certification(
+    pub(in crate::physical_runtime) fn pause_at(
         &self,
-        checkpoint: super::CertificationPhysicalMutationCheckpoint,
-    ) -> super::CertificationPhysicalMutationPauseGate {
+        checkpoint: super::PhysicalMutationCheckpoint,
+    ) -> super::PhysicalMutationPauseGate {
         self.yieldpoint.install(checkpoint)
     }
 
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn reach_certification_checkpoint(
+    pub(in crate::physical_runtime) fn reach_checkpoint(
         &self,
-        checkpoint: super::CertificationPhysicalMutationCheckpoint,
+        checkpoint: super::PhysicalMutationCheckpoint,
     ) {
         self.yieldpoint.pause(checkpoint);
     }
@@ -162,9 +158,8 @@ impl PhysicalMutationRuntimeOwner {
         for attempt in attempts {
             attempt.mark_runtime_closing();
         }
-        #[cfg(feature = "certification-test-authority")]
         self.yieldpoint
-            .pause(super::CertificationPhysicalMutationCheckpoint::RuntimeClosingMarked);
+            .pause(super::PhysicalMutationCheckpoint::RuntimeClosingMarked);
         for worker in workers {
             let _ = worker.join();
         }
@@ -359,10 +354,9 @@ fn run_worker(
                 ),
             );
         };
-        #[cfg(feature = "certification-test-authority")]
         owner
             .yieldpoint
-            .pause(super::CertificationPhysicalMutationCheckpoint::BeforeEffectCutover);
+            .pause(super::PhysicalMutationCheckpoint::BeforeEffectCutover);
         director.execute_managed_mutation(prepared, &attempt)
     }));
     let Some(owner) = owner.upgrade() else {
@@ -384,9 +378,8 @@ fn run_worker(
             true,
         ),
     };
-    #[cfg(feature = "certification-test-authority")]
     owner
         .yieldpoint
-        .pause(super::CertificationPhysicalMutationCheckpoint::BeforeTerminalFinalization);
+        .pause(super::PhysicalMutationCheckpoint::BeforeTerminalFinalization);
     owner.record_terminal(&attempt, terminal, panicked);
 }

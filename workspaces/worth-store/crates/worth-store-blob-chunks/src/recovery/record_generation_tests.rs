@@ -1,10 +1,4 @@
-use worth_store_physical_backend::{
-    BackendTargetProfile, BlobPhysicalManifestObservation, BlobPhysicalManifestValidation,
-};
-use worth_store_recovery_physics::{
-    BlobReplaySourceAdmission, DurabilityReplayIdentity, DurabilityReplayKind,
-};
-
+use super::replay_source::{BlobReplaySourceIdentity, BlobReplaySourceIdentityKind};
 use crate::lifecycle::generation_registry_test_support::{
     lifecycle_receipt_for_publication_with_identity, registry_authority,
     root_publication_with_bytes,
@@ -17,8 +11,11 @@ use crate::{
     BlobObjectClassificationAdmission, BlobPlacementManifestRow, BlobPublicationWalCommit,
     BlobPublicationWalPayload, BlobPublicationWalRecord, BlobReachabilityManifestRow,
     BlobReachabilityStaging, BlobRecoveryRecordDenialKind, BlobRecoveryRecordSet,
-    BlobResumabilityReceipt, BlobResumeSessionCheckpointRecord, BlobRootCandidateForPublication,
-    BlobRootCandidateRecord,
+    BlobReplaySourceAdmission, BlobResumabilityReceipt, BlobResumeSessionCheckpointRecord,
+    BlobRootCandidateForPublication, BlobRootCandidateRecord,
+};
+use worth_store_physical_backend::{
+    BackendTargetProfile, BlobPhysicalManifestObservation, BlobPhysicalManifestValidation,
 };
 
 #[test]
@@ -248,8 +245,8 @@ fn replay_fixture_from_candidate(
 }
 
 fn checkpoint_source(case: &str) -> BlobReplaySourceAdmission {
-    let identity = DurabilityReplayIdentity::new(
-        DurabilityReplayKind::Checkpoint,
+    let identity = BlobReplaySourceIdentity::new(
+        BlobReplaySourceIdentityKind::Checkpoint,
         BackendTargetProfile::SimulatedStrictDurable,
         format!("{case}.checkpoint"),
         1,
@@ -261,8 +258,8 @@ fn checkpoint_source(case: &str) -> BlobReplaySourceAdmission {
 }
 
 fn manifest_source(case: &str) -> BlobReplaySourceAdmission {
-    let identity = DurabilityReplayIdentity::new(
-        DurabilityReplayKind::Manifest,
+    let identity = BlobReplaySourceIdentity::new(
+        BlobReplaySourceIdentityKind::Manifest,
         BackendTargetProfile::SimulatedStrictDurable,
         format!("{case}.manifest"),
         1,

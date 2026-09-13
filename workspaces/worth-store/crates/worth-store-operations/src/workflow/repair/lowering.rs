@@ -1,10 +1,10 @@
+use super::integrity_classification::{
+    IntegrityOperationalRepairOwner, IntegrityRepairClassificationDenial,
+    IntegrityRepairClassificationPlan,
+};
 use sha2::{Digest, Sha256};
 use worth_store_layout_indexes::{
     DerivedIndexRepairExecutionDenial, DerivedIndexRepairPlan, LayoutOperationalRepairOwner,
-};
-use worth_store_physical_integrity::{
-    IntegrityOperationalRepairOwner, IntegrityRepairClassificationDenial,
-    IntegrityRepairClassificationPlan,
 };
 
 use crate::authorization::{

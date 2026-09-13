@@ -1,9 +1,8 @@
 pub(super) const fn offline_family(
     family: worth_store_physical_format::BackupBundleArtifactFamily,
-) -> worth_store_physical_format::OfflinePhysicalArtifactFamily {
-    use worth_store_physical_format::{
-        BackupBundleArtifactFamily as Bundle, OfflinePhysicalArtifactFamily as Offline,
-    };
+) -> crate::OfflinePhysicalArtifactFamily {
+    use crate::OfflinePhysicalArtifactFamily as Offline;
+    use worth_store_physical_format::BackupBundleArtifactFamily as Bundle;
 
     match family {
         Bundle::RootManifest | Bundle::CheckpointManifest | Bundle::SecondaryRoot => {

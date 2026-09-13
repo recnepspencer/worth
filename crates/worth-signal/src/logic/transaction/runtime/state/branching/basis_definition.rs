@@ -1,4 +1,5 @@
 use super::super::runtime_state::SignalRuntime;
+use crate::schema::data::SignalSchemaRegistry;
 
 pub(crate) fn signal_definition_basis<D, I, E, Ctx, T>(
     runtime: &SignalRuntime<D, I, E, Ctx, T>,
@@ -8,8 +9,13 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    runtime
-        .schema_registry
+    signal_definition_basis_from_registry(&runtime.schema_registry)
+}
+
+pub(in crate::logic::transaction::runtime) fn signal_definition_basis_from_registry(
+    schema_registry: &SignalSchemaRegistry,
+) -> u64 {
+    schema_registry
         .registry_digest()
         .as_bytes()
         .iter()

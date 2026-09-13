@@ -10,7 +10,7 @@
 //! ```
 //!
 //! ```compile_fail
-//! use worth_store_recovery_physics::BlobReplaySourceAdmission;
+//! use worth_store_blob_chunks::BlobReplaySourceAdmission;
 //! let _source = BlobReplaySourceAdmission::from_resume_checkpoint_digest("copied");
 //! ```
 //!
@@ -28,7 +28,7 @@
 //! ```
 //!
 //! ```compile_fail
-//! use worth_store_recovery_physics::{
+//! use worth_store_blob_chunks::{
 //!     BlobReplaySourceAdmission, BlobResumeReplayReadmission,
 //! };
 //! fn copied_authority_digest_is_not_replay_readmission(source: BlobReplaySourceAdmission) {

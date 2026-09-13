@@ -25,6 +25,7 @@ pub(super) struct WorthQueryPreparedApplicationCommit {
     branch: worth_relational::facade::history::BranchId,
     retained_preimage: Option<WorthQueryRetainedPreImage>,
     preimage_retention_work: WorthQueryPreImageRetentionWork,
+    _completion: super::commit_completion::WorthQueryApplicationAttemptCompletion,
 }
 
 impl WorthQueryPreparedApplicationCommit {
@@ -73,19 +74,17 @@ fn take_prepared_session(
     provider: &WorthQueryPrimaryGraphProvider,
     session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
 ) -> Result<WorthQueryPreparedApplicationCommit, WorthQueryProviderSessionFailure> {
-    let prepared = provider
-        .attempts
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .take_commit_prepared(session)
-        .ok_or_else(|| {
-            commit_failure("primary graph session has no exact commit-prepared application attempt")
-        })?;
-    let super::WorthQueryPreparedProviderApplicationAttempt {
-        attempt,
-        candidate,
-        work,
-    } = prepared;
+    let attempts = std::sync::Arc::clone(&provider.attempts);
+    let prepared = {
+        attempts
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .take_commit_prepared(session, std::sync::Arc::clone(&attempts))
+    }
+    .ok_or_else(|| {
+        commit_failure("primary graph session has no exact commit-prepared application attempt")
+    })?;
+    let (attempt, candidate, work, completion) = prepared.into_parts();
     let branch = attempt.affinity().branch().clone();
     let (retained_preimage, preimage_retention_work) =
         preimage_retention::retain_attempt_preimage(&attempt, &candidate)?.into_parts();
@@ -96,6 +95,7 @@ fn take_prepared_session(
         branch,
         retained_preimage,
         preimage_retention_work,
+        _completion: completion,
     })
 }
 

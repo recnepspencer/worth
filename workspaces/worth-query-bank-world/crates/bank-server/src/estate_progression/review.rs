@@ -97,20 +97,26 @@ impl BankIdentityRuntime {
                 ));
             }
         };
-        let access_authority = match self.application_runtime().admit_capability_access(
-            principal.query(),
-            &capability,
-            action,
-            request,
-        ) {
-            Ok(access) => access,
+        let selected = match self.select_current_product() {
+            Ok(selected) => selected,
             Err(denial) => {
                 return Err(BankEstateProgressionFailure::retained(
-                    BankEstateProgressionDenial::from_authorization(denial),
+                    BankEstateProgressionDenial::from_product_selection(denial),
                     mandatory,
                 ));
             }
         };
+        let access_authority =
+            match selected.admit_capability_access(principal.query(), &capability, action, request)
+            {
+                Ok(access) => access,
+                Err(denial) => {
+                    return Err(BankEstateProgressionFailure::retained(
+                        BankEstateProgressionDenial::from_authorization(denial),
+                        mandatory,
+                    ));
+                }
+            };
         let operation = match self
             .application_runtime()
             .installed_schema()

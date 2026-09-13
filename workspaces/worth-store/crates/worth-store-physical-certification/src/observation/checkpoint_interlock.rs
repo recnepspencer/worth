@@ -5,10 +5,10 @@ pub struct CheckpointInterlockObservation {
     no_mixed_root: bool,
     old_reader_retained_old_root: bool,
     post_publication_reader_observed_new_epoch: bool,
-    page_lsn_frontier_bound_to_cutover: bool,
+    checkpoint_wal_bound_to_cutover: bool,
     root_epoch_checks: u64,
     manifest_epoch_checks: u64,
-    page_lsn_frontier_checks: u64,
+    checkpoint_wal_range_checks: u64,
     readmission_checks: u64,
     publication_swaps: u64,
 }
@@ -23,7 +23,7 @@ impl CheckpointInterlockObservation {
         let counters = evidence.counters();
         if counters.root_epoch_checks() == 0
             || counters.manifest_epoch_checks() == 0
-            || counters.page_lsn_frontier_checks() == 0
+            || counters.checkpoint_wal_range_checks() == 0
             || counters.readmission_checks() == 0
             || counters.publication_swaps() == 0
         {
@@ -34,10 +34,10 @@ impl CheckpointInterlockObservation {
             old_reader_retained_old_root: evidence.old_reader_retained_old_root(),
             post_publication_reader_observed_new_epoch: evidence
                 .post_publication_reader_observed_new_epoch(),
-            page_lsn_frontier_bound_to_cutover: evidence.page_lsn_frontier_bound_to_cutover(),
+            checkpoint_wal_bound_to_cutover: evidence.checkpoint_wal_bound_to_cutover(),
             root_epoch_checks: counters.root_epoch_checks(),
             manifest_epoch_checks: counters.manifest_epoch_checks(),
-            page_lsn_frontier_checks: counters.page_lsn_frontier_checks(),
+            checkpoint_wal_range_checks: counters.checkpoint_wal_range_checks(),
             readmission_checks: counters.readmission_checks(),
             publication_swaps: counters.publication_swaps(),
         })
@@ -55,8 +55,8 @@ impl CheckpointInterlockObservation {
         self.post_publication_reader_observed_new_epoch
     }
 
-    pub const fn page_lsn_frontier_bound_to_cutover(self) -> bool {
-        self.page_lsn_frontier_bound_to_cutover
+    pub const fn checkpoint_wal_bound_to_cutover(self) -> bool {
+        self.checkpoint_wal_bound_to_cutover
     }
 
     pub const fn root_epoch_checks(self) -> u64 {
@@ -67,8 +67,8 @@ impl CheckpointInterlockObservation {
         self.manifest_epoch_checks
     }
 
-    pub const fn page_lsn_frontier_checks(self) -> u64 {
-        self.page_lsn_frontier_checks
+    pub const fn checkpoint_wal_range_checks(self) -> u64 {
+        self.checkpoint_wal_range_checks
     }
 
     pub const fn readmission_checks(self) -> u64 {

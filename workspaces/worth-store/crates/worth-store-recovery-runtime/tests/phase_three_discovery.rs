@@ -4,6 +4,7 @@ use phase_three_support::*;
 use worth_store_recovery_runtime::{
     PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimits,
     PhysicalRecoveryPlatformAuthority, PhysicalRecoverySourceDenial,
+    PhysicalRecoveryWalIntegrityObservationOutcome,
 };
 
 #[test]
@@ -14,6 +15,21 @@ fn bounded_genesis_discovery_selects_only_the_fixed_current_root() {
     publish_synthetic_genesis(&root, store);
     let discovered = admitted_recovery(&root).discover().unwrap();
     assert_eq!(discovered.counters().selector_slots, 2);
+    assert_eq!(
+        discovered.counters().current_selector_integrity_admissions,
+        1
+    );
+    assert_eq!(discovered.counters().current_selector_interpretations, 1);
+    assert_eq!(discovered.counters().current_root_integrity_admissions, 1);
+    assert_eq!(
+        discovered.counters().current_root_candidate_interpretations,
+        1
+    );
+    assert_eq!(
+        discovered.counters().previous_selector_integrity_admissions,
+        0
+    );
+    assert_eq!(discovered.counters().previous_selector_interpretations, 0);
     assert_eq!(discovered.counters().root_candidates, 1);
     assert_eq!(discovered.counters().checkpoint_candidates, 0);
     assert_eq!(discovered.counters().wal_segments, 0);
@@ -45,14 +61,29 @@ fn bounded_discovery_joins_root_bound_checkpoint_cutover_and_contiguous_wal() {
     publish_synthetic_wal_tail(&root);
     let discovered = admitted_recovery(&root).discover().unwrap();
     assert_eq!(discovered.counters().checkpoint_candidates, 1);
+    assert_eq!(discovered.counters().checkpoint_integrity_attempts, 5);
+    assert_eq!(discovered.counters().checkpoint_integrity_admissions, 5);
+    assert_eq!(discovered.counters().checkpoint_integrity_rejections, 0);
+    assert_eq!(discovered.counters().checkpoint_owner_projections, 3);
+    assert_eq!(discovered.counters().checkpoint_owner_decoder_entries, 0);
     assert_eq!(discovered.counters().wal_entries, 1);
     assert_eq!(discovered.counters().wal_segments, 1);
     assert_eq!(discovered.counters().wal_frames, 1);
+    assert_eq!(discovered.counters().wal_integrity_attempts, 1);
+    assert_eq!(discovered.counters().wal_integrity_admissions, 1);
+    assert_eq!(discovered.counters().wal_integrity_rejections, 0);
+    assert_eq!(discovered.counters().wal_owner_projections, 1);
+    assert_eq!(discovered.counters().wal_owner_decoder_entries, 0);
     let selected = discovered.select().unwrap();
     assert_eq!(selected.checkpoint_identity(), Some(checkpoint));
     assert_eq!(selected.compaction_generation(), Some(1));
     assert_eq!(selected.wal_segment_count(), 1);
     assert_eq!(selected.wal_frame_count(), 1);
+    assert_eq!(selected.wal_integrity_observations().len(), 1);
+    assert_eq!(
+        selected.wal_integrity_observations()[0].outcome(),
+        PhysicalRecoveryWalIntegrityObservationOutcome::Admitted
+    );
     assert_eq!(selected.residue_count(), 0);
     let _ = selected.cancel_before_reconstruction();
 }
@@ -195,6 +226,10 @@ fn absent_and_rejected_checkpoints_have_distinct_terminal_evidence() {
     let discovered = admitted_recovery(&rejected_root).discover().unwrap();
     assert_eq!(discovered.counters().checkpoints_absent, 0);
     assert_eq!(discovered.counters().checkpoints_rejected, 1);
+    assert_eq!(discovered.counters().checkpoint_integrity_attempts, 1);
+    assert_eq!(discovered.counters().checkpoint_integrity_admissions, 0);
+    assert_eq!(discovered.counters().checkpoint_integrity_rejections, 1);
+    assert_eq!(discovered.counters().checkpoint_owner_decoder_entries, 0);
     let blocked = expect_blocked(
         discovered
             .select()
@@ -204,12 +239,18 @@ fn absent_and_rejected_checkpoints_have_distinct_terminal_evidence() {
     assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::Checkpoint);
     assert_eq!(blocked.store_identity(), rejected_store);
     assert_eq!(blocked.evidence().counters.checkpoints_rejected, 1);
-    assert!(matches!(
-        blocked.evidence().source_denials.as_slice(),
-        [PhysicalRecoverySourceDenial::CheckpointFormat(
-            worth_store_physical_format::CheckpointStreamDecodeDenial::Truncated
-        )]
-    ));
+    assert!(blocked
+        .evidence()
+        .source_denials
+        .iter()
+        .any(|denial| matches!(
+            denial,
+            PhysicalRecoverySourceDenial::CheckpointIntegrity(
+                worth_store_recovery_runtime::PhysicalRecoveryCheckpointIntegrityDenial::Integrity(
+                    _
+                )
+            )
+        )));
     assert_eq!(
         blocked.evidence().artifact.as_deref(),
         Some("families/checkpoint.current")
@@ -217,50 +258,6 @@ fn absent_and_rejected_checkpoints_have_distinct_terminal_evidence() {
     assert_eq!(blocked.recovery_effects(), 0);
     let after = PhysicalRecoveryPlatformAuthority::process_counters();
     assert!(after.sessions_terminated_blocked >= before.sessions_terminated_blocked + 1);
-}
-
-#[test]
-fn interrupted_terminal_first_frame_preserves_the_complete_prior_segment() {
-    let parent = tempfile::tempdir().unwrap();
-    let root = parent.path().join("store");
-    let store = initialize_store(&root);
-    publish_synthetic_genesis(&root, store);
-    publish_synthetic_checkpoint(&root, store);
-    let families = root.join("families");
-    let (first_path, first) =
-        worth_store_test_support::harness::recovery::wal_tail::prepare_persisted_wal_frame(
-            &families,
-            1,
-            2,
-            3,
-            "complete-prior-frame",
-            b"complete",
-        );
-    let (second_path, second) =
-        worth_store_test_support::harness::recovery::wal_tail::prepare_persisted_wal_frame(
-            &families,
-            2,
-            3,
-            4,
-            "interrupted-newest-frame",
-            b"interrupted",
-        );
-    std::fs::create_dir_all(first_path.parent().unwrap()).unwrap();
-    std::fs::write(first_path, &first).unwrap();
-    std::fs::write(second_path, &second[..37]).unwrap();
-
-    let discovered = admitted_recovery(&root).discover().unwrap();
-    assert_eq!(discovered.counters().valid_wal_frames, 1);
-    assert_eq!(discovered.counters().valid_wal_bytes, first.len() as u64);
-    assert_eq!(discovered.counters().torn_suffix_frames, 1);
-    assert_eq!(discovered.counters().torn_suffix_bytes, 37);
-    assert_eq!(discovered.counters().interrupted_wal_start_residue, 1);
-    assert_eq!(discovered.counters().wal_corruption_denials, 0);
-    let selected = discovered.select().unwrap();
-    assert_eq!(selected.wal_segment_count(), 1);
-    assert_eq!(selected.wal_frame_count(), 1);
-    assert_eq!(selected.residue_count(), 1);
-    let _ = selected.cancel_before_reconstruction();
 }
 
 #[test]

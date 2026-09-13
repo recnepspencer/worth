@@ -2,6 +2,8 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+mod reconstitution;
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct ConditionalOperationKey {
     domain: TypeId,
@@ -19,15 +21,7 @@ pub(crate) struct WorthQueryInstalledConditionalNode {
     pub(crate) operation_identity: String,
     pub(crate) runtime_authority: u64,
     pub(crate) installation_runtime_authority: u64,
-    pub(crate) installation_generation: u64,
-    pub(crate) resource_support: crate::domain_installation::WorthQueryExecutionResourceSupport,
-}
-
-#[derive(Clone)]
-pub(crate) struct WorthQueryInstalledConditionalInstanceFamily {
-    pub(crate) location: worth_query_installation::facade::WorthQueryConditionalNodeLocation,
-    pub(crate) operation_identity: String,
-    pub(crate) runtime_authority: u64,
+    pub(crate) source_installation_generation: u64,
     pub(crate) installation_generation: u64,
     pub(crate) resource_support: crate::domain_installation::WorthQueryExecutionResourceSupport,
 }
@@ -62,10 +56,6 @@ impl WorthQueryConditionalExecutionIndexRebuildReport {
 pub(crate) struct WorthQueryConditionalExecutionRegistry {
     authoritative: Vec<AuthoritativeConditionalInstallation>,
     by_operation: HashMap<ConditionalOperationKey, Vec<Arc<WorthQueryInstalledConditionalNode>>>,
-    owned_instances: HashMap<u64, AuthoritativeConditionalInstallation>,
-    owned_instance_families:
-        HashMap<ConditionalOperationKey, Vec<WorthQueryInstalledConditionalInstanceFamily>>,
-    next_owned_instance: u64,
 }
 
 impl WorthQueryConditionalExecutionRegistry {
@@ -102,84 +92,12 @@ impl WorthQueryConditionalExecutionRegistry {
             .unwrap_or_default()
     }
 
-    pub(crate) fn install_owned_instance_family<D: 'static, O: 'static, F: 'static>(
-        &mut self,
-        family: WorthQueryInstalledConditionalInstanceFamily,
-    ) -> Result<(), ()> {
-        let families = self
-            .owned_instance_families
-            .entry(operation_key::<D, O, F>())
-            .or_default();
-        if families
-            .iter()
-            .any(|installed| installed.location == family.location)
-        {
-            return Err(());
-        }
-        families.push(family);
-        families.sort_by(|left, right| left.location.cmp(&right.location));
-        Ok(())
-    }
-
-    pub(crate) fn owned_instance_families<D: 'static, O: 'static, F: 'static>(
-        &self,
-    ) -> Vec<WorthQueryInstalledConditionalInstanceFamily> {
-        self.owned_instance_families
-            .get(&operation_key::<D, O, F>())
-            .cloned()
-            .unwrap_or_default()
-    }
-
-    pub(crate) fn install_owned_instance<D: 'static, O: 'static, F: 'static>(
-        &mut self,
-        node: WorthQueryInstalledConditionalNode,
-    ) -> Result<(u64, Arc<WorthQueryInstalledConditionalNode>), ()> {
-        let identity = self.next_owned_instance.checked_add(1).ok_or(())?;
-        self.next_owned_instance = identity;
-        let key = operation_key::<D, O, F>();
-        let node = Arc::new(node);
-        self.owned_instances.insert(
-            identity,
-            AuthoritativeConditionalInstallation {
-                key,
-                node: Arc::clone(&node),
-            },
-        );
-        Ok((identity, node))
-    }
-
-    pub(crate) fn owned_instance<D: 'static, O: 'static, F: 'static>(
-        &self,
-        identity: u64,
-    ) -> Option<Arc<WorthQueryInstalledConditionalNode>> {
-        let installed = self.owned_instances.get(&identity)?;
-        (installed.key == operation_key::<D, O, F>()).then(|| Arc::clone(&installed.node))
-    }
-
-    pub(crate) fn remove_owned_instance<D: 'static, O: 'static, F: 'static>(
-        &mut self,
-        identity: u64,
-    ) -> Option<Arc<WorthQueryInstalledConditionalNode>> {
-        let installed = self.owned_instances.get(&identity)?;
-        if installed.key != operation_key::<D, O, F>() {
-            return None;
-        }
-        self.owned_instances
-            .remove(&identity)
-            .map(|entry| entry.node)
-    }
-
     pub(crate) fn len(&self) -> usize {
-        self.authoritative.len() + self.owned_instances.len()
+        self.authoritative.len()
     }
 
     pub(crate) fn registration_len(&self) -> usize {
         self.len()
-            + self
-                .owned_instance_families
-                .values()
-                .map(Vec::len)
-                .sum::<usize>()
     }
 
     pub(crate) fn replace_lowerings_for_test<D: 'static, O: 'static, F: 'static>(
@@ -213,6 +131,7 @@ impl WorthQueryConditionalExecutionRegistry {
                     operation_identity: current.operation_identity.clone(),
                     runtime_authority,
                     installation_runtime_authority: current.installation_runtime_authority,
+                    source_installation_generation: current.source_installation_generation,
                     installation_generation,
                     resource_support: donor.resource_support.clone(),
                 })

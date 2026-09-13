@@ -139,15 +139,15 @@ A recovery design is false if it can pass by:
   been durably published and independently reopened; or
 - letting the verifier call recovery selection, redo, or runtime decoding.
 
-## Decisive Fresh-Process Courtroom
+## Decisive Fresh-Process Suite
 
 ### Production subjects
 
-The courtroom uses four real process roles:
+The suite uses four real process roles:
 
-1. The existing `physical_store_work_courtroom` executable runs in its C.8
-   writer mode, using the canonical C.7 ordinary Store facade and only
-   production C.4 effects.
+1. The dedicated `physical_store_c8_writer` executable uses the canonical
+   ordinary Store facade and only production C.4 effects. It is a shipped
+   production binary with no certification authority or replay import.
 2. `physical_store_recover` uses the C.8 recovery composition facade.
 3. The existing `physical_store_offline_observer` executable runs in its C.8
    observation mode, opens the dead store read-only, and interprets stable
@@ -178,6 +178,40 @@ intervals and two WAL rotations. The history includes:
 
 The parent records submitted identities and expected semantic record values in
 its own history model. Neither the recoverer nor observer receives that model.
+
+The Phase 8 checkpoint-crash fixture uses an independently modeled C8 v1 dirty
+record whose payload is `2 * (16 KiB - 112 bytes) + 1 = 32,545` bytes. That
+record produces one new-artifact extent frame followed by existing-artifact
+writebacks, so the parent must observe the real pre-effect writeback boundary.
+The C8 writer requires an explicit sealed `--writer-durability-profile` before
+record-store initialization. Checkpoint and ordinary writeback worlds use
+`c8-phase8-checkpoint-writeback-v1`, whose local WAL segment limit is 128 KiB;
+the workspace runtime admission and WAL rotation rules remain unchanged, and
+the checkpoint fixture still crosses multiple physical WAL segments. Cleanup
+seam worlds use the distinct `c8-phase8-cleanup-rotation-v1` profile, whose
+24 KiB segment limit fits each cleanup durability group while forcing the
+checkpoint group and its durable-unacknowledged tail into separate physical
+segments. The parent cleanup-world owner independently parses those raw WAL
+frames and refuses to enter a cleanup seam unless it proves one complete
+checkpoint-covered segment, one retained tail segment, contiguous LSN/segment
+topology, and no torn suffix. No arbitrary numeric WAL limit is accepted from
+the process boundary.
+
+The separate durable-before-ack process world intentionally uses the ordinary
+8 KiB mutation payload and fate `2`; its parent expectation and writer profile
+are selected by that semantic launcher profile rather than by overriding the
+checkpoint fixture's 32,545-byte payload or fate `4`.
+
+### Recovery profiles and memory budgets
+
+Ordinary Phase 8 recovery uses the named `c8-phase2-admission-v1` profile and
+its admitted 512 KiB recovery-memory budget. The checkpoint-fate and recovery-
+yieldpoint campaigns use the explicitly named
+`c8-phase8-fate-coverage-v1` profile with a separate 4 MiB admission because
+their deliberately oversized multi-checkpoint fixture must retain enough
+physical evidence to cross every named boundary. Those campaigns assert their
+own 4 MiB bound; they are additional crash-composition evidence and do not
+substitute for the ordinary 512 KiB budget proof.
 
 ### Hostile sequence
 
@@ -244,19 +278,17 @@ runtime may not silently normalize the observer to its own answer.
 
 ### Schedule perturbation
 
-Every staged courtroom scenario has a deterministic schedule seed and a
-distinct perturbation seed. CI runs at least 16 source-closure-derived
-perturbation seeds across the existing bounded schedule harness. The release
-lane runs the canonical schedule plus the complete named crash matrix.
+Every staged process scenario has a deterministic schedule seed and a distinct
+perturbation seed derived from its stable scenario identity. CI runs the
+explicit scenario matrix. The release lane runs the canonical schedule plus
+the complete named crash matrix.
 
-A failure report records the exact scenario identity, source identity, schedule
-seed, perturbation seed, backend profile, yieldpoint, artifact digest set, and
-counter snapshot. Replaying those values must reproduce the same failure on
-unchanged source.
+A failure identifies the scenario, seeds, backend profile, and yieldpoint.
+Replaying those values must reproduce the same failure on unchanged source.
 
-### Mutation sensitivity
+### Hostile sensitivity
 
-The initial C.8 mutation corpus must include at least these defect classes:
+Direct C.8 tests must reject at least these defect classes:
 
 - accept the C.7 in-memory handoff or reuse writer runtime identity;
 - choose the highest enumerated root or checkpoint generation;
@@ -287,9 +319,8 @@ The initial C.8 mutation corpus must include at least these defect classes:
   unsupported protocol version, or let that descriptive protocol authorize a
   persisted Store artifact.
 
-Every real C.8 defect fixed after the initial corpus adds a smallest causal
-mutation that would reintroduce it. The corpus is a growing regression record,
-not a fixed ceremonial count.
+Every real C.8 defect fixed later adds the smallest direct regression test that
+would have exposed it at the responsible boundary.
 
 ### Forbidden substitutes
 
@@ -344,10 +375,10 @@ The following cannot close C.8:
     preserved only when they already express the destination contract. Wrong,
     redundant, speculative, milestone-coded, or duplicated surfaces are
     narrowed, moved, replaced, or deleted.
-12. **The long courtroom certifies; it does not discover ordinary defects.**
-    Warnings-denied compilation, focused tests, API/topology checks, ledger
-    completeness, report-schema checks, and isolated mutation runs are required
-    preflights before a source-bound campaign begins.
+12. **Behavioral tests are the verdict.** Warnings-denied compilation, focused
+    tests, boundary checks, and direct process scenarios run after each coherent
+    implementation batch. No ledger, report reconciliation, source fingerprint,
+    or test-of-tests may stand between a defect and its failing test.
 13. **A sealed witness proves the lane, not the recovery instance.** C.8 uses
     the Worth Proof sealed marker-authoring pattern for private minting, but the
     concrete Store authority also retains a private exact binding. A zero-sized
@@ -477,7 +508,7 @@ to that whole-stream format and reconstructs its policy and retention axes only
 after verification. WAL security does not gain a parallel decorative frame
 header: Phase 4 derives it from a verified WAL frame whose payload contains the
 exact persisted C.7 attempt binding and canonical redo digest, decoded by the
-Store owner. The persisted-input inventory binds both producer and decoder
+Store owner. The persisted-input contract binds both producer and decoder
 chains so later work cannot silently substitute an in-memory receipt, identity
 wrapper, or derived classification for crash-surviving truth.
 
@@ -501,6 +532,24 @@ prefix.
 The recovery request's configuration and qualified platform authority decide
 what may be opened and what budgets apply. They do not decide which persisted
 generation is current.
+
+A C.7 death after synchronizing a root candidate but before root-protocol
+replacement may leave complete artifacts at the exact successor generation.
+Those bytes are never current authority. When recovery must publish that same
+successor, effect-free planning may read only that addressed candidate and its
+referenced manifest blocks under the existing observation and manifest-entry
+limits. Recovery independently derives the exact incremental copy-on-write
+successor required by the admitted physical-format contract from the selected
+current topology and persisted recovery projection. Adoption requires exact
+root and free-space headers, exact reused selected-source references in their
+expected positions, and exact identity and canonical bytes for every
+successor-owned block. Recovery's candidate-absent full reconstruction is a
+different lawful strategy and is not the adoption oracle. A malformed,
+semantically conflicting, differently packed, or differently sourced candidate
+blocks before effects. Recovery never skips a generation, overwrites mismatched
+immutable bytes, or deletes a candidate to make publication proceed. If no
+publication is required, non-current successor material cannot displace or
+invalidate the selected root.
 
 ### Derived state
 
@@ -529,7 +578,7 @@ filename order, or highest-generation heuristic may select authority.
 | valid current selector names an invalid/missing root | block with exact current-root denial unless the persisted selector protocol itself authorizes the retained previous slot | silently demote current because previous opens |
 | several checkpoint files are present | admit only the checkpoint selected by the chosen root/selector chain and exact Store/generation binding | choose the newest enumerated checkpoint |
 | selected checkpoint plus older valid checkpoint | use the selected checkpoint; retain the older one only as declared fallback/cleanup evidence | merge their page or binding contents |
-| checkpoint redo frontier plus retained WAL | require the first tail LSN to be exactly contiguous with the checkpoint frontier | search later segments for a convenient start |
+| checkpoint redo frontier plus retained WAL | require the first selected complete tail-frame LSN to be exactly contiguous with the checkpoint frontier, even when that frame is inside a retained physical segment | search later segments for a convenient start or treat the containing segment's physical first LSN as the logical tail start |
 | incomplete final WAL frame/suffix after a valid prefix | admit the prefix, classify and exclude the torn suffix, preserve evidence until safe cleanup | reject the prefix or decode partial payload |
 | invalid frame followed by required/later valid material | block as middle corruption or missing required range | truncate it as a torn tail |
 | pageLSN at or above redo LSN with matching generation | skip the frame and record the skip | reapply because WAL is newer in enumeration order |
@@ -553,7 +602,10 @@ unsupported physical scope instead of inventing repair.
 
 The selected checkpoint contributes the base physical image and exact covered
 LSN frontier. The retained WAL contributes only the contiguous suffix after
-that frontier.
+that frontier. “First tail LSN” means the first selected complete frame, not
+necessarily the first frame in the physical segment that contains it; frames
+covered by the checkpoint remain physical evidence but are excluded from the
+logical recovery basis.
 
 Before effects, C.8 must prove:
 
@@ -603,7 +655,7 @@ cannot construct `ProvenNoEffect`. An expired terminal binding may be absent
 only when the selected namespace-durable checkpoint proves that C.7 lawfully
 compacted it. Every unresolved or unexpired binding remains represented.
 
-The parent courtroom may separately know whether a client observed a response.
+The parent process suite may separately know whether a client observed a response.
 C.8 does not infer network or caller observation. `AcknowledgedDurable` names a
 persisted C.7 physical acknowledgment fact, not delivery telemetry.
 
@@ -923,7 +975,7 @@ No Foundational branch, commit, merge, selected-node, selected-aspect,
 skipped-scope, or semantic checkpoint vocabulary is applicable to C.8 physical
 reconstruction.
 
-## Authority Type Ledger
+## Production Authority Matrix
 
 | Type or responsibility | Constructed by | Proves | Authorizes | Cannot authorize | Consumed by |
 | --- | --- | --- | --- | --- | --- |
@@ -1076,16 +1128,19 @@ workspaces/worth-store/crates/
 │       │   ├── authority.rs                              [C]
 │       │   ├── runtime_identity.rs                       [C]
 │       │   └── handoff.rs                                [C]
-│       └── bin/physical_store_work_courtroom/            [E]
-│           └── c8_recovery_writer.rs                     [C]
+│       ├── bin/physical_store_c8_writer.rs               [C]
 ├── worth-store-offline-verifier/
-│   └── src/c8_recovery_observation/                      [C]
-│       ├── mod.rs                                        [C]
-│       ├── artifact_walk.rs                              [C]
-│       ├── physical_format.rs                            [C]
-│       ├── conclusion.rs                                 [C]
-│       ├── report_protocol.rs                            [C]
-│       └── report.rs                                     [C]
+│   └── src/
+│       ├── c8_recovery_observation/                      [C]
+│       │   ├── mod.rs                                    [C]
+│       │   ├── artifact_walk.rs                          [C]
+│       │   ├── physical_format.rs                        [C]
+│       │   ├── conclusion.rs                             [C]
+│       │   ├── report_protocol.rs                        [C]
+│       │   └── report.rs                                 [C]
+│       └── truth_composition/candidate_evaluation/        [C]
+│           ├── mod.rs                                    [C]
+│           └── candidate_set.rs                          [C]
 └── worth-store-physical-certification/
     └── src/c8_fresh_process_recovery/                    [C]
         ├── mod.rs                                        [C]
@@ -1098,15 +1153,10 @@ workspaces/worth-store/crates/
         ├── schedules/                                    [C]
         │   ├── mod.rs                                    [C]
         │   └── perturbation.rs                           [C]
-        └── mutations/                                    [C]
-            ├── mod.rs                                    [C]
-            └── corpus.rs                                 [C]
 ```
 
-The one-file `schedules/` and `mutations/` directories are intentional. The
-existing schedule harness and opportunistically growing mutation corpus give
-them committed sibling growth along stable axes; flattening them now would
-force later structural churn.
+The schedule harness remains only where it controls a real production
+yieldpoint and reports a replayable seed.
 
 ### Boundary ownership and exclusions
 
@@ -1117,13 +1167,14 @@ force later structural churn.
 | `recovery-runtime/orchestration` | cross-domain sequencing | calls into physics, Store port, and C.4 work route | domain meaning | dependency and composition checks |
 | `recovery-runtime/observation` | descriptive recovery export | cheap typed facts, report protocol identity/version, bounded rendering | Store admission, effects, rich mandatory diagnostics | separate observation profile, compatibility-window tests, and import gates |
 | `recovery-physics/source_precedence` | persisted truth selection | role-specific admission and deterministic choice | filesystem execution, operator policy | no `worth-store`, Signal, or runtime dependency |
-| `recovery-physics/wal_prefix` | WAL continuity | exact prefix/torn/middle decisions | redo execution | focused property and mutation proof |
+| `recovery-physics/wal_prefix` | WAL continuity | exact prefix/torn/middle decisions | redo execution | focused property and adversarial tests |
 | `recovery-physics/redo_replay` | immutable redo plan | admitted record grammar and order | media writes | pure API and dependency check |
 | `recovery-physics/page_redo` | page transition meaning | generation/pageLSN apply or skip | buffer-pool lifecycle | pure transition tests |
 | `operation_reconciliation` | physical fate | identity/evidence join and owner-sampled generation freshness | semantic retry, acknowledgment delivery, or caller-supplied freshness | exhaustive fate types and source/policy substitution tests |
 | `recovery_freshness` | Store physical freshness ownership | owner-sampled selected-checkpoint and published-root generations, sealed bases, and concrete policies | pure classification, caller samples, or replay | exact authority-trace-to-topology owner equality and substitution tests |
 | `recovery_construction` | Store physical runtime construction | new identity, fresh handles, quiescent handoff | replay and semantic serving | reconstruction-only feature/dependency gate |
 | `c8_recovery_observation` | independent read-only evidence | stable format interpretation and observer report protocol | recovery decisions, authority types, and Store format admission | import/dependency, protocol-window, and controlled-defect gates |
+| `truth_composition/candidate_evaluation` | offline candidate projection | owner-verified frontier observations, canonical candidate ordering, confidence, and conflict denial | source precedence, Store admission, media effects, and execution selection | exact candidate facade, bounded allocation, and independent identity/digest assertions |
 
 The destination forbids `recovery_manager.rs`, `helpers.rs`, `common.rs`,
 `util.rs`, generic evidence bags, flat phase-state files, and any module that
@@ -1156,8 +1207,7 @@ fixed current/previous selector slots
 
 It may not scale with total Store size, total historical WAL, all historical
 operations, all expired idempotency keys, directory-tree breadth, semantic
-record count, diagnostic richness, mutation-corpus size, or offline-observer
-work.
+record count, diagnostic richness, or offline-observer work.
 
 `PhysicalRecoveryLimits` separately bounds:
 
@@ -1218,11 +1268,13 @@ Counters are monotonic, stage-honest, and cannot report future work as zeroed
 fields. Each phase exposes only facts already executed. Exact structural
 counters prove boundedness; elapsed time is secondary qualification evidence.
 
-CI uses a small bounded profile. Release certification and named hardware
-qualification use larger explicit profiles. Every timing report names source
-identity, hardware, filesystem, backend profile, cold/warm posture, Store and
-tail scale, concurrency, repetitions, and percentiles. Timing qualification
-does not share a contended lane with randomized schedule exploration.
+The ordinary CI process lane runs the complete deterministic process matrix
+with the small bounded profile. Larger named profiles are invoked directly on
+their target hardware when scale or timing qualification is needed; those
+runs are performance observations, not a second source-validity system. Every
+timing report names source revision, hardware, filesystem, backend profile,
+cold/warm posture, Store and tail scale, concurrency, repetitions, and
+percentiles.
 
 ## Cleanup, Cutover, And Deletion Contract
 
@@ -1274,7 +1326,7 @@ Never delete or recycle:
 - an artifact involved in `PublicationIndeterminate`;
 - unsupported, damaged, quarantined, or unexplained material whose retention
   is required for later classification; or
-- observer/courtroom artifacts under an active certification retention policy.
+- temporary observer output still owned by an active process.
 
 Cleanup failure after successful recovered-root publication yields
 `RecoveryCleanupPosture::Deferred` with exact candidates and causes. It does
@@ -1285,35 +1337,12 @@ and last-copy facts. Each successful removal records concrete performed-effect
 evidence only after C.4 reports completion; attempted or ambiguous removal
 retains the artifact disposition and cannot be relabeled successful.
 
-### Source cutover accounting
+### Source cutover
 
-C.8 maintains a scoped preserve/narrow/replace/delete inventory over:
-
-- `worth-store-recovery-physics` public exports and implementation owners;
-- the Store recovery-construction boundary;
-- C.8 certification and offline-observer routes;
-- workspace crates that directly import a replaced C.8 surface; and
-- authoritative C.8 documentation.
-
-It does not enumerate unrelated repository files, archives, generated output,
-build directories, attachments, temporary directories, or binary containers.
-A dependent file enters the inventory only because a named C.8 surface change
-requires its migration or deletion.
-
-Disposition meanings are exact:
-
-- **preserve** — semantics, owner, authority, lifecycle, failure, and cost all
-  match the destination;
-- **narrow** — the responsibility remains but visibility, accepted authority,
-  output, dependency, or scope must shrink;
-- **replace** — build the destination in parallel, migrate callers, then remove
-  the source; and
-- **delete** — no destination responsibility exists.
-
-“Legacy,” “compatibility,” “deprecated,” and “keep for now” are not
-dispositions for this unreleased product. Each replace row names its destination
-and deletion gate. Each preserve/narrow row names one semantic owner. Generic
-owners such as recovery, physics, support, evidence, or utility are invalid.
+Cutover is judged from the current Git diff, Cargo dependency graph, public
+facades, and direct consumers. Replaced surfaces are deleted in the same change
+that migrates their callers. No cutover inventory, disposition table, source
+registry, or generated topology report is maintained.
 
 The existing recovery-physics crate receives special scrutiny:
 
@@ -1334,56 +1363,36 @@ Each phase removes dead tests, fixtures, exports, modules, dependencies,
 documentation, and certification cases exposed by its cutover. Cleanup is not
 deferred wholesale to closeout.
 
-## Living Requirement-And-Evidence Ledger
+## Verification Policy
 
-C.8 uses one living ledger whose rows are derived from this specification's
-guarantees and causally relevant risks. The ledger is not a diary, a fixed
-template, or a global source inventory.
+C.8 verification is intentionally small and direct:
 
-Every row records:
+- Git identifies the reviewed source revision.
+- Cargo targets and features define what is built.
+- Focused unit, integration, compile-fail, and fresh-process tests decide pass
+  or fail.
+- The workspace boundary checker enforces dependency and authority direction.
+- Independent reviewers judge whether those tests adequately cover the changed
+  behavior.
 
-- stable guarantee identity;
-- exact claim and owning phase;
-- authoritative implementation owner;
-- positive, hostile, compile-time, process-boundary, counter, and mutation
-  evidence as applicable;
-- current source closure and source identity only when certification depends on
-  it;
-- status, reopened-by relationship, and exact closure evidence; and
-- any remaining unsupported or indeterminate scope.
+Completed phase evidence is immutable Git history, not a live status system.
+A later defect is fixed and protected by the narrowest useful regression test;
+it does not reopen or rewrite a historical phase. Current changes are blocked
+only by current compilation, tests, boundary checks, or material review
+findings.
 
-The ledger generator must reason over the complete guarantee graph. It must
-reject omitted guarantees, evidence that cannot causally prove the claim,
-duplicate authority rows, stale proof owners, contradictory statuses, missing
-mutants, and closed rows whose bound source changed.
+C.8 must not add requirement ledgers, source-closure maps, source or executable
+fingerprints, proof reports, mutation receipts, report-to-report reconciliation,
+or tests whose subject is another test. Structural checks are retained only
+when they enforce a real compiler-visible boundary that the compiler and
+workspace boundary checker cannot already express.
 
-It must not require exact variable phrasing, compacted source substrings,
-comment-sensitive occurrence counts, or every repository path. Structural
-enforcement uses compiler visibility, dependency graphs, public facade
-enumeration, parsed syntax only where semantic topology truly requires it, and
-runtime proof for behavior.
-
-Before any long source-bound campaign, the following cheap preflight must be
-green:
-
-- warnings-denied focused compilation and tests;
-- public API exactness and facade reachability;
-- destination topology and dependency direction;
-- disposition-inventory completeness for the scoped C.8 surface;
-- ledger guarantee completeness and source binding;
-- report-schema construction and source/profile binding;
-- isolated crash seam and mutation executions; and
-- counter and budget reconciliation on a small deterministic case.
-
-If a failure requires a source or harness correction, stop the current proof
-run, reopen affected guarantees, and write a new bounded implementation plan
-from the corrected authority boundary. Do not accumulate ad hoc fixes during a
-certification campaign. Batch all discovered corrections, rerun preflight, and
-then regenerate source-bound evidence.
-
-A campaign may resume after interruption only when source, configuration,
-profile, scenario set, and harness identity are unchanged. Any relevant source
-change correctly invalidates prior source-bound results.
+The Phase 8 process lane builds the writer, observer, and recovery executables
+through separate locked Cargo invocations that reuse Cargo's configured target
+directory. Separate invocations preserve role-feature isolation while normal
+incremental artifacts keep the direct suite practical during iteration.
+The process scenarios receive only those three paths and produce no
+certification bundle.
 
 ## Documentation Deliverables
 
@@ -1440,15 +1449,15 @@ substrings.
 ## Phase Plan
 
 Phases close in order. A later phase cannot begin implementation until the
-earlier phase's code, tests, ledger rows, cleanup, documentation slice, commit,
-and push are complete. A discovered defect reopens the earliest affected
-guarantee and requires a new plan before correction.
+earlier phase's code, focused tests, cleanup, documentation slice, independent
+review, commit, and push are complete. A discovered defect blocks the current
+change until its root cause and regression protection are complete; historical
+phase records are not rewritten.
 
-### Phase 1: Freeze Recovery Truth, API, And Cutover Accounting
+### Phase 1: Freeze Recovery Truth, API, And Cutover Boundaries
 
-**Becomes true:** C.8 has one persisted-input contract, one public API inventory,
-one authority trace, one destination topology, and one scoped
-preserve/narrow/replace/delete inventory.
+**Becomes true:** C.8 has one persisted-input contract, one public entry path,
+one authority path, and explicit destination owners visible in code.
 
 **Consumes:** C.7 closeout guarantees, actual persisted formats, current
 recovery-physics exports and consumers, current certification/observer routes,
@@ -1461,39 +1470,8 @@ policies, report protocol identities/version windows, phase-state names,
 outcome/fate vocabularies, dependency direction, and deletion targets. The C.7
 in-memory handoff is explicitly non-authoritative for C.8.
 
-**Mechanically forbids:** missing API rows, generic dispositions, unresolved
-C.8 owners, unspecified binding axes or report versions, entry acceptance of
-live state, replay in ordinary features, and a recovery-physics dependency on
-Signal or Query.
-
-**Evidence:** exact facade inventory, dependency graph, compilation attacks,
-disposition reconciliation, architecture-law checks, and ledger completeness
-mutants.
-
-<!-- c8-phase1-requirements:start -->
-| Requirement ID | Normative Phase 1 guarantee |
-| --- | --- |
-| C8-P1-TRUTH-01 | Persisted truth and explicit producer gaps are distinguished from live or derived proxies. |
-| C8-P1-API-01 | Every reachable current surface and planned destination surface has one disposition. |
-| C8-P1-AUTHORITY-01 | Concrete Store authority retains every declared binding axis. |
-| C8-P1-SESSION-01 | One linear recovery session reaches one exact terminal. |
-| C8-P1-EFFECT-01 | Performed effects retain action outcome and occurrence identity. |
-| C8-P1-FRESHNESS-01 | Freshness uses owner-sampled sources sealed bases and exact policies. |
-| C8-P1-PROTOCOL-01 | Recovery and observer protocols are distinct versioned descriptive families. |
-| C8-P1-TOPOLOGY-01 | Every semantic destination leaf has an exact owner responsibility and introduction phase. |
-| C8-P1-DEPENDENCY-01 | Current dependency edges and forbidden replay directions are exact. |
-| C8-P1-CUTOVER-01 | Owners consumers observer routes and documents have reconciled dispositions. |
-| C8-P1-COMPILE-01 | The inherited C7 handoff remains non-forgeable pending actual C8 types. |
-| C8-P1-CLEANUP-01 | Cutover deletion gates are named without Phase 2 placeholders. |
-| C8-P1-DOCUMENTATION-01 | Specification and roadmap links and contracts agree. |
-| C8-P1-LEDGER-01 | Every normative Phase 1 requirement has one causal ledger row and closed findings. |
-| C8-P1-LEDGER-02 | Each proved row is bound to its own causal source closure. |
-| C8-P1-ENTRY-01 | Planned entry accepts exact static owner inputs and rejects live proxies. |
-| C8-P1-PERSISTED-01 | Every persisted role names a real producer/admission pair or an explicit producer gap. |
-<!-- c8-phase1-requirements:end -->
-
-**Next may trust:** no architectural decision or hidden old path remains for
-later phases to discover.
+**Evidence:** focused facade compilation, dependency and boundary checks,
+hostile protocol cases, and executable examples.
 
 **Cleanup:** delete false placeholders, duplicate planned APIs, obsolete
 milestone-coded vocabulary, and tests or documents that assert the rejected
@@ -1514,19 +1492,11 @@ bindings, the concrete linear recovery session plus owner lifecycle tracking,
 `AdmittedPhysicalRecovery`, fresh scheduler/Signal mechanism, and bounded
 read-only discovery ports.
 
-**Mechanically forbids:** same-process runtime reuse, copied C.7 handoff,
-foreign Store/root substitution, omitted binding axes, stale authority, a bare
-marker/witness/binding satisfying entry, duplicate session termination,
-undetected non-terminal drop, unlimited recovery, and effects during admission.
-
 **Evidence:** compile-fail authority attacks, two-process identity journeys,
 one-axis-at-a-time binding drift twins, wrong-root/profile/media-generation/
 configuration/limit/session denials, duplicate-terminal compiler attacks,
 owner-visible non-terminal-drop tests, allocation-bound tests, and zero-effect
 counters for refusal.
-
-**Next may trust:** discovery begins in one fresh, exclusive, bounded recovery
-world.
 
 **Cleanup:** remove any alternate recovery constructor, test-only entry, or
 runtime-driver API replaced by the new facade.
@@ -1549,18 +1519,12 @@ session into top-level `Blocked(PhysicalRecoveryBlock)` after quiescence. That
 terminal preserves exact Store, session, source/artifact, generation/LSN,
 counter, limit, and zero-effect evidence relevant to the cause.
 
-**Mechanically forbids:** directory-order authority, generation-max selection,
-heuristic fallback, generic source envelopes, whole-tree scanning, and residue
-promotion.
-
 **Evidence:** exhaustive precedence model/property tests, hostile current versus
 previous and foreign-Store cases, absent-versus-rejected checkpoint twins,
 terminal partial-first-frame and nonterminal-corruption WAL twins, residue and
 compaction attacks, deterministic repeated selection, cumulative WAL and
-multi-block manifest exact-limit twins, exact terminal counters, and precedence
-mutants.
-
-**Next may trust:** planning receives one immutable authoritative source cut.
+multi-block manifest exact-limit twins, exact terminal counters, and direct
+negative precedence cases.
 
 **Cleanup:** replace and delete old candidate-confidence, generic selection,
 checkpoint-selection, and duplicated source-role surfaces that do not match the
@@ -1586,20 +1550,10 @@ and only the final new segment may be partial. The immutable redo plan
 independently binds each pending projection allocation capacity and used-page
 count to that selected allocation truth before staging authority exists.
 
-**Mechanically forbids:** redo redecision during execution, missing-range
-truncation, pageLSN bypass, Store-incarnation omission, absence-as-no-effect,
-caller-supplied generation samples/source/policy, wall-clock lease expiry, and
-plan construction over budget. A coordinated target and recovery projection
-cannot redefine the persisted segment capacity or spill boundary by remaining
-internally self-consistent.
-
 **Evidence:** independent prefix decoder tests, property tests for gaps/overlaps
 and repeated planning, every-fate identity blender, exact counter oracles,
 source/policy/sample substitution compiler attacks, checkpoint-generation
-boundary twins, compile-time plan progression, and controlled mutants.
-
-**Next may trust:** execution performs a fixed plan and cannot reinterpret
-truth.
+boundary twins, compile-time plan progression, and direct adversarial cases.
 
 **Cleanup:** delete old replay bases, receipts, staged-WAL adapters, and generic
 evidence materialization made redundant by the plan and fate types.
@@ -1617,19 +1571,11 @@ pageLSNs and digests, staged manifests, settled fate set, stage-honest counters,
 concrete performed staging-effect evidence, and
 `ClosedRecoveryStagingGeneration`.
 
-**Mechanically forbids:** mutation of selected source artifacts, unplanned I/O,
-direct filesystem calls, double application, serving access, phase skipping,
-admission/scheduling/attempt evidence substituting for performed effects, and
-completion with live recovery work or handles.
-
 **Evidence:** real-media apply/skip journeys, repeated-recovery convergence,
-partial-effect cancellation and failure cases, wrong-generation/pageLSN
-mutants, admitted-as-performed and wrong-action compiler attacks, evidence-
-before-effect mutants, exact allocation/counter reconciliation, and quiescence
+partial-effect cancellation and failure cases, wrong-generation/pageLSN cases,
+admitted-as-performed and wrong-action compiler attacks, evidence-before-effect
+cases, exact allocation/counter reconciliation, and quiescence
 compile/runtime proof.
-
-**Next may trust:** one closed non-current generation exactly implements the
-plan.
 
 **Cleanup:** remove execution from recovery-physics, duplicate page-transition
 routes, temporary staging adapters, and fixtures that bypass C.4/C.5.1.
@@ -1649,19 +1595,10 @@ and final fate set.
 identity/handles, `RecoveredPhysicalRuntimeHandoff`, and publication-
 indeterminate continuation law.
 
-**Mechanically forbids:** handoff before namespace durability, serving-runtime
-construction, writer identity/handle reuse, report-as-authority, in-process
-retry after ambiguous publication, permission/attempt/counter as performed
-publication, action-kind or dynamic-binding substitution, and semantic state in
-the handoff.
-
 **Evidence:** real crash seams around every publication effect, distinct-process
 and distinct-runtime identity proof, fresh-handle reopen comparison, compile-
 fail serving/semantic/performed-action attacks, evidence-before-barrier and
-wrong-generation binding mutants, and root/barrier counter mutants.
-
-**Next may trust:** one durable, reopened, quiescent physical generation is
-current and ready for later readmission.
+wrong-generation binding cases, and root/barrier counter cases.
 
 **Cleanup:** delete the old executable recovery facade, broad Store imports, and
 any handoff constructor or compatibility re-export bypassing the new port.
@@ -1680,40 +1617,10 @@ classifications, and exact cleanup limits.
 concrete performed removal evidence, deferred cleanup posture, and crash-safe
 owner-sampled retry revalidation.
 
-**Mechanically forbids:** cleanup before publication/reopen, filename/age-based
-deletion, removal of required WAL or previous root, deletion under
-indeterminate publication, caller-supplied freshness, attempted-as-performed
-removal, stale-plan retry, and cleanup authority widening.
-
 **Evidence:** hostile last-copy and unresolved-binding attacks, cleanup crash
 matrix, deferred-cleanup recovery journey, freshness source/policy substitution
 attacks, stale-plan rejection, ambiguous-removal evidence attacks, and exact
 cleanup counters.
-
-<!-- c8-phase7-requirements:start -->
-| Guarantee | Normative Phase 7 requirement |
-| --- | --- |
-| C8-P7-PLAN-01 | Every discovered or C.8-created artifact has one exact cleanup disposition derived from the sealed reopened basis. |
-| C8-P7-AUTHORITY-01 | The Store product deletion boundary consumes owner-issued authority bound to fresh reopen, verified checkpoint coverage, exact WAL facts, and the cleanup plan; raw coordinates cannot authorize deletion through a delivered Store or recovery-runtime facade, while the unpublished physical backend remains inside the trusted C.4 implementation boundary. |
-| C8-P7-ELIGIBILITY-01 | Cleanup eligibility is consuming and per artifact, and is never widened by a batch, filename, age, or generic recovery receipt. |
-| C8-P7-FRESHNESS-01 | The Store owner samples current published generation and concrete policy immediately before each effect. |
-| C8-P7-SCHEDULER-01 | Freshness reads and removals traverse Store Signal, C.5.1 scheduling/execution, and exact C.4 settlement. |
-| C8-P7-SAFETY-01 | Cleanup preserves current, fallback, selected, unresolved, unsupported, quarantined, and last-copy recovery truth. |
-| C8-P7-LIMITS-01 | Candidate and byte limits are independent and reject crossing work before freshness or removal effects. |
-| C8-P7-EFFECT-01 | Performed cleanup evidence exists only after exact C.4 completion, executed scheduling, and terminal Signal settlement. |
-| C8-P7-FAILURE-01 | Denial or indeterminate cleanup remains exact deferred maintenance and never invalidates recovered success. |
-| C8-P7-CANCELLATION-01 | Plan-bound cleanup cancellation is sampled only at declared between-command safe points and retains the exact settled prefix. |
-| C8-P7-CRASH-01 | Forced process death at cleanup effect seams leaves the next fresh process recoverable through renewed validation. |
-| C8-P7-COUNTERS-01 | Cleanup dispositions, bytes, freshness, scheduling, cancellation, settlement, and effect counters are stage-honest and exact. |
-| C8-P7-QUIESCENCE-01 | Cleanup returns to handoff with zero live work, reservations, handles, or pending Signal reconciliation. |
-| C8-P7-PROGRESSION-01 | Only consuming reopened recovery enters cleanup, and complete or deferred cleanup enriches but never defines success. |
-| C8-P7-COMPILE-01 | External product code cannot forge, reuse, or substitute cleanup authorization, eligibility, freshness, cancellation, or performed evidence; direct dependencies of the unpublished backend are explicitly inside the trusted C.4 boundary. |
-| C8-P7-API-01 | Every delivered Phase 7 product surface has one exact facade and topology disposition with no raw deletion bypass outside the trusted unpublished C.4 implementation boundary. |
-| C8-P7-LEDGER-01 | The Phase 7 ledger is a bijection with this normative inventory and preserves exact findings, source closure, audits, and inherited continuity. |
-<!-- c8-phase7-requirements:end -->
-
-**Next may trust:** cleanup cannot destroy recovery truth and does not define
-recovery success.
 
 **Cleanup:** delete temporary cleanup adapters and redundant residue
 classifications replaced by exact eligibility.
@@ -1724,123 +1631,95 @@ classifications replaced by exact eligibility.
 has its final narrow role, documentation names the real public contract, and no
 old executable recovery or compatibility path remains.
 
-**Consumes:** proved destination entry through cleanup, scoped disposition
-inventory, public API inventory, dependency graph, affected direct consumers,
-and named documentation deliverables.
+**Consumes:** proved destination entry through cleanup, the current dependency
+graph, affected direct consumers, public facades, and named documentation
+deliverables.
 
 **Establishes:** final narrow facades, complete caller migration, exact deletion
 closure, versioned recovery and observer report protocols, owner READMEs, and
 the executable caller/operator guide.
 
-**Mechanically forbids:** compatibility aliases, duplicate entry points, broad
-re-exports, ordinary replay imports, recovery-runtime code in recovery physics,
-same-crate observer decisions, wrong-family or unsupported-version payload
-decode, reports admitted as Store truth, stale docs, and dead dependencies.
-
-**Evidence:** exact API and reachability gates, dependency/feature checks,
-scoped inventory reconciliation, report identity/version/window tests, wrong-
-family and future-version twins, compiled and executed documentation, warnings-
-denied all-target checks, and zero stale source/dependency rows.
-
-**Next may trust:** only the destination authority path and continuing
-successor-owned surfaces remain.
+**Evidence:** facade compile tests, dependency and feature checks, report
+identity/version/window tests, wrong-family and future-version twins, compiled
+documentation, separate locked builds for the three process roles,
+warnings-denied focused tests, and the fresh-process recovery suite.
 
 **Cleanup:** delete obsolete modules, exports, fixtures, reports, source-shape
 gates, README claims, dependencies, and temporary parallel-cutover code.
 
-<!-- c8-phase8-requirements:start -->
-| Guarantee | Normative Phase 8 requirement |
-| --- | --- |
-| C8-P8-RUNTIME-REPORT-01 | The runtime emits a versioned descriptive recovery report from the terminal outcome without granting Store authority. |
-| C8-P8-OBSERVER-01 | A separate offline-verifier owner performs a deterministic bounded read-only artifact walk and emits observer evidence without sharing runtime decisions. |
-| C8-P8-PROTOCOL-01 | Runtime and observer report families have distinct identities exact version-one windows and typed malformed wrong-family future-version and digest denials. |
-| C8-P8-API-01 | Every delivered Phase 8 surface has one exact facade and destination topology row with no compatibility alias or duplicate entry. |
-| C8-P8-CUTOVER-01 | Every scoped caller and inventory row is migrated to its destination owner before the replaced source is deleted. |
-| C8-P8-PHYSICS-01 | Recovery physics retains only pure source-precedence WAL-prefix operation-fate page-redo and bounded planning law and owns no runtime effects observer or report protocol. |
-| C8-P8-DEPENDENCY-01 | Cargo features and dependency edges expose no ordinary replay import dead dependency or caller-enabled authority bypass. |
-| C8-P8-DOCUMENTATION-01 | Public and owner documentation names the executable commands protocol posture authority boundary and current limits without stale milestone claims. |
-| C8-P8-RETIREMENT-01 | Replaced executable verifier evidence compatibility fixture and source-shape paths are absent after their final consumers migrate. |
-| C8-P8-LEDGER-01 | The Phase 8 ledger is a bijection with this normative inventory and retains exact source cutover dependency documentation and independent-audit evidence. |
-<!-- c8-phase8-requirements:end -->
-
-### Phase 9: Hostile Courtroom And Successor Closure
+### Phase 9: Hostile Process Verification And Successor Closure
 
 **Becomes true:** the final source survives the complete distinct-process crash
-matrix, deterministic and randomized schedules, growing mutation corpus,
-independent observation, boundedness proof, and reverse ledger attack.
+matrix, deterministic schedules, direct hostile inputs, independent
+observation, and boundedness proof.
 
-**Consumes:** final cutover source, public/operator documentation, living ledger,
-observer, certification harness, mutation catalog, schedule harness, exact
-counters, and named profiles.
+**Consumes:** final cutover source, public/operator documentation, observer,
+process harness, exact counters, and named profiles.
 
-**Establishes:** final C.8 source-bound certification, one C.9/C.10 successor
-handoff, and counter-backed performance evidence.
+**Establishes:** `RecoveredPhysicalRuntimeHandoff` as the sole physical
+successor boundary. C.9 may consume it for integrity, corruption localization,
+quarantine, and offline truth. C.10 may consume it for stable reads, epochs,
+reclaim, scheduled I/O, and maintenance interference. Neither successor may
+reconstruct a parallel C.8 authority lane from reports or test artifacts.
 
-**Mechanically forbids:** stale evidence, discovery-through-certification,
-same-process recovery, observer/runtime decision sharing, missing mutants,
-wrong-reason green, temporary courtroom hooks, and later access to replay or
-recovery authority through the handoff.
+**Evidence:** every persisted-effect C.7 mutation seam and every C.8 recovery
+seam under real process death; explicit deterministic scenario seeds; direct
+malformed, torn, stale, foreign, and unsupported inputs; independent observer
+comparison; authority compile denials; documentation execution; exact bounded
+counters; and line-cap, constitution, dependency, and focused API checks.
+Named larger profiles remain direct target-hardware qualification, separate
+from source closure. The scheduled and manually dispatched release job runs
+the complete `process-scenario` matrix directly after the release-scale backup
+proof; it does not substitute a hand-maintained test filter or generated
+certificate for those executable scenarios.
 
-**Evidence:** cheap preflight; all named crash seams; 16 seeded CI schedules;
-canonical release schedule; exact seed replay; controlled-defect corpus;
-independent versioned artifact report; authority-binding, freshness,
-performed-effect, linear-session, and protocol mutants; documentation
-execution; line-cap, constitution, dependency, API, inventory, and ledger
-gates; final source identity; and hardware qualification for the named release
-profiles.
+Successor-candidate observation is production accounting. Planning exposes the
+number of addressed candidate artifacts read, candidate bytes read, and peak
+retained candidate materialization bytes. Root-routing, segment-membership,
+and free-space observation share one cumulative manifest-entry budget. Direct
+raw-media evidence must admit the exact total and deny one entry below it; a
+second per-family or candidate-local allowance is forbidden. A failed child
+decode reports the exact retained prefix peak for its family, including all
+earlier successfully retained families. A recovery with no pending
+publication must report zero for all three counters even when malformed bytes
+exist at the next-generation path. Candidate boundedness uses two isolated
+copies of the same killed-writer world: one with the candidate topology and one
+without it. The exact observation and lifecycle-memory values must equal an
+independent raw-media and public-structure calculation, followed by exact-limit
+admission and one-byte-below denial. Lifecycle memory is the larger of
+candidate observation plus one expected-artifact comparison scratch buffer and
+the final publication materialization; recovery must not retain a second
+complete expected candidate. A test may not use the production plan cost as
+its own expected candidate delta.
 
-**Next may trust:** a dead writer is replaceable from persisted physical
-authority alone, within declared cost, without semantic readmission.
+Candidate identity is stronger than semantic equivalence. Recovery reproduces
+the concrete C.7 producer's incremental allocation and packing order from the
+selected topology, including capacity transitions, and compares each emitted
+canonical artifact directly with the addressed immutable candidate bytes.
+Same-capacity and capacity-transition derivation remain independent recovery
+implementations; calling the candidate-absent full-rebuild helper is not an
+incremental adoption proof. Canonically encoded stale selected-generation
+topology, foreign topology, frontier drift, malformed frames, and corrupted
+children produce exact typed denials before effects. A killed-writer capacity
+transition must preserve the writer's exact multi-level successor bytes through
+recovery and a second fresh reopen.
 
-**Cleanup:** delete temporary courtroom-only code. Retain only production C.4
-yieldpoints/interposers, reusable process/schedule infrastructure, and the
-opportunistically growing mutation corpus.
+The complete mutation-seam matrix explicitly uses an extent-backed writeback
+workload. Successor child-family corruption explicitly uses an inline-record
+workload so root-routing, segment-membership, and free-space candidate children
+are present. Crash stage and workload are independent required inputs; no stage
+implicitly selects its workload.
 
-## Milestone Must Ship
-
-C.8 is incomplete without:
-
-- one fresh-process recovery composition facade;
-- one concrete, sealed, root-bound platform recovery authority;
-- private exact entry and admitted-world bindings covering every dynamic
-  recovery axis, with generated per-axis drift and hostile twins;
-- one concrete, owner-tracked linear recovery session that reaches exactly one
-  top-level terminal outcome;
-- no acceptance of the C.7 in-memory handoff at recovery entry;
-- compiler-visible admitted, discovered, selected, planned, staged, published,
-  reopened, and handed-off phases;
-- deterministic current/previous root and checkpoint precedence;
-- bounded candidate discovery that does not scan the Store tree;
-- contiguous WAL-tail admission and distinct torn-tail, middle-corruption,
-  missing-range, stale-generation, and unsupported-version outcomes;
-- immutable redo planning with exact page generation and pageLSN decisions;
-- idempotent redo into a non-current staging generation;
-- exact operation-fate reconciliation by Store incarnation and stable physical
-  operation identity;
-- owner-sampled checkpoint-generation freshness for idempotency retention and
-  owner-sampled current-root freshness for cleanup retry;
-- concrete Store wrappers over performed C.4 staging, publication, namespace,
-  reopen, and cleanup effects;
-- namespace-durable recovered-root publication;
-- independent fresh-handle reopen before handoff;
-- one quiescent physical handoff with a new runtime identity and no semantic
-  authority;
-- post-publication per-artifact cleanup eligibility and deferred-cleanup
-  posture;
-- exact recovery budgets and stage-honest counters;
-- a narrowed pure-law `worth-store-recovery-physics` facade;
-- deletion of the replaced executable, verifier, evidence, and compatibility
-  surfaces;
-- a scoped, complete preserve/narrow/replace/delete inventory;
-- living requirement/evidence closure with smart causal evidence;
-- distinct writer, recoverer, observer, and parent-harness process roles;
-- `store.physical.recovery-report` version 1 and
-  `store.physical.recovery-observer-report` version 1 with exact initial
-  compatibility windows and typed incompatibility;
-- deterministic replay plus at least 16 perturbation seeds in CI;
-- an opportunistically growing mutation regression corpus;
-- public/operator and owner documentation; and
-- C.9/C.10 successor handoff.
+**Cleanup:** delete temporary process-only code, cross-test lock bookkeeping,
+recursive tests of parent-oracle helpers, and writer-issued mutation identity,
+fate, or barrier receipts. Reaching a production C.4 yieldpoint is observed
+from that real gate; a second marker cannot certify it. Expected operations are
+bound from the parent-submitted program and independently decoded persisted
+authority. Retain production C.4 yieldpoints/interposers, the independent
+raw-byte observer, direct malformed persisted inputs, and the smallest process
+launcher needed to kill and inspect real executables. Git records the reviewed
+change; no ledger, certificate, fingerprint map, or generated closeout report
+is produced.
 
 ## Must Preserve
 
@@ -1893,10 +1772,10 @@ C.8 closes only with all of the following green on final source:
    crates;
 2. workspace line-cap and composition checks for every dirty Rust file;
 3. boundary and agent-context enforcement;
-4. exact public API inventory and facade reachability;
+4. direct public-facade compilation and caller reachability;
 5. exact dependency direction, including no ordinary replay import and no
    `worth-store` dependency from narrowed recovery physics;
-6. zero unresolved scoped disposition rows and no compatibility residue;
+6. no stale callers, duplicate entry paths, or compatibility residue;
 7. compile-fail authority, phase-order, serving, semantic, bare-witness,
    bare-binding, bare-performed, duplicate-terminal, and counterfeit evidence
    attacks;
@@ -1921,13 +1800,10 @@ C.8 closes only with all of the following green on final source:
 20. recovery-report and observer-report family/version/window tests covering
     wrong family, supported version, future version, and every declared retired
     posture without granting Store authority;
-21. all controlled mutants killed by their intended narrow proof;
-22. 16 replayable schedule-perturbation seeds in CI and canonical release
-    schedule;
-23. executable public/operator documentation;
-24. living ledger completeness and reverse-ledger attacks; and
-25. final source-bound courtroom report generated only after all cheap
-    preflights pass.
+21. direct controlled-defect tests for each material recovery branch;
+22. explicit replayable scenario seeds for the crash matrix;
+23. executable public/operator documentation; and
+24. the focused current test and boundary lanes green at the reviewed revision.
 
 Evidence is rejected if it can pass through comments, string literals, dead
 syntax, copied production decision code, same-process state, a test-only

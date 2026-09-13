@@ -1,7 +1,0 @@
-error[E0277]: the trait bound `PhysicalIsolationEntryAdmission: From<BackgroundPacingAdmissionBasis>` is not satisfied
- --> tests/scheduler_authority_ui/background_pacing_basis_cannot_become_isolation_entry.rs:7:11
-  |
-7 |     basis.into()
-  |           ^^^^ the trait `From<BackgroundPacingAdmissionBasis>` is not implemented for `PhysicalIsolationEntryAdmission`
-  |
-  = note: required for `BackgroundPacingAdmissionBasis` to implement `Into<PhysicalIsolationEntryAdmission>`

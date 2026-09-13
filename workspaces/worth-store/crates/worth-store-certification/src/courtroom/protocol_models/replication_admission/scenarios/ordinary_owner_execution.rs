@@ -7,12 +7,12 @@ use worth_store_formal_models::{
     ReplicationAdmissionAction,
 };
 use worth_store_physical_backend::BackendTargetProfile;
-use worth_store_recovery_physics::{DurabilityReplayIdentity, DurabilityReplayKind};
 use worth_store_replication::{
     admit_replication_publication_readiness, admit_replication_source, AdmittedReplicationSource,
     ReplicationAdmissionRuntime, ReplicationCapsuleId, ReplicationPeerCapacity,
-    ReplicationProgressDenial, ReplicationProgressOutcomeView, ReplicationSourceDeclaration,
+    ReplicationSourceDeclaration,
 };
+use worth_store_replication::{DurabilityReplayIdentity, DurabilityReplayKind};
 #[cfg(test)]
 use worth_store_replication::{ObserveReplicationAdmission, ReplicationAdmissionObservation};
 use worth_store_security::{
@@ -37,109 +37,6 @@ pub(in crate::courtroom::protocol_models) fn ordinary_replication_admission_acti
     collect_progress_actions(&mut runtime, &mut actions);
     collect_publication_denials(&mut actions);
     actions
-}
-
-pub(in crate::courtroom::protocol_models) fn ordinary_replication_admission_traces(
-) -> Vec<Vec<ReplicationAdmissionAction>> {
-    vec![
-        fresh_publication_trace(),
-        resume_publication_trace(),
-        divergence_trace(),
-    ]
-}
-
-fn fresh_publication_trace() -> Vec<ReplicationAdmissionAction> {
-    let source_outcome = source_outcome(SourceSpec::standard(80, 10, 20), false, false);
-    let source_action = map_replication_source_admission_outcome(&source_outcome);
-    let source = source_outcome.into_result().unwrap();
-    let mut runtime = current_runtime();
-    publication_trace(&mut runtime, source_action, source)
-}
-
-fn resume_publication_trace() -> Vec<ReplicationAdmissionAction> {
-    let mut runtime = current_runtime();
-    let mut ignored = BTreeSet::new();
-    published_progress(
-        &mut runtime,
-        admitted_source(SourceSpec::standard(81, 10, 20)),
-        &mut ignored,
-    );
-    let source_outcome = source_outcome(SourceSpec::standard(82, 20, 30), false, false);
-    let source_action = map_replication_source_admission_outcome(&source_outcome);
-    publication_trace(
-        &mut runtime,
-        source_action,
-        source_outcome.into_result().unwrap(),
-    )
-}
-
-fn divergence_trace() -> Vec<ReplicationAdmissionAction> {
-    let mut runtime = current_runtime();
-    let mut ignored = BTreeSet::new();
-    published_progress(
-        &mut runtime,
-        admitted_source(SourceSpec::standard(83, 10, 20)),
-        &mut ignored,
-    );
-    let source_outcome = source_outcome(
-        SourceSpec {
-            lineage: "divergent-lineage",
-            ..SourceSpec::standard(84, 20, 30)
-        },
-        false,
-        false,
-    );
-    let source_action = map_replication_source_admission_outcome(&source_outcome);
-    let progress = runtime.observe_progress(source_outcome.into_result().unwrap());
-    vec![source_action, map_replication_progress_outcome(&progress)]
-}
-
-fn publication_trace(
-    runtime: &mut ReplicationAdmissionRuntime,
-    source_action: ReplicationAdmissionAction,
-    source: AdmittedReplicationSource,
-) -> Vec<ReplicationAdmissionAction> {
-    let progress = runtime.observe_progress(source);
-    let progress_action = map_replication_progress_outcome(&progress);
-    let readiness =
-        admit_replication_publication_readiness(progress.into_observed_progress().unwrap());
-    let readiness_action = map_replication_publication_readiness(&readiness);
-    let authority = readiness
-        .source()
-        .security_scope()
-        .current_authority()
-        .clone();
-    let publication = runtime.publish(readiness, &authority);
-    let publication_action = map_replication_publication_outcome(&publication);
-    publication.into_result().unwrap();
-    vec![
-        source_action,
-        progress_action,
-        readiness_action,
-        publication_action,
-    ]
-}
-
-pub(in crate::courtroom::protocol_models) fn replay_replication_divergence_guard(
-    seed: u64,
-) -> Vec<ReplicationAdmissionAction> {
-    let capsule = seed.max(1);
-    let mut runtime = current_runtime();
-    let mut ignored = BTreeSet::new();
-    published_progress(
-        &mut runtime,
-        admitted_source(SourceSpec::standard(capsule, 10, 20)),
-        &mut ignored,
-    );
-    let divergent = runtime.observe_progress(admitted_source(SourceSpec {
-        lineage: "counterexample-lineage",
-        ..SourceSpec::standard(capsule.saturating_add(1), 20, 30)
-    }));
-    assert!(matches!(
-        divergent.view(),
-        ReplicationProgressOutcomeView::Denied(ReplicationProgressDenial::LineageDivergence)
-    ));
-    vec![map_replication_progress_outcome(&divergent)]
 }
 
 #[cfg(test)]

@@ -10,10 +10,10 @@ pub use driver_fixtures::{
 };
 pub use fault_fixtures::{
     ambiguous_locus_fault_attempt_fixture, arbitrary_byte_scribble_fault_attempt_fixture,
-    crash_recovery_fault_locus, io_pressure_fault_locus, observed_checksum_mismatch_boundary,
-    observed_io_pressure_boundary, observed_torn_frame_boundary, page_generation_fault_locus,
-    post_decode_corruption_fault_attempt_fixture, private_mutation_fault_attempt_fixture,
-    same_process_crash_fault_attempt_fixture, wal_frame_payload_fault_locus,
+    crash_recovery_fault_locus, io_pressure_fault_locus, observed_io_pressure_boundary,
+    page_generation_fault_locus, post_decode_corruption_fault_attempt_fixture,
+    private_mutation_fault_attempt_fixture, same_process_crash_fault_attempt_fixture,
+    wal_frame_payload_fault_locus,
 };
 pub use fixture_builders::production_backed_physical_fixture_materialization;
 pub use schedule_fixtures::{

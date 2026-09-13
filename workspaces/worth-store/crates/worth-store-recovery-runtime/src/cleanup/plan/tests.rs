@@ -96,6 +96,7 @@ fn cleanup_limits(cleanup_candidates: u64, cleanup_bytes: u64) -> PhysicalRecove
         distinct_pages_and_extents: 1,
         operation_bindings: 1,
         staging_bytes: 1,
+        recovery_memory_bytes: 1,
         dirty_frames: 1,
         concurrent_commands: 1,
         publication_effects: 1,

@@ -191,10 +191,14 @@ fn recover_coverage(
             checkpoint_identity,
             manifest_generation,
             durable_checkpoint_lsn,
+            authority_fingerprint,
+            frontier_digest,
         } => BackupArtifactCoverage::CheckpointManifest {
             checkpoint_identity: copy_string(checkpoint_identity)?,
             manifest_generation: *manifest_generation,
             durable_checkpoint_lsn: *durable_checkpoint_lsn,
+            authority_fingerprint: *authority_fingerprint,
+            frontier_digest: *frontier_digest,
         },
         BackupBundleArtifactCoverage::WalSegment {
             start_lsn,

@@ -96,9 +96,7 @@ pub enum MaterializationFreshness {
 
 impl CurrentLayoutMaterialization {
     pub(crate) fn from_btree_replay_source(
-        source: &worth_store_recovery_physics::AdmittedBTreeReplaySource<
-            crate::BaselineBTreeReplayAdmission,
-        >,
+        source: &crate::AdmittedBTreeReplaySource<crate::BaselineBTreeReplayAdmission>,
     ) -> Result<Self, MaterializationDenial> {
         let materialization = source.intent().materialization().clone();
         materialization.coverage().require_exact()?;

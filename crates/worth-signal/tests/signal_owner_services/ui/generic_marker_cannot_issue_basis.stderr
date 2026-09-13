@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/signal_owner_services/ui/generic_marker_cannot_issue_basis.rs:11:41
+   |
+11 |         .issue_managed_branch_reference(&authority)
+   |          ------------------------------ ^^^^^^^^^^ expected `&AdmittedSignalBranchBasis`, found `&AuthorityWitness<Auth>`
+   |          |
+   |          arguments to this method are incorrect
+   |
+   = note: expected reference `&AdmittedSignalBranchBasis`
+              found reference `&AuthorityWitness<Auth>`
+note: method defined here
+  --> src/branch/owner_services/basis_port.rs
+   |
+   |     pub fn issue_managed_branch_reference(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

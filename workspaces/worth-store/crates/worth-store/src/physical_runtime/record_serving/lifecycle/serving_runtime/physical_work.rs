@@ -207,6 +207,18 @@ impl ServingPhysicalRuntime {
         self.parts.work_runtime.recovery.evidence_damaged()
     }
 
+    pub fn physical_recovery_admission_observations(
+        &self,
+    ) -> &[crate::physical_runtime::PhysicalWorkRecoveryAdmissionObservation] {
+        self.parts.work_runtime.recovery.admission_observations()
+    }
+
+    pub fn physical_recovery_admission_counters(
+        &self,
+    ) -> crate::physical_runtime::PhysicalWorkRecoveryAdmissionCounters {
+        self.parts.work_runtime.recovery.admission_counters()
+    }
+
     pub fn cancel_physical_work(
         &self,
         consumer: crate::physical_runtime::PhysicalWorkConsumerHandle,

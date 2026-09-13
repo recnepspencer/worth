@@ -1,5 +1,3 @@
-use worth_store_test_support::harness::recovery::closeout as closeout_fixture;
-
 use worth_foundational::{FoundationalBoundaryArtifactCategory, FoundationalBoundaryArtifactRole};
 use worth_proof::TransitionOutcome;
 use worth_relational::facade::{
@@ -13,13 +11,11 @@ use worth_store_authority::{
     StoreLowerAuthoritySource,
 };
 use worth_store_physical_isolation::{
-    admit_physical_isolation_entry, admit_physical_read_stability_authority,
     correlate_semantic_visibility_with_physical_snapshot,
     deny_semantic_visibility_as_physical_stability, physical_epoch_vector_for_current_root,
-    CurrentPhysicalRoot, PhysicalEpochDriftKind, PhysicalEpochVector,
-    PhysicalIsolationEntryRequest, PhysicalOrderingContract, PhysicalReadStabilityAuthority,
-    PhysicalSemanticBoundaryDenial, PhysicalSemanticBoundaryRoleEvidence,
-    SemanticVisibilityReference,
+    CurrentPhysicalRoot, PhysicalEpochDriftKind, PhysicalEpochVector, PhysicalOrderingContract,
+    PhysicalReadStabilityAuthority, PhysicalSemanticBoundaryDenial,
+    PhysicalSemanticBoundaryRoleEvidence, SemanticVisibilityReference,
 };
 
 #[test]
@@ -186,7 +182,11 @@ fn relational_exports_are_semantic_diagnostics_not_store_authority() {
         RelationalStoreCorrelationReference::transaction(10, TransactionId(1)),
         RelationalStoreCorrelationReference::branch(10, BranchId("main".to_string())),
         RelationalStoreCorrelationReference::snapshot(10, SnapshotId(2)),
-        RelationalStoreCorrelationReference::snapshot_handle(&SnapshotHandle::new(3, 4)),
+        RelationalStoreCorrelationReference::snapshot_handle(&SnapshotHandle::new(
+            3,
+            4,
+            BranchId("main".to_string()),
+        )),
         RelationalStoreCorrelationReference::projection(10, "projection/users"),
         RelationalStoreCorrelationReference::current_basis(10, "current-basis"),
         RelationalStoreCorrelationReference::commit(10, CommitId(5)),
@@ -226,25 +226,27 @@ fn semantic_lower_authority_sources() -> [StoreLowerAuthoritySource; 6] {
 }
 
 fn physical_authority_from_complete_closeout() -> PhysicalReadStabilityAuthority {
-    physical_authority_from_completion(closeout_fixture::recovery_completion())
+    worth_store_physical_isolation::physical_read_stability_authority_for_certification_test(
+        20,
+        worth_store_physical_format::PhysicalStoreIdentity::physical_format_default()
+            .authority_identity(),
+    )
 }
 
 fn physical_authority_from_operation_digest_closeout(
     operation_digest: &str,
 ) -> PhysicalReadStabilityAuthority {
-    physical_authority_from_completion(closeout_fixture::recovery_completion_with_operation_digest(
-        operation_digest,
-    ))
-}
-
-fn physical_authority_from_completion(
-    completion: worth_store_recovery_physics::RecoveryCompletion,
-) -> PhysicalReadStabilityAuthority {
-    let entry = admit_physical_isolation_entry(
-        PhysicalIsolationEntryRequest::from_recovery_completion(&completion),
+    let root_seed = operation_digest
+        .bytes()
+        .fold(0xcbf29ce484222325_u64, |seed, byte| {
+            seed.wrapping_mul(0x100000001b3)
+                .wrapping_add(u64::from(byte))
+        });
+    worth_store_physical_isolation::physical_read_stability_authority_for_certification_test(
+        root_seed,
+        worth_store_physical_format::PhysicalStoreIdentity::physical_format_default()
+            .authority_identity(),
     )
-    .unwrap();
-    admit_physical_read_stability_authority(&entry).unwrap()
 }
 
 fn semantic_reference_from_relational_export(

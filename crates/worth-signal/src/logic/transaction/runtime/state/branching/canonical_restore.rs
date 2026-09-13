@@ -15,6 +15,10 @@ where
         expected: &AdmittedSignalBranchBasis,
         admitted_snapshot: &AdmittedSignalBranchSnapshot,
     ) -> Result<AdmittedSignalBranchBasis, SignalBranchRestoreDenial> {
+        if let Some((_, mutation, _)) = self.sealed_owner_port_slots() {
+            let cancellation = crate::branch::SignalOwnerCancellationSource::new();
+            return mutation.restore_exact(expected, admitted_snapshot, &cancellation.token());
+        }
         let expected_runtime_instance_id = self.branches.owner_runtime_instance_id();
         let observed_runtime_instance_id = admitted_snapshot.owner_runtime_instance_id();
         if observed_runtime_instance_id != expected_runtime_instance_id {

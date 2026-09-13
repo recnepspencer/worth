@@ -10,12 +10,12 @@ use worth_query_declaration::facade::application_aftermath::{
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationAspectMarkerIdentity, ApplicationEntityMarkerIdentity,
-    ApplicationExternalEffectProtocol, ApplicationFieldMarkerIdentity, ApplicationFieldRef,
-    ApplicationOperationDecisionReadTarget, ApplicationOperationMarkerIdentity,
-    ApplicationOperationProgramTarget, ApplicationOperationRef, ApplicationSchema,
-    ApplicationSchemaBindingIdentity, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember,
-    WorthQueryExternalEffectCorrelationFamily,
+    ApplicationExternalEffectProtocol, ApplicationFieldMarkerIdentity, ApplicationFieldPresence,
+    ApplicationFieldRef, ApplicationOperationDecisionReadTarget,
+    ApplicationOperationMarkerIdentity, ApplicationOperationProgramTarget, ApplicationOperationRef,
+    ApplicationSchema, ApplicationSchemaBindingIdentity, ApplicationSchemaDeclaration,
+    ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember, DeclaredApplicationFieldValue,
+    U64ApplicationValueBinding, WorthQueryExternalEffectCorrelationFamily,
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -47,17 +47,18 @@ pub(crate) struct OtherBalance;
 worth_query_declaration::worth_query_portable_type!(
     FixtureInput => "worth.query.installation-test.aftermath-input"
 );
+worth_query_declaration::worth_query_structured_value_binding!(
+    FixtureInputBinding for FixtureInput { identity: "worth.query.installation-test.aftermath-input" }
+);
 
-impl ApplicationOperationMarkerIdentity for FixtureOperation {
-    type Schema = FixtureSchema;
-    type Input = FixtureInput;
+impl ApplicationOperationMarkerIdentity<FixtureSchema> for FixtureOperation {
+    type InputBinding = FixtureInputBinding;
     const IDENTIFIER: &'static str = "FixtureOperation";
 }
 
 macro_rules! entity_identity {
     ($marker:ty, $identifier:literal) => {
-        impl ApplicationEntityMarkerIdentity for $marker {
-            type Schema = FixtureSchema;
+        impl ApplicationEntityMarkerIdentity<FixtureSchema> for $marker {
             const IDENTIFIER: &'static str = $identifier;
         }
     };
@@ -65,9 +66,7 @@ macro_rules! entity_identity {
 
 macro_rules! aspect_identity {
     ($marker:ty, $entity:ty, $identifier:literal, $identity:expr) => {
-        impl ApplicationAspectMarkerIdentity for $marker {
-            type Schema = FixtureSchema;
-            type Entity = $entity;
+        impl ApplicationAspectMarkerIdentity<FixtureSchema, $entity> for $marker {
             const IDENTIFIER: &'static str = $identifier;
             const ASPECT_IDENTITY:
                 worth_query_declaration::facade::application_schema::AspectIdentity =
@@ -81,11 +80,13 @@ macro_rules! aspect_identity {
 
 macro_rules! field_identity {
     ($marker:ty, $entity:ty, $aspect:ty, $identifier:literal) => {
-        impl ApplicationFieldMarkerIdentity for $marker {
-            type Schema = FixtureSchema;
-            type Entity = $entity;
-            type Aspect = $aspect;
+        impl ApplicationFieldMarkerIdentity<FixtureSchema, $entity, $aspect> for $marker {
             const IDENTIFIER: &'static str = $identifier;
+        }
+        impl DeclaredApplicationFieldValue for $marker {
+            type Value = u64;
+            type Binding = U64ApplicationValueBinding;
+            const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
         }
     };
 }
@@ -157,24 +158,16 @@ impl AftermathInstall {
 
     pub(crate) fn reads<Field>(self) -> Self
     where
-        Field: ApplicationFieldMarkerIdentity<
-            Schema = FixtureSchema,
-            Entity = Account,
-            Aspect = State,
-        >,
+        Field: ApplicationFieldMarkerIdentity<FixtureSchema, Account, State, Value = u64>,
     {
         self.reads_at::<Account, State, Field>()
     }
 
     pub(crate) fn reads_at<Entity, Aspect, Field>(mut self) -> Self
     where
-        Entity: ApplicationEntityMarkerIdentity<Schema = FixtureSchema>,
-        Aspect: ApplicationAspectMarkerIdentity<Schema = FixtureSchema, Entity = Entity>,
-        Field: ApplicationFieldMarkerIdentity<
-            Schema = FixtureSchema,
-            Entity = Entity,
-            Aspect = Aspect,
-        >,
+        Entity: ApplicationEntityMarkerIdentity<FixtureSchema>,
+        Aspect: ApplicationAspectMarkerIdentity<FixtureSchema, Entity>,
+        Field: ApplicationFieldMarkerIdentity<FixtureSchema, Entity, Aspect, Value = u64>,
     {
         self.declared_reads = vec![decision_read_target::<Entity, Aspect, Field>()];
         self
@@ -316,7 +309,7 @@ pub(crate) fn binding(
 
 pub(crate) fn recorded_inverse<Field>() -> DeclaredCorrectionMechanism<FixtureSchema>
 where
-    Field: ApplicationFieldMarkerIdentity<Schema = FixtureSchema, Entity = Account, Aspect = State>,
+    Field: ApplicationFieldMarkerIdentity<FixtureSchema, Account, State, Value = u64>,
 {
     recorded_inverse_at::<Account, State, Field>(256)
 }
@@ -325,9 +318,9 @@ pub(crate) fn recorded_inverse_at<Entity, Aspect, Field>(
     maximum_encoded_bytes: usize,
 ) -> DeclaredCorrectionMechanism<FixtureSchema>
 where
-    Entity: ApplicationEntityMarkerIdentity<Schema = FixtureSchema>,
-    Aspect: ApplicationAspectMarkerIdentity<Schema = FixtureSchema, Entity = Entity>,
-    Field: ApplicationFieldMarkerIdentity<Schema = FixtureSchema, Entity = Entity, Aspect = Aspect>,
+    Entity: ApplicationEntityMarkerIdentity<FixtureSchema>,
+    Aspect: ApplicationAspectMarkerIdentity<FixtureSchema, Entity>,
+    Field: ApplicationFieldMarkerIdentity<FixtureSchema, Entity, Aspect, Value = u64>,
 {
     let field =
         ApplicationFieldRef::<FixtureSchema, Entity, Aspect, Field, u64>::from_schema_types();
@@ -348,9 +341,9 @@ where
 
 fn decision_read_target<Entity, Aspect, Field>() -> ApplicationOperationDecisionReadTarget
 where
-    Entity: ApplicationEntityMarkerIdentity<Schema = FixtureSchema>,
-    Aspect: ApplicationAspectMarkerIdentity<Schema = FixtureSchema, Entity = Entity>,
-    Field: ApplicationFieldMarkerIdentity<Schema = FixtureSchema, Entity = Entity, Aspect = Aspect>,
+    Entity: ApplicationEntityMarkerIdentity<FixtureSchema>,
+    Aspect: ApplicationAspectMarkerIdentity<FixtureSchema, Entity>,
+    Field: ApplicationFieldMarkerIdentity<FixtureSchema, Entity, Aspect, Value = u64>,
 {
     let field =
         ApplicationFieldRef::<FixtureSchema, Entity, Aspect, Field, u64>::from_schema_types();

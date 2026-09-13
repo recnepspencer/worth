@@ -1,14 +1,14 @@
 use std::ops::Range;
 
-use worth_store_physical_format::{
-    decode_inline_record, inspect_inline_page, DurableInlineRecordPlacement, InlinePageDenial,
-};
-
 use super::super::PhysicalRecordReader;
+use crate::physical_runtime::record_serving::work_semantics::integrity_admission::{
+    admit_inline_record, CleanInlineAdmissionDenial,
+};
 use crate::physical_runtime::record_serving::{
     residency::frame_loading::LoadedPhysicalFrame, PhysicalRecordId, RecordReadDenial,
-    RecordReadObservation, StalePhysicalRecordPlacement,
+    RecordReadObservation,
 };
+use worth_store_physical_format::DurableInlineRecordPlacement;
 
 pub(super) struct ProjectedInlineRecord {
     pub(super) frame: LoadedPhysicalFrame,
@@ -33,70 +33,45 @@ pub(super) fn project_inline_record(
         page,
         observation,
     } = projection;
-    let geometry = match inspect_inline_page(reader.format.declaration(), &page) {
-        Ok(geometry) => geometry,
-        Err(_) => {
-            page.reject_projection_failure();
-            return Err(RecordReadDenial::ArtifactDamaged);
-        }
-    };
-    if !observation.check_generation(geometry.page_cell() == placement.page_cell()) {
-        page.reject_projection_failure();
-        return Err(RecordReadDenial::StalePlacement(
-            StalePhysicalRecordPlacement::PageIdentity,
-        ));
-    }
-    let decoded = decode_inline_record(
+    let admitted = admit_inline_record(
         &page,
-        record.persisted(),
-        placement.page_cell(),
-        placement.slot_cell(),
+        reader.residency.resident_admission_context(),
+        reader.store,
+        reader.format.declaration(),
+        placement,
     );
-    observe_slot_generation(observation, &decoded);
-    let (payload, format) = match decoded {
-        Ok(decoded) => decoded,
+    let admitted = match admitted {
+        Ok(admitted) => admitted,
         Err(denial) => {
-            page.reject_projection_failure();
-            return Err(classify_projection_denial(denial));
+            observe_denial(observation, denial);
+            if !denial.preserves_resident_bytes() {
+                page.reject_projection_failure();
+            }
+            return Err(denial.read_denial());
         }
     };
-    if format != reader.format.declaration()
-        || payload.range().len() as u64 != placement.payload_bytes()
-    {
-        page.reject_projection_failure();
-        return Err(RecordReadDenial::FormatMismatch);
-    }
+    observation.check_page_identity_generation(true);
+    observation.check_slot_generation(true);
+    debug_assert_eq!(record.persisted(), placement.record());
     Ok(ProjectedInlineRecord {
         frame: page,
-        payload: payload.range(),
+        payload: admitted.payload,
     })
 }
 
-fn classify_projection_denial(denial: InlinePageDenial) -> RecordReadDenial {
-    if denial == InlinePageDenial::SlotGenerationMismatch {
-        RecordReadDenial::StalePlacement(StalePhysicalRecordPlacement::SlotGeneration)
-    } else {
-        RecordReadDenial::ArtifactDamaged
-    }
-}
-
-fn observe_slot_generation(
-    observation: &mut RecordReadObservation,
-    decoded: &Result<
-        (
-            worth_store_physical_format::InlineRecordRange,
-            worth_store_physical_format::PhysicalRecordFormatDeclaration,
-        ),
-        InlinePageDenial,
-    >,
-) {
-    match decoded {
-        Ok(_) => {
-            observation.check_generation(true);
+fn observe_denial(observation: &mut RecordReadObservation, denial: CleanInlineAdmissionDenial) {
+    match denial {
+        CleanInlineAdmissionDenial::PageIdentity => {
+            observation.check_page_identity_generation(false);
         }
-        Err(InlinePageDenial::SlotGenerationMismatch) => {
-            observation.check_generation(false);
+        CleanInlineAdmissionDenial::SlotGeneration => {
+            observation.check_page_identity_generation(true);
+            observation.check_slot_generation(false);
         }
-        Err(_) => {}
+        CleanInlineAdmissionDenial::Format
+        | CleanInlineAdmissionDenial::Unavailable
+        | CleanInlineAdmissionDenial::RuntimeReleased
+        | CleanInlineAdmissionDenial::Residency(_)
+        | CleanInlineAdmissionDenial::Damaged => {}
     }
 }

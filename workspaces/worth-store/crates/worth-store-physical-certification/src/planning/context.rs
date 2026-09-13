@@ -3,11 +3,7 @@ use super::{
     PhysicalSimulationProfileSet, SimulationEvidencePolicy, SupportedObserverSet,
     SupportedOracleFamilySet, SupportedPhysicalDriverSet,
 };
-use crate::{
-    AdmittedDriverContractSet, PhysicalIsolationCertificationLaneRegistration,
-    PhysicalResourceEnvelope,
-};
-use worth_store_physical_isolation::CompactionMutationLaneOrigin;
+use crate::{AdmittedDriverContractSet, PhysicalResourceEnvelope};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SimulationPlanningContext {
@@ -21,8 +17,6 @@ pub struct SimulationPlanningContext {
     supported_oracle_families: SupportedOracleFamilySet,
     evidence_policy: Option<SimulationEvidencePolicy>,
     forbidden_shortcuts: Option<ForbiddenShortcutSet>,
-    physical_isolation_compaction_mutation_origin: Option<CompactionMutationLaneOrigin>,
-    physical_isolation_lane: Option<PhysicalIsolationCertificationLaneRegistration>,
 }
 
 impl SimulationPlanningContext {
@@ -42,8 +36,6 @@ impl SimulationPlanningContext {
             supported_oracle_families: SupportedOracleFamilySet::empty(),
             evidence_policy: None,
             forbidden_shortcuts: None,
-            physical_isolation_compaction_mutation_origin: None,
-            physical_isolation_lane: None,
         }
     }
 
@@ -98,22 +90,6 @@ impl SimulationPlanningContext {
         self
     }
 
-    pub fn with_physical_isolation_compaction_mutation_origin(
-        mut self,
-        origin: CompactionMutationLaneOrigin,
-    ) -> Self {
-        self.physical_isolation_compaction_mutation_origin = Some(origin);
-        self
-    }
-
-    pub fn with_physical_isolation_lane_registration(
-        mut self,
-        registration: PhysicalIsolationCertificationLaneRegistration,
-    ) -> Self {
-        self.physical_isolation_lane = Some(registration);
-        self
-    }
-
     pub const fn profile(&self) -> PhysicalSimulationProfile {
         self.profile
     }
@@ -152,17 +128,5 @@ impl SimulationPlanningContext {
 
     pub const fn supported_profiles(&self) -> &PhysicalSimulationProfileSet {
         &self.supported_profiles
-    }
-
-    pub const fn physical_isolation_compaction_mutation_origin(
-        &self,
-    ) -> Option<&CompactionMutationLaneOrigin> {
-        self.physical_isolation_compaction_mutation_origin.as_ref()
-    }
-
-    pub const fn physical_isolation_lane_registration(
-        &self,
-    ) -> Option<&PhysicalIsolationCertificationLaneRegistration> {
-        self.physical_isolation_lane.as_ref()
     }
 }

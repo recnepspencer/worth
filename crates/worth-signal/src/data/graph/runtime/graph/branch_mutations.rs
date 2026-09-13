@@ -1,3 +1,4 @@
+mod publication_work;
 use serde::{Deserialize, Serialize};
 
 use crate::data::core_profile::StableHashValue;
@@ -269,7 +270,7 @@ impl SignalGraph {
 }
 
 fn restore_optional_record(
-    records: &mut std::collections::BTreeMap<NodeId, BranchMutationRecord>,
+    records: &mut crate::data::persistent_ord_map::PersistentOrdMap<NodeId, BranchMutationRecord>,
     node: NodeId,
     record: Option<BranchMutationRecord>,
 ) {

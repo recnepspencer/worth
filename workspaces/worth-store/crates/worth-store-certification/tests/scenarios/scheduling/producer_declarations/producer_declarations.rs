@@ -17,10 +17,6 @@ fn producer_pressure_declarations_lower_into_scheduler_shapes() {
             BackgroundIoPressureClass::CheckpointFlush,
         ),
         (
-            worth_store_physical_integrity::scrub_scan_scheduler_demand(),
-            BackgroundIoPressureClass::ScrubScan,
-        ),
-        (
             worth_store_operations::replication_prep_background_pressure_shape(4),
             BackgroundIoPressureClass::ReplicationPrepRead,
         ),
@@ -77,12 +73,6 @@ fn physical_isolation_declarations_lower_concrete_resource_units() {
     assert!(checkpoint.requested_budget().flush_permits() > 0);
     assert!(checkpoint.requested_budget().sync_debt() > 0);
     assert!(checkpoint.requested_budget().write_back_window() > 0);
-
-    let scrub = BackgroundIoPressureShape::from_background_pressure_declaration(
-        worth_store_physical_integrity::scrub_scan_scheduler_demand(),
-    );
-    assert!(scrub.requested_budget().bandwidth_tokens() > 0);
-    assert!(scrub.requested_budget().read_ahead_window() > 0);
 }
 
 // store-proof-identity[quantity_bearing_producer_declarations_survive_scheduler_lowering]: worth-store-io-scheduler::src/background_pacing/tests/producer_declarations/quantity_bearing_producer_declarations_survive_scheduler_lowering::producer_declarations::quantity_bearing_producer_declarations_survive_scheduler_lowering
@@ -119,7 +109,6 @@ fn producer_pressure_declarations_are_scheduler_consumable() {
     let cases = [
         worth_store_physical_isolation::compaction_rewrite_scheduler_demand(),
         worth_store_physical_isolation::checkpoint_flush_scheduler_demand(),
-        worth_store_physical_integrity::scrub_scan_scheduler_demand(),
         worth_store_operations::replication_prep_background_pressure_shape(4),
         worth_store_blob_chunks::blob_migration_background_pressure_shape(4096),
         worth_store_operations::backup_prep_background_pressure_shape(4096, 4),

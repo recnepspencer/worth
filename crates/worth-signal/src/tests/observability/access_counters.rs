@@ -4,8 +4,19 @@ use crate::facade::{
 };
 use crate::tests::support::{evaluate, version_ab, GraphDependencyBatchExt, ASPECT_A};
 
+const ACCESS_COUNTER_CHILD_ENV: &str = "WORTH_SIGNAL_ACCESS_COUNTER_CHILD";
+const ACCESS_COUNTER_TEST_NAME: &str =
+    "tests::observability::access_counters::artifact_access_counters_attribute_lane_api_and_denial_reason";
+
 #[test]
 fn artifact_access_counters_attribute_lane_api_and_denial_reason() {
+    if super::isolated_counter_process::run_in_isolated_counter_process(
+        ACCESS_COUNTER_TEST_NAME,
+        ACCESS_COUNTER_CHILD_ENV,
+    ) {
+        return;
+    }
+
     let mut retained_graph = SignalGraph::new();
     let retained_source = retained_graph.node().build();
     let retained_dependent = retained_graph.node().build();
@@ -30,11 +41,31 @@ fn artifact_access_counters_attribute_lane_api_and_denial_reason() {
             Ok(result)
         })
         .unwrap();
-    assert!(retained_graph
+    let access_before_explanation = crate::data::access_counters::snapshot();
+    let observed_explanation = retained_graph
+        .observe()
+        .explain(retained_dependent)
+        .unwrap();
+    let explanation_access =
+        crate::data::access_counters::snapshot().delta_since(access_before_explanation);
+    assert_eq!(explanation_access.materialized_entry_reads, 0);
+    assert_eq!(explanation_access.materialized_entry_writes, 0);
+    let retained_explanation = retained_graph
         .observe()
         .materialize()
         .retained_explanation_artifact(retained_dependent)
-        .is_some());
+        .expect("development policy must retain the dependent explanation");
+    assert_eq!(observed_explanation.state, retained_explanation.state);
+    let retained_validation = retained_graph
+        .node_explanation_storage_view(retained_dependent)
+        .unwrap();
+    assert_eq!(retained_validation.state(), retained_explanation.state);
+    assert!(
+        retained_validation.matches_historical_artifact_record(
+            retained_explanation.historical_artifact_record.as_ref(),
+        ),
+        "component validation must preserve the retained explanation's current graph facts"
+    );
     assert!(retained_graph
         .observe()
         .materialize()

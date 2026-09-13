@@ -12,6 +12,8 @@ mod domain_evidence;
 mod execution_resource_admission;
 #[path = "workflow_execution/reexecution/historical_replay.rs"]
 pub(crate) mod historical_replay;
+#[path = "graph_execution/managed_progression.rs"]
+mod managed_graph_progression;
 #[path = "direct_execution/input_contract.rs"]
 mod operation_input;
 #[path = "direct_execution/output_contract.rs"]
@@ -109,13 +111,12 @@ mod workflow_trace;
 
 pub use worth_query_execution::facade::provider_session::{
     WorthQueryBoundGraphExecutionReceipt, WorthQueryExecutionGraphReadProduct,
-    WorthQueryLegacyProviderWorkClaim, WorthQueryProviderWorkReport,
+    WorthQueryProviderWorkReport,
 };
 
 pub use artifact_owner::*;
 pub(crate) use artifact_owner::{
-    WorthQueryArtifactProductionAuthority, WorthQueryWorkflowArtifactAuthority,
-    WorthQueryWorkflowArtifactRegistry,
+    WorthQueryArtifactProductionAuthority, WorthQueryWorkflowArtifactRegistry,
 };
 pub use consumption_progression::*;
 pub use domain_evidence::*;
@@ -124,10 +125,7 @@ pub use operation_input::*;
 pub use operation_output::*;
 pub use progression::*;
 pub use progression_evidence::*;
-pub(crate) use projection_lifecycle::{
-    refresh_granular_source, validate_live_source_authority,
-    WorthQueryClassifiedOwnerDeliveryCompletion,
-};
+pub(crate) use projection_lifecycle::{refresh_granular_source, validate_live_source_authority};
 pub use projection_lifecycle::{
     WorthQueryAuthorityRevalidationDomainProjection,
     WorthQueryAuthorityRevalidationWorkflowProjection, WorthQueryBoundCapabilityGeneration,

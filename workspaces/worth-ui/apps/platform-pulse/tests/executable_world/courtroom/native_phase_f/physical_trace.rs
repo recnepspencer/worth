@@ -98,6 +98,7 @@ pub(super) fn assert_duplicate_rejection(
 pub(super) fn assert_supersession(
     evidence: &serde_json::Value,
     predecessor: &serde_json::Value,
+    deferred: &serde_json::Value,
     successor: &serde_json::Value,
 ) {
     let physical = transitions(evidence);
@@ -112,8 +113,55 @@ pub(super) fn assert_supersession(
     assert!(
         physical
             .iter()
-            .any(|row| matches(row, predecessor, "Superseded")),
-        "the exact predecessor completion must retire as physically superseded"
+            .any(|row| matches(row, predecessor, "Completed")),
+        "the semantically superseded predecessor physically completes while its successor awaits the atlas"
+    );
+    let work = evidence["text_presentation_work"].as_array().unwrap();
+    let exact_work = |request: &serde_json::Value| {
+        let rows = work
+            .iter()
+            .filter(|row| {
+                row["attempt"] == request["attempt"] && row["binding"] == request["binding"]
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(rows.len(), 1);
+        rows[0]
+    };
+    let before = exact_work(deferred);
+    let retry = exact_work(successor);
+    for field in [
+        "mounted_frame",
+        "active_mechanics",
+        "binding_pin_identities",
+        "glyph_run_transcript_digest",
+        "intrinsic_glyph_transcript_digest",
+    ] {
+        assert_eq!(
+            before[field], retry[field],
+            "atlas retry preserves exact {field}"
+        );
+    }
+    let atlas = physical
+        .iter()
+        .position(|row| {
+            row["work"] == "AtlasUpload"
+                && row["attempt"] == deferred["attempt"]
+                && row["binding"] == deferred["binding"]
+                && row["origin"] == "NativeExternalPort"
+                && row["settlement"] == "Completed"
+        })
+        .unwrap();
+    let first = physical
+        .iter()
+        .position(|row| matches(row, predecessor, "Completed"))
+        .unwrap();
+    let last = physical
+        .iter()
+        .position(|row| matches(row, successor, "Completed"))
+        .unwrap();
+    assert!(
+        first < atlas && atlas < last,
+        "A completes, B's atlas settles, then exact B retry paints"
     );
     assert!(
         physical

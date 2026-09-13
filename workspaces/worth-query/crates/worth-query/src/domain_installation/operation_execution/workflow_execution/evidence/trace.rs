@@ -3,18 +3,20 @@ use crate::domain_installation::operation_authority_chain::{
     mint_operation_phase_proof, operation_phase_basis, WorthQueryCompletedWorkflowPhase,
     WorthQueryOperationPhaseProof,
 };
-use crate::domain_installation::operation_identity_basis::{
-    canonical_indexed_operation_material, canonical_operation_material, graph_call_kind_material,
-    operation_result_state_material, workflow_warning_material,
-};
+use crate::domain_installation::operation_identity_basis::canonical_indexed_operation_material;
 use crate::identity::hash_parts;
 
 use super::{WorthQueryWorkflowRun, WorthQueryWorkflowRunCounters, WorthQueryWorkflowStageReceipt};
 use worth_proof::TransitionOutcome;
 
+#[path = "trace/semantic_identity.rs"]
+mod semantic_identity;
+
+use semantic_identity::semantic_trace_identity;
+
 impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkflowRun<D, O, F, L> {
     pub fn complete(
-        self,
+        mut self,
     ) -> TransitionOutcome<
         WorthQueryCompletedWorkflowTrace<D, O, F, L>,
         WorthQueryWorkflowCompletionDenial,
@@ -24,22 +26,62 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         WorthQueryWorkflowCompletionDenial,
     > {
         if !self.bound.installation_is_current() {
-            return TransitionOutcome::Stale(WorthQueryWorkflowCompletionDenial::from_run(
+            let denial = WorthQueryWorkflowCompletionDenial::from_run(
                 WorthQueryWorkflowCompletionDenialKind::StaleInstallationGeneration,
                 &self,
-            ));
+            );
+            return TransitionOutcome::Stale(
+                denial.with_managed_cleanup(cleanup_abandoned_workflow(&mut self)),
+            );
         }
         if self.completed.len() != self.graph.stages().len() {
-            return TransitionOutcome::Denied(WorthQueryWorkflowCompletionDenial::from_run(
+            let denial = WorthQueryWorkflowCompletionDenial::from_run(
                 WorthQueryWorkflowCompletionDenialKind::IncompleteStages,
                 &self,
-            ));
+            );
+            return TransitionOutcome::Denied(
+                denial.with_managed_cleanup(cleanup_abandoned_workflow(&mut self)),
+            );
         }
         let mut run = self;
         for receipt in run.receipts.iter_mut().rev() {
             receipt.retire_artifact_output();
         }
         run.artifact_registry.close_released();
+        let running = run
+            .managed
+            .take()
+            .expect("completed workflow owns its managed run");
+        let terminal = match running.completed() {
+            Ok(terminal) => terminal,
+            Err(rejection) => {
+                let detail = rejection.denial().detail().to_owned();
+                let cleanup = rejection.into_running().abandon().cleanup();
+                return TransitionOutcome::Denied(
+                    WorthQueryWorkflowCompletionDenial::from_run(
+                        WorthQueryWorkflowCompletionDenialKind::ManagedRun,
+                        &run,
+                    )
+                    .with_managed_detail(detail)
+                    .with_managed_cleanup(cleanup),
+                );
+            }
+        };
+        match terminal.cleanup() {
+            worth_query_execution::facade::runtime::WorthQueryWorkflowRunCleanupOutcome::Complete(receipt) => {
+                run.managed_cleanup = Some(receipt);
+            }
+            cleanup => {
+                return TransitionOutcome::Denied(
+                    WorthQueryWorkflowCompletionDenial::from_run(
+                        WorthQueryWorkflowCompletionDenialKind::ManagedRun,
+                        &run,
+                    )
+                    .with_managed_detail("managed workflow cleanup requires owner resolution")
+                    .with_managed_cleanup(cleanup),
+                );
+            }
+        }
         let mut trace = mint_completed_trace(run);
         match crate::domain_installation::dependency_impact::compile_workflow_semantic_aspect_dependencies(&trace) {
             Ok(dependency_closure) => trace.dependency_closure = Some(dependency_closure),
@@ -60,6 +102,20 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             }
         }
     }
+}
+
+fn cleanup_abandoned_workflow<D, O, F, L: BasisOperationLane>(
+    run: &mut WorthQueryWorkflowRun<D, O, F, L>,
+) -> worth_query_execution::facade::runtime::WorthQueryWorkflowRunCleanupOutcome {
+    for receipt in run.receipts.iter_mut().rev() {
+        receipt.cancel_artifact_output();
+    }
+    run.artifact_registry.close_cancelled();
+    run.managed
+        .take()
+        .expect("live workflow owns its managed run")
+        .abandon()
+        .cleanup()
 }
 
 fn mint_completed_trace<D, O, F, L: BasisOperationLane>(
@@ -106,129 +162,6 @@ fn mint_completed_trace<D, O, F, L: BasisOperationLane>(
     }
 }
 
-fn semantic_trace_identity<D, O, F, L: BasisOperationLane>(
-    run: &WorthQueryWorkflowRun<D, O, F, L>,
-) -> String {
-    let mut semantic_parts = run
-        .receipts
-        .iter()
-        .map(stage_semantic_part)
-        .collect::<Vec<_>>();
-    semantic_parts.sort();
-    hash_parts(&[
-        "worth_query_workflow_semantic_trace_v1".into(),
-        format!("operation:{}", run.bound.definition().canonical_identity()),
-        format!(
-            "operation_conditional:{}",
-            canonical_indexed_operation_material(
-                "workflow.operation.conditional",
-                run.operation_conditional_provenance()
-                    .iter()
-                    .map(super::workflow_conditional_trace::conditional_trace_semantic_material),
-            )
-        ),
-        format!("stages:{}", semantic_parts.join("|")),
-    ])
-}
-
-fn stage_semantic_part(receipt: &WorthQueryWorkflowStageReceipt) -> String {
-    canonical_operation_material(vec![
-        ("stage.identity", receipt.stage_identity.clone()),
-        (
-            "stage.predecessors",
-            canonical_indexed_operation_material(
-                "stage.predecessor",
-                receipt.predecessor_stage_identities.iter().cloned(),
-            ),
-        ),
-        (
-            "stage.result_state",
-            operation_result_state_material(receipt.result_state).into(),
-        ),
-        (
-            "stage.output",
-            crate::domain_installation::operation_identity_basis::workflow_semantic_value_material(
-                &receipt.output_semantics,
-            ),
-        ),
-        (
-            "stage.warnings",
-            canonical_indexed_operation_material(
-                "stage.warning",
-                receipt.warnings.iter().map(workflow_warning_material),
-            ),
-        ),
-        (
-            "stage.domain_evidence",
-            receipt
-                .domain_evidence()
-                .map(super::WorthQueryAdmittedDomainEvidence::replay_meaning)
-                .map(|meaning| meaning.semantic_material())
-                .unwrap_or_else(|| "not-required".into()),
-        ),
-        (
-            "stage.graph",
-            canonical_indexed_operation_material(
-                "stage.graph.receipt",
-                receipt.graph_receipts.iter().map(|graph| {
-                    canonical_operation_material(vec![
-                        ("graph.role", graph.role().into()),
-                        ("graph.kind", graph_call_kind_material(graph.kind()).into()),
-                        ("graph.evidence", graph.evidence_identity().into()),
-                        (
-                            "graph.projection",
-                            graph
-                                .graph_read_product()
-                                .map(|projection| projection.call_identity())
-                                .unwrap_or("not-projected")
-                                .into(),
-                        ),
-                    ])
-                }),
-            ),
-        ),
-        (
-            "stage.reads",
-            canonical_indexed_operation_material(
-                "stage.read",
-                receipt.primary_read_evidence.iter().map(|read| {
-                    canonical_operation_material(vec![
-                        ("read.role", read.role().into()),
-                        ("read.result", read.read_receipt().result_digest().into()),
-                    ])
-                }),
-            ),
-        ),
-        (
-            "stage.effects",
-            canonical_indexed_operation_material(
-                "stage.effect",
-                receipt.effect_evidence.iter().map(|effect| {
-                    canonical_operation_material(vec![
-                        ("effect.family", effect.family().as_str().into()),
-                        ("effect.receipt", effect.receipt_identity().into()),
-                    ])
-                }),
-            ),
-        ),
-        (
-            "stage.invariants",
-            canonical_indexed_operation_material(
-                "stage.invariant",
-                receipt.invariant_outcomes.iter().map(|outcome| {
-                    canonical_operation_material(vec![
-                        ("invariant.role", outcome.invariant_role().into()),
-                        (
-                            "invariant.installed",
-                            outcome.installed_invariant_identity().into(),
-                        ),
-                    ])
-                }),
-            ),
-        ),
-    ])
-}
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowCompletionDenialKind {
     StaleInstallationGeneration,
@@ -237,6 +170,7 @@ pub enum WorthQueryWorkflowCompletionDenialKind {
     DependencyCompilation(
         crate::domain_installation::WorthQuerySemanticAspectDependencyCompilationDenial,
     ),
+    ManagedRun,
 }
 
 #[derive(Debug)]
@@ -244,6 +178,9 @@ pub struct WorthQueryWorkflowCompletionDenial {
     kind: WorthQueryWorkflowCompletionDenialKind,
     executed_effects: Vec<super::WorthQueryWorkflowEffectEvidence>,
     counters: WorthQueryWorkflowRunCounters,
+    managed_detail: Option<String>,
+    managed_cleanup:
+        Option<worth_query_execution::facade::runtime::WorthQueryWorkflowRunCleanupOutcome>,
 }
 
 impl WorthQueryWorkflowCompletionDenial {
@@ -259,6 +196,8 @@ impl WorthQueryWorkflowCompletionDenial {
                 .flat_map(|receipt| receipt.effect_evidence().iter().cloned())
                 .collect(),
             counters: run.counters,
+            managed_detail: None,
+            managed_cleanup: None,
         }
     }
 
@@ -279,6 +218,29 @@ impl WorthQueryWorkflowCompletionDenial {
 
     pub const fn counters(&self) -> WorthQueryWorkflowRunCounters {
         self.counters
+    }
+
+    pub fn managed_detail(&self) -> Option<&str> {
+        self.managed_detail.as_deref()
+    }
+
+    pub fn take_managed_cleanup(
+        &mut self,
+    ) -> Option<worth_query_execution::facade::runtime::WorthQueryWorkflowRunCleanupOutcome> {
+        self.managed_cleanup.take()
+    }
+
+    fn with_managed_detail(mut self, detail: impl Into<String>) -> Self {
+        self.managed_detail = Some(detail.into());
+        self
+    }
+
+    fn with_managed_cleanup(
+        mut self,
+        cleanup: worth_query_execution::facade::runtime::WorthQueryWorkflowRunCleanupOutcome,
+    ) -> Self {
+        self.managed_cleanup = Some(cleanup);
+        self
     }
 }
 

@@ -18,6 +18,10 @@ pub(crate) enum PageObservationFailure {
         target: Option<PhysicalRedoTargetIdentity>,
         artifact: RecordArtifactFile,
     },
+    Integrity {
+        artifact: RecordArtifactFile,
+        denial: crate::entry::PhysicalRecoveryRootProtocolDenial,
+    },
     InvalidTarget(PhysicalRedoTargetIdentity),
     InvalidPage(PhysicalRedoTargetIdentity),
     ManifestEntryLimit,
@@ -35,6 +39,9 @@ impl PageObservationFailure {
             }
             Self::InvalidManifest { target, artifact } => {
                 PhysicalRecoveryPageAdmissionDenial::InvalidManifest { target, artifact }
+            }
+            Self::Integrity { artifact, denial } => {
+                PhysicalRecoveryPageAdmissionDenial::Integrity { artifact, denial }
             }
             Self::InvalidTarget(target) => {
                 PhysicalRecoveryPageAdmissionDenial::InvalidTarget(target)

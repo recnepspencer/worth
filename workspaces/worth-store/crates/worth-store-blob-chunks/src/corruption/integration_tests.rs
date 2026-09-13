@@ -16,7 +16,6 @@ use crate::{
     BlobQuarantineRepairCapability,
 };
 use worth_proof::TransitionOutcome;
-use worth_store_physical_integrity::PreDecodePhysicalDenialKind;
 
 #[test]
 fn integration_paths_classify_all_five_damage_cases_before_decode() {
@@ -222,27 +221,15 @@ fn quarantine_diagnostics_expose_repair_capability_not_read_authority() {
 }
 
 #[test]
-fn pre_decode_gate_maps_physical_denial_kinds_to_distinct_damage_cases() {
-    for (kind, expected) in [
-        (
-            PreDecodePhysicalDenialKind::ChecksumMismatch,
-            BlobDamageCase::ChecksumMismatch,
-        ),
-        (
-            PreDecodePhysicalDenialKind::AuthenticityRequiredPhysicalDenial,
-            BlobDamageCase::AuthenticityFailure,
-        ),
-        (
-            PreDecodePhysicalDenialKind::TruncatedPhysicalPage,
-            BlobDamageCase::MissingChunk,
-        ),
-        (
-            PreDecodePhysicalDenialKind::StaleGeneration,
-            BlobDamageCase::StaleGeneration,
-        ),
+fn owner_local_physical_observations_preserve_blob_damage_classification() {
+    for expected in [
+        BlobDamageCase::ChecksumMismatch,
+        BlobDamageCase::AuthenticityFailure,
+        BlobDamageCase::MissingChunk,
+        BlobDamageCase::StaleGeneration,
     ] {
         assert_eq!(
-            classify_blob_damage_before_decode(BlobDamageEvidence::PhysicalPreDecode(kind)),
+            classify_blob_damage_before_decode(BlobDamageEvidence::PhysicalObservation(expected)),
             expected
         );
     }
@@ -250,10 +237,8 @@ fn pre_decode_gate_maps_physical_denial_kinds_to_distinct_damage_cases() {
 
 #[test]
 fn physical_handoff_rejects_lower_evidence_as_blob_authority() {
-    let denial = worth_store_physical_integrity::test_pre_decode_denial_for_kind(
-        PreDecodePhysicalDenialKind::ChecksumMismatch,
-    );
-    let (classification, rejection) = observe_physical_pre_decode_denial(&denial);
+    let (classification, rejection) =
+        observe_physical_pre_decode_denial(BlobDamageCase::ChecksumMismatch);
     assert_eq!(
         classification.damage_case(),
         BlobDamageCase::ChecksumMismatch
@@ -267,7 +252,7 @@ fn physical_handoff_rejects_lower_evidence_as_blob_authority() {
     ));
 
     let (handoff_classification, handoff_rejection) =
-        reject_physical_handoff_from_pre_decode_denial(&denial);
+        reject_physical_handoff_from_pre_decode_denial(BlobDamageCase::ChecksumMismatch);
     assert_eq!(
         handoff_classification.damage_case(),
         BlobDamageCase::ChecksumMismatch

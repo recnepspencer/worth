@@ -311,6 +311,47 @@ fn widened_source_cannot_flow_through_exact_correspondence() {
     assert_eq!(graph.node_aspect_version(node).unwrap().get(aspect), before);
 }
 
+#[test]
+fn runtime_world_admission_is_bound_to_the_issuing_bridge_runtime() {
+    let mut graph = SignalGraph::new();
+    let node = graph.node().build();
+    let runtime = runtime(
+        exact_mapping(),
+        vec![registration(
+            dependency("query:one"),
+            vec![target(&graph, node)],
+        )],
+    );
+    let TransitionOutcome::Success(correspondence) =
+        runtime.install_semantic_correspondence(dependency("query:one"), &graph)
+    else {
+        panic!("installed correspondence");
+    };
+
+    let admitted = runtime
+        .runtime_world_correspondence_port()
+        .admit_installed_basis(&correspondence)
+        .expect("the issuing runtime admits its installed basis");
+    assert_eq!(
+        admitted.source_installation_generation(),
+        correspondence.basis().source_installation_generation()
+    );
+    let repeated = runtime
+        .runtime_world_correspondence_port()
+        .admit_installed_basis(&correspondence)
+        .expect("the same installed correspondence reuses its admission identity");
+    assert_eq!(admitted.admission_identity(), repeated.admission_identity());
+    assert_eq!(admitted, repeated);
+
+    let foreign_runtime = runtime.fork_managed_request_lane();
+    assert!(matches!(
+        foreign_runtime
+            .runtime_world_correspondence_port()
+            .admit_installed_basis(&correspondence),
+        Err(crate::facade::RuntimeWorldCorrespondenceAdmissionDenial::ForeignBridgeRuntime { .. })
+    ));
+}
+
 mod atomic_batch;
 mod conditional_compatibility;
 mod delivery_cost;
@@ -318,6 +359,7 @@ mod graph_cohesion;
 mod outcome_topology;
 mod partition_and_precision;
 mod registration_drift;
+mod runtime_world;
 mod semantic_dependencies;
 mod semantic_fixture;
 mod semantic_invalidation;

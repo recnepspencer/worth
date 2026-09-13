@@ -230,3 +230,23 @@ For most readers, the smoothest path is:
 6. only then the deeper explicit-control or replay-oriented types on `facade`
 
 That order matches how the bridge is meant to feel in real use.
+
+## Product history and coordinated publication
+
+[`worth-runtime-world`](../worth-runtime-world/README.md) owns product branches,
+composite commit history and coordinated Relational/Signal publication. Bridge
+owns installed semantic correspondence. Admit that exact installed witness through
+`RuntimeBridge::runtime_world_correspondence_port().admit_installed_basis(...)`
+after binding it to the actual Signal graph; descriptors or detached registration
+requests cannot replace the installed witness.
+
+Use the [Runtime World example](../worth-runtime-world/examples/runtime_world_publication.rs)
+for real same-graph construction and three-way publication handling. Bridge
+speculation/replay is not product-head or committed-terminal authority.
+
+For Query-hosted conditional work, Bridge owns semantic correspondence and
+baseline interpretation while Signal's sealed owner service owns evaluation,
+mutation, and lifecycle mechanics. Use `BridgeOwnedSignalRuntime` and its
+installed operation ports. The returned exact basis and performed evidence are
+carried into Query and Runtime World; consumers do not reopen raw graph access
+or rebuild a Signal basis from descriptors.

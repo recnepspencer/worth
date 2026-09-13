@@ -1,8 +1,8 @@
-use worth_store_physical_isolation::SemanticVisibilityReference;
-use worth_store_recovery_physics::{
-    CrashBoundaryLayoutReport, PartialPublicationObservationSet,
-    PartialPublicationReplayReadDenial, PartialPublicationReplayedCrashEdge,
+use crate::publication::{
+    BlobPublicationCrashBoundaryReport, BlobPublicationObservationSet,
+    BlobPublicationReplayReadDenial, BlobPublicationReplayedCrashEdge,
 };
+use worth_store_physical_isolation::SemanticVisibilityReference;
 
 use crate::publication::test_support::{
     chunk_write_replay_evidence, durable_wal_publication, publication_inputs,
@@ -38,10 +38,7 @@ fn committed_publication_is_the_only_visible_generation_source() {
         published.generation()
     );
     assert!(!published.replay_classification_digest().is_empty());
-    assert_eq!(
-        published.replay_counters().replayable_unacknowledged_wal(),
-        1
-    );
+    assert_eq!(published.replay_counters().replayable_durable_wal(), 1);
     assert_eq!(
         published.security_metadata(),
         published.staging_identity().security_metadata()
@@ -199,9 +196,9 @@ fn replay_read_witness_rejects_copied_bytes_for_wrong_operation() {
     let operation =
         BlobPublicationPreWalReplayEvidence::chunk_write_recovery_operation_digest(&digest);
     let replay = with_recovery_replay_entry(operation.as_str(), |replay_entry| {
-        PartialPublicationReplayedCrashEdge::from_replay_read_artifact(
+        BlobPublicationReplayedCrashEdge::from_replay_read_artifact(
             replay_entry
-                .read_partial_publication_before_wal_append()
+                .read_blob_publication_before_wal_append()
                 .expect("protected before-WAL replay bytes should read"),
         )
         .expect("replayed bytes admit as their own before-WAL source")
@@ -220,9 +217,9 @@ fn copied_replay_bytes_cannot_be_readmitted_for_another_operation() {
     let operation =
         BlobPublicationPreWalReplayEvidence::checksum_admitted_recovery_operation_digest(&digest);
     let replay = with_recovery_replay_entry(operation.as_str(), |replay_entry| {
-        PartialPublicationReplayedCrashEdge::from_replay_read_artifact(
+        BlobPublicationReplayedCrashEdge::from_replay_read_artifact(
             replay_entry
-                .read_partial_publication_before_wal_append()
+                .read_blob_publication_before_wal_append()
                 .expect("protected before-WAL replay bytes should read"),
         )
         .expect("replayed bytes admit as their own before-WAL source")
@@ -238,8 +235,8 @@ fn copied_replay_bytes_cannot_be_readmitted_for_another_operation() {
 fn bytes_without_before_wal_operation_are_denied_before_witness() {
     with_generic_recovery_replay_entry("phase6-no-before-wal-operation", |replay_entry| {
         assert!(matches!(
-            replay_entry.read_partial_publication_before_wal_append(),
-            Err(PartialPublicationReplayReadDenial::NotBeforeWalAppend { .. })
+            replay_entry.read_blob_publication_before_wal_append(),
+            Err(BlobPublicationReplayReadDenial::NotBeforeWalAppend { .. })
         ));
     });
 }
@@ -248,8 +245,8 @@ fn bytes_without_before_wal_operation_are_denied_before_witness() {
 fn generic_recovery_entry_cannot_mint_before_wal_replay_read_artifact() {
     with_generic_recovery_replay_entry("phase6-generic-entry-no-pre-wal-read", |replay_entry| {
         assert!(matches!(
-            replay_entry.read_partial_publication_before_wal_append(),
-            Err(PartialPublicationReplayReadDenial::NotBeforeWalAppend {
+            replay_entry.read_blob_publication_before_wal_append(),
+            Err(BlobPublicationReplayReadDenial::NotBeforeWalAppend {
                 actual_operation_digest: None
             })
         ));
@@ -260,9 +257,8 @@ fn generic_recovery_entry_cannot_mint_before_wal_replay_read_artifact() {
 fn checkpoint_cutover_bytes_are_denied_before_wal_witness() {
     with_generic_recovery_replay_entry("phase6-no-before-wal-operation", |replay_entry| {
         assert!(matches!(
-            replay_entry
-                .read_partial_publication_checkpoint_cutover("phase6-no-before-wal-operation"),
-            Err(PartialPublicationReplayReadDenial::NotBeforeWalAppend { .. })
+            replay_entry.read_blob_publication_checkpoint_cutover("phase6-no-before-wal-operation"),
+            Err(BlobPublicationReplayReadDenial::NotBeforeWalAppend { .. })
         ));
     });
 }
@@ -274,9 +270,9 @@ fn replay_read_admission_token_no_longer_exists_for_reuse() {
     let operation =
         BlobPublicationPreWalReplayEvidence::chunk_write_recovery_operation_digest(&digest);
     let replay = with_recovery_replay_entry(operation.as_str(), |replay_entry| {
-        PartialPublicationReplayedCrashEdge::from_replay_read_artifact(
+        BlobPublicationReplayedCrashEdge::from_replay_read_artifact(
             replay_entry
-                .read_partial_publication_before_wal_append()
+                .read_blob_publication_before_wal_append()
                 .expect("protected before-WAL replay bytes should read"),
         )
     });
@@ -290,8 +286,8 @@ fn non_replayable_recovery_classification_cannot_commit_publication_record() {
     let staged =
         BlobReachabilityStaging::stage(candidate, reachability).expect("reachability should stage");
     let payload = BlobPublicationWalPayload::from_staged_reachability(&staged);
-    assert!(CrashBoundaryLayoutReport::admit_observations(
-        PartialPublicationObservationSet::new().with_insufficient_persisted_evidence("ambiguous"),
+    assert!(BlobPublicationCrashBoundaryReport::admit_observations(
+        BlobPublicationObservationSet::new().with_insufficient_persisted_evidence("ambiguous"),
     )
     .is_err());
     let _ = (staged, payload);

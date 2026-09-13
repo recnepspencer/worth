@@ -23,6 +23,8 @@ pub(crate) fn rebuild_adjacency_kind_buckets(
                     metadata.kind_id,
                     metadata.endpoints.source,
                     metadata.endpoints.target,
+                    metadata.effective_at,
+                    metadata.retired_at,
                 ));
             }
             let Some(slot_view) = partition.relation_arena.get_slot(slot) else {
@@ -34,7 +36,18 @@ pub(crate) fn rebuild_adjacency_kind_buckets(
             let relation_id = RelationId::new(*partition_id, slot as u64, slot_view.generation());
             relation_kinds.insert(relation_id, kind_id);
             if let Some(endpoints) = slot_view.extra().endpoints.as_ref() {
-                historical.push((relation_id, kind_id, endpoints.source, endpoints.target));
+                let effective_at = partition
+                    .relation_arena
+                    .created_at_for_slot(slot)
+                    .ok_or_else(|| format!("relation slot {slot} has no creation version"))?;
+                historical.push((
+                    relation_id,
+                    kind_id,
+                    endpoints.source,
+                    endpoints.target,
+                    effective_at,
+                    slot_view.retired_at(),
+                ));
             }
         }
     }
@@ -85,18 +98,26 @@ pub(crate) fn rebuild_adjacency_kind_buckets(
         adjacency.index_current_kind(kind_id, relation_id);
     }
 
-    for (relation_id, kind_id, source, target) in historical {
+    for (relation_id, kind_id, source, target, effective_at, retired_at) in historical {
         if let Some(adjacency) = partitions
             .get_mut(&source.partition_id)
             .and_then(|partition| partition.adjacency.get_mut(source.slot_index()))
         {
             adjacency.index_historical_kind(kind_id, relation_id);
+            adjacency.index_structural_revision(kind_id, effective_at);
+            if let Some(retired_at) = retired_at {
+                adjacency.index_structural_revision(kind_id, retired_at);
+            }
         }
         if let Some(adjacency) = partitions
             .get_mut(&target.partition_id)
             .and_then(|partition| partition.reverse_adjacency.get_mut(target.slot_index()))
         {
             adjacency.index_historical_kind(kind_id, relation_id);
+            adjacency.index_structural_revision(kind_id, effective_at);
+            if let Some(retired_at) = retired_at {
+                adjacency.index_structural_revision(kind_id, retired_at);
+            }
         }
     }
     Ok(())

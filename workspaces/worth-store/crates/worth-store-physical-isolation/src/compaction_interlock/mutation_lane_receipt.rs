@@ -1,11 +1,10 @@
 use super::{
     CompactionCandidateRangeSet, CompactionCutoverStabilityProof, CompactionDeferredReclaimQueue,
     CompactionProtectedReferenceSet, CompactionReadInterlockCounters,
-    CompactionReadInterlockDenial, CompactionReadInterlockPlan, CompactionRewritePublication,
-    CompactionSourceIntegrityEvidence,
+    CompactionReadInterlockDenial, CompactionReadInterlockPlan, CompactionRecoveryEvidence,
+    CompactionRewritePublication, CompactionSourceIntegrityEvidence,
 };
 use crate::{LatchAcquisitionDenial, LatchDeniedBeforeWaitEvidence, RootEpoch};
-use worth_store_recovery_physics::CompactionCutoverRecoveryPosture;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompactionMutationLaneReceipt {
@@ -115,10 +114,10 @@ impl CompactionMutationLaneReceipt {
 
     pub fn from_backend_residue_denial(
         publication: CompactionRewritePublication,
-        recovery_posture: CompactionCutoverRecoveryPosture,
+        recovery_evidence: CompactionRecoveryEvidence,
     ) -> Result<Self, CompactionReadInterlockDenial> {
         let origin = CompactionMutationLaneOrigin::from_plan(publication.delta().plan());
-        match CompactionCutoverStabilityProof::admit(publication, recovery_posture) {
+        match CompactionCutoverStabilityProof::admit(publication, recovery_evidence) {
             Ok(_) => Err(CompactionReadInterlockDenial::ExpectedMutationLaneDenialNotProduced),
             Err(denial @ CompactionReadInterlockDenial::BackendResidueCandidateSelection(_)) => {
                 Ok(Self {

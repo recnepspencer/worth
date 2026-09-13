@@ -7,6 +7,7 @@ mod consumer_lifecycle;
 mod declaration;
 mod drain_observation;
 mod execution;
+pub(in crate::physical_runtime) use execution::PhysicalInspectionExecutorCommand;
 mod identity;
 mod observation;
 mod profile;
@@ -77,6 +78,11 @@ pub use progression::{
 pub use recovery::PhysicalCheckpointRecoveryAction;
 pub(in crate::physical_runtime) use recovery::{
     PhysicalEffectJournal, PhysicalEffectRecoveryInventory, PreparedPhysicalEffect,
+};
+pub use recovery::{
+    PhysicalWorkRecoveryAdmissionCounters, PhysicalWorkRecoveryAdmissionObservation,
+    PhysicalWorkRecoveryAdmissionOutcome, PhysicalWorkRecoveryIngressRejection,
+    PhysicalWorkRecoveryObservationSubject,
 };
 pub use recovery::{PhysicalWorkRecoveryLocator, PhysicalWorkRecoveryTarget};
 pub use request::{

@@ -3,7 +3,6 @@ use worth_query_admission::facade::application_query::WorthQueryApplicationParam
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use worth_relational::facade::{
-    branch::RelationalBranchBasisDescriptor,
     identity::EntityId,
     indexes::{DerivedIndexGenerationId, RelatedEntityOrderingBoundary},
 };
@@ -18,12 +17,10 @@ use crate::domain_computation::primary_graph::{
 
 pub(super) struct WorthQueryValidatedContinuationAffinity {
     pub(super) parameter_basis: WorthQueryApplicationParameterCanonicalArtifact,
-    pub(super) basis_descriptor: RelationalBranchBasisDescriptor,
     pub(super) index_generation: DerivedIndexGenerationId,
     pub(super) boundary: RelatedEntityOrderingBoundary,
     pub(super) page_ordinal: u64,
-    pub(super) basis_retention:
-        Option<worth_relational::facade::branch::RelationalBranchRetentionLease>,
+    pub(super) product: crate::basis::WorthQueryProductObservationLease,
 }
 
 pub(super) fn validate_continuation_affinity<Schema, Query, Parameters, QueryResult, Scope>(
@@ -81,11 +78,10 @@ where
     }
     Ok(WorthQueryValidatedContinuationAffinity {
         parameter_basis: continuation.parameter_basis,
-        basis_descriptor: continuation.basis_descriptor,
         index_generation: continuation.index_generation,
         boundary: continuation.boundary,
         page_ordinal: continuation.page_ordinal,
-        basis_retention: Some(continuation.basis_retention),
+        product: continuation.product,
     })
 }
 

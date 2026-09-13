@@ -5,11 +5,14 @@ use bank_domain::{
         EstateCapabilityScope, EstateCaseId, EstateMoment, EstateWorkflowStage,
     },
     model::{BankPrincipalId, InstitutionId},
-    schema::{BankSchema, DelegateEstateCapability, DelegateEstateCapabilityOperation},
+    schema::{
+        BankSchema, BranchIdBinding, DelegateEstateCapability, DelegateEstateCapabilityOperation,
+        InstitutionIdBinding,
+    },
 };
 use worth_query_host::facade::declaration::{
     application_capability::ApplicationCapabilityDelegationRequest,
-    application_schema::TypedApplicationValue,
+    application_schema::ApplicationScalarValueBinding,
 };
 use worth_query_host::facade::domain::WorthQueryInstallationRuntimeIdentity;
 
@@ -128,7 +131,7 @@ fn delegation_request_projects_exact_typed_bank_context_selectors() {
     );
     assert_eq!(
         institution_projection.selector().value(),
-        &institution.into_foundational_value()
+        &InstitutionIdBinding::encode(&institution).unwrap()
     );
     let branch_projection = context
         .iter()
@@ -138,7 +141,7 @@ fn delegation_request_projects_exact_typed_bank_context_selectors() {
     assert_eq!(branch_projection.selector().field(), "BranchIdentityField");
     assert_eq!(
         branch_projection.selector().value(),
-        &branch.into_foundational_value()
+        &BranchIdBinding::encode(&branch).unwrap()
     );
 }
 

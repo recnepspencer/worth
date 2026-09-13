@@ -1,0 +1,187 @@
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:20:67
+   |
+20 |     let _ = PhysicalCheckpointSource::decode_stream_header_record(validated);
+   |             ----------------------------------------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedCheckpointStreamHeader<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/checkpoint/source.rs
+   |
+   |     pub fn decode_stream_header_record(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:24:54
+   |
+24 |     let _ = CheckpointDirtyFrameBasis::decode_record(validated);
+   |             ---------------------------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedCheckpointDirtyBasis<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/checkpoint/dirty_basis.rs
+   |
+   |     pub fn decode_record(record: &[u8]) -> Result<Self, CheckpointStreamDecodeDenial> {
+   |            ^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:28:62
+   |
+28 |     let _ = CheckpointBindingCompactionHeader::decode_record(validated);
+   |             ------------------------------------------------ ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedCheckpointBindingCompaction<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/checkpoint/binding_compaction.rs
+   |
+   |     pub fn decode_record(record: &[u8]) -> Result<Self, CheckpointStreamDecodeDenial> {
+   |            ^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:32:46
+   |
+32 |     let _ = decode_checkpoint_binding_record(validated);
+   |             -------------------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedCheckpointBinding<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/checkpoint/binding_compaction.rs
+   |
+   | pub fn decode_checkpoint_binding_record(
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:36:51
+   |
+36 |     let _ = CheckpointStreamFooter::decode_record(validated);
+   |             ------------------------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedCheckpointFooter<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/checkpoint/footer.rs
+   |
+   |     pub fn decode_record(record: &[u8]) -> Result<Self, CheckpointStreamDecodeDenial> {
+   |            ^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:40:41
+   |
+40 |     let _ = DurableRootSelector::decode(validated);
+   |             --------------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedCurrentRootSelector<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/root_selector.rs
+   |
+   |     pub fn decode(bytes: &[u8]) -> Result<Self, RootSelectorDecodeDenial> {
+   |            ^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:44:41
+   |
+44 |     let _ = DurableRootSelector::decode(validated);
+   |             --------------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedPreviousRootSelector<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/root_selector.rs
+   |
+   |     pub fn decode(bytes: &[u8]) -> Result<Self, RootSelectorDecodeDenial> {
+   |            ^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:48:49
+   |
+48 |     let _ = DurablePhysicalRootManifest::decode(validated, 2);
+   |             ----------------------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedRootManifest<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/manifest/durable_root.rs
+   |
+   |     pub fn decode(
+   |            ^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:52:48
+   |
+52 |     let _ = decode_physical_work_obligation_v6(validated);
+   |             ---------------------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedPhysicalWorkObligation<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/physical_work_obligation/encode.rs
+   |
+   | pub fn decode_physical_work_obligation_v6(
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:56:60
+   |
+56 |     let _ = inspect_inline_page(validated.record_format(), validated);
+   |             -------------------                            ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedPageFrame<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/page_record/durable_page.rs
+   |
+   | pub fn inspect_inline_page(
+   |        ^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:60:41
+   |
+60 |     let _ = decode_bounded_wal_frame_v1(validated);
+   |             --------------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedWalFrame<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/wal_frame/bounded_decode.rs
+   |
+   | pub fn decode_bounded_wal_frame_v1(
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:64:43
+   |
+64 |     let _ = DurableExtentManifest::decode(validated);
+   |             ----------------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedExtentManifest<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/manifest/durable_extent.rs
+   |
+   |     pub fn decode(
+   |            ^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/validated_view_cannot_open_decoder.rs:71:33
+   |
+71 |     let _ = decode_extent_chunk(validated, expected);
+   |             ------------------- ^^^^^^^^^ expected `&[u8]`, found `IntegrityValidatedExtentChunkFrame<'_>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: function defined here
+  --> $WORKSPACE/crates/worth-store-physical-format/src/extent_record/durable_extent.rs
+   |
+   | pub fn decode_extent_chunk(
+   |        ^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `chunk_bytes` found for struct `IntegrityValidatedExtentChunkFrame<'media>` in the current scope
+  --> tests/ui/validated_view_cannot_open_decoder.rs:75:23
+   |
+75 |     let _ = validated.chunk_bytes();
+   |                       ^^^^^^^^^^^ method not found in `IntegrityValidatedExtentChunkFrame<'_>`

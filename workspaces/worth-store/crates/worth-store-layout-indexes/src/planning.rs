@@ -1,8 +1,6 @@
 mod access_request;
 mod admission;
 #[cfg(test)]
-mod architecture_tests;
-#[cfg(test)]
 mod candidate_tests;
 mod candidates;
 mod cost;

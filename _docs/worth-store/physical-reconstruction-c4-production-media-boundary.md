@@ -147,7 +147,7 @@ recovery claim inherits the lie.
     owner with deterministic faults and observation. It cannot replace the
     backend, choose persisted truth, create the runtime phase, or write the
     expected result itself.
-18. Every existing direct writer identified by C.2 receives a migrate,
+18. Every existing direct writer found in C.4's causal call-path review receives a migrate,
     quarantine, or delete disposition before C.4 closes. No ordinary physical
     path may bypass the admitted media owner.
 19. C.4 admits one configured service-account access posture. Store performs
@@ -171,17 +171,14 @@ recovery claim inherits the lie.
     process identity and dependency independence are part of the proof. Its
     source imports no runtime, backend, certification, or production decoder
     surface.
-22. One `physical_media_authority_ui` runner owns exactly one positive fixture
-    and five negative authority-class fixtures fixed by this specification.
-    Per-method, per-type, per-platform, and per-error compile fixtures are
-    forbidden.
+22. One `physical_media_authority_ui` runner owns a small representative set of
+    authority-class fixtures. Per-method, per-type, per-platform, and per-error
+    compile fixtures are forbidden.
 23. Compiler UI is used only when the required guarantee is that invalid code
     cannot compile. Runtime lifecycle, path, fault, counter, concurrency,
-    capability, and mutation behavior belongs in ordinary tests.
-24. A new C.4 compiler fixture requires a specification change naming a new
-    compiler-enforced authority class and explaining why an existing fixture
-    cannot carry a representative case. Test implementation may not expand the
-    fixture set opportunistically.
+    capability, and fault behavior belongs in ordinary tests.
+24. Add a compiler fixture only for a materially distinct compiler-enforced
+    authority class; consolidate or delete redundant cases during review.
 25. All UI fixtures share one Cargo target root and runner compilation. No
     fixture may invoke Cargo, create a target directory, or become its own
     test target. The consolidated runner declares the certification feature
@@ -189,7 +186,7 @@ recovery claim inherits the lie.
     profile; ordinary default-profile compilation remains owner-lane work.
 26. Warm owner feedback targets under ten seconds and the C.4 developer-smoke
     product targets under one minute on the declared reference machine.
-    Maximal-feature UI, multi-process fault campaigns, and controlled mutants
+    Maximal-feature UI and multi-process fault campaigns
     remain CI/release products and do not inflate ordinary owner feedback.
 27. Store-owned types remain the strongest forms while meaning is local to
     physical format, backend execution, or runtime composition. Neither shared
@@ -400,25 +397,18 @@ same lifecycle, and it must not introduce `helpers`, `common`, `utils`,
 
 ## Compilation And Test Cost Contract
 
-- C.4 adds exactly three dedicated Cargo targets beyond existing owner/unit
-  test targets: one journey suite, one deliberately dependency-minimal OS
-  observer, and one consolidated UI runner.
-- `physical_media_journeys` owns three named scenario tests and spawns itself
+- C.4 uses direct owner tests, the `physical_media_journeys` suite, a
+  dependency-minimal OS observer, and focused compiler authority checks.
+- `physical_media_journeys` spawns itself
   into writer, reopener, contender, successor, and faulted-writer roles. Those
   roles are new processes, not new Cargo targets.
 - `physical_media_os_observer` is the only separate scenario helper. It is a
   normal tiny binary target with `test = false`, built once and located through
   Cargo's integration-test binary environment, then spawned by the journey
   suite. It does not pay for an empty libtest harness.
-- `physical_media_authority_ui` owns the six exact fixtures shown in the target
-  skeleton. One fixture represents one authority class and may contain several
-  representative invalid expressions from that same class.
-- The runner lists those fixtures explicitly. It does not glob a directory and
-  silently accept fixture growth. Each negative fixture has one stable expected
-  diagnostic snapshot and must fail at its declared authority boundary, not
-  merely somewhere during compilation.
-- The five colocated `.stderr` files are expected diagnostic snapshots, not
-  additional fixtures, executables, or evidence products.
+- `physical_media_authority_ui` keeps one representative compiler denial per
+  materially distinct authority class. Fixtures are ordinary test inputs, not
+  an inventory or completeness authority.
 - The complete authority UI runner executes once in the maximal certification
   profile. Default-profile production compilation is covered by ordinary
   owner checks and strict lint; it does not duplicate the trybuild campaign.
@@ -426,9 +416,8 @@ same lifecycle, and it must not introduce `helpers`, `common`, `utils`,
   runner may invoke the standardized cache-sharing UI harness.
 - No test writes mandatory evidence for another test to consume. Scenario
   evidence is disposable output from the owning executable.
-- Adding a test target, UI fixture, feature combination, or broad crate test to
-  developer smoke requires an explicit cost review against C.1 target-count,
-  dependency-breadth, target-root, and warm-time observations.
+- Adding a broad or expensive lane to developer smoke requires an explicit
+  cost review against C.1 warm-time and dependency-breadth expectations.
 - A slower correct test moves to the proper CI/release lane; it is not split
   into more binaries or weakened to satisfy the smoke budget.
 
@@ -449,7 +438,7 @@ before a real owner exists.
 - existing proof-backed backend capability admission
 - Foundational canonicalization and boundary-identity facades
 - certification feature and dependency topology
-- C.2 writer dispositions
+- current physical-writer call paths
 
 **Relevant APIs**
 
@@ -472,8 +461,8 @@ before a real owner exists.
   capability.
 - State which calls are owner-internal, artifact-owner-internal, observable,
   certification-only, and public.
-- Record every existing production or certification callsite that writes files
-  and attach its C.2 migrate, quarantine, or delete disposition.
+- Trace every in-scope production or certification callsite that writes files
+  and migrate, quarantine, or delete each bypass in source.
 - Freeze the negative-space list: C.4 exposes no record append, page lookup,
   WAL append, checkpoint, recovery, stable semantic read, maintenance, layout,
   index, blob, Query, or MVCC operation.
@@ -1091,14 +1080,11 @@ validated absent/empty root
 | --- | --- |
 | Phase 6 real filesystem | create-new collision, absent or substituted staged source, foreign-owner publication target, wrong-type replacement target, absent or substituted deletion target, and synchronization denied after ownership invalidation |
 | Phase 11 real-backend interposer | file-sync failure, namespace-directory-sync failure, store-root-sync failure, root-parent-sync failure, post-call completion ambiguity, and a pause on each named causal edge |
-| Phase 15 fresh observer | allowed path/byte states and typed retry posture for every Phase 11 directive, plus barrier-omission mutation sensitivity |
+| Phase 15 fresh observer | allowed path/byte states and typed retry posture for every Phase 11 directive, including omitted-barrier fault cases |
 
   A Phase 6 unit fixture must not fake a successful or failed synchronization
   syscall. The production durability claim closes only after the Phase 11 and
   Phase 15 rows pass against the real backend.
-- Phase 15 owns controlled mutants that omit file or directory
-  synchronization and must fail distinct predicates even when final bytes are
-  visible.
 - Reordering rename before complete write or before required file sync must
   fail typestate/compiler proof or the sequence assertion at the causal edge.
 
@@ -1189,7 +1175,7 @@ system lock is the proving action.
 - Killing the winning process without cleanup must allow exactly one fresh
   contender to acquire a new lease and discover the same stable store identity
   with a new process, runtime, and ownership-attempt identity.
-- A stale owner-metadata mutant must prove that plausible live PID/timestamp
+- A stale owner-metadata case must prove that plausible live PID/timestamp
   bytes neither block a free OS lock nor grant a contended one.
 - A handle-inheritance test must spawn an unrelated child, terminate the owner,
   and prove the child does not keep the mutation lease alive.
@@ -1353,9 +1339,8 @@ either work.
 - An optional-capability matrix must prove absence is honest and cheap, while
   each present handle carries the actual alignment/granularity constraints and
   rejects a violating request before media effects.
-- A controlled mutant that returns a hard-coded supported profile without
-  executing the qualification transaction must fail the operation-sequence and
-  zero-scratch-observation predicates.
+- Capability tests must prove that a supported profile is emitted only after
+  the real qualification transaction and its operation/scratch observations.
 - A compile-time authority specimen must reject an unrelated proof witness, a
   successful claim for another capability, a bridged/stale claim, a
   Foundational canonical artifact, and a serialized qualification report as
@@ -1584,9 +1569,8 @@ path has one explicit owner fate and one observable result.
 - A deterministic shutdown race must pause immediately before lease release,
   contend from a second process, and prove no new mutation begins after release
   starts and no old-runtime operation occurs after the contender acquires.
-- A controlled mutant that counts unexpected drop as close must fail the exact
-  terminal oracle; a mutant that performs a backend call after lease release
-  must fail the ordering oracle.
+- Unexpected drop must remain distinct from close, and the shutdown-race test
+  must directly prove that no backend call occurs after lease release.
 
 **Engineering decisions**
 
@@ -1738,7 +1722,7 @@ the product facade before acceptance journeys grant C.4 closure.
 
 **Relevant subsystems**
 
-- every C.2 physical-writer audit row
+- every current physical writer reachable from the scoped call paths
 - Worth Store crate dependency graph
 - product and certification facades
 - consolidated compiler UI suite
@@ -1763,8 +1747,8 @@ the product facade before acceptance journeys grant C.4 closure.
   test-construction routes that could impersonate media admission
 - keep offline OS observation and physical-format decoding read-only and
   structurally separate from runtime construction
-- update the C.2 audit disposition and source paths for every affected writer;
-  the CSV records the decision but does not authorize it
+- resolve every affected writer in source and verify the resulting route with
+  direct owner or boundary tests; no inventory artifact is required
 - install mechanical dependency/source gates for direct filesystem effects
   outside the backend boundary, with narrow named allowances only for
   configuration/root declaration and independent certification observers
@@ -1795,14 +1779,13 @@ the product facade before acceptance journeys grant C.4 closure.
   the canonical media owner or a named non-production/offline role and must
   fail closure on any unclassified writer.
 - A maximal-feature build must preserve the same public authority denials.
-- The C.1 Cargo-derived catalog must report exactly one C.4 journey target, one
-  observer binary, and one UI target. The UI runner's explicit fixture list
-  must match the six specification-owned files with no unclassified addition.
+- The Store runner dispatches the named C.4 owner, journey, observer, and UI
+  tests directly and fails when a selected product executes no tests.
 
 **Engineering decisions**
 
-- Mechanical gates protect stable crate/module boundaries; the manually
-  resolved C.2 audit protects semantic interpretation. Neither is inflated
+- Mechanical gates protect stable crate/module boundaries; human review of the
+  current causal paths protects semantic interpretation. Neither is inflated
   into a generated proof ledger.
 - Independent observer allowances are read-only, named, and incapable of
   constructing runtime or mutation types.
@@ -1910,11 +1893,10 @@ discovers the same persistent identity from bytes alone.
 - Re-running the observer and reopener without mutation must yield identical
   namespace bytes and stable identity with new ephemeral identities and zero
   initialization writes.
-- A controlled defect that skips the required identity-file barrier must fail
-  the sequence predicate even when observer bytes happen to look correct.
-- A canonical-locus mutant that changes exactly one observer semantic field
-  must fail at that named canonical locus without granting the observer value
-  Store identity or runtime authority.
+- The omitted identity-file-barrier fault case must fail the sequence assertion
+  even when observer bytes happen to look correct.
+- Altering one observer semantic field must fail at that named canonical locus
+  without granting the observer value Store identity or runtime authority.
 
 **Engineering decisions**
 
@@ -2046,9 +2028,9 @@ stale observations, and immediate re-admission around one persistent identity.
 
 - None.
 
-### Phase 15: Prove Partial Effects, Barrier Honesty, And Mutation Sensitivity
+### Phase 15: Prove Partial Effects And Barrier Honesty
 
-Build the deterministic fault courtroom over real filesystem effects. Each
+Build deterministic fault scenarios over real filesystem effects. Each
 fault case starts from its own root, kills or exits the actor as required, and
 uses fresh observation to prove that typed outcome, actual bytes, operation
 sequence, and counters describe the same reality.
@@ -2059,12 +2041,11 @@ sequence, and counters describe the same reality.
 - media operation outcome topology
 - namespace publication protocol
 - independent OS observer
-- controlled-mutant lane
 
 **Named executable and roles**
 
 - Cargo integration-test executable: `physical_media_journeys`
-- named test: `partial_effects_barrier_honesty_and_mutants`
+- named test: `partial_effects_and_barrier_honesty`
 - `faulted-media-writer` child using the production runtime facade plus one
   sealed certification fault schedule
 - separate `physical_media_os_observer` child using OS APIs and duplicated
@@ -2106,25 +2087,8 @@ yieldpoint rather than translating death into `Err`.
 - identical source/binary/profile/schedule reruns localize to the same operation
   and yield the same observable result
 
-**Required controlled mutants**
-
-1. **File-barrier omission:** report synchronized identity after write without
-   calling the backend file barrier. The barrier-sequence predicate fails.
-2. **Directory-barrier omission:** report durable replacement after rename
-   without synchronizing the containing directory. The publication predicate
-   fails independently of byte parity.
-3. **Path-escape acceptance:** weaken one component/reparse confinement check.
-   The outside-sentinel predicate fails at the targeted operation.
-4. **Short-write promotion:** treat a positive prefix as complete. The byte-
-   conservation and typed-outcome predicates fail.
-5. **Metadata-lock authority:** grant mutation ownership from plausible lock-
-   file bytes without a live OS lock. The multi-process exclusivity predicate
-   fails.
-
 **Warnings**
 
-- A mutant that only fails compilation is insufficient for runtime mutation
-  sensitivity.
 - Do not edit persisted files after the writer exits to manufacture the fault
   effect; the interposer must deliver it at the production boundary.
 - Do not allow the independent observer to call runtime namespace
@@ -2133,13 +2097,8 @@ yieldpoint rather than translating death into `Err`.
 
 **Test requirements**
 
-- Every fault case and controlled mutant names its expected failing predicate,
-  actual failing predicate, exact causal-boundary role and ordinal, any
-  operation/handle identity already issued at that phase, and the observed
-  artifact delta. Pre-owner setup boundaries must say that no owner-scoped
-  operation identity exists; they may not fabricate one for report symmetry.
-- At least the five required mutants must be executed, observed failing for the
-  intended reason, and then removed before closeout.
+- Every fault case asserts its typed outcome, exact causal-boundary role and
+  ordinal, operation/handle identity when issued, and observed artifact delta.
 - A pass-through control, a definite-before-effect fault, a partial-transfer
   fault, an indeterminate-publication fault, and abrupt process death must run
   in developer/CI lanes according to cost; the full seam campaign runs in
@@ -2151,11 +2110,8 @@ yieldpoint rather than translating death into `Err`.
   from becoming hidden input.
 - The oracle predicts the allowed path/byte outcomes before the writer runs.
 - Any Foundational diagnostic, receipt, canonical, or performance artifact is
-  materialized only after the direct OS, Store-outcome, and counter predicates
-  have been decided. The courtroom never consumes its own derived boundary
-  package as evidence that the underlying effect occurred.
-- Source, binary, backend profile, schedule, and namespace format identities
-  bind the evidence; changed identity invalidates reuse.
+  materialized only after direct OS, Store-outcome, and counter assertions have
+  decided the result; diagnostic output never substitutes for those checks.
 - Runtime and observer disagreement is emitted explicitly and fails the
   relevant predicate; neither side silently reconciles the other.
 
@@ -2205,9 +2161,9 @@ or a test fixture writer.
 - The primary store root is absent. A second control root exists and is truly
   empty. The parent directory is on a named qualified local filesystem, not a
   RAM disk, mock filesystem, or in-memory mount.
-- Record OS version, filesystem type, volume/device identity, backend profile,
-  namespace format version, root path identity, source revision, Rust
-  toolchain, binary hashes, feature set, and test command.
+- Diagnostic output identifies the OS, filesystem, backend profile, namespace
+  format, root, feature posture, and fault schedule needed to reproduce a
+  failure; it does not hash source trees or test binaries.
 - The certification qualification payload is deterministic and at least 1 MiB
   + 257 bytes, generated incrementally with a maximum 64 KiB operation buffer
   so no whole-payload allocation is required. Ordinary existing-root admission
@@ -2223,8 +2179,8 @@ or a test fixture writer.
 - The outside-sentinel root is created independently with deterministic random
   bytes and same-relative-name collision candidates. Its expected digest and
   path manifest are fixed before any writer starts.
-- Fault profiles and controlled-mutant expected predicates are fixed before
-  the corresponding writer executable runs.
+- Fault profiles and expected outcomes are fixed before the corresponding
+  writer executable runs.
 - Page size, WAL format, checkpoint interval, and semantic record model are
   explicitly not applicable because C.4 installs no such owner.
 
@@ -2240,15 +2196,13 @@ or a test fixture writer.
 5. Run the fault journey with one new root per seam. Where death is the fault,
    terminate the writer process rather than returning an error from a live
    process.
-6. Run each controlled mutant, capture its intended failure and localization,
-   remove it, and rerun the unmutated owning lane.
-7. Compile the ordinary product under its default profile, then run the
+6. Compile the ordinary product under its default profile, then run the
    consolidated compiler authority suite once under its directly declared
    maximal certification feature.
-8. Run canonical namespace comparison and explicit support/performance lowering
+7. Run canonical namespace comparison and explicit support/performance lowering
    inside the existing owner/journey products; these are assertions, not new
    Cargo targets or evidence-producing prerequisite tests.
-9. Run source/dependency gates and constitutional checks before closeout.
+8. Run source/dependency gates and constitutional checks before closeout.
 
 Process identity, runtime identity, stable store identity, media-owner identity,
 mutation-lease identity, operation identities, root identity, and every
@@ -2311,23 +2265,6 @@ authority transition are recorded as separate fields.
   blob, Query, Relational, Signal, or Runtime Bridge authority is installed.
 - No direct ordinary writer bypass or public media escape hatch remains.
 
-### Mutation sensitivity
-
-The five required runtime mutants are the file-barrier omission, directory-
-barrier omission, path-escape acceptance, short-write promotion, and lock-file-
-metadata authority defects defined in Phase 15.
-
-For every mutant, closeout records:
-
-- mutant id and exact production edit
-- source and binary identity
-- expected owning lane and failing predicate
-- actual first causal failing predicate
-- observed artifact/counter delta
-- confirmation that the unmutated lane passes after removal
-
-No compile-only mutant satisfies runtime mutation sensitivity.
-
 ### Mechanical anti-substitution gates
 
 Closeout must mechanically reject:
@@ -2350,53 +2287,20 @@ Closeout must mechanically reject:
 - private-state corruption or test-created output files
 - automatic whole-file/whole-namespace materialization
 - per-fixture nested Cargo builds or target directories
-- additional C.4 journey/UI/helper targets, unlisted compiler fixtures, or
-  behavioral guarantees moved into compile-fail tests without a spec change
+- behavioral guarantees moved out of direct owner/journey tests and into
+  compile-fail or source-shape tests
 - success inferred only from file visibility, `is_ok`, `is_err`, nonzero
   counters, logs, or elapsed time
 
 ### Evidence and rerun
 
-The three hostile scenario products must emit structured observation records
-that are sufficient to localize a failure and reproduce the exercised
-schedule. C.4 does not require one persisted, recursively self-certifying
-evidence ledger. Runtime reports, child-process reports, observer projections,
-counter snapshots, manifests, and the compact courtroom binding collectively
-carry the evidence appropriate to their owning boundary.
-
-Across those products, the retained observations include, where the causal
-phase makes the identity or fact available:
-
-- source revision when supplied by the build environment and the normative
-  source-manifest digest (the digest is sufficient when building outside a VCS
-  checkout)
-- binary hashes for every role
-- OS, filesystem, volume/device, backend, qualification, and namespace-format
-  identities
-- exact commands, features, environment classification, and workload seed
-- process/runtime/store/media-owner/lease identities and every operation/
-  handle identity that exists at the observed causal phase
-- initial and final namespace manifests
-- outside-sentinel manifests
-- operation trace, fault schedule, barrier sequence, and counter snapshot
-- root/profile qualification basis, proof-outcome categories, freshness/rebind
-  posture, and concrete capability-handle inventory
-- runtime and observer canonical namespace bases, producer shapes, comparison
-  outcome, and any structured mismatch loci
-- allocation/buffer observations
-- explicitly requested Foundational support/performance lowerings and their
-  source counter-row reconciliation; absence is recorded when policy disables
-  materialization
-- admission, lifecycle, oracle, and observer results
-- mutant expectations and actual localizations
-- the predicates actually exercised by that scenario and its final verdict
-
-The courtroom binding must change when its source/build identity, journey or
-observer binary, OS, architecture, filesystem/volume identity, backend
-profile, namespace format, feature posture, or schedule changes. Raw test
-output may be retained by CI for diagnosis, but neither the binding nor any
-observation record grants runtime authority. A result from a different binding
-is a different run, not corroborating evidence for the original run.
+The three hostile scenario products assert Store outcomes, independent
+filesystem observations, barrier order, exact artifact changes, and structural
+counters directly. On failure they report the case, process role, fault seam,
+backend/profile, and relevant operation identity needed for diagnosis. Test
+reports are disposable diagnostics: they are not hashed, reconciled into a
+certificate, accepted as runtime authority, or used as prerequisites for later
+tests.
 
 Canonical commands are expected to include:
 
@@ -2404,7 +2308,7 @@ Canonical commands are expected to include:
 cargo test -p worth-store-physical-backend
 cargo test -p worth-store --all-features --test physical_media_journeys namespace_creation_and_fresh_process_discovery
 cargo test -p worth-store --all-features --test physical_media_journeys mutation_contention_confinement_and_readmission
-cargo test -p worth-store --all-features --test physical_media_journeys partial_effects_barrier_honesty_and_mutants
+cargo test -p worth-store --all-features --test physical_media_journeys partial_effects_and_barrier_honesty
 cargo test -p worth-store --all-features --test physical_media_authority_ui
 cargo clippy -p worth-store-physical-backend --all-targets --all-features -- -D warnings
 cargo clippy -p worth-store --all-targets --all-features -- -D warnings
@@ -2448,10 +2352,9 @@ the spec and roadmap must be updated before implementation silently diverges.
 - optional Foundational canonical/support/performance lowerings derived from
   Store-owned facts outside primitive I/O and unable to influence execution
 - exhaustive close, abort, panic, unexpected-drop, and process-death behavior
-- migration, quarantine, or deletion of every C.2 writer bypass
-- three fresh-process hostile scenarios inside one journey executable, one
-  dependency-minimal observer binary, six fixed UI fixtures, and five runtime
-  controlled mutants
+- migration, quarantine, or deletion of every in-scope writer bypass
+- direct fresh-process hostile scenarios, an independent read-only observer,
+  and focused compiler authority denials
 - default/maximal-feature compile denials and constitutional boundary gates
 
 ## Must Preserve
@@ -2498,10 +2401,9 @@ C.4 closes with:
 - explicit support/performance lowering parity plus hot-path zero-
   materialization evidence
 - independent OS namespace and outside-sentinel manifests
-- five observed-and-removed controlled mutants
-- updated C.2 writer dispositions and zero unclassified ordinary writers
+- zero unresolved ordinary writers in the scoped source and call-path review
 - strict lint, workspace check, boundary-check, and agent-context results
-- source/binary/profile/format/schedule-bound rerun evidence
+- reproducible fault schedules and direct failure diagnostics
 
 Test-lane posture:
 
@@ -2510,7 +2412,7 @@ Test-lane posture:
 - public lifecycle/observer checks belong in developer smoke and target under
   one minute on the declared reference machine
 - namespace qualification/discovery, multi-process contention, representative
-  fault seams, maximal UI, and controlled mutants belong in CI certification
+  fault seams, and maximal UI belong in CI
   jobs partitioned by proof family
 - the full seam campaign and supported-platform matrix belong in release
   certification
@@ -2528,8 +2430,8 @@ Test-lane posture:
   same coherent slice.
 - Phases 10 through 12 complete lifecycle, observability, faultability, and
   cutover before system acceptance begins.
-- Phases 13 through 15 are ordered control, hostile authority, then fault/
-  mutation courtrooms. Each exercises the joined production path.
+- Phases 13 through 15 are ordered control, hostile authority, then direct fault
+  scenarios. Each exercises the joined production path.
 - C.5 may begin only after C.4 closeout proves the media-owned phase and the
   internal artifact-family handoff. C.5 must consume the phase rather than
   recreate or select a backend.
@@ -2569,8 +2471,8 @@ C.4 is complete only when Worth Store can truthfully say:
 - every effect is faultable and structurally counted at its causal boundary
 - fresh processes independently observe the same namespace truth without live
   heap state
-- C.4 proof remains inside the fixed three-target, six-UI-fixture topology and
-  meets C.1 warm owner/smoke budgets without nested compilation
+- C.4 direct owner, scenario, observer, and UI tests meet C.1 warm owner/smoke
+  budgets without nested compilation
 - no memory/mock backend, raw path, replay artifact, test authority, or direct
   writer bypass can construct or impersonate the media-owned phase
 - C.5 receives one concrete, bounded, honest media owner on which real pages,

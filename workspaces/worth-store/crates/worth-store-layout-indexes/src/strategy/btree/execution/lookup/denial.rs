@@ -1,4 +1,4 @@
-use crate::planning::AccessPlanIdentity;
+use crate::{planning::AccessPlanIdentity, BTreeReplaySourceDenial};
 use worth_store_physical_format::{
     InMemoryPhysicalFormatModelDenial, PhysicalRecordSlot, PhysicalReference,
 };
@@ -62,7 +62,7 @@ pub enum BaselineBTreeExecutionDenial {
     InvalidPhysicalReferenceForBTree,
     WrongSelectedOperation,
     StableReadPlan(PhysicalReadPlanAdmissionDenial),
-    Recovery(Box<worth_store_recovery_physics::BTreeReplaySourceDenial>),
+    Recovery(Box<BTreeReplaySourceDenial>),
     CounterEnvelope(crate::CounterEnvelopeViolation),
     SeparatorPartition(BTreeSeparatorPartitionDenial),
 }
@@ -89,8 +89,8 @@ impl BaselineBTreeExecutionDenial {
     }
 }
 
-impl From<worth_store_recovery_physics::BTreeReplaySourceDenial> for BaselineBTreeExecutionDenial {
-    fn from(value: worth_store_recovery_physics::BTreeReplaySourceDenial) -> Self {
+impl From<BTreeReplaySourceDenial> for BaselineBTreeExecutionDenial {
+    fn from(value: BTreeReplaySourceDenial) -> Self {
         Self::Recovery(Box::new(value))
     }
 }

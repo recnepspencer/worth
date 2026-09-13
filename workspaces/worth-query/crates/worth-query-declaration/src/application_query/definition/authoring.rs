@@ -1,9 +1,12 @@
+use crate::application_query::ApplicationQueryMarkerIdentity;
 use crate::application_query::{
     ApplicationQueryAuthorizationRequirement, ApplicationQueryBasisSupport,
     ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility, ApplicationQueryReference,
-    TypedApplicationQueryResultShape,
+    ApplicationQueryResultShape, TypedApplicationQueryResultShape,
 };
-use crate::application_schema::{ApplicationAbilityRef, ApplicationEntityRef};
+use crate::application_schema::{
+    ApplicationAbilityRef, ApplicationEntityRef, ApplicationStructuredValueBinding,
+};
 
 use super::{
     ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
@@ -63,16 +66,59 @@ pub struct ApplicationQueryResultAuthoring<Schema, Query, Parameters, QueryResul
 impl<Schema, Query, Parameters, QueryResult, Scope, Root>
     ApplicationQueryResultAuthoring<Schema, Query, Parameters, QueryResult, Scope, Root>
 {
-    pub fn result_shape(
+    /// Attaches the query marker's declared root result binding.
+    ///
+    /// A different binding for the same Rust value cannot replace the query's
+    /// declared protocol identity:
+    ///
+    /// ```compile_fail
+    /// use worth_query_declaration::facade::{
+    ///     application_query::{ApplicationQueryDefinitionBuilder, ApplicationQueryResultShapeBuilder},
+    ///     application_schema::ApplicationEntityRef,
+    /// };
+    /// struct Schema;
+    /// struct Parameters;
+    /// struct Result;
+    /// worth_query_declaration::worth_query_structured_value_binding!(ParametersBinding for Parameters { identity: "example.parameters.v1" });
+    /// worth_query_declaration::worth_query_structured_value_binding!(DeclaredResultBinding for Result { identity: "example.result.v1" });
+    /// worth_query_declaration::worth_query_structured_value_binding!(WrongResultBinding for Result { identity: "example.wrong-result.v1" });
+    /// worth_query_declaration::worth_query_entity!(pub Record for Schema);
+    /// worth_query_declaration::worth_query_application_query!(
+    ///     pub ReadRecord for Schema,
+    ///     identity "example.read-record.v1",
+    ///     parameters ParametersBinding,
+    ///     result DeclaredResultBinding,
+    ///     scope Record => "Record",
+    ///     name "read_record"
+    /// );
+    /// let root = ApplicationEntityRef::<Schema, Record>::from_schema_identifier("Record");
+    /// let wrong = ApplicationQueryResultShapeBuilder::<
+    ///     Schema, ReadRecord, Record, Result, WrongResultBinding,
+    /// >::new(root).build();
+    /// let _ = ApplicationQueryDefinitionBuilder::declare(ReadRecord::reference())
+    ///     .root(root)
+    ///     .scope(root)
+    ///     .result_shape(wrong);
+    /// ```
+    pub fn result_shape<ShapeBinding>(
         self,
-        result_shape: TypedApplicationQueryResultShape<Schema, Query, Root, QueryResult>,
+        result_shape: TypedApplicationQueryResultShape<
+            Schema,
+            Query,
+            Root,
+            QueryResult,
+            ShapeBinding,
+        >,
     ) -> ApplicationQueryCardinalityAuthoring<Schema, Query, Parameters, QueryResult, Scope, Root>
+    where
+        Query: ApplicationQueryMarkerIdentity<Schema, ResultBinding = ShapeBinding>,
+        ShapeBinding: ApplicationStructuredValueBinding<Value = QueryResult>,
     {
         ApplicationQueryCardinalityAuthoring {
             reference: self.reference,
             root: self.root,
             scope: self.scope,
-            result_shape,
+            result_shape: result_shape.into_erased(),
         }
     }
 }
@@ -82,7 +128,7 @@ pub struct ApplicationQueryCardinalityAuthoring<Schema, Query, Parameters, Query
     reference: ApplicationQueryReference<Schema, Query, Parameters, QueryResult, Scope>,
     root: ApplicationEntityRef<Schema, Root>,
     scope: ApplicationEntityRef<Schema, Scope>,
-    result_shape: TypedApplicationQueryResultShape<Schema, Query, Root, QueryResult>,
+    result_shape: ApplicationQueryResultShape,
 }
 
 impl<Schema, Query, Parameters, QueryResult, Scope, Root>
@@ -253,7 +299,7 @@ pub(super) struct ApplicationQueryDefinitionParts<
     pub(super) reference: ApplicationQueryReference<Schema, Query, Parameters, QueryResult, Scope>,
     pub(super) root: ApplicationEntityRef<Schema, Root>,
     pub(super) scope: ApplicationEntityRef<Schema, Scope>,
-    pub(super) result_shape: TypedApplicationQueryResultShape<Schema, Query, Root, QueryResult>,
+    pub(super) result_shape: ApplicationQueryResultShape,
     pub(super) cardinality: ApplicationQueryCardinality,
     pub(super) dependency_ceiling: ApplicationQueryDependencyCeiling,
     pub(super) disclosure: ApplicationQueryDisclosureContract,

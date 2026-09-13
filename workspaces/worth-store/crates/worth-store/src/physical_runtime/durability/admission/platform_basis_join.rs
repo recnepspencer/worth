@@ -46,6 +46,7 @@ impl PhysicalDurabilityRuntimeOwner {
             checkpoint.checkpoint_bytes_read(),
             checkpoint.dirty_body_bytes_skipped(),
             checkpoint.binding_records_read(),
+            checkpoint.integrity_admissions(),
             rebuilt.wal_members_read(),
         );
         ReopenedPhysicalDurabilityRuntimeOwner {

@@ -16,17 +16,17 @@ impl crate::StagingAuthorizationContinuationPort for LyingWalRuntime {
     }
 }
 
-impl worth_store_recovery_physics::StagedWalApplicationPort for LyingWalRuntime {
+impl crate::workflow::StagedWalApplicationPort for LyingWalRuntime {
     fn apply_staged_wal(
         &self,
-        request: worth_store_recovery_physics::StagedWalApplicationRequest<'_>,
+        request: crate::workflow::StagedWalApplicationRequest<'_>,
     ) -> Result<
-        worth_store_recovery_physics::StagedWalApplicationProviderReceipt,
-        worth_store_recovery_physics::StagedWalApplicationDenial,
+        crate::workflow::StagedWalApplicationProviderReceipt,
+        crate::workflow::StagedWalApplicationDenial,
     > {
         let source = request.replay_source();
         Ok(
-            worth_store_recovery_physics::StagedWalApplicationProviderReceipt::observed(
+            crate::workflow::StagedWalApplicationProviderReceipt::observed(
                 [0xd1; 32],
                 request.staging().staging_plan_fingerprint(),
                 [0xd2; 32],
@@ -79,8 +79,8 @@ fn a_runtime_cannot_claim_replay_for_a_different_wal_source() {
     assert!(matches!(
         ready.execute(&LyingWalRuntime),
         Err(crate::BackupRestoreExecutionDenial::Recovery(
-            worth_store_recovery_physics::BackupRestoreReplayDenial::Application(
-                worth_store_recovery_physics::StagedWalApplicationDenial::ReceiptMismatch
+            crate::workflow::BackupRestoreReplayDenial::Application(
+                crate::workflow::StagedWalApplicationDenial::ReceiptMismatch
             )
         ))
     ));

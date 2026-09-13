@@ -1,7 +1,7 @@
 use super::{
     BackupMaterializationRecoveryPlan, OperationalControlRecord, OperationalControlRecordKind,
-    OperationalOperationId, OperationalTransitionId, OperationalWorkflowKind,
-    PersistedOperationalControlRecordKind, PersistedWorkflowKind,
+    OperationalOperationId, OperationalOwnerReceiptKind, OperationalTransitionId,
+    OperationalWorkflowKind, PersistedOperationalControlRecordKind, PersistedWorkflowKind,
 };
 use worth_store_physical_backend::ControlMediaFault;
 use worth_store_physical_backend::ControlRecoveryObjectHandle;
@@ -155,7 +155,9 @@ impl PersistedOperationalControlRecordKind {
                 receipt_fingerprint, owner_tag } =>
                 OperationalControlRecordKind::OperationalOwnerReceiptPersisted {
                     workflow: workflow.into(), plan_fingerprint,
-                    receipt_fingerprint, owner_tag },
+                    receipt_fingerprint,
+                    owner_kind: OperationalOwnerReceiptKind::from_tag(owner_tag)
+                        .ok_or(PersistedControlRecordDecodeDenial::InvalidEncoding)? },
             Self::ReplicaBootstrapTransferRecorded {
                 authorization_plan_fingerprint, execution_plan_fingerprint, receipt_identity,
                 durable_target_identity, source_lease_identity,

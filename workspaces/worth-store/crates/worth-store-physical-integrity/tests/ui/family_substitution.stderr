@@ -1,0 +1,125 @@
+error[E0308]: mismatched types
+  --> tests/ui/family_substitution.rs:14:20
+   |
+14 |     requires_dirty(binding);
+   |     -------------- ^^^^^^^ expected `IntegrityValidatedCheckpointDirtyBasis<'_>`, found `IntegrityValidatedCheckpointBinding<'_>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/ui/family_substitution.rs:11:4
+   |
+11 | fn requires_dirty(_: IntegrityValidatedCheckpointDirtyBasis<'_>) {}
+   |    ^^^^^^^^^^^^^^ ---------------------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/family_substitution.rs:24:22
+   |
+24 |     requires_current(previous);
+   |     ---------------- ^^^^^^^^ expected `IntegrityValidatedCurrentRootSelector<'_>`, found `IntegrityValidatedPreviousRootSelector<'_>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/ui/family_substitution.rs:17:4
+   |
+17 | fn requires_current(_: IntegrityValidatedCurrentRootSelector<'_>) {}
+   |    ^^^^^^^^^^^^^^^^ --------------------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/family_substitution.rs:28:22
+   |
+28 |     requires_current(physical_work);
+   |     ---------------- ^^^^^^^^^^^^^ expected `IntegrityValidatedCurrentRootSelector<'_>`, found `IntegrityValidatedPhysicalWorkObligation<'_>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/ui/family_substitution.rs:17:4
+   |
+17 | fn requires_current(_: IntegrityValidatedCurrentRootSelector<'_>) {}
+   |    ^^^^^^^^^^^^^^^^ --------------------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/family_substitution.rs:32:28
+   |
+32 |     requires_physical_work(current);
+   |     ---------------------- ^^^^^^^ expected `IntegrityValidatedPhysicalWorkObligation<'_>`, found `IntegrityValidatedCurrentRootSelector<'_>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/ui/family_substitution.rs:18:4
+   |
+18 | fn requires_physical_work(_: IntegrityValidatedPhysicalWorkObligation<'_>) {}
+   |    ^^^^^^^^^^^^^^^^^^^^^^ -----------------------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/family_substitution.rs:36:19
+   |
+36 |     requires_page(current);
+   |     ------------- ^^^^^^^ expected `IntegrityValidatedPageFrame<'_>`, found `IntegrityValidatedCurrentRootSelector<'_>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/ui/family_substitution.rs:19:4
+   |
+19 | fn requires_page(_: IntegrityValidatedPageFrame<'_>) {}
+   |    ^^^^^^^^^^^^^ ----------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/family_substitution.rs:40:22
+   |
+40 |     requires_current(wal);
+   |     ---------------- ^^^ expected `IntegrityValidatedCurrentRootSelector<'_>`, found `IntegrityValidatedWalFrame<'_>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/ui/family_substitution.rs:17:4
+   |
+17 | fn requires_current(_: IntegrityValidatedCurrentRootSelector<'_>) {}
+   |    ^^^^^^^^^^^^^^^^ --------------------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/family_substitution.rs:44:30
+   |
+44 |     requires_extent_manifest(chunk);
+   |     ------------------------ ^^^^^ expected `IntegrityValidatedExtentManifest<'_>`, found `IntegrityValidatedExtentChunkFrame<'_>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/ui/family_substitution.rs:20:4
+   |
+20 | fn requires_extent_manifest(_: IntegrityValidatedExtentManifest<'_>) {}
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^ ---------------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/family_substitution.rs:48:27
+   |
+48 |     requires_root_routing(segment);
+   |     --------------------- ^^^^^^^ expected `IntegrityValidatedRootRoutingBlock<'_>`, found `IntegrityValidatedSegmentMembershipBlock<'_>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/ui/family_substitution.rs:21:4
+   |
+21 | fn requires_root_routing(_: IntegrityValidatedRootRoutingBlock<'_>) {}
+   |    ^^^^^^^^^^^^^^^^^^^^^ -----------------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/family_substitution.rs:52:27
+   |
+52 |     requires_root_routing(bootstrap);
+   |     --------------------- ^^^^^^^^^ expected `IntegrityValidatedRootRoutingBlock<'_>`, found `IntegrityValidatedBootstrapCatalog<'_>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/ui/family_substitution.rs:21:4
+   |
+21 | fn requires_root_routing(_: IntegrityValidatedRootRoutingBlock<'_>) {}
+   |    ^^^^^^^^^^^^^^^^^^^^^ -----------------------------------------

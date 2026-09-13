@@ -1,11 +1,11 @@
+use super::super::integrity_classification::{
+    IntegrityRepairArtifactFamily, IntegrityRepairOwnerBinding, IntegrityRepairRegion,
+    IntegrityRepairRegionClass,
+};
 use sha2::{Digest, Sha256};
 use worth_store_authority::StoreCurrentAuthorityIdentity;
 use worth_store_layout_indexes::DerivedIndexRepairRequest;
 use worth_store_physical_format::BackupBundleArtifactFamily;
-use worth_store_physical_integrity::{
-    IntegrityRepairArtifactFamily, IntegrityRepairOwnerBinding, IntegrityRepairRegion,
-    IntegrityRepairRegionClass,
-};
 
 use crate::{
     OperationalOperationId, OperationalSecurityScope, ProductionRestoreAdmissibleBackupBundle,

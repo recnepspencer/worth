@@ -28,7 +28,6 @@ pub enum SimulationPlanDenial {
     },
     MissingBlobHarnessTopology,
     MissingEvidencePolicy,
-    MissingPhysicalIsolationLaneRegistration,
     AbsentForbiddenShortcutSet,
     MissingForbiddenShortcut(ForbiddenShortcutKind),
     AmbiguousFaultScope,

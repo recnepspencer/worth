@@ -3,6 +3,9 @@
 mod authenticity;
 mod authority_source;
 mod raw_security_declarations;
+mod recovery_metadata;
+#[cfg(test)]
+mod recovery_metadata_tests;
 mod repair_blast_radius;
 mod scope;
 mod scope_vocabulary;
@@ -51,6 +54,15 @@ pub use raw_security_declarations::{
     StoreJwtSubjectClaim, StoreKmsKeyIdentifier, StoreOperatorIdentityClaim,
     StoreRawSecurityScopeDeclaration, StoreRepairAuditRecordClaim,
     StoreSecurityScopeDeclarationProvenance, StoreSecurityScopeReadmissionEvaluation,
+};
+pub use recovery_metadata::{
+    RecoveryCheckpointRecordSecurityMetadataEnvelope,
+    RecoveryCheckpointRecordSecurityMetadataIdentity,
+    RecoveryCheckpointRecordSecurityMetadataSource, RecoveryRootSecurityMetadataAdmission,
+    RecoveryRootSecurityMetadataEnvelope, RecoverySecurityScopePropagation,
+    RecoverySecurityScopePropagationCounters, RecoverySecurityScopePropagationDenial,
+    RecoverySecurityScopePropagationInput, RecoveryWalRecordSecurityMetadataEnvelope,
+    RecoveryWalRecordSecurityMetadataIdentity, RecoveryWalRecordSecurityMetadataSource,
 };
 pub use repair_blast_radius::{
     reject_repair_authority_source, repair_blast_radius_authenticity,

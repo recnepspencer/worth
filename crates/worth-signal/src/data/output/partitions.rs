@@ -1,4 +1,6 @@
-use std::collections::BTreeMap;
+mod fork_growth;
+mod reserved_fork;
+mod retained_charge;
 
 use serde::{Deserialize, Serialize};
 
@@ -40,6 +42,10 @@ pub struct CanonicalChangedRegions {
 }
 
 impl CanonicalChangedRegions {
+    pub(crate) fn from_canonical_regions(regions: Vec<ChangedRegion>) -> Option<Self> {
+        is_strict_region_order(&regions).then_some(Self { regions })
+    }
+
     pub fn new(regions: impl IntoIterator<Item = ChangedRegion>) -> Self {
         Self::canonicalize_unordered(regions)
     }
@@ -244,12 +250,12 @@ pub(crate) fn scope_touched_by_artifact_state(
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PartitionInterner {
-    partitions: Vec<String>,
-    details: Vec<String>,
+    partitions: crate::data::persistent_vector::PersistentVector<String>,
+    details: crate::data::persistent_vector::PersistentVector<String>,
     #[serde(default)]
-    partition_lookup: BTreeMap<String, PartitionTokenId>,
+    partition_lookup: crate::data::persistent_ord_map::PersistentOrdMap<String, PartitionTokenId>,
     #[serde(default)]
-    detail_lookup: BTreeMap<String, DetailTokenId>,
+    detail_lookup: crate::data::persistent_ord_map::PersistentOrdMap<String, DetailTokenId>,
 }
 
 impl PartitionInterner {
@@ -298,7 +304,7 @@ impl PartitionInterner {
             return id;
         }
         let id = PartitionTokenId(self.partitions.len() as u32);
-        self.partitions.push(partition.to_owned());
+        self.partitions.push_back(partition.to_owned());
         self.partition_lookup.insert(partition.to_owned(), id);
         id
     }
@@ -308,9 +314,45 @@ impl PartitionInterner {
             return id;
         }
         let id = DetailTokenId(self.details.len() as u32);
-        self.details.push(detail.to_owned());
+        self.details.push_back(detail.to_owned());
         self.detail_lookup.insert(detail.to_owned(), id);
         id
+    }
+
+    pub(crate) fn operational_clone(&self) -> Self {
+        Self {
+            partitions: self.partitions.operational_clone(),
+            details: self.details.operational_clone(),
+            partition_lookup: self.partition_lookup.operational_clone(),
+            detail_lookup: self.detail_lookup.operational_clone(),
+        }
+    }
+
+    pub(crate) fn fork_persistent(&mut self) -> Self {
+        Self {
+            partitions: self.partitions.fork_persistent(),
+            details: self.details.fork_persistent(),
+            partition_lookup: self.partition_lookup.fork_persistent(),
+            detail_lookup: self.detail_lookup.fork_persistent(),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn fork_storage_identity(&self) -> Self {
+        Self {
+            partitions: self.partitions.clone(),
+            details: self.details.clone(),
+            partition_lookup: self.partition_lookup.fork_storage_identity(),
+            detail_lookup: self.detail_lookup.fork_storage_identity(),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn shares_storage_with(&self, other: &Self) -> bool {
+        self.partitions.shares_storage_with(&other.partitions)
+            && self.details.shares_storage_with(&other.details)
+            && self.partition_lookup.ptr_eq(&other.partition_lookup)
+            && self.detail_lookup.ptr_eq(&other.detail_lookup)
     }
 }
 
@@ -327,3 +369,5 @@ impl ChangedRegion {
         self
     }
 }
+
+mod subscription_lookup;

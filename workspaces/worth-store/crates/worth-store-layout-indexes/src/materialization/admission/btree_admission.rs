@@ -56,7 +56,7 @@ impl crate::planning::AccessPlanningFacade {
         &self,
         family: crate::AdmittedPhysicalArtifactFamily,
         catalog: &crate::BootstrapCatalogReadAdmission,
-        source: &worth_store_recovery_physics::AdmittedBTreeReplayPhysicalSource,
+        source: &crate::AdmittedBTreeReplayPhysicalSource,
     ) -> BTreeReplayMaterializationAdmissionOutcome {
         BTreeReplayMaterializationAdmissionOutcome::issue(
             AdmittedLayoutMaterialization::admit_btree_replay_exact(family, catalog, source),

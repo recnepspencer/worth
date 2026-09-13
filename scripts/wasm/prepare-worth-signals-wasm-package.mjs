@@ -206,7 +206,7 @@ async function compileReactEntryPoints(reactOutDir) {
 packageJson.name = packageNameOverride
   ?? (normalizedScope ? `@${normalizedScope}/worth-signals-wasm` : "worth-signals-wasm");
 packageJson.version = crateVersion;
-packageJson.license = "UNLICENSED";
+packageJson.license = "BUSL-1.1";
 packageJson.repository = {
   type: "git",
   url: repoUrl,

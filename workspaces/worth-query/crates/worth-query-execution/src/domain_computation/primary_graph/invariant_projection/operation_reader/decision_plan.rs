@@ -1,7 +1,8 @@
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationOperationDecisionReadTarget, ApplicationRelationRef, ApplicationSchema,
-    OperationReads, TypedApplicationReadableValue, WritePosture,
+    ApplicationOperationDecisionReadTarget, ApplicationReadableScalarValueBinding,
+    ApplicationRelationRef, ApplicationSchema, DeclaredApplicationFieldValue, OperationReads,
+    WritePosture,
 };
 
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
@@ -62,8 +63,8 @@ where
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Result<Option<Value>, WorthQueryInvariantDecisionPlanDenial>
     where
-        Field: OperationReads<Operation>,
-        Value: TypedApplicationReadableValue,
+        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -131,8 +132,8 @@ where
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Result<(), WorthQueryInvariantDecisionPlanDenial>
     where
-        Field: OperationReads<Operation>,
-        Value: TypedApplicationReadableValue,
+        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {

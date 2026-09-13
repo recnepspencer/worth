@@ -1,6 +1,3 @@
-use worth_store_physical_format::MaterializedBackupBundle;
-use worth_store_recovery_physics::RecoveryCandidateObservation;
-
 use crate::backup_verification::owner_media_read::OwnerMediaReadSession;
 use crate::backup_verification::owner_semantic_verification::{
     verify_owner_semantics, OwnerSemanticVerificationCounters, OwnerSemanticVerificationDenial,
@@ -8,7 +5,9 @@ use crate::backup_verification::owner_semantic_verification::{
 use crate::backup_verification::verification_owned_memory::defect_owned_allocation_bytes;
 use crate::backup_verification::{BackupVerificationDefect, BackupVerificationReadAccounting};
 use crate::inspection::OwnerDecodedArtifactBinding;
+use crate::truth_composition::RecoveryCandidateObservation;
 use crate::{OfflineInspectionBudget, StructurallyWalkedMedia};
+use worth_store_physical_format::MaterializedBackupBundle;
 
 use super::structural_comparison::StructuralBackupComparison;
 use super::{BackupStructuralVerificationDenial, BackupVerificationAllocationPhase};

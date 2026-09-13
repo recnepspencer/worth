@@ -1,8 +1,11 @@
+#[cfg(feature = "certification-authority")]
 use worth_proof::{
-    AdmitRecipeTransition, AssumptionBasis, AuthorityMarker, AuthorityWitness, CapabilityMarker,
-    CapabilityWitness, ContextualTransition, CurrentValidity, FreshnessScopedBasis,
-    LowerRecipeTransition, Lowered, Recipe, RecipeResolutionContext, ResolveRecipeTransition,
-    Resolved, Transition, Unresolved,
+    AdmitRecipeTransition, AuthorityMarker, AuthorityWitness, CapabilityMarker, CapabilityWitness,
+    ContextualTransition, LowerRecipeTransition, RecipeResolutionContext, ResolveRecipeTransition,
+    Transition,
+};
+use worth_proof::{
+    AssumptionBasis, CurrentValidity, FreshnessScopedBasis, Lowered, Recipe, Resolved, Unresolved,
 };
 
 use super::{PhysicalIsolationEntryIdentity, PhysicalIsolationRootEpochBasis};
@@ -42,19 +45,24 @@ pub struct PhysicalIsolationEntryProofProgression {
     admitted: PhysicalIsolationAdmittedEntryRecipe,
 }
 
+#[cfg(feature = "certification-authority")]
 pub struct S5EntryAuthority {
     _private: (),
 }
 
+#[cfg(feature = "certification-authority")]
 impl AuthorityMarker for S5EntryAuthority {}
 
+#[cfg(feature = "certification-authority")]
 struct S5EntryLoweringCapability {
     _private: (),
 }
 
+#[cfg(feature = "certification-authority")]
 impl CapabilityMarker for S5EntryLoweringCapability {}
 
 impl PhysicalIsolationEntryProofProgression {
+    #[cfg(feature = "certification-authority")]
     pub(crate) fn from_identity(identity: PhysicalIsolationEntryIdentity) -> Self {
         let unresolved = Recipe::<Unresolved, _>::new(PhysicalIsolationEntryProofRequest {
             identity: identity.clone(),
@@ -124,10 +132,12 @@ impl RecoveryReadinessBasis {
     }
 }
 
+#[cfg(feature = "certification-authority")]
 fn physical_isolation_entry_authority_witness() -> AuthorityWitness<S5EntryAuthority> {
     AuthorityWitness::from_authority_marker(S5EntryAuthority { _private: () })
 }
 
+#[cfg(feature = "certification-authority")]
 fn physical_isolation_entry_lowering_capability() -> CapabilityWitness<S5EntryLoweringCapability> {
     CapabilityWitness::from_capability_marker(S5EntryLoweringCapability { _private: () })
 }

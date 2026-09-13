@@ -1,9 +1,6 @@
 #[path = "../scenarios/scheduling/access_policy/access_policy.rs"]
 mod access_policy;
 
-#[path = "../scenarios/scheduling/evidence_materialization/evidence_materialization.rs"]
-mod evidence_materialization;
-
 #[path = "../scenarios/scheduling/flush_durability/flush_durability.rs"]
 mod flush_durability;
 

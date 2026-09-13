@@ -3,6 +3,7 @@ use worth_store_physical_backend::QualifiedFilesystemMedia;
 use crate::physical_runtime::{PhysicalExecutorCommand, PhysicalExecutorDispatch};
 
 mod checkpoint;
+mod inspection_read;
 mod metadata_read;
 mod publication;
 mod range_read;
@@ -66,6 +67,7 @@ impl PhysicalWorkExecutor {
         self.certification_yieldpoints
             .pause(CertificationPhysicalExecutionCheckpoint::BeforeBackendDispatch);
         match command {
+            PhysicalExecutorCommand::Inspection(command) => self.dispatch_inspection(command),
             PhysicalExecutorCommand::Metadata(command) => self.dispatch_metadata(command),
             PhysicalExecutorCommand::Read(command) => self.dispatch_read(command),
             PhysicalExecutorCommand::ExactWrite(command) => self.dispatch_exact_write(command),

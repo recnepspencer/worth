@@ -7,15 +7,19 @@ fn request_controls_do_not_become_query_or_parameter_identity() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -26,11 +30,13 @@ fn request_controls_do_not_become_query_or_parameter_identity() {
     let query = installed_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let admit = |status: &str, maximum_results: usize, maximum_work: usize| {
-        world.application.admit_application_query(
+        world.selected_product().admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), status.to_string()),
-            WorthQueryApplicationQueryControls::current_one_shot(
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), status.to_string())
+                .expect("fixture query parameter must encode"),
+            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(maximum_results).unwrap(),
                 NonZeroUsize::new(maximum_work).unwrap(),
                 &request,

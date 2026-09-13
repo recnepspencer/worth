@@ -1,0 +1,9 @@
+error[E0432]: unresolved imports `worth_runtime_world::facade::ProductBranchHeadProtection`, `worth_runtime_world::facade::ProductHeadRetentionObligation`, `worth_runtime_world::facade::RetentionTransferReceipt`
+ --> tests/ui/private_product_head_surface.rs:2:5
+  |
+2 |     ProductBranchHeadProtection, ProductHeadRetentionObligation, RetentionTransferReceipt,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^ no `RetentionTransferReceipt` in `facade`
+  |     |                            |
+  |     |                            no `ProductHeadRetentionObligation` in `facade`
+  |     no `ProductBranchHeadProtection` in `facade`
+  |     help: a similar name exists in the module: `ProductBranchObservation`

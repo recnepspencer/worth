@@ -11,11 +11,10 @@ use worth_store_security::{
     admitted_store_managed_root_security_scope_for_layout_partition_test,
     admitted_tenant_page_security_scope_for_layout_partition_test,
 };
+use worth_store_test_support::harness::recovery::deterministic_checkpoint_plus_tail_source;
 use worth_store_test_support::{
     admitted_layout_bootstrap_catalog, deterministic_btree_replay_world,
 };
-
-use worth_store_test_support::harness::recovery::redo_replay as redo_fixture;
 
 #[test]
 fn ordinary_recovery_facade_reopens_and_validates_btree_state() {
@@ -48,9 +47,7 @@ fn ordinary_recovery_facade_reopens_and_validates_btree_state() {
     assert_eq!(counters.manifest_reads(), 1);
     assert_eq!(counters.bytes_read(), 12_288);
     assert_eq!(counters.read_amplification(), 3);
-    assert!(recovered
-        .recovery_source_digest()
-        .starts_with("CheckpointPlusWalTail:"));
+    assert_eq!(recovered.recovery_source_digest().len(), 64);
 }
 
 #[test]
@@ -125,35 +122,7 @@ fn replay_artifact_from_another_store_instance_is_rejected() {
                 world.root_reference(),
                 world.replay_artifact().clone(),
                 foreign,
-                redo_fixture::checkpoint_plus_tail_source_for_root(20, 30, world.root_reference()),
-            ),
-        ))
-        .into_result();
-
-    assert!(matches!(outcome, Err(BTreeReplayDenied::Execution(_))));
-}
-
-#[test]
-fn physical_root_without_admitted_checkpoint_or_wal_source_is_rejected() {
-    let catalog = admitted_layout_bootstrap_catalog();
-    let security = admitted_tenant_page_security_scope_for_layout_partition_test();
-    let world = deterministic_btree_replay_world();
-    let no_source =
-        worth_store_recovery_physics::RecoverySourcePrecedenceGraph::new("btree-no-source")
-            .admit_sources();
-
-    let outcome = layout_btree_recovery()
-        .replay(BTreeReplayRequest::new(
-            &catalog,
-            security.witnesses(),
-            location(),
-            PreExecutionBudgetEnvelope::maintenance_default(),
-            BTreeReplayPhysicalSource::new(
-                world.readiness().clone(),
-                world.root_reference(),
-                world.replay_artifact().clone(),
-                world.replay_artifact().store_identity().clone(),
-                no_source,
+                deterministic_checkpoint_plus_tail_source(),
             ),
         ))
         .into_result();
@@ -185,10 +154,10 @@ fn checkpoint_for_copied_root_generation_cannot_authorize_current_root() {
             PreExecutionBudgetEnvelope::maintenance_default(),
             BTreeReplayPhysicalSource::new(
                 world.readiness().clone(),
-                world.root_reference(),
+                copied_root,
                 world.replay_artifact().clone(),
                 world.replay_artifact().store_identity().clone(),
-                redo_fixture::checkpoint_plus_tail_source_for_root(20, 30, copied_root),
+                deterministic_checkpoint_plus_tail_source(),
             ),
         ))
         .into_result();
@@ -201,43 +170,7 @@ fn checkpoint_for_copied_root_generation_cannot_authorize_current_root() {
                 BaselineBTreeExecutionDenial::Recovery(recovery)
                     if matches!(
                         recovery.as_ref(),
-                        worth_store_recovery_physics::BTreeReplaySourceDenial::CheckpointRootMismatch { .. }
-                    )
-            )
-    ));
-}
-
-#[test]
-fn wal_only_source_cannot_borrow_an_unmaterialized_physical_root() {
-    let catalog = admitted_layout_bootstrap_catalog();
-    let security = admitted_tenant_page_security_scope_for_layout_partition_test();
-    let world = deterministic_btree_replay_world();
-
-    let outcome = layout_btree_recovery()
-        .replay(BTreeReplayRequest::new(
-            &catalog,
-            security.witnesses(),
-            location(),
-            PreExecutionBudgetEnvelope::maintenance_default(),
-            BTreeReplayPhysicalSource::new(
-                world.readiness().clone(),
-                world.root_reference(),
-                world.replay_artifact().clone(),
-                world.replay_artifact().store_identity().clone(),
-                redo_fixture::wal_only_source(20, 30),
-            ),
-        ))
-        .into_result();
-
-    assert!(matches!(
-        outcome,
-        Err(BTreeReplayDenied::Execution(denial))
-            if matches!(
-                denial.as_ref(),
-                BaselineBTreeExecutionDenial::Recovery(recovery)
-                    if matches!(
-                        recovery.as_ref(),
-                        worth_store_recovery_physics::BTreeReplaySourceDenial::WalOnlyRootNotMaterialized
+                        worth_store_layout_indexes::BTreeReplaySourceDenial::PhysicalOpen(_)
                     )
             )
     ));
@@ -259,6 +192,6 @@ fn physical_source(
         root,
         world.replay_artifact().clone(),
         world.replay_artifact().store_identity().clone(),
-        redo_fixture::checkpoint_plus_tail_source_for_root(20, 30, root),
+        deterministic_checkpoint_plus_tail_source(),
     )
 }

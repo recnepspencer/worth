@@ -62,7 +62,8 @@ fn throughput_serial_and_parallel_commit_the_same_operational_digest() {
 fn all_profiles_preserve_serial_parallel_operational_digest() {
     let started = Instant::now();
     for profile in profiles() {
-        let definition = FinancialWorldDefinition::partitioned_curve_universe(41, 256, 1, 1);
+        let definition =
+            FinancialWorldDefinition::dense_market_close(41, 256, DensityRatio::FourInFive);
         let mut serial_world =
             compile_financial_locality_world_with_policy(definition.clone(), profile.policy)
                 .expect("serial profile world compiles");
@@ -101,7 +102,11 @@ fn all_profiles_preserve_serial_parallel_operational_digest() {
             "semantic work drift in {}",
             profile.name
         );
-        assert!(parallel_report.parallel_stage_dispatches > 0);
+        assert!(
+            parallel_report.parallel_stage_dispatches > 0,
+            "parallel profile {} must dispatch production parallel work",
+            profile.name
+        );
     }
     assert_within_throughput_budget(started, "six-profile serial/parallel digest");
 }

@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 
-use super::frame_codec::encode_append;
 use super::prefix_scan::{
     scan_segment_path_with_buffer, scan_segment_suffix_with_buffer, WalPrefixScan,
     WAL_SCAN_BUFFER_BYTES,
@@ -82,7 +81,7 @@ impl WalAppendPlanner {
             prior.last_lsn_end,
             &mut state.scan_buffer,
         )?;
-        Ok(encode_append(
+        Ok(super::encode_append(
             self.segment_id,
             self.generation,
             lsn_start,

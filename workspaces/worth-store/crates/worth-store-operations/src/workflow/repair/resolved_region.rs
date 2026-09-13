@@ -1,17 +1,17 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct ResolvedRepairRegion {
-    integrity: worth_store_physical_integrity::IntegrityRepairRegion,
+    integrity: super::integrity_classification::IntegrityRepairRegion,
     pub(super) source: std::path::PathBuf,
 }
 
 impl ResolvedRepairRegion {
     pub(super) fn new(
-        integrity: worth_store_physical_integrity::IntegrityRepairRegion,
+        integrity: super::integrity_classification::IntegrityRepairRegion,
         source: std::path::PathBuf,
     ) -> Self {
         Self { integrity, source }
     }
-    pub(super) const fn integrity(&self) -> worth_store_physical_integrity::IntegrityRepairRegion {
+    pub(super) const fn integrity(&self) -> super::integrity_classification::IntegrityRepairRegion {
         self.integrity
     }
 }

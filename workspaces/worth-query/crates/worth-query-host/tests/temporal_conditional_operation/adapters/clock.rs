@@ -11,30 +11,40 @@ impl domain::WorthQueryNamedClock for CourtroomClock {
 
 #[derive(Clone)]
 pub struct ClockController {
-    scripted: Arc<Mutex<VecDeque<(u64, u64)>>>,
+    state: Arc<Mutex<ClockSourceState>>,
 }
 
 impl ClockController {
     pub fn push(&self, sequence: u64, now: u64) {
-        self.scripted.lock().unwrap().push_back((sequence, now));
+        self.state
+            .lock()
+            .unwrap()
+            .scripted
+            .push_back((sequence, now));
     }
 }
 
 pub struct ClockSource {
+    controller: ClockController,
+}
+
+struct ClockSourceState {
     sequence: u64,
     now: u64,
-    controller: ClockController,
+    scripted: VecDeque<(u64, u64)>,
 }
 
 impl ClockSource {
     pub fn due() -> (Self, ClockController) {
         let controller = ClockController {
-            scripted: Arc::new(Mutex::new(VecDeque::new())),
+            state: Arc::new(Mutex::new(ClockSourceState {
+                sequence: 0,
+                now: 10,
+                scripted: VecDeque::new(),
+            })),
         };
         (
             Self {
-                sequence: 0,
-                now: 10,
                 controller: controller.clone(),
             },
             controller,
@@ -54,20 +64,21 @@ impl domain::WorthQueryNamedClockSource<CourtroomClock> for ClockSource {
     }
 
     fn observe(
-        &mut self,
+        &self,
     ) -> Result<
         domain::WorthQueryNamedClockReading<CourtroomClock>,
         domain::WorthQueryNamedClockFailure,
     > {
-        if let Some((sequence, now)) = self.controller.scripted.lock().unwrap().pop_front() {
-            self.sequence = sequence;
-            self.now = now;
+        let mut state = self.controller.state.lock().unwrap();
+        if let Some((sequence, now)) = state.scripted.pop_front() {
+            state.sequence = sequence;
+            state.now = now;
         } else {
-            self.sequence += 1;
+            state.sequence += 1;
         }
         Ok(domain::WorthQueryNamedClockReading::new(
-            self.sequence,
-            domain::WorthQueryClockCoordinate::from_nanoseconds(self.now),
+            state.sequence,
+            domain::WorthQueryClockCoordinate::from_nanoseconds(state.now),
         ))
     }
 }

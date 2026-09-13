@@ -1,0 +1,12 @@
+error: cannot construct `ManagedSignalBranchReference` with struct literal syntax due to private fields
+ --> tests/ui/branch_reference/managed_reference_fields_are_private.rs:4:19
+  |
+4 |     let _forged = ManagedSignalBranchReference {};
+  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: private fields `owner_lifecycle`, `owner_runtime_instance_id`, `owner_lifecycle_identity`, `branch_id`, `cell_incarnation` and `_proof` that were not provided
+help: you might have meant to use the `owner_issued` associated function
+  |
+4 -     let _forged = ManagedSignalBranchReference {};
+4 +     let _forged = ManagedSignalBranchReference::owner_issued(_, _, _);
+  |

@@ -1,529 +1,121 @@
-S.4 integrity-vetted WAL frames cannot be constructed from raw bytes:
+Recovery physics exposes pure, proof-carrying decisions. Its sealed records
+cannot be created by filling copied fields:
 
 ```compile_fail
-use worth_store_recovery_physics::IntegrityVettedWalFrame;
+use worth_store_recovery_physics::PhysicalRedoTarget;
 
-let raw: &[u8] = b"not-integrity-evidence";
-let _vetted = IntegrityVettedWalFrame::from(raw);
-```
-
-S.4 integrity-vetted records cannot be constructed from copied reports without
-an executed S.3 handoff receipt:
-
-```compile_fail
-use worth_store_physical_integrity::WalFrameIntegrityReport;
-use worth_store_recovery_physics::IntegrityVettedWalFrame;
-
-let report: WalFrameIntegrityReport = todo!();
-let _vetted = IntegrityVettedWalFrame::from_integrity_report(&report);
-```
-
-S.4 recovery physics inputs cannot be constructed from copied S.3 reports:
-
-```compile_fail
-use worth_store_physical_integrity::WalFrameIntegrityReport;
-use worth_store_recovery_physics::RecoveryPhysicsIntegrityInput;
-
-let report: WalFrameIntegrityReport = todo!();
-let _input = RecoveryPhysicsIntegrityInput::from_wal_integrity_report(&report);
-```
-
-Quarantine summaries cannot become sealed S.4 payloads:
-
-```compile_fail
-use worth_store_recovery_physics::{QuarantineSummary, S4IntegrityHandoffPayload};
-
-let summary: QuarantineSummary = todo!();
-let _payload = S4IntegrityHandoffPayload::from(summary);
-```
-
-S.4 checksum basis cannot be constructed from loose algorithm and scope parts:
-
-```compile_fail
-use worth_store_physical_integrity::{ChecksumAlgorithmId, ChecksumScopeDeclaration};
-use worth_store_recovery_physics::S4ChecksumAlgorithmScopeBasis;
-
-let algorithm = ChecksumAlgorithmId::crc32c();
-let scope: ChecksumScopeDeclaration = todo!();
-let _basis = S4ChecksumAlgorithmScopeBasis::new(algorithm, scope);
-```
-
-S.4 bounded inspection evidence cannot be constructed from raw numeric limits:
-
-```compile_fail
-use worth_store_recovery_physics::BoundedInspectionEnvelopeEvidence;
-
-let _evidence = BoundedInspectionEnvelopeEvidence::new(1, 1, 1);
-```
-
-S.4 readiness cannot be synthesized from raw fields:
-
-```compile_fail
-use worth_store_recovery_physics::S4RecoveryPhysicsIntegrityReadiness;
-
-let _forged = S4RecoveryPhysicsIntegrityReadiness {
-    payload: todo!(),
+let _forged = PhysicalRedoTarget {
+    identity: todo!(),
+    extent_coordinate: None,
+    artifact: todo!(),
+    artifact_offset: 0,
+    artifact_length: 0,
+    resulting_digest: [0; 32],
 };
 ```
 
-S.4 unresolved authority damage cannot be synthesized from raw digest labels:
+An immutable redo plan must come from the bounded physical decoder and
+planner, not from a caller-owned vector of decisions:
 
 ```compile_fail
-use worth_store_contracts::StableDigest;
-use worth_store_recovery_physics::RecoveryBlockedByIntegrityDamage;
+use worth_store_recovery_physics::ImmutablePhysicalRedoPlan;
 
-let digest = StableDigest::new("fixture-owned-unresolved-authority").unwrap();
-let _damage = RecoveryBlockedByIntegrityDamage::unresolved_authority_damage(digest, None);
-```
-
-S.4 recovery entry admission cannot be synthesized from raw fields:
-
-```compile_fail
-use worth_store_recovery_physics::RecoveryEntryAdmission;
-
-let _forged = RecoveryEntryAdmission {
-    entry_identity: todo!(),
-    recovery_basis: todo!(),
+let _forged = ImmutablePhysicalRedoPlan {
+    records: Box::new([]),
+    decisions: Box::new([]),
+    projections: Box::new([]),
+    recovery_root_allocation_bytes: 0,
     counters: todo!(),
-    integrity_readiness: todo!(),
-    memory_envelope: todo!(),
-    physical_authority: todo!(),
 };
 ```
 
-Replay planning entry points must require admitted S.4 recovery entry state and
-admitted recovery security-scope propagation:
+Source selection cannot be forged from an arbitrary root, page-fact, or WAL
+tail projection:
 
 ```compile_fail
-use worth_store_recovery_physics::{
-    RecoveryEntryAdmission, RecoveryReplayEntryGate,
-};
+use worth_store_recovery_physics::PhysicalSourceSelection;
 
-let admission: RecoveryEntryAdmission<'_> = todo!();
-let _gate = RecoveryReplayEntryGate::before_source_precedence(admission);
-```
-
-Partial publication replay operation identity is not a public authority surface:
-
-```compile_fail
-use worth_store_recovery_physics::PartialPublicationReplayOperationIdentity;
-
-let _operation: PartialPublicationReplayOperationIdentity = todo!();
-```
-
-S.4 recovery entry admission cannot consume S.3 protected-view capability as
-if it were recovery readiness:
-
-```compile_fail
-use worth_store_readiness::ProtectedIntegrityViewCapability;
-use worth_store_recovery_physics::{RecoveryEntryAdmission, RecoveryMemoryAllocation};
-
-let protected_view: ProtectedIntegrityViewCapability = todo!();
-let memory: RecoveryMemoryAllocation<'_> = todo!();
-let physical_authority = todo!();
-let _entry = RecoveryEntryAdmission::admit(protected_view, memory, physical_authority);
-```
-
-S.4 integrity handoff admission cannot consume an inspection lifetime law as if
-it were complete S.3 readiness:
-
-```compile_fail
-use worth_store_readiness::IntegrityInspectionLifetimeLaw;
-use worth_store_recovery_physics::{S4IntegrityHandoffAdmission, S4IntegrityHandoffPayload};
-
-let lifetime_law: IntegrityInspectionLifetimeLaw = todo!();
-let payload: S4IntegrityHandoffPayload = todo!();
-let _readiness = S4IntegrityHandoffAdmission::admit(lifetime_law, payload);
-```
-
-S.4 replay topology admission cannot be bypassed through a public WAL topology
-candidate surface:
-
-```compile_fail
-use worth_store_recovery_physics::{
-    LogSequenceNumber, WalLsnRange, WalSegmentGeneration, WalSegmentId, WalTopologyCandidate,
-};
-
-let segment = WalSegmentId::new(1).unwrap();
-let generation = WalSegmentGeneration::new(1).unwrap();
-let range = WalLsnRange::new(LogSequenceNumber::new(0), LogSequenceNumber::new(1)).unwrap();
-let _candidate = WalTopologyCandidate::current(segment, generation, range);
-```
-
-Durable acknowledgments cannot be forged from raw fields:
-
-```compile_fail
-use worth_store_physical_backend::PosixFileFsyncDirFsyncProfile;
-use worth_store_recovery_physics::DurableAckReceipt;
-
-let _forged: DurableAckReceipt<PosixFileFsyncDirFsyncProfile> = DurableAckReceipt {
-    profile: todo!(),
-    basis: todo!(),
+let _forged = PhysicalSourceSelection {
+    root: todo!(),
+    page_facts: todo!(),
+    retained_previous_page_facts: None,
+    checkpoint: None,
+    wal_tail: todo!(),
+    compaction: None,
+    residue: Vec::new(),
+    trace: todo!(),
 };
 ```
 
-Profile-scoped durable acknowledgment receipts cannot cross backend profile
-boundaries:
+Physical root candidates are admitted only by the fixed role, format, store,
+and selector boundary:
 
 ```compile_fail
-use worth_store_physical_backend::{
-    PosixFileFsyncDirFsyncProfile, SimulatedStrictDurableProfile,
-};
-use worth_store_recovery_physics::DurableAckReceipt;
+use worth_store_recovery_physics::PhysicalRootSourceCandidate;
 
-fn requires_posix(_: DurableAckReceipt<PosixFileFsyncDirFsyncProfile>) {}
-
-let simulated: DurableAckReceipt<SimulatedStrictDurableProfile> = todo!();
-requires_posix(simulated);
-```
-
-External crates cannot mint new certified backend durability profiles:
-
-```compile_fail
-use worth_store_physical_backend::{
-    BackendDurabilityProfile, BackendDurabilityProfileId, BackendDurabilitySupport,
-    WalDurabilityBarrierSet,
-};
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-struct ForgedProfile;
-
-impl BackendDurabilityProfile for ForgedProfile {
-    const ID: BackendDurabilityProfileId = BackendDurabilityProfileId::PosixFileFsyncDirFsync;
-    const REQUIRED_BARRIERS: WalDurabilityBarrierSet = WalDurabilityBarrierSet::EMPTY;
-    const SUPPORT: BackendDurabilitySupport = BackendDurabilitySupport::Certified;
-}
-```
-
-WAL append progress cannot complete successful durability barriers from raw
-barrier enum values:
-
-```compile_fail
-use worth_store_physical_backend::{
-    PosixFileFsyncDirFsyncProfile, WalDurabilityBarrier,
-};
-use worth_store_recovery_physics::{
-    LogSequenceNumber, WalAppendPlan, WalLsnRange, WalSegmentGeneration, WalSegmentId,
-};
-
-let segment = WalSegmentId::new(42).unwrap();
-let generation = WalSegmentGeneration::new(7).unwrap();
-let range = WalLsnRange::new(LogSequenceNumber::new(100), LogSequenceNumber::new(101)).unwrap();
-let plan = WalAppendPlan::<PosixFileFsyncDirFsyncProfile>::new(
-    segment,
-    generation,
-    range,
-    "frame-digest",
-    4096,
-).unwrap();
-
-let _progress = plan
-    .record_written_bytes(4096)
-    .complete_barrier(WalDurabilityBarrier::WalFileFsync);
-```
-
-Profile-scoped WAL durability barrier receipts cannot be forged from raw fields:
-
-```compile_fail
-use worth_store_physical_backend::{
-    PosixFileFsyncDirFsyncProfile, WalDurabilityBarrier, WalDurabilityBarrierReceipt,
-};
-use worth_store_recovery_physics::WalAppendDurabilityScope;
-
-let _receipt: WalDurabilityBarrierReceipt<
-    PosixFileFsyncDirFsyncProfile,
-    WalAppendDurabilityScope,
-> =
-    WalDurabilityBarrierReceipt {
-        profile: todo!(),
-        scope: todo!(),
-        barrier: WalDurabilityBarrier::WalFileFsync,
-    };
-```
-
-Completed WAL durability barrier authority is not available through the ordinary
-production dependency surface:
-
-```ignore
-use worth_store_physical_backend::{
-    BackendDurabilityBarrierAuthority, PosixFileFsyncDirFsyncAuthority,
-    WalDurabilityBarrier,
-};
-use worth_store_recovery_physics::{
-    LogSequenceNumber, WalAppendPlan, WalLsnRange, WalSegmentGeneration, WalSegmentId,
-};
-
-let segment = WalSegmentId::new(42).unwrap();
-let generation = WalSegmentGeneration::new(7).unwrap();
-let range = WalLsnRange::new(LogSequenceNumber::new(100), LogSequenceNumber::new(101)).unwrap();
-let progress = WalAppendPlan::new(segment, generation, range, "frame-digest", 4096)
-    .unwrap()
-    .record_written_bytes(4096);
-let receipt = PosixFileFsyncDirFsyncAuthority::new()
-    .certify_completed_barrier(progress.durability_scope(), WalDurabilityBarrier::WalFileFsync)
-    .unwrap();
-let _progress = progress.complete_barrier(receipt);
-```
-
-Crash posture cannot be constructed directly from live acknowledgment
-precondition state:
-
-```compile_fail
-use worth_store_physical_backend::PosixFileFsyncDirFsyncProfile;
-use worth_store_recovery_physics::{
-    AcknowledgmentPrecondition, WalDurabilityCrashPosture,
-};
-
-let precondition: AcknowledgmentPrecondition<PosixFileFsyncDirFsyncProfile> = todo!();
-let _posture =
-    WalDurabilityCrashPosture::<PosixFileFsyncDirFsyncProfile>::unacknowledged_completed(
-        precondition,
-    );
-```
-
-WAL-only source precedence cannot bind an arbitrary caller-supplied LSN range to
-an otherwise vetted WAL frame:
-
-```compile_fail
-use worth_store_recovery_physics::{
-    IntegrityVettedWalFrame, LogSequenceNumber, WalLsnRange, WalOnlyTailProof,
-};
-
-let record: IntegrityVettedWalFrame = todo!();
-let range = WalLsnRange::new(LogSequenceNumber::new(1), LogSequenceNumber::new(2)).unwrap();
-let _proof = WalOnlyTailProof::from_vetted_wal_frame(&record, range);
-```
-
-Compaction visibility cannot be admitted from raw generation and boolean
-assertions:
-
-```compile_fail
-use worth_store_recovery_physics::{
-    CompactionCutoverRecoveryPosture, RecoveryCandidateDiscoveryTrace,
-};
-
-let trace = RecoveryCandidateDiscoveryTrace::new("strict-test-profile", "compaction", 1);
-let _posture = CompactionCutoverRecoveryPosture::admit_visible_product(
-    Some(7),
-    true,
-    true,
-    true,
-    trace,
-);
-```
-
-Compaction cutover records cannot be admitted from generation identity alone:
-
-```compile_fail
-use worth_store_recovery_physics::{
-    AdmittedCompactionCutoverRecord, CompactionGenerationIdentity,
-};
-
-let generation = CompactionGenerationIdentity::new(7);
-let _cutover = AdmittedCompactionCutoverRecord::for_generation(generation);
-```
-
-Old compaction generations cannot be declared recoverable from generation
-identity alone:
-
-```compile_fail
-use worth_store_recovery_physics::{
-    CompactionGenerationIdentity, RecoverableOldCompactionGeneration,
-};
-
-let generation = CompactionGenerationIdentity::new(7);
-let _recoverable = RecoverableOldCompactionGeneration::for_generation(generation);
-```
-
-Compaction cutover durability cannot be admitted from generation identity alone:
-
-```compile_fail
-use worth_store_recovery_physics::{
-    AdmittedCompactionCutoverDurability, CompactionGenerationIdentity,
-};
-
-let generation = CompactionGenerationIdentity::new(7);
-let _durability = AdmittedCompactionCutoverDurability::for_generation(generation);
-```
-
-Redo plans require a proof-bearing WAL valid prefix, not a raw WAL range:
-
-```compile_fail
-use worth_store_recovery_physics::{
-    AdmittedRecoverySource, RecoveryRedoPlan, WalLsnRange,
-};
-
-let source: AdmittedRecoverySource = todo!();
-let raw_range: WalLsnRange = todo!();
-let _forged = RecoveryRedoPlan::from_valid_prefix(&source, raw_range, vec![]);
-```
-
-Valid WAL prefix inputs cannot be self-minted as raw integrity-vetted
-observations:
-
-```compile_fail
-use worth_store_recovery_physics::WalPrefixFrameObservation;
-```
-
-Valid WAL prefix observations cannot bind a vetted WAL frame to caller-supplied
-LSN authority:
-
-```compile_fail
-use worth_store_recovery_physics::{
-    IntegrityVettedWalFrame, LogSequenceNumber, WalPrefixIntegrityObservation,
-    WalSegmentGeneration,
-};
-
-let record: IntegrityVettedWalFrame = todo!();
-let _forged = WalPrefixIntegrityObservation::from_vetted_wal_frame(
-    &record,
-    LogSequenceNumber::new(20),
-    WalSegmentGeneration::new(1).unwrap(),
-);
-```
-
-Redo record grammar cannot be minted by filling public fields:
-
-```compile_fail
-use worth_store_recovery_physics::RedoRecordGrammar;
-
-let _forged = RedoRecordGrammar {
-    target_page: todo!(),
-    target_generation: todo!(),
-    redo_lsn: todo!(),
-    operation_form: todo!(),
-    integrity_binding: todo!(),
-    idempotence_basis: todo!(),
-    page_lsn_basis: todo!(),
+let _forged = PhysicalRootSourceCandidate {
+    selector: todo!(),
+    manifest: todo!(),
 };
 ```
 
-Crash harness evidence cannot be constructed from caller-mixed plan,
-boundary, transcript, and oracle labels:
+The physical checkpoint base is admitted only against a selected root and a
+verified checkpoint stream; a raw checkpoint identity is insufficient:
 
 ```compile_fail
-use worth_store_recovery_physics::{S4LoweredCrashHarnessEvidence, S4RecoveryCrashSeam};
+use worth_store_recovery_physics::PhysicalCheckpointBase;
 
-let _harness = S4LoweredCrashHarnessEvidence::from_lowered_plan_boundary(
-    S4RecoveryCrashSeam::WalAppend,
-    "caller-plan",
-    "caller-boundary",
-    "caller-transcript",
-    "caller-oracle",
-    1,
-    "caller-profile",
-    1,
-);
+let _forged = PhysicalCheckpointBase { checkpoint: todo!() };
 ```
 
-Production callers cannot construct a Roadmap 2 crash harness transcript source
-from raw string labels:
+Bounded planning cost is an owned value, not a caller-provided tuple that can
+skip the exact limit comparison:
 
 ```compile_fail
-use worth_store_recovery_physics::{
-    S4CrashHarnessTranscriptSource, S4RecoveryCrashSeam,
+use worth_store_recovery_physics::RecoveryPlanCost;
+
+let _forged = RecoveryPlanCost {
+    redo_targets: 1,
+    redo_bytes: 1,
+    distinct_targets: 1,
+    operation_bindings: 1,
+    observation_bytes: 1,
+    total_observation_bytes: 1,
+    staging_bytes: 1,
+    dirty_frames: 1,
 };
-
-let _source = S4CrashHarnessTranscriptSource::from_roadmap2_transcript(
-    S4RecoveryCrashSeam::WalAppend,
-    "caller-plan",
-    "caller-boundary",
-    "caller-transcript",
-    "caller-oracle",
-    1,
-    "caller-profile",
-    1,
-);
 ```
 
-Lowered crash harness evidence cannot be constructed directly from a caller-owned
-transcript source:
+Page-redo eligibility is a pure decision produced by its constructor; copied
+fields cannot mint an admitted page transition:
 
 ```compile_fail
-use worth_store_recovery_physics::{
-    S4CrashHarnessTranscriptSource, S4LoweredCrashHarnessEvidence,
-    S4RecoveryCrashSeam,
+use worth_store_recovery_physics::PageRedoEligibility;
+
+let _forged = PageRedoEligibility {
+    kind: todo!(),
+    page_generation: todo!(),
+    classified_page_lsn: todo!(),
+    redo_frontier: todo!(),
+    counters: todo!(),
 };
-
-let source = S4CrashHarnessTranscriptSource::from_roadmap2_transcript(
-    S4RecoveryCrashSeam::WalAppend,
-    "caller-plan",
-    "caller-boundary",
-    "caller-transcript",
-    "caller-oracle",
-    1,
-    "caller-profile",
-    1,
-).unwrap();
-let _harness = S4LoweredCrashHarnessEvidence::from_recovery_harness_transcript(source);
 ```
 
-Crash harness evidence cannot be constructed from caller-supplied lane
-parameters:
+The operation-fate join is likewise sealed behind admission and cannot be
+replaced by a caller-defined outcome:
 
 ```compile_fail
-use worth_store_recovery_physics::{S4LoweredCrashHarnessEvidence, S4RecoveryCrashSeam};
+use worth_store_recovery_physics::ReconciledOperationFates;
 
-let _harness = S4LoweredCrashHarnessEvidence::from_required_s4_lane(
-    S4RecoveryCrashSeam::WalAppend,
-    1,
-    "caller-profile",
-    1,
-);
+let _forged = ReconciledOperationFates {
+    operations: Vec::new(),
+    acknowledged_durable: 0,
+    durable_unacknowledged: 0,
+    proven_no_effect: 0,
+    indeterminate: 0,
+};
 ```
 
-Crash harness evidence cannot be constructed from a seam label alone:
-
-```compile_fail
-use worth_store_recovery_physics::{S4LoweredCrashHarnessEvidence, S4RecoveryCrashSeam};
-
-let _harness = S4LoweredCrashHarnessEvidence::from_required_s4_seam(
-    S4RecoveryCrashSeam::WalAppend,
-);
-```
-
-Recovery memory accepts only Store-minted Recovery allocation authority; an
-exact Maintenance allocation cannot cross the scope boundary:
-
-```compile_fail
-use worth_store::physical_runtime::MaintenancePhysicalAllocation;
-use worth_store_recovery_physics::RecoveryMemoryAllocation;
-
-fn cannot_substitute_scope<'runtime>(
-    allocation: MaintenancePhysicalAllocation<'runtime>,
-) {
-    let _memory = RecoveryMemoryAllocation::from_store_allocation(allocation);
-}
-```
-
-Owning Recovery wrappers cannot erase the issuing runtime lifetime:
-
-```compile_fail
-use worth_store::physical_runtime::RecoveryPhysicalAllocation;
-use worth_store_recovery_physics::RecoveryMemoryAllocation;
-
-fn cannot_escape_runtime<'runtime>(
-    allocation: RecoveryPhysicalAllocation<'runtime>,
-) -> RecoveryMemoryAllocation<'static> {
-    RecoveryMemoryAllocation::from_store_allocation(allocation)
-}
-```
-
-The issuing runtime cannot close while Recovery allocation authority remains
-live in a successor wrapper:
-
-```compile_fail
-use std::num::NonZeroU64;
-use worth_store::physical_runtime::ServingPhysicalRuntime;
-use worth_store_recovery_physics::RecoveryMemoryAllocation;
-
-fn cannot_close_while_recovery_authority_is_live(runtime: ServingPhysicalRuntime) {
-    let allocation = runtime
-        .physical_allocations()
-        .admit_recovery(NonZeroU64::MIN)
-        .unwrap();
-    let memory = RecoveryMemoryAllocation::from_store_allocation(allocation);
-    let _closed = runtime.close();
-    drop(memory);
-}
-```
+Recovery physics has no runtime effect owner, observer protocol, backend
+durability profile, or integrity-handoff constructor. Those surfaces must be
+obtained from their owning crates before a runtime boundary can consume them.

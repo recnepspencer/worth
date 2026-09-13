@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
-use worth_store_physical_format::VerifiedCheckpointStream;
-use worth_store_wal::{VerifiedWalArtifact, WalLsnRange, WalSegmentArtifactIdentity};
+use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_wal::{WalLsnRange, WalSegmentArtifactIdentity};
 
 use crate::physical_runtime::{CompletedPhysicalRecoveryFreshReopen, PhysicalRecoveryCoordination};
 
@@ -18,7 +18,7 @@ pub(super) struct CandidateAdmissionContext<'a> {
 }
 
 pub(super) struct PendingCandidate {
-    pub(super) wal: VerifiedWalArtifact,
+    pub(super) wal: crate::physical_runtime::IntegrityAdmittedRecoveryWalSegment,
     pub(super) artifact: WalSegmentArtifactIdentity,
     pub(super) lsn_range: WalLsnRange,
     pub(super) byte_count: u64,
@@ -33,7 +33,7 @@ pub(super) struct AdmittedCandidates {
 
 pub(super) fn admit(
     context: CandidateAdmissionContext<'_>,
-    wal: impl IntoIterator<Item = VerifiedWalArtifact>,
+    wal: impl IntoIterator<Item = crate::physical_runtime::IntegrityAdmittedRecoveryWalSegment>,
 ) -> Result<AdmittedCandidates, StoreRecoveryCleanupFreshnessFailure> {
     if context.descriptive_plan_identity == [0; 32] {
         return Err(invalid());
@@ -104,6 +104,7 @@ fn admit_terminal_bindings(
     let before = context.coordination.freshness().binding_samples();
     let sampled = super::super::super::binding::sample_binding(
         context.coordination.freshness(),
+        context.coordination.checkpoint_binding_basis(),
         context.media,
         context.checkpoint,
         wal_frames,
@@ -124,7 +125,7 @@ fn admit_terminal_bindings(
     })?;
     super::super::wal_members_are_terminal(&binding)
         .then_some(terminal_binding_evaluations)
-        .ok_or_else(|| StoreRecoveryCleanupFreshnessFailure {
+        .ok_or(StoreRecoveryCleanupFreshnessFailure {
             denial: StoreRecoveryCleanupFreshnessDenial::InvalidCleanupEligibility,
             sample: None,
             read: None,

@@ -23,15 +23,19 @@ fn retained_continuation_releases_the_query_registry_basis() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -42,17 +46,16 @@ fn retained_continuation_releases_the_query_registry_basis() {
     let query = super::installed_live_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
-        .admit_application_query(
+        .selected_product()
+        .admit_application_query_continuation(
             &query,
             &access,
             live_account_parameters("account-1"),
-            crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls::
-                current_continuation_page(
-                    NonZeroUsize::new(1).unwrap(),
-                    NonZeroUsize::new(10_000).unwrap(),
-                    &request,
-                ),
+            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
+                NonZeroUsize::new(1).unwrap(),
+                NonZeroUsize::new(10_000).unwrap(),
+                &request,
+            ),
         )
         .unwrap();
     let basis = plan.basis_identity().clone();
@@ -90,15 +93,19 @@ fn foreign_runtime_rejects_plan_and_releases_its_basis() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -109,11 +116,13 @@ fn foreign_runtime_rejects_plan_and_releases_its_basis() {
     let query = installed_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();
@@ -143,15 +152,19 @@ fn cancellation_after_admission_releases_basis_before_projection() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -162,11 +175,13 @@ fn cancellation_after_admission_releases_basis_before_projection() {
     let query = installed_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();
@@ -190,21 +205,25 @@ fn cancellation_after_admission_releases_basis_before_projection() {
 }
 
 #[test]
-fn revocation_after_admission_denies_under_the_execution_lock() {
+fn principal_revocation_after_product_admission_denies_before_projection() {
     let world = installed_authorization_world(true);
     let request = super::super::fixture::live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -215,11 +234,13 @@ fn revocation_after_admission_denies_under_the_execution_lock() {
     let query = installed_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();
@@ -230,7 +251,7 @@ fn revocation_after_admission_denies_under_the_execution_lock() {
         .application
         .execute_application_query_one_shot(plan)
         .err()
-        .expect("revocation must deny before reading the admitted basis");
+        .expect("revocation must deny before reading the retained data basis");
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationOneShotDenialKind::StalePrincipal
@@ -239,21 +260,25 @@ fn revocation_after_admission_denies_under_the_execution_lock() {
 }
 
 #[test]
-fn scope_authorization_revocation_after_admission_denies_under_the_execution_lock() {
+fn scope_revocation_after_product_admission_denies_before_projection() {
     let world = installed_authorization_world(true);
     let request = super::super::fixture::live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -264,11 +289,13 @@ fn scope_authorization_revocation_after_admission_denies_under_the_execution_loc
     let query = installed_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();

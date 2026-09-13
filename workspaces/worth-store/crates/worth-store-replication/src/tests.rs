@@ -1,5 +1,5 @@
+use crate::{DurabilityReplayIdentity, DurabilityReplayKind};
 use worth_store_physical_backend::BackendTargetProfile;
-use worth_store_recovery_physics::{DurabilityReplayIdentity, DurabilityReplayKind};
 use worth_store_security::{
     readmitted_foreign_wal_security_scope_for_test, readmitted_wal_security_scope_for_test,
 };

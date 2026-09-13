@@ -7,7 +7,7 @@ use worth_foundational::facade::{
 
 use super::{BridgeCorrespondenceDenial, BridgeCorrespondenceDenialKind};
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum BridgeSemanticLocality {
     SourceRecord,
     /// One exact source record supplied by a Bridge-managed temporal intent.
@@ -178,6 +178,10 @@ impl BridgeSemanticDependencyCandidate {
 
     pub const fn dependency_ordinal(&self) -> usize {
         self.dependency_ordinal
+    }
+
+    pub const fn source_installation_generation(&self) -> u64 {
+        self.source_installation_generation
     }
 
     pub const fn observation_record_identity(

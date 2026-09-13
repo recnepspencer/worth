@@ -9,11 +9,11 @@ pub(super) fn compose_declared_samples(world: &mut World) {
     world.sample(world.surfaces[0], 71, 33, 57_343);
     composed(world, 57_343, &[], 34);
 
-    // One mounted candidate joins real pointer departure/arrival with the next
-    // accepted physical sample. The trigger and foreign copy retain raw opacity.
+    // The modal shields this background pointer move. The next accepted sample
+    // must therefore remain physical-only, preserving the trigger's appearance.
     world.sample(world.surfaces[0], 141, 35, 65_535);
     locality::hover(world, 0, 4);
-    composed(world, 65_535, &[world.instances[0], world.instances[1]], 35);
+    composed(world, 65_535, &[], 35);
     let unchanged = world.prepare_surface_with_current_portals(world.surfaces[0]);
     assert_eq!(
         unchanged
@@ -174,7 +174,10 @@ fn composed(
                 .iter()
                 .all(|candidate| candidate.performed_layout_cost().is_none()));
             if target == world.instances[4] {
-                assert!(!fragment.work().damage().is_empty());
+                // Entrance publication already contains the zero-opacity sample.
+                // Later samples change the retained ordinary appearance.
+                assert_eq!(fragment.work().changes().is_empty(), motion == 0);
+                assert_eq!(fragment.work().damage().is_empty(), motion == 0);
             } else if !appearance_targets.contains(&target) {
                 assert!(
                     fragment.work().changes().is_empty(),
@@ -199,7 +202,8 @@ fn composed(
                         .unwrap();
                     let bounds = surface.surface().bounds();
                     let expected = if index == 2 {
-                        [80_000, 268_000, 280_000, 308_000]
+                        // The authored modal is 280x320, centered in 800x600.
+                        [260_000, 140_000, 280_000, 320_000]
                     } else {
                         [
                             [40_000, 118_000, 280_000, 320_000],
@@ -254,14 +258,15 @@ fn composed(
         );
         // The sibling dialog at [300,128..580,448] covers this point; neither
         // other dialog nor region Backdrop does. Two viewport scrims precede its
-        // color with effective alpha 128/255 * 40_000/65_535.
+        // retained Hover color [192,64,32] with effective alpha
+        // 128/255 * 40_000/65_535. Modal shielding blocked pointer departure.
         assert_eq!(
             overlay
                 .work()
                 .successor()
-                .reference_overlay_at(410_000, 140_000)
+                .reference_overlay_at(560_000, 150_000)
                 .straight_srgba(),
-            [18, 39, 60, 211],
+            [122, 39, 21, 211],
             "the sibling Portal paints its owner-issued dialog bounds"
         );
     }

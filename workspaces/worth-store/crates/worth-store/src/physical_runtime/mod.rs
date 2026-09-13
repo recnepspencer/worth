@@ -6,6 +6,7 @@ mod diagnostics;
 mod durability;
 mod identity;
 mod instance;
+mod integrity;
 mod lifecycle;
 #[cfg(feature = "certification-test-authority")]
 mod media_evidence;
@@ -18,6 +19,9 @@ mod recovery_construction;
 mod recovery_coordination;
 #[cfg(feature = "recovery-runtime-owner")]
 mod recovery_freshness;
+pub mod recovery_wal;
+#[cfg(feature = "recovery-runtime-owner")]
+mod recovery_yieldpoint;
 mod resource_lifecycle;
 mod root_admission;
 mod runtime;
@@ -74,8 +78,7 @@ pub use durability::{
     PhysicalDurabilityPolicyDenial, PhysicalDurabilityPolicyFailure,
     PhysicalDurabilityPolicyIdentity, PhysicalDurabilityPolicyRebindRequired,
     PhysicalDurabilityPolicyStale, PhysicalDurabilityRecoveryHandoff,
-    PhysicalDurabilityReopenObservation, PhysicalDurabilitySourceIdentity,
-    PhysicalDurabilitySourceProfileIdentity, PhysicalGroupAppendAmplificationObservation,
+    PhysicalDurabilityReopenObservation, PhysicalGroupAppendAmplificationObservation,
     PhysicalGroupBarrierAmplificationObservation, PhysicalGroupMemberOrdinal,
     PhysicalGroupQueueAdmissionTick, PhysicalGroupRootPublicationPlan, PhysicalIdempotencyPolicy,
     PhysicalIdempotencyReopenFailure, PhysicalIoPerformanceExpectation,
@@ -133,6 +136,29 @@ pub use instance::{
     PhysicalStoreCloseObservation, PhysicalStoreCloseOutcome, PhysicalStoreClosePhase,
     PhysicalStoreClosePlan, PhysicalWorkExecution,
 };
+pub use integrity::{
+    DamagedPhysicalAuthorityObservation, DamagedPhysicalDerivedDisposition,
+    IndeterminateDerivedRebuildability, IntactPhysicalAuthorityObservation,
+    IntactPhysicalDerivedObservation, OwnerDispositionProjectionDenial,
+    PhysicalArtifactDisposition, PhysicalArtifactRoleDisposition, PhysicalRootProtocolRoute,
+    RebuildablePhysicalDerivedObservation, ResidentAdmissionCounters, RootProtocolAdmissionDenial,
+    RootProtocolRouteCounters, UnknownDerivedRebuildability,
+};
+#[cfg(feature = "recovery-runtime-owner")]
+pub use integrity::{
+    IntegrityAdmittedRecoveryWalFrame, IntegrityAdmittedRecoveryWalSegment,
+    RecoveryWalIntegrityAdmissionDenial,
+};
+pub use integrity::{
+    ManagedPhysicalIntegrityScrubHandle, ManagedPhysicalIntegrityScrubProgress,
+    ManagedPhysicalIntegrityScrubRequest, PhysicalIntegrityScrubCancellation,
+    PhysicalIntegrityScrubCounters, PhysicalIntegrityScrubDeferral,
+    PhysicalIntegrityScrubRequestDenial, PhysicalIntegrityScrubResume,
+    PhysicalIntegrityScrubTarget, PhysicalIntegrityScrubWindowObservation,
+};
+pub(in crate::physical_runtime) use integrity::{
+    ResidentAdmissionCounterCells, RootProtocolRouteCounterCells,
+};
 pub use lifecycle::LifecycleGeneration;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use media_ownership::{
@@ -152,6 +178,7 @@ pub use observation::{
     LifecycleObservation, ObservationError, ObservationHandle, RootAdmissionObservation,
     RuntimeObservation,
 };
+pub use record_serving::PhysicalIntegrityScrubReadDeferral;
 pub use record_serving::*;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_construction::{
@@ -197,11 +224,17 @@ pub use recovery_freshness::{
     PhysicalRecoveryFreshnessAuthority, PhysicalRecoveryFreshnessPort,
     PhysicalRecoveryRegisteredSessionAuthority, StoreRecoveryBindingFreshness,
     StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleDenial,
-    StoreRecoveryBindingSampleFailure, StoreRecoveryCleanupAttempt,
+    StoreRecoveryBindingSampleFailure, StoreRecoveryCheckpointBindingBasis,
+    StoreRecoveryCheckpointBindingRebuilder, StoreRecoveryCleanupAttempt,
     StoreRecoveryCleanupFreshnessDenial, StoreRecoveryCleanupFreshnessFailure,
     StoreRecoveryCleanupFreshnessSample, StoreRecoveryCleanupPlan,
     StoreRecoveryCleanupPlanAdmissionFailure, StoreRecoveryOperationEvidence,
     StoreRecoveryOperationFate, StoreRecoveryWalMember,
+};
+#[cfg(feature = "recovery-runtime-owner")]
+pub use recovery_yieldpoint::{
+    PhysicalRecoveryProcessYieldpoint, PhysicalRecoveryYieldpointStage,
+    PhysicalRecoveryYieldpointWaitResult,
 };
 pub use runtime::AdmittedPhysicalRuntime;
 pub use shutdown::{AbortedRuntime, ClosedRuntime};
@@ -230,17 +263,20 @@ pub use work::{
     PhysicalWorkNoEffectEvidence, PhysicalWorkObservation, PhysicalWorkOperationFamily,
     PhysicalWorkPreEffectDenial, PhysicalWorkPressureClass, PhysicalWorkProfileDeclaration,
     PhysicalWorkProfileDenial, PhysicalWorkPublicationResiduePosture, PhysicalWorkReadiness,
-    PhysicalWorkRecoveryDisposition, PhysicalWorkRecoveryLocator, PhysicalWorkRecoveryTarget,
-    PhysicalWorkRetryAdmission, PhysicalWorkRetryFailure, PhysicalWorkRetrySchedule,
-    PhysicalWorkRetryScheduleOutcome, PhysicalWorkScheduler, PhysicalWorkSchedulerPosture,
-    PhysicalWorkScope, PhysicalWorkSemanticBasis, PhysicalWorkSemanticBasisDenial,
-    PhysicalWorkSemanticPosture, PhysicalWorkSettlementEvidence, PhysicalWorkShutdownObservation,
-    PhysicalWorkSignalDeclaration, PhysicalWorkSignalFamily, PhysicalWorkSignalFamilySet,
-    PhysicalWorkSubmissionDeferred, PhysicalWorkSubmissionDenial, PhysicalWorkSubmissionFailure,
-    PhysicalWorkSubmissionOutcome, PhysicalWorkSubmissionReceipt, PhysicalWorkSubmissionStale,
-    PhysicalWorkSupersessionJoin, PhysicalWorkTerminalCause, PhysicalWorkTerminalDisposition,
-    PhysicalWorkTerminalFailure, PhysicalWorkTerminalObservation, PhysicalWorkTerminalStage,
-    PhysicalWorkTimeoutJoin, ReadyPhysicalWork, ResourceAdmittedPhysicalWork, SettledPhysicalWork,
+    PhysicalWorkRecoveryAdmissionCounters, PhysicalWorkRecoveryAdmissionObservation,
+    PhysicalWorkRecoveryAdmissionOutcome, PhysicalWorkRecoveryDisposition,
+    PhysicalWorkRecoveryIngressRejection, PhysicalWorkRecoveryLocator,
+    PhysicalWorkRecoveryObservationSubject, PhysicalWorkRecoveryTarget, PhysicalWorkRetryAdmission,
+    PhysicalWorkRetryFailure, PhysicalWorkRetrySchedule, PhysicalWorkRetryScheduleOutcome,
+    PhysicalWorkScheduler, PhysicalWorkSchedulerPosture, PhysicalWorkScope,
+    PhysicalWorkSemanticBasis, PhysicalWorkSemanticBasisDenial, PhysicalWorkSemanticPosture,
+    PhysicalWorkSettlementEvidence, PhysicalWorkShutdownObservation, PhysicalWorkSignalDeclaration,
+    PhysicalWorkSignalFamily, PhysicalWorkSignalFamilySet, PhysicalWorkSubmissionDeferred,
+    PhysicalWorkSubmissionDenial, PhysicalWorkSubmissionFailure, PhysicalWorkSubmissionOutcome,
+    PhysicalWorkSubmissionReceipt, PhysicalWorkSubmissionStale, PhysicalWorkSupersessionJoin,
+    PhysicalWorkTerminalCause, PhysicalWorkTerminalDisposition, PhysicalWorkTerminalFailure,
+    PhysicalWorkTerminalObservation, PhysicalWorkTerminalStage, PhysicalWorkTimeoutJoin,
+    ReadyPhysicalWork, ResourceAdmittedPhysicalWork, SettledPhysicalWork,
 };
 #[cfg(feature = "recovery-runtime-owner")]
 pub use worth_store_physical_backend::{
@@ -253,7 +289,8 @@ pub use worth_store_physical_backend::{
     RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryCounters, RecoveryDiscoveryFailure,
     RecoveryFilesystemQualificationError, RecoveryReopenReadOutcome,
     RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan,
-    RecoveryStagingWriteDisposition, RecoveryStagingWriteOutcome,
+    RecoveryStagingIndeterminatePhysical, RecoveryStagingWriteDisposition,
+    RecoveryStagingWriteOutcome, RecoveryWalObservationIdentity,
 };
 
 pub(in crate::physical_runtime) use work::{
@@ -292,5 +329,12 @@ pub mod certification {
         CertificationMediaFaultActivation, CertificationMediaFaultAuthority, MediaFaultDirective,
         MediaFaultRule, MediaFaultSchedule, MediaFaultScheduleDenial, MediaOperationRole,
         MediaPauseGate,
+    };
+}
+
+pub mod production {
+    pub use super::durability::{
+        PhysicalCheckpointPauseGate, PhysicalCheckpointStep, PhysicalMutationCheckpoint,
+        PhysicalMutationPauseGate,
     };
 }

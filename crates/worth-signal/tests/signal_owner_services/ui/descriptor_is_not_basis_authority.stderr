@@ -1,0 +1,16 @@
+error[E0308]: mismatched types
+  --> tests/signal_owner_services/ui/descriptor_is_not_basis_authority.rs:15:9
+   |
+13 |     let _ = mutation.fork_exact(
+   |                      ---------- arguments to this method are incorrect
+14 |         validate_signal_branch_name("invalid-descriptor").expect("the identity is valid"),
+15 |         descriptor,
+   |         ^^^^^^^^^^ expected `&AdmittedSignalBranchBasis`, found `&SignalBranchBasisDescriptor`
+   |
+   = note: expected reference `&AdmittedSignalBranchBasis`
+              found reference `&SignalBranchBasisDescriptor`
+note: method defined here
+  --> src/branch/owner_services/mutation_port.rs
+   |
+   |     pub fn fork_exact(
+   |            ^^^^^^^^^^

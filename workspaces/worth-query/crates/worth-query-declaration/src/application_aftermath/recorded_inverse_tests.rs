@@ -9,6 +9,19 @@ struct Aspect;
 struct FirstField;
 struct SecondField;
 
+macro_rules! declare_u64_field {
+    ($($field:ty),+ $(,)?) => {$ (
+        impl crate::application_schema::DeclaredApplicationFieldValue for $field {
+            type Value = u64;
+            type Binding = crate::application_schema::U64ApplicationValueBinding;
+            const PRESENCE: crate::application_schema::ApplicationFieldPresence =
+                crate::application_schema::ApplicationFieldPresence::Required;
+        }
+    )+};
+}
+
+declare_u64_field!(FirstField, SecondField);
+
 #[test]
 fn duplicate_exact_locus_is_denied() {
     let locus = locus::<FirstEntity, FirstField>("FirstEntity", "Aspect", "FirstField");
@@ -36,7 +49,7 @@ fn multiple_exact_fields_on_one_entity_role_are_admissible() {
     assert_eq!(demand.loci().len(), 2);
 }
 
-fn locus<Entity, Field>(
+fn locus<Entity, Field: crate::application_schema::DeclaredApplicationFieldValue<Value = u64>>(
     entity: &'static str,
     aspect: &'static str,
     field: &'static str,

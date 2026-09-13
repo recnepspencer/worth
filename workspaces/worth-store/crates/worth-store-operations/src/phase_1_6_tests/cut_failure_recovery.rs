@@ -6,9 +6,9 @@ use super::support::*;
 #[test]
 fn source_verification_runs_while_a_reachability_reservation_blocks_reclaim() {
     let scenario = BackupScenario::new("source-verification-lease-order");
-    let authority = crate::backup::export::current_authority("s10-source-verification-lease-order");
+    let authority = scenario.authority();
     let protected = scenario.references()[0].reclaim_reference();
-    let verifier = |manifest: &BackupCutManifest, root_generation| {
+    let verifier = |manifest: &BackupCutManifest| {
         let evidence = ExecutedReachabilityEvidence::for_certification_reference(protected);
         let hazards = HazardLeaseTable::with_capacity(
             HazardLeaseTableCapacity::bounded_slots(1).expect("capacity"),
@@ -29,7 +29,6 @@ fn source_verification_runs_while_a_reachability_reservation_blocks_reclaim() {
         ));
         worth_store_offline_verifier::verify_backup_cut_sources(
             manifest,
-            root_generation,
             OfflineInspectionBudget::bounded(4 * 1024, u64::MAX).expect("budget"),
         )
     };
@@ -53,7 +52,7 @@ fn source_verification_runs_while_a_reachability_reservation_blocks_reclaim() {
 #[test]
 fn wal_cut_coverage_uses_the_wal_owners_half_open_interval_semantics() {
     let scenario = BackupScenario::new("half-open-wal-cut");
-    let authority = crate::backup::export::current_authority("s10-half-open-wal-cut");
+    let authority = scenario.authority();
     let mut artifacts = scenario
         .references()
         .iter()
@@ -106,7 +105,7 @@ fn wal_cut_coverage_uses_the_wal_owners_half_open_interval_semantics() {
 #[test]
 fn published_bundle_survives_control_receipt_failure_as_a_retryable_linear_state() {
     let scenario = BackupScenario::new("receipt-retry");
-    let authority = crate::backup::export::current_authority("s10-receipt-retry");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-receipt-retry").expect("operation"),
@@ -135,7 +134,7 @@ fn published_bundle_survives_control_receipt_failure_as_a_retryable_linear_state
 #[test]
 fn admitted_cut_survives_lease_receipt_failure_as_a_retryable_linear_state() {
     let scenario = BackupScenario::new("lease-retry");
-    let authority = crate::backup::export::current_authority("s10-lease-retry");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let fault = ObserveReservedLeaseThenFail {
         delegate: &control,
@@ -178,7 +177,7 @@ fn admitted_cut_survives_lease_receipt_failure_as_a_retryable_linear_state() {
 #[test]
 fn lost_successful_lease_receipt_retries_the_exact_holder_without_under_or_over_counting() {
     let scenario = BackupScenario::new("lost-successful-lease-receipt");
-    let authority = crate::backup::export::current_authority("s10-lost-successful-lease-receipt");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let fault = LoseSuccessfulControlAppendReceipt::new(&control, 0);
     let denial = OnlineBackupIntent::new(
@@ -226,7 +225,7 @@ fn lost_successful_lease_receipt_retries_the_exact_holder_without_under_or_over_
 #[test]
 fn lost_successful_release_receipt_keeps_the_exact_holder_retryable_until_acknowledged() {
     let scenario = BackupScenario::new("lost-successful-release-receipt");
-    let authority = crate::backup::export::current_authority("s10-lost-successful-release-receipt");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-lost-successful-release-receipt").expect("operation"),

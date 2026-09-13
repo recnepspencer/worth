@@ -8,8 +8,8 @@ error: cannot construct `LoweredBridgeAsyncSourceDeclaration` with struct litera
 help: you might have meant to use an associated function to build this type
   |
 4 -     let _ = LoweredBridgeAsyncSourceDeclaration {};
-4 +     let _ = LoweredBridgeAsyncSourceDeclaration::new_request_response(_, _, _);
+4 +     let _ = LoweredBridgeAsyncSourceDeclaration::new_subscription_backed(_, _, _);
   |
 4 -     let _ = LoweredBridgeAsyncSourceDeclaration {};
-4 +     let _ = LoweredBridgeAsyncSourceDeclaration::new_subscription_backed(_, _, _);
+4 +     let _ = LoweredBridgeAsyncSourceDeclaration::from_request_response_parts(_, _, _);
   |

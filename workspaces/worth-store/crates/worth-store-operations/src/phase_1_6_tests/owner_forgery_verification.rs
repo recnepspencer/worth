@@ -49,7 +49,7 @@ fn same_generation_cross_owner_substitution_survives_outer_hashes_but_not_owner_
 
 fn materialized_bundle(case: &str) -> (BackupScenario, MaterializedBackupBundle) {
     let scenario = BackupScenario::new(case);
-    let authority = crate::backup::export::current_authority(&format!("s10-{case}"));
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let bundle = OnlineBackupIntent::new(
         OperationalOperationId::new(format!("backup-{case}")).expect("operation id"),

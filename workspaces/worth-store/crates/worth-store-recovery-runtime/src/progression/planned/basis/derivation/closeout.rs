@@ -8,6 +8,7 @@ pub(super) fn seal(
     fates: &ReconciledOperationFates,
     redo: &ImmutablePhysicalRedoPlan,
     selected_source: &RecoverySelectedSourceInventory,
+    successor_candidate: Option<RecoveryObservedSuccessorCandidate>,
     pending: PendingProjectionBasis<'_>,
     staging: RecoveryStagingLayoutPlan,
 ) -> Result<
@@ -15,6 +16,8 @@ pub(super) fn seal(
         RecoveryStagingLayoutPlan,
         RecoveryPublicationPlan,
         RecoveryQuiescencePlan,
+        CandidateMaterializationCost,
+        crate::entry::PhysicalRecoveryRootProtocolCounters,
     ),
     ExecutionBasisDenial,
 > {
@@ -31,44 +34,47 @@ pub(super) fn seal(
     let candidate = if pending.projections.is_empty() {
         super::super::publication_candidate::RecoveryCandidateBasis {
             root: selection.root().selected().manifest().clone(),
+            referenced_artifacts: Box::new([]),
             artifacts: Box::new([]),
+            materialization_cost: CandidateMaterializationCost::default(),
+            staged_current_selector: selection.root().selected().selector(),
         }
     } else {
         super::super::publication_candidate::build(
             store,
             staging.base_image(),
             selected_source,
+            successor_candidate,
             selection.root().selected().selector().format(),
             publication_identity,
         )
-        .map_err(|_| ExecutionBasisDenial::Invalid)?
+        .map_err(|denial| match denial {
+            super::super::publication_candidate::CandidateBuildDenial::SuccessorCandidate(
+                denial,
+            ) => ExecutionBasisDenial::SuccessorCandidate(denial),
+            super::super::publication_candidate::CandidateBuildDenial::Invalid => {
+                ExecutionBasisDenial::Invalid
+            }
+        })?
     };
     let plan_identity = super::super::identity::bind_publication_candidates(
         basis_identity,
         &candidate.root,
         selection.root().selected().selector().format(),
+        &candidate.referenced_artifacts,
         &candidate.artifacts,
     );
     let actions = publication_actions(&candidate.artifacts);
     let staging_commands = (staging.commands.len() as u64)
         .checked_mul(2)
         .ok_or(ExecutionBasisDenial::Invalid)?;
-    let current_selector = candidate
-        .artifacts
-        .iter()
-        .find(|candidate| {
-            matches!(
-                candidate.artifact(),
-                RecordArtifactFile::RootSelectorCandidate {
-                    role: worth_store_physical_format::RootSelectorRole::Current,
-                    ..
-                }
-            )
-        })
-        .and_then(|candidate| {
-            worth_store_physical_format::DurableRootSelector::decode(candidate.bytes()).ok()
-        })
-        .unwrap_or_else(|| selection.root().selected().selector());
+    let (current_selector, root_protocol_counters) =
+        super::selector_closeout::select_staged_current(
+            &candidate,
+            store,
+            selection.root().selected().selector().format(),
+        )?;
+    let materialization_cost = candidate.materialization_cost;
     let created_artifacts = created_artifacts(&staging, &candidate.artifacts);
     let publication = RecoveryPublicationPlan {
         store,
@@ -85,6 +91,7 @@ pub(super) fn seal(
         .expect("the Phase 4 publication identity always names a catalog candidate"),
         current_selector,
         recovered_root: candidate.root,
+        referenced_artifacts: candidate.referenced_artifacts,
         candidates: candidate.artifacts,
         created_artifacts,
     };
@@ -94,7 +101,13 @@ pub(super) fn seal(
         expected_live_commands_after_close: 0,
         expected_live_media_handles_after_close: 0,
     };
-    Ok((staging, publication, quiescence))
+    Ok((
+        staging,
+        publication,
+        quiescence,
+        materialization_cost,
+        root_protocol_counters,
+    ))
 }
 
 fn created_artifacts(

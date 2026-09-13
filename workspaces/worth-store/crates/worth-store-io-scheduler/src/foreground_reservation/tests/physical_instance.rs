@@ -147,3 +147,45 @@ fn metadata_budget() -> super::super::ForegroundResourceBudget {
         .with_queue_slots(QueueSlot::new(1).unwrap())
         .with_worker_permits(WorkerPermit::new(1).unwrap())
 }
+
+#[test]
+fn competing_background_reservations_preserve_live_foreground_headroom() {
+    use super::super::{
+        ForegroundResourceBudget, PhysicalInstanceForegroundCapacity, QueueSlot, WorkerPermit,
+    };
+    let backend = backend_admission(IoSchedulerBackendCapabilityRequirement::BufferedFile);
+    let security = io_qos_security_scope_admission();
+    let configured = ForegroundResourceBudget::new()
+        .with_queue_slots(QueueSlot::new(2).unwrap())
+        .with_worker_permits(WorkerPermit::new(2).unwrap());
+    let capacity = PhysicalInstanceForegroundCapacity::new(configured).unwrap();
+    let lane = ForegroundLaneDeclaration::artifact_metadata_read()
+        .with_latency_envelope(ForegroundLatencyEnvelope::bounded_interference(
+            "live-background",
+            1,
+        ))
+        .with_budget(metadata_budget());
+    let start = std::sync::Barrier::new(2);
+    let results = std::thread::scope(|threads| {
+        let first = threads.spawn(|| {
+            start.wait();
+            capacity.reserve_background(lane, &backend, &security)
+        });
+        let second = threads.spawn(|| {
+            start.wait();
+            capacity.reserve_background(lane, &backend, &security)
+        });
+        [first.join().unwrap(), second.join().unwrap()]
+    });
+    assert_eq!(results.iter().filter(|result| result.is_ok()).count(), 1);
+    assert_eq!(capacity.snapshot().active_reservations(), 1);
+    let foreground = capacity
+        .reserve(lane, &backend, &security)
+        .expect("ordinary work uses protected headroom while scrub is live");
+    assert_eq!(capacity.snapshot().active_reservations(), 2);
+    drop(results);
+    assert_eq!(capacity.snapshot().active_reservations(), 1);
+    drop(foreground);
+    assert_eq!(capacity.snapshot().available(), configured);
+    assert_eq!(capacity.snapshot().released_reservations(), 2);
+}

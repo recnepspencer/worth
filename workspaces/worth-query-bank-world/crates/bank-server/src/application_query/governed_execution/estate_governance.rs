@@ -1,5 +1,7 @@
 use bank_domain::model::BankPrincipalId;
-use bank_domain::queries::{EstateGovernanceQuery, EstateGovernanceRequest};
+use bank_domain::queries::{
+    EstateGovernanceQuery, EstateGovernanceQueryBinding, EstateGovernanceRequest,
+};
 use bank_domain::reads::EstateGovernanceContext;
 use bank_domain::schema::{
     BankSchema, EstateCase, EstateCaseIdentityField, Principal, ViewEstateAdministrationCapability,
@@ -8,26 +10,32 @@ use bank_domain::schema::{
 use worth_query_host::facade::declaration::application_query::ApplicationQueryParameterSet;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationOneShotResult, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryControls, WorthQueryPrincipalResolutionMode,
+    WorthQueryPrincipalResolutionMode,
 };
 
 use super::super::BankApplicationQueryDenial;
-use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime};
+use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankReadControls};
 
 pub(crate) fn execute_estate_governance(
     runtime: &BankIdentityRuntime,
     principal: &BankAuthenticatedPrincipal,
     request: EstateGovernanceRequest,
-    controls: WorthQueryApplicationQueryControls<'_, BankSchema>,
+    controls: &BankReadControls,
 ) -> Result<
     WorthQueryApplicationOneShotResult<EstateGovernanceQuery, EstateGovernanceContext>,
     BankApplicationQueryDenial,
 > {
     let application = runtime.application_runtime();
-    let query = application
+    let selected = application
+        .on_branch(application.current_world())
+        .select()
+        .map_err(BankApplicationQueryDenial::from_product_selection)?;
+    let query_binding = application
         .installed_schema()
-        .application_query(EstateGovernanceQuery::reference())
+        .installed_query_binding::<EstateGovernanceQueryBinding>()
         .map_err(BankApplicationQueryDenial::from_installation)?;
+
+    let query = query_binding.query();
     let capability = application
         .installed_schema()
         .capability(
@@ -35,19 +43,19 @@ pub(crate) fn execute_estate_governance(
             ViewRestrictedEstateOperation::reference(),
         )
         .map_err(BankApplicationQueryDenial::from_capability_installation)?;
-    let capability_access = application
+    let capability_access = selected
         .admit_capability_access(
             principal.query(),
             &capability,
             request.capability_request(),
-            controls.request_scope(),
+            controls.request(),
         )
         .map_err(BankApplicationQueryDenial::from_capability_admission)?;
-    let scope = application
+    let scope = selected
         .resolve_entity(
             EstateCaseIdentityField::reference(),
             request.estate(),
-            controls.request_scope(),
+            controls.request(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .map_err(BankApplicationQueryDenial::from_scope_resolution)?;
@@ -57,13 +65,13 @@ pub(crate) fn execute_estate_governance(
         BankPrincipalId,
         EstateCase,
     >::new(principal.query(), &scope);
-    let plan = application
+    let plan = selected
         .admit_governed_application_query(
-            &query,
+            query,
             &access,
             capability_access,
             ApplicationQueryParameterSet::<EstateGovernanceQuery>::new(),
-            controls,
+            controls.application_query_controls(),
         )
         .map_err(BankApplicationQueryDenial::from_admission)?;
 

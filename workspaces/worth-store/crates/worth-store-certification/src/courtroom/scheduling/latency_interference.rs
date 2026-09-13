@@ -40,19 +40,6 @@ pub enum S6LatencyInterferenceCertificationDenial {
 }
 
 impl S6LatencyInterferenceEvidence {
-    #[cfg(test)]
-    pub(crate) fn from_rows_for_test(
-        status: LatencyEnvelopeAssessmentStatus,
-        rows: Vec<InterferenceCounterRow>,
-    ) -> Self {
-        Self {
-            status,
-            counter_backed_receipt: build_counter_backed_receipt(&rows)
-                .expect("declared test rows build a counter-backed receipt"),
-            rows,
-        }
-    }
-
     pub fn from_assessment(
         assessment: &LatencyEnvelopeAssessment,
     ) -> Result<Self, S6LatencyInterferenceCertificationDenial> {

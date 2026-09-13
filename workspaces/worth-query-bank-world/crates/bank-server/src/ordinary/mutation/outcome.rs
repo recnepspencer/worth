@@ -16,9 +16,16 @@ use crate::{
     BankCommitDenialKind, BankCommitDenialStage, BankCommitPreparationDenial, BankCommitReceipt,
     BankOperationProposalError, BankUnresolvedCommitEvidence,
 };
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationCommitDeferred, WorthQueryApplicationSettlementDeferred,
+    WorthQueryCustomInvariantDenial, WorthQueryProductStaleApplication,
+    WorthQueryProductUnpublishedApplication,
+};
+use worth_query_host::facade::product::WorthQueryApplicationNoEffectCause;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BankMutationDenial {
+    ProductSelection(worth_query_host::facade::product::WorthQueryProductBranchAdmissionDenial),
     Scope(BankEntityResolutionDenial),
     Installation(BankOperationInstallationDenial),
     Authorization(BankAuthorizationDenial),
@@ -28,20 +35,29 @@ pub enum BankMutationDenial {
         kind: BankCommitDenialKind,
         stage: BankCommitDenialStage,
     },
+    CustomInvariant {
+        denial: WorthQueryCustomInvariantDenial,
+        stage: BankCommitDenialStage,
+    },
     IdempotencyIntentDrift,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub enum BankMutationStatus {
+    ProductStale(WorthQueryProductStaleApplication),
+    ProductUnpublished(WorthQueryProductUnpublishedApplication),
+    NoEffect(WorthQueryApplicationNoEffectCause),
     Committed(BankCommitReceipt),
     AlreadyCommitted(BankCommitReceipt),
     Stale { stale_fact_count: usize },
     Cancelled,
+    TimedOut,
     DeadlineExceeded,
     Denied(BankMutationDenial),
     InvariantViolated(BankProposalDenial),
     Aborted,
-    PartialEffect(BankUnresolvedCommitEvidence),
+    Deferred(WorthQueryApplicationCommitDeferred),
+    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     Indeterminate(BankUnresolvedCommitEvidence),
 }
 
@@ -63,7 +79,7 @@ impl BankMutationMetadata {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct BankMutationOutcome {
     status: BankMutationStatus,
     metadata: BankMutationMetadata,
@@ -95,8 +111,7 @@ impl BankMutationOutcome {
 
     pub const fn unresolved_evidence(&self) -> Option<&BankUnresolvedCommitEvidence> {
         match &self.status {
-            BankMutationStatus::PartialEffect(evidence)
-            | BankMutationStatus::Indeterminate(evidence) => Some(evidence),
+            BankMutationStatus::Indeterminate(evidence) => Some(evidence),
             _ => None,
         }
     }

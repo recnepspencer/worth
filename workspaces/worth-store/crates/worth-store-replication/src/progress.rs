@@ -2,13 +2,12 @@ use core::convert::Infallible;
 
 use worth_proof::TransitionOutcome;
 use worth_store_authority::StoreCurrentAuthorityIdentity;
-use worth_store_recovery_physics::DurabilityReplayIdentity;
 use worth_store_security::StoreSecurityScopeIdentity;
 
 use crate::progress_store::StoredReplicationPeerProgress;
 use crate::{
-    AdmittedReplicationSource, ReplicationLineageIdentity, ReplicationPeerId,
-    ReplicationPublicationReadiness, ReplicationSourceEpoch,
+    AdmittedReplicationSource, DurabilityReplayIdentity, ReplicationLineageIdentity,
+    ReplicationPeerId, ReplicationPublicationReadiness, ReplicationSourceEpoch,
 };
 
 #[derive(Debug)]

@@ -1,6 +1,7 @@
 use super::{
     AtomicPhysicalRootSwap, PhysicalPublicationCounterSnapshot, PhysicalPublicationDenial,
-    PhysicalPublicationReadiness, RootSwapOrderingContract, ValidatedPhysicalPublicationIntent,
+    PhysicalPublicationReadiness, PhysicalPublicationReceipt, RootSwapOrderingContract,
+    ValidatedPhysicalPublicationIntent,
 };
 
 #[derive(Debug, Clone)]
@@ -106,5 +107,17 @@ impl CopyOnWritePublicationPlan {
 
     pub const fn atomic_swap(&self) -> AtomicPhysicalRootSwap {
         self.atomic_swap
+    }
+
+    /// Complete the admitted publication transition and issue its receipt.
+    ///
+    /// The plan is consumed so callers cannot reuse the same admitted
+    /// transition as a second publication effect.
+    pub fn complete(self) -> PhysicalPublicationReceipt {
+        PhysicalPublicationReceipt::from_completed_plan(
+            self.binding(),
+            self.readiness,
+            self.atomic_swap,
+        )
     }
 }

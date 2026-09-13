@@ -347,7 +347,21 @@ fn dependency_output_cannot_overwrite_an_active_direct_dirty_obligation() {
     )
     .unwrap();
     let prepared = graph
-        .prepare_direct_output_causes(&delta, &mut DefaultComparatorPolicyResolver::default())
+        .prepare_direct_output_causes(
+            &delta,
+            &mut DefaultComparatorPolicyResolver::default(),
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )
+        .unwrap();
+    let mut work = crate::data::retained_storage::RetainedStoragePreparation::new(10_000);
+    let projection = crate::data::graph::PendingRevalidationNodeProjection::capture(
+        &graph,
+        delta.producer,
+        &mut work,
+    )
+    .unwrap();
+    let prepared = graph
+        .prepare_direct_cause_publication(prepared, projection, false, &mut work)
         .unwrap();
     graph.publish_direct_output_causes(prepared).unwrap();
 

@@ -1,10 +1,13 @@
 use sha2::{Digest, Sha256};
+use worth_store_physical_format::wal_frame::{
+    decode_wal_frame_v1_header, WalFrameV1ChecksumCalculator, WAL_FRAME_V1_FOOTER_BYTES,
+    WAL_FRAME_V1_HEADER_BYTES,
+};
 
 use super::WalSegmentArtifactIdentity;
 use crate::{LogSequenceNumber, WalArtifactStoreDenial, WalLsnRange};
 
-use crate::artifact_store::frame_codec::{decode_header, FOOTER_BYTES, HEADER_BYTES};
-
+mod accessors;
 mod denial;
 mod owned_artifact;
 mod owned_frame;
@@ -165,7 +168,8 @@ pub fn inspect_bounded_wal_active_tail_with_evidence(
         frames.push(VerifiedWalFramePayload {
             lsn_range,
             payload,
-            encoded_bytes: (HEADER_BYTES + payload.len() + FOOTER_BYTES) as u64,
+            encoded_bytes: (WAL_FRAME_V1_HEADER_BYTES + payload.len() + WAL_FRAME_V1_FOOTER_BYTES)
+                as u64,
         });
         frame_count = frame_count.checked_add(1).ok_or_else(|| {
             inspection_failure(WalArtifactStoreDenial::InvalidFrame, frame_count + 1)
@@ -224,46 +228,50 @@ fn inspect_active_tail_frame<'segment>(
     offset: usize,
     last_lsn_end: Option<u64>,
 ) -> Result<ActiveTailFrame<'segment>, WalArtifactStoreDenial> {
-    if bytes.len() - offset < HEADER_BYTES {
+    if bytes.len() - offset < WAL_FRAME_V1_HEADER_BYTES {
         return Ok(ActiveTailFrame::Interrupted);
     }
     let header_end = offset
-        .checked_add(HEADER_BYTES)
+        .checked_add(WAL_FRAME_V1_HEADER_BYTES)
         .ok_or(WalArtifactStoreDenial::InvalidFrame)?;
-    let header: &[u8; HEADER_BYTES] = bytes
+    let header: &[u8; WAL_FRAME_V1_HEADER_BYTES] = bytes
         .get(offset..header_end)
         .and_then(|header| header.try_into().ok())
         .ok_or(WalArtifactStoreDenial::InvalidFrame)?;
-    let fields = decode_header(header)?;
-    if fields.segment_id != identity.segment().get()
-        || fields.generation != identity.generation().get()
+    let fields = decode_wal_frame_v1_header(header).map_err(super::super::map_wal_frame_denial)?;
+    if fields.segment_id() != identity.segment().get()
+        || fields.generation() != identity.generation().get()
     {
         return Err(WalArtifactStoreDenial::StoreBindingMismatch);
     }
-    if last_lsn_end.is_some_and(|prior| prior != fields.lsn_start) {
+    if last_lsn_end.is_some_and(|prior| prior != fields.lsn_start()) {
         return Err(WalArtifactStoreDenial::NonContiguousLsn);
     }
-    let payload_bytes =
-        usize::try_from(fields.payload_bytes).map_err(|_| WalArtifactStoreDenial::InvalidFrame)?;
+    let payload_bytes = usize::try_from(fields.payload_bytes())
+        .map_err(|_| WalArtifactStoreDenial::InvalidFrame)?;
     let payload_end = header_end
         .checked_add(payload_bytes)
         .ok_or(WalArtifactStoreDenial::InvalidFrame)?;
     let frame_end = payload_end
-        .checked_add(FOOTER_BYTES)
+        .checked_add(WAL_FRAME_V1_FOOTER_BYTES)
         .ok_or(WalArtifactStoreDenial::InvalidFrame)?;
     if frame_end > bytes.len() {
         return Ok(ActiveTailFrame::Interrupted);
     }
     let payload = &bytes[header_end..payload_end];
-    let footer = &bytes[payload_end..frame_end];
-    if Sha256::digest(payload)[..] != header[84..116]
-        || Sha256::digest(&bytes[offset..payload_end])[..] != *footer
-    {
-        return Err(WalArtifactStoreDenial::DigestMismatch);
-    }
+    let footer: &[u8; WAL_FRAME_V1_FOOTER_BYTES] = bytes[payload_end..frame_end]
+        .try_into()
+        .expect("fixed WAL footer");
+    let mut checksums = WalFrameV1ChecksumCalculator::new(header);
+    checksums
+        .update_payload(payload)
+        .map_err(super::super::map_wal_frame_denial)?;
+    checksums
+        .finish(fields, footer)
+        .map_err(super::super::map_wal_frame_denial)?;
     Ok(ActiveTailFrame::Complete {
-        lsn_start: fields.lsn_start,
-        lsn_end: fields.lsn_end,
+        lsn_start: fields.lsn_start(),
+        lsn_end: fields.lsn_end(),
         payload,
         frame_end,
     })
@@ -320,80 +328,4 @@ fn finish_verified_segment<'segment>(
         },
         frames,
     })
-}
-
-impl<'segment> VerifiedWalFramePayload<'segment> {
-    pub const fn lsn_range(self) -> WalLsnRange {
-        self.lsn_range
-    }
-
-    pub const fn payload(&self) -> &'segment [u8] {
-        self.payload
-    }
-
-    pub fn to_owned_verified(self) -> VerifiedWalFrame {
-        VerifiedWalFrame {
-            lsn_range: self.lsn_range,
-            payload: self.payload.into(),
-            encoded_bytes: self.encoded_bytes,
-        }
-    }
-}
-
-impl VerifiedWalSegment<'_> {
-    pub const fn inspection(&self) -> WalSegmentInspection {
-        self.inspection
-    }
-
-    pub fn frames(&self) -> &[VerifiedWalFramePayload<'_>] {
-        &self.frames
-    }
-}
-
-impl<'segment> VerifiedWalActiveTail<'segment> {
-    pub fn into_verified_prefix(self) -> VerifiedWalSegment<'segment> {
-        self.verified_prefix
-    }
-
-    pub const fn interrupted_tail(&self) -> Option<InterruptedWalTail> {
-        self.interrupted_tail
-    }
-}
-
-impl InterruptedWalTail {
-    pub const fn valid_prefix_bytes(self) -> u64 {
-        self.valid_prefix_bytes
-    }
-
-    pub const fn observed_bytes(self) -> u64 {
-        self.observed_bytes
-    }
-}
-
-impl InterruptedWalSegmentStart {
-    pub const fn observed_bytes(self) -> u64 {
-        self.observed_bytes
-    }
-}
-
-impl WalSegmentInspection {
-    pub const fn identity(self) -> WalSegmentArtifactIdentity {
-        self.identity
-    }
-
-    pub const fn lsn_range(self) -> WalLsnRange {
-        self.lsn_range
-    }
-
-    pub const fn frame_count(self) -> u64 {
-        self.frame_count
-    }
-
-    pub const fn byte_count(self) -> u64 {
-        self.byte_count
-    }
-
-    pub const fn artifact_digest(self) -> [u8; 32] {
-        self.artifact_digest
-    }
 }

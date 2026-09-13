@@ -12,6 +12,7 @@ mod durable_root_routing;
 mod durable_segment_routing;
 mod entries;
 mod free_space_routing;
+mod integrity_scope_identity;
 mod physical_free_space_membership_block;
 mod rebuild_source;
 mod reclaim_region;
@@ -51,6 +52,10 @@ pub use durable_segment_routing::{
 };
 pub use entries::*;
 pub use free_space_routing::{FreeSpaceBlockReference, FreeSpaceKey, FreeSpaceRoutingDenial};
+pub use integrity_scope_identity::{
+    DurableArtifactCrc32c, FreeSpaceHeaderScopeIdentity, FreeSpaceMembershipBlockScopeIdentity,
+    PhysicalTreeIdentity, RootRoutingBlockScopeIdentity, SegmentMembershipBlockScopeIdentity,
+};
 pub use physical_free_space_membership_block::{
     BoundedFreeSpaceMembershipBlockDecodeDenial, FreeSpaceMembershipBlockDecodeLimits,
     PhysicalFreeSpaceMembershipBlock,

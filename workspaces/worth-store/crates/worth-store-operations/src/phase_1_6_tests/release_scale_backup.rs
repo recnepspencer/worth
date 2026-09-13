@@ -9,7 +9,7 @@ const STREAM_BUFFER_BYTES: usize = 128 * 1024;
 fn two_gib_owner_bundle_stays_bounded_through_materialization_and_independent_verification() {
     let mut scenario = BackupScenario::new("release-scale-backup");
     replace_blob_with_two_gib_owner_artifact(&mut scenario);
-    let authority = crate::backup::export::current_authority("s10-release-scale-backup");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let operation =
         OperationalOperationId::new("backup-release-scale").expect("operation identity");

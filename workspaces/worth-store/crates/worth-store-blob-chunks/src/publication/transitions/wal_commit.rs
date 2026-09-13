@@ -1,16 +1,15 @@
-use worth_store_recovery_physics::CrashBoundaryLayoutReport;
 use worth_store_wal::PublicationDeclaration;
 
 use super::super::types::reachability_staging::BlobReachabilityStaging;
 use super::super::types::wal_types::{BlobPublicationWalCommit, BlobPublicationWalPayload};
 use super::super::verification::{replayable_wal, wal_replay_identity};
-use super::super::BlobPublicationDenial;
+use super::super::{BlobPublicationCrashBoundaryReport, BlobPublicationDenial};
 
 pub(crate) fn from_replayable_wal_record(
     staged: BlobReachabilityStaging,
     payload: BlobPublicationWalPayload,
     publication_declaration: PublicationDeclaration,
-    replay_report: &CrashBoundaryLayoutReport,
+    replay_report: &BlobPublicationCrashBoundaryReport,
 ) -> Result<BlobPublicationWalCommit, BlobPublicationDenial> {
     let (intent, staging_identity, security_metadata) = staged.into_parts();
     let counters = intent.counters();

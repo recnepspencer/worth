@@ -6,11 +6,10 @@
 //! generic proof machinery are deliberately absent.
 
 pub use crate::domain_installation::{
-    WorthQueryBoundDomainOperation, WorthQueryBranchHeadIdentity,
-    WorthQueryBranchHeadIdentityError, WorthQueryInstalledOperatingWorld,
+    WorthQueryBoundDomainOperation, WorthQueryInstalledOperatingWorld,
     WorthQueryOperatingWorldEntryDenial, WorthQueryOperatingWorldEntryDenialKind,
-    WorthQueryOperationBindingDenial, WorthQueryOperationBindingDenialKind,
-    WorthQueryOperationFamilyView,
+    WorthQueryOperatingWorldProductDenial, WorthQueryOperationBindingDenial,
+    WorthQueryOperationBindingDenialKind, WorthQueryOperationFamilyView,
 };
 
 pub mod transition {
@@ -36,9 +35,8 @@ pub mod operation {
         WorthQueryConsumerProjectionContractDenial, WorthQueryConsumerSupportDimension,
         WorthQueryConsumerSupportPosture, WorthQueryDeferredDomainOperation,
         WorthQueryDerivedPublicationReceipt, WorthQueryDirectResourceAdmissionOutcome,
-        WorthQueryExecutedDomainOperation, WorthQueryExecutionProviderSession,
-        WorthQueryExecutionResourceAdmissionCounters, WorthQueryExecutionResourceAdmissionDenial,
-        WorthQueryExecutionResourceAdmissionDenialKind,
+        WorthQueryExecutedDomainOperation, WorthQueryExecutionResourceAdmissionCounters,
+        WorthQueryExecutionResourceAdmissionDenial, WorthQueryExecutionResourceAdmissionDenialKind,
         WorthQueryExecutionResourceAdmissionPosture, WorthQueryExecutionResourceAttemptEvidence,
         WorthQueryExecutionResourceSupport, WorthQueryExecutionResourceSupportSnapshot,
         WorthQueryNativeAccessCounters, WorthQueryNativeAccessDenial,
@@ -62,16 +60,15 @@ pub mod operation {
 
 pub mod observation {
     pub use crate::domain_installation::{
-        WorthQueryAdmittedConsumerInvalidation, WorthQueryConsumerGranularMaintenanceStop,
-        WorthQueryConsumerInvalidationAdmissionStop, WorthQueryConsumerInvalidationCause,
-        WorthQueryConsumerInvalidationContinuation, WorthQueryConsumerInvalidationCounters,
-        WorthQueryConsumerInvalidationDelta, WorthQueryConsumerInvalidationDeltaStop,
-        WorthQueryConsumerInvalidationDeltaStopKind, WorthQueryConsumerInvalidationDisposition,
-        WorthQueryConsumerInvalidationLocality, WorthQueryLiveBoundDomainProjection,
-        WorthQueryProjectionLeaseAdmissionDenialKind, WorthQueryProjectionLeaseAdmissionOutcome,
-        WorthQueryProjectionLeaseAdmissionStop, WorthQueryProjectionPromotionDenialKind,
-        WorthQueryProjectionPromotionOutcome, WorthQueryProjectionPromotionStop,
-        WorthQueryPublishedConsumerInvalidation, WorthQuerySharedLiveProjectionLease,
+        WorthQueryAdmittedConsumerInvalidation, WorthQueryConsumerInvalidationAdmissionStop,
+        WorthQueryConsumerInvalidationCause, WorthQueryConsumerInvalidationContinuation,
+        WorthQueryConsumerInvalidationCounters, WorthQueryConsumerInvalidationDelta,
+        WorthQueryConsumerInvalidationDeltaStop, WorthQueryConsumerInvalidationDeltaStopKind,
+        WorthQueryConsumerInvalidationDisposition, WorthQueryConsumerInvalidationLocality,
+        WorthQueryLiveBoundDomainProjection, WorthQueryProjectionLeaseAdmissionDenialKind,
+        WorthQueryProjectionLeaseAdmissionOutcome, WorthQueryProjectionLeaseAdmissionStop,
+        WorthQueryProjectionPromotionDenialKind, WorthQueryProjectionPromotionOutcome,
+        WorthQueryProjectionPromotionStop, WorthQuerySharedLiveProjectionLease,
         WorthQuerySharedProjectionDelivery, WorthQuerySharedProjectionDisposalOutcome,
         WorthQuerySharedProjectionDisposalStop, WorthQuerySharedProjectionDrainStop,
     };
@@ -146,7 +143,7 @@ pub mod invalidation {
     pub use crate::live::{
         bind_primary_runtime_granular_invalidations,
         bind_shared_primary_runtime_granular_invalidations,
-        maintain_granular_invalidation_deliveries, maintain_primary_runtime_granular_batch,
+        maintain_primary_runtime_granular_batch,
         maintain_primary_runtime_granular_collection_batch,
         maintain_primary_runtime_granular_invalidations,
         maintain_shared_primary_runtime_granular_batch,

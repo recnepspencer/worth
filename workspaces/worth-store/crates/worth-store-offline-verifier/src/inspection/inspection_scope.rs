@@ -5,10 +5,7 @@ impl OfflineInspectionScope {
     pub const fn all_physical_families() -> Self {
         Self
     }
-    pub const fn includes(
-        self,
-        _family: worth_store_physical_format::OfflinePhysicalArtifactFamily,
-    ) -> bool {
+    pub const fn includes(self, _family: crate::OfflinePhysicalArtifactFamily) -> bool {
         true
     }
 }

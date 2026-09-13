@@ -70,13 +70,13 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
             &request_scope(),
         )
         .expect("proposal drift is a typed commit outcome");
-    assert_eq!(
+    assert!(matches!(
         drift,
         BankMutationCommitOutcome::Denied {
             kind: BankCommitDenialKind::IdempotencyIntentDrift,
             stage: BankCommitDenialStage::Idempotency,
         }
-    );
+    ));
 
     let approver = fixture.authenticate_approver();
     let result = fixture

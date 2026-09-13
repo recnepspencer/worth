@@ -9,6 +9,7 @@ pub struct RecoveryPlanCost {
     observation_reads: u64,
     observation_bytes: u64,
     staging_bytes: u64,
+    peak_recovery_bytes: u64,
     dirty_frames: u64,
 }
 
@@ -34,6 +35,9 @@ pub const fn admit_recovery_plan_cost(
     if cost.staging_bytes > limits.staging_bytes() {
         return Err(RecoveryPlanCostDenial::StagingBytes);
     }
+    if cost.peak_recovery_bytes > limits.recovery_memory_bytes() {
+        return Err(RecoveryPlanCostDenial::RecoveryMemoryBytes);
+    }
     if cost.dirty_frames > limits.dirty_frames() {
         return Err(RecoveryPlanCostDenial::DirtyFrames);
     }
@@ -49,6 +53,7 @@ impl RecoveryPlanCost {
         observation_reads: u64,
         observation_bytes: u64,
         staging_bytes: u64,
+        peak_recovery_bytes: u64,
         dirty_frames: u64,
     ) -> Self {
         Self {
@@ -59,6 +64,7 @@ impl RecoveryPlanCost {
             observation_reads,
             observation_bytes,
             staging_bytes,
+            peak_recovery_bytes,
             dirty_frames,
         }
     }
@@ -83,6 +89,9 @@ impl RecoveryPlanCost {
     pub const fn staging_bytes(self) -> u64 {
         self.staging_bytes
     }
+    pub const fn peak_recovery_bytes(self) -> u64 {
+        self.peak_recovery_bytes
+    }
     pub const fn dirty_frames(self) -> u64 {
         self.dirty_frames
     }
@@ -94,38 +103,42 @@ mod tests {
 
     #[test]
     fn exact_limit_is_admitted_and_each_one_over_limit_is_rejected() {
-        let limits = RecoveryPlanLimits::new(2, 3, 2, 4, 5, 6, 2).unwrap();
-        let exact = RecoveryPlanCost::new(2, 3, 2, 4, 2, 5, 6, 2);
+        let limits = RecoveryPlanLimits::new(2, 3, 2, 4, 5, 6, 7, 2).unwrap();
+        let exact = RecoveryPlanCost::new(2, 3, 2, 4, 2, 5, 6, 7, 2);
         assert_eq!(admit_recovery_plan_cost(limits, exact), Ok(exact));
 
         let attacks = [
             (
-                RecoveryPlanCost::new(3, 3, 2, 4, 2, 5, 6, 2),
+                RecoveryPlanCost::new(3, 3, 2, 4, 2, 5, 6, 7, 2),
                 RecoveryPlanCostDenial::RedoTargets,
             ),
             (
-                RecoveryPlanCost::new(2, 4, 2, 4, 2, 5, 6, 2),
+                RecoveryPlanCost::new(2, 4, 2, 4, 2, 5, 6, 7, 2),
                 RecoveryPlanCostDenial::RedoBytes,
             ),
             (
-                RecoveryPlanCost::new(2, 3, 3, 4, 2, 5, 6, 2),
+                RecoveryPlanCost::new(2, 3, 3, 4, 2, 5, 6, 7, 2),
                 RecoveryPlanCostDenial::DistinctTargets,
             ),
             (
-                RecoveryPlanCost::new(2, 3, 2, 5, 2, 5, 6, 2),
+                RecoveryPlanCost::new(2, 3, 2, 5, 2, 5, 6, 7, 2),
                 RecoveryPlanCostDenial::OperationBindings,
             ),
             (
-                RecoveryPlanCost::new(2, 3, 2, 4, 2, 6, 6, 2),
+                RecoveryPlanCost::new(2, 3, 2, 4, 2, 6, 6, 7, 2),
                 RecoveryPlanCostDenial::ObservationBytes,
             ),
             (
-                RecoveryPlanCost::new(2, 3, 2, 4, 2, 5, 7, 2),
+                RecoveryPlanCost::new(2, 3, 2, 4, 2, 5, 7, 7, 2),
                 RecoveryPlanCostDenial::StagingBytes,
             ),
             (
-                RecoveryPlanCost::new(2, 3, 2, 4, 2, 5, 6, 3),
+                RecoveryPlanCost::new(2, 3, 2, 4, 2, 5, 6, 7, 3),
                 RecoveryPlanCostDenial::DirtyFrames,
+            ),
+            (
+                RecoveryPlanCost::new(2, 3, 2, 4, 2, 5, 6, 8, 2),
+                RecoveryPlanCostDenial::RecoveryMemoryBytes,
             ),
         ];
         for (cost, expected) in attacks {

@@ -35,6 +35,7 @@ pub struct PhysicalDurabilityReopenObservation {
     checkpoint_bytes_read: u64,
     dirty_body_bytes_skipped: u64,
     binding_records_read: u64,
+    checkpoint_integrity_admissions: u64,
     wal_members_read: u64,
 }
 
@@ -117,6 +118,7 @@ impl PhysicalDurabilityReopenObservation {
         checkpoint_bytes_read: u64,
         dirty_body_bytes_skipped: u64,
         binding_records_read: u64,
+        checkpoint_integrity_admissions: u64,
         wal_members_read: u64,
     ) -> Self {
         Self {
@@ -124,6 +126,7 @@ impl PhysicalDurabilityReopenObservation {
             checkpoint_bytes_read,
             dirty_body_bytes_skipped,
             binding_records_read,
+            checkpoint_integrity_admissions,
             wal_members_read,
         }
     }
@@ -142,6 +145,10 @@ impl PhysicalDurabilityReopenObservation {
 
     pub const fn binding_records_read(self) -> u64 {
         self.binding_records_read
+    }
+
+    pub const fn checkpoint_integrity_admissions(self) -> u64 {
+        self.checkpoint_integrity_admissions
     }
 
     pub const fn wal_members_read(self) -> u64 {

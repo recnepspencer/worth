@@ -31,9 +31,7 @@ pub use exploration::{
 pub use identity::ScheduleReplayIdentity;
 pub use interleaving::PhysicalInterleavingSchedule;
 pub use perturbation_trace::{SchedulePerturbationDecision, SchedulePerturbationTrace};
-pub use seed::{
-    SchedulePerturbationSeed, SourceClosureScheduleSeeds, CI_SCHEDULE_PERTURBATION_SEED_COUNT,
-};
+pub use seed::SchedulePerturbationSeed;
 pub use shrink::{
     CounterMismatchSummary, OracleVerdictKind, OracleVerdictSummary, PhysicalFaultLocus,
     ScheduleFailureClass, ScheduleFailureSignature, ScheduleShrinkTrace,

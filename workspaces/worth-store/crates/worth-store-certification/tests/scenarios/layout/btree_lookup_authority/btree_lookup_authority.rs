@@ -8,18 +8,12 @@ use worth_store_layout_indexes::{
     LayoutReadAdmissionDenied, PageLookupRequest, PlannedCounterObservation,
 };
 use worth_store_physical_format::{PhysicalPageId, PhysicalSegmentId};
-use worth_store_physical_integrity::CompactionSourceIntegrityClearance;
-use worth_store_physical_isolation::{
-    next_root_epoch_for_certification, CompactionCandidateRangeSet, CompactionReadInterlockPlan,
-    CompactionSourceIntegrityEvidence,
-};
 use worth_store_security::{
     admitted_store_managed_root_security_scope_for_layout_partition_test,
     admitted_tenant_page_security_scope_for_layout_partition_test,
 };
 use worth_store_test_support::harness::physical_isolation::epoch_scope as physical_support;
 use worth_store_test_support::harness::physical_isolation::read_plan as plan_admission;
-use worth_store_test_support::harness::recovery::source_precedence as source_precedence_fixture;
 use worth_store_test_support::{
     admitted_layout_bootstrap_catalog, baseline_btree_probe_slot,
     deterministic_baseline_btree_read_preflight, deterministic_corrupt_leaf_btree_read_preflight,
@@ -196,54 +190,6 @@ fn stable_plan_omitting_a_candidate_child_cannot_issue_btree_source() {
             worth_store_physical_isolation::PhysicalReadPlanAdmissionDenial::ExecutionTimeReferenceDiscovery,
         ))
     ));
-}
-
-#[test]
-fn active_btree_read_defers_reclaim_for_overlapping_compaction() {
-    let catalog = admitted_layout_bootstrap_catalog();
-    let security = admitted_tenant_page_security_scope_for_layout_partition_test();
-    let preflight = deterministic_baseline_btree_read_preflight();
-    let candidate = preflight.protected_references()[1];
-    let source = admit_source(preflight);
-    let executed = layout_read_runtime()
-        .execute_page_lookup(PageLookupRequest::new(
-            &catalog,
-            security.witnesses(),
-            segment(7),
-            page(9),
-            baseline_btree_probe_slot(),
-            PreExecutionBudgetEnvelope::foreground_default(),
-            source,
-        ))
-        .unwrap()
-        .into_result()
-        .unwrap();
-    let integrity =
-        source_precedence_fixture::intact_wal_integrity_evidence_for_owner(candidate.owner());
-    let clearance =
-        CompactionSourceIntegrityClearance::from_integrity_evidence(&integrity).unwrap();
-    let evidence =
-        CompactionSourceIntegrityEvidence::from_stable_read_receipt_and_integrity_clearance(
-            *executed.stable_read(),
-            clearance,
-        )
-        .unwrap();
-    let old_authority = physical_support::physical_authority_from_complete_closeout();
-    let source_epoch = physical_support::current_root_from_authority(&old_authority).epoch();
-    let target_epoch = next_root_epoch_for_certification(source_epoch);
-    let candidates =
-        CompactionCandidateRangeSet::from_current_generation_refs([candidate]).unwrap();
-    let plan = CompactionReadInterlockPlan::admit(
-        executed.protected().clone(),
-        candidates,
-        source_epoch,
-        target_epoch,
-        evidence,
-    )
-    .unwrap();
-
-    assert!(plan.reclaim_deferred());
-    assert_eq!(plan.counters().overlapping_ranges(), 1);
 }
 
 #[test]

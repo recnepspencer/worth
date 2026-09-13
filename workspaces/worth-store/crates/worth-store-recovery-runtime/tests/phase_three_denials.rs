@@ -6,16 +6,17 @@ use std::num::NonZeroU64;
 use phase_three_support::*;
 use worth_store_physical_format::{
     CheckpointBindingCompactionHeader, CheckpointDirtyFrameBasis, CheckpointRootBasis,
-    CheckpointStreamDecodeDenial, CheckpointStreamEncoder, CheckpointWalSourceRange,
-    DurableRootSelector, PhysicalCheckpointIdentity, PhysicalCheckpointSource, RecordArtifactFile,
+    CheckpointStreamEncoder, CheckpointWalSourceRange, DurableRootSelector,
+    PhysicalCheckpointIdentity, PhysicalCheckpointSource, RecordArtifactFile,
     RecordFrameCoordinate, RootSelectorRole, ROOT_SELECTOR_BYTES,
 };
 use worth_store_recovery_physics::{
     PhysicalRootCandidateDenial, PhysicalRootSelectionDenial, SelectedPhysicalWalTailDenial,
 };
 use worth_store_recovery_runtime::{
-    PhysicalRecoveryBlock, PhysicalRecoveryBlockKind, PhysicalRecoveryLimits,
-    PhysicalRecoverySourceDenial,
+    PhysicalRecoveryBlock, PhysicalRecoveryBlockKind, PhysicalRecoveryCheckpointIntegrityDenial,
+    PhysicalRecoveryLimits, PhysicalRecoveryRootProtocolArtifact,
+    PhysicalRecoveryRootProtocolDenial, PhysicalRecoverySourceDenial,
 };
 
 #[test]
@@ -60,87 +61,17 @@ fn foreign_store_selector_is_rejected_through_the_persisted_boundary() {
     assert!(matches!(
         blocked.evidence().source_denials.as_slice(),
         [
-            PhysicalRecoverySourceDenial::RootSlot {
-                slot: RootSelectorRole::Current,
-                denial: PhysicalRootCandidateDenial::ForeignStore,
-                observed_store: Some(observed),
-                observed_role: Some(RootSelectorRole::Current),
-                observed_generation: Some(1),
+            PhysicalRecoverySourceDenial::RootProtocol {
+                artifact: PhysicalRecoveryRootProtocolArtifact::CurrentSelector,
+                denial: PhysicalRecoveryRootProtocolDenial::Integrity(_),
             },
-            PhysicalRecoverySourceDenial::RootSelection(
-                PhysicalRootSelectionDenial::CurrentRootRejected
-            )
-        ] if *observed == alternate_store
-    ));
-    assert_eq!(blocked.recovery_effects(), 0);
-}
-
-#[test]
-fn root_denials_retain_wrong_role_missing_manifest_and_selector_format() {
-    let wrong_role = root_case("wrong-role", |root| {
-        let path = current_selector(root);
-        let selector = DurableRootSelector::decode(&std::fs::read(&path).unwrap()).unwrap();
-        let replacement = DurableRootSelector::new(
-            selector.store_identity(),
-            selector.format(),
-            selector.identity(),
-            RootSelectorRole::Previous,
-            selector.root_generation(),
-            selector.linked_selector(),
-            selector.linked_root_generation(),
-        )
-        .unwrap();
-        std::fs::write(path, replacement.encode()).unwrap();
-    });
-    assert!(matches!(
-        wrong_role.evidence().source_denials.as_slice(),
-        [
-            PhysicalRecoverySourceDenial::RootSlot {
-                slot: RootSelectorRole::Current,
-                denial: PhysicalRootCandidateDenial::WrongRole,
-                observed_role: Some(RootSelectorRole::Previous),
-                observed_generation: Some(1),
-                ..
+            PhysicalRecoverySourceDenial::RootProtocol {
+                artifact: PhysicalRecoveryRootProtocolArtifact::PreviousSelector,
+                denial: PhysicalRecoveryRootProtocolDenial::Absent,
             },
-            PhysicalRecoverySourceDenial::RootSelection(
-                PhysicalRootSelectionDenial::CurrentRootRejected
-            )
-        ]
-    ));
-
-    let missing_manifest = root_case("missing-manifest", |root| {
-        std::fs::remove_file(
-            root.join("families")
-                .join("records")
-                .join("roots")
-                .join("root-0000000000000001.manifest"),
-        )
-        .unwrap();
-    });
-    assert!(matches!(
-        missing_manifest.evidence().source_denials.as_slice(),
-        [
             PhysicalRecoverySourceDenial::RootSlot {
                 slot: RootSelectorRole::Current,
-                denial: PhysicalRootCandidateDenial::RootMissing,
-                observed_generation: Some(1),
-                ..
-            },
-            PhysicalRecoverySourceDenial::RootSelection(
-                PhysicalRootSelectionDenial::CurrentRootRejected
-            )
-        ]
-    ));
-
-    let selector_format = root_case("selector-format", |root| {
-        std::fs::write(current_selector(root), [0_u8; ROOT_SELECTOR_BYTES]).unwrap();
-    });
-    assert!(matches!(
-        selector_format.evidence().source_denials.as_slice(),
-        [
-            PhysicalRecoverySourceDenial::RootSlot {
-                slot: RootSelectorRole::Current,
-                denial: PhysicalRootCandidateDenial::SelectorFormat(_),
+                denial: PhysicalRootCandidateDenial::SelectorAuthorityMismatch,
                 observed_store: None,
                 observed_role: None,
                 observed_generation: None,
@@ -150,6 +81,7 @@ fn root_denials_retain_wrong_role_missing_manifest_and_selector_format() {
             )
         ]
     ));
+    assert_eq!(blocked.recovery_effects(), 0);
 }
 
 #[test]
@@ -179,9 +111,13 @@ fn torn_current_retains_unlinked_previous_selection_cause() {
     assert!(matches!(
         blocked.evidence().source_denials.as_slice(),
         [
+            PhysicalRecoverySourceDenial::RootProtocol {
+                artifact: PhysicalRecoveryRootProtocolArtifact::CurrentSelector,
+                denial: PhysicalRecoveryRootProtocolDenial::Integrity(_),
+            },
             PhysicalRecoverySourceDenial::RootSlot {
                 slot: RootSelectorRole::Current,
-                denial: PhysicalRootCandidateDenial::SelectorFormat(_),
+                denial: PhysicalRootCandidateDenial::SelectorIntegrity,
                 ..
             },
             PhysicalRecoverySourceDenial::RootSelection(
@@ -196,7 +132,23 @@ fn checkpoint_denials_retain_truncation_integrity_and_count_causes() {
     let truncated = checkpoint_case("truncated", limits(), |path, _| {
         std::fs::write(path, b"short").unwrap();
     });
-    assert_checkpoint_denial(&truncated, CheckpointStreamDecodeDenial::Truncated);
+    assert_checkpoint_denial(&truncated, |denial| {
+        matches!(
+            denial,
+            PhysicalRecoveryCheckpointIntegrityDenial::Integrity(_)
+        )
+    });
+    assert_eq!(
+        truncated.evidence().counters.checkpoint_integrity_attempts,
+        1
+    );
+    assert_eq!(
+        truncated
+            .evidence()
+            .counters
+            .checkpoint_integrity_rejections,
+        1
+    );
 
     let integrity = checkpoint_case("integrity", limits(), |path, store| {
         publish_synthetic_checkpoint(path.parent().unwrap().parent().unwrap(), store);
@@ -204,7 +156,12 @@ fn checkpoint_denials_retain_truncation_integrity_and_count_causes() {
         *bytes.last_mut().unwrap() ^= 0x5a;
         std::fs::write(path, bytes).unwrap();
     });
-    assert_checkpoint_denial(&integrity, CheckpointStreamDecodeDenial::IntegrityMismatch);
+    assert_checkpoint_denial(&integrity, |denial| {
+        matches!(
+            denial,
+            PhysicalRecoveryCheckpointIntegrityDenial::Integrity(_)
+        )
+    });
 
     let mut declaration = limit_declaration(2, 8, 8 * 1024);
     declaration.dirty_frames = 1;
@@ -212,7 +169,15 @@ fn checkpoint_denials_retain_truncation_integrity_and_count_causes() {
     let count = checkpoint_case("record-count", count_limits, |path, store| {
         write_checkpoint_with_two_dirty_records(path, store);
     });
-    assert_checkpoint_denial(&count, CheckpointStreamDecodeDenial::RecordCountMismatch);
+    assert_checkpoint_denial(&count, |denial| {
+        matches!(
+            denial,
+            PhysicalRecoveryCheckpointIntegrityDenial::DirtyRecordLimit {
+                observed: 2,
+                admitted: 1
+            }
+        )
+    });
 }
 
 #[test]
@@ -248,17 +213,21 @@ fn corrupt_wal_counts_scanned_separately_from_valid_and_retains_identity() {
             .err()
             .expect("corrupt canonical WAL must block"),
     );
-    let [PhysicalRecoverySourceDenial::WalArtifact(corruption)] =
-        blocked.evidence().source_denials.as_slice()
-    else {
-        panic!("corrupt canonical WAL must retain typed artifact evidence")
-    };
+    let corruption = blocked
+        .evidence()
+        .source_denials
+        .iter()
+        .find_map(|denial| match denial {
+            PhysicalRecoverySourceDenial::WalIntegrity(corruption) => Some(corruption),
+            _ => None,
+        })
+        .expect("corrupt canonical WAL must retain typed artifact evidence");
     assert_eq!(
         corruption.artifact(),
         path.file_name().unwrap().to_string_lossy()
     );
     assert_eq!(corruption.identity().segment().get(), 1);
-    assert_eq!(format!("{:?}", corruption.denial()), "DigestMismatch");
+    assert!(format!("{:?}", corruption.rejection()).contains("ChecksumMismatch"));
 }
 
 #[test]
@@ -291,12 +260,14 @@ fn wal_gap_retains_the_exact_continuity_denial_and_frontier() {
             .expect("WAL gap must block"),
     );
     assert_eq!(blocked.evidence().lsn, Some(2));
-    assert!(matches!(
-        blocked.evidence().source_denials.as_slice(),
-        [PhysicalRecoverySourceDenial::WalTail(
-            SelectedPhysicalWalTailDenial::SegmentGap
-        )]
-    ));
+    assert!(blocked
+        .evidence()
+        .source_denials
+        .iter()
+        .any(|denial| matches!(
+            denial,
+            PhysicalRecoverySourceDenial::WalTail(SelectedPhysicalWalTailDenial::SegmentGap)
+        )));
 }
 
 fn root_case(name: &str, mutate: impl FnOnce(&std::path::Path)) -> PhysicalRecoveryBlock {
@@ -341,12 +312,16 @@ fn checkpoint_case(
 
 fn assert_checkpoint_denial(
     blocked: &PhysicalRecoveryBlock,
-    expected: CheckpointStreamDecodeDenial,
+    expected: impl Fn(&PhysicalRecoveryCheckpointIntegrityDenial) -> bool,
 ) {
-    assert!(matches!(
-        blocked.evidence().source_denials.as_slice(),
-        [PhysicalRecoverySourceDenial::CheckpointFormat(denial)] if *denial == expected
-    ));
+    assert!(blocked
+        .evidence()
+        .source_denials
+        .iter()
+        .any(|denial| match denial {
+            PhysicalRecoverySourceDenial::CheckpointIntegrity(observed) => expected(observed),
+            _ => false,
+        }));
 }
 
 fn current_selector(root: &std::path::Path) -> std::path::PathBuf {

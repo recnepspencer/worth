@@ -1,8 +1,12 @@
 //! Bank-owned authority for the approved emergency-access phase.
 
-use worth_query_host::facade::domain::TypedApplicationValue;
+use std::num::NonZeroUsize;
+
+use bank_domain::schema::BankSchema;
+use worth_query_host::facade::declaration::application_schema::ApplicationScalarValueBinding;
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationHistoricalRead, WorthQueryApprovedElevation,
+    WorthQueryApprovedElevation, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQuerySelectedProductOperation,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -57,8 +61,26 @@ impl BankApprovedEstateElevation {
         self.query
     }
 
-    pub(crate) fn historical_read(&self) -> WorthQueryApplicationHistoricalRead {
-        self.query.historical_read()
+    pub(crate) fn select_approval_product<'runtime>(
+        &self,
+        application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
+        maximum_history_entries: NonZeroUsize,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'runtime, BankSchema>,
+        crate::BankApplicationQueryDenial,
+    > {
+        let publication = self.query.approval_product_publication();
+        let history = application
+            .branches()
+            .history(application.current_world(), maximum_history_entries)
+            .map_err(crate::BankApplicationQueryDenial::from_product_selection)?;
+        let entry = history
+            .entries()
+            .find(|entry| entry.selected_commit() == publication.composite_commit())
+            .ok_or(crate::BankApplicationQueryDenial::HistoricalCommitUnavailable)?;
+        history
+            .select(&entry)
+            .map_err(crate::BankApplicationQueryDenial::from_product_selection)
     }
 
     pub fn requester_differs_from_approver(&self) -> bool {
@@ -89,7 +111,11 @@ impl BankApprovedEstateElevation {
             .approval_retained_preimage()
             .and_then(|preimage| preimage.field_for(EmergencyAccessStatusField::reference()))
             .is_some_and(|field| {
-                field.value() == &EmergencyAccessStatus::Requested.into_foundational_value()
+                field.value()
+                    == &bank_domain::schema::EmergencyAccessStatusBinding::encode(
+                        &EmergencyAccessStatus::Requested,
+                    )
+                    .expect("declared emergency-access status must encode")
             })
     }
 

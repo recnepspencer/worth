@@ -1,3 +1,5 @@
+mod adjacency_revision;
+mod aspect_versions;
 mod basis_reads;
 mod contracts;
 mod exact_basis_reads;
@@ -7,6 +9,9 @@ mod query_locus_projection;
 mod read_record_identity_ordering;
 mod view;
 
+pub use adjacency_revision::{
+    AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection,
+};
 pub use contracts::{
     ProjectionAspectFilter, ProjectionAspectFilterMode, ProjectionAspectRequirement,
     ProjectionAspectScope,

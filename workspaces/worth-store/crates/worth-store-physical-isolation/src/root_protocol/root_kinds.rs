@@ -4,7 +4,7 @@ use crate::{
     PagePublicationEpochBasis, PhysicalOrderingContract, PhysicalOrderingContractDenial,
     PhysicalOrderingSite, RootEpoch, SegmentPublicationEpochBasis,
 };
-use worth_store_recovery_physics::CheckpointId;
+use worth_store_physical_format::PhysicalCheckpointIdentity;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CurrentPhysicalRoot {
@@ -45,7 +45,7 @@ pub struct CheckpointPublicationRootBasis {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CheckpointPublicationIdentity {
-    digest: String,
+    checkpoint: PhysicalCheckpointIdentity,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -157,14 +157,19 @@ impl CheckpointPublicationRoot {
 }
 
 impl CheckpointPublicationIdentity {
-    pub fn from_checkpoint_id(checkpoint_id: &CheckpointId) -> Self {
-        Self {
-            digest: checkpoint_id.digest().as_str().to_owned(),
-        }
+    pub const fn from_physical_checkpoint_identity(checkpoint: PhysicalCheckpointIdentity) -> Self {
+        Self { checkpoint }
     }
 
-    pub fn matches_checkpoint_id(&self, checkpoint_id: &CheckpointId) -> bool {
-        self.digest == checkpoint_id.digest().as_str()
+    pub fn matches_physical_checkpoint_identity(
+        &self,
+        checkpoint: PhysicalCheckpointIdentity,
+    ) -> bool {
+        self.checkpoint == checkpoint
+    }
+
+    pub const fn physical_checkpoint_identity(&self) -> PhysicalCheckpointIdentity {
+        self.checkpoint
     }
 }
 

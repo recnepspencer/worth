@@ -3,10 +3,11 @@ use std::sync::Arc;
 use worth_foundational::FoundationalBranchReferenceMismatchAxis;
 
 use crate::data::error::SignalError;
-use crate::state::{SignalBranchId, SignalSnapshotV1};
+use crate::state::{SignalBranchId, SignalSnapshotId, SignalSnapshotV1};
 
 use super::{
     AdmittedSignalBranchBasis, SignalBranchAdmissionLease, SignalBranchRetentionAcquisitionDenial,
+    SignalOwnerUnavailable,
 };
 
 /// Owner-bound snapshot authority accepted by canonical restore operations.
@@ -53,7 +54,25 @@ impl AdmittedSignalBranchSnapshot {
 
 #[derive(Debug)]
 pub enum SignalBranchSnapshotCaptureDenial {
+    OwnerUnavailable(SignalOwnerUnavailable),
+    OperationCapacityExhausted {
+        maximum_in_flight_operations: usize,
+    },
+    OwnerReentry,
+    CancelledNoMovement,
     UnknownBranch {
+        branch_id: SignalBranchId,
+    },
+    RetirementInProgress {
+        branch_id: SignalBranchId,
+    },
+    RetiredBranch {
+        branch_id: SignalBranchId,
+    },
+    QuarantinedBranch {
+        branch_id: SignalBranchId,
+    },
+    OwnerCellMisuse {
         branch_id: SignalBranchId,
     },
     BasisMismatch {
@@ -64,6 +83,9 @@ pub enum SignalBranchSnapshotCaptureDenial {
     },
     SnapshotCapacityExhausted {
         maximum_stored_snapshots: usize,
+    },
+    SnapshotIdentityExhausted {
+        next_snapshot_id: SignalSnapshotId,
     },
     OwnerDeniedNoMovement {
         error: SignalError,

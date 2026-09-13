@@ -26,8 +26,9 @@ pub use super::backend::{
     SubscriptionActivationReceipt, WorthQueryBackendEntityLookup, WorthQueryBackendInspectionError,
     WorthQueryBackendInspectionErrorKind, WorthQueryBackendMergeAuthority,
     WorthQueryBridgeBackedRuntimeBackend, WorthQueryIntentAuthorityAdapter,
-    WorthQueryMergeSnapshotOwner, WorthQueryPrimaryGraphBackendHandle, WorthQueryRuntimeBackend,
-    WorthQueryRuntimeBackendParts, WorthQueryRuntimeDeclarationInitializationAdapter,
+    WorthQueryMergeSnapshotOwner, WorthQueryPrimaryGraphBackendHandle,
+    WorthQueryProductSourceDenial, WorthQueryRuntimeBackend, WorthQueryRuntimeBackendParts,
+    WorthQueryRuntimeDeclarationInitializationAdapter,
     WorthQueryRuntimeExistingTruthVerificationAdapter, WorthQueryRuntimeInspectorEvidenceAdapter,
     WorthQueryRuntimeIntentAuthorityAdapter, WorthQueryRuntimePreviewBasisAdapter,
     WorthQueryRuntimeSchemaAdapter, WorthQueryRuntimeSignalSinkAdapter,
@@ -40,6 +41,7 @@ pub use super::backend::{
 pub use super::branch::WorthQueryBranchSession;
 
 pub use super::builder::{
+    WorthQueryDeclarationAuthorityRuntime, WorthQueryDeclarationAuthorityRuntimeBuilder,
     WorthQueryHostRuntimeCompletionError, WorthQueryHostRuntimeInstallationCompletion,
     WorthQueryHostRuntimeInstallationDenial, WorthQueryHostRuntimeInstallationDenialKind,
     WorthQueryHostRuntimeInstallationPlan, WorthQueryHostRuntimeInstallationRequest,

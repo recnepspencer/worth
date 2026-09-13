@@ -1,6 +1,6 @@
 use worth_store::physical_runtime::{
     RecoveredPhysicalRuntimeConstructionDenial, RecoveryDiscoveryFailure,
-    RecoveryFilesystemQualificationError, StoreRecoveryBindingSampleDenial,
+    StoreRecoveryBindingSampleDenial,
 };
 use worth_store_physical_format::{store_namespace::StableStoreIdentity, RecordArtifactFile};
 use worth_store_recovery_physics::{
@@ -8,7 +8,6 @@ use worth_store_recovery_physics::{
     RecoveryPlanCostDenial, RecoveryPlanningCounters,
 };
 
-use super::PhysicalRecoveryEntryBindingDrift;
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
 #[derive(Debug)]
@@ -19,45 +18,37 @@ pub enum PhysicalRecoveryOutcome {
     PublicationIndeterminate(PhysicalRecoveryPublicationIndeterminate),
 }
 
+impl PhysicalRecoveryOutcome {
+    pub(crate) fn with_block_integrity_observations(
+        self,
+        observations: super::PhysicalRecoveryIntegrityObservations,
+    ) -> Self {
+        match self {
+            Self::Blocked(blocked) => {
+                Self::Blocked(blocked.with_integrity_observations(observations))
+            }
+            _ => unreachable!("planning denial construction always yields a blocked outcome"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct PhysicalRecoveryPublicationIndeterminate {
     store: StableStoreIdentity,
     session: super::PhysicalRecoverySessionIdentity,
     counters: super::PhysicalRecoveryPublicationCounters,
     settlement: super::PhysicalRecoveryPublicationSettlementLedger,
+    root_protocol_denials: Vec<super::PhysicalRecoverySourceDenial>,
+    root_protocol_counters: super::PhysicalRecoveryRootProtocolCounters,
+    integrity_observations: super::PhysicalRecoveryIntegrityObservations,
     reopen: Option<super::PhysicalRecoveryReopenFailure>,
     handoff: Option<RecoveredPhysicalRuntimeConstructionDenial>,
     recovery_effects: u64,
+    integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PhysicalRecoveryRefusal {
-    pub kind: PhysicalRecoveryRefusalKind,
-    recovery_effects: u64,
-}
-
-impl PhysicalRecoveryRefusal {
-    pub(crate) const fn new(kind: PhysicalRecoveryRefusalKind, recovery_effects: u64) -> Self {
-        Self {
-            kind,
-            recovery_effects,
-        }
-    }
-
-    pub const fn recovery_effects(&self) -> u64 {
-        self.recovery_effects
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PhysicalRecoveryRefusalKind {
-    CancelledBeforeDiscovery,
-    CancelledBeforeReconstruction,
-    CancelledBeforeExecution,
-    EntryBindingDrift(PhysicalRecoveryEntryBindingDrift),
-    PersistedStoreAdmission(RecoveryFilesystemQualificationError),
-    CoordinationUnavailable,
-}
+mod refusal;
+pub use refusal::{PhysicalRecoveryRefusal, PhysicalRecoveryRefusalKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalRecoveryBlockKind {
@@ -89,6 +80,7 @@ pub enum PhysicalRecoveryLimitDimension {
     RedoTargets,
     RedoBytes,
     StagingBytes,
+    RecoveryMemoryBytes,
     DirtyFrames,
     PublicationEffects,
 }
@@ -104,11 +96,13 @@ pub struct PhysicalRecoveryLimitFailure {
 pub struct PhysicalRecoveryBlockEvidence {
     pub counters: PhysicalRecoveryDiscoveryCounters,
     pub planning_counters: Option<RecoveryPlanningCounters>,
+    pub root_protocol_counters: Option<super::PhysicalRecoveryRootProtocolCounters>,
     pub limit: Option<PhysicalRecoveryLimitFailure>,
     pub artifact: Option<String>,
     pub source_generation: Option<u64>,
     pub lsn: Option<u64>,
     pub source_denials: Vec<super::PhysicalRecoverySourceDenial>,
+    pub integrity_observations: super::PhysicalRecoveryIntegrityObservations,
     pub planning_denial: Option<PhysicalRecoveryPlanningDenial>,
     pub staging_counters: Option<super::PhysicalRecoveryStagingCounters>,
     pub staging_denial: Option<super::PhysicalRecoveryStagingDenial>,
@@ -116,6 +110,21 @@ pub struct PhysicalRecoveryBlockEvidence {
     pub publication_counters: Option<super::PhysicalRecoveryPublicationCounters>,
     pub publication_denial: Option<super::PhysicalRecoveryPublicationDenial>,
     pub publication_settlements: Option<super::PhysicalRecoveryPublicationSettlementLedger>,
+    pub(crate) integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+}
+
+impl PhysicalRecoveryBlockEvidence {
+    pub const fn integrity_observation_count(&self) -> u64 {
+        self.integrity_trace.counters().attempted
+    }
+
+    pub const fn integrity_counters(&self) -> crate::PhysicalRecoveryIntegrityCounters {
+        self.integrity_trace.counters()
+    }
+
+    pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
+        self.integrity_trace.observations()
+    }
 }
 
 impl PhysicalRecoveryPublicationIndeterminate {
@@ -124,6 +133,8 @@ impl PhysicalRecoveryPublicationIndeterminate {
         session: super::PhysicalRecoverySessionIdentity,
         counters: super::PhysicalRecoveryPublicationCounters,
         settlement: super::PhysicalRecoveryPublicationSettlementLedger,
+        root_protocol_denials: Vec<super::PhysicalRecoverySourceDenial>,
+        root_protocol_counters: super::PhysicalRecoveryRootProtocolCounters,
         recovery_effects: u64,
     ) -> Self {
         Self {
@@ -131,9 +142,13 @@ impl PhysicalRecoveryPublicationIndeterminate {
             session,
             counters,
             settlement,
+            root_protocol_denials,
+            root_protocol_counters,
+            integrity_observations: super::PhysicalRecoveryIntegrityObservations::new(Vec::new()),
             reopen: None,
             handoff: None,
             recovery_effects,
+            integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
         }
     }
     pub const fn store_identity(&self) -> StableStoreIdentity {
@@ -148,8 +163,47 @@ impl PhysicalRecoveryPublicationIndeterminate {
     pub const fn settlement(&self) -> &super::PhysicalRecoveryPublicationSettlementLedger {
         &self.settlement
     }
+    pub fn root_protocol_denials(&self) -> &[super::PhysicalRecoverySourceDenial] {
+        &self.root_protocol_denials
+    }
+    pub const fn root_protocol_counters(&self) -> super::PhysicalRecoveryRootProtocolCounters {
+        self.root_protocol_counters
+    }
     pub const fn recovery_effects(&self) -> u64 {
         self.recovery_effects
+    }
+    pub const fn integrity_observation_count(&self) -> u64 {
+        self.integrity_trace.counters().attempted
+    }
+
+    pub const fn integrity_counters(&self) -> crate::PhysicalRecoveryIntegrityCounters {
+        self.integrity_trace.counters()
+    }
+
+    pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
+        self.integrity_trace.observations()
+    }
+
+    pub(crate) fn with_integrity_trace(
+        mut self,
+        trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    ) -> Self {
+        self.integrity_trace = trace;
+        self
+    }
+
+    pub(crate) fn with_integrity_observations(
+        mut self,
+        observations: super::PhysicalRecoveryIntegrityObservations,
+    ) -> Self {
+        self.integrity_observations = observations;
+        self
+    }
+
+    pub const fn wal_integrity_observations(
+        &self,
+    ) -> &super::PhysicalRecoveryIntegrityObservations {
+        &self.integrity_observations
     }
 
     pub(crate) fn with_reopen_failure(
@@ -183,6 +237,7 @@ pub enum PhysicalRecoveryPlanningDenial {
     OperationReconciliation(OperationReconciliationDenial),
     Redo(PhysicalRedoPlanningDenial),
     Page(PhysicalRecoveryPageAdmissionDenial),
+    SuccessorCandidate(super::PhysicalRecoverySuccessorCandidateDenial),
     Cost(RecoveryPlanCostDenial),
 }
 
@@ -199,6 +254,10 @@ pub enum PhysicalRecoveryPageAdmissionDenial {
     InvalidManifest {
         target: Option<PhysicalRedoTargetIdentity>,
         artifact: RecordArtifactFile,
+    },
+    Integrity {
+        artifact: RecordArtifactFile,
+        denial: super::PhysicalRecoveryRootProtocolDenial,
     },
     InvalidTarget(PhysicalRedoTargetIdentity),
     InvalidPage(PhysicalRedoTargetIdentity),
@@ -246,5 +305,32 @@ impl PhysicalRecoveryBlock {
 
     pub const fn recovery_effects(&self) -> u64 {
         self.recovery_effects
+    }
+
+    fn with_integrity_observations(
+        mut self,
+        observations: super::PhysicalRecoveryIntegrityObservations,
+    ) -> Self {
+        self.evidence.integrity_observations = observations;
+        self
+    }
+}
+
+impl PhysicalRecoveryOutcome {
+    pub(crate) fn with_integrity_trace(
+        self,
+        trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    ) -> Self {
+        match self {
+            Self::Blocked(mut block) => {
+                block.evidence.integrity_trace.append(trace);
+                Self::Blocked(block)
+            }
+            Self::Refused(refusal) => Self::Refused(refusal.with_integrity_trace(trace)),
+            Self::PublicationIndeterminate(indeterminate) => {
+                Self::PublicationIndeterminate(indeterminate.with_integrity_trace(trace))
+            }
+            Self::Recovered(recovered) => Self::Recovered(recovered),
+        }
     }
 }

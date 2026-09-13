@@ -2,7 +2,7 @@ use super::{denial::BTreeReplayDenied, request::BTreeReplayRequest};
 
 pub(super) fn admit(
     request: &BTreeReplayRequest<'_>,
-) -> Result<worth_store_recovery_physics::AdmittedBTreeReplayPhysicalSource, BTreeReplayDenied> {
+) -> Result<super::AdmittedBTreeReplayPhysicalSource, BTreeReplayDenied> {
     crate::btree_replay_runtime()
         .admit_physical_source(
             request.physical_source.readiness.clone(),

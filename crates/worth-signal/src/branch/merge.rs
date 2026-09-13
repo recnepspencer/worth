@@ -4,7 +4,7 @@ use worth_foundational::FoundationalBranchReferenceMismatchAxis;
 
 use crate::data::error::SignalError;
 use crate::logic::transaction::BranchMergeResult;
-use crate::state::SignalBranchId;
+use crate::state::{SignalBranchId, SignalSnapshotId};
 
 use super::{AdmittedSignalBranchBasis, SignalBranchRetentionAcquisitionDenial};
 
@@ -70,6 +70,9 @@ pub enum SignalBranchMergeDenial {
     },
     SnapshotCapacityExhausted {
         maximum_stored_snapshots: usize,
+    },
+    SnapshotIdentityExhausted {
+        next_snapshot_id: SignalSnapshotId,
     },
     OwnerFailed {
         error: SignalError,

@@ -1,26 +1,16 @@
-use worth_store_physical_isolation::{
-    PhysicalPublicationDenial, PhysicalPublicationIntent, PublicationCrashRecoveryOutcome,
-};
-use worth_store_recovery_physics::{PublicationCrashStage, RecoveredPublicationStructureKind};
+use worth_store_physical_isolation::{PhysicalPublicationDenial, PublicationCrashRecoveryOutcome};
+use worth_store_physical_isolation::{PublicationCrashStage, RecoveredPublicationStructureKind};
 
 use super::publication_support::{
-    execute_mixed_tree_recovery_replay, execute_publication_recovery_replay, publication_inputs,
-    publication_inputs_with_root_generation, publish_copy_on_write,
-    successor_publication_inputs_for_store,
+    admitted_copy_on_write_plan, execute_mixed_tree_recovery_replay,
+    execute_publication_recovery_replay, publication_inputs,
+    publication_inputs_for_successor_receipt, publication_inputs_with_root_generation,
 };
 
 #[test]
 fn crash_matrix_recovers_old_or_new_stable_structure_never_mixed_tree() {
     let inputs = publication_inputs();
-    let receipt = publish_copy_on_write(
-        PhysicalPublicationIntent::copy_on_write_root_manifest(
-            inputs.old_candidate,
-            inputs.new_candidate,
-            inputs.old_reachability,
-        ),
-        inputs.new_validation,
-        None,
-    );
+    let receipt = admitted_copy_on_write_plan(&inputs).complete();
 
     let before = PublicationCrashRecoveryOutcome::admit_recovery_receipt(
         &receipt,
@@ -77,29 +67,9 @@ fn crash_matrix_recovers_old_or_new_stable_structure_never_mixed_tree() {
 #[test]
 fn recovery_receipt_binds_to_each_publication_receipt_roots() {
     let first = publication_inputs_with_root_generation(721);
-    let first_receipt = publish_copy_on_write(
-        PhysicalPublicationIntent::copy_on_write_root_manifest(
-            first.old_candidate,
-            first.new_candidate,
-            first.old_reachability,
-        ),
-        first.new_validation,
-        None,
-    );
-    let second = successor_publication_inputs_for_store(
-        &first_receipt,
-        &worth_store_physical_format::PhysicalStoreIdentity::physical_format_default(),
-        722,
-    );
-    let second_receipt = publish_copy_on_write(
-        PhysicalPublicationIntent::copy_on_write_root_manifest(
-            second.old_candidate,
-            second.new_candidate,
-            second.old_reachability,
-        ),
-        second.new_validation,
-        None,
-    );
+    let first_receipt = admitted_copy_on_write_plan(&first).complete();
+    let second = publication_inputs_for_successor_receipt(&first_receipt, 722);
+    let second_receipt = admitted_copy_on_write_plan(&second).complete();
     let recovery_receipt =
         execute_publication_recovery_replay(PublicationCrashStage::AfterPublication);
 

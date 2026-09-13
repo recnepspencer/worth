@@ -71,8 +71,9 @@ closes before Milestone 9.17. It establishes stable package identities, typed
 decomposition, fresh reconstruction, and a neutral archive without adding
 application-state persistence. The Milestone 9.17 sequence remains in memory:
 9.17.1 adds exact component bases and Relational branch-local MVCC, corrective
-9.17.1.1 closes owner-port concurrency and lifecycle, 9.17.2 adds Runtime
-Bridge composite history/publication, and 9.17.3 completes Query carriage and
+9.17.1.1 closes Relational publication ports and shared lifecycle, 9.17.1.2
+completes owner services and Signal independent progress, 9.17.2 adds
+dedicated Runtime World composite history/publication, and 9.17.3 completes Query carriage and
 performed-publication-gated live-runtime dispatch.
 Milestone 9.18 accepts tree-based semantic undo/redo over that completed
 composite history.
@@ -691,14 +692,16 @@ F14. Descriptive digests and installation authority seals are different
     branch head, ancestry, and publication. Query owns typed `undo-of` /
     `redo-of` operation meaning but owns no parallel history chain or head.
     Milestone 9.17.1 first adds exact owner component bases and Relational
-    branch-local MVCC, 9.17.2 adds Runtime Bridge-owned composite product
+    branch-local MVCC, 9.17.1.1 and 9.17.1.2 close the Relational and Signal
+    service prerequisites, 9.17.2 adds Runtime World-owned composite product
     branches while preserving each component owner, and 9.17.3 completes Query
     carriage and public-facade cutover;
     Milestone 9.18 owns exact composite source/target selection, tree-based
     reversal/reapplication, and fresh Query admission as new composite history.
-    Runtime Bridge coordinates component correspondence and publication but
-    owns neither correction meaning nor Relational or Signal internal
-    currentness. Semantic merge, rebase, multi-parent publication, offline
+    Runtime Bridge owns installed component correspondence and Runtime World
+    coordinates composite publication; neither owns correction meaning or
+    Relational or Signal internal currentness. Semantic merge, rebase,
+    multi-parent publication, offline
     synchronization, and distributed recovery remain governed by the
     [cross-runtime merging-and-branching roadmap](../cross-runtime/merging-and-branching-roadmap.md).
 66. Indeterminate and externally unresolved outcomes carry a framework-owned
@@ -3163,7 +3166,8 @@ Milestone 9.16 still has one ordinary installed branch and does not implement
 multiple branch heads, branch-local version allocation, concurrent writers on
 different branches, branch creation, merge, rebase, or branch-local inversion.
 Exact Relational/Signal component bases and Relational branch-local MVCC begin
-in Milestone 9.17.1, their corrected owner-port handoff closes in 9.17.1.1,
+in Milestone 9.17.1, Relational publication-service correction closes in
+9.17.1.1, final owner services and Signal progress close in 9.17.1.2,
 composite product-branch creation begins in 9.17.2, and the ordinary Query lane
 closes in 9.17.3; tree-based semantic
 reversal and reapplication begin in Milestone 9.18. Semantic merge, rebase,
@@ -4194,8 +4198,9 @@ component and composite recovery without changing Query package meaning.
 The Milestone 9.17 sequence replaces the conservative single-product-branch
 and global-coordinator limits. Milestone 9.17.1 establishes exact owner-issued
 Relational and Signal component bases plus Relational branch-local MVCC;
-9.17.2 establishes Runtime Bridge-owned composite product branches and
-coordinated publication; 9.17.3 carries the completed authority through Query
+9.17.1.1 and 9.17.1.2 close the required Relational and Signal owner-service
+boundaries; 9.17.2 establishes Runtime World-owned composite product branches
+and coordinated publication; 9.17.3 carries the completed authority through Query
 and cuts over the public facade. Query continues to carry the branch-affine
 authority established here; it does not become the owner of component truth,
 composite correspondence, version allocation, or conflict mechanics. Product

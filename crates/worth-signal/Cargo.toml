@@ -15,20 +15,26 @@ parallel = []
 profile-compact = []
 profile-standard = []
 profile-extended = []
+test-operation-control = []
+test-peak-allocation = []
 
 [dependencies]
 tracing = "0.1"
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive", "rc"] }
 smallvec = { version = "1", features = ["serde"] }
 rayon = "1"
 serde_json = "1"
 worth-proof = { path = "../worth-proof" }
 worth-foundational = { path = "../worth-foundational" }
 sha2 = "0.10"
+im = { version = "15.1", features = ["serde"] }
+arc-swap = "1"
 
 [dev-dependencies]
 worth-harness.workspace = true
+serde_json = { version = "1", features = ["arbitrary_precision"] }
 stats_alloc = "0.1"
+tracking-allocator = { version = "0.4", default-features = false }
 trybuild = "1"
 quote = "1"
 syn = { version = "2", features = ["full", "visit"] }

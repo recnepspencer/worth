@@ -102,6 +102,20 @@ made relevant by the actual implementation, inspect the tests, and state materia
 findings. A concise review summary may name the categories covered and explain
 why other categories were not material.
 
+Every delegated review prompt must state its reading boundary. For incremental
+corrections, give the exact last-approved-to-candidate diff, changed-file and
+finding inventory, invalidated seams, and prior accepted evidence. Instruct the
+reviewer to read that patch once, then revisit only named hunks or line ranges.
+Diff reads use at most five context lines; high-context or whole-file diff
+output is prohibited. The reviewer must not reopen the whole diff or reread the
+full milestone, crate, kernel, manifest set, or dirty surface. Any necessary
+scope expansion is announced and justified before inspection.
+
+Holistic reading is reserved for an explicitly named phase or milestone closure
+gate. Even then, provide the commit inventory and completed evidence up front,
+forbid whole-diff dumps and repeated file reads, and ask the reviewer to trace
+the material semantic clusters rather than reconstructing the repository.
+
 The review ends when the implementation is sound, the accepted tests pass, and
 the reviewers judge the remaining risk acceptable. Do not add evidence whose
 primary purpose is to certify other evidence.

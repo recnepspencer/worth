@@ -81,6 +81,21 @@ fn perf_suppression_wide_fanout_serial() {
                         .unwrap();
                 }
 
+                assert_eq!(
+                    runtime.graph().node_aspect_version(source).unwrap(),
+                    version_ab(10, 0)
+                );
+                assert_eq!(
+                    runtime.graph().node_aspect_version(middle).unwrap(),
+                    version_ab(100, 0)
+                );
+                for &leaf in &leaves {
+                    assert_eq!(
+                        runtime.graph().node_aspect_version(leaf).unwrap(),
+                        version_ab(1_000, 0)
+                    );
+                }
+
                 let before = runtime.observe().metrics();
                 let access_before_transaction = crate::data::access_counters::snapshot();
                 let transaction_start = Instant::now();
@@ -106,6 +121,23 @@ fn perf_suppression_wide_fanout_serial() {
                 let leaf_reread_nanos = leaf_reread_start.elapsed().as_nanos();
                 let access_after_reread = crate::data::access_counters::snapshot();
                 let after = runtime.observe().metrics();
+
+                // Operational policy leaves optional telemetry inactive. Prove
+                // suppression through canonical values, outside timed intervals.
+                assert_eq!(
+                    runtime.graph().node_aspect_version(source).unwrap(),
+                    version_ab(12, 0)
+                );
+                assert_eq!(
+                    runtime.graph().node_aspect_version(middle).unwrap(),
+                    version_ab(100, 0)
+                );
+                for &leaf in &leaves {
+                    assert_eq!(
+                        runtime.graph().node_aspect_version(leaf).unwrap(),
+                        version_ab(1_000, 0)
+                    );
+                }
 
                 let mut metrics = eval_metrics_delta(before, after);
                 if let Value::Object(ref mut map) = metrics {
@@ -150,18 +182,4 @@ fn perf_suppression_wide_fanout_serial() {
     });
 
     assert!(samples.iter().all(|sample| sample.elapsed_micros > 0));
-    assert!(samples.iter().all(|sample| {
-        sample.metrics["tasks_pruned_before_execution"]
-            .as_u64()
-            .unwrap_or(0)
-            > 0
-            || sample.metrics["skipped_by_comparator"]
-                .as_u64()
-                .unwrap_or(0)
-                > 0
-            || sample.metrics["suppressed_downstream_propagations"]
-                .as_u64()
-                .unwrap_or(0)
-                > 0
-    }));
 }

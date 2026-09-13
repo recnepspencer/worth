@@ -67,10 +67,8 @@ impl RecordPublicationDirector {
             PhysicalWalGroupAppendOutcome::Appended(appended) => {
                 attempt.commit_settlement();
                 drop(effect_cutover);
-                #[cfg(feature = "certification-test-authority")]
-                self.mutations.reach_certification_checkpoint(
-                    crate::physical_runtime::durability::
-                        CertificationPhysicalMutationCheckpoint::AfterGroupSeal,
+                self.mutations.reach_checkpoint(
+                    crate::physical_runtime::durability::PhysicalMutationCheckpoint::AfterGroupSeal,
                 );
                 Ok(appended)
             }
@@ -136,10 +134,8 @@ impl RecordPublicationDirector {
         };
         let basis = durable.basis();
         let durable = one(durable.into_members());
-        #[cfg(feature = "certification-test-authority")]
-        self.mutations.reach_certification_checkpoint(
-            crate::physical_runtime::durability::CertificationPhysicalMutationCheckpoint::
-                AfterWalDurability,
+        self.mutations.reach_checkpoint(
+            crate::physical_runtime::durability::PhysicalMutationCheckpoint::AfterWalDurability,
         );
         Ok((basis, durable))
     }
@@ -164,10 +160,8 @@ impl RecordPublicationDirector {
             }
         };
         attempt.enter(PhysicalMutationProgressPhase::DataSettlement);
-        #[cfg(feature = "certification-test-authority")]
-        self.mutations.reach_certification_checkpoint(
-            crate::physical_runtime::durability::CertificationPhysicalMutationCheckpoint::
-                DuringDataSettlement,
+        self.mutations.reach_checkpoint(
+            crate::physical_runtime::durability::PhysicalMutationCheckpoint::DuringDataSettlement,
         );
         let settled = match dispatched.settle_exact_effects() {
             PhysicalDataSettlementOutcome::Settled(settled) => settled,
@@ -192,10 +186,8 @@ impl RecordPublicationDirector {
                 ))
             }
         };
-        #[cfg(feature = "certification-test-authority")]
-        self.mutations.reach_certification_checkpoint(
-            crate::physical_runtime::durability::CertificationPhysicalMutationCheckpoint::
-                AfterDataSettlement,
+        self.mutations.reach_checkpoint(
+            crate::physical_runtime::durability::PhysicalMutationCheckpoint::AfterDataSettlement,
         );
         Ok(settled)
     }
@@ -219,10 +211,8 @@ impl RecordPublicationDirector {
                 ))
             }
         };
-        #[cfg(feature = "certification-test-authority")]
-        self.mutations.reach_certification_checkpoint(
-            crate::physical_runtime::durability::CertificationPhysicalMutationCheckpoint::
-                DuringRootPublication,
+        self.mutations.reach_checkpoint(
+            crate::physical_runtime::durability::PhysicalMutationCheckpoint::DuringRootPublication,
         );
         Ok(prepared_root)
     }

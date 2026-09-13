@@ -2,9 +2,6 @@ use worth_store_wal::{BlobWalRecordIdentity, BlobWalRecordKind, CheckpointArtifa
 
 use crate::{LsmCompactionMembership, LsmMembershipRecord};
 use std::sync::atomic::{AtomicU64, Ordering};
-use worth_store_recovery_physics::{
-    PartialPublicationClassification, UnacknowledgedPublicationOutcome,
-};
 
 static NEXT_LSM_REPLAY_SOURCE_IDENTITY: AtomicU64 = AtomicU64::new(1);
 
@@ -36,8 +33,6 @@ pub enum LsmReplaySourceDenial {
     MembershipWalRangeOverlap,
     CheckpointDoesNotCoverMembership,
     CheckpointDoesNotBindMembership,
-    PartialPublicationAmbiguous,
-    TornPublication,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,15 +57,11 @@ impl AdmittedLsmReplaySource {
     pub fn admit_recovered_membership(
         membership: LsmCompactionMembership,
         checkpoint: Option<&CheckpointArtifactObservation>,
-        partial: Option<&PartialPublicationClassification>,
     ) -> Result<Self, LsmReplaySourceDenial> {
         validate_membership(&membership)?;
         let records = membership.record_set();
         let first_wal_lsn = records.value().durable_scope().lsn_start();
         let last_wal_lsn = records.tombstone().durable_scope().lsn_end();
-        let checkpoint = classify_partial_publication(partial)?
-            .then_some(checkpoint)
-            .flatten();
         let (selected_source, selected_first_lsn, selected_last_lsn) = match checkpoint {
             Some(checkpoint) if checkpoint.scope().covered_lsn_end() >= last_wal_lsn => {
                 if checkpoint.scope().covered_lsn_start() > first_wal_lsn {
@@ -158,27 +149,6 @@ impl LsmReplayExecutionPlan {
 
     pub const fn remaining_run_count(self) -> u16 {
         self.remaining_run_count
-    }
-}
-
-fn classify_partial_publication(
-    partial: Option<&PartialPublicationClassification>,
-) -> Result<bool, LsmReplaySourceDenial> {
-    let Some(partial) = partial else {
-        return Ok(true);
-    };
-    match partial.outcome() {
-        UnacknowledgedPublicationOutcome::NoWalAppendObserved
-        | UnacknowledgedPublicationOutcome::WalAppendedButNotDurable
-        | UnacknowledgedPublicationOutcome::DurableWalReplayable
-        | UnacknowledgedPublicationOutcome::RejectedNonAuthoritativePromotion => Ok(false),
-        UnacknowledgedPublicationOutcome::CheckpointCutoverAmbiguous
-        | UnacknowledgedPublicationOutcome::Ambiguous => {
-            Err(LsmReplaySourceDenial::PartialPublicationAmbiguous)
-        }
-        UnacknowledgedPublicationOutcome::TornPublicationRejected => {
-            Err(LsmReplaySourceDenial::TornPublication)
-        }
     }
 }
 

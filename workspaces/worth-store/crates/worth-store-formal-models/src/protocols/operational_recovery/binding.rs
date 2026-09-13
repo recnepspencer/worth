@@ -1,5 +1,9 @@
 use worth_store_operations::OperationalControlRecordKind as Record;
 
+// These publication states remain part of the cold S10 model, but their
+// deleted C7/S10 owner records are intentionally not constructible from the
+// current production record vocabulary.
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum OperationalRecoveryActionBinding {
     None,
@@ -94,30 +98,6 @@ pub(super) fn binding_from_record(kind: &Record) -> OperationalRecoveryActionBin
             plan: *plan_fingerprint,
             execution: *execution_plan_fingerprint,
             replayed: *replay_same_operation_identity,
-        },
-        Record::RecoveryPublicationPrepared { binding } => {
-            Binding::PublicationPrepared(PublicationBinding::from_control(binding))
-        }
-        Record::RecoveryPublicationPending { binding } => {
-            Binding::PublicationPending(PublicationBinding::from_control(binding))
-        }
-        Record::RecoveryPublicationDisposition {
-            publication_identity,
-            observed_authority,
-            ..
-        } => Binding::PublicationDisposition {
-            publication: *publication_identity,
-            observed_authority: observed_authority.fingerprint(),
-        },
-        Record::RecoveryPublicationFenceReleased {
-            publication_identity,
-            fence_identity,
-            fence_plan_fingerprint,
-            ..
-        } => Binding::FenceReleased {
-            publication: *publication_identity,
-            fence: *fence_identity,
-            fence_plan: *fence_plan_fingerprint,
         },
         Record::ReplicaBootstrapTransferRecorded {
             authorization_plan_fingerprint,
@@ -215,19 +195,6 @@ pub(super) fn binding_from_record(kind: &Record) -> OperationalRecoveryActionBin
 }
 
 impl PublicationBinding {
-    fn from_control(binding: &worth_store_operations::RecoveryPublicationControlBinding) -> Self {
-        Self {
-            publication: binding.publication_identity(),
-            candidate: binding.candidate_media_identity(),
-            fence: binding.fence_identity(),
-            fence_plan: binding.fence_plan_fingerprint(),
-            cutover_plan: binding.cutover_plan_fingerprint(),
-            publication_plan: binding.publication_plan_fingerprint(),
-            authority_posture: binding.authority_posture().identity(),
-            admission_policy: binding.admission_policy().identity(),
-        }
-    }
-
     pub(super) const fn publication(self) -> [u8; 32] {
         self.publication
     }

@@ -3,10 +3,12 @@ mod completion;
 mod context;
 mod counters;
 mod denial;
+mod manifest_entry_budget;
 mod operation_join;
 mod page_observation;
 mod resolved_basis;
 mod selected_source_inventory;
+mod successor_candidate_observation;
 
 use crate::entry::PhysicalRecoveryOutcome;
 use crate::progression::{PlannedPhysicalRecovery, SelectedPhysicalRecovery};

@@ -1,7 +1,15 @@
-pub(crate) mod execution;
-pub(crate) mod offline_scrub_input;
-pub(crate) mod plan;
-pub(crate) mod scrub_counters;
-pub(crate) mod scrub_denial;
-pub(crate) mod scrub_scheduler_demand;
-pub(crate) mod scrub_window;
+mod bootstrap_inspection;
+mod counters;
+mod inspection;
+mod outcome;
+mod validate_window;
+mod validator;
+mod window;
+pub use validator::PhysicalIntegrityScrubValidator;
+
+pub use counters::PhysicalIntegrityScrubCounters;
+pub use inspection::PhysicalIntegrityScrubInspection;
+pub use outcome::PhysicalIntegrityScrubWindowOutcome;
+pub use validate_window::inspect_physical_integrity_window;
+pub use window::PhysicalIntegrityScrubWindow;
+mod selector_inspection;

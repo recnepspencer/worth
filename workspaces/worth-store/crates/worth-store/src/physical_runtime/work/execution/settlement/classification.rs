@@ -16,6 +16,8 @@ use crate::physical_runtime::work::{
 
 mod checkpoint;
 pub(in crate::physical_runtime::work::execution::settlement) mod publication;
+#[cfg(feature = "recovery-runtime-owner")]
+mod recovery;
 mod wal;
 mod wal_reclamation;
 
@@ -24,6 +26,24 @@ pub(super) fn classify(
     outcome: PhysicalExecutorOutcome,
 ) -> PhysicalWorkSettlementEvidence {
     match outcome {
+        PhysicalExecutorOutcome::InspectionObserved {
+            physical,
+            bytes,
+            scheduler,
+        } if dispatched.matches_inspection(&physical)
+            && bytes.len() == physical.range().length() as usize =>
+        {
+            PhysicalWorkSettlementEvidence::Inspection {
+                physical,
+                bytes,
+                scheduler,
+            }
+        }
+        PhysicalExecutorOutcome::InspectionDenied(failure)
+            if dispatched.intent().scope().inspection_target().is_some() =>
+        {
+            PhysicalWorkSettlementEvidence::InspectionDenied(failure)
+        }
         PhysicalExecutorOutcome::DeniedBeforeEffect { failure, retry } => {
             PhysicalWorkSettlementEvidence::NoEffect(PhysicalWorkNoEffectEvidence {
                 failure,
@@ -136,11 +156,7 @@ pub(super) fn classify(
             let coordinate = dispatched
                 .coordinate()
                 .expect("recovery staging work has one exact coordinate");
-            publication::indeterminate_new_artifact(
-                dispatched,
-                physical.into_physical(),
-                coordinate,
-            )
+            recovery::indeterminate_recovery_staging(dispatched, physical, coordinate)
         }
         PhysicalExecutorOutcome::PublicationEffectIndeterminate(physical)
             if dispatched.matches_publication_effect_indeterminate(&physical) =>

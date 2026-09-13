@@ -1,25 +1,42 @@
 use crate::data::core_profile::StableHashValue;
 use crate::data::graph::signal_graph::SignalGraph;
-use crate::data::output::{CanonicalChangedRegions, OutputChange};
-use crate::data::trace::{ColdArtifactIntent, COLD_ARTIFACT_INTENT_LABEL_LIMIT};
+use crate::data::output::OutputChange;
 use crate::diagnostics::policy::ArtifactRetentionPolicy;
 use crate::logic::evaluation::{EvaluationEffect, EvaluationVerdict, SuppressionReason};
-use smallvec::SmallVec;
 
 pub(super) fn count_changed_partitions(
     changed_regions: &[crate::data::output::ChangedRegion],
-) -> u32 {
-    let mut partitions: SmallVec<[crate::data::output::PartitionToken; 4]> = SmallVec::new();
+    work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+) -> Result<u32, crate::data::error::SignalError> {
+    work.reserve(
+        changed_regions
+            .len()
+            .checked_mul(std::mem::size_of::<&crate::data::output::PartitionToken>() + 1)
+            .filter(|bytes| *bytes <= isize::MAX as usize),
+    )?;
+    // Borrow partition payloads; counting never needs an owned string copy.
+    let mut partitions: Vec<&crate::data::output::PartitionToken> =
+        Vec::with_capacity(changed_regions.len());
     for region in changed_regions {
-        if partitions
+        work.reserve(
+            region
+                .partition
+                .0
+                .len()
+                .checked_mul(2)
+                .and_then(|n| n.checked_add(2))
+                .and_then(|cost| cost.checked_mul(partitions.len())),
+        )?;
+        if !partitions
             .iter()
-            .any(|partition| partition == &region.partition)
+            .any(|partition| *partition == &region.partition)
         {
-            continue;
+            partitions.push(&region.partition);
         }
-        partitions.push(region.partition.clone());
     }
-    partitions.len() as u32
+    u32::try_from(partitions.len()).map_err(|_| {
+        crate::data::error::SignalError::invalid_input("changed partition count exceeds u32")
+    })
 }
 
 pub(super) fn verdict_retains_runtime_artifact(verdict: &EvaluationVerdict) -> bool {
@@ -70,60 +87,6 @@ pub(super) fn trace_output_hash(version: crate::data::aspect::AspectVersion) -> 
         hash = hash.wrapping_mul(0x100000001b3_u128);
     }
     hash as StableHashValue
-}
-
-pub(super) fn build_cold_artifact_intent(
-    effect: &EvaluationEffect,
-    retention: &crate::diagnostics::policy::RetentionBudget,
-) -> Option<ColdArtifactIntent> {
-    if matches!(
-        retention.explanation_retention,
-        ArtifactRetentionPolicy::Omit
-    ) && matches!(
-        retention.provenance_retention,
-        ArtifactRetentionPolicy::Omit
-    ) {
-        return None;
-    }
-    let retain_reuse_boundary_detail = matches!(
-        effect.operational.reuse_basis.strategy,
-        Some(crate::data::reuse::ReuseStrategy::CrossIdentityPersistentMatch)
-            | Some(crate::data::reuse::ReuseStrategy::PartialArtifactSplicing)
-    );
-    let labels = if matches!(
-        retention.explanation_retention,
-        ArtifactRetentionPolicy::Retain
-    ) || matches!(
-        retention.provenance_retention,
-        ArtifactRetentionPolicy::Retain
-    ) {
-        effect
-            .labels()
-            .iter()
-            .take(COLD_ARTIFACT_INTENT_LABEL_LIMIT)
-            .cloned()
-            .collect()
-    } else {
-        SmallVec::new()
-    };
-    let intent = ColdArtifactIntent {
-        changed_regions: CanonicalChangedRegions::from_slice(effect.changed_regions()),
-        labels,
-        keyed_family: effect.keyed_context().and_then(|keyed| {
-            keyed
-                .family
-                .as_ref()
-                .map(|family| family.as_str().to_owned())
-        }),
-        keyed_key: effect
-            .keyed_context()
-            .and_then(|keyed| keyed.key.as_ref().map(|key| key.as_str().to_owned())),
-        reuse_certification: effect.reuse_certification().cloned(),
-        reuse_boundary_context: retain_reuse_boundary_detail
-            .then(|| effect.reuse_boundary_detail().cloned())
-            .flatten(),
-    };
-    (!intent.is_empty()).then_some(intent)
 }
 
 pub(super) fn runtime_policy_omits_cold_artifacts(graph: &SignalGraph) -> bool {

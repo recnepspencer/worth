@@ -1,11 +1,13 @@
-error[E0599]: no method named `create_branch` found for mutable reference `&mut SignalRuntime<(), (), (), ()>` in the current scope
+error[E0624]: method `create_branch` is private
  --> tests/ui/branch_reference/legacy_create_branch_is_private.rs:4:21
   |
-4 |     let _ = runtime.create_branch("legacy");
-  |                     ^^^^^^^^^^^^^
+4 |       let _ = runtime.create_branch("legacy");
+  |                       ^^^^^^^^^^^^^ private method
   |
-help: there is a method `current_branch` with a similar name, but with different arguments
- --> src/logic/transaction/runtime/state/branching/lifecycle.rs
+ ::: src/logic/transaction/runtime/state/branching/lifecycle.rs
   |
-  |     pub fn current_branch(&self) -> SignalBranchHandle {
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  | /     pub(crate) fn create_branch(
+  | |         &mut self,
+  | |         name: impl Into<String>,
+  | |     ) -> Result<SignalBranchHandle, SignalError> {
+  | |________________________________________________- private method defined here

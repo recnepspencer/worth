@@ -158,7 +158,11 @@ pub(super) fn delete_entity_with_cascade(
     Ok(())
 }
 
-pub(crate) fn apply_adjacency_deltas(state: &mut WorkingState, deltas: &[AdjacencyDelta]) {
+pub(crate) fn apply_adjacency_deltas(
+    state: &mut WorkingState,
+    deltas: &[AdjacencyDelta],
+    version_id: crate::identity::data::VersionId,
+) {
     for delta in deltas {
         let (source, target) = match delta.kind {
             AdjacencyDeltaKind::Created { source, target }
@@ -174,11 +178,11 @@ pub(crate) fn apply_adjacency_deltas(state: &mut WorkingState, deltas: &[Adjacen
                 source_partition
                     .adjacency
                     .ensure(source.slot_index(), &source_partition.adjacency_policy)
-                    .insert(delta.kind_id, delta.relation_id);
+                    .insert_at(delta.kind_id, delta.relation_id, version_id);
             }
             AdjacencyDeltaKind::Deleted { .. } => {
                 if let Some(relations) = source_partition.adjacency.get_mut(source.slot_index()) {
-                    relations.remove(delta.kind_id, &delta.relation_id);
+                    relations.remove_at(delta.kind_id, &delta.relation_id, version_id);
                 }
             }
         }
@@ -190,14 +194,14 @@ pub(crate) fn apply_adjacency_deltas(state: &mut WorkingState, deltas: &[Adjacen
                 target_partition
                     .reverse_adjacency
                     .ensure(target.slot_index(), &target_partition.adjacency_policy)
-                    .insert(delta.kind_id, delta.relation_id);
+                    .insert_at(delta.kind_id, delta.relation_id, version_id);
             }
             AdjacencyDeltaKind::Deleted { .. } => {
                 if let Some(relations) = target_partition
                     .reverse_adjacency
                     .get_mut(target.slot_index())
                 {
-                    relations.remove(delta.kind_id, &delta.relation_id);
+                    relations.remove_at(delta.kind_id, &delta.relation_id, version_id);
                 }
             }
         }

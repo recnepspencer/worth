@@ -25,12 +25,8 @@ fn test_root() -> PathBuf {
         &root.join("tools/boundary-check/snapshots"),
     );
     copy_dir(
-        &workspace_root().join("cad/workspaces/worth-contracts/crates/worth-schema-core"),
-        &root.join("cad/workspaces/worth-contracts/crates/worth-schema-core"),
-    );
-    copy_dir(
-        &workspace_root().join("cad/workspaces/worth-packs/crates/worth-pack-registry"),
-        &root.join("cad/workspaces/worth-packs/crates/worth-pack-registry"),
+        &workspace_root().join("workspaces/worth-contracts/crates/worth-schema-core"),
+        &root.join("workspaces/worth-contracts/crates/worth-schema-core"),
     );
     // Framework Query packages are configured in road1.toml and live in their
     // dedicated workspace for orientation generation.
@@ -162,7 +158,7 @@ fn generation_is_stable_and_check_passes() {
     );
 
     let schema_path =
-        root.join("cad/workspaces/worth-contracts/crates/worth-schema-core/AGENT_CONTEXT.md");
+        root.join("workspaces/worth-contracts/crates/worth-schema-core/AGENT_CONTEXT.md");
     let first = fs::read_to_string(&schema_path).expect("read generated context");
     assert!(
         first.contains("Canonical machine constitution: `tools/boundary-check/config/road1.toml`")
@@ -240,7 +236,7 @@ fn stale_hand_edit_is_rejected() {
     );
 
     let schema_path =
-        root.join("cad/workspaces/worth-contracts/crates/worth-schema-core/AGENT_CONTEXT.md");
+        root.join("workspaces/worth-contracts/crates/worth-schema-core/AGENT_CONTEXT.md");
     fs::write(&schema_path, "tampered\n").expect("overwrite generated context");
 
     let check = run_tool(&root, "check");

@@ -3,7 +3,7 @@ use super::support::*;
 #[test]
 fn independent_verification_rejects_cross_component_wal_closure_tampering() {
     let scenario = BackupScenario::new("wal-closure-defect");
-    let authority = crate::backup::export::current_authority("s10-wal-closure-defect");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-wal-closure-defect").expect("operation id"),
@@ -104,7 +104,7 @@ fn structurally_valid_bundle_omission_cannot_release_a_larger_admitted_cut() {
     let mut complete = scenario.references().to_vec();
     complete.push(extra);
 
-    let authority = crate::backup::export::current_authority("s10-omitted-reachable-page");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let operation =
         OperationalOperationId::new("backup-omitted-reachable-page").expect("operation");
@@ -181,7 +181,7 @@ fn structurally_valid_bundle_omission_cannot_release_a_larger_admitted_cut() {
 #[test]
 fn independently_decodable_files_cannot_claim_one_physical_owner_twice() {
     let scenario = BackupScenario::new("duplicate-physical-owner");
-    let authority = crate::backup::export::current_authority("s10-duplicate-physical-owner");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-duplicate-physical-owner").expect("operation"),

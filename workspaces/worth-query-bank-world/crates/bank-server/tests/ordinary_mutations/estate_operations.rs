@@ -16,12 +16,8 @@ mod open_estate_case;
 mod phase8_cross_gate;
 #[path = "estate_operations/phase8_exact_handle_authority.rs"]
 mod phase8_exact_handle_authority;
-#[path = "estate_operations/phase8_fanout_courtroom.rs"]
-mod phase8_fanout_courtroom;
 #[path = "estate_operations/phase8_ordinary_commit_cost.rs"]
 mod phase8_ordinary_commit_cost;
-#[path = "estate_operations/phase8_proved_undo_fixture.rs"]
-mod phase8_proved_undo_fixture;
 #[path = "estate_operations/phase8_publication_noninterference.rs"]
 mod phase8_publication_noninterference;
 #[path = "estate_operations/phase8_recovery_counters.rs"]
@@ -32,24 +28,10 @@ mod phase8_recovery_expiry;
 mod phase8_recovery_mechanism;
 #[path = "estate_operations/phase8_recovery_policy.rs"]
 mod phase8_recovery_policy;
-#[path = "estate_operations/phase8_redo_denials.rs"]
-mod phase8_redo_denials;
-#[path = "estate_operations/phase8_redo_world_drift.rs"]
-mod phase8_redo_world_drift;
 #[path = "estate_operations/phase8_residue.rs"]
 mod phase8_residue;
 #[path = "estate_operations/phase8_safe_retry.rs"]
 mod phase8_safe_retry;
-#[path = "estate_operations/phase8_undo_denial_support.rs"]
-mod phase8_undo_denial_support;
-#[path = "estate_operations/phase8_undo_denials.rs"]
-mod phase8_undo_denials;
-#[path = "estate_operations/phase8_undo_denials_lifecycle.rs"]
-mod phase8_undo_denials_lifecycle;
-#[path = "estate_operations/phase8_undo_money.rs"]
-mod phase8_undo_money;
-#[path = "estate_operations/phase8_undo_recorded_inverse.rs"]
-mod phase8_undo_recorded_inverse;
 #[path = "estate_operations/recognize_executor.rs"]
 mod recognize_executor;
 #[path = "estate_operations/release_estate.rs"]

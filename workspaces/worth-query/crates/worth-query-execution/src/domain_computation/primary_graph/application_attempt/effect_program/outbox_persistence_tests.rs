@@ -15,7 +15,8 @@ use worth_foundational::facade::{
     AspectValue, BoundaryProtocolIdentity, BoundaryProtocolVersion, InternedString,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEffectPayload, ApplicationExternalEffectPayload, ApplicationExternalEffectProtocol,
+    ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
+    ApplicationRetainedEffectBinding,
 };
 use worth_query_installation::facade::InstalledExternalEffectContract;
 use worth_relational::facade::history::BranchId;
@@ -49,18 +50,19 @@ worth_query_declaration::worth_query_portable_type!(
     DeathNotice => "worth.query.test.death-notice.v1"
 );
 
-impl ApplicationEffectPayload for DeathNotice {
-    fn retained_bytes(&self) -> u64 {
-        u64::try_from(std::mem::size_of::<Self>() + self.0.capacity()).unwrap_or(u64::MAX)
+worth_query_declaration::worth_query_structured_value_binding!(DeathNoticeBinding for DeathNotice { identity: "worth.query.test.death-notice.v1" });
+impl ApplicationRetainedEffectBinding for DeathNoticeBinding {
+    fn retained_bytes(value: &Self::Value) -> u64 {
+        u64::try_from(std::mem::size_of::<Self::Value>() + value.0.capacity()).unwrap_or(u64::MAX)
     }
 }
 
-impl ApplicationExternalEffectPayload for DeathNotice {
+impl ApplicationExternalEffectBinding for DeathNoticeBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = EXTERNAL_PROTOCOL;
     const MAX_EXTERNAL_BYTES: u64 = 8;
 
-    fn external_effect_bytes(&self) -> Vec<u8> {
-        self.0.clone()
+    fn external_effect_bytes(value: &Self::Value) -> Vec<u8> {
+        value.0.clone()
     }
 }
 
@@ -125,9 +127,9 @@ fn assert_protocol_projection(evidence: &OutboxProjectionEvidence) {
     );
     assert_eq!(
         spec.fields.get(&layout.payload_locator),
-        Some(&text(hex(
-            DeathNotice(NOTICE.to_vec()).external_effect_bytes()
-        ))),
+        Some(&text(hex(DeathNoticeBinding::external_effect_bytes(
+            &DeathNotice(NOTICE.to_vec()),
+        )))),
         "the persisted payload is the emission's own wire projection"
     );
     assert_eq!(
@@ -149,7 +151,7 @@ fn assert_protocol_projection(evidence: &OutboxProjectionEvidence) {
     );
     assert_eq!(
         spec.fields.get(&layout.maximum_payload_bytes_locator),
-        Some(&AspectValue::UInt64(DeathNotice::MAX_EXTERNAL_BYTES)),
+        Some(&AspectValue::UInt64(DeathNoticeBinding::MAX_EXTERNAL_BYTES)),
         "the persisted bound is the payload type's own associated constant"
     );
     assert_eq!(
@@ -233,15 +235,18 @@ fn installed_contract() -> InstalledExternalEffectContract {
         effect: EFFECT.to_owned(),
         rust_payload_type: <DeathNotice as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY,
         protocol: EXTERNAL_PROTOCOL,
-        maximum_payload_bytes: DeathNotice::MAX_EXTERNAL_BYTES,
+        maximum_payload_bytes: DeathNoticeBinding::MAX_EXTERNAL_BYTES,
     }
 }
 
 fn admitted_notice() -> WorthQueryAdmittedApplicationEmissionBatch {
     WorthQueryAdmittedApplicationEmissionBatch::admit(
         vec![
-            WorthQueryApplicationEmission::new_external(EFFECT, DeathNotice(NOTICE.to_vec()))
-                .expect("the fixture projection stays within its declared bound"),
+            WorthQueryApplicationEmission::new_external::<DeathNoticeBinding>(
+                EFFECT,
+                DeathNotice(NOTICE.to_vec()),
+            )
+            .expect("the fixture projection stays within its declared bound"),
         ],
         1_024,
     )

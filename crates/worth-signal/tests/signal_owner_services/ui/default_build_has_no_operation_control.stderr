@@ -1,0 +1,20 @@
+error[E0432]: unresolved import `worth_signal::facade::branch::SignalOwnerOperationBoundary`
+ --> tests/signal_owner_services/ui/default_build_has_no_operation_control.rs:1:5
+  |
+1 | use worth_signal::facade::branch::SignalOwnerOperationBoundary;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `SignalOwnerOperationBoundary` in `facade::branch`
+  |
+note: found an item that was configured out
+ --> src/facade/branch.rs
+  |
+  | #[cfg(feature = "test-operation-control")]
+  |       ---------------------------------- the item is gated behind the `test-operation-control` feature
+  | pub use crate::branch::{
+  |     SignalOwnerOperationBoundary, SignalOwnerOperationControl, SignalOwnerOperationPause,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `owner_operation_control` found for struct `SignalRuntime<D, I, E, Ctx, T>` in the current scope
+  --> tests/signal_owner_services/ui/default_build_has_no_operation_control.rs:14:21
+   |
+14 |     let _ = runtime.owner_operation_control();
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `SignalRuntime<(), (), (), ()>`

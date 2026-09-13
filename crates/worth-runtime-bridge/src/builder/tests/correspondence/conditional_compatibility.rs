@@ -11,15 +11,20 @@ use crate::facade::{
     BridgeConditionalContract, BridgeConditionalExecutionAffinityMismatch,
     BridgeConditionalInstallationRequest, BridgeConditionalLocation,
     BridgeConditionalProviderSemantics, BridgeConditionalProviderSet,
-    BridgeInstalledConditionalLowering, BridgeOwnedSignalRuntime,
-    BridgeSignalAspectTargetDeclaration,
+    BridgeConditionalRuntimeBuilder, BridgeInstalledConditionalLowering,
+    BridgeSealedRuntimeAssembly, BridgeSignalAspectTargetDeclaration,
 };
 
 mod certification;
+mod evaluation_budget;
 mod managed_time;
 mod owned_installation;
 mod provider_semantics;
 mod retained_decision;
+mod retained_source;
+mod sealed_delivery;
+mod source_admission;
+mod source_packet_affinity;
 
 pub(super) struct Compute(pub(super) u64);
 
@@ -28,6 +33,16 @@ impl BridgeConditionalProviderSemantics for Compute {
 
     fn semantic_contract(&self) -> Self::SemanticContract {
         self.0
+    }
+
+    fn retained_heap_bytes(
+        &self,
+        _semantic_contract: &Self::SemanticContract,
+    ) -> Result<
+        crate::facade::BridgeConditionalProviderHeapRetention,
+        crate::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(crate::facade::BridgeConditionalProviderHeapRetention::none())
     }
 }
 
@@ -46,7 +61,7 @@ pub(super) fn install(
     contract: BridgeConditionalContract,
     partition: &str,
 ) -> (
-    BridgeOwnedSignalRuntime,
+    BridgeSealedRuntimeAssembly,
     Arc<BridgeInstalledConditionalLowering>,
 ) {
     install_with(
@@ -61,7 +76,7 @@ fn install_with(
     partition: &str,
     providers: BridgeConditionalProviderSet,
 ) -> (
-    BridgeOwnedSignalRuntime,
+    BridgeSealedRuntimeAssembly,
     Arc<BridgeInstalledConditionalLowering>,
 ) {
     install_with_target_partitions(contract, &[partition], providers)
@@ -72,13 +87,16 @@ fn install_with_target_partitions(
     partitions: &[&str],
     providers: BridgeConditionalProviderSet,
 ) -> (
-    BridgeOwnedSignalRuntime,
+    BridgeSealedRuntimeAssembly,
     Arc<BridgeInstalledConditionalLowering>,
 ) {
-    let (mut owner, request) = installation_fixture(contract, partitions, providers);
-    let lowering = owner
+    let (mut builder, request) = installation_fixture(contract, partitions, providers);
+    let lowering = builder
         .install(request)
         .expect("owner-bound conditional lowering installs");
+    let owner = builder
+        .seal()
+        .expect("installed conditional operations seal");
     (owner, lowering)
 }
 
@@ -87,7 +105,7 @@ fn installation_fixture(
     partitions: &[&str],
     providers: BridgeConditionalProviderSet,
 ) -> (
-    BridgeOwnedSignalRuntime,
+    BridgeConditionalRuntimeBuilder,
     BridgeConditionalInstallationRequest,
 ) {
     installation_fixture_with_baseline(contract, partitions, providers, &[])
@@ -99,7 +117,70 @@ fn installation_fixture_with_baseline(
     providers: BridgeConditionalProviderSet,
     baseline_labels: &[&str],
 ) -> (
-    BridgeOwnedSignalRuntime,
+    BridgeConditionalRuntimeBuilder,
+    BridgeConditionalInstallationRequest,
+) {
+    installation_fixture_with_runtime(
+        contract,
+        partitions,
+        providers,
+        baseline_labels,
+        |baseline| runtime(exact_mapping(), baseline),
+    )
+}
+
+fn installation_fixture_with_runtime(
+    contract: BridgeConditionalContract,
+    partitions: &[&str],
+    providers: BridgeConditionalProviderSet,
+    baseline_labels: &[&str],
+    build_runtime: impl FnOnce(
+        Vec<crate::facade::BridgeSemanticCorrespondenceRegistration>,
+    ) -> crate::facade::RuntimeBridge,
+) -> (
+    BridgeConditionalRuntimeBuilder,
+    BridgeConditionalInstallationRequest,
+) {
+    installation_fixture_with_runtime_and_budget(
+        contract,
+        partitions,
+        providers,
+        baseline_labels,
+        worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+        build_runtime,
+    )
+}
+
+pub(super) fn installation_fixture_with_budget(
+    contract: BridgeConditionalContract,
+    partitions: &[&str],
+    providers: BridgeConditionalProviderSet,
+    budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
+) -> (
+    BridgeConditionalRuntimeBuilder,
+    BridgeConditionalInstallationRequest,
+) {
+    installation_fixture_with_runtime_and_budget(
+        contract,
+        partitions,
+        providers,
+        &[],
+        budget,
+        |baseline| runtime(exact_mapping(), baseline),
+    )
+}
+
+fn installation_fixture_with_runtime_and_budget(
+    contract: BridgeConditionalContract,
+    partitions: &[&str],
+    providers: BridgeConditionalProviderSet,
+    baseline_labels: &[&str],
+    budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
+    build_runtime: impl FnOnce(
+        Vec<crate::facade::BridgeSemanticCorrespondenceRegistration>,
+    ) -> crate::facade::RuntimeBridge,
+) -> (
+    BridgeConditionalRuntimeBuilder,
     BridgeConditionalInstallationRequest,
 ) {
     let mut graph = SignalGraph::new();
@@ -160,8 +241,9 @@ fn installation_fixture_with_baseline(
             )
         })
         .collect();
-    let owner = BridgeOwnedSignalRuntime::new(runtime(exact_mapping(), baseline), graph)
-        .expect("Bridge owns the fresh Signal runtime");
+    let owner =
+        BridgeConditionalRuntimeBuilder::new(build_runtime(baseline), Box::new(graph), budget)
+            .expect("Bridge owns the fresh Signal runtime");
     (
         owner,
         BridgeConditionalInstallationRequest {
@@ -170,5 +252,14 @@ fn installation_fixture_with_baseline(
             registrations: vec![request_registration],
             providers,
         },
+    )
+}
+
+pub(super) fn owned_runtime_builder(
+    bridge: crate::facade::RuntimeBridge,
+) -> Result<BridgeConditionalRuntimeBuilder, crate::facade::BridgeConditionalDenial> {
+    BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
+        bridge,
+        worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
     )
 }

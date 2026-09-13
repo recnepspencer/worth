@@ -1,6 +1,3 @@
-use crate::courtroom::source_tree::store_crate_source;
-use std::{fs, path::PathBuf};
-
 use worth_foundational::{
     materialize_diagnostic_explanation_bundle, materialize_diagnostic_support_report,
     AdmissionReadinessProfile, BoundaryArtifactField, BoundaryArtifactId,
@@ -35,28 +32,6 @@ fn store_diagnostic_evidence_requires_foundational_diagnostic_artifacts() {
     assert_eq!(
         explanation_evidence.diagnostic().artifact_kind(),
         FoundationalDiagnosticArtifactKind::ExplanationBundle
-    );
-}
-
-#[test]
-fn raw_diagnostic_payloads_cannot_satisfy_store_diagnostic_evidence() {
-    let source = fs::read_to_string(aspect_native_source("evidence_receipts.rs")).unwrap();
-
-    assert!(
-        !source.contains("StoreDiagnosticBoundaryEvidence<"),
-        "generic Store diagnostic evidence would admit raw diagnostic payloads"
-    );
-    assert!(
-        !source.contains("impl<Diagnostic>"),
-        "generic diagnostic implementation would bypass Foundational diagnostics"
-    );
-    assert!(
-        source.contains("FoundationalDiagnosticSupportReport"),
-        "support diagnostics must use Foundational diagnostic artifacts"
-    );
-    assert!(
-        source.contains("FoundationalDiagnosticExplanationBundle"),
-        "explanation diagnostics must use Foundational diagnostic artifacts"
     );
 }
 
@@ -132,10 +107,4 @@ fn physical_witness() -> StorePhysicalBoundaryWitness {
         .unwrap(),
     )
     .unwrap()
-}
-
-fn aspect_native_source(file: &str) -> PathBuf {
-    store_crate_source("worth-store-aspect-native")
-        .join("receipts")
-        .join(file)
 }

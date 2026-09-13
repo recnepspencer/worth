@@ -24,7 +24,7 @@ pub struct WorthQueryConditionalRuntimeInstallationDenial {
 }
 
 impl WorthQueryConditionalRuntimeInstallationDenial {
-    pub(in crate::domain_computation::primary_graph::conditional_operation) fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         kind: WorthQueryConditionalRuntimeInstallationDenialKind,
         subject: impl Into<String>,
     ) -> Self {
@@ -41,4 +41,13 @@ impl WorthQueryConditionalRuntimeInstallationDenial {
     pub fn subject(&self) -> &str {
         &self.subject
     }
+}
+
+pub(super) fn foreign_binding_denial(
+    subject: impl Into<String>,
+) -> WorthQueryConditionalRuntimeInstallationDenial {
+    WorthQueryConditionalRuntimeInstallationDenial::new(
+        WorthQueryConditionalRuntimeInstallationDenialKind::ForeignBinding,
+        subject,
+    )
 }

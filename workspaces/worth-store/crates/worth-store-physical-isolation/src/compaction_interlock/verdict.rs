@@ -1,8 +1,8 @@
 use super::{
-    CompactionCutoverStabilityProof, CompactionReadInterlockDenial, CompactionRewritePublication,
+    CompactionCutoverStabilityProof, CompactionReadInterlockDenial, CompactionRecoveryEvidence,
+    CompactionRewritePublication,
 };
 use crate::StablePhysicalReadReceipt;
-use worth_store_recovery_physics::CompactionCutoverRecoveryPosture;
 
 #[derive(Debug, Clone)]
 pub struct ReadDuringCompactionVerdict {
@@ -64,7 +64,7 @@ impl ReadDuringCompactionVerdict {
 
 pub fn execute_read_during_compaction_cutover(
     publication: CompactionRewritePublication,
-    recovery: CompactionCutoverRecoveryPosture,
+    recovery: CompactionRecoveryEvidence,
     pre_cutover_read: StablePhysicalReadReceipt,
     post_cutover_read: StablePhysicalReadReceipt,
 ) -> Result<ReadDuringCompactionVerdict, CompactionReadInterlockDenial> {

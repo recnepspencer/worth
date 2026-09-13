@@ -1,6 +1,7 @@
 use crate::data::dependency::DependencyEdge;
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
+use crate::data::node::NodeState;
 use crate::data::output::PartitionSubscription;
 use crate::data::proof::invalidation::binding::{OutputCommitOrdinal, ResolvedDependencyCause};
 use crate::data::proof::PartitionScopeSet;
@@ -74,6 +75,39 @@ fn accepted_rewire_advances_revision_and_invalidates_old_cause_caches() -> Resul
     assert!(graph.pending_causes(consumer)?.is_empty());
     assert!(graph.node_dirty_aspects(consumer)?.is_empty());
     assert!(graph.node_dirty_scoped_aspects(consumer)?.is_empty());
+    graph.assert_bidirectional_consistency()?;
+    Ok(())
+}
+
+#[test]
+fn component_rewire_preserves_revision_state_and_bidirectional_topology() -> Result<(), SignalError>
+{
+    let mut graph = SignalGraph::new();
+    let old_source = graph.create_node();
+    let new_source = graph.create_node();
+    let consumer = graph.create_node();
+    graph.set_dependencies(consumer, [DependencyEdge::new(old_source, ASPECT_A)])?;
+    graph.transition_node_clean(consumer)?;
+    let prior_revision = graph.dependency_revision(consumer)?;
+
+    graph.set_dependencies(consumer, [DependencyEdge::new(new_source, ASPECT_B)])?;
+
+    let dependencies = graph.dependencies_of(consumer)?;
+    assert_eq!(dependencies.len(), 1);
+    assert_eq!(dependencies[0].source(), new_source);
+    assert_eq!(dependencies[0].aspect(), ASPECT_B);
+    assert!(graph.subscribers_of(old_source)?.is_empty());
+    assert_eq!(graph.subscribers_of(new_source)?, &[consumer]);
+    assert_eq!(graph.dependency_revision(consumer)?.0, prior_revision.0 + 1);
+    assert_eq!(graph.get_state(consumer)?, NodeState::MaybeStale);
+    let pending = graph
+        .pending_dependency_revalidation(consumer)?
+        .expect("a topology rewrite must retain structural revalidation authority");
+    assert_eq!(
+        pending.dependency_revision(),
+        graph.dependency_revision(consumer)?
+    );
+    assert!(pending.requires_structural_recompute());
     graph.assert_bidirectional_consistency()?;
     Ok(())
 }

@@ -13,6 +13,8 @@ mod record_queue_policy;
 pub(in crate::physical_runtime) mod residency;
 pub(in crate::physical_runtime) mod work_semantics;
 
+#[cfg(test)]
+pub(in crate::physical_runtime) use access::locate::assert_actual_lifecycle_manifest_denial_maps_without_damage;
 pub use access::locate::{PhysicalRecordReader, RecordReadCancellation, RecordReadSession};
 pub use access::read_observation::{
     RecordReadDenial, RecordReadError, RecordReadLimits, RecordReadObservation,
@@ -67,33 +69,6 @@ pub use evidence::performance_evidence::{
     RecordLocatePerformanceExpectation, RecordManifestPerformanceExpectation,
     RecordPerformanceEvidenceDenial, RecordScanPerformanceExpectation,
     RecordTransferPerformanceExpectation, StoreRecordPerformanceReceipt,
-};
-#[cfg(feature = "certification-test-authority")]
-pub use evidence::physical_work::{
-    PhysicalWorkArtifactBinding, PhysicalWorkBackendEvidenceClass,
-    PhysicalWorkBackendProfileEvidence, PhysicalWorkCausalEvidence, PhysicalWorkCounterEvidence,
-    PhysicalWorkCounterStageEvidence, PhysicalWorkCourtroomBinding, PhysicalWorkCourtroomEvidence,
-    PhysicalWorkCourtroomFinding, PhysicalWorkCourtroomFinishDenial,
-    PhysicalWorkCourtroomRunBinding, PhysicalWorkCourtroomVerdict, PhysicalWorkEffectFateEvidence,
-    PhysicalWorkEvidenceBindingDenial, PhysicalWorkEvidenceDigest, PhysicalWorkExecutionContext,
-    PhysicalWorkFamilyEvidence, PhysicalWorkFeatureGraphEvidence, PhysicalWorkFeatureNodeEvidence,
-    PhysicalWorkFilesystemCapabilityEvidence, PhysicalWorkFilesystemCapabilityObservation,
-    PhysicalWorkFilesystemLocationEvidence, PhysicalWorkFilesystemProfileEvidence,
-    PhysicalWorkFilesystemProfileParts, PhysicalWorkFilesystemSupportEvidence,
-    PhysicalWorkFreshReopenEvidence, PhysicalWorkFreshReopenIdentity,
-    PhysicalWorkFreshReopenPosture, PhysicalWorkHostileArtifactEvidence,
-    PhysicalWorkHostileCurrentTruth, PhysicalWorkHostileProcessEvidence,
-    PhysicalWorkHostileTruthCampaignEvidence, PhysicalWorkHostileTruthCaseBinding,
-    PhysicalWorkHostileTruthCaseEvidence, PhysicalWorkHostileTruthComparison,
-    PhysicalWorkHostileTruthEvidenceDenial, PhysicalWorkHostileTruthFinding,
-    PhysicalWorkHostileTruthScenario, PhysicalWorkHostileTruthVerdict, PhysicalWorkMutantBinding,
-    PhysicalWorkMutantExecutionContext, PhysicalWorkMutantLocalization, PhysicalWorkMutantOutcome,
-    PhysicalWorkMutantSubject, PhysicalWorkOracleEvidence, PhysicalWorkPlatformEvidence,
-    PhysicalWorkPressureEvidence, PhysicalWorkProcessEvidence, PhysicalWorkProcessFateEvidence,
-    PhysicalWorkRecoveryEvidence, PhysicalWorkRerunEvidence, PhysicalWorkRunEnvironmentEvidence,
-    PhysicalWorkRunProvenanceDenial, PhysicalWorkScheduleSeed, PhysicalWorkSchedulerEvidence,
-    PhysicalWorkShutdownEvidence, PhysicalWorkSignalSettlementEvidence, PhysicalWorkSourceBinding,
-    PhysicalWorkWorkloadSeed,
 };
 pub use identity::{ExternalPhysicalRecordLocator, PhysicalRecordId};
 pub use lifecycle::record_lifecycle::RecordServingCounterSnapshot;
@@ -271,3 +246,5 @@ mod tests {
         assert_eq!(fixed_limits.current_root_entries(), 185);
     }
 }
+pub use read_work_port::PhysicalIntegrityScrubReadDeferral;
+pub(in crate::physical_runtime) use record_queue_policy::admit_scrub_background_policy;

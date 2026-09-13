@@ -3,14 +3,15 @@ use super::{
     BaselineBTreeExecutionDenial, BaselineBTreeReplayAdmission,
     BaselineBTreeReplayRecoveryExecution,
 };
+use sha2::{Digest, Sha256};
 use worth_store_contracts::AcceptedHandoffReadiness;
 use worth_store_physical_format::{
     access::page::PageAccess, InMemoryPhysicalFormatReplayArtifact, PhysicalReference,
     PhysicalStoreIdentity,
 };
-use worth_store_recovery_physics::{
-    AdmittedBTreeReplayPhysicalSource, AdmittedBTreeReplaySource, AdmittedRecoverySource,
-};
+use worth_store_recovery_physics::PhysicalSourceSelection;
+
+use crate::{AdmittedBTreeReplayPhysicalSource, AdmittedBTreeReplaySource};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BTreeReplayRuntime;
@@ -42,7 +43,7 @@ impl BTreeReplayRuntime {
         root_reference: PhysicalReference,
         replay_artifact: InMemoryPhysicalFormatReplayArtifact,
         expected_store_identity: PhysicalStoreIdentity,
-        durable_source: AdmittedRecoverySource,
+        durable_source: PhysicalSourceSelection,
     ) -> Result<AdmittedBTreeReplayPhysicalSource, BaselineBTreeExecutionDenial> {
         Ok(AdmittedBTreeReplayPhysicalSource::admit(
             readiness,
@@ -91,7 +92,7 @@ impl BTreeReplayRuntime {
             right.counters,
         ]);
         let admission = source.intent();
-        let recovery_source_digest = source.durable_source().trace().canonical_replay_digest();
+        let recovery_source_digest = selection_digest(source.durable_source());
         Ok(BaselineBTreeReplayRecoveryExecution::new(
             admission.plan_binding().clone(),
             admission.request_identity(),
@@ -110,4 +111,24 @@ impl BTreeReplayRuntime {
 
 pub const fn btree_replay_runtime() -> BTreeReplayRuntime {
     BTreeReplayRuntime
+}
+
+fn selection_digest(selection: &PhysicalSourceSelection) -> String {
+    let mut digest = Sha256::new();
+    digest.update(format!("{:?}", selection.trace()).as_bytes());
+    digest.update(
+        selection
+            .checkpoint()
+            .map_or(0, |checkpoint| {
+                checkpoint.checkpoint().source().identity().sequence().get()
+            })
+            .to_le_bytes(),
+    );
+    digest.update(selection.wal_tail().frame_count().to_le_bytes());
+    digest.update(selection.wal_tail().byte_count().to_le_bytes());
+    digest
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }

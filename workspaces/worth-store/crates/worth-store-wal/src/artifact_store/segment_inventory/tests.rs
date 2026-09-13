@@ -3,6 +3,7 @@ use super::{
     inspect_interrupted_wal_segment_start, inspect_verified_wal_active_tail,
     WalActiveTailInspectionDenial, WalSegmentArtifactIdentity,
 };
+use crate::wal_frame_integrity_scope_identity;
 use crate::{
     plan_wal_frame_append, LogSequenceNumber, WalAppendFrontier, WalLsnRange, WalSegmentGeneration,
     WalSegmentId,
@@ -13,6 +14,14 @@ fn identity() -> WalSegmentArtifactIdentity {
         WalSegmentId::new(7).unwrap(),
         WalSegmentGeneration::new(3).unwrap(),
     )
+}
+
+#[test]
+fn wal_owner_adapter_exposes_only_canonical_prevalidation_identity() {
+    let identity = identity();
+    let adapted = wal_frame_integrity_scope_identity(identity);
+    assert_eq!(adapted.segment().get(), identity.segment().get());
+    assert_eq!(adapted.generation().get(), identity.generation().get());
 }
 
 #[test]

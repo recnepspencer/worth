@@ -37,7 +37,7 @@ impl PublishedLsmCompaction {
 
     pub fn observe_reader_cutover(
         &self,
-        recovery: worth_store_recovery_physics::CompactionCutoverRecoveryPosture,
+        recovery: worth_store_physical_isolation::CompactionRecoveryEvidence,
         pre_cutover_read: worth_store_physical_isolation::StablePhysicalReadReceipt,
         post_cutover_read: worth_store_physical_isolation::StablePhysicalReadReceipt,
     ) -> Result<

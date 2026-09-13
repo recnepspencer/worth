@@ -25,7 +25,7 @@ pub use cleanup::{
 pub use discovery::{
     BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, ObservedWalArtifact,
     RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryCounters,
-    RecoveryDiscoveryFailure,
+    RecoveryDiscoveryFailure, RecoveryWalObservationIdentity,
 };
 pub use generation::PhysicalRecoveryMediaGeneration;
 pub use profile::QualifiedPhysicalBackendProfile;
@@ -43,6 +43,7 @@ pub use staging::{
     CompletedRecoveryStagingWrite, CompletedScheduledRecoveryStagingSynchronization,
     CompletedScheduledRecoveryStagingWrite, DeniedScheduledRecoveryStagingWrite,
     IndeterminateRecoveryStagingWrite, IndeterminateScheduledRecoveryStagingSynchronization,
-    IndeterminateScheduledRecoveryStagingWrite, RecoveryStagingSynchronizationOutcome,
-    RecoveryStagingWriteDisposition, RecoveryStagingWriteOutcome,
+    IndeterminateScheduledRecoveryStagingWrite, RecoveryStagingIndeterminatePhysical,
+    RecoveryStagingSynchronizationOutcome, RecoveryStagingWriteDisposition,
+    RecoveryStagingWriteOutcome,
 };

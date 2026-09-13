@@ -82,6 +82,8 @@ fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
 
     let elevation = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             CapabilityElevationIdentity::reference(),
             "elevation-2".to_owned(),
@@ -95,6 +97,8 @@ fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
     );
     let review = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             CapabilityReviewIdentity::reference(),
             "review-2".to_owned(),

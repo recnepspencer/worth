@@ -14,12 +14,14 @@ pub(super) fn legal_compliance_shape() -> TypedApplicationQueryResultShape<
     EstateLegalComplianceQuery,
     EstateCase,
     EstateLegalComplianceResult,
+    super::legal_compliance::EstateLegalComplianceQueryResultBinding,
 > {
     let holder = ApplicationQueryResultShapeBuilder::<
         BankSchema,
         EstateLegalComplianceQuery,
         Principal,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(Principal::reference())
     .field(authority_holder_identity());
     let authority = ApplicationQueryResultShapeBuilder::<
@@ -27,6 +29,7 @@ pub(super) fn legal_compliance_shape() -> TypedApplicationQueryResultShape<
         EstateLegalComplianceQuery,
         LegalAuthority,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(LegalAuthority::reference())
     .field(authority_identity())
     .field(authority_kind())

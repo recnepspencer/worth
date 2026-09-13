@@ -1,0 +1,12 @@
+[package]
+name = "worth-query-consumer-root"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+worth-query-consumer-values.workspace = true
+worth-query-decl.workspace = true
+worth-query-host.workspace = true
+worth-query-parameter-entry.workspace = true
+worth-query-topology-entry.workspace = true

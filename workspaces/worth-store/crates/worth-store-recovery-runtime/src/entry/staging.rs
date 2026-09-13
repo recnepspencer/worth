@@ -11,6 +11,7 @@ pub struct PhysicalRecoveryStagingCounters {
     pub scheduler_settlements: u64,
     pub artifacts_created: u64,
     pub artifacts_converged: u64,
+    pub artifacts_completed_from_prefix: u64,
     pub artifacts_synchronized: u64,
     pub bytes_written: u64,
     pub bytes_verified: u64,

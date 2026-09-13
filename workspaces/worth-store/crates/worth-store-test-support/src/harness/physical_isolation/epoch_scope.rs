@@ -1,12 +1,10 @@
-use crate::harness::recovery::closeout as closeout_fixture;
 use worth_store_physical_format::{
     PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId,
     PhysicalRecordSlot, PhysicalReferenceAuthority, PhysicalSegmentId,
 };
 use worth_store_physical_isolation::{
-    admit_physical_isolation_entry, admit_physical_read_stability_authority,
-    CurrentGenerationPhysicalReference, CurrentPhysicalRoot, GenerationCountedPhysicalReference,
-    PhysicalIsolationEntryRequest, PhysicalOrderingContract,
+    physical_read_stability_authority_for_certification_test, CurrentGenerationPhysicalReference,
+    CurrentPhysicalRoot, GenerationCountedPhysicalReference, PhysicalOrderingContract,
 };
 
 pub fn generation_counted_page_reference(generation: u64) -> GenerationCountedPhysicalReference {
@@ -51,40 +49,40 @@ pub fn current_root_from_authority(
 
 pub fn physical_authority_from_complete_closeout(
 ) -> worth_store_physical_isolation::PhysicalReadStabilityAuthority {
-    physical_authority_from_completion(closeout_fixture::recovery_completion())
+    physical_read_stability_authority_for_certification_test(
+        20,
+        worth_store_physical_format::PhysicalStoreIdentity::physical_format_default()
+            .authority_identity(),
+    )
 }
 
 pub fn physical_authority_from_complete_closeout_for_store(
     store_identity: &worth_store_physical_format::PhysicalStoreIdentity,
 ) -> worth_store_physical_isolation::PhysicalReadStabilityAuthority {
-    let completion = closeout_fixture::recovery_completion();
-    let entry = admit_physical_isolation_entry(PhysicalIsolationEntryRequest::for_store(
-        &completion,
-        store_identity,
-    ))
-    .unwrap();
-    admit_physical_read_stability_authority(&entry).unwrap()
+    physical_read_stability_authority_for_certification_test(
+        20,
+        store_identity.authority_identity(),
+    )
 }
 
 pub fn physical_authority_from_operation_digest_closeout(
     operation_digest: &str,
 ) -> worth_store_physical_isolation::PhysicalReadStabilityAuthority {
-    physical_authority_from_completion(closeout_fixture::recovery_completion_with_operation_digest(
-        operation_digest,
-    ))
+    physical_read_stability_authority_for_certification_test(
+        certification_root_seed(operation_digest),
+        worth_store_physical_format::PhysicalStoreIdentity::physical_format_default()
+            .authority_identity(),
+    )
 }
 
 pub fn physical_authority_from_operation_digest_closeout_for_store(
     operation_digest: &str,
     store_identity: &worth_store_physical_format::PhysicalStoreIdentity,
 ) -> worth_store_physical_isolation::PhysicalReadStabilityAuthority {
-    let completion = closeout_fixture::recovery_completion_with_operation_digest(operation_digest);
-    let entry = admit_physical_isolation_entry(PhysicalIsolationEntryRequest::for_store(
-        &completion,
-        store_identity,
-    ))
-    .unwrap();
-    admit_physical_read_stability_authority(&entry).unwrap()
+    physical_read_stability_authority_for_certification_test(
+        certification_root_seed(operation_digest),
+        store_identity.authority_identity(),
+    )
 }
 
 fn generation_counted_extent_reference(generation: u64) -> GenerationCountedPhysicalReference {
@@ -107,12 +105,11 @@ fn generation_counted_segment_reference(generation: u64) -> GenerationCountedPhy
     GenerationCountedPhysicalReference::from_segment_cell(cell)
 }
 
-fn physical_authority_from_completion(
-    completion: worth_store_recovery_physics::RecoveryCompletion,
-) -> worth_store_physical_isolation::PhysicalReadStabilityAuthority {
-    let entry = admit_physical_isolation_entry(
-        PhysicalIsolationEntryRequest::from_recovery_completion(&completion),
-    )
-    .unwrap();
-    admit_physical_read_stability_authority(&entry).unwrap()
+fn certification_root_seed(operation_digest: &str) -> u64 {
+    operation_digest
+        .bytes()
+        .fold(0xcbf29ce484222325, |seed, byte| {
+            seed.wrapping_mul(0x100000001b3)
+                .wrapping_add(u64::from(byte))
+        })
 }

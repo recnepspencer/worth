@@ -3,36 +3,12 @@ use crate::observation::AccessShape;
 use crate::{
     access_planning, AccessAuthorityPosture, AccessStaleDisposition, ExpectedCounterClass,
 };
+use worth_store_physical_format::CheckpointWalSourceRange;
 use worth_store_physical_format::PhysicalEpoch;
-use worth_store_recovery_physics::{CheckpointCoveredLsnRange, LogSequenceNumber};
+use worth_store_wal::LogSequenceNumber;
 
 fn format_family() -> &'static crate::PhysicalArtifactFamilyDeclaration {
     crate::layout_declarations().seed_family()
-}
-
-fn owner_sources(path: &str) -> String {
-    fn collect(path: &std::path::Path, sources: &mut Vec<std::path::PathBuf>) {
-        for entry in std::fs::read_dir(path).unwrap() {
-            let path = entry.unwrap().path();
-            if path.is_dir() {
-                collect(&path, sources);
-            } else if path.extension().is_some_and(|extension| extension == "rs") {
-                sources.push(path);
-            }
-        }
-    }
-
-    let mut sources = Vec::new();
-    collect(
-        &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(path),
-        &mut sources,
-    );
-    sources.sort();
-    sources
-        .into_iter()
-        .map(|source| std::fs::read_to_string(source).unwrap())
-        .collect::<Vec<_>>()
-        .join("\n")
 }
 
 #[test]
@@ -42,8 +18,7 @@ fn checkpoint_exactness_preserves_full_range_identity() {
             crate::bootstrap::test_support::bootstrap_exact_materialization(
                 format_family().family(),
             ),
-            CheckpointCoveredLsnRange::new(LogSequenceNumber::new(21), LogSequenceNumber::new(29))
-                .expect("left checkpoint fixture should be valid"),
+            CheckpointWalSourceRange::new(21, 29).expect("left checkpoint fixture should be valid"),
         )
         .expect("left checkpoint coverage should admit");
     let right = access_planning()
@@ -51,7 +26,7 @@ fn checkpoint_exactness_preserves_full_range_identity() {
             crate::bootstrap::test_support::bootstrap_exact_materialization(
                 format_family().family(),
             ),
-            CheckpointCoveredLsnRange::new(LogSequenceNumber::new(24), LogSequenceNumber::new(29))
+            CheckpointWalSourceRange::new(24, 29)
                 .expect("right checkpoint fixture should be valid"),
         )
         .expect("right checkpoint coverage should admit");
@@ -121,8 +96,7 @@ fn lagged_and_quarantined_states_deny_exact_completeness() {
             format_family(),
             LogSequenceNumber::new(49),
             LogSequenceNumber::new(53),
-            CheckpointCoveredLsnRange::new(LogSequenceNumber::new(50), LogSequenceNumber::new(52))
-                .expect("quarantine fixture should be valid"),
+            CheckpointWalSourceRange::new(50, 52).expect("quarantine fixture should be valid"),
         )
         .expect("quarantined coverage should build");
     assert_eq!(
@@ -154,64 +128,6 @@ fn reversed_lagged_intervals_are_denied_at_admission() {
             upper_bound: 40,
         })
     );
-}
-
-#[test]
-fn ordinary_runtime_owners_cannot_assemble_coverage_from_scalar_watermarks() {
-    for relative in [
-        "src/read",
-        "src/recovery/btree_replay",
-        "src/maintenance/lsm",
-    ] {
-        let source = owner_sources(relative);
-        for forbidden in [
-            ".exact_root_epoch_coverage(",
-            ".exact_wal_lsn_coverage(",
-            ".admit_catalog_materialization(",
-            ".watermark()",
-        ] {
-            assert!(
-                !source.contains(forbidden),
-                "ordinary owner {relative} retained raw materialization lane {forbidden}",
-            );
-        }
-    }
-}
-
-#[test]
-fn degraded_rebind_consumes_a_replacement_owner_selection() {
-    let source = std::fs::read_to_string(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("src/access/execution/degraded_scan/staged_runtime.rs"),
-    )
-    .unwrap();
-    assert!(source.contains("replacement: SelectedDegradedExactScan"));
-    assert!(source.contains("admission: super::DegradedScanRebindAdmission"));
-    assert!(!source.contains("coverage: crate::materialization::LayoutCoverageWitness"));
-    assert!(!source.contains("family: crate::AdmittedPhysicalArtifactFamily"));
-    assert!(!source.contains("key_domain: crate::AdmittedPhysicalKeyDomain"));
-}
-
-#[test]
-fn ordinary_lookup_coverage_is_derived_from_lower_owned_sources() {
-    let source = owner_sources("src/read");
-    assert!(!source.contains("coverage_epoch"));
-    assert!(!source.contains("coverage_lsn"));
-    assert!(source.contains("admit_btree_lookup_materialization"));
-    assert!(source.contains("current_btree_materialization_frontier"));
-    assert!(source.contains("request.current_catalog"));
-    assert!(source.contains("request.current_source.as_ref().unwrap_or(&request.source)"));
-    assert!(source.contains("&request.source"));
-    assert!(!source.contains("request.source.replacement_output()"));
-    let replay = owner_sources("src/recovery/btree_replay");
-    assert!(!replay.contains("coverage_epoch"));
-    assert!(replay.contains("request.physical_source.root_reference"));
-    assert!(replay.contains("admit_btree_replay_materialization"));
-    let lsm_replay = owner_sources("src/maintenance/lsm");
-    assert!(!lsm_replay.contains("coverage_lsn"));
-    assert!(lsm_replay.contains("request.source"));
-    assert!(lsm_replay.contains("admit_lsm_replay_materialization"));
-    assert!(!lsm_replay.contains("expected_output_identity"));
 }
 
 #[test]

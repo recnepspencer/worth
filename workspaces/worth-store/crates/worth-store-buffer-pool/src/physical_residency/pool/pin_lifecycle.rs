@@ -30,6 +30,9 @@ impl PoolInner {
                 return Err(Self::deny(state, PhysicalResidencyDenial::FrameNotResident));
             }
         };
+        let resident_generation = entry
+            .resident_generation
+            .expect("a resident frame has an installed byte-image generation");
         let was_unpinned = entry.pins == 0;
         if was_unpinned {
             state.detach_evictable(key.coordinate);
@@ -58,6 +61,7 @@ impl PoolInner {
             owner: Arc::clone(self),
             key,
             bytes,
+            resident_generation,
         })
     }
 

@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalBranchTransactionAdmissionDenial {
+    OwnerUnavailable,
     ForeignRuntime {
         expected_runtime_instance_id: u64,
         actual_runtime_instance_id: u64,

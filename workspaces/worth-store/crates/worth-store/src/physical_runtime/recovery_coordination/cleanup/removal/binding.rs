@@ -1,7 +1,4 @@
 use sha2::{Digest, Sha256};
-use worth_store_physical_format::{
-    DurablePhysicalRootManifest, DurableRootSelector, RecordArtifactFile, RootSelectorRole,
-};
 
 use crate::physical_runtime::PhysicalRecoveryCoordination;
 
@@ -31,7 +28,7 @@ pub(super) fn effect(
     command: &PhysicalRecoveryCleanupRemovalCommand,
     work: crate::physical_runtime::PhysicalWorkIdentity,
 ) -> CleanupEffectBinding {
-    let inspection = command.verified_wal.inspection();
+    let inspection = command.admitted_wal.inspection();
     #[cfg(feature = "certification-test-authority")]
     let artifact_generation =
         if _coordination.take_certification_cleanup_authorization_substitution() {
@@ -60,28 +57,46 @@ pub(super) fn effect(
     }
 }
 
+pub(super) fn admit_selector(
+    command: &PhysicalRecoveryCleanupRemovalCommand,
+) -> Result<
+    worth_store_physical_format::DurableRootSelector,
+    crate::physical_runtime::RootProtocolAdmissionDenial,
+> {
+    let selector = super::super::super::source_admission::admit_scheduled_current_selector(
+        &command.selector_read,
+        command.store,
+        command.format,
+    )?;
+    selector.project()
+}
+
+pub(super) fn admit_root_manifest(
+    command: &PhysicalRecoveryCleanupRemovalCommand,
+) -> Result<
+    worth_store_physical_format::DurablePhysicalRootManifest,
+    crate::physical_runtime::RootProtocolAdmissionDenial,
+> {
+    let root = super::super::super::source_admission::admit_scheduled_root_manifest(
+        &command.root_read,
+        command.store,
+        command.format,
+        command.published_generation,
+    )?;
+    root.project()
+}
+
 pub(super) fn matches(
     command: &PhysicalRecoveryCleanupRemovalCommand,
     work: crate::physical_runtime::PhysicalWorkIdentity,
     binding: CleanupEffectBinding,
+    selector: worth_store_physical_format::DurableRootSelector,
+    root: worth_store_physical_format::DurablePhysicalRootManifest,
 ) -> bool {
-    let inspection = command.verified_wal.inspection();
-    let Ok(selector) = DurableRootSelector::decode(command.selector_read.bytes()) else {
-        return false;
-    };
-    let Ok((root, _)) = DurablePhysicalRootManifest::decode(command.root_read.bytes(), u16::MAX)
-    else {
-        return false;
-    };
+    let inspection = command.admitted_wal.inspection();
     binding.store == command.store.bytes()
-        && command.selector_read.artifact() == RecordArtifactFile::CurrentRootSelector
         && selector.store_identity() == command.store
-        && selector.role() == RootSelectorRole::Current
         && selector.root_generation() == command.published_generation
-        && command.root_read.artifact()
-            == RecordArtifactFile::RootManifest {
-                generation: command.published_generation,
-            }
         && root.generation() == command.published_generation
         && root.tree_identity() == command.checkpoint_stream.source().root().tree_identity()
         && binding.artifact_segment == command.artifact.segment().get()

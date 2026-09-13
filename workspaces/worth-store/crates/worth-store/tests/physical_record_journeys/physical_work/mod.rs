@@ -4,8 +4,6 @@ mod authority_sealing;
 mod capacity;
 mod close_plan;
 mod concurrency;
-mod courtroom_binding;
-mod courtroom_environment;
 mod durability_signal_binding;
 mod e2e_trace;
 mod execution_capability;

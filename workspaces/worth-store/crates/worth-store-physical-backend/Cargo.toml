@@ -23,6 +23,7 @@ worth-store-contracts.workspace = true
 worth-store-authority.workspace = true
 worth-store-physical-format.workspace = true
 worth-store-security.workspace = true
+worth-store-wal.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 winapi-util = "0.1"

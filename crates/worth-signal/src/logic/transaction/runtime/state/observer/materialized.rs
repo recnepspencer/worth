@@ -13,6 +13,7 @@ where
     T: Copy + Ord,
 {
     pub fn graph(&self) -> GraphMaterializer<'a> {
+        self.runtime.assert_construction_graph_access();
         self.runtime.graph.observe().materialize()
     }
 

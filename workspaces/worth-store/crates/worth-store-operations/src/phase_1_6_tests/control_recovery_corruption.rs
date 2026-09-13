@@ -12,7 +12,7 @@ fn malformed_owner_lease_bytes_make_selected_control_state_damaged() {
         .publish_recovery_object(b"not a backup cut recovery record")
         .expect("checksum-valid malformed recovery object");
     let scenario = BackupScenario::new("malformed-control-recovery");
-    let authority = crate::backup::export::current_authority("s10-malformed-control-recovery");
+    let authority = scenario.authority();
     let scenario_control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("recovery-source").expect("operation"),

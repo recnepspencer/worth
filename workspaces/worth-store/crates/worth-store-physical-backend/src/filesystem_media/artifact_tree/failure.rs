@@ -40,6 +40,11 @@ impl ArtifactTreeFailure {
         Self::structural(ArtifactTreeFailureKind::DeniedBeforeEffect)
     }
 
+    #[cfg(feature = "recovery-runtime-owner")]
+    pub const fn recovery_damaged() -> Self {
+        Self::structural(ArtifactTreeFailureKind::Damaged)
+    }
+
     /// Describes an I/O failure observed by the Store-owned recovery effect
     /// boundary. This value carries no filesystem capability or effect
     /// authority.

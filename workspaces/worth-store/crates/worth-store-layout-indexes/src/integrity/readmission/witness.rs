@@ -1,4 +1,4 @@
-use worth_store_recovery_physics::RecoveryLayoutReadmissionIdentity;
+use super::authority::RecoveryLayoutReadmissionIdentity;
 
 use super::{LayoutReadmissionIdentity, LayoutReadmissionSource};
 

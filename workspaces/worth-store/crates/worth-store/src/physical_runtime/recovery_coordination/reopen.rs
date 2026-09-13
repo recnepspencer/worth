@@ -21,6 +21,7 @@ pub struct PhysicalRecoveryFreshReopenCommand {
 
 pub struct CompletedPhysicalRecoveryFreshReopen {
     root: DurablePhysicalRootManifest,
+    format: PhysicalRecordFormatDeclaration,
     performed: PerformedRecoveryPhysicalEffect<RecoveryFreshReopenAction>,
 }
 
@@ -35,6 +36,7 @@ pub struct PhysicalRecoveryFreshReopenDenial {
     selector: Option<CompletedScheduledRecoveryReopenRead>,
     root: Option<CompletedScheduledRecoveryReopenRead>,
     physical: Option<DeniedScheduledRecoveryReopenRead>,
+    integrity: Option<crate::physical_runtime::RootProtocolAdmissionDenial>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,6 +54,7 @@ pub enum PhysicalRecoveryFreshReopenDenialKind {
     Media(ArtifactTreeFailure),
     SchedulerSettlement(crate::physical_runtime::PhysicalWorkSchedulerPosture),
     SignalSettlement(crate::physical_runtime::PhysicalSignalSettlementOutcome),
+    Yieldpoint(crate::physical_runtime::PhysicalRecoveryYieldpointWaitResult),
     InvalidSelector,
     InvalidRoot,
     BindingMismatch,
@@ -89,13 +92,22 @@ impl PhysicalRecoveryCoordination {
 impl CompletedPhysicalRecoveryFreshReopen {
     pub(super) const fn new(
         root: DurablePhysicalRootManifest,
+        format: PhysicalRecordFormatDeclaration,
         performed: PerformedRecoveryPhysicalEffect<RecoveryFreshReopenAction>,
     ) -> Self {
-        Self { root, performed }
+        Self {
+            root,
+            format,
+            performed,
+        }
     }
 
     pub const fn root(&self) -> &DurablePhysicalRootManifest {
         &self.root
+    }
+
+    pub const fn format(&self) -> PhysicalRecordFormatDeclaration {
+        self.format
     }
 
     pub const fn performed(&self) -> &PerformedRecoveryPhysicalEffect<RecoveryFreshReopenAction> {
@@ -124,7 +136,16 @@ impl PhysicalRecoveryFreshReopenDenial {
             selector,
             root,
             physical,
+            integrity: None,
         }
+    }
+
+    pub(super) const fn with_integrity(
+        mut self,
+        integrity: crate::physical_runtime::RootProtocolAdmissionDenial,
+    ) -> Self {
+        self.integrity = Some(integrity);
+        self
     }
 
     pub const fn stage(&self) -> PhysicalRecoveryFreshReopenStage {
@@ -141,6 +162,9 @@ impl PhysicalRecoveryFreshReopenDenial {
     }
     pub const fn physical(&self) -> Option<&DeniedScheduledRecoveryReopenRead> {
         self.physical.as_ref()
+    }
+    pub const fn integrity(&self) -> Option<crate::physical_runtime::RootProtocolAdmissionDenial> {
+        self.integrity
     }
 }
 

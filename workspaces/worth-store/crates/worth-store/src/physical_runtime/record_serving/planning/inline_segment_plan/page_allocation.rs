@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap, VecDeque};
 
 use worth_store_physical_format::{
-    inspect_inline_page_records, CurrentPhysicalRecordPlacement, DurableInlineRecordPlacement,
-    InlinePageGeometry, PageGenerationCell, PersistedRecordIdentity, PhysicalGenerationAuthority,
-    PhysicalRecordSlot, RecordSegmentPageManifestEntry,
+    CurrentPhysicalRecordPlacement, DurableInlineRecordPlacement, PageGenerationCell,
+    PersistedRecordIdentity, PhysicalGenerationAuthority, PhysicalRecordSlot,
+    RecordSegmentPageManifestEntry,
 };
 
 use super::{
@@ -14,8 +14,9 @@ use super::{
 use crate::physical_runtime::record_serving::planning::{
     inline_page_packing::{fitting_prefix, new_page_fill_capacity, remaining_policy_capacity},
     inline_plan_failure::admitted_generation as generation,
-    published_tail_page::LoadedPublishedTailPage,
+    published_tail_page::{LoadedPublishedTailPage, PublishedTailPageGeometry},
 };
+use crate::physical_runtime::record_serving::work_semantics::integrity_admission::AdmittedCleanInlinePageRecord;
 
 pub(super) fn append_to_last_page(
     format: AdmittedPhysicalRecordFormat,
@@ -25,8 +26,11 @@ pub(super) fn append_to_last_page(
     inline: &mut VecDeque<MaterializedInlineInput>,
     placements: &mut BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
 ) -> Result<(), RecordAppendError> {
-    let LoadedPublishedTailPage { image, geometry } = loaded;
-    let page = image.bytes();
+    let LoadedPublishedTailPage {
+        image,
+        geometry,
+        records: admitted_records,
+    } = loaded;
     let count = fitting_record_count(format, placement, &geometry, inline);
     if count == 0 {
         return Ok(());
@@ -35,7 +39,7 @@ pub(super) fn append_to_last_page(
     let candidate_page = PhysicalGenerationAuthority::for_canonical_physical_format()
         .page_cell(segment.segment.segment_id(), geometry.page())
         .with_page_generation(page_generation);
-    remap_existing_page_records(format, page, segment, candidate_page, placements)?;
+    remap_existing_page_records(&admitted_records, segment, candidate_page, placements)?;
     let candidate_frame_index = segment.data_pages.len() as u32;
     segment.last_published_page = None;
     segment
@@ -63,7 +67,7 @@ pub(super) fn append_to_last_page(
 fn fitting_record_count(
     format: AdmittedPhysicalRecordFormat,
     placement: AdmittedRecordPlacementPolicy,
-    geometry: &InlinePageGeometry,
+    geometry: &PublishedTailPageGeometry,
     inline: &mut VecDeque<MaterializedInlineInput>,
 ) -> usize {
     fitting_prefix(
@@ -74,36 +78,33 @@ fn fitting_record_count(
 }
 
 fn remap_existing_page_records(
-    format: AdmittedPhysicalRecordFormat,
-    page: &[u8],
+    records: &[AdmittedCleanInlinePageRecord],
     segment: &PlanningSegment,
     candidate_page: PageGenerationCell,
     placements: &mut BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
 ) -> Result<(), RecordAppendError> {
     let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
-    for descriptor in inspect_inline_page_records(format.declaration(), page)
-        .map_err(|_| RecordAppendError::Denied(RecordAppendDenial::PublishedLayoutDamaged))?
-    {
+    for descriptor in records {
         let slot = authority
             .slot_cell(
                 segment.segment.segment_id(),
                 candidate_page.page_id(),
-                descriptor.slot(),
+                descriptor.slot,
             )
-            .with_slot_generation(descriptor.slot_generation());
+            .with_slot_generation(generation(Some(descriptor.slot_generation))?);
         let placement = DurableInlineRecordPlacement::new(
-            descriptor.record(),
+            descriptor.record,
             segment.segment,
             candidate_page,
             slot,
             segment.page_capacity,
-            u64::from(descriptor.payload_bytes()),
+            u64::from(descriptor.payload_bytes),
         )
         .ok_or(RecordAppendError::Denied(
             RecordAppendDenial::PublishedLayoutDamaged,
         ))?;
         placements.insert(
-            descriptor.record(),
+            descriptor.record,
             CurrentPhysicalRecordPlacement::Inline(placement),
         );
     }

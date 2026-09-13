@@ -3,8 +3,9 @@ use std::marker::PhantomData;
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
 use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef, EqualityCapable,
-    EqualityPosture, TypedApplicationValue, WritePosture,
+    ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationRelationRef, ApplicationScalarValueBinding, DeclaredApplicationFieldValue,
+    EqualityCapable, EqualityPosture, WritePosture,
 };
 
 use super::{
@@ -82,10 +83,10 @@ impl<Schema, Entity> Clone for ApplicationCapabilityEntitySelector<Schema, Entit
 impl<Schema, Entity> ApplicationCapabilityEntitySelector<Schema, Entity> {
     pub fn new<Aspect, Field, Value, Write, Equality, Unit>(
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        value: Value,
+        value: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Equality: EqualityPosture + EqualityCapable,
         Unit: ApplicationFieldUnit,
@@ -94,7 +95,7 @@ impl<Schema, Entity> ApplicationCapabilityEntitySelector<Schema, Entity> {
             entity: field.entity(),
             aspect: field.aspect(),
             field: field.field(),
-            scalar_family: Value::SCALAR_FAMILY,
+            scalar_family: field.scalar_family(),
             value_type: field.value_type_name(),
             value: value.into_foundational_value(),
             _marker: PhantomData,
@@ -278,15 +279,15 @@ pub struct ApplicationCapabilityRequestProjection<Schema, Scope, Context> {
 }
 
 impl<Schema, Scope, Context> ApplicationCapabilityRequestProjection<Schema, Scope, Context> {
-    pub fn new<Action, Purpose>(
+    pub fn new<ActionBinding, PurposeBinding>(
         resource: ApplicationCapabilityEntitySelector<Schema, Scope>,
-        action: Action,
-        purpose: Purpose,
+        action: ApplicationEncodedScalarValue<ActionBinding>,
+        purpose: ApplicationEncodedScalarValue<PurposeBinding>,
         context: ApplicationCapabilityRequestContext<Schema, Context>,
     ) -> Self
     where
-        Action: TypedApplicationValue,
-        Purpose: TypedApplicationValue,
+        ActionBinding: ApplicationScalarValueBinding,
+        PurposeBinding: ApplicationScalarValueBinding,
     {
         Self {
             resource,
@@ -320,12 +321,18 @@ impl<Schema, Scope, Context> ApplicationCapabilityRequestProjection<Schema, Scop
         self
     }
 
-    pub fn field<Value: TypedApplicationValue>(mut self, field: Value) -> Self {
+    pub fn field<Binding: ApplicationScalarValueBinding>(
+        mut self,
+        field: ApplicationEncodedScalarValue<Binding>,
+    ) -> Self {
         self.field = Some(field.into_foundational_value());
         self
     }
 
-    pub fn magnitude<Value: TypedApplicationValue>(mut self, magnitude: Value) -> Self {
+    pub fn magnitude<Binding: ApplicationScalarValueBinding>(
+        mut self,
+        magnitude: ApplicationEncodedScalarValue<Binding>,
+    ) -> Self {
         self.magnitude = Some(magnitude.into_foundational_value());
         self
     }

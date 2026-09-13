@@ -20,10 +20,14 @@ pub use counters::{LayoutCorruptionCounterSnapshot, LayoutReadmissionCounterSnap
 pub use denial::CorruptionDenial;
 pub use quarantine::LayoutQuarantineWitness;
 pub use readmission::{
-    import_readmission, import_readmission_cases, quarantine_readmission,
-    quarantine_readmission_cases, ImportReadmission, ImportReadmissionCaseId,
-    ImportReadmissionOutcome, ImportReadmissionRequirement, ImportReadmissionView,
-    LayoutReadmissionIdentity, LayoutReadmissionSource, LayoutReadmissionWitness,
+    import_readmission, import_readmission_cases, layout_readmission, quarantine_readmission,
+    quarantine_readmission_cases, ImportLayoutReadmissionOutcome, ImportReadmission,
+    ImportReadmissionCaseId, ImportReadmissionOutcome, ImportReadmissionRequirement,
+    ImportReadmissionView, LayoutReadmissionAuthority, LayoutReadmissionIdentity,
+    LayoutReadmissionSource, LayoutReadmissionWitness, QuarantineLayoutReadmissionOutcome,
     QuarantineReadmission, QuarantineReadmissionCaseId, QuarantineReadmissionOutcome,
     QuarantineReadmissionRequirement, QuarantineReadmissionView, ReadmissionDenied,
+    RecoveryLayoutReadmissionAdmissionDenial, RecoveryLayoutReadmissionClass,
+    RecoveryLayoutReadmissionIdentity, RecoveryLayoutReadmissionOutcomeView,
+    RecoveryLayoutReadmissionWitness,
 };

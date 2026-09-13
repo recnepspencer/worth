@@ -16,8 +16,8 @@ pub use custom_rule::{
     CustomInvariantPreparationError, CustomInvariantProvenance, CustomInvariantRegistration,
     CustomInvariantRegistrationError, CustomInvariantRule, CustomInvariantScopePlanner,
     CustomInvariantTouchedSummary, CustomInvariantTraversalSummary, CustomInvariantVerdict,
-    PlannedRelationEndpointUpdate, StructuralCountView, StructuralRelationRecord,
-    StructuralRelationView,
+    PlannedRelationEndpointUpdate, StructuralAspectStateView, StructuralCountView,
+    StructuralReadError, StructuralRelationRecord, StructuralRelationView,
 };
 pub(crate) use custom_rule::{
     CustomInvariantFailure, CustomInvariantFailureKind, CustomInvariantRuntimePhase,
@@ -28,8 +28,8 @@ pub(crate) use custom_rule::{
     CustomInvariantTraversalError, PlannedEntityCreate, PlannedRelationCreate, TouchedStructuralSet,
 };
 pub use descriptor::{
-    CustomInvariantDescriptor, CustomInvariantOperationalMetadata, InvariantRuleDescriptor,
-    InvariantSemanticsClass, SupportedExecutionPoints,
+    CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantOperationalMetadata,
+    InvariantRuleDescriptor, InvariantSemanticsClass, SupportedExecutionPoints,
 };
 #[allow(unused_imports)]
 pub use execution::InvariantWitnessBasis;

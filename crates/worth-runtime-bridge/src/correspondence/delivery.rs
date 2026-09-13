@@ -4,13 +4,12 @@ use worth_signal::facade::SignalGraph;
 use crate::facade::RuntimeBridge;
 use crate::input::envelope::{BridgeCommittedPatchEnvelope, BridgeProducerAuthorityKind};
 
-use super::delivery_preflight::{admit_envelope_source, preflight};
-use super::semantic_delivery_match::match_envelope;
+use super::delivery_preflight::preflight;
 use super::{
     BridgeCorrespondenceAdmissionFailure, BridgeCorrespondenceDeferred,
     BridgeCorrespondenceDeliveryDenial, BridgeCorrespondenceDeliveryReceipt,
     BridgeCorrespondenceDenialKind, BridgeCorrespondenceRebindRequired, BridgeCorrespondenceStale,
-    BridgeDeliveredCorrespondenceChangeSet, BridgeInstalledSemanticCorrespondence,
+    BridgeInstalledSemanticCorrespondence, BridgePreparedCorrespondenceDelivery,
     CorrespondenceDeliveryCounters,
 };
 
@@ -112,55 +111,53 @@ impl RuntimeBridge {
         targets: &super::ProvenCorrespondenceTargets,
         graph: &mut SignalGraph,
         envelope: &BridgeCommittedPatchEnvelope,
-        mut counters: CorrespondenceDeliveryCounters,
+        counters: CorrespondenceDeliveryCounters,
     ) -> CorrespondenceDeliveryOutcome {
-        if let Err(denial) = admit_envelope_source(correspondence, envelope, counters) {
-            return TransitionOutcome::Denied(denial);
-        }
-        if let Some(outcome) = preflight(self, correspondence, graph) {
-            return outcome;
-        }
-        let target_slice = targets.as_slice();
-        if let Err(outcome) =
-            self.admit_delivery_target_allocations(correspondence, target_slice, &mut counters)
-        {
-            return outcome;
-        }
-
-        let matched = match match_envelope(
-            correspondence.ready.payload(),
-            target_slice,
+        let graph_instance_id = graph.installed_graph_capability().graph_instance_id();
+        let prepared = match self.prepare_installed_correspondence_envelope_to_targets(
+            correspondence,
+            targets,
+            graph_instance_id,
             envelope,
             counters,
         ) {
-            Ok(matched) => matched,
-            Err(denial) => return TransitionOutcome::Denied(denial),
+            TransitionOutcome::Success(prepared) => prepared,
+            TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
+            TransitionOutcome::Deferred(deferred) => return TransitionOutcome::Deferred(deferred),
+            TransitionOutcome::Stale(stale) => return TransitionOutcome::Stale(stale),
+            TransitionOutcome::RebindRequired(rebind) => {
+                return TransitionOutcome::RebindRequired(rebind)
+            }
+            TransitionOutcome::Failed(failure) => return TransitionOutcome::Failed(failure),
         };
-        let mut counters = matched.counters;
-        let change_set = BridgeDeliveredCorrespondenceChangeSet::new(
-            correspondence.basis().clone(),
-            correspondence.dependency().clone(),
-            envelope,
-            matched.changes,
-        );
-        if counters.truth_targets_admitted == 0 {
+        self.perform_prepared_delivery_on_raw_graph(graph, prepared)
+    }
+
+    fn perform_prepared_delivery_on_raw_graph(
+        &self,
+        graph: &mut SignalGraph,
+        prepared: BridgePreparedCorrespondenceDelivery,
+    ) -> CorrespondenceDeliveryOutcome {
+        let BridgePreparedCorrespondenceDelivery {
+            mut counters,
+            change_set,
+            signal,
+            target_count,
+            node_fan_out,
+        } = prepared;
+        let Some(prepared_signal) = signal else {
             return TransitionOutcome::Success(BridgeCorrespondenceDeliveryReceipt::new(
                 counters, change_set, None,
             ));
-        }
-
-        let signal_capabilities =
-            match admit_signal_target_capabilities(graph, target_slice, &mut counters) {
-                Ok(capabilities) => capabilities,
-                Err(outcome) => return outcome,
-            };
-        let (scoped_changes, prepared_signal) =
-            super::signal_execution::prepare_scoped_signal_invalidation_for_targets(
-                correspondence,
-                target_slice,
-                &change_set,
-                signal_capabilities,
-            );
+        };
+        let scoped_changes = match prepared_signal.admit_raw_graph(graph, &mut counters) {
+            Ok(changes) => changes,
+            Err(()) => {
+                return TransitionOutcome::RebindRequired(
+                    BridgeCorrespondenceRebindRequired::SignalGraphGeneration,
+                )
+            }
+        };
         let worth_proof::TransitionOutcome::Success(admitted) =
             worth_signal::facade::apply_installed_scoped_changes(graph, scoped_changes)
         else {
@@ -169,12 +166,8 @@ impl RuntimeBridge {
             );
         };
         counters.signal_seeds_emitted = admitted.len();
-        counters.node_fan_out = target_slice
-            .iter()
-            .map(|target| target.node)
-            .collect::<std::collections::BTreeSet<_>>()
-            .len();
-        counters.slots_touched = target_slice.len();
+        counters.node_fan_out = node_fan_out;
+        counters.slots_touched = target_count;
         TransitionOutcome::Success(BridgeCorrespondenceDeliveryReceipt::new(
             counters,
             change_set,
@@ -182,7 +175,7 @@ impl RuntimeBridge {
         ))
     }
 
-    fn admit_delivery_target_allocations(
+    pub(super) fn admit_delivery_target_allocations(
         &self,
         correspondence: &BridgeInstalledSemanticCorrespondence,
         targets: &[super::InstalledCorrespondenceTarget],
@@ -224,31 +217,4 @@ impl RuntimeBridge {
         }
         Ok(())
     }
-}
-
-fn admit_signal_target_capabilities(
-    graph: &mut SignalGraph,
-    targets: &[super::InstalledCorrespondenceTarget],
-    counters: &mut CorrespondenceDeliveryCounters,
-) -> Result<Vec<worth_signal::facade::InstalledSignalAspectCapability>, CorrespondenceDeliveryOutcome>
-{
-    let mut capabilities = Vec::with_capacity(targets.len());
-    for target in targets {
-        let capability = match graph.admit_installed_aspect(target.node, target.aspect) {
-            TransitionOutcome::Success(capability) => capability,
-            _ => {
-                return Err(TransitionOutcome::RebindRequired(
-                    BridgeCorrespondenceRebindRequired::SignalGraphGeneration,
-                ))
-            }
-        };
-        if capability.graph_instance_id() != target.signal_graph_instance_id {
-            return Err(TransitionOutcome::RebindRequired(
-                BridgeCorrespondenceRebindRequired::SignalGraphGeneration,
-            ));
-        }
-        capabilities.push(capability);
-        counters.signal_capability_admissions += 1;
-    }
-    Ok(capabilities)
 }

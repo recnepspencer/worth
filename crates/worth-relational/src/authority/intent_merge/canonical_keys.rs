@@ -22,6 +22,7 @@ pub(crate) enum CanonicalIntentKey {
         replacement_kind_id: crate::identity::data::KindId,
         replacement_client_key: crate::symbols::data::ClientKey,
     },
+    DeleteRelation(RelationId),
     CreateRelation(RelationCreateKey),
     BulkCreateRelations {
         partition_id: crate::identity::data::PartitionId,
@@ -30,7 +31,6 @@ pub(crate) enum CanonicalIntentKey {
         endpoints: Vec<(EntityReference, EntityReference)>,
     },
     UpdateRelationEndpoints(RelationId),
-    DeleteRelation(RelationId),
     DeleteEntity(EntityId),
 }
 

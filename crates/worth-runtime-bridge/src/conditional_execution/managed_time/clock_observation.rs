@@ -14,12 +14,14 @@ enum ObservationAdmission {
 
 impl BridgeOwnedSignalRuntime {
     pub fn observe_managed_clock(
-        &mut self,
+        &self,
         parts: BridgeManagedClockObservationParts<'_>,
     ) -> Result<BridgeManagedClockObservationOutcome, BridgeManagedTemporalDenial> {
         let binding_identity = parts.binding.binding_identity.clone();
-        let lane = self.managed_clock_lane_mut(parts.binding)?;
-        validate_observation_source(lane, &parts)?;
+        let cell = self.admit_managed_clock_lane(parts.binding)?;
+        let mut lane = super::lock_lane(&cell)?;
+        super::lifecycle::require_clock_lane(&lane, parts.binding)?;
+        validate_observation_source(&lane, &parts)?;
         let admission = classify_observation(
             lane.last_observation(),
             parts.sequence,
@@ -40,10 +42,9 @@ impl BridgeOwnedSignalRuntime {
                 ))
             }
             ObservationAdmission::Advance => {
-                let signal_advance_ordinal =
-                    lane.advance_signal_clock(parts.observed_coordinate)?;
+                let (signal_advance_ordinal, due) =
+                    lane.advance_and_promote_due(&binding_identity, parts.observed_coordinate)?;
                 lane.record_observation(parts.sequence, parts.observed_coordinate);
-                let due = lane.promote_due(&binding_identity)?;
                 Ok(BridgeManagedClockObservationOutcome::Accepted(
                     BridgeManagedClockAcceptedObservation {
                         sequence: parts.sequence,

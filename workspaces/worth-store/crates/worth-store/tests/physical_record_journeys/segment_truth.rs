@@ -12,6 +12,9 @@ use worth_store_physical_backend::MediaOperationRole;
 
 use super::{configuration, durable_publication, media, success};
 
+#[path = "segment_truth/generation_damage.rs"]
+mod generation_damage;
+
 #[test]
 fn segment_filename_and_header_disagreement_is_denied_before_record_decode() {
     let parent = tempfile::tempdir().unwrap();
@@ -66,6 +69,95 @@ fn segment_filename_and_header_disagreement_is_denied_before_record_decode() {
         reopened.abort().records().posture(),
         RecordServingTerminalPosture::InspectionRequired
     );
+}
+
+#[test]
+fn checksum_valid_slot_generation_drift_preserves_exact_read_observation() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("slot-generation-drift");
+    let (format, placement, access) = configuration();
+    let serving = success(initialize_record_store!(media(&root), |durability| {
+        PhysicalRecordInitialization::new(format, placement, access, durability)
+    }));
+    let published = durable_publication::publish_single(
+        &serving,
+        placement,
+        durable_publication::certification_material("slot-generation-drift", 1),
+        RecordAppendBatch::try_from_iter([b"record".as_slice()]).unwrap(),
+    );
+    let record = published.settled_members()[0].record_id(0).unwrap();
+    serving.close();
+
+    let page =
+        root.join("families/records/segments/segment-0000000000000001-0000000000000001.pages");
+    let mut bytes = std::fs::read(&page).unwrap();
+    super::durable_frame_oracle::payload_mut(&mut bytes)[56..64]
+        .copy_from_slice(&2_u64.to_le_bytes());
+    super::durable_frame_oracle::reseal(&mut bytes);
+    std::fs::write(page, bytes).unwrap();
+
+    let reopened = success(open_record_store!(media(&root), |durability| {
+        PhysicalRecordOpen::new(format, access, durability)
+    }));
+    let error = match reopened.records().open(
+        record,
+        RecordReadLimits::new(RecordByteLimit::new(32).unwrap()),
+    ) {
+        Err(error) => error,
+        Ok(_) => panic!("slot generation drift cannot open a clean record session"),
+    };
+    assert_eq!(
+        error.denial(),
+        RecordReadDenial::StalePlacement(StalePhysicalRecordPlacement::SlotGeneration)
+    );
+    assert_eq!(error.observation().generation_checks(), 4);
+    assert_eq!(error.observation().generation_rejections(), 1);
+    reopened.abort();
+}
+
+#[test]
+fn checksum_valid_extent_generation_drift_is_stale_membership() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("extent-generation-drift");
+    let (format, placement, access) = configuration();
+    let serving = success(initialize_record_store!(media(&root), |durability| {
+        PhysicalRecordInitialization::new(format, placement, access, durability)
+    }));
+    let payload = vec![7_u8; 40_000];
+    let published = durable_publication::publish_single(
+        &serving,
+        placement,
+        durable_publication::certification_material("extent-generation-drift", 1),
+        RecordAppendBatch::try_from_iter([payload.as_slice()]).unwrap(),
+    );
+    let record = published.settled_members()[0].record_id(0).unwrap();
+    serving.close();
+
+    let manifest = root.join(
+        "families/records/extent-manifests/extent-0000000000000001-0000000000000001.manifest",
+    );
+    let mut bytes = std::fs::read(&manifest).unwrap();
+    bytes[28..36].copy_from_slice(&2_u64.to_le_bytes());
+    super::durable_frame_oracle::reseal(&mut bytes);
+    std::fs::write(manifest, bytes).unwrap();
+
+    let reopened = success(open_record_store!(media(&root), |durability| {
+        PhysicalRecordOpen::new(format, access, durability)
+    }));
+    let error = match reopened.records().open(
+        record,
+        RecordReadLimits::new(RecordByteLimit::new(payload.len() as u32).unwrap()),
+    ) {
+        Err(error) => error,
+        Ok(_) => panic!("extent generation drift cannot open a clean record session"),
+    };
+    assert_eq!(
+        error.denial(),
+        RecordReadDenial::StalePlacement(StalePhysicalRecordPlacement::ExtentMembership)
+    );
+    assert_eq!(error.observation().generation_checks(), 1);
+    assert_eq!(error.observation().generation_rejections(), 1);
+    reopened.abort();
 }
 
 #[test]

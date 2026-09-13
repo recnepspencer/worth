@@ -5,6 +5,7 @@ pub enum PhysicalRedoPlanningDenial {
     RecordCountLimit,
     TargetLimit,
     DistinctTargetLimit,
+    RecoveryMemoryLimit { observed: u64, admitted: u64 },
     InvalidRecordOrder,
     NonCanonicalTargetOrder,
     LsnRangeMismatch,

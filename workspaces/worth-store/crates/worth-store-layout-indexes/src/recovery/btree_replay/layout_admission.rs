@@ -8,7 +8,7 @@ use super::{
 
 pub(super) fn admit(
     request: &BTreeReplayRequest<'_>,
-    physical_source: &worth_store_recovery_physics::AdmittedBTreeReplayPhysicalSource,
+    physical_source: &super::AdmittedBTreeReplayPhysicalSource,
 ) -> Result<crate::BaselineBTreeReplayAdmission, BTreeReplayDenied> {
     let declarations = crate::layout_declarations();
     let declaration = declarations

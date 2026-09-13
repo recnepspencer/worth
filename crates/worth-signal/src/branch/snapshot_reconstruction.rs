@@ -18,6 +18,7 @@ pub enum SignalBranchSnapshotReconstructionDenial {
     NonPristineBranch {
         branch_id: SignalBranchId,
     },
+    NonPristineRuntime,
     InactiveBranch {
         branch_id: SignalBranchId,
     },

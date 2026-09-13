@@ -8,13 +8,11 @@ mod backend_qualification_tests;
 mod background_pacing;
 #[cfg(test)]
 mod background_pacing_tests;
-mod closeout;
 mod flush_durability;
 mod foreground_reservation;
 #[cfg(test)]
 mod foreground_reservation_tests;
 mod latency_interference;
-mod materialized_closeout;
 mod queue_execution;
 mod reclaim_policy;
 #[cfg(test)]
@@ -34,7 +32,6 @@ pub use background_pacing::{
     certify_io_qos_background_pacing, S6BackgroundPacingCertificationEvidence,
     S6BackgroundPacingOutcomeKind,
 };
-pub use closeout::*;
 pub use flush_durability::S6FlushDurabilityEvidenceRow;
 pub use foreground_reservation::{
     certify_io_qos_foreground_reservation, S6ForegroundReservationCertificationDenial,
@@ -45,12 +42,3 @@ pub use latency_interference::{
 };
 pub use queue_execution::{S6CertifiedQueueExecutionEvidence, S6QueueExecutionCertificationDenial};
 pub use reclaim_policy::{S6ReclaimPolicyEvidenceOutcomeKind, S6ReclaimPolicyEvidenceRow};
-
-pub(crate) use materialized_closeout::S6ReadinessCertificationProofTopologyParts;
-pub use materialized_closeout::{
-    S6MaterializedCertificationAdoptionDenial, S6MaterializedCertificationAdoptionReceipt,
-    S6ReadinessCertificationCounterEvidence, S6ReadinessCertificationCounterFamily,
-    S6ReadinessCertificationCounterStrength, S6ReadinessCertificationProofSummary,
-    S6ReadinessCertificationProofTopology, S6ReadinessResidualDebtEvidenceKind,
-    S6ReadinessResidualDebtEvidenceRow,
-};

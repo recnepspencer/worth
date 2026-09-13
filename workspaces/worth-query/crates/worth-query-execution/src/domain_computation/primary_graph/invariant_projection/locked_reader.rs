@@ -1,10 +1,12 @@
+use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationSchema, EqualityPredicate,
-    TypedApplicationReadableValue, TypedApplicationValue, WritePosture,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
+    ApplicationScalarValueBinding, ApplicationSchema, DeclaredApplicationFieldValue,
+    EqualityPredicate, WritePosture,
 };
 
 use super::work::WorthQueryInvariantProjectionWorkBudget;
@@ -19,6 +21,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+#[path = "locked_reader/traversal_denial.rs"]
+mod traversal_denial;
+pub use traversal_denial::{
+    WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
+};
+
 pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) runtime: &'runtime mut worth_relational::facade::runtime::RelationalRuntime,
     pub(super) layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
@@ -30,6 +38,13 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) realized_scope: WorthQueryRealizedProjectionScope,
     pub(super) aggregate_projections:
         Arc<std::sync::Mutex<super::super::aggregate_projection::WorthQueryAggregateProjections>>,
+    pub(super) output_lineage:
+        Arc<std::sync::Mutex<super::super::output_lineage::WorthQueryApplicationOutputLineage>>,
+    pub(super) selected_product_occurrence:
+        Option<worth_runtime_world::facade::ProductBranchIncarnation>,
+    pub(super) selected_product_generation: Option<u64>,
+    pub(super) prior_output_bindings:
+        HashMap<std::any::TypeId, Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -37,21 +52,6 @@ pub struct WorthQueryCompletedInvariantProjection<Schema, Output> {
     output: Output,
     snapshot: WorthQueryApplicationInvariantProjectionSnapshot<Schema>,
     work: WorthQueryInvariantProjectionWork,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryInvariantProjectionTraversalDenialKind {
-    RelationNotInstalled,
-    UndeclaredDecisionTarget,
-    ForeignIdentity,
-    EndpointUnavailable,
-    WorkBudgetExceeded,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryInvariantProjectionTraversalDenial {
-    kind: WorthQueryInvariantProjectionTraversalDenialKind,
-    relation: String,
 }
 
 impl<Schema> WorthQueryApplicationInvariantProjectionAuthority<Schema>
@@ -67,8 +67,16 @@ where
         WorthQueryCompletedInvariantProjection<Schema, Output>,
         WorthQueryInvariantProjectionDenial,
     > {
+        let basis = self.graph.with_runtime_mut(|runtime| {
+            let identity = runtime.main_branch_identity();
+            runtime
+                .observe_branch(&identity)
+                .map(|(_, basis)| basis)
+                .map_err(super::admission_denial::from_branch_basis_denial)
+        })?;
         self.project_with_work_budget(
             WorthQueryInvariantProjectionWorkBudget::unbounded(),
+            basis,
             projection,
         )
     }
@@ -76,6 +84,7 @@ where
     pub(super) fn project_bounded<Output>(
         &self,
         maximum_work: usize,
+        basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
@@ -85,6 +94,7 @@ where
     > {
         self.project_with_work_budget(
             WorthQueryInvariantProjectionWorkBudget::bounded(maximum_work),
+            basis,
             projection,
         )
     }
@@ -92,6 +102,7 @@ where
     fn project_with_work_budget<Output>(
         &self,
         work_budget: WorthQueryInvariantProjectionWorkBudget,
+        basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
@@ -99,16 +110,11 @@ where
         WorthQueryCompletedInvariantProjection<Schema, Output>,
         WorthQueryInvariantProjectionDenial,
     > {
-        let (basis, snapshot) = self.graph.with_runtime_mut(|runtime| {
-            let identity = runtime.main_branch_identity();
-            let (_, basis) = runtime
-                .observe_branch(&identity)
-                .map_err(super::admission_denial::from_branch_basis_denial)?;
-            let snapshot = runtime
+        let snapshot = self.graph.with_runtime_mut(|runtime| {
+            runtime
                 .snapshots()
                 .snapshot_for_observation(&basis.observation())
-                .map_err(super::admission_denial::from_snapshot_admission_denial)?;
-            Ok((basis, snapshot))
+                .map_err(super::admission_denial::from_snapshot_admission_denial)
         })?;
         let projected = self.graph.with_runtime_mut(|runtime| {
             catch_unwind(AssertUnwindSafe(|| {
@@ -122,6 +128,10 @@ where
                     work_budget,
                     realized_scope: WorthQueryRealizedProjectionScope::default(),
                     aggregate_projections: Arc::clone(&self.graph.aggregate_projections),
+                    output_lineage: Arc::clone(&self.graph.output_lineage),
+                    selected_product_occurrence: None,
+                    selected_product_generation: None,
+                    prior_output_bindings: HashMap::new(),
                     _schema: PhantomData,
                 };
                 let output = projection(&mut reader);
@@ -209,7 +219,7 @@ where
         value: Value,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -219,17 +229,19 @@ where
                 field.field(),
             ));
         }
+        let value = Field::Binding::encode(&value).map_err(|_| {
+            WorthQueryEntityResolutionDenial::new(
+                WorthQueryEntityResolutionDenialKind::ValueEncodingRejected,
+                field.field(),
+            )
+        })?;
         let truth = self.entity_resolution.at_snapshot(
             self.runtime,
             self.snapshot,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )?;
-        let (resolved, examined) = truth.resolve_with_work(
-            field.entity(),
-            field.aspect(),
-            field.field(),
-            value.into_foundational_value(),
-        );
+        let (resolved, examined) =
+            truth.resolve_with_work(field.entity(), field.aspect(), field.field(), value);
         self.work_budget.consume(1 + examined);
         self.work.record_lookup(examined);
         let resolved = resolved?;
@@ -261,7 +273,7 @@ where
         WorthQueryEntityResolutionDenial,
     >
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -280,7 +292,8 @@ where
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Option<Value>
     where
-        Value: TypedApplicationReadableValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -304,7 +317,7 @@ where
             identity.kind,
             &locator,
         )
-        .and_then(|value| Value::from_foundational_value(&value))
+        .and_then(|value| Field::Binding::decode(&value).ok())
     }
 
     pub(super) fn identity_is_local<Entity>(
@@ -315,35 +328,3 @@ where
         identity.authority_identity == self.authority_identity && identity.entity.as_ref() == entity
     }
 }
-
-impl WorthQueryInvariantProjectionTraversalDenial {
-    pub const fn kind(&self) -> WorthQueryInvariantProjectionTraversalDenialKind {
-        self.kind
-    }
-
-    pub fn relation(&self) -> &str {
-        &self.relation
-    }
-
-    pub(super) fn new(
-        kind: WorthQueryInvariantProjectionTraversalDenialKind,
-        relation: impl Into<String>,
-    ) -> Self {
-        Self {
-            kind,
-            relation: relation.into(),
-        }
-    }
-}
-
-impl std::fmt::Display for WorthQueryInvariantProjectionTraversalDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "invariant projection traversal denied: {:?} ({})",
-            self.kind, self.relation
-        )
-    }
-}
-
-impl std::error::Error for WorthQueryInvariantProjectionTraversalDenial {}

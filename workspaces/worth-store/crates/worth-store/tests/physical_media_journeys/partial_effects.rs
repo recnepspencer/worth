@@ -10,8 +10,6 @@ use super::{admit_runtime, media_admission};
 mod abrupt_writer;
 #[path = "partial_effects/counter_evidence.rs"]
 mod counter_evidence;
-#[path = "partial_effects/evidence_binding.rs"]
-mod evidence_binding;
 #[path = "partial_effects/fault_cases.rs"]
 mod fault_cases;
 #[path = "partial_effects/fault_schedule.rs"]
@@ -20,7 +18,6 @@ mod fault_schedule;
 mod independent_observation;
 use abrupt_writer::{event, run_abrupt_writer};
 use counter_evidence::{assert_counter_conservation, emit_counter_report, inspection_counters};
-use evidence_binding::{CaseEvidenceBinding, CourtroomBinding};
 use fault_cases::{FaultCase, CI_CASES, RELEASE_CASES};
 use independent_observation::{
     expected_manifest, manifest_projection, observe_namespace, observe_tree,
@@ -28,7 +25,6 @@ use independent_observation::{
 
 #[derive(Debug, PartialEq, Eq)]
 struct CaseProjection {
-    evidence: CaseEvidenceBinding,
     outcome: String,
     root_exists: bool,
     identity_visible: bool,
@@ -45,22 +41,13 @@ struct CaseProjection {
 }
 
 #[test]
-fn partial_effects_barrier_honesty_and_mutants() {
+fn partial_effects_and_barrier_honesty() {
     let parent = tempfile::tempdir().unwrap();
-    let binding = courtroom_binding(&parent.path().join("evidence-environment"));
     for case in CI_CASES {
         println!("C4_SEAM {} run=one", case.id);
-        let first = run_case(
-            &parent.path().join(format!("{}-one", case.id)),
-            case,
-            &binding,
-        );
+        let first = run_case(&parent.path().join(format!("{}-one", case.id)), case);
         println!("C4_SEAM {} run=two", case.id);
-        let second = run_case(
-            &parent.path().join(format!("{}-two", case.id)),
-            case,
-            &binding,
-        );
+        let second = run_case(&parent.path().join(format!("{}-two", case.id)), case);
         assert_eq!(
             first, second,
             "fault schedule {} was not deterministic",
@@ -70,23 +57,15 @@ fn partial_effects_barrier_honesty_and_mutants() {
     if std::env::var_os("WORTH_STORE_C4_FULL_SEAMS").is_some() {
         for case in RELEASE_CASES {
             println!("C4_SEAM {} run=one", case.id);
-            let first = run_case(
-                &parent.path().join(format!("{}-one", case.id)),
-                case,
-                &binding,
-            );
+            let first = run_case(&parent.path().join(format!("{}-one", case.id)), case);
             println!("C4_SEAM {} run=two", case.id);
-            let second = run_case(
-                &parent.path().join(format!("{}-two", case.id)),
-                case,
-                &binding,
-            );
+            let second = run_case(&parent.path().join(format!("{}-two", case.id)), case);
             assert_eq!(first, second, "release seam {} drifted", case.id);
         }
     }
 }
 
-fn run_case(root: &Path, case: FaultCase, binding: &CourtroomBinding) -> CaseProjection {
+fn run_case(root: &Path, case: FaultCase) -> CaseProjection {
     let expected_manifest = expected_manifest(case.manifest);
     let abrupt_boundary = if case.abrupt {
         Some(run_abrupt_writer(root, case.id))
@@ -179,7 +158,6 @@ fn run_case(root: &Path, case: FaultCase, binding: &CourtroomBinding) -> CasePro
         case.id
     );
     CaseProjection {
-        evidence: binding.for_schedule(case.id),
         outcome: report.as_ref().map_or_else(
             || "abrupt-death".into(),
             |report| report.value("outcome").into(),
@@ -215,24 +193,6 @@ fn run_case(root: &Path, case: FaultCase, binding: &CourtroomBinding) -> CasePro
             |report| report.value("fault_handle").into(),
         ),
     }
-}
-
-fn courtroom_binding(root: &Path) -> CourtroomBinding {
-    let media = match admit_runtime(root)
-        .try_admit_filesystem_media(media_admission())
-        .into_raw()
-    {
-        TransitionOutcome::Success(media) => media,
-        _ => panic!("courtroom environment qualification failed"),
-    };
-    let profile = media
-        .observer()
-        .snapshot()
-        .unwrap()
-        .backend_profile()
-        .clone();
-    assert!(matches!(media.close(), MediaShutdownOutcome::Released(_)));
-    CourtroomBinding::capture(&profile)
 }
 
 fn assert_fault_localization(report: &super::child_dispatch::ChildReport, case: FaultCase) {

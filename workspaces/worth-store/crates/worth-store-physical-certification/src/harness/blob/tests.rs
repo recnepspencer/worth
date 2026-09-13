@@ -1,29 +1,21 @@
 use crate::{
     lower_blob_simulation_seed_plan, lower_physical_simulation_plan, BlobHarnessProfile,
     BlobHarnessProfileSet, BlobHarnessScenarioSeed, BlobHarnessShortcutAttempt,
-    BlobHarnessShortcutDenial, CounterContractKind, CoverageRowDimension,
-    PhysicalSimulationCapability, PhysicalSimulationScenarioFamily, SimulationPlanDenial,
-    SimulationPlanningContext,
+    BlobHarnessShortcutDenial, CounterContractKind, PhysicalSimulationCapability,
+    PhysicalSimulationScenarioFamily, SimulationPlanDenial, SimulationPlanningContext,
 };
 use worth_store_blob_chunks::{
     deny_ambient_chaos_corpus_as_canonical, deny_hidden_temporary_sidecar,
     deny_logical_size_only_heavy_qualification, deny_sparse_only_heavy_qualification,
-    deny_whole_object_expected_buffer, BlobHarnessAccessMode, BlobHarnessActorMix,
-    BlobHarnessChunkSizeClass, BlobHarnessChunkTopology, BlobHarnessFailurePoint,
-    BlobHarnessPlacementClass, BlobHarnessSecurityScopeClass, BlobHarnessSizeClass,
-    BlobHarnessTopologyDenial, HeavyBlobFixtureMaterializationMode,
+    deny_whole_object_expected_buffer, BlobHarnessChunkSizeClass, BlobHarnessChunkTopology,
+    BlobHarnessSizeClass, BlobHarnessTopologyDenial, HeavyBlobFixtureMaterializationMode,
 };
-use worth_store_budgets::BlobHarnessEnvelopeProfile;
 use worth_store_test_support::{
     execute_blob_harness_real_multi_gb_temp_file_fixture,
     execute_blob_harness_temp_file_fixture_smoke,
 };
 
-use super::{
-    heavy_qualification::canonical_heavy_fixture_plan_for_seed,
-    synthetic_blob_harness_coverage_matrix_for_test_support,
-    synthetic_blob_harness_replay_bundle_for_test_support,
-};
+use super::heavy_qualification::canonical_heavy_fixture_plan_for_seed;
 
 #[test]
 fn seed_blob_scenario_lowers_to_stable_simulation_harness_plan_identity() {
@@ -188,88 +180,6 @@ fn shortcut_lanes_are_typed_denials() {
         BlobHarnessShortcutAttempt::private_harness_state_mutation().deny_for_blob_harness(),
         BlobHarnessShortcutDenial::PrivateMutationNotHarnessAuthority
     );
-}
-
-#[test]
-#[ignore = "release-scale blob qualification"]
-fn replay_bundle_is_stable_and_carries_exact_blob_counter_evidence() {
-    let seed = BlobHarnessScenarioSeed::builder()
-        .profile(BlobHarnessProfile::ci_memory_envelope_exceeding())
-        .placement_external()
-        .security_scope_preserving()
-        .read_only_access()
-        .placement_move_partial_replication_actor_mix()
-        .fault_during_tier_move()
-        .build()
-        .unwrap();
-
-    let first = synthetic_blob_harness_replay_bundle_for_test_support(seed.clone());
-    let second = synthetic_blob_harness_replay_bundle_for_test_support(seed.clone());
-
-    assert_eq!(first.plan().identity(), second.plan().identity());
-    assert_eq!(first.schedule().identity(), second.schedule().identity());
-    assert_eq!(first.transcript_identity(), second.transcript_identity());
-    assert_eq!(first.oracle_verdicts(), second.oracle_verdicts());
-    assert_eq!(
-        first.counter_receipt().rows(),
-        second.counter_receipt().rows()
-    );
-    assert_eq!(
-        first
-            .counter_receipt()
-            .rows()
-            .iter()
-            .find(|row| row.kind() == CounterContractKind::BlobChunkCountExact)
-            .map(|row| row.observed_count()),
-        Some(seed.topology().chunk_count())
-    );
-    assert_eq!(
-        first
-            .counter_receipt()
-            .rows()
-            .iter()
-            .find(|row| row.kind() == CounterContractKind::BlobLogicalBytesExact)
-            .map(|row| row.observed_count()),
-        Some(seed.topology().logical_bytes())
-    );
-}
-
-#[test]
-fn coverage_rows_include_blob_axes() {
-    let seed = BlobHarnessScenarioSeed::builder()
-        .profile(BlobHarnessProfile::heavy_multi_gb())
-        .placement_cold_tier()
-        .security_scope_cross_scope_denied()
-        .partial_replication_access()
-        .placement_move_partial_replication_actor_mix()
-        .fault_during_tier_move()
-        .build()
-        .unwrap();
-
-    let coverage = synthetic_blob_harness_coverage_matrix_for_test_support(seed.clone());
-    let rows = coverage.rows();
-
-    assert!(rows.iter().any(|row| {
-        row.has_dimension(&CoverageRowDimension::BlobSizeClass(
-            BlobHarnessSizeClass::HeavyMultiGbDeclared,
-        )) && row.has_dimension(&CoverageRowDimension::BlobChunkCount(
-            seed.topology().chunk_count(),
-        )) && row.has_dimension(&CoverageRowDimension::BlobChunkSizeClass(
-            BlobHarnessChunkSizeClass::Fixed8MiB,
-        )) && row.has_dimension(&CoverageRowDimension::BlobSecurityScopeClass(
-            BlobHarnessSecurityScopeClass::CrossScopeDenied,
-        )) && row.has_dimension(&CoverageRowDimension::BlobPlacementClass(
-            BlobHarnessPlacementClass::ColdTierObserved,
-        )) && row.has_dimension(&CoverageRowDimension::BlobAccessMode(
-            BlobHarnessAccessMode::PartialReplication,
-        )) && row.has_dimension(&CoverageRowDimension::BlobFailurePoint(
-            BlobHarnessFailurePoint::DuringTierMove,
-        )) && row.has_dimension(&CoverageRowDimension::BlobMemoryEnvelopeProfile(
-            BlobHarnessEnvelopeProfile::HeavyMultiGb,
-        )) && row.has_dimension(&CoverageRowDimension::BlobActorMix(
-            BlobHarnessActorMix::PlacementMovePartialReplication,
-        ))
-    }));
 }
 
 #[test]

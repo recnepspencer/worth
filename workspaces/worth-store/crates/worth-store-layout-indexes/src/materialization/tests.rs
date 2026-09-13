@@ -6,8 +6,9 @@ use crate::keyspace::tests_support::{
 use crate::observation::AccessShape;
 use crate::ExpectedCounterClass;
 use std::collections::BTreeSet;
+use worth_store_physical_format::CheckpointWalSourceRange;
 use worth_store_physical_format::PhysicalEpoch;
-use worth_store_recovery_physics::{CheckpointCoveredLsnRange, LogSequenceNumber};
+use worth_store_wal::LogSequenceNumber;
 
 fn format_family() -> &'static crate::PhysicalArtifactFamilyDeclaration {
     layout_declarations().seed_family()
@@ -228,9 +229,7 @@ fn stale_coverage_cannot_become_current_materialization() {
 
 #[test]
 fn partial_coverage_localizes_gap() {
-    let gap =
-        CheckpointCoveredLsnRange::new(LogSequenceNumber::new(11), LogSequenceNumber::new(19))
-            .expect("gap fixture should be valid");
+    let gap = CheckpointWalSourceRange::new(11, 19).expect("gap fixture should be valid");
     let partial = access_planning()
         .partial_wal_lsn_coverage(
             format_family(),
@@ -275,8 +274,7 @@ fn exact_through_basis_survives_range_and_prefix_completeness() {
 #[test]
 fn checkpoint_and_blob_generation_coverages_are_first_class_public_lanes() {
     let checkpoint =
-        CheckpointCoveredLsnRange::new(LogSequenceNumber::new(21), LogSequenceNumber::new(29))
-            .expect("checkpoint fixture should be valid");
+        CheckpointWalSourceRange::new(21, 29).expect("checkpoint fixture should be valid");
     let checkpoint_coverage = access_planning()
         .exact_checkpoint_coverage(
             crate::bootstrap::test_support::bootstrap_exact_materialization(

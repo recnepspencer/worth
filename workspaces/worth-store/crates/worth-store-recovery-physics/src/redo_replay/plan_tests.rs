@@ -4,16 +4,39 @@ use crate::{
     RecoveryOperationEvidenceInput, RecoveryOperationFate, RecoveryOperationIdentity,
     RecoveryPageSource,
 };
+use worth_store_physical_format::store_namespace::{
+    ProposedStoreIdentity, StableStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
+};
 use worth_store_physical_format::RecordArtifactFile;
 
 #[path = "plan_tests/fixtures.rs"]
 mod fixtures;
 #[path = "plan_tests/group_atomic.rs"]
 mod group_atomic;
+#[path = "plan_tests/observation_membership.rs"]
+mod observation_membership;
 #[path = "plan_tests/projection_mutants.rs"]
 mod projection_mutants;
+#[path = "plan_tests/supersession.rs"]
+mod supersession;
 
 use fixtures::*;
+
+fn plan_physical_redo(
+    members: Vec<PhysicalRedoMemberInput>,
+    observations: Vec<RecoveryPageObservation>,
+    maximum_targets: u64,
+) -> Result<ImmutablePhysicalRedoPlan, PhysicalRedoPlanningDenial> {
+    super::plan_physical_redo(members, observations, maximum_targets, test_store())
+}
+
+fn test_store() -> StableStoreIdentity {
+    StoreNamespaceIdentityRecord::new(
+        StoreNamespaceVersion::CURRENT,
+        ProposedStoreIdentity::from_nonzero_bytes([0x51; 16]).unwrap(),
+    )
+    .published_identity()
+}
 
 #[test]
 fn page_lsn_and_operation_fate_make_one_fixed_apply_or_skip_decision() {
@@ -28,7 +51,8 @@ fn page_lsn_and_operation_fate_make_one_fixed_apply_or_skip_decision() {
     let applied = plan_physical_redo(vec![indeterminate.clone()], vec![prior], 1).unwrap();
     assert_eq!(
         applied.decisions()[0].kind(),
-        PhysicalRedoDecisionKind::Apply
+        PhysicalRedoDecisionKind::Apply,
+        "MUTANT_PREDICATE:c8-page-lsn-apply-skip-inverted"
     );
 
     let wrong_digest = observation(2, 10, [6; 32]);
@@ -41,7 +65,8 @@ fn page_lsn_and_operation_fate_make_one_fixed_apply_or_skip_decision() {
     let skipped = plan_physical_redo(vec![indeterminate.clone()], vec![current], 1).unwrap();
     assert_eq!(
         skipped.decisions()[0].kind(),
-        PhysicalRedoDecisionKind::SkipPageAlreadyAtOrBeyondLsn
+        PhysicalRedoDecisionKind::SkipPageAlreadyAtOrBeyondLsn,
+        "MUTANT_PREDICATE:c8-page-lsn-apply-skip-inverted"
     );
     assert_eq!(
         skipped,
@@ -97,7 +122,8 @@ fn absence_cannot_turn_a_wal_attempt_into_no_effect() {
     );
     assert_eq!(
         plan_physical_redo(vec![member], Vec::new(), 1),
-        Err(PhysicalRedoPlanningDenial::ProvenNoEffectHasWalAttempt)
+        Err(PhysicalRedoPlanningDenial::ProvenNoEffectHasWalAttempt),
+        "MUTANT_PREDICATE:c8-no-effect-proof-promoted-from-wal-attempt"
     );
 }
 

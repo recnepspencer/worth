@@ -47,17 +47,18 @@ impl<'port> PublicationRecordArtifacts<'port> {
         })
     }
 
-    pub(in crate::physical_runtime::record_serving) fn write_existing_artifact_candidate(
+    pub(in crate::physical_runtime::record_serving) fn write_existing_artifact_candidate_with_pause(
         &self,
         residency: &mut StoreCandidateFramePublicationSession<'_>,
         frame: CandidateFrame,
         writeback: &super::FrameWritebackPort,
+        after_admission_before_effect: &mut dyn FnMut(),
     ) -> Result<
         CandidateFrameWriteCompletion,
         CandidateFrameWriteFailure<super::dirty::PhysicalRecordWritebackFailureEvidence>,
     > {
         residency
-            .write_frame_via_writeback(frame, writeback)
+            .write_frame_via_writeback_with_pause(frame, writeback, after_admission_before_effect)
             .map(|(completion, _settlement)| completion)
     }
 

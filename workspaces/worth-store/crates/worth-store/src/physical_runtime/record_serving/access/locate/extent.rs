@@ -43,6 +43,8 @@ impl PhysicalRecordReader {
                 admitted.artifact,
                 admitted.manifest,
                 admitted.artifact_bytes,
+                admitted.integrity_membership,
+                self.store,
                 self.format.declaration(),
             ))),
             identity: RecordReadIdentity::for_extent(

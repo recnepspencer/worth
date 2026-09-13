@@ -14,6 +14,7 @@ pub struct MediaOwnedPhysicalRuntime {
     termination: crate::physical_runtime::lifecycle::LifecycleTerminationGuard,
     media: QualifiedFilesystemMedia,
     core: PhysicalRuntimeCore,
+    root_protocol_counters: crate::physical_runtime::RootProtocolRouteCounterCells,
 }
 
 impl MediaOwnedPhysicalRuntime {
@@ -53,11 +54,35 @@ impl MediaOwnedPhysicalRuntime {
             termination,
             media,
             core,
+            root_protocol_counters: crate::physical_runtime::RootProtocolRouteCounterCells::default(
+            ),
         }
     }
 
     pub const fn runtime_identity(&self) -> RuntimeIdentity {
         self.core.runtime_identity()
+    }
+
+    pub(in crate::physical_runtime) fn lifecycle_generation(
+        &self,
+    ) -> crate::physical_runtime::LifecycleGeneration {
+        self.core.lifecycle_generation()
+    }
+
+    pub(in crate::physical_runtime) fn lifecycle_state(
+        &self,
+    ) -> std::sync::Arc<crate::physical_runtime::lifecycle::LifecycleState> {
+        self.core.lifecycle_state()
+    }
+
+    pub(in crate::physical_runtime) const fn root_protocol_counter_cells(
+        &self,
+    ) -> &crate::physical_runtime::RootProtocolRouteCounterCells {
+        &self.root_protocol_counters
+    }
+
+    pub fn root_protocol_counters(&self) -> crate::physical_runtime::RootProtocolRouteCounters {
+        self.root_protocol_counters.snapshot()
     }
 
     pub const fn store_identity(&self) -> StableStoreIdentity {
@@ -141,6 +166,7 @@ impl MediaOwnedPhysicalRuntime {
             termination,
             media,
             core,
+            root_protocol_counters: _,
         } = self;
         drop(termination);
         let release = media.close();
@@ -152,6 +178,7 @@ impl MediaOwnedPhysicalRuntime {
             termination,
             media,
             core,
+            root_protocol_counters: _,
         } = self;
         drop(termination);
         let release = media.close();

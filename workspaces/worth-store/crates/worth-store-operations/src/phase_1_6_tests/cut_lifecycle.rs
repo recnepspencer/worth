@@ -2,32 +2,6 @@ use super::current_root_fixture::*;
 use super::support::*;
 
 #[test]
-fn phase_one_ledger_is_inert_complete_and_records_the_hard_cutover() {
-    let ledger = OperationalRecoveryBoundaryLedger::current();
-    assert!(
-        ledger
-            .entries()
-            .iter()
-            .all(|entry| !entry.authority_owner.is_empty()
-                && !entry.construction_authority.is_empty())
-    );
-    assert!(ledger
-        .entries()
-        .iter()
-        .any(|entry| entry.artifact == "blob custody"
-            && entry.mutation_owner == "worth-store-blob-chunks"));
-    assert!(ledger
-        .shared_vocabulary()
-        .entries()
-        .iter()
-        .all(|entry| !entry.reverse_flow_denial.is_empty()));
-    assert!(CurrentRecoverySurfaceGapReport::current()
-        .gaps()
-        .iter()
-        .any(|gap| gap.surface == "behavioral operations vocabulary"));
-}
-
-#[test]
 fn production_current_root_source_protects_one_page_allocation_for_multiple_slots() {
     let scenario = BackupScenario::new("runtime-root-closure");
     let fixture = current_root_fixture_with_shared_page();
@@ -101,7 +75,7 @@ fn production_current_root_source_protects_one_page_allocation_for_multiple_slot
 #[test]
 fn cut_identity_binds_acknowledged_frontier_and_rejects_unproven_profiles() {
     let scenario = BackupScenario::new("cut-coordinate-identity");
-    let authority = crate::backup::export::current_authority("s10-cut-coordinate-identity");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admit = |operation: &str, acknowledged_frontier, format, backend| {
         OnlineBackupIntent::new(
@@ -185,7 +159,7 @@ fn cut_identity_binds_acknowledged_frontier_and_rejects_unproven_profiles() {
 #[test]
 fn source_replacement_after_cut_admission_fails_before_output_allocation() {
     let scenario = BackupScenario::new("source-replacement");
-    let authority = crate::backup::export::current_authority("s10-source-replacement");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-source-replacement").expect("operation"),
@@ -214,7 +188,7 @@ fn source_replacement_after_cut_admission_fails_before_output_allocation() {
 #[test]
 fn backup_cut_admission_rejects_manifest_coordinates_that_name_another_root() {
     let scenario = BackupScenario::new("root-mismatch");
-    let authority = crate::backup::export::current_authority("s10-root-mismatch");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let mismatched = BackupCutCoordinates::new(
         "lineage-a",
@@ -265,9 +239,69 @@ fn backup_cut_admission_rejects_manifest_coordinates_that_name_another_root() {
 }
 
 #[test]
+fn checkpoint_frontier_cannot_claim_a_different_live_store_authority() {
+    let scenario = BackupScenario::new("checkpoint-authority-mismatch");
+    let authority = scenario.authority();
+    let control = scenario.control_store();
+    let checkpoint = scenario
+        .references()
+        .iter()
+        .find(|artifact| artifact.family() == BackupArtifactFamily::CheckpointManifest)
+        .expect("checkpoint artifact");
+    let BackupArtifactCoverage::CheckpointManifest {
+        checkpoint_identity,
+        manifest_generation,
+        durable_checkpoint_lsn,
+        frontier_digest,
+        ..
+    } = checkpoint.coverage()
+    else {
+        panic!("checkpoint carries checkpoint coverage");
+    };
+    let forged = BackupArtifactReference::declare_untrusted_physical_observation(
+        UntrustedBackupArtifactClaim {
+            family: BackupArtifactFamily::CheckpointManifest,
+            format: checkpoint.format(),
+            identity: checkpoint.identity().to_owned(),
+            generation: checkpoint.generation(),
+            coverage: BackupArtifactCoverage::checkpoint_manifest(
+                checkpoint_identity,
+                *manifest_generation,
+                *durable_checkpoint_lsn,
+                [0xa5; 32],
+                *frontier_digest,
+            )
+            .expect("forged checkpoint coverage remains structurally valid"),
+        },
+        observe_physical_backup_artifact(checkpoint.source_path().to_path_buf(), 4 * 1024)
+            .expect("checkpoint observation"),
+        checkpoint.reclaim_reference(),
+    )
+    .expect("forged checkpoint reference");
+    let mut references = scenario.references().to_vec();
+    let checkpoint_index = references
+        .iter()
+        .position(|artifact| artifact.family() == BackupArtifactFamily::CheckpointManifest)
+        .expect("checkpoint index");
+    references[checkpoint_index] = forged;
+    let denial = OnlineBackupIntent::new(
+        OperationalOperationId::new("checkpoint-authority-mismatch").expect("operation"),
+        scenario.coordinates(),
+        BackupCutManifest::canonical(references).expect("structurally valid cut"),
+        backup_custody(&authority),
+    )
+    .admit_cut(&authority, &control, &scenario.leases)
+    .expect_err("checkpoint authority substitution must fail closed");
+    assert!(matches!(
+        denial,
+        OnlineBackupAdmissionDenial::Cut(BackupCutAdmissionDenial::CheckpointFrontierMismatch)
+    ));
+}
+
+#[test]
 fn custody_admitted_by_another_store_authority_cannot_open_a_backup_cut() {
     let scenario = BackupScenario::new("foreign-custody-authority");
-    let current = crate::backup::export::current_authority("s10-current-custody-authority");
+    let current = scenario.authority();
     let foreign = crate::backup::export::current_authority("s10-foreign-custody-authority");
     let control = scenario.control_store();
 

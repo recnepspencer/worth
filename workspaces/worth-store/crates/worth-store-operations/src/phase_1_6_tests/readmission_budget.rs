@@ -3,7 +3,7 @@ use super::support::*;
 #[test]
 fn zero_readmission_budget_is_typed_and_preserves_the_retry_handle() {
     let scenario = BackupScenario::new("zero-readmission-budget");
-    let authority = crate::backup::export::current_authority("s10-zero-readmission-budget");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     OnlineBackupIntent::new(
         OperationalOperationId::new("zero-readmission-budget").expect("operation"),
@@ -44,7 +44,7 @@ fn zero_readmission_budget_is_typed_and_preserves_the_retry_handle() {
 #[test]
 fn recovery_rejects_custody_from_another_store_and_preserves_the_exact_retry() {
     let scenario = BackupScenario::new("foreign-readmission-custody");
-    let authority = crate::backup::export::current_authority("s10-readmission-authority");
+    let authority = scenario.authority();
     let foreign = crate::backup::export::current_authority("s10-foreign-readmission-authority");
     let control = scenario.control_store();
     OnlineBackupIntent::new(

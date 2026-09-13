@@ -11,26 +11,23 @@ use std::sync::{Arc, Mutex};
 
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
-use worth_relational::facade::history::{BranchId, CommitId};
+use worth_runtime_world::facade::CompositeCommitIdentity;
 
 /// Authoritative commit identity claimed exactly once for recovery minting.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub(crate) struct WorthQueryRecoveryMintClaim {
     provider_runtime_instance_id: u64,
-    branch: BranchId,
-    commit: CommitId,
+    product_commit: CompositeCommitIdentity,
 }
 
 impl WorthQueryRecoveryMintClaim {
     pub(crate) fn new(
         provider_runtime_instance_id: u64,
-        branch: BranchId,
-        commit: CommitId,
+        product_commit: CompositeCommitIdentity,
     ) -> Self {
         Self {
             provider_runtime_instance_id,
-            branch,
-            commit,
+            product_commit,
         }
     }
 }

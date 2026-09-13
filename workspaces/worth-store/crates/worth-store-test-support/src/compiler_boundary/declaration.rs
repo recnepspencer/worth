@@ -28,7 +28,6 @@ pub struct UiFixtureIdentity {
     pub suite_identity: String,
     pub case_identity: String,
     pub source_path: String,
-    pub source_digest: String,
     pub environment_identity: String,
     pub expected_denial_identity: String,
 }

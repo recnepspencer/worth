@@ -1,14 +1,15 @@
-use worth_store_recovery_physics::UnacknowledgedPublicationOutcome;
-
 use super::super::evidence::BlobPublicationRecoveryOperationDigest;
 use super::super::types::BlobPublicationPreWalReplayEvidence;
-use super::super::{BlobPublicationCounterSnapshot, BlobPublicationDenial};
+use super::super::{
+    BlobPublicationCounterSnapshot, BlobPublicationCrashOutcome, BlobPublicationDenial,
+    BlobPublicationReplayedCrashEdge,
+};
 
 pub(crate) fn from_replayed_crash_edge(
-    replay: &worth_store_recovery_physics::PartialPublicationReplayedCrashEdge,
+    replay: &BlobPublicationReplayedCrashEdge,
     expected_operation_digest: &BlobPublicationRecoveryOperationDigest,
 ) -> Result<BlobPublicationPreWalReplayEvidence, BlobPublicationDenial> {
-    if replay.outcome() == UnacknowledgedPublicationOutcome::NoWalAppendObserved
+    if replay.outcome() == BlobPublicationCrashOutcome::NoWalAppendObserved
         && replay.before_wal_append_operation_digest() == Some(expected_operation_digest.as_str())
     {
         Ok(BlobPublicationPreWalReplayEvidence {

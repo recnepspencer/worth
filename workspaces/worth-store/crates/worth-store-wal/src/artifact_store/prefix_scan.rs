@@ -1,9 +1,12 @@
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
 
-use sha2::{Digest, Sha256};
+use worth_store_physical_format::wal_frame::{
+    decode_wal_frame_v1_header, WalFrameV1ChecksumCalculator, WAL_FRAME_V1_FOOTER_BYTES,
+    WAL_FRAME_V1_HEADER_BYTES,
+};
 
-use super::frame_codec::{decode_header, segment_relative_path, FOOTER_BYTES, HEADER_BYTES};
+use super::segment_inventory::wal_segment_relative_path;
 use super::WalArtifactStoreDenial;
 
 pub(super) const WAL_SCAN_BUFFER_BYTES: usize = 64 * 1024;
@@ -40,7 +43,7 @@ pub(super) fn scan_segment_path_with_buffer(
     generation: u64,
     buffer: &mut [u8],
 ) -> Result<WalPrefixScan, WalArtifactStoreDenial> {
-    let path = root.join(segment_relative_path(segment_id, generation));
+    let path = root.join(wal_segment_relative_path(segment_id, generation)?);
     let mut file = match std::fs::File::open(path) {
         Ok(file) => file,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(empty_prefix()),
@@ -58,7 +61,7 @@ pub(super) fn scan_segment_suffix_with_buffer(
     last_lsn_end: Option<u64>,
     buffer: &mut [u8],
 ) -> Result<WalPrefixScan, WalArtifactStoreDenial> {
-    let path = root.join(segment_relative_path(segment_id, generation));
+    let path = root.join(wal_segment_relative_path(segment_id, generation)?);
     let mut file = match std::fs::File::open(path) {
         Ok(file) => file,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound && valid_prefix_bytes == 0 => {
@@ -107,33 +110,31 @@ pub(super) fn scan_segment_reader(
     let mut last_lsn_end = initial_lsn_end;
     let mut bytes_scanned = 0u64;
     while offset < observed_file_bytes {
-        if observed_file_bytes - offset < HEADER_BYTES as u64 {
+        if observed_file_bytes - offset < WAL_FRAME_V1_HEADER_BYTES as u64 {
             break;
         }
-        let mut header = [0u8; HEADER_BYTES];
+        let mut header = [0u8; WAL_FRAME_V1_HEADER_BYTES];
         file.read_exact(&mut header)
             .map_err(|_| WalArtifactStoreDenial::Io)?;
-        let fields = decode_header(&header)?;
-        if fields.segment_id != segment_id || fields.generation != generation {
+        let fields = decode_wal_frame_v1_header(&header).map_err(super::map_wal_frame_denial)?;
+        if fields.segment_id() != segment_id || fields.generation() != generation {
             return Err(WalArtifactStoreDenial::StoreBindingMismatch);
         }
-        if last_lsn_end.is_some_and(|last| last != fields.lsn_start) {
+        if last_lsn_end.is_some_and(|last| last != fields.lsn_start()) {
             return Err(WalArtifactStoreDenial::NonContiguousLsn);
         }
-        let encoded_bytes = ((HEADER_BYTES + FOOTER_BYTES) as u64)
-            .checked_add(fields.payload_bytes)
+        let encoded_bytes = ((WAL_FRAME_V1_HEADER_BYTES + WAL_FRAME_V1_FOOTER_BYTES) as u64)
+            .checked_add(fields.payload_bytes())
             .ok_or(WalArtifactStoreDenial::InvalidFrame)?;
         if encoded_bytes > observed_file_bytes - offset {
             break;
         }
-        verify_frame(file, chunk, &header, fields.payload_bytes)?;
+        verify_frame(file, chunk, &header, fields)?;
         observe(WalFrameObservation {
-            payload_offset: offset + HEADER_BYTES as u64,
-            payload_bytes: fields.payload_bytes,
-            payload_digest: header[84..116]
-                .try_into()
-                .expect("fixed WAL payload digest width"),
-            lsn_end: fields.lsn_end,
+            payload_offset: offset + WAL_FRAME_V1_HEADER_BYTES as u64,
+            payload_bytes: fields.payload_bytes(),
+            payload_digest: fields.payload_digest(),
+            lsn_end: fields.lsn_end(),
             encoded_end: offset + encoded_bytes,
         });
         offset = offset
@@ -142,7 +143,7 @@ pub(super) fn scan_segment_reader(
         bytes_scanned = bytes_scanned
             .checked_add(encoded_bytes)
             .ok_or(WalArtifactStoreDenial::InvalidFrame)?;
-        last_lsn_end = Some(fields.lsn_end);
+        last_lsn_end = Some(fields.lsn_end());
     }
     Ok(WalPrefixScan {
         valid_prefix_bytes: offset,
@@ -155,31 +156,27 @@ pub(super) fn scan_segment_reader(
 fn verify_frame(
     file: &mut std::fs::File,
     chunk: &mut [u8],
-    header: &[u8; HEADER_BYTES],
-    payload_bytes: u64,
+    header_bytes: &[u8; WAL_FRAME_V1_HEADER_BYTES],
+    header: worth_store_physical_format::wal_frame::WalFrameV1Header,
 ) -> Result<(), WalArtifactStoreDenial> {
-    let mut payload_digest = Sha256::new();
-    let mut frame_digest = Sha256::new();
-    frame_digest.update(header);
-    let mut remaining = payload_bytes;
+    let mut checksums = WalFrameV1ChecksumCalculator::new(header_bytes);
+    let mut remaining = header.payload_bytes();
     while remaining > 0 {
         let take = usize::try_from(remaining.min(chunk.len() as u64))
             .expect("bounded WAL scan chunk fits usize");
         file.read_exact(&mut chunk[..take])
             .map_err(|_| WalArtifactStoreDenial::Io)?;
-        payload_digest.update(&chunk[..take]);
-        frame_digest.update(&chunk[..take]);
+        checksums
+            .update_payload(&chunk[..take])
+            .map_err(super::map_wal_frame_denial)?;
         remaining -= take as u64;
     }
-    if payload_digest.finalize()[..] != header[84..116] {
-        return Err(WalArtifactStoreDenial::DigestMismatch);
-    }
-    let mut footer = [0u8; FOOTER_BYTES];
+    let mut footer = [0u8; WAL_FRAME_V1_FOOTER_BYTES];
     file.read_exact(&mut footer)
         .map_err(|_| WalArtifactStoreDenial::Io)?;
-    if frame_digest.finalize()[..] != footer {
-        return Err(WalArtifactStoreDenial::DigestMismatch);
-    }
+    checksums
+        .finish(header, &footer)
+        .map_err(super::map_wal_frame_denial)?;
     Ok(())
 }
 

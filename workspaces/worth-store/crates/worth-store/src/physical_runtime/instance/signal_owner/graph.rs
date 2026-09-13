@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use worth_signal::facade::specialist::EvaluationOutput;
 use worth_signal::facade::{
-    AspectVersion, EvaluationContext, NodeEvaluationResult, ResourceRequestHandle,
+    AspectVersion, EvaluationContext, NodeEvaluationResult, NodeId, ResourceRequestHandle,
     RuntimeClockBasis, SignalError, SignalGraph, SignalRuntime,
 };
 
@@ -88,6 +88,10 @@ impl PhysicalSignalGraph {
             self.release_identity(identity);
             return Err(PhysicalWorkPreEffectDenial::SignalOwnerUnavailable);
         }
+        self.settle_dependency(capability.node()).map_err(|_| {
+            self.release_identity(identity);
+            PhysicalWorkPreEffectDenial::SignalOwnerUnavailable
+        })?;
         let report = self
             .runtime
             .admit_async_node_request(capability.request_intent_requiring_clean_dependencies())
@@ -156,6 +160,10 @@ impl PhysicalSignalGraph {
             self.release_identity(identity);
             return Err(PhysicalWorkPreEffectDenial::CapabilityAbsent);
         };
+        self.settle_dependency(capability.node()).map_err(|_| {
+            self.release_identity(identity);
+            PhysicalWorkPreEffectDenial::SignalOwnerUnavailable
+        })?;
         let report = match self.runtime.revalidate_async_node(
             capability.revalidation_intent_requiring_clean_dependencies(active),
         ) {
@@ -217,6 +225,18 @@ impl PhysicalSignalGraph {
         let bindings = &self.bindings;
         let version = self.context.version;
         self.runtime.evaluate_dirty(&self.context, &|view| {
+            evaluate_physical_signal_node(topology, bindings, version, view)
+        })?;
+        Ok(())
+    }
+
+    fn settle_dependency(&mut self, node: NodeId) -> Result<(), SignalError> {
+        let topology = &self.topology;
+        let bindings = &self.bindings;
+        let version = self.context.version;
+        // A source update can dirty its consumer after the dirty-target snapshot.
+        // Settle only the requested dependency chain before Signal checks readiness.
+        self.runtime.read(node, &self.context, &|view| {
             evaluate_physical_signal_node(topology, bindings, version, view)
         })?;
         Ok(())

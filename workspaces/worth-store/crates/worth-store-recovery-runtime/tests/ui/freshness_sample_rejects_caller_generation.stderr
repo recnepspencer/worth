@@ -5,7 +5,7 @@ error[E0061]: this function takes 6 arguments but 2 arguments were supplied
   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-------------------
   |                                                          |       |
   |                                                          |       expected `u64`, found `[u8; 32]`
-  |                                                          three arguments of type `&PhysicalRecoveryCoordination`, `&AdmittedRecoveryFilesystemMedia`, and `&worth_store_physical_format::checkpoint::inspection::VerifiedCheckpointStream` are missing
+  |                                                          three arguments of type `&PhysicalRecoveryCoordination`, `&AdmittedRecoveryFilesystemMedia`, and `&worth_store_physical_integrity::artifact::checkpoint::verified_stream::VerifiedCheckpointStream` are missing
   |                                                          argument #5 of type `u64` is missing
   |
 note: associated function defined here
@@ -16,5 +16,5 @@ note: associated function defined here
 help: provide the arguments
   |
 4 -     let _ = PhysicalRecoveryFreshnessPort::sample_binding(7_u64, [0_u8; 32]);
-4 +     let _ = PhysicalRecoveryFreshnessPort::sample_binding(/* &PhysicalRecoveryCoordination */, /* &AdmittedRecoveryFilesystemMedia */, /* &worth_store_physical_format::checkpoint::inspection::VerifiedCheckpointStream */, 7_u64, /* u64 */, /* u64 */);
+4 +     let _ = PhysicalRecoveryFreshnessPort::sample_binding(/* &PhysicalRecoveryCoordination */, /* &AdmittedRecoveryFilesystemMedia */, /* &worth_store_physical_integrity::artifact::checkpoint::verified_stream::VerifiedCheckpointStream */, 7_u64, /* u64 */, /* u64 */);
   |

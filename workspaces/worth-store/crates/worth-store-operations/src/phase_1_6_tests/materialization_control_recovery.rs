@@ -15,7 +15,7 @@ fn fresh_process_resumes_the_exact_durable_materialization_plan() {
     }
 
     let scenario = BackupScenario::new("materialization-plan-recovery");
-    let authority = crate::backup::export::current_authority("s10-materialization-plan-recovery");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-materialization-plan-recovery").expect("operation"),
@@ -79,7 +79,7 @@ fn run_recovery_child(control_path: std::path::PathBuf, target_path: std::path::
         )],
     )
     .expect("child reopens control media");
-    let authority = crate::backup::export::current_authority("s10-materialization-plan-recovery");
+    let authority = crate::backup::export::current_authority("store.physical.default_instance");
     let selection = TestControlStoreFencingProvider::selected(
         &authority,
         &control,

@@ -162,6 +162,7 @@ pub enum BackupCutAdmissionDenial {
     RootGenerationMismatch,
     CheckpointIdentityMismatch,
     CheckpointGenerationMismatch,
+    CheckpointFrontierMismatch,
     RootCoverageMismatch,
     CheckpointCoverageMismatch,
     WalCoverageGap,
@@ -199,7 +200,7 @@ impl<'a> BackupCutAdmissionAuthority<'a> {
         if request.coordinates.backend_profile() != request.storage_posture.backend_profile() {
             return Err(BackupCutAdmissionDenial::BackendProfileMismatch);
         }
-        validate_manifest_coordinates(&request.coordinates, &request.manifest)?;
+        validate_manifest_coordinates(&request.coordinates, &request.manifest, authority_identity)?;
         let identity = cut_identity(
             authority_identity,
             request.security_scope.receipt(),
@@ -222,6 +223,7 @@ impl<'a> BackupCutAdmissionAuthority<'a> {
 fn validate_manifest_coordinates(
     coordinates: &BackupCutCoordinates,
     manifest: &BackupCutManifest,
+    current_authority: StoreCurrentAuthorityIdentity,
 ) -> Result<(), BackupCutAdmissionDenial> {
     let mut roots = manifest
         .artifacts()
@@ -259,17 +261,27 @@ fn validate_manifest_coordinates(
     if checkpoint.generation() != coordinates.manifest_generation() {
         return Err(BackupCutAdmissionDenial::CheckpointGenerationMismatch);
     }
-    if !matches!(
-        checkpoint.coverage(),
-        BackupArtifactCoverage::CheckpointManifest {
-            checkpoint_identity,
-            manifest_generation,
-            durable_checkpoint_lsn,
-        } if checkpoint_identity == coordinates.checkpoint_identity()
-            && *manifest_generation == coordinates.manifest_generation()
-            && *durable_checkpoint_lsn == coordinates.durable_checkpoint_lsn()
-    ) {
+    let BackupArtifactCoverage::CheckpointManifest {
+        checkpoint_identity,
+        manifest_generation,
+        durable_checkpoint_lsn,
+        authority_fingerprint,
+        frontier_digest,
+    } = checkpoint.coverage()
+    else {
         return Err(BackupCutAdmissionDenial::CheckpointCoverageMismatch);
+    };
+    if checkpoint_identity != coordinates.checkpoint_identity()
+        || *manifest_generation != coordinates.manifest_generation()
+        || *durable_checkpoint_lsn != coordinates.durable_checkpoint_lsn()
+    {
+        return Err(BackupCutAdmissionDenial::CheckpointCoverageMismatch);
+    }
+    if *frontier_digest == [0; 32] {
+        return Err(BackupCutAdmissionDenial::CheckpointFrontierMismatch);
+    }
+    if *authority_fingerprint != current_authority.fingerprint() {
+        return Err(BackupCutAdmissionDenial::CheckpointFrontierMismatch);
     }
     validate_wal_coverage(coordinates, manifest)?;
     Ok(())

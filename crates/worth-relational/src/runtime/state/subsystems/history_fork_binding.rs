@@ -86,8 +86,19 @@ impl RelationalForkOwnerBinding {
         reservation: RelationalForkTargetReservation,
         mut cell: RelationalBranchReferenceCell,
     ) {
-        cell.bind_basis_registry_metrics(Arc::clone(&self.basis_metrics));
+        self.bind_target_basis_registry_metrics(&mut cell);
         reservation.install(cell);
+    }
+
+    pub(crate) fn bind_target_basis_registry_metrics(
+        &self,
+        cell: &mut RelationalBranchReferenceCell,
+    ) {
+        cell.bind_basis_registry_metrics(Arc::clone(&self.basis_metrics));
+    }
+
+    pub(crate) fn owns_reservation(&self, reservation: &RelationalForkTargetReservation) -> bool {
+        self.branches.owns_reservation(reservation)
     }
 
     pub(crate) fn install_head(

@@ -105,7 +105,7 @@ impl RecordReadSession {
     > {
         let runtime = self.runtime.upgrade().ok_or_else(|| {
             RecordStreamFailure::during_read(
-                RecordStreamFailureKind::ServingRequiresInspection,
+                RecordStreamFailureKind::RuntimeReleased,
                 self.observation.payload_bytes(),
             )
         })?;

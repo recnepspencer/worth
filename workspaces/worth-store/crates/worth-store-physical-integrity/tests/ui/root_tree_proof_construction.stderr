@@ -1,0 +1,23 @@
+error: cannot construct `IntegrityValidatedBootstrapCatalog<'_>` with struct literal syntax due to private fields
+ --> tests/ui/root_tree_proof_construction.rs:7:19
+  |
+7 |     let _forged = IntegrityValidatedBootstrapCatalog { scope };
+  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   ----- private field
+  |
+  = note: ...and other private fields `record_format`, `current_root_generation`, `validation_record` and `inspected` that were not provided
+
+error: cannot construct `IntegrityValidatedRootRoutingBlock<'_>` with struct literal syntax due to private fields
+  --> tests/ui/root_tree_proof_construction.rs:11:19
+   |
+11 |     let _forged = IntegrityValidatedRootRoutingBlock { scope };
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   ----- private field
+   |
+   = note: ...and other private fields `record_format`, `block`, `validation_record` and `inspected` that were not provided
+
+error: cannot construct `IntegrityValidatedSegmentMembershipBlock<'_>` with struct literal syntax due to private fields
+  --> tests/ui/root_tree_proof_construction.rs:15:19
+   |
+15 |     let _forged = IntegrityValidatedSegmentMembershipBlock { scope };
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   ----- private field
+   |
+   = note: ...and other private fields `record_format`, `block`, `validation_record` and `inspected` that were not provided

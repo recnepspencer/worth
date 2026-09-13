@@ -1,3 +1,4 @@
+use super::DiagnosticHistory;
 use crate::data::aspect::Aspect;
 use crate::data::handle::NodeId;
 use crate::data::output::ChangedRegion;
@@ -7,12 +8,15 @@ use crate::data::proof::{
 use crate::diagnostics::epochs::EventEpochSummary;
 use crate::diagnostics::facts::{ExplanationFact, ProvenanceFact};
 use crate::diagnostics::failure::{FailureSummary, RollbackDiagnostic};
-use crate::diagnostics::flow::{ChangeInputSummary, FlowSummary, InvalidationSummary};
+use crate::diagnostics::flow::{
+    ChangeInputSummary, FlowSummary, InvalidationSummary, RetainedFlowSummaryView,
+};
 use crate::diagnostics::policy::FrontierTracingPolicy;
 use crate::diagnostics::profile::DiagnosticsTier;
 use crate::diagnostics::summary::{ExecutionHistorySummary, GraphSummary};
 use crate::logic::transaction::ObservationBoundarySummary;
 use crate::runtime_policy::{InstalledSignalRuntimePolicy, SignalRuntimePolicy};
+use std::sync::Arc;
 
 use super::{DiagnosticsState, PendingFlowInput};
 
@@ -57,38 +61,38 @@ impl DiagnosticsState {
             self.installed_frontier_tracing_policy,
             FrontierTracingPolicy::SummaryOnly
         ) {
-            self.latest_invalidation_trace_records.clear();
+            self.latest_invalidation_trace_records = Arc::new(Vec::new());
         }
         self.trim_history();
     }
 
-    pub fn latest_flow(&self) -> Option<&FlowSummary> {
-        self.latest_flow.as_ref()
+    pub fn latest_flow(&self) -> Option<RetainedFlowSummaryView<'_>> {
+        self.latest_flow.as_ref().map(super::RetainedFlow::view)
     }
 
     pub fn latest_failure(&self) -> Option<&FailureSummary> {
-        self.latest_failure.as_ref()
+        self.latest_failure.as_deref()
     }
 
     pub fn latest_rollback(&self) -> Option<&RollbackDiagnostic> {
-        self.latest_rollback.as_ref()
+        self.latest_rollback.as_deref()
     }
 
     pub fn latest_observation(&self) -> Option<&ObservationBoundarySummary> {
-        self.latest_observation.as_ref()
+        self.latest_observation.as_deref()
     }
 
     pub fn latest_graph_summary(&self) -> Option<&GraphSummary> {
-        self.latest_graph_summary.as_ref()
+        self.latest_graph_summary.as_deref()
     }
 
     pub fn pending_graph_summary(&self) -> Option<&GraphSummary> {
-        self.pending_graph_summary.as_ref()
+        self.pending_graph_summary.as_deref()
     }
 
     #[cfg(test)]
     pub fn latest_frontier_execution(&self) -> Option<&FrontierDiagnosticsSidecar> {
-        self.latest_frontier_execution.as_ref()
+        self.latest_frontier_execution.as_deref()
     }
 
     pub fn latest_invalidation_planning_estimate(&self) -> Option<&InvalidationPlanningEstimate> {
@@ -99,15 +103,19 @@ impl DiagnosticsState {
         &self.latest_invalidation_trace_records
     }
 
-    pub fn recent_history(&self) -> &std::collections::VecDeque<ExecutionHistorySummary> {
+    pub fn recent_history(&self) -> &DiagnosticHistory<ExecutionHistorySummary> {
         &self.recent_history
     }
 
-    pub fn explanation_facts(&self) -> &std::collections::BTreeMap<NodeId, ExplanationFact> {
+    pub fn explanation_facts(
+        &self,
+    ) -> &crate::data::persistent_ord_map::PersistentOrdMap<NodeId, ExplanationFact> {
         &self.explanation_facts
     }
 
-    pub fn provenance_facts(&self) -> &std::collections::BTreeMap<NodeId, ProvenanceFact> {
+    pub fn provenance_facts(
+        &self,
+    ) -> &crate::data::persistent_ord_map::PersistentOrdMap<NodeId, ProvenanceFact> {
         &self.provenance_facts
     }
 
@@ -128,7 +136,7 @@ impl DiagnosticsState {
         pending.changed_aspects.insert(aspect.id());
         pending.changed_region_count += changed_regions.len() as u32;
         if pending.causality_kind.is_none() {
-            pending.causality_kind = causality_kind;
+            pending.causality_kind = causality_kind.map(Arc::new);
         }
     }
 
@@ -139,12 +147,12 @@ impl DiagnosticsState {
         trace_records: Vec<InvalidationTraceRecord>,
     ) {
         self.latest_invalidation_planning_estimate = Some(planning_estimate);
-        self.latest_frontier_execution = Some(summary);
-        self.latest_invalidation_trace_records = trace_records;
+        self.latest_frontier_execution = Some(Arc::new(summary));
+        self.latest_invalidation_trace_records = Arc::new(trace_records);
     }
 
     pub fn set_pending_graph_summary(&mut self, summary: GraphSummary) {
-        self.pending_graph_summary = Some(summary);
+        self.pending_graph_summary = Some(Arc::new(summary));
     }
 
     pub fn complete_flow_without_graph_summary(
@@ -152,9 +160,11 @@ impl DiagnosticsState {
         flow: FlowSummary,
         history: ExecutionHistorySummary,
     ) {
-        self.latest_flow = Some(flow);
+        self.latest_flow = Some(flow.into());
         self.latest_graph_summary = None;
-        self.recent_history.push_back(history);
+        self.recent_history
+            .push_back(history)
+            .expect("diagnostic history exhausted its private position space");
         self.trim_history();
         self.pending_input = None;
         self.pending_graph_summary = None;
@@ -165,8 +175,10 @@ impl DiagnosticsState {
         history: ExecutionHistorySummary,
         graph_summary: GraphSummary,
     ) {
-        self.latest_graph_summary = Some(graph_summary);
-        self.recent_history.push_back(history);
+        self.latest_graph_summary = Some(Arc::new(graph_summary));
+        self.recent_history
+            .push_back(history)
+            .expect("diagnostic history exhausted its private position space");
         self.trim_history();
         self.pending_graph_summary = None;
     }
@@ -178,19 +190,20 @@ impl DiagnosticsState {
         {
             return;
         }
-        self.latest_failure = Some(failure);
+        self.latest_failure = Some(Arc::new(failure));
     }
 
     pub fn record_rollback(&mut self, rollback: RollbackDiagnostic) {
         if self.installed_retention_budget.retain_history_details {
-            self.latest_rollback = Some(rollback);
+            self.latest_rollback = Some(Arc::new(rollback));
         }
     }
 
     pub fn record_observation(&mut self, observation: ObservationBoundarySummary) {
-        self.latest_observation = Some(observation.clone());
+        let observation = Arc::new(observation);
+        self.latest_observation = Some(Arc::clone(&observation));
         if let Some(flow) = &mut self.latest_flow {
-            flow.observation = Some(observation);
+            flow.record_observation(observation);
         }
     }
 
@@ -199,12 +212,12 @@ impl DiagnosticsState {
         self.pending_graph_summary = None;
         self.latest_frontier_execution = None;
         self.latest_invalidation_planning_estimate = None;
-        self.latest_invalidation_trace_records.clear();
+        self.latest_invalidation_trace_records = Arc::new(Vec::new());
     }
 
     pub fn attach_event_epochs_to_latest_flow(&mut self, event_epochs: Vec<EventEpochSummary>) {
         if let Some(flow) = &mut self.latest_flow {
-            flow.event_epochs = event_epochs;
+            flow.attach_event_epochs(event_epochs);
         }
     }
 
@@ -236,10 +249,10 @@ impl DiagnosticsState {
                         .map(Aspect::new)
                         .collect(),
                     pending.changed_region_count,
-                    pending.causality_kind.clone(),
+                    pending.causality_kind.as_deref().cloned(),
                 ),
                 self.latest_frontier_execution
-                    .as_ref()
+                    .as_deref()
                     .map(InvalidationSummary::from_frontier_execution)
                     .unwrap_or_else(InvalidationSummary::empty_frontier),
             )

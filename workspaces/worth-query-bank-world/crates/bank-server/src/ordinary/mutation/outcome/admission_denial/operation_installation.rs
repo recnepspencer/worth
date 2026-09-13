@@ -2,6 +2,24 @@ use worth_query_host::facade::domain::WorthQueryApplicationOperationInstallation
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankOperationInstallationDenialKind {
+    MutationBindingIdentityCollision,
+    MutationBindingNotInstalled,
+    MutationBindingMeaningChanged,
+    MutationBindingOperationNotInstalled,
+    MutationBindingOperationMeaningChanged,
+    MutationBindingPrincipalMeaningChanged,
+    MutationBindingResultMeaningChanged,
+    MutationBindingScopeMeaningChanged,
+    MutationBindingCandidateMeaningChanged,
+    MutationBindingHandlerMeaningChanged,
+    MutationBindingIdempotencyMeaningChanged,
+    MutationBindingOutputMeaningChanged,
+    InvalidMutationBindingIdentity,
+    InvalidMutationHandlerIdentity,
+    InvalidMutationIdempotencyIdentity,
+    InvalidMutationOutputRole,
+    MutationOutputEntityNotInstalled,
+    MutationOutputCandidateMismatch,
     OperationNotInstalled,
     OperationMeaningChanged,
     MissingAbilityPolicy,
@@ -37,6 +55,36 @@ impl BankOperationInstallationDenial {
     pub const fn code(self) -> &'static str {
         use BankOperationInstallationDenialKind as Bank;
         match self.kind {
+            Bank::MutationBindingIdentityCollision => "mutation-binding-identity-collision",
+            Bank::MutationBindingNotInstalled => "mutation-binding-not-installed",
+            Bank::MutationBindingMeaningChanged => "mutation-binding-meaning-changed",
+            Bank::MutationBindingOperationNotInstalled => {
+                "mutation-binding-operation-not-installed"
+            }
+            Bank::MutationBindingOperationMeaningChanged => {
+                "mutation-binding-operation-meaning-changed"
+            }
+            Bank::MutationBindingPrincipalMeaningChanged => {
+                "mutation-binding-principal-meaning-changed"
+            }
+            Bank::MutationBindingResultMeaningChanged => "mutation-binding-result-meaning-changed",
+            Bank::MutationBindingScopeMeaningChanged => "mutation-binding-scope-meaning-changed",
+            Bank::MutationBindingCandidateMeaningChanged => {
+                "mutation-binding-candidate-meaning-changed"
+            }
+            Bank::MutationBindingHandlerMeaningChanged => {
+                "mutation-binding-handler-meaning-changed"
+            }
+            Bank::MutationBindingIdempotencyMeaningChanged => {
+                "mutation-binding-idempotency-meaning-changed"
+            }
+            Bank::MutationBindingOutputMeaningChanged => "mutation-binding-output-meaning-changed",
+            Bank::InvalidMutationBindingIdentity => "invalid-mutation-binding-identity",
+            Bank::InvalidMutationHandlerIdentity => "invalid-mutation-handler-identity",
+            Bank::InvalidMutationIdempotencyIdentity => "invalid-mutation-idempotency-identity",
+            Bank::InvalidMutationOutputRole => "invalid-mutation-output-role",
+            Bank::MutationOutputEntityNotInstalled => "mutation-output-entity-not-installed",
+            Bank::MutationOutputCandidateMismatch => "mutation-output-candidate-mismatch",
             Bank::OperationNotInstalled => "operation-not-installed",
             Bank::OperationMeaningChanged => "operation-meaning-changed",
             Bank::MissingAbilityPolicy => "missing-ability-policy",
@@ -63,6 +111,44 @@ impl BankOperationInstallationDenial {
     pub(crate) const fn from_query(kind: QueryKind) -> Self {
         use BankOperationInstallationDenialKind as Bank;
         let kind = match kind {
+            QueryKind::MutationBindingIdentityCollision => Bank::MutationBindingIdentityCollision,
+            QueryKind::MutationBindingNotInstalled => Bank::MutationBindingNotInstalled,
+            QueryKind::MutationBindingMeaningChanged => Bank::MutationBindingMeaningChanged,
+            QueryKind::MutationBindingOperationNotInstalled => {
+                Bank::MutationBindingOperationNotInstalled
+            }
+            QueryKind::MutationBindingOperationMeaningChanged => {
+                Bank::MutationBindingOperationMeaningChanged
+            }
+            QueryKind::MutationBindingPrincipalMeaningChanged => {
+                Bank::MutationBindingPrincipalMeaningChanged
+            }
+            QueryKind::MutationBindingResultMeaningChanged => {
+                Bank::MutationBindingResultMeaningChanged
+            }
+            QueryKind::MutationBindingScopeMeaningChanged => {
+                Bank::MutationBindingScopeMeaningChanged
+            }
+            QueryKind::MutationBindingCandidateMeaningChanged => {
+                Bank::MutationBindingCandidateMeaningChanged
+            }
+            QueryKind::MutationBindingHandlerMeaningChanged => {
+                Bank::MutationBindingHandlerMeaningChanged
+            }
+            QueryKind::MutationBindingIdempotencyMeaningChanged => {
+                Bank::MutationBindingIdempotencyMeaningChanged
+            }
+            QueryKind::MutationBindingOutputMeaningChanged => {
+                Bank::MutationBindingOutputMeaningChanged
+            }
+            QueryKind::InvalidMutationBindingIdentity => Bank::InvalidMutationBindingIdentity,
+            QueryKind::InvalidMutationHandlerIdentity => Bank::InvalidMutationHandlerIdentity,
+            QueryKind::InvalidMutationIdempotencyIdentity => {
+                Bank::InvalidMutationIdempotencyIdentity
+            }
+            QueryKind::InvalidMutationOutputRole => Bank::InvalidMutationOutputRole,
+            QueryKind::MutationOutputEntityNotInstalled => Bank::MutationOutputEntityNotInstalled,
+            QueryKind::MutationOutputCandidateMismatch => Bank::MutationOutputCandidateMismatch,
             QueryKind::OperationNotInstalled => Bank::OperationNotInstalled,
             QueryKind::OperationMeaningChanged => Bank::OperationMeaningChanged,
             QueryKind::MissingAbilityPolicy => Bank::MissingAbilityPolicy,

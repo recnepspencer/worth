@@ -22,13 +22,3 @@
 //! let digest = StableDigest::new("sha256:copied").unwrap();
 //! let _forged = BlobChunkDedupeCandidate::from_integrity_proof(digest);
 //! ```
-//! Chunk integrity reports cannot satisfy blob residency proof:
-//! ```compile_fail
-//! use worth_store_blob_chunks::BlobChunkStreamingResidencyProof;
-//! use worth_store_physical_integrity::ChunkIntegrityReport;
-//!
-//! fn requires_residency(_: BlobChunkStreamingResidencyProof) {}
-//!
-//! let report: ChunkIntegrityReport = todo!();
-//! requires_residency(report);
-//! ```

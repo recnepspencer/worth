@@ -15,11 +15,6 @@ use super::dependency_model;
 use super::execution::Phase5LocalityEvidence;
 
 mod evidence_row;
-mod semantic_frontier;
-
-const LOCAL_SIGNAL_FRONTIER: [u64; 24] = [
-    1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-];
 
 pub(super) fn adjudicate(evidence: Phase5LocalityEvidence) -> Result<Value, String> {
     let case = evidence.case();
@@ -57,7 +52,6 @@ pub(super) fn adjudicate(evidence: Phase5LocalityEvidence) -> Result<Value, Stri
                 && transition.binding() == presentation.binding_generation()
         })
         .ok_or_else(|| "last presentation has no exact physical-Signal join".to_owned())?;
-    let expected = semantic_frontier::adjudicate(case, shutdown, presentation, physical)?;
     require_exact_physical_signal(case.axis(), physical)?;
     require_successor_topology(case, retained_successor, presentation)?;
     dependency_model::adjudicate(
@@ -81,7 +75,6 @@ pub(super) fn adjudicate(evidence: Phase5LocalityEvidence) -> Result<Value, Stri
         &evidence,
         presentation,
         completed,
-        expected,
         work,
         physical,
     ))
@@ -136,10 +129,6 @@ fn require_complete_world(
         "Query transition trace overflowed",
     )?;
     require(
-        shutdown.presentation_semantic_frontier_trace_complete(),
-        "semantic frontier trace overflowed",
-    )?;
-    require(
         shutdown.text_presentation_work_trace_complete(),
         "text work trace overflowed",
     )?;
@@ -183,14 +172,6 @@ fn require_unchanged_zero_work(
             .iter()
             .all(|work| work.mounted_frame() != unchanged.frame()),
         "unchanged turn performed text qualification, raster, atlas, or pin work",
-    )?;
-    require(
-        shutdown
-            .presentation_semantic_frontiers()
-            .iter()
-            .flat_map(|frontier| frontier.subscribers())
-            .all(|subscriber| subscriber.mounted_frame() != unchanged.frame()),
-        "unchanged turn entered the Query semantic execution frontier",
     )
 }
 
@@ -205,16 +186,11 @@ fn completed_resource_count(
         .count();
     if completed < 2 {
         return Err(format!(
-            "initial and successor Query resources did not complete: transitions={:?} frontiers={:?} text-work={:?} retained-kinds={:?}",
+            "initial and successor Query resources did not complete: transitions={:?} text-work={:?} retained-kinds={:?}",
             shutdown
                 .presentation_transitions()
                 .iter()
                 .map(|transition| transition.kind())
-                .collect::<Vec<_>>(),
-            shutdown
-                .presentation_semantic_frontiers()
-                .iter()
-                .map(|frontier| frontier.change())
                 .collect::<Vec<_>>(),
             shutdown
                 .text_presentation_work()

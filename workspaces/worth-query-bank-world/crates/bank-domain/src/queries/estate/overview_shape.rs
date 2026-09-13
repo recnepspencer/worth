@@ -17,26 +17,32 @@ pub(super) fn overview_shape() -> TypedApplicationQueryResultShape<
     EstateCaseOverviewQuery,
     EstateCase,
     EstateCaseOverview,
+    super::overview::EstateCaseOverviewQueryResultBinding,
 > {
     let account = ApplicationQueryResultShapeBuilder::<
         BankSchema,
         EstateCaseOverviewQuery,
         Account,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(Account::reference())
     .field(account_identity())
     .field(account_name())
     .field(account_status());
-    let branch =
-        ApplicationQueryResultShapeBuilder::<BankSchema, EstateCaseOverviewQuery, Branch, ()>::new(
-            Branch::reference(),
-        )
-        .field(branch_identity());
+    let branch = ApplicationQueryResultShapeBuilder::<
+        BankSchema,
+        EstateCaseOverviewQuery,
+        Branch,
+        (),
+        crate::queries::UnitQueryResultBinding,
+    >::new(Branch::reference())
+    .field(branch_identity());
     let notice = ApplicationQueryResultShapeBuilder::<
         BankSchema,
         EstateCaseOverviewQuery,
         DeathNotice,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(DeathNotice::reference())
     .field(notice_identity())
     .field(notice_status());
@@ -51,6 +57,7 @@ pub(super) fn overview_shape() -> TypedApplicationQueryResultShape<
         EstateCaseOverviewQuery,
         EmployeeAssignment,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(EmployeeAssignment::reference())
     .field(assignment_identity())
     .field(assignment_role())
@@ -60,6 +67,7 @@ pub(super) fn overview_shape() -> TypedApplicationQueryResultShape<
         EstateCaseOverviewQuery,
         LegalAuthority,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(LegalAuthority::reference())
     .field(authority_identity())
     .field(authority_kind())
@@ -70,6 +78,7 @@ pub(super) fn overview_shape() -> TypedApplicationQueryResultShape<
         EstateCaseOverviewQuery,
         MandatoryReview,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(MandatoryReview::reference())
     .field(review_identity())
     .field(review_kind())
@@ -81,6 +90,7 @@ pub(super) fn overview_shape() -> TypedApplicationQueryResultShape<
         EstateCaseOverviewQuery,
         EstateCase,
         EstateCaseOverview,
+        super::overview::EstateCaseOverviewQueryResultBinding,
     >::new(EstateCase::reference())
     .field(estate_identity())
     .field(estate_stage())
@@ -97,7 +107,7 @@ pub(super) fn overview_shape() -> TypedApplicationQueryResultShape<
     .build()
 }
 
-fn principal_shape<Slot: 'static>(
+fn principal_shape<Slot: worth_query_decl::facade::portable_identity::WorthQueryPortableType>(
     selector: worth_query_decl::facade::application_query::ApplicationQueryResultFieldRef<
         EstateCaseOverviewQuery,
         Slot,
@@ -110,6 +120,12 @@ fn principal_shape<Slot: 'static>(
         worth_query_decl::facade::application_schema::EqualityPredicate,
         worth_query_decl::facade::application_schema::NoApplicationUnit,
     >,
-) -> ApplicationQueryResultShapeBuilder<BankSchema, EstateCaseOverviewQuery, Principal, ()> {
+) -> ApplicationQueryResultShapeBuilder<
+    BankSchema,
+    EstateCaseOverviewQuery,
+    Principal,
+    (),
+    crate::queries::UnitQueryResultBinding,
+> {
     ApplicationQueryResultShapeBuilder::new(Principal::reference()).field(selector)
 }

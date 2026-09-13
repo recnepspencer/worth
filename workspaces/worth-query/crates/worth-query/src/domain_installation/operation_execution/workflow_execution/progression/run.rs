@@ -5,9 +5,8 @@ use crate::basis_lifecycle::BasisOperationLane;
 
 use super::{
     WorthQueryAdmittedWorkflowOperation, WorthQueryAdmittedWorkflowResourcePlan,
-    WorthQueryExecutionProviderSession, WorthQueryExecutionResourceAttemptEvidence,
-    WorthQueryInstalledWorkflowGraph, WorthQueryInstalledWorkflowStageExecutor,
-    WorthQueryWorkflowExecutionResourceAttempt, WorthQueryWorkflowRunCounters,
+    WorthQueryExecutionResourceAttemptEvidence, WorthQueryInstalledWorkflowGraph,
+    WorthQueryInstalledWorkflowStageExecutor, WorthQueryWorkflowRunCounters,
     WorthQueryWorkflowStageReceipt, WorthQueryWorkflowStartDenial,
     WorthQueryWorkflowStartDenialKind,
 };
@@ -72,9 +71,13 @@ pub struct WorthQueryWorkflowRun<D, O, F, L: BasisOperationLane> {
     pub(super) artifact_registry:
         Arc<crate::domain_installation::WorthQueryWorkflowArtifactRegistry>,
     pub(super) _artifact_registry_guard: WorthQueryWorkflowArtifactRegistryGuard,
-    pub(super) artifact_authority: crate::domain_installation::WorthQueryWorkflowArtifactAuthority,
     pub(super) domain_evidence_ledger: super::WorthQueryDomainEvidenceAdmissionLedger,
-    pub(super) resource_attempt: WorthQueryWorkflowExecutionResourceAttempt,
+    pub(super) managed:
+        Option<worth_query_execution::facade::runtime::WorthQueryRunningWorkflowRun>,
+    pub(super) managed_cleanup:
+        Option<worth_query_execution::facade::runtime::WorthQueryWorkflowRunCleanupReceipt>,
+    pub(super) resources: WorthQueryAdmittedWorkflowResourcePlan,
+    pub(super) operation_resource_evidence: WorthQueryExecutionResourceAttemptEvidence,
 }
 
 pub(super) struct WorthQueryWorkflowArtifactRegistryGuard(
@@ -107,20 +110,13 @@ where
         let mut counters = WorthQueryWorkflowRunCounters::default();
         let operation_resource_evidence = self.resource_attempt.evidence().clone();
         let snapshot = workspace.snapshot_identity();
-        let artifact_authority = match self.resource_attempt.bind_workflow_artifacts() {
+        let artifact_authority = match self.resource_attempt.begin_managed_workflow_artifacts() {
             Ok(authority) => authority,
             Err(denial) => {
-                let stale = denial.kind()
-                    == crate::domain_installation::WorthQueryArtifactDenialKind::StaleInstallationGeneration;
-                let denial = WorthQueryWorkflowStartDenial::new(
+                return TransitionOutcome::Denied(WorthQueryWorkflowStartDenial::new(
                     WorthQueryWorkflowStartDenialKind::ArtifactAuthority(denial),
                     counters,
-                );
-                return if stale {
-                    TransitionOutcome::Stale(denial)
-                } else {
-                    TransitionOutcome::Denied(denial)
-                };
+                ));
             }
         };
         let identity = artifact_authority.run_identity().to_owned();
@@ -139,6 +135,7 @@ where
             ) {
                 Ok(conditional) => conditional,
                 Err(super::workflow_conditional_start_evaluation::ConditionalWorkflowStartStop::Deferred(conditional)) => {
+                    artifact_authority.registry().close_cancelled();
                     return TransitionOutcome::Deferred(
                         crate::domain_installation::WorthQueryDeferredWorkflowStart {
                             admitted: self,
@@ -150,6 +147,7 @@ where
                     );
                 }
                 Err(super::workflow_conditional_start_evaluation::ConditionalWorkflowStartStop::Denied(kind)) => {
+                    artifact_authority.registry().close_cancelled();
                     let failed = matches!(
                         kind,
                         WorthQueryWorkflowStartDenialKind::ConditionalExecution(_)
@@ -163,7 +161,7 @@ where
                 }
             };
         let proof = mint_operation_phase_proof(
-            identity.clone(),
+            identity,
             Some(self.phase_proof.payload().identity()),
             operation_phase_basis(&self.phase_proof).clone(),
         );
@@ -171,27 +169,66 @@ where
             domain_authority: Arc::clone(self.bound.operation().domain_authority()),
             proof,
         });
-        let artifact_registry = artifact_authority.registry();
+        let WorthQueryAdmittedWorkflowOperation {
+            bound,
+            graph,
+            executor,
+            parallel_posture,
+            resource_attempt,
+            phase_proof: _,
+        } = self;
+        let resources = resource_attempt.resources().clone();
+        let managed = match workspace.admit_managed_workflow_run(
+            bound.execution_authority(),
+            bound.product(),
+            resource_attempt,
+        ) {
+            Ok(managed) => managed,
+            Err(failure) => {
+                let detail = failure.detail().to_owned();
+                artifact_authority.registry().close_cancelled();
+                let _ = failure.release();
+                return TransitionOutcome::Denied(WorthQueryWorkflowStartDenial::new(
+                    WorthQueryWorkflowStartDenialKind::ManagedRun(detail),
+                    counters,
+                ));
+            }
+        };
+        let managed = match managed.start_with_artifacts(artifact_authority) {
+            Ok(running) => running,
+            Err(rejection) => {
+                let detail = rejection.denial().detail().to_owned();
+                let _ = rejection.release();
+                return TransitionOutcome::Denied(WorthQueryWorkflowStartDenial::new(
+                    WorthQueryWorkflowStartDenialKind::ManagedRun(detail),
+                    counters,
+                ));
+            }
+        };
+        let identity = managed.artifacts().run_identity().to_owned();
+        let artifact_registry = managed.artifacts().registry();
         let artifact_registry_guard =
             WorthQueryWorkflowArtifactRegistryGuard(Arc::clone(&artifact_registry));
         TransitionOutcome::Success(WorthQueryWorkflowRun {
-            bound: self.bound,
-            graph: self.graph,
-            executor: self.executor,
+            bound,
+            graph,
+            executor,
             identity: identity.clone(),
             completed: BTreeSet::new(),
             receipt_index: BTreeMap::new(),
             receipts: Vec::new(),
             counters,
-            parallel_posture: self.parallel_posture,
+            parallel_posture,
             active_parallel_admission: None,
             authority_proof,
             operation_conditional,
             artifact_registry,
             _artifact_registry_guard: artifact_registry_guard,
-            artifact_authority,
             domain_evidence_ledger: super::WorthQueryDomainEvidenceAdmissionLedger::default(),
-            resource_attempt: self.resource_attempt,
+            managed: Some(managed),
+            managed_cleanup: None,
+            resources,
+            operation_resource_evidence,
         })
     }
 }
@@ -215,13 +252,29 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryWorkflowRun<D, O, F, L> {
         &self.operation_conditional
     }
     pub fn resources(&self) -> &WorthQueryAdmittedWorkflowResourcePlan {
-        self.resource_attempt.resources()
+        &self.resources
     }
-    pub fn provider_session(&self) -> &WorthQueryExecutionProviderSession {
-        self.resource_attempt.provider_session()
+    pub fn provider_session_identity(&self) -> &str {
+        if let Some(managed) = self.managed.as_ref() {
+            managed.provider_session_identity()
+        } else {
+            self.managed_cleanup
+                .as_ref()
+                .expect("terminal workflow owns its managed cleanup receipt")
+                .inspection()
+                .provider_session_identity()
+        }
     }
     pub fn operation_resource_evidence(&self) -> &WorthQueryExecutionResourceAttemptEvidence {
-        self.resource_attempt.evidence()
+        &self.operation_resource_evidence
+    }
+
+    pub(super) fn managed_run(
+        &self,
+    ) -> &worth_query_execution::facade::runtime::WorthQueryRunningWorkflowRun {
+        self.managed
+            .as_ref()
+            .expect("live workflow owns its managed run")
     }
 }
 

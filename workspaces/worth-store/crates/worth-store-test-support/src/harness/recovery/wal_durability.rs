@@ -1,8 +1,8 @@
-use worth_store_physical_backend::{BackendDurabilityProfile, PosixFileFsyncDirFsyncProfile};
-use worth_store_recovery_physics::{
-    LogSequenceNumber, WalAppendObservationScope, WalAppendReceipt, WalDurabilityObservation,
-    WalLsnRange, WalSegmentGeneration, WalSegmentId,
+use worth_store_physical_backend::{
+    BackendDurabilityProfile, PosixFileFsyncDirFsyncProfile, WalAppendObservationScope,
+    WalAppendReceipt, WalDurabilityObservation,
 };
+use worth_store_wal::{LogSequenceNumber, WalLsnRange, WalSegmentGeneration, WalSegmentId};
 
 pub fn completed_posix_receipt() -> WalAppendReceipt<PosixFileFsyncDirFsyncProfile> {
     completed_posix_receipt_for_range(100, 101)

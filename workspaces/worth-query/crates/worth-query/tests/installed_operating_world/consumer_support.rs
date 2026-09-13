@@ -10,7 +10,7 @@ fn bound_projection_mints_one_query_owned_support_contract() {
     let workspace = workspace("consumer-support", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -92,7 +92,7 @@ fn runtime_support_truth_drifts_to_a_dimension_specific_query_denial() {
         .unwrap();
         let installed_domain = workspace.domain(GeometryDomain).unwrap();
         let bound = workspace
-            .observe_operating_world()
+            .observe_operating_world(workspace.current_world())
             .unwrap()
             .family(ReadFamily)
             .bind(&installed_domain, ReadVertex)
@@ -125,7 +125,7 @@ fn basis_support_drift_denies_before_other_dimension_admission() {
         .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -154,13 +154,13 @@ fn equivalent_runtime_paths_and_rebuilt_indexes_preserve_support_truth() {
     let direct_domain = direct.domain(GeometryDomain).unwrap();
     let rebuilt_domain = rebuilt.domain(GeometryDomain).unwrap();
     let direct_bound = direct
-        .observe_operating_world()
+        .observe_operating_world(direct.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&direct_domain, ReadVertex)
         .unwrap();
     let rebuilt_bound = rebuilt
-        .observe_operating_world()
+        .observe_operating_world(rebuilt.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&rebuilt_domain, ReadVertex)
@@ -204,7 +204,7 @@ fn foundational_support_projection_preserves_exact_descriptive_support() {
         .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)

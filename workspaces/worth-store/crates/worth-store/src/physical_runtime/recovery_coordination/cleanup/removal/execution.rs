@@ -1,8 +1,13 @@
 use worth_store_io_scheduler::execute_ready_queue_plan;
 use worth_store_wal::WalSegmentArtifactIdentity;
 
+use super::*;
 use crate::physical_runtime::recovery_coordination::settlement::{
     scheduler_posture, settle, signal_completion_is_terminal,
+};
+use crate::physical_runtime::recovery_coordination::{
+    RecoveryCleanupRemovalBinding, RecoveryCleanupRemovalOccurrence,
+    RecoveryCleanupRemovalSettlement, RecoveryCleanupRemovalTarget,
 };
 use crate::physical_runtime::work::{
     CompletedPhysicalWalReclamationAction, IndeterminatePhysicalWalReclamationAction,
@@ -10,12 +15,6 @@ use crate::physical_runtime::work::{
     PhysicalRetryPayload, PhysicalWalReclamationScope,
 };
 use crate::physical_runtime::{PhysicalRecoveryCoordination, PhysicalWorkSchedulerPosture};
-
-use super::*;
-use crate::physical_runtime::recovery_coordination::{
-    RecoveryCleanupRemovalBinding, RecoveryCleanupRemovalOccurrence,
-    RecoveryCleanupRemovalSettlement, RecoveryCleanupRemovalTarget,
-};
 
 struct RemovalExecution {
     dispatched: crate::physical_runtime::DispatchedPhysicalWork,
@@ -44,11 +43,25 @@ pub(in crate::physical_runtime::recovery_coordination::cleanup) fn execute(
         Err(outcome) => return outcome,
     };
     let binding = super::binding::effect(coordination, &command, execution.work);
-    if !super::binding::matches(&command, execution.work, binding) {
-        return deny_invalid_binding(coordination, execution);
+    let selector = match super::binding::admit_selector(&command) {
+        Ok(selector) => selector,
+        Err(integrity) => return deny_invalid_binding(coordination, execution, Some(integrity)),
+    };
+    coordination
+        .root_protocol_counters
+        .observe_selector(crate::physical_runtime::PhysicalRootProtocolRoute::CleanupRemoval);
+    let root = match super::binding::admit_root_manifest(&command) {
+        Ok(root) => root,
+        Err(integrity) => return deny_invalid_binding(coordination, execution, Some(integrity)),
+    };
+    coordination
+        .root_protocol_counters
+        .observe_root(crate::physical_runtime::PhysicalRootProtocolRoute::CleanupRemoval);
+    if !super::binding::matches(&command, execution.work, binding, selector, root) {
+        return deny_invalid_binding(coordination, execution, None);
     }
     let Some(request) = super::request::from_command(&command, binding.identity()) else {
-        return deny_invalid_binding(coordination, execution);
+        return deny_invalid_binding(coordination, execution, None);
     };
     match worth_store_physical_backend::execute_recovery_cleanup_removal(
         media,
@@ -66,6 +79,19 @@ pub(in crate::physical_runtime::recovery_coordination::cleanup) fn execute(
                     command.artifact,
                     *completed,
                 );
+            let wait = coordination
+                .pause_at(crate::physical_runtime::PhysicalRecoveryYieldpointStage::CleanupRemoval);
+            if wait.is_interrupted() {
+                let settlement =
+                    settle_completed_removal(coordination, &command, execution, physical);
+                return PhysicalRecoveryCleanupRemovalOutcome::Indeterminate(
+                    PhysicalRecoveryCleanupRemovalIndeterminate::Yieldpoint {
+                        revalidation: settlement.revalidation,
+                        physical: settlement.physical,
+                        wait,
+                    },
+                );
+            }
             complete_removal(coordination, command, execution, physical)
         }
         worth_store_physical_backend::BackendRecoveryCleanupRemovalOutcome::DeniedBeforeEffect(
@@ -94,6 +120,7 @@ pub(in crate::physical_runtime::recovery_coordination::cleanup) fn execute(
 fn deny_invalid_binding(
     coordination: &PhysicalRecoveryCoordination,
     execution: RemovalExecution,
+    integrity: Option<crate::physical_runtime::RootProtocolAdmissionDenial>,
 ) -> PhysicalRecoveryCleanupRemovalOutcome {
     let signal = settle(
         coordination,
@@ -113,6 +140,7 @@ fn deny_invalid_binding(
             work: Some(execution.work),
             scheduler: None,
             signal: Some(signal),
+            integrity,
         },
     )
 }
@@ -197,6 +225,7 @@ fn denied_without_physical(
             work,
             scheduler: None,
             signal: None,
+            integrity: None,
         },
     )
 }
@@ -250,6 +279,9 @@ fn complete_removal(
             ),
         ),
     );
+    coordination
+        .root_protocol_counters
+        .observe_publication(crate::physical_runtime::PhysicalRootProtocolRoute::CleanupRemoval);
     PhysicalRecoveryCleanupRemovalOutcome::Completed(CompletedPhysicalRecoveryCleanupRemoval {
         performed,
         revalidation: settlement.revalidation,
@@ -328,6 +360,7 @@ fn deny_removal(
             work: Some(execution.work),
             scheduler,
             signal: Some(signal),
+            integrity: None,
         },
     )
 }

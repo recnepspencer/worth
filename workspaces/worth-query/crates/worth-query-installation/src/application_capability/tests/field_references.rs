@@ -6,6 +6,7 @@ use worth_query_declaration::facade::{
         ApplicationAspectMarkerIdentity, ApplicationEntityMarkerIdentity,
         ApplicationFieldMarkerIdentity, ApplicationFieldPresence, ApplicationFieldRef,
         DeclaredApplicationFieldValue, EqualityPredicate, NoApplicationUnit, ReadOnly,
+        U64ApplicationValueBinding,
     },
 };
 
@@ -17,8 +18,7 @@ use super::{
 
 macro_rules! entity_identity {
     ($marker:ty, $identifier:literal) => {
-        impl ApplicationEntityMarkerIdentity for $marker {
-            type Schema = Schema;
+        impl ApplicationEntityMarkerIdentity<Schema> for $marker {
             const IDENTIFIER: &'static str = $identifier;
         }
     };
@@ -26,9 +26,7 @@ macro_rules! entity_identity {
 
 macro_rules! aspect_identity {
     ($marker:ty, $entity:ty, $identifier:literal, $identity:expr) => {
-        impl ApplicationAspectMarkerIdentity for $marker {
-            type Schema = Schema;
-            type Entity = $entity;
+        impl ApplicationAspectMarkerIdentity<Schema, $entity> for $marker {
             const IDENTIFIER: &'static str = $identifier;
             const ASPECT_IDENTITY:
                 worth_query_declaration::facade::application_schema::AspectIdentity =
@@ -42,14 +40,12 @@ macro_rules! aspect_identity {
 
 macro_rules! field_identity {
     ($marker:ty, $entity:ty, $aspect:ty, $identifier:literal) => {
-        impl ApplicationFieldMarkerIdentity for $marker {
-            type Schema = Schema;
-            type Entity = $entity;
-            type Aspect = $aspect;
+        impl ApplicationFieldMarkerIdentity<Schema, $entity, $aspect> for $marker {
             const IDENTIFIER: &'static str = $identifier;
         }
         impl DeclaredApplicationFieldValue for $marker {
             type Value = u64;
+            type Binding = U64ApplicationValueBinding;
             const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
         }
     };
@@ -95,22 +91,21 @@ pub(super) fn field<FieldMarker>() -> ApplicationFieldRef<
     NoApplicationUnit,
 >
 where
-    FieldMarker: ApplicationFieldMarkerIdentity<Schema = Schema, Entity = Grant, Aspect = Facts>,
+    FieldMarker: ApplicationFieldMarkerIdentity<Schema, Grant, Facts, Value = u64>,
 {
     ApplicationFieldRef::from_schema_types()
 }
 
 pub(super) fn field_binding<FieldMarker>() -> ApplicationCapabilityFieldBinding
 where
-    FieldMarker: ApplicationFieldMarkerIdentity<Schema = Schema, Entity = Grant, Aspect = Facts>,
+    FieldMarker: ApplicationFieldMarkerIdentity<Schema, Grant, Facts, Value = u64>,
 {
     ApplicationCapabilityFieldBinding::from_reference(field::<FieldMarker>())
 }
 
 pub(super) fn resource_field_binding<FieldMarker>() -> ApplicationCapabilityFieldBinding
 where
-    FieldMarker:
-        ApplicationFieldMarkerIdentity<Schema = Schema, Entity = Resource, Aspect = ResourceFacts>,
+    FieldMarker: ApplicationFieldMarkerIdentity<Schema, Resource, ResourceFacts, Value = u64>,
 {
     ApplicationCapabilityFieldBinding::from_reference(ApplicationFieldRef::<
         Schema,
@@ -135,8 +130,7 @@ pub(super) fn resource_field<FieldMarker>() -> ApplicationFieldRef<
     NoApplicationUnit,
 >
 where
-    FieldMarker:
-        ApplicationFieldMarkerIdentity<Schema = Schema, Entity = Resource, Aspect = ResourceFacts>,
+    FieldMarker: ApplicationFieldMarkerIdentity<Schema, Resource, ResourceFacts, Value = u64>,
 {
     ApplicationFieldRef::from_schema_types()
 }

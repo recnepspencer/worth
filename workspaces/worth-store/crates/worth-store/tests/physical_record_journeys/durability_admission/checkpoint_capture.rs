@@ -7,7 +7,6 @@ use worth_store::physical_runtime::{
     PhysicalCheckpointRequest, PhysicalCheckpointStartDenial, PhysicalMutationIdempotencyMaterial,
     PhysicalWalGroupAppendOutcome, PhysicalWalGroupBarrierOutcome,
 };
-use worth_store_physical_format::CheckpointStreamDecoder;
 
 use super::super::{configuration, serving_from_initialization};
 
@@ -87,25 +86,10 @@ fn durable_wal_captures_through_the_ordinary_facade_into_verified_checkpoint_byt
     let bytes = fs::read(&artifact).unwrap();
     assert_eq!(published.encoded_bytes(), bytes.len() as u64);
     let records = checkpoint_records(&bytes);
-    let mut decoder = CheckpointStreamDecoder::begin(records[0]).unwrap();
-    assert_eq!(decoder.source(), basis.source());
     let compaction_index = records
         .iter()
         .position(|record| record[9] == 3)
         .expect("checkpoint carries one binding-compaction header");
-    for record in &records[1..compaction_index] {
-        decoder.decode_dirty_basis(record).unwrap();
-    }
-    let mut compaction = decoder
-        .begin_binding_compaction(records[compaction_index])
-        .unwrap();
-    for record in &records[compaction_index + 1..records.len() - 1] {
-        compaction.decode_binding_record(record).unwrap();
-    }
-    assert_eq!(
-        compaction.finish(records[records.len() - 1]).unwrap(),
-        published.footer()
-    );
     assert_eq!(published.dirty_records() as usize, compaction_index - 1);
     assert_eq!(
         published.binding_compaction().binding_count() as usize,

@@ -7,7 +7,7 @@ use super::super::{
     planning::prepared_payload::PreparedRecordPayloadPlan,
     publication::{PhysicalManifestCapacityTransition, PublicationPlan},
     AdmittedPhysicalRecordFormat, AdmittedRecordAccessPolicy, AdmittedRecordPlacementPolicy,
-    RecordAllocationFrontier, RecordAppendDenial, RecordAppendError,
+    RecordAppendDenial, RecordAppendError,
 };
 
 mod assembly;
@@ -25,7 +25,6 @@ pub(in crate::physical_runtime::record_serving) struct RootRebaseContext<'plan> 
         &'plan DurablePhysicalRootManifest,
     pub(in crate::physical_runtime::record_serving) current_free_space:
         &'plan DurableFreeSpaceManifestHeader,
-    pub(in crate::physical_runtime::record_serving) frontier: &'plan RecordAllocationFrontier,
     pub(in crate::physical_runtime::record_serving) placement: AdmittedRecordPlacementPolicy,
     pub(in crate::physical_runtime::record_serving) capacity_transition:
         PhysicalManifestCapacityTransition,

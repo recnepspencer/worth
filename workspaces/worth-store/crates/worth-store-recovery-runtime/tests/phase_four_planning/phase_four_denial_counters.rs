@@ -17,6 +17,9 @@ fn page_failures_retain_distinct_exact_phase_four_read_counters() {
         Ok(_) => panic!("an invalid membership block cannot form a plan"),
         Err(outcome) => expect_blocked(outcome),
     };
+    // Six checkpoint attempts survive discovery alongside the four routing
+    // attempts up to the damaged membership block.
+    assert_eq!(invalid.evidence().integrity_observation_count(), 10);
 
     let page_root = prepare_ordinary_recovery_root("c8-phase4-invalid-page");
     let page_selected = selected_ordinary_recovery(page_root.path());
@@ -48,6 +51,24 @@ fn page_failures_retain_distinct_exact_phase_four_read_counters() {
         3
     );
     assert_eq!(page_counters.fate_counts(), [1, 0, 0, 2]);
+    assert_eq!(page_counters.page_extent_integrity_attempts(), 1);
+    assert_eq!(page_counters.page_extent_integrity_admissions(), 0);
+    assert_eq!(page_counters.page_extent_integrity_rejections(), 1);
+    assert_eq!(page_counters.page_extent_owner_projections(), 0);
+    assert_eq!(page_counters.page_extent_owner_decoders(), 0);
+    let rejected = invalid_page
+        .evidence()
+        .integrity_observations()
+        .last()
+        .unwrap();
+    assert_eq!(
+        rejected.scope().artifact_family(),
+        worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::PageFrame,
+    );
+    assert!(matches!(
+        rejected.outcome(),
+        worth_store_recovery_runtime::PhysicalRecoveryIntegrityObservationOutcome::Rejected(_),
+    ));
     assert_eq!(invalid.recovery_effects(), 0);
     assert_eq!(invalid_page.recovery_effects(), 0);
 }

@@ -1,5 +1,5 @@
+use crate::BlobResumeReplayReadmission;
 use worth_store_authority::StoreCurrentAuthorityWitness;
-use worth_store_recovery_physics::BlobResumeReplayReadmission;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlobResumeStoreAuthority {

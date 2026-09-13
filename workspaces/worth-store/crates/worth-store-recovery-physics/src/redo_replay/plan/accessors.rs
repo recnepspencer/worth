@@ -1,5 +1,12 @@
 use super::*;
 
+impl ImmutablePhysicalRedoPlan {
+    /// Conservative peak charge for retained descriptors and historical-skip planning.
+    pub const fn supersession_scratch_bytes(&self) -> u64 {
+        self.scratch_bytes
+    }
+}
+
 impl PhysicalRedoMemberInput {
     pub fn new(
         lsn_range: WalLsnRange,

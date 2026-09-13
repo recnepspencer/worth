@@ -1,103 +1,28 @@
-use serde::{Deserialize, Serialize};
 use worth_proof::TransitionOutcome;
 
 use crate::data::error::SignalError;
-use crate::state::{SignalBranchHandle, SignalBranchId, SignalSnapshotId, SignalSnapshotV1};
+use crate::state::{SignalBranchHandle, SignalSnapshotId, SignalSnapshotV1};
 
 use super::super::runtime_state::{ExplicitBranchForkPacket, SignalRuntime};
 use super::branches::{BranchAncestryState, BranchState};
-use super::fork_resolution::ResolvedForkRequest;
 use super::fork_snapshot::materialize_snapshot_fork_state;
 use super::fork_validation::{expect_fork_branch_basis, validate_fork_branch_name};
-use super::SignalBranchForkReceipt;
+use super::{
+    SignalBranchBasisArtifact, SignalBranchForkDenial, SignalBranchForkReceipt,
+    SignalBranchForkRequest, SignalBranchForkRequestBasis,
+};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum SignalBranchForkRequestBasis {
-    CurrentBranchHead,
-    ParentBranchHead {
-        parent_branch_id: SignalBranchId,
-    },
-    ParentBranchSnapshot {
-        parent_branch_id: SignalBranchId,
-        snapshot_id: SignalSnapshotId,
-    },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SignalBranchForkRequest {
-    branch_name: String,
-    basis: SignalBranchForkRequestBasis,
-}
-
-impl SignalBranchForkRequest {
-    #[cfg(test)]
-    pub fn from_current_branch_head(name: impl Into<String>) -> Self {
-        Self {
-            branch_name: name.into(),
-            basis: SignalBranchForkRequestBasis::CurrentBranchHead,
-        }
-    }
-
-    pub fn from_parent_branch_head(
-        name: impl Into<String>,
-        parent_branch_id: SignalBranchId,
-    ) -> Self {
-        Self {
-            branch_name: name.into(),
-            basis: SignalBranchForkRequestBasis::ParentBranchHead { parent_branch_id },
-        }
-    }
-
-    #[cfg(test)]
-    pub fn from_parent_branch_snapshot(
-        name: impl Into<String>,
-        parent_branch_id: SignalBranchId,
-        snapshot_id: SignalSnapshotId,
-    ) -> Self {
-        Self {
-            branch_name: name.into(),
-            basis: SignalBranchForkRequestBasis::ParentBranchSnapshot {
-                parent_branch_id,
-                snapshot_id,
-            },
-        }
-    }
-
-    pub fn branch_name(&self) -> &str {
-        &self.branch_name
-    }
-
-    pub fn basis(&self) -> &SignalBranchForkRequestBasis {
-        &self.basis
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum SignalBranchForkDenial {
-    InvalidBranchIdentity,
-    BranchIdentityExhausted,
-    UnknownParentBranch {
-        parent_branch_id: SignalBranchId,
-    },
-    UnknownForkSnapshot {
-        parent_branch_id: SignalBranchId,
-        snapshot_id: SignalSnapshotId,
-    },
-    SnapshotBasisMismatch {
-        requested_snapshot_id: SignalSnapshotId,
-        provided_snapshot_id: SignalSnapshotId,
-    },
-    SnapshotPayloadRequiredForFork {
-        request: SignalBranchForkRequest,
-    },
-    IncompatibleForkSnapshotLineage {
-        parent_branch_id: SignalBranchId,
-        snapshot_branch_id: SignalBranchId,
-        snapshot_id: SignalSnapshotId,
-    },
-    ManagedQueueBranchTransferDenied {
-        bound_queue_count: u32,
-    },
+struct ResolvedForkRequest<D, I, T>
+where
+    D: Copy + Ord + std::fmt::Debug + 'static,
+    I: Copy + Ord,
+    T: Copy + Ord,
+{
+    parent_branch: SignalBranchHandle,
+    parent_basis: SignalBranchBasisArtifact,
+    requested_snapshot_basis: Option<SignalBranchBasisArtifact>,
+    created_branch_head_snapshot_id: Option<SignalSnapshotId>,
+    source_branch_state: BranchState<D, I, T>,
 }
 
 impl<D, I, E, Ctx, T> SignalRuntime<D, I, E, Ctx, T>
@@ -124,7 +49,6 @@ where
         self.fork_branch_resolved(request, None)
     }
 
-    #[cfg(test)]
     pub(crate) fn fork_branch_with_snapshot(
         &mut self,
         request: SignalBranchForkRequest,
@@ -210,25 +134,20 @@ where
             current_branch_name,
         );
 
-        #[cfg(test)]
         let created_branch_basis = match self.branch_basis_artifact(handle.clone()) {
             TransitionOutcome::Success(basis) => basis,
             other => {
                 panic!("created branch basis must validate immediately after admission: {other:?}")
             }
         };
-        #[cfg(test)]
         let active_branch_after_fork_basis = self.current_branch_basis_artifact();
 
         TransitionOutcome::success(SignalBranchForkReceipt {
-            #[cfg(test)]
+            request,
             parent_basis: resolved.parent_basis,
-            #[cfg(test)]
             requested_snapshot_basis: resolved.requested_snapshot_basis,
             created_branch: handle,
-            #[cfg(test)]
             created_branch_basis,
-            #[cfg(test)]
             active_branch_after_fork_basis,
         })
     }
@@ -242,7 +161,6 @@ where
             SignalBranchForkRequestBasis::CurrentBranchHead => {
                 let parent_branch = self.graph.current_branch();
                 Ok(ResolvedForkRequest {
-                    #[cfg(test)]
                     parent_basis: self.current_branch_basis_artifact(),
                     created_branch_head_snapshot_id: parent_branch.head_snapshot_id,
                     requested_snapshot_basis: None,
@@ -258,14 +176,12 @@ where
                         parent_branch_id: *parent_branch_id,
                     },
                 )?;
-                #[cfg(test)]
                 let parent_basis =
                     expect_fork_branch_basis(self.branch_basis_artifact(parent_branch.clone()));
                 let source_branch_state =
                     self.materialize_parent_head_fork_state(parent_branch.clone())?;
                 Ok(ResolvedForkRequest {
                     created_branch_head_snapshot_id: parent_branch.head_snapshot_id,
-                    #[cfg(test)]
                     parent_basis,
                     requested_snapshot_basis: None,
                     source_branch_state,
@@ -309,7 +225,6 @@ where
                         snapshot_id: snapshot.meta.snapshot_id,
                     });
                 }
-                #[cfg(test)]
                 let parent_basis =
                     expect_fork_branch_basis(self.branch_basis_artifact(parent_branch.clone()));
                 let requested_snapshot_basis = expect_fork_branch_basis(
@@ -319,7 +234,6 @@ where
                     materialize_snapshot_fork_state(self, parent_branch.clone(), snapshot)?;
                 Ok(ResolvedForkRequest {
                     created_branch_head_snapshot_id: Some(snapshot.meta.snapshot_id),
-                    #[cfg(test)]
                     parent_basis,
                     requested_snapshot_basis: Some(requested_snapshot_basis),
                     source_branch_state,

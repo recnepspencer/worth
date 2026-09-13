@@ -7,19 +7,15 @@ use worth_store_layout_indexes::{
 use super::action::{
     CompactionVisibilityAction, LsmMaintenanceAction, LsmMaintenanceDenial, ModeledOutcome,
 };
-use crate::protocol_bindings::{
-    CompactionVisibilityMappedOwnerCase, CompactionVisibilityOwnerCase,
-};
-
 pub fn map_lsm_maintenance_observation(
     observation: LsmMaintenanceOwnerCaseObservation,
-) -> CompactionVisibilityMappedOwnerCase {
+) -> CompactionVisibilityAction {
     map_lsm_maintenance_case(observation.id())
 }
 
 pub(crate) fn map_lsm_maintenance_case(
     owner_case: LsmMaintenanceOwnerCaseId,
-) -> CompactionVisibilityMappedOwnerCase {
+) -> CompactionVisibilityAction {
     let operation = match owner_case.operation() {
         OwnerOperation::AdmitRunPublication => LsmMaintenanceAction::AdmitRunPublication,
         OwnerOperation::AdmitReplay => LsmMaintenanceAction::AdmitReplay,
@@ -29,10 +25,7 @@ pub(crate) fn map_lsm_maintenance_case(
         OwnerDisposition::Admitted => ModeledOutcome::Admitted,
         OwnerDisposition::Denied(denial) => ModeledOutcome::Denied(map_denial(denial)),
     };
-    CompactionVisibilityMappedOwnerCase::new(
-        CompactionVisibilityOwnerCase::LsmMaintenance(owner_case),
-        CompactionVisibilityAction::LsmMaintenance { operation, outcome },
-    )
+    CompactionVisibilityAction::LsmMaintenance { operation, outcome }
 }
 
 const fn map_denial(denial: OwnerDenial) -> LsmMaintenanceDenial {

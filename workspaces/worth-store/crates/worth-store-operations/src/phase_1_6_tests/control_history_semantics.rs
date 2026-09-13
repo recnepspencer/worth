@@ -34,8 +34,7 @@ fn a_durable_open_without_its_source_lease_fails_closed_as_incomplete_history() 
 #[test]
 fn owner_release_cannot_bypass_materialization_and_independent_verification() {
     let scenario = BackupScenario::new("verification-before-materialization");
-    let authority =
-        crate::backup::export::current_authority("s10-verification-before-materialization");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let operation =
         OperationalOperationId::new("verification-before-materialization").expect("operation");
@@ -72,7 +71,7 @@ fn owner_release_cannot_bypass_materialization_and_independent_verification() {
 #[test]
 fn terminal_release_must_name_the_operations_exact_cut() {
     let scenario = BackupScenario::new("wrong-cut-terminal-release");
-    let authority = crate::backup::export::current_authority("s10-wrong-cut-terminal-release");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let operation = OperationalOperationId::new("wrong-cut-terminal-release").expect("operation");
     let _admitted = OnlineBackupIntent::new(
@@ -149,7 +148,7 @@ fn backup_records_cannot_attach_to_another_workflow_kind() {
 #[test]
 fn no_record_can_reopen_a_terminal_backup_lifecycle() {
     let scenario = BackupScenario::new("record-after-terminal");
-    let authority = crate::backup::export::current_authority("s10-record-after-terminal");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let operation = OperationalOperationId::new("record-after-terminal").expect("operation");
     OnlineBackupIntent::new(

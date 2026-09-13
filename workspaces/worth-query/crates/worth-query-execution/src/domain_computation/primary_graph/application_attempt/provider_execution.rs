@@ -23,7 +23,8 @@ pub(in crate::domain_computation) use outcome::{
 };
 pub(in crate::domain_computation::primary_graph::application_attempt) use phase::{
     WorthQueryEarlyEquivalentCommitReceiptPermit, WorthQueryFreshCommitReceiptPermit,
-    WorthQueryManagedEquivalentCommitReceiptPermit, WorthQueryStaleEquivalentCommitReceiptPermit,
+    WorthQueryManagedEquivalentCommitReceiptPermit,
+    WorthQueryRegisteredEquivalentCommitReceiptPermit,
 };
 pub(in crate::domain_computation) use phase::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,

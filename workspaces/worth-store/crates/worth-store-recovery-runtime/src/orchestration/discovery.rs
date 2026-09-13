@@ -1,11 +1,7 @@
 use worth_store::physical_runtime::{RecoveryDiscoveryByteLimitScope, RecoveryDiscoveryFailure};
-use worth_store_physical_format::{
-    BootstrapCatalog, BootstrapCatalogDenial, CheckpointStreamDecodeDenial,
-    VerifiedCheckpointStream,
-};
+use worth_store_recovery_physics::PhysicalBootstrapFallbackAnchor;
 use worth_store_recovery_physics::{
-    PhysicalRecoveryResidue, PhysicalRootSlotObservation, PhysicalWalArtifactCorruption,
-    PhysicalWalSegmentCandidate,
+    PhysicalRecoveryResidue, PhysicalRootSlotObservation, PhysicalWalSegmentCandidate,
 };
 
 use crate::entry::{
@@ -18,8 +14,10 @@ use crate::entry::{
 use super::{ManifestFactsDiscovery, RecoveryCoordination};
 
 mod observation;
+mod wal;
 
 use observation::observe_all;
+pub(crate) use wal::AdmittedWalInventory;
 
 pub(crate) struct DiscoveryMaterial {
     pub(crate) authority: AdmittedPlatformAuthority,
@@ -32,25 +30,33 @@ pub(crate) struct DiscoveryMaterial {
     pub(crate) checkpoint: CheckpointDiscovery,
     pub(crate) wal: WalDiscovery,
     pub(crate) residue: Vec<PhysicalRecoveryResidue>,
+    pub(crate) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
     pub(crate) counters: crate::progression::PhysicalRecoveryDiscoveryCounters,
+    pub(crate) integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
 pub(crate) enum CheckpointDiscovery {
     Absent,
-    Rejected(CheckpointStreamDecodeDenial),
-    Admitted(VerifiedCheckpointStream),
+    Rejected(crate::entry::PhysicalRecoveryCheckpointIntegrityDenial),
+    Admitted {
+        projection: crate::integrity_ingress::OwnerCheckpointProjection,
+        source_root: worth_store::physical_runtime::ObservedRecoveryArtifact,
+    },
 }
 
 pub(crate) enum BootstrapDiscovery {
     NotRequired,
     Absent,
-    Rejected(BootstrapCatalogDenial),
-    Admitted(BootstrapCatalog),
+    Rejected(crate::integrity_ingress::RecoveryIntegrityIngressRejection),
+    Admitted(PhysicalBootstrapFallbackAnchor),
 }
 
 pub(crate) struct WalDiscovery {
     pub(crate) candidates: Vec<PhysicalWalSegmentCandidate>,
     pub(crate) rejected: bool,
+    pub(super) admitted: AdmittedWalInventory,
+    pub(super) integrity_observations: Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
+    pub(super) integrity_ingress: crate::integrity_ingress::RecoveryIntegrityIngressCounters,
     scanned_frames: u64,
     valid_frames: u64,
     valid_bytes: u64,
@@ -60,18 +66,32 @@ pub(crate) struct WalDiscovery {
     corruption_denials: u64,
     scanned_segments: u64,
     valid_segments: u64,
-    pub(crate) corruptions: Vec<PhysicalWalArtifactCorruption>,
+    pub(crate) corruptions: Vec<crate::entry::PhysicalRecoveryWalIntegrityDenial>,
 }
 
 impl WalDiscovery {
+    pub(crate) fn integrity_observations(
+        &self,
+    ) -> Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation> {
+        self.integrity_observations.clone()
+    }
+
     pub(crate) fn into_selection_parts(
         self,
     ) -> (
         Vec<PhysicalWalSegmentCandidate>,
         bool,
-        Vec<PhysicalWalArtifactCorruption>,
+        Vec<crate::entry::PhysicalRecoveryWalIntegrityDenial>,
+        AdmittedWalInventory,
+        Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
     ) {
-        (self.candidates, self.rejected, self.corruptions)
+        (
+            self.candidates,
+            self.rejected,
+            self.corruptions,
+            self.admitted,
+            self.integrity_observations,
+        )
     }
 }
 
@@ -79,6 +99,36 @@ pub(super) struct DiscoveryFailure {
     kind: PhysicalRecoveryBlock,
     limit: Option<PhysicalRecoveryLimitFailure>,
     source_denials: Vec<PhysicalRecoverySourceDenial>,
+    integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    integrity_observations: Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
+}
+
+impl DiscoveryFailure {
+    pub(super) fn with_root_protocol_denials(
+        mut self,
+        denials: &[PhysicalRecoverySourceDenial],
+    ) -> Self {
+        let mut combined = denials.to_vec();
+        combined.append(&mut self.source_denials);
+        self.source_denials = combined;
+        self
+    }
+
+    pub(super) fn with_integrity_trace(
+        mut self,
+        trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    ) -> Self {
+        self.integrity_trace.append(trace);
+        self
+    }
+
+    pub(super) fn with_integrity_observations(
+        mut self,
+        observations: Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
+    ) -> Self {
+        self.integrity_observations = observations;
+        self
+    }
 }
 
 impl From<PhysicalRecoveryBlock> for DiscoveryFailure {
@@ -87,6 +137,8 @@ impl From<PhysicalRecoveryBlock> for DiscoveryFailure {
             kind,
             limit: None,
             source_denials: Vec::new(),
+            integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
+            integrity_observations: Vec::new(),
         }
     }
 }
@@ -122,7 +174,7 @@ pub(crate) fn discover_sources(
         .checked_mul(2)
         .and_then(|value| value.checked_add(2));
     let maximum_entries = match maximum_manifest_blocks.and_then(|blocks| {
-        5_u64
+        6_u64
             .checked_add(declaration.wal_segments)
             .and_then(|entries| entries.checked_add(blocks))
     }) {
@@ -141,12 +193,21 @@ pub(crate) fn discover_sources(
         session,
         _world_binding,
         limits,
+        record_format,
     } = authority;
     let mut discovery = media
         .bounded_discovery(maximum_entries, declaration.observation_bytes)
         .expect("a nonzero admitted discovery limit constructs a bounded observer");
     let mut counters = crate::progression::PhysicalRecoveryDiscoveryCounters::default();
-    let result = observe_all(&mut discovery, limits, &mut counters);
+    let mut ingress_trace = crate::integrity_ingress::RecoveryIntegrityIngressTrace::new();
+    let result = observe_all(
+        &mut discovery,
+        &coordination,
+        limits,
+        record_format,
+        &mut counters,
+        &mut ingress_trace,
+    );
     counters.bytes_observed = discovery.counters().bytes_read;
     counters.wal_entries = discovery.counters().directory_entries_observed;
     counters.wal_bytes = discovery.counters().wal_bytes_read;
@@ -156,6 +217,7 @@ pub(crate) fn discover_sources(
         session,
         _world_binding,
         limits,
+        record_format,
     };
     match result {
         Ok(observed) => Ok(DiscoveryMaterial {
@@ -169,14 +231,19 @@ pub(crate) fn discover_sources(
             checkpoint: observed.checkpoint,
             wal: observed.wal,
             residue: observed.residue,
+            root_protocol_denials: observed.root_protocol_denials,
             counters,
+            integrity_trace: ingress_trace,
         }),
         Err(failure) => {
             let DiscoveryFailure {
                 kind,
                 limit,
                 source_denials,
+                mut integrity_trace,
+                integrity_observations,
             } = failure;
+            integrity_trace.append(ingress_trace);
             Err((
                 authority,
                 coordination,
@@ -186,6 +253,11 @@ pub(crate) fn discover_sources(
                     limit,
                     artifact: Some(discovery_artifact_context(kind).to_owned()),
                     source_denials,
+                    integrity_trace,
+                    integrity_observations:
+                        crate::entry::PhysicalRecoveryIntegrityObservations::new(
+                            integrity_observations,
+                        ),
                     ..PhysicalRecoveryBlockEvidence::default()
                 },
             ))
@@ -207,6 +279,8 @@ pub(super) fn map_discovery_failure(
                 admitted,
             }),
             source_denials: Vec::new(),
+            integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
+            integrity_observations: Vec::new(),
         },
         RecoveryDiscoveryFailure::ByteLimitExceeded {
             observed,
@@ -225,6 +299,8 @@ pub(super) fn map_discovery_failure(
                 admitted,
             }),
             source_denials: Vec::new(),
+            integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
+            integrity_observations: Vec::new(),
         },
         RecoveryDiscoveryFailure::Media { artifact, failure } => DiscoveryFailure {
             kind: PhysicalRecoveryBlock::MediaObservation,
@@ -236,6 +312,8 @@ pub(super) fn map_discovery_failure(
                     io_kind: failure.io_kind(),
                 },
             }],
+            integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
+            integrity_observations: Vec::new(),
         },
         RecoveryDiscoveryFailure::InvalidAddress { artifact } => DiscoveryFailure {
             kind: PhysicalRecoveryBlock::MediaObservation,
@@ -244,6 +322,8 @@ pub(super) fn map_discovery_failure(
                 artifact,
                 failure: PhysicalRecoveryMediaObservationFailure::InvalidAddress,
             }],
+            integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
+            integrity_observations: Vec::new(),
         },
     }
 }
@@ -296,6 +376,8 @@ pub(super) fn discovery_limit(
             admitted,
         }),
         source_denials: Vec::new(),
+        integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
+        integrity_observations: Vec::new(),
     }
 }
 

@@ -49,7 +49,18 @@ impl super::WorthUiNativeApplicationShell {
         WorthUiNativePresentationRecoveryDenial,
     > {
         self.refresh_native_surface_reconciliation();
-        if self.pending_surface_reconciliation.is_none() {
+        if self.pending_surface_reconciliation.is_none()
+            || self
+                .session
+                .mounted
+                .observation_validation_basis()
+                .binding_requires_reconciliation(self.binding)
+            || self
+                .session
+                .mounted
+                .observation_validation_basis()
+                .binding_requires_reconstruction(self.binding)
+        {
             self.replace_native_surface_binding(self.scale_factor_milli)
                 .map_err(|()| WorthUiNativePresentationRecoveryDenial::SurfaceRebindUnavailable)?;
         }
@@ -217,17 +228,12 @@ impl super::WorthUiNativeApplicationShell {
                 ),
             );
         }
-        let affected = self
-            .session
+        self.session
             .mounted
             .current_publication()
             .and_then(|publication| publication.bindings().first().copied())
             .ok_or(WorthUiNativePresentationRecoveryDenial::CurrentPublicationUnavailable)?;
-        self.refresh_native_surface_reconciliation();
-        if affected == self.binding && self.pending_surface_reconciliation.is_none() {
-            self.replace_native_surface_binding(self.scale_factor_milli)
-                .map_err(|()| WorthUiNativePresentationRecoveryDenial::SurfaceRebindUnavailable)?;
-        }
+        let replacement = self.prepare_native_reconstruction_binding()?;
         self.settle_pending_native_viewport_measurements()
             .map_err(|stop| match stop {
                 crate::facade::entry::mounted_application_presentation::UiMountedHostMeasurementSettlementStop::PublicationLease(denial) => {
@@ -243,11 +249,6 @@ impl super::WorthUiNativeApplicationShell {
                 }
             })?;
         let request = self.session.mounted_frame_request();
-        let replacement = self
-            .pending_native_surface_reconciliation()
-            .unwrap_or_else(|| {
-                crate::mounting::UiMountedSurfaceReconciliationBinding::new(affected, self.binding)
-            });
         let replacements = [replacement];
         let frame = self
             .session

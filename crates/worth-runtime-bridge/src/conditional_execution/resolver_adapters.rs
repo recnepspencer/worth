@@ -4,8 +4,7 @@ use worth_signal::facade::{
 };
 
 use super::{
-    BridgeConditionalDenial, BridgeConditionalResolverContext,
-    BridgeConditionalSemanticObservation, BridgeInstalledConditionalLowering,
+    BridgeConditionalDenial, BridgeConditionalResolverContext, BridgeInstalledConditionalLowering,
 };
 
 pub(super) struct ConditionAdapter<'a> {
@@ -13,19 +12,14 @@ pub(super) struct ConditionAdapter<'a> {
     snapshot: Option<
         &'a crate::snapshot::AdmittedSnapshotContext<Box<dyn crate::snapshot::TruthSnapshotReader>>,
     >,
-    previous: &'a std::collections::BTreeMap<
-        (
-            worth_signal::facade::NodeId,
-            usize,
-            Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
-        ),
-        worth_foundational::facade::ContractValidatedAspectArtifact,
-    >,
+    previous: &'a super::observation_retention::BridgeRetainedObservations,
     managed_source_record: Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
     truth_branch_identity: Option<&'a str>,
     truth_snapshot_identity: &'a str,
-    observations: std::sync::Arc<[BridgeConditionalSemanticObservation]>,
+    observations: super::observation_retention::BridgeRetainedObservations,
     observation_denial: Option<BridgeConditionalDenial>,
+    context_reservation: Option<&'a std::sync::Arc<super::retention::BridgeRetentionReservation>>,
+    ledger: &'a std::sync::Arc<super::retention::BridgeRetentionLedger>,
 }
 
 impl<'a> ConditionAdapter<'a> {
@@ -36,19 +30,16 @@ impl<'a> ConditionAdapter<'a> {
                 Box<dyn crate::snapshot::TruthSnapshotReader>,
             >,
         >,
-        previous: &'a std::collections::BTreeMap<
-            (
-                worth_signal::facade::NodeId,
-                usize,
-                Option<crate::relational_identity::RelationalBridgeRecordIdentityParts>,
-            ),
-            worth_foundational::facade::ContractValidatedAspectArtifact,
-        >,
+        previous: &'a super::observation_retention::BridgeRetainedObservations,
         managed_source_record: Option<
             crate::relational_identity::RelationalBridgeRecordIdentityParts,
         >,
         truth_branch_identity: Option<&'a str>,
         truth_snapshot_identity: &'a str,
+        ledger: &'a std::sync::Arc<super::retention::BridgeRetentionLedger>,
+        context_reservation: Option<
+            &'a std::sync::Arc<super::retention::BridgeRetentionReservation>,
+        >,
     ) -> Self {
         Self {
             lowering,
@@ -57,7 +48,9 @@ impl<'a> ConditionAdapter<'a> {
             managed_source_record,
             truth_branch_identity,
             truth_snapshot_identity,
-            observations: std::sync::Arc::from([]),
+            observations: Default::default(),
+            ledger,
+            context_reservation,
             observation_denial: None,
         }
     }
@@ -72,7 +65,7 @@ impl<'a> ConditionAdapter<'a> {
 
     pub(super) fn take_observations(
         &mut self,
-    ) -> std::sync::Arc<[BridgeConditionalSemanticObservation]> {
+    ) -> super::observation_retention::BridgeRetainedObservations {
         std::mem::take(&mut self.observations)
     }
 }
@@ -85,7 +78,7 @@ impl worth_signal::facade::InstalledSignalConditionResolver for ConditionAdapter
     ) -> Result<InstalledSignalConditionDecision, worth_signal::facade::SignalError> {
         if !self
             .lowering
-            .signal_contract
+            .signal_contract()
             .accepts_condition_identity(identity)
         {
             return Err(worth_signal::facade::SignalError::invalid_input(
@@ -97,23 +90,17 @@ impl worth_signal::facade::InstalledSignalConditionResolver for ConditionAdapter
             self.lowering,
             self.previous,
             self.managed_source_record,
+            self.ledger,
         ) {
-            Ok(observations) => observations.into(),
+            Ok(observations) => observations,
             Err(denial) => {
                 let detail = denial.detail().to_string();
                 self.observation_denial = Some(denial);
                 return Err(worth_signal::facade::SignalError::invalid_input(detail));
             }
         };
-        let bridge_context = BridgeConditionalResolverContext::new(
-            context.dirty_aspects,
-            context.max_dependency_delta,
-            self.truth_branch_identity,
-            self.truth_snapshot_identity,
-            std::sync::Arc::clone(&self.observations),
-        );
         if let worth_signal::facade::SignalConditionalCondition::DeltaThreshold(threshold) =
-            self.lowering.signal_contract.semantic_condition()
+            self.lowering.signal_contract().semantic_condition()
         {
             let observation = self.observations.first().ok_or_else(|| {
                 worth_signal::facade::SignalError::invalid_input(
@@ -130,6 +117,17 @@ impl worth_signal::facade::InstalledSignalConditionResolver for ConditionAdapter
                 threshold, previous, current,
             );
         }
+        let bridge_context = BridgeConditionalResolverContext::new(
+            context.dirty_aspects,
+            context.max_dependency_delta,
+            self.truth_branch_identity,
+            self.truth_snapshot_identity,
+            self.observations.clone(),
+            std::sync::Arc::clone(
+                self.context_reservation
+                    .expect("Bridge provider context is preflighted"),
+            ),
+        );
         if let Some(provider) = &self.lowering.providers.condition {
             return provider
                 .resolve(bridge_context)
@@ -191,7 +189,7 @@ impl worth_signal::facade::VersionComparatorResolver for ComparatorAdapter<'_> {
     ) -> Result<bool, worth_signal::facade::SignalError> {
         let provider = match self
             .lowering
-            .signal_contract
+            .signal_contract()
             .classify_comparator_identity(identity)
         {
             Some(worth_signal::facade::InstalledSignalComparatorUse::DependencyVersion) => {

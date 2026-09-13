@@ -59,6 +59,20 @@ Inspection does not execute the feature again. It reads retained runtime
 evidence that already exists because the feature was declared, installed,
 executed, or closed out.
 
+Product inspection distinguishes **selected** truth from **current** truth. A
+selected product observation retains its exact composite commit and component
+bases even after that branch advances. Current inspection asks Runtime World
+for the branch's present occurrence. Neither descriptive commit IDs nor
+rendered basis tokens can authorize a read, publication, cleanup, or retry.
+
+History and recovery inspection are bounded but use distinct continuation
+contracts. A product-history page protects its exact commit chain and can only
+continue from its owner-issued `next_parent_commit()`. A
+`RuntimeWorldRecoveryCursor` resumes at the recovery catalog's next unexamined
+slot, including after an empty page; the cursor is descriptive and protects no
+resources. Retained observations, pending cleanup, aftermath, and recovery
+carriers protect their referenced resources until released or consumed.
+
 What you are holding:
 
 - a typed explanation artifact chosen by the target you inspect

@@ -10,7 +10,6 @@ mod primary_runtime;
 
 pub use candidate_set::{select_invalidation_candidates, WorthQueryInvalidationCandidateSet};
 pub use classification::classify_owner_delivered_impact;
-pub(crate) use classification::preflight_owner_delivered_impact;
 pub use decision_contract::{
     WorthQueryImpactAdmissionDenial, WorthQueryImpactAdmissionDenialKind, WorthQueryImpactClass,
     WorthQueryImpactCounters, WorthQueryImpactDecision,
@@ -25,7 +24,6 @@ pub(crate) use installed_live::{
     WorthQueryInstalledLiveImpactClassifier, WorthQueryInstalledLiveRoutingSelector,
     WorthQueryPreclassifiedInstalledLiveImpact,
 };
-pub(crate) use primary_runtime::admit_granular_invalidation_deliveries;
 pub use primary_runtime::{
     admit_primary_runtime_granular_batch, admit_primary_runtime_granular_invalidations,
     WorthQueryAdmittedInvalidationBatch,

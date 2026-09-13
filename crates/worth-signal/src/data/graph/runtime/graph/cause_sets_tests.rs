@@ -8,55 +8,8 @@ use crate::data::proof::invalidation::output_commit::ProducedAspectDelta;
 use crate::data::proof::PartitionScopeSet;
 use crate::tests::support::evaluate;
 
-pub(super) fn graph_with_edge() -> (SignalGraph, NodeId, NodeId, Aspect) {
-    let mut graph = SignalGraph::new();
-    let producer = graph.create_node();
-    let consumer = graph.create_node();
-    let aspect = Aspect::new(2);
-    let mut baseline = |_id, _graph: &SignalGraph| Ok(AspectVersion::zero());
-    evaluate(&mut graph, producer, &mut baseline).unwrap();
-    evaluate(&mut graph, consumer, &mut baseline).unwrap();
-    graph
-        .set_dependencies(consumer, [DependencyEdge::new(producer, aspect)])
-        .unwrap();
-    let mut snapshot = DependencySnapshot::empty();
-    snapshot.record(producer, aspect, 0, None);
-    graph.set_dep_snapshot(consumer, snapshot).unwrap();
-    (graph, producer, consumer, aspect)
-}
-
-pub(super) fn publish_delta(
-    graph: &mut SignalGraph,
-    producer: NodeId,
-    aspect: Aspect,
-    previous: u64,
-    committed: u64,
-    _ordinal: u64,
-) {
-    let ordinal = graph.cause_sets.reserve_output_commit_ordinal();
-    graph
-        .apply_node_aspect_version(
-            producer,
-            AspectVersion::from_updates([(aspect, committed)]),
-            &[],
-        )
-        .unwrap();
-    let delta = ProducedAspectDelta::from_committed_result(
-        producer,
-        ordinal,
-        AspectVersion::from_updates([(aspect, previous)]),
-        AspectVersion::from_updates([(aspect, committed)]),
-        AspectMask::from_aspect(aspect),
-        &[],
-        &[],
-    )
-    .unwrap();
-    let prepared = graph
-        .prepare_direct_output_causes(&delta, &mut DefaultComparatorPolicyResolver::default())
-        .unwrap();
-    graph.publish_direct_output_causes(prepared).unwrap();
-    graph.cause_sets.publish_output_commit(delta);
-}
+mod fixture;
+pub(super) use fixture::{graph_with_edge, publish_delta};
 
 #[test]
 fn unscoped_cause_normalizes_to_whole_aspect_and_rebuilds_exact_cache() {
@@ -340,7 +293,7 @@ fn raw_and_directly_deserialized_graphs_fail_closed_until_cause_readmission() {
 }
 
 #[test]
-fn transient_wide_fanout_reclaims_cause_slots_back_to_current_live_size() {
+fn transient_wide_fanout_releases_references_and_retains_reusable_slots() {
     let mut graph = SignalGraph::new();
     let producer = graph.create_node();
     let aspect = Aspect::new(2);
@@ -380,7 +333,7 @@ fn transient_wide_fanout_reclaims_cause_slots_back_to_current_live_size() {
         );
     }
     assert_eq!(graph.cause_sets.occupied_slot_count(), 0);
-    assert_eq!(graph.cause_sets.allocated_slot_count(), 0);
+    assert_eq!(graph.cause_sets.allocated_slot_count(), 64);
     assert!(graph
         .cause_sets
         .published_output_commit(OutputCommitOrdinal(ordinal))

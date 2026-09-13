@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use crate::diagnostics::state::DiagnosticHistory;
 
 use serde::{Deserialize, Serialize};
 
@@ -6,13 +6,17 @@ use super::record::LineageRecord;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct RetainedLineageView<'a> {
-    records: Option<&'a VecDeque<LineageRecord>>,
+    records: Option<&'a DiagnosticHistory<LineageRecord>>,
     offset: usize,
     len: usize,
 }
 
 impl<'a> RetainedLineageView<'a> {
-    pub fn new(records: &'a VecDeque<LineageRecord>, offset: usize, len: usize) -> Self {
+    pub(crate) fn new(
+        records: &'a DiagnosticHistory<LineageRecord>,
+        offset: usize,
+        len: usize,
+    ) -> Self {
         Self {
             records: Some(records),
             offset,
@@ -36,11 +40,12 @@ impl<'a> RetainedLineageView<'a> {
         self.len == 0
     }
 
-    pub fn iter(&self) -> Box<dyn Iterator<Item = &'a LineageRecord> + 'a> {
-        match self.records {
-            Some(records) => Box::new(records.iter().skip(self.offset).take(self.len)),
-            None => Box::new(std::iter::empty()),
-        }
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &'a LineageRecord> + ExactSizeIterator {
+        self.records
+            .map(DiagnosticHistory::iter)
+            .unwrap_or_default()
+            .skip(self.offset)
+            .take(self.len)
     }
 
     pub fn first(&self) -> Option<&'a LineageRecord> {
@@ -48,7 +53,7 @@ impl<'a> RetainedLineageView<'a> {
     }
 
     pub fn last(&self) -> Option<&'a LineageRecord> {
-        self.iter().last()
+        self.iter().next_back()
     }
 
     pub fn to_owned_records(&self) -> Vec<LineageRecord> {

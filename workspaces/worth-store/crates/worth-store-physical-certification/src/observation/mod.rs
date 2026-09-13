@@ -1,10 +1,8 @@
 mod boundary_observation;
 mod checkpoint_interlock;
 mod checkpoint_publication_lane;
-mod checkpoint_publication_shortcut_denial;
 mod checkpoint_recovery_lane;
 mod compaction_interlock;
-mod compaction_mutation;
 mod denial;
 mod independent_verifier;
 mod observer;
@@ -20,20 +18,12 @@ pub use checkpoint_publication_lane::{
     CheckpointCrashReplayObservation, PhysicalIsolationCheckpointPublicationCrashLaneOutput,
     PhysicalIsolationCheckpointPublicationLaneBinding,
     PhysicalIsolationCheckpointPublicationScheduledLaneOutput,
-    PhysicalIsolationCheckpointPublicationShortcutRejectionOutput,
 };
-pub use checkpoint_publication_shortcut_denial::PhysicalIsolationCheckpointPublicationShortcutDenialLaneOutput;
 pub use checkpoint_recovery_lane::{
     CheckpointPublicationRecoveryExecution,
     PhysicalIsolationCheckpointPublicationRecoveryOutcomeLaneOutput,
 };
 pub use compaction_interlock::CompactionInterlockObservation;
-pub use compaction_mutation::{
-    PhysicalIsolationCompactionMutationLaneExecution,
-    PhysicalIsolationCompactionMutationObservationSet,
-    PhysicalIsolationCompactionMutationReplayBinding,
-    PhysicalIsolationCompactionMutationScheduledLaneOutput,
-};
 pub use denial::ObservationDenial;
 pub use independent_verifier::{
     IndependentVerifierObservation, IndependentVerifierObservationKind,

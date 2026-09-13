@@ -7,10 +7,11 @@ pub struct WorthQueryProviderWorkReport {
     disposed_artifact_count: usize,
     scratch_bytes: usize,
     retained_bytes: usize,
+    output_retained_bytes: usize,
 }
 
 impl WorthQueryProviderWorkReport {
-    pub(crate) const fn new(
+    pub const fn new(
         completed_work_units: u64,
         applied_effect_count: u64,
         scratch_bytes: usize,
@@ -24,10 +25,11 @@ impl WorthQueryProviderWorkReport {
             disposed_artifact_count: 0,
             scratch_bytes,
             retained_bytes,
+            output_retained_bytes: 0,
         }
     }
 
-    pub(crate) fn with_artifact_disposition(
+    pub fn with_artifact_disposition(
         mut self,
         produced: usize,
         retained: usize,
@@ -68,5 +70,14 @@ impl WorthQueryProviderWorkReport {
 
     pub const fn retained_bytes(self) -> usize {
         self.retained_bytes
+    }
+
+    pub(crate) const fn with_output_retention(mut self, retained_bytes: usize) -> Self {
+        self.output_retained_bytes = retained_bytes;
+        self
+    }
+
+    pub const fn output_retained_bytes(self) -> usize {
+        self.output_retained_bytes
     }
 }

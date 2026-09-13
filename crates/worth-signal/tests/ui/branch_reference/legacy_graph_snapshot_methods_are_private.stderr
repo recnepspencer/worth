@@ -9,11 +9,19 @@ error[E0624]: method `capture_snapshot` is private
   |     pub(crate) fn capture_snapshot(&mut self) -> SignalSnapshotV1 {
   |     ------------------------------------------------------------- private method defined here
 
-error[E0599]: no function or associated item named `restore_snapshot` found for struct `SignalGraph` in the current scope
+error[E0624]: method `restore_snapshot` is private
  --> tests/ui/branch_reference/legacy_graph_snapshot_methods_are_private.rs:8:79
   |
-8 |     let _restore: fn(&mut SignalGraph, &SignalSnapshotV1) -> _ = SignalGraph::restore_snapshot;
-  |                                                                               ^^^^^^^^^^^^^^^^ function or associated item not found in `SignalGraph`
+8 |       let _restore: fn(&mut SignalGraph, &SignalSnapshotV1) -> _ = SignalGraph::restore_snapshot;
+  |                                                                                 ^^^^^^^^^^^^^^^^ private method
+  |
+ ::: src/data/graph/diagnostics_access/artifacts/historical.rs
+  |
+  | /     pub(crate) fn restore_snapshot(
+  | |         &mut self,
+  | |         snapshot: &SignalSnapshotV1,
+  | |     ) -> Result<(), SignalError> {
+  | |________________________________- private method defined here
 
 error[E0624]: method `restore_snapshot_with_intent` is private
   --> tests/ui/branch_reference/legacy_graph_snapshot_methods_are_private.rs:10:22

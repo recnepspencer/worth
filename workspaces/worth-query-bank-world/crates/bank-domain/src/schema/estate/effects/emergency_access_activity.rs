@@ -1,6 +1,7 @@
+use worth_query_decl::facade::worth_query_structured_value_binding;
 use worth_query_decl::facade::{
     application_capability::ApplicationCapabilityLifecycleEffect,
-    application_schema::{ApplicationEffectPayload, ApplicationEffectRef},
+    application_schema::{ApplicationEffectRef, ApplicationRetainedEffectBinding},
     worth_query_effect,
 };
 
@@ -18,27 +19,27 @@ pub struct EstateEmergencyAccessActivityEvent {
     pub access: EmergencyAccessId,
 }
 
-impl ApplicationEffectPayload for EstateEmergencyAccessActivityEvent {
-    fn retained_bytes(&self) -> u64 {
-        u64::try_from(std::mem::size_of::<Self>()).unwrap_or(u64::MAX)
+worth_query_structured_value_binding!(pub EstateEmergencyAccessActivityEventBinding for EstateEmergencyAccessActivityEvent { identity: "bank.estate.effect.emergency-access-activity.payload.v1" });
+impl ApplicationRetainedEffectBinding for EstateEmergencyAccessActivityEventBinding {
+    fn retained_bytes(_: &Self::Value) -> u64 {
+        u64::try_from(std::mem::size_of::<EstateEmergencyAccessActivityEvent>()).unwrap_or(u64::MAX)
     }
 }
-
-worth_query_effect!(
-    pub EstateEmergencyAccessActivityEffect(EstateEmergencyAccessActivityEvent) in BankSchema
-);
+worth_query_effect!(pub EstateEmergencyAccessActivityEffect for BankSchema, payload EstateEmergencyAccessActivityEventBinding);
 
 macro_rules! lifecycle_effect {
     ($operation:ty, $variant:pat => ($estate:expr, $access:expr)) => {
         impl ApplicationCapabilityLifecycleEffect<BankSchema, $operation> for EstateAction {
             type Effect = EstateEmergencyAccessActivityEffect;
-            type Payload = EstateEmergencyAccessActivityEvent;
+            type PayloadBinding = EstateEmergencyAccessActivityEventBinding;
 
-            fn effect() -> ApplicationEffectRef<BankSchema, Self::Effect, Self::Payload> {
+            fn effect(
+            ) -> ApplicationEffectRef<BankSchema, Self::Effect, EstateEmergencyAccessActivityEvent>
+            {
                 EstateEmergencyAccessActivityEffect::reference()
             }
 
-            fn lifecycle_effect(&self) -> Option<Self::Payload> {
+            fn lifecycle_effect(&self) -> Option<EstateEmergencyAccessActivityEvent> {
                 let $variant = *self else {
                     return None;
                 };
@@ -71,9 +72,9 @@ lifecycle_effect!(
 #[cfg(test)]
 mod tests {
     use worth_query_decl::facade::application_capability::ApplicationCapabilityLifecycleEffect;
-    use worth_query_decl::facade::application_schema::ApplicationEffectPayload;
+    use worth_query_decl::facade::application_schema::ApplicationRetainedEffectBinding;
 
-    use super::EstateEmergencyAccessActivityEvent;
+    use super::{EstateEmergencyAccessActivityEvent, EstateEmergencyAccessActivityEventBinding};
     use crate::{
         estate::{EmergencyAccessId, EstateAction, EstateCaseId},
         schema::{BankSchema, RequestEstateEmergencyAccessOperation},
@@ -87,7 +88,7 @@ mod tests {
         };
 
         assert_eq!(
-            event.retained_bytes(),
+            EstateEmergencyAccessActivityEventBinding::retained_bytes(&event),
             u64::try_from(std::mem::size_of::<EstateEmergencyAccessActivityEvent>()).unwrap()
         );
     }

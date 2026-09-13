@@ -1,7 +1,9 @@
 mod authority;
 mod basis;
+mod basis_admission_identity;
 mod basis_axis_validation;
 mod basis_counters;
+mod basis_currentness;
 mod basis_denial;
 mod basis_descriptor_resolution;
 mod basis_identity_validation;
@@ -15,6 +17,7 @@ mod fork_port;
 mod fork_source_basis;
 mod identity;
 mod lifecycle;
+mod owner_services;
 mod reference;
 mod reference_publication_cell;
 mod reference_state;
@@ -43,6 +46,7 @@ pub use basis::{
     AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor, RelationalBranchBasisPosture,
     ResolvedRelationalBasisDescriptor, RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
 };
+pub use basis_admission_identity::RelationalBranchBasisAdmissionIdentity;
 pub use basis_counters::RelationalBranchBasisCostCounters;
 pub use basis_denial::{RelationalBranchBasisDenial, RelationalBranchBasisMismatchAxis};
 pub(crate) use basis_observation::{
@@ -61,6 +65,11 @@ pub use lifecycle::{
     RelationalBranchDeleteDenial, RelationalBranchDeletionOutcome, RelationalBranchDeletionPending,
     RelationalBranchLifecyclePosture,
 };
+pub use owner_services::{
+    RelationalBranchBasisPort, RelationalBranchLifecyclePort,
+    RelationalBranchTransactionAdmissionPort, RelationalOwnerLifecycleObservation,
+    RelationalOwnerServicePorts,
+};
 pub use reference::RelationalBranchCellDenial;
 pub use reference::{
     relational_branch_observation, RelationalBranchComparisonBasis, RelationalBranchForkBasis,
@@ -72,9 +81,9 @@ pub(crate) use reference::{
 };
 pub(crate) use reference_publication_cell::RelationalBranchPublicationCell;
 pub use reference_state::RelationalBranchReferenceState;
+pub use registry::RelationalForkTargetReservation;
 pub(crate) use registry::{
-    RelationalBranchReferenceRegistry, RelationalForkTargetReservation,
-    RelationalForkTargetReservationDenial,
+    RelationalBranchReferenceRegistry, RelationalForkTargetReservationDenial,
 };
 pub use root::RelationalRootCorrectnessIndex;
 pub(crate) use root::{

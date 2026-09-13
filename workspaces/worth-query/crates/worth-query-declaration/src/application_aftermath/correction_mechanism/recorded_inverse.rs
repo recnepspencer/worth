@@ -9,7 +9,9 @@ use super::super::postcondition::DeclaredAftermathPostcondition;
 use super::portable_recorded_inverse::{
     PortablePreImageDemand, PortablePreImageLocus, PortableRecordedInverse,
 };
-use crate::application_schema::{ApplicationFieldRef, ApplicationFieldUnit, TypedApplicationValue};
+use crate::application_schema::{
+    ApplicationFieldRef, ApplicationFieldUnit, DeclaredApplicationFieldValue,
+};
 
 /// A schema-affine application-field identity required by a recorded inverse.
 ///
@@ -25,7 +27,7 @@ impl<Schema> DeclaredPreImageLocus<Schema> {
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
         Self {

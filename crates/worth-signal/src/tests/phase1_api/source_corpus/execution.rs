@@ -25,7 +25,7 @@ pub(in crate::tests::phase1_api) const HOT_SEMANTIC_FINALIZE_SOURCE: &str = conc
 pub(in crate::tests::phase1_api) const HOT_EFFECT_SOURCE: &str = concat!(
     include_str!("../../../data/graph/runtime/effect.rs"),
     include_str!("../../../data/graph/runtime/effect/admission.rs"),
-    include_str!("../../../data/graph/runtime/effect/application.rs"),
+    include_str!("../../../data/graph/runtime/effect/output_commit/snapshot_preparation.rs"),
     include_str!("../../../data/graph/runtime/effect/batching.rs"),
     include_str!("../../../data/graph/runtime/effect/evidence.rs"),
     include_str!("../../../data/graph/runtime/effect/vocabulary.rs"),
@@ -111,3 +111,15 @@ pub(in crate::tests::phase1_api) const WORKSPACE_SOURCE: &str =
     include_str!("../../../logic/planner/apply/workspace.rs");
 pub(in crate::tests::phase1_api) const PATCH_BUFFER_SOURCE: &str =
     include_str!("../../../logic/transaction/patch_buffer.rs");
+pub(in crate::tests::phase1_api) const ORDINARY_INVALIDATION_ACCESS_SOURCE: &str = concat!(
+    include_str!("../../../logic/invalidation/causality/dependency_admission.rs"),
+    include_str!("../../../logic/invalidation/scheduling/readiness.rs"),
+);
+pub(in crate::tests::phase1_api) const INVALIDATION_REVALIDATION_SOURCE: &str =
+    include_str!("../../../logic/invalidation/causality/revalidation.rs");
+pub(in crate::tests::phase1_api) const ORDINARY_EXPLANATION_ACCESS_SOURCE: &str = concat!(
+    include_str!("../../../logic/explain/analysis.rs"),
+    include_str!("../../../logic/explain/resolver/assembly.rs"),
+    include_str!("../../../logic/explain/resolver/causes.rs"),
+    include_str!("../../../logic/explain/resolver/policy.rs"),
+);

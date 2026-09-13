@@ -47,7 +47,7 @@ pub enum WorthQueryExecutionResourceAdmissionPosture {
     Degraded,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryAdmittedExecutionResourcePlan {
     identity: Arc<str>,
     binding_identity: Arc<str>,
@@ -156,7 +156,7 @@ impl WorthQueryAdmittedExecutionResourcePlan {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryAdmittedWorkflowResourcePlan {
     operation: WorthQueryAdmittedExecutionResourcePlan,
     stages: BTreeMap<String, Arc<WorthQueryAdmittedExecutionResourcePlan>>,

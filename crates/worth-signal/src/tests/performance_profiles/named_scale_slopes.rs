@@ -22,7 +22,7 @@ struct ScaleSlopeEvidence {
 #[test]
 fn named_scale_slopes_record_independent_axes() {
     let started = Instant::now();
-    let (evidence, parallel_regions) = run_scale_slopes();
+    let (evidence, parallel_dispatch_sample) = run_scale_slopes();
     let nodes = evidence
         .iter()
         .find(|row| row.axis == "nodes")
@@ -48,7 +48,7 @@ fn named_scale_slopes_record_independent_axes() {
     assert_eq!(edit_width.lower_scale, 1);
     assert_eq!(edit_width.upper_scale, 4);
     assert!(edit_width.lower_micros > 0 && edit_width.upper_micros > 0);
-    println!("named scale slopes={evidence:?} parallel_regions={parallel_regions}");
+    println!("named scale slopes={evidence:?} parallel_dispatch_sample={parallel_dispatch_sample}");
     assert_within_throughput_budget(started, "named scale slopes");
 }
 
@@ -120,16 +120,16 @@ fn run_scale_slopes() -> (Vec<ScaleSlopeEvidence>, u128) {
         },
     ];
     #[cfg(feature = "parallel")]
-    let parallel_regions = {
-        let lower = parallel_region_sample(256);
-        let upper = parallel_region_sample(1_024);
+    let parallel_dispatch_sample = {
+        let lower = parallel_dispatch_sample(256);
+        let upper = parallel_dispatch_sample(1_024);
         assert!(lower.1 > 0 && upper.1 > 0);
         assert!(upper.0 > lower.0);
         upper.1
     };
     #[cfg(not(feature = "parallel"))]
-    let parallel_regions = 0;
-    (evidence, parallel_regions)
+    let parallel_dispatch_sample = 0;
+    (evidence, parallel_dispatch_sample)
 }
 
 fn slope_partitioned_median(output_floor: u32) -> (usize, u128) {
@@ -153,15 +153,19 @@ fn slope_world_median(definition: FinancialWorldDefinition) -> (usize, u128) {
 }
 
 #[cfg(feature = "parallel")]
-fn parallel_region_sample(output_floor: u32) -> (usize, u128) {
+fn parallel_dispatch_sample(output_floor: u32) -> (usize, u128) {
     let mut world = compile_financial_locality_world_with_policy(
-        partitioned_world_for_output_floor(PERFORMANCE_SEED, output_floor),
+        FinancialWorldDefinition::dense_market_close(
+            PERFORMANCE_SEED,
+            output_floor,
+            DensityRatio::FourInFive,
+        ),
         SignalRuntimePolicy::operational(),
     )
-    .expect("parallel-region slope world compiles");
+    .expect("parallel-dispatch slope world compiles");
     let report = world
         .run_locality_performance_sequence(8, StageExecutor::balanced_parallel(), false)
-        .expect("parallel-region slope settles");
+        .expect("parallel-dispatch slope settles");
     assert!(report.parallel_stage_dispatches > 0);
     (report.node_count, report.warm_median_micros)
 }

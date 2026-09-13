@@ -19,6 +19,7 @@ impl WorthQueryDirectGraphCompletionPermit {
 use super::direct_graph_chunk::{
     WorthQueryPendingDirectGraphChunk, WorthQueryPendingDirectGraphQueueState,
 };
+use super::direct_graph_terminalization::terminal_outcome;
 use super::interruption_classification::producer_terminal_kind;
 use super::managed_graph_execution::{
     WorthQueryManagedGraphExecution, WorthQueryManagedProviderStep,
@@ -168,6 +169,11 @@ impl WorthQueryActiveDirectGraphExecution {
     ) -> WorthQueryDirectGraphStepOutcome {
         let width = u64::try_from(material.rows().len()).unwrap_or(u64::MAX);
         let retained_bytes = material.owned_allocation_capacity_bytes();
+        if !self.execution.projection_chunk_fits_ceiling() {
+            drop(material);
+            let _ = self.release_pending_chunk(retained_bytes);
+            return self.interrupted_terminal(WorthQueryManagedRunTerminalKind::Exhausted);
+        }
         let admission = match self.running.bridge_basis_mut().enqueue_managed_queue(width) {
             Ok(admission) => admission,
             Err(failure) => {
@@ -186,7 +192,6 @@ impl WorthQueryActiveDirectGraphExecution {
         self.running
             .provider_work_mut()
             .record_queue_mutation(mutation.counters());
-        self.execution.admit_projection_chunk(&material);
         let queue = WorthQueryPendingDirectGraphQueueState::new(
             occupancy,
             mutation.queue_depth(),
@@ -205,10 +210,20 @@ impl WorthQueryActiveDirectGraphExecution {
         mut self,
         report: &WorthQueryGraphProviderStepReport,
     ) -> WorthQueryDirectGraphStepOutcome {
-        let receipt = match self.execution.seal_completion(report) {
-            Ok(receipt) => receipt,
+        let (receipt, output_retained_bytes, envelope_bytes) = match self
+            .execution
+            .seal_completion(report)
+        {
+            Ok(completion) => completion,
             Err(()) => return self.abandoned_terminal(WorthQueryManagedRunTerminalKind::Failed),
         };
+        if !self
+            .running
+            .provider_work_mut()
+            .transfer_output_to_receipt(envelope_bytes, output_retained_bytes)
+        {
+            return self.settled_terminal(WorthQueryManagedRunTerminalKind::Failed);
+        }
         self.running.provider_work_mut().complete_step_call();
         let after = match self.observe_safe_point() {
             Ok(observation) => observation,
@@ -283,6 +298,17 @@ impl WorthQueryActiveDirectGraphExecution {
                 .release_projection_bytes(retained_bytes)
     }
 
+    pub(super) fn retain_pending_chunk(&mut self, material: WorthQueryGraphReadMaterial) -> bool {
+        let Some((projection_bytes, additional_bytes)) =
+            self.execution.retain_projection_chunk(material)
+        else {
+            return false;
+        };
+        self.running
+            .provider_work_mut()
+            .transfer_projection_to_output(projection_bytes, additional_bytes)
+    }
+
     fn release_unpublished_projection(
         &mut self,
         report: &mut WorthQueryGraphProviderStepReport,
@@ -293,44 +319,6 @@ impl WorthQueryActiveDirectGraphExecution {
         let retained_bytes = material.owned_allocation_capacity_bytes();
         drop(material);
         self.release_pending_chunk(retained_bytes)
-    }
-
-    pub(super) fn interrupted_terminal(
-        mut self,
-        kind: WorthQueryManagedRunTerminalKind,
-    ) -> WorthQueryDirectGraphStepOutcome {
-        self.running.provider_work_mut().interrupt_step_call();
-        self.into_terminal_outcome(kind)
-    }
-
-    pub(super) fn abandoned_terminal(
-        mut self,
-        kind: WorthQueryManagedRunTerminalKind,
-    ) -> WorthQueryDirectGraphStepOutcome {
-        self.running.provider_work_mut().abandon();
-        self.into_terminal_outcome(kind)
-    }
-
-    fn settled_terminal(
-        self,
-        kind: WorthQueryManagedRunTerminalKind,
-    ) -> WorthQueryDirectGraphStepOutcome {
-        self.into_terminal_outcome(kind)
-    }
-
-    fn into_terminal_outcome(
-        mut self,
-        kind: WorthQueryManagedRunTerminalKind,
-    ) -> WorthQueryDirectGraphStepOutcome {
-        let release = self.execution.release_provider_execution();
-        let (release_evidence, memory) = release.into_parts();
-        self.running
-            .provider_work_mut()
-            .record_provider_execution_release(&release_evidence);
-        self.running
-            .provider_work_mut()
-            .retain_provider_memory(memory);
-        terminal_outcome(self.running.terminal(kind), kind)
     }
 }
 
@@ -367,30 +355,4 @@ pub enum WorthQueryDirectGraphStepOutcome {
     Exhausted(WorthQueryDirectRunTerminal),
     Degraded(WorthQueryDirectRunTerminal),
     Failed(WorthQueryDirectRunTerminal),
-}
-
-fn terminal_outcome(
-    terminal: WorthQueryDirectRunTerminal,
-    kind: WorthQueryManagedRunTerminalKind,
-) -> WorthQueryDirectGraphStepOutcome {
-    match kind {
-        WorthQueryManagedRunTerminalKind::Cancelled => {
-            WorthQueryDirectGraphStepOutcome::Cancelled(terminal)
-        }
-        WorthQueryManagedRunTerminalKind::TimedOut => {
-            WorthQueryDirectGraphStepOutcome::TimedOut(terminal)
-        }
-        WorthQueryManagedRunTerminalKind::Exhausted => {
-            WorthQueryDirectGraphStepOutcome::Exhausted(terminal)
-        }
-        WorthQueryManagedRunTerminalKind::Degraded => {
-            WorthQueryDirectGraphStepOutcome::Degraded(terminal)
-        }
-        WorthQueryManagedRunTerminalKind::Failed => {
-            WorthQueryDirectGraphStepOutcome::Failed(terminal)
-        }
-        WorthQueryManagedRunTerminalKind::Completed => {
-            unreachable!("provider completion returns a completion authority")
-        }
-    }
 }

@@ -30,6 +30,9 @@ where
         snapshot: &SignalSnapshotV1,
     ) -> Result<SignalBranchSnapshotReconstructionOutcome, SignalBranchSnapshotReconstructionDenial>
     {
+        if self.owner_services.is_sealed() {
+            return Err(SignalBranchSnapshotReconstructionDenial::NonPristineRuntime);
+        }
         let preflight = self.preflight_signal_branch_snapshot_reconstruction(expected, snapshot)?;
         self.restore_branch_snapshot(preflight.branch.clone(), snapshot)
             .map_err(
@@ -45,7 +48,10 @@ where
         self.branches.insert_snapshot(
             SnapshotBranchState::from_branch_state(&branch_state).packet(snapshot.meta.snapshot_id),
         );
-        self.branches.store_branch_state(branch_state);
+        self.branches.synchronize_snapshot_identity_high_water(
+            snapshot.meta.snapshot_id.0.saturating_add(1),
+        );
+        self.branches.observe_active_branch_state(&branch_state);
 
         let admitted_snapshot = AdmittedSignalBranchSnapshot::owner_issued(
             self.branches.owner_runtime_instance_id(),
@@ -94,6 +100,18 @@ where
                     snapshot_branch_id: snapshot.meta.branch_id,
                 },
             );
+        }
+        if !self
+            .branches
+            .snapshot_reconstruction_runtime_is_pristine(branch_id)
+            || self
+                .graph
+                .diagnostics_state()
+                .branch_snapshot_allocator_state()
+                .0
+                != 0
+        {
+            return Err(SignalBranchSnapshotReconstructionDenial::NonPristineRuntime);
         }
         self.branches
             .ensure_snapshot_storage_available()

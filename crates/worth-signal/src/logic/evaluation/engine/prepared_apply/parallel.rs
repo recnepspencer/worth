@@ -85,6 +85,7 @@ pub(crate) fn build_prepared_apply_commit_packet(
                 effect,
                 graph.node_eval_config(node)?.output_equivalence.clone(),
                 defer_snapshot_commit,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary,
             )
             .map_err(ApplyCommitBuildError::Signal);
     }
@@ -185,6 +186,7 @@ pub(crate) fn build_prepared_apply_commit_packet(
                     effect,
                     graph.node_eval_config(node)?.output_equivalence.clone(),
                     defer_snapshot_commit,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary,
                 )
                 .map_err(ApplyCommitBuildError::Signal)?
         }

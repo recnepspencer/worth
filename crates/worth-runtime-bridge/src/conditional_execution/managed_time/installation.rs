@@ -1,74 +1,65 @@
-use std::{num::NonZeroUsize, sync::Arc};
+use std::sync::{Arc, Mutex};
 
 use super::{
-    contract::{
-        validate_identity, BridgeManagedClockLease, BridgeManagedTemporalDenial,
-        BridgeManagedTemporalDenialKind,
-    },
-    BridgeManagedClockBinding, BridgeManagedClockInstallationParts, BridgeManagedClockLane,
+    BridgeManagedClockBinding, BridgeManagedClockInstallationParts, BridgeManagedTemporalDenial,
+    BridgeManagedTemporalDenialKind,
 };
-use crate::conditional_execution::BridgeOwnedSignalRuntime;
+use crate::conditional_execution::{BridgeInstalledConditionalLowering, BridgeOwnedSignalRuntime};
 
 impl BridgeOwnedSignalRuntime {
     pub fn install_managed_clock(
-        &mut self,
+        &self,
         parts: BridgeManagedClockInstallationParts<'_>,
     ) -> Result<BridgeManagedClockBinding, BridgeManagedTemporalDenial> {
-        if !self
-            .conditional_lowerings
-            .get(&parts.lowering.signal_node())
-            .is_some_and(|installed| Arc::ptr_eq(installed, parts.lowering))
-        {
-            return Err(BridgeManagedTemporalDenial::new(
-                BridgeManagedTemporalDenialKind::ForeignClockBinding,
-                "managed clock requires its exact live conditional lowering",
-            ));
-        }
-        validate_identity(&parts.binding_identity, "managed clock binding")?;
-        validate_identity(&parts.source_identity, "managed clock source")?;
-        validate_identity(&parts.timeline_identity, "managed clock timeline")?;
-        let maximum_due_wakes_per_observation =
-            NonZeroUsize::new(parts.maximum_due_wakes_per_observation).ok_or_else(|| {
-                BridgeManagedTemporalDenial::new(
-                    BridgeManagedTemporalDenialKind::InvalidContract,
-                    "managed clock due-wake bound must be non-zero",
-                )
-            })?;
-        if parts.maximum_active_intents == 0 {
-            return Err(BridgeManagedTemporalDenial::new(
-                BridgeManagedTemporalDenialKind::InvalidContract,
-                "managed clock active-intent capacity must be non-zero",
-            ));
-        }
+        self.require_managed_clock_lowering(parts.lowering)?;
+        let declaration = super::BridgeManagedClockDeclaration::admit(
+            self.bridge.signal_runtime_key,
+            &self.retention,
+            parts,
+        )?;
+        let identity = Arc::clone(declaration.identity());
+        let binding = declaration.binding();
         if self
             .managed_clock_lanes
-            .contains_key(&parts.binding_identity)
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .contains_key(&identity)
         {
-            return Err(BridgeManagedTemporalDenial::new(
-                BridgeManagedTemporalDenialKind::DuplicateClockBinding,
-                "managed clock binding identity is already installed",
-            ));
+            return Err(duplicate_clock());
         }
-
-        let lease = Arc::new(BridgeManagedClockLease::issue());
-        let binding = BridgeManagedClockBinding {
-            bridge_runtime_key: self.bridge.signal_runtime_key,
-            binding_identity: Arc::clone(&parts.binding_identity),
-            source_identity: Arc::clone(&parts.source_identity),
-            timeline_identity: Arc::clone(&parts.timeline_identity),
-            lease: Arc::clone(&lease),
-        };
-        self.managed_clock_lanes.insert(
-            parts.binding_identity,
-            BridgeManagedClockLane::new(
-                Arc::clone(parts.lowering),
-                parts.source_identity,
-                parts.timeline_identity,
-                lease,
-                parts.maximum_active_intents,
-                maximum_due_wakes_per_observation,
-            ),
-        );
-        Ok(binding)
+        // Owner issuance happens after the registry lookup has released its lock.
+        let lane = Arc::new(Mutex::new(declaration.seal()?));
+        let mut lanes = self
+            .managed_clock_lanes
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let std::collections::btree_map::Entry::Vacant(entry) = lanes.entry(identity) {
+            entry.insert(lane);
+            Ok(binding)
+        } else {
+            drop(lanes);
+            drop(lane);
+            Err(duplicate_clock())
+        }
     }
+
+    pub(in crate::conditional_execution) fn require_managed_clock_lowering(
+        &self,
+        lowering: &Arc<BridgeInstalledConditionalLowering>,
+    ) -> Result<(), BridgeManagedTemporalDenial> {
+        self.require_live_installed_lowering(lowering)
+            .map_err(|denial| {
+                BridgeManagedTemporalDenial::new(
+                    BridgeManagedTemporalDenialKind::ForeignClockBinding,
+                    denial.detail(),
+                )
+            })
+    }
+}
+
+fn duplicate_clock() -> BridgeManagedTemporalDenial {
+    BridgeManagedTemporalDenial::new(
+        BridgeManagedTemporalDenialKind::DuplicateClockBinding,
+        "managed clock binding identity is already installed",
+    )
 }

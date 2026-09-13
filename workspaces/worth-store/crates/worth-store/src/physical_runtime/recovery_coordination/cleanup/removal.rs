@@ -3,6 +3,7 @@ use std::sync::Arc;
 use worth_store_physical_backend::PhysicalRecoveryMediaGeneration;
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, PhysicalCheckpointIdentity,
+    PhysicalRecordFormatDeclaration,
 };
 use worth_store_wal::{LogSequenceNumber, WalLsnRange, WalSegmentArtifactIdentity};
 
@@ -21,6 +22,7 @@ pub(in crate::physical_runtime) struct PhysicalRecoveryCleanupRemovalCommand {
     session: [u8; 16],
     plan: [u8; 32],
     published_generation: u64,
+    format: PhysicalRecordFormatDeclaration,
     checkpoint: PhysicalCheckpointIdentity,
     compaction_generation: u64,
     compaction_digest: [u8; 32],
@@ -30,8 +32,8 @@ pub(in crate::physical_runtime) struct PhysicalRecoveryCleanupRemovalCommand {
     byte_count: u64,
     selector_read: worth_store_physical_backend::CompletedScheduledRecoveryReopenRead,
     root_read: worth_store_physical_backend::CompletedScheduledRecoveryReopenRead,
-    checkpoint_stream: Arc<worth_store_physical_format::VerifiedCheckpointStream>,
-    verified_wal: worth_store_wal::VerifiedWalArtifact,
+    checkpoint_stream: Arc<worth_store_physical_integrity::VerifiedCheckpointStream>,
+    admitted_wal: crate::physical_runtime::IntegrityAdmittedRecoveryWalSegment,
 }
 
 pub struct CompletedPhysicalRecoveryCleanupRemoval {
@@ -45,6 +47,7 @@ pub struct PhysicalRecoveryCleanupRemovalDenial {
     work: Option<crate::physical_runtime::PhysicalWorkIdentity>,
     scheduler: Option<PhysicalWorkSchedulerPosture>,
     signal: Option<crate::physical_runtime::PhysicalSignalSettlementOutcome>,
+    integrity: Option<crate::physical_runtime::RootProtocolAdmissionDenial>,
 }
 
 pub enum PhysicalRecoveryCleanupRemovalDenialKind {
@@ -72,6 +75,11 @@ pub enum PhysicalRecoveryCleanupRemovalIndeterminate {
         posture: PhysicalWorkSchedulerPosture,
         outcome: crate::physical_runtime::PhysicalSignalSettlementOutcome,
     },
+    Yieldpoint {
+        physical: crate::physical_runtime::CompletedRecoveryCleanupPhysicalRemoval,
+        revalidation: crate::physical_runtime::RecoveryCleanupArtifactRevalidationProgress,
+        wait: crate::physical_runtime::PhysicalRecoveryYieldpointWaitResult,
+    },
 }
 
 pub enum PhysicalRecoveryCleanupRemovalOutcome {
@@ -84,8 +92,8 @@ impl PhysicalRecoveryCleanupRemovalCommand {
     pub(in crate::physical_runtime) fn from_freshness(
         basis: crate::physical_runtime::recovery_freshness::StoreRecoveryCleanupRemovalBasis,
         selector_read: worth_store_physical_backend::CompletedScheduledRecoveryReopenRead,
-        checkpoint_stream: Arc<worth_store_physical_format::VerifiedCheckpointStream>,
-        verified_wal: worth_store_wal::VerifiedWalArtifact,
+        checkpoint_stream: Arc<worth_store_physical_integrity::VerifiedCheckpointStream>,
+        admitted_wal: crate::physical_runtime::IntegrityAdmittedRecoveryWalSegment,
     ) -> Self {
         let root_read = basis.root_read();
         Self {
@@ -94,6 +102,7 @@ impl PhysicalRecoveryCleanupRemovalCommand {
             session: basis.session(),
             plan: basis.plan(),
             published_generation: basis.published_generation(),
+            format: basis.format(),
             checkpoint: basis.checkpoint(),
             compaction_generation: basis.compaction_generation(),
             compaction_digest: basis.compaction_digest(),
@@ -104,7 +113,7 @@ impl PhysicalRecoveryCleanupRemovalCommand {
             selector_read,
             root_read,
             checkpoint_stream,
-            verified_wal,
+            admitted_wal,
         }
     }
 }
@@ -143,6 +152,9 @@ impl PhysicalRecoveryCleanupRemovalDenial {
     pub const fn signal(&self) -> Option<crate::physical_runtime::PhysicalSignalSettlementOutcome> {
         self.signal
     }
+    pub const fn integrity(&self) -> Option<crate::physical_runtime::RootProtocolAdmissionDenial> {
+        self.integrity
+    }
 }
 
 impl PhysicalRecoveryCleanupRemovalIndeterminate {
@@ -151,9 +163,9 @@ impl PhysicalRecoveryCleanupRemovalIndeterminate {
     ) -> crate::physical_runtime::RecoveryCleanupArtifactRevalidationProgress {
         match self {
             Self::Media { physical, .. } => physical.revalidation(),
-            Self::Scheduler { revalidation, .. } | Self::Signal { revalidation, .. } => {
-                *revalidation
-            }
+            Self::Scheduler { revalidation, .. }
+            | Self::Signal { revalidation, .. }
+            | Self::Yieldpoint { revalidation, .. } => *revalidation,
         }
     }
 }

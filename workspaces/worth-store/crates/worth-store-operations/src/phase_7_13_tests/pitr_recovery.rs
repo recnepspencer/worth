@@ -3,11 +3,10 @@ use crate::{
     AuthorizationReplayPolicy, AuthorizationRevocationObservation, OperationalOperationId,
     OperationalTransitionId, PointInTimeRecoveryIntent,
 };
-use worth_store_physical_isolation::RecoverySourceLeaseRegistry;
-use worth_store_recovery_physics::{
-    PitrCandidatePosture, PitrRoundingPolicy, RecoveryPhysicsTimelineAuthority,
+use crate::{
+    PitrCandidatePosture, PitrRoundingPolicy, RecoveryTimelineAdmission, RecoveryTimelineOwner,
 };
-
+use worth_store_physical_isolation::RecoverySourceLeaseRegistry;
 #[test]
 fn exact_frontier_pitr_executes_only_after_a_durable_source_lease() {
     let world = restore_world("phase-9-exact-pitr");
@@ -21,22 +20,22 @@ fn exact_frontier_pitr_executes_only_after_a_durable_source_lease() {
     let manifest = materialized.manifest();
     let wal_end = manifest.wal_half_open_interval().1;
     let selected_client_ack = manifest.acknowledged_frontier();
-    let observation = RecoveryPhysicsTimelineAuthority::admit_observation(
-        100,
-        0,
-        0,
-        manifest.durable_checkpoint_lsn(),
-        wal_end,
-        wal_end,
-        selected_client_ack,
-        manifest.acknowledged_frontier(),
-        world.admissible.admission().admitting_authority(),
-        [0x91; 32],
-        materialized.manifest_digest(),
-        PitrCandidatePosture::Available,
-    )
+    let observation = RecoveryTimelineOwner::admit_observation(RecoveryTimelineAdmission {
+        observed_time: 100,
+        uncertainty_before: 0,
+        uncertainty_after: 0,
+        checkpoint_durability: manifest.durable_checkpoint_lsn(),
+        wal_structural: wal_end,
+        local_durable_commit: wal_end,
+        client_acknowledged: selected_client_ack,
+        replication_acknowledged: manifest.acknowledged_frontier(),
+        authority_identity: world.admissible.admission().admitting_authority(),
+        source_lineage: [0x91; 32],
+        source_identity: materialized.manifest_digest(),
+        posture: PitrCandidatePosture::Available,
+    })
     .unwrap();
-    let candidates = RecoveryPhysicsTimelineAuthority::resolve_candidates(
+    let candidates = RecoveryTimelineOwner::resolve_candidates(
         100,
         PitrRoundingPolicy::ExactOnly,
         vec![observation],
@@ -118,22 +117,22 @@ fn pitr_rejects_timeline_evidence_from_a_different_store_authority() {
     let foreign = worth_store_authority::StoreCurrentAuthorityIdentity::from_persisted_fingerprint(
         [0xe1; 32],
     );
-    let observation = RecoveryPhysicsTimelineAuthority::admit_observation(
-        100,
-        0,
-        0,
-        manifest.durable_checkpoint_lsn(),
-        wal_end,
-        wal_end,
-        manifest.acknowledged_frontier(),
-        manifest.acknowledged_frontier(),
-        foreign,
-        [0x91; 32],
-        materialized.manifest_digest(),
-        PitrCandidatePosture::Available,
-    )
+    let observation = RecoveryTimelineOwner::admit_observation(RecoveryTimelineAdmission {
+        observed_time: 100,
+        uncertainty_before: 0,
+        uncertainty_after: 0,
+        checkpoint_durability: manifest.durable_checkpoint_lsn(),
+        wal_structural: wal_end,
+        local_durable_commit: wal_end,
+        client_acknowledged: manifest.acknowledged_frontier(),
+        replication_acknowledged: manifest.acknowledged_frontier(),
+        authority_identity: foreign,
+        source_lineage: [0x91; 32],
+        source_identity: materialized.manifest_digest(),
+        posture: PitrCandidatePosture::Available,
+    })
     .unwrap();
-    let candidates = RecoveryPhysicsTimelineAuthority::resolve_candidates(
+    let candidates = RecoveryTimelineOwner::resolve_candidates(
         100,
         PitrRoundingPolicy::ExactOnly,
         vec![observation],
@@ -164,22 +163,22 @@ fn pitr_rejects_an_acknowledgement_frontier_not_represented_by_the_source_cut() 
     let materialized = world.admissible.custody().structural().materialized();
     let manifest = materialized.manifest();
     let wal_end = manifest.wal_half_open_interval().1;
-    let observation = RecoveryPhysicsTimelineAuthority::admit_observation(
-        100,
-        0,
-        0,
-        manifest.durable_checkpoint_lsn(),
-        wal_end,
-        wal_end,
-        wal_end.saturating_sub(1),
-        wal_end.saturating_sub(1),
-        world.admissible.admission().admitting_authority(),
-        [0x91; 32],
-        materialized.manifest_digest(),
-        PitrCandidatePosture::Available,
-    )
+    let observation = RecoveryTimelineOwner::admit_observation(RecoveryTimelineAdmission {
+        observed_time: 100,
+        uncertainty_before: 0,
+        uncertainty_after: 0,
+        checkpoint_durability: manifest.durable_checkpoint_lsn(),
+        wal_structural: wal_end,
+        local_durable_commit: wal_end,
+        client_acknowledged: wal_end.saturating_sub(1),
+        replication_acknowledged: wal_end.saturating_sub(1),
+        authority_identity: world.admissible.admission().admitting_authority(),
+        source_lineage: [0x91; 32],
+        source_identity: materialized.manifest_digest(),
+        posture: PitrCandidatePosture::Available,
+    })
     .unwrap();
-    let candidates = RecoveryPhysicsTimelineAuthority::resolve_candidates(
+    let candidates = RecoveryTimelineOwner::resolve_candidates(
         100,
         PitrRoundingPolicy::ExactOnly,
         vec![observation],

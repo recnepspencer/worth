@@ -16,6 +16,7 @@ use super::{
     CompletedPhysicalWalReclamationAction,
 };
 
+mod backend_role;
 mod classification;
 mod durability;
 mod result;
@@ -37,6 +38,13 @@ pub enum PhysicalWorkEffectFate {
 }
 
 pub enum PhysicalWorkSettlementEvidence {
+    /// Diagnostic acquisition only: never revokes serving health or grants repair.
+    Inspection {
+        physical: worth_store_physical_backend::ObservedArtifactInspectionRead,
+        bytes: Box<[u8]>,
+        scheduler: QueueExecutionOutcome,
+    },
+    InspectionDenied(ArtifactTreeFailure),
     NoEffect(PhysicalWorkNoEffectEvidence),
     Metadata {
         physical: CompletedArtifactMetadataRead,
@@ -195,37 +203,23 @@ impl PhysicalWorkSettlement {
 }
 
 impl PhysicalWorkSettlementEvidence {
-    pub(in crate::physical_runtime) const fn backend_role(&self) -> Option<MediaOperationRole> {
-        match self {
-            Self::NoEffect(_) | Self::StaleOrForeign => None,
-            Self::Metadata { .. } => Some(MediaOperationRole::ReadMetadata),
-            Self::Read { .. } => Some(MediaOperationRole::PositionedRead),
-            Self::Write { .. } | Self::Publication { .. } | Self::NewArtifact { .. } => {
-                Some(MediaOperationRole::PositionedWrite)
-            }
-            #[cfg(feature = "recovery-runtime-owner")]
-            Self::RecoveryStaging { physical, .. } => {
-                if physical.created().is_some() {
-                    Some(MediaOperationRole::PositionedWrite)
-                } else {
-                    Some(MediaOperationRole::PositionedRead)
-                }
-            }
-            Self::WalAppend { .. } | Self::WalSegmentCreate { .. } => {
-                Some(MediaOperationRole::PositionedWrite)
-            }
-            Self::WalBarrier { .. } => Some(MediaOperationRole::SynchronizeFileState),
-            Self::Checkpoint { physical, .. } => Some(physical.role()),
-            Self::WalReclamation { physical, .. } => Some(physical.role()),
-            Self::PublicationEffect { physical, .. } => {
-                Some(classification::publication::effect_role(physical.effect()))
-            }
-            Self::TerminalFailure(failure) => Some(failure.backend_role),
-        }
-    }
-
     pub const fn fate(&self) -> PhysicalWorkEffectFate {
         match self {
+            Self::Inspection {
+                physical,
+                scheduler,
+                ..
+            } => {
+                if physical.completed_bytes() == physical.range().length() as u64
+                    && physical.stable()
+                    && matches!(scheduler, QueueExecutionOutcome::Executed(_))
+                {
+                    PhysicalWorkEffectFate::ReadCompleted
+                } else {
+                    PhysicalWorkEffectFate::ReadIncomplete
+                }
+            }
+            Self::InspectionDenied(_) => PhysicalWorkEffectFate::ProvenNoEffect,
             Self::NoEffect(_) => PhysicalWorkEffectFate::ProvenNoEffect,
             Self::Metadata { .. } => PhysicalWorkEffectFate::ReadCompleted,
             Self::Read { .. } => PhysicalWorkEffectFate::ReadCompleted,
@@ -293,6 +287,8 @@ impl PhysicalWorkSettlementEvidence {
 
     pub const fn completed_payload_bytes(&self) -> u64 {
         match self {
+            Self::Inspection { physical, .. } => physical.completed_bytes(),
+            Self::InspectionDenied(_) => 0,
             Self::NoEffect(_) | Self::Metadata { .. } | Self::StaleOrForeign => 0,
             Self::Read { physical, .. } => physical.completed_bytes(),
             Self::Write { physical, .. } | Self::Publication { physical, .. } => {
@@ -316,6 +312,9 @@ impl PhysicalWorkSettlementEvidence {
         declared: PhysicalWorkRecoveryDisposition,
     ) -> PhysicalWorkRecoveryDisposition {
         match self {
+            Self::Inspection { .. } | Self::InspectionDenied(_) => {
+                PhysicalWorkRecoveryDisposition::NoEffect
+            }
             Self::TerminalFailure(failure) => failure.recovery,
             Self::StaleOrForeign => PhysicalWorkRecoveryDisposition::InspectionRequired,
             Self::NoEffect(_) => declared,

@@ -9,6 +9,18 @@ use crate::state::SignalBranchId;
 /// Library-native error type for signal graph operations.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignalError {
+    EvaluationStorageCapacityExhausted,
+    EvaluationStorageUnavailable,
+    SnapshotIndexUnavailable,
+    ConditionalEvaluationWorkExhausted {
+        maximum_visits: usize,
+    },
+    UpstreamDependencyWorkExhausted {
+        maximum_visits: usize,
+    },
+    WaiterResolutionWorkExhausted {
+        maximum_visits: usize,
+    },
     StaleHandle {
         node: NodeId,
         expected_generation: u32,
@@ -158,6 +170,20 @@ impl SignalError {
 impl fmt::Display for SignalError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::EvaluationStorageCapacityExhausted => write!(f, "evaluation storage capacity exhausted"),
+            Self::EvaluationStorageUnavailable => write!(f, "evaluation storage unavailable"),
+            Self::SnapshotIndexUnavailable => write!(f, "snapshot indexes are unavailable for retained evaluation"),
+            Self::ConditionalEvaluationWorkExhausted { maximum_visits } => write!(
+                f,
+                "conditional evaluation exhausted its {maximum_visits} work allowance"
+            ),
+            Self::UpstreamDependencyWorkExhausted { maximum_visits } => write!(
+                f, "upstream dependency traversal exhausted its {maximum_visits} edge visits"
+            ),
+            Self::WaiterResolutionWorkExhausted { maximum_visits } => write!(
+                f,
+                "output waiter resolution exceeded its {maximum_visits} visit allowance"
+            ),
             Self::StaleHandle {
                 node,
                 expected_generation,

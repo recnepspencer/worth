@@ -15,7 +15,7 @@ impl WorthQueryInvariantEnforcement {
     }
 }
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInstalledInvariantExecutionRequirement {
     slot: String,
     family: String,
@@ -25,6 +25,8 @@ pub struct WorthQueryInstalledInvariantExecutionRequirement {
     state_load_families: Vec<String>,
     max_state_facts: usize,
     max_work_units: u64,
+    application_invariant:
+        Option<crate::application_schema::WorthQueryInstalledApplicationInvariantDescriptor>,
 }
 
 impl WorthQueryInstalledInvariantExecutionRequirement {
@@ -59,6 +61,7 @@ impl WorthQueryInstalledInvariantExecutionRequirement {
             state_load_families,
             max_state_facts,
             max_work_units,
+            application_invariant: None,
         })
     }
 
@@ -94,8 +97,22 @@ impl WorthQueryInstalledInvariantExecutionRequirement {
         self.max_work_units
     }
 
+    pub(crate) fn with_application_invariant(
+        mut self,
+        descriptor: crate::application_schema::WorthQueryInstalledApplicationInvariantDescriptor,
+    ) -> Self {
+        self.application_invariant = Some(descriptor);
+        self
+    }
+
+    pub fn application_invariant(
+        &self,
+    ) -> Option<&crate::application_schema::WorthQueryInstalledApplicationInvariantDescriptor> {
+        self.application_invariant.as_ref()
+    }
+
     pub(crate) fn canonical_parts(&self) -> Vec<String> {
-        [
+        let mut parts = [
             vec![
                 self.slot.clone(),
                 self.family.clone(),
@@ -107,7 +124,12 @@ impl WorthQueryInstalledInvariantExecutionRequirement {
             ],
             self.state_load_families.clone(),
         ]
-        .concat()
+        .concat();
+        if let Some(invariant) = &self.application_invariant {
+            parts.push("installed-application-invariant".to_owned());
+            parts.extend(invariant.canonical_parts());
+        }
+        parts
     }
 }
 

@@ -1,10 +1,8 @@
-use std::collections::BTreeSet;
-
 /// Dirty impact for one domain.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DomainImpact<I: Copy + Ord> {
     global: bool,
-    scoped: BTreeSet<I>,
+    scoped: im::OrdSet<I>,
 }
 
 impl<I: Copy + Ord> DomainImpact<I> {
@@ -12,7 +10,7 @@ impl<I: Copy + Ord> DomainImpact<I> {
     pub fn empty() -> Self {
         Self {
             global: false,
-            scoped: BTreeSet::new(),
+            scoped: im::OrdSet::new(),
         }
     }
 

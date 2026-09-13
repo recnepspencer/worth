@@ -29,15 +29,18 @@ where
     T: Copy + Ord,
 {
     pub fn config(&self) -> &SignalRuntimeConfig<T> {
+        self.assert_construction_graph_access();
         &self.config
     }
 
     pub fn config_mut(&mut self) -> &mut SignalRuntimeConfig<T> {
+        self.assert_construction_graph_access();
         self.config.sync_graph_capacity(&self.graph);
         &mut self.config
     }
 
     pub fn graph(&self) -> &SignalGraph {
+        self.assert_construction_graph_access();
         &self.graph
     }
 
@@ -78,11 +81,13 @@ where
     }
 
     pub fn validate_schema_bindings(&self) -> Result<(), crate::data::error::SignalError> {
+        self.assert_construction_graph_access();
         self.graph
             .validate_schema_bindings_against(&self.schema_registry)
     }
 
     pub fn validate_merge_semantics(&self) -> Result<(), crate::data::error::SignalError> {
+        self.assert_construction_graph_access();
         self.graph.validate_merge_semantics_against(
             &self.schema_registry,
             &self.merge_strategy_registry,
@@ -100,19 +105,34 @@ where
     }
 
     pub fn derive_evaluation_strategy(&self) -> EvaluationStrategy {
+        self.assert_construction_graph_access();
         self.graph.derive_evaluation_strategy()
     }
 
     pub fn graph_mut(&mut self) -> SignalGraphMut<'_, D, I, E, Ctx, T> {
+        self.assert_construction_graph_access();
         self.config.sync_graph_capacity(&self.graph);
         SignalGraphMut { runtime: self }
     }
 
     pub fn clear_live_branch_mutation_residue(&mut self) {
+        self.assert_construction_graph_access();
         self.graph.clear_branch_mutation_nodes();
     }
 
+    pub(in crate::logic::transaction::runtime::state) fn assert_construction_graph_access(&self) {
+        self.assert_construction_state_access();
+    }
+
+    pub(in crate::logic::transaction::runtime::state) fn assert_construction_state_access(&self) {
+        assert!(
+            !self.owner_services.is_sealed(),
+            "legacy runtime state access is unavailable after owner-service sealing"
+        );
+    }
+
     pub fn checkpoint(&self) -> &CheckpointRuntime<D, I> {
+        self.assert_construction_state_access();
         &self.checkpoint
     }
 
@@ -121,6 +141,10 @@ where
     }
 
     pub fn event_bus_mut(&mut self) -> &mut EventBus<E, D, Ctx> {
+        assert!(
+            !self.owner_services.is_sealed(),
+            "event subscribers cannot be configured after owner-service sealing"
+        );
         self.event_bus
             .set_telemetry_capture(self.graph.captures_observation_surface(
                 crate::logic::transaction::SignalObservationSurface::OptionalTelemetry,
@@ -133,10 +157,15 @@ where
     }
 
     pub fn observations_mut(&mut self) -> &mut RuntimeObservationRegistry<D, I, E, Ctx, T> {
+        assert!(
+            !self.owner_services.is_sealed(),
+            "observation listeners cannot be configured after owner-service sealing"
+        );
         &mut self.observations
     }
 
     pub fn telemetry(&self) -> &RuntimeTelemetry {
+        self.assert_construction_state_access();
         &self.telemetry
     }
 

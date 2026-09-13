@@ -6,6 +6,7 @@ use super::{ExecutionBasisDenial, RecoveryStagingCommandPlan};
 pub(super) fn exact_commands(
     frames: impl IntoIterator<Item = PersistedPhysicalRecoveryFrame>,
     manifests: impl IntoIterator<Item = (RecordArtifactFile, Box<[u8]>)>,
+    source_artifacts: &[RecordArtifactFile],
 ) -> Result<Box<[RecoveryStagingCommandPlan]>, ExecutionBasisDenial> {
     let mut grouped = std::collections::BTreeMap::<
         RecordArtifactFile,
@@ -30,10 +31,10 @@ pub(super) fn exact_commands(
             }
             bytes.extend_from_slice(&range);
         }
-        push(&mut commands, artifact, bytes.into())?;
+        push(&mut commands, artifact, bytes.into(), source_artifacts)?;
     }
     for (artifact, bytes) in manifests {
-        push(&mut commands, artifact, bytes)?;
+        push(&mut commands, artifact, bytes, source_artifacts)?;
     }
     commands.sort_by_key(|command| command.artifact);
     for (ordinal, command) in commands.iter_mut().enumerate() {
@@ -46,8 +47,12 @@ fn push(
     commands: &mut Vec<RecoveryStagingCommandPlan>,
     artifact: RecordArtifactFile,
     bytes: Box<[u8]>,
+    source_artifacts: &[RecordArtifactFile],
 ) -> Result<(), ExecutionBasisDenial> {
-    if bytes.is_empty() || commands.iter().any(|command| command.artifact == artifact) {
+    if bytes.is_empty()
+        || source_artifacts.contains(&artifact)
+        || commands.iter().any(|command| command.artifact == artifact)
+    {
         return Err(ExecutionBasisDenial::Invalid);
     }
     commands.push(RecoveryStagingCommandPlan {
@@ -61,6 +66,8 @@ fn push(
 
 #[cfg(test)]
 mod tests {
+    use super::ExecutionBasisDenial;
+
     use worth_store_physical_format::{
         PersistedPhysicalDataFrameSubject, PersistedPhysicalRecoveryFrame, PhysicalGeneration,
         PhysicalGenerationAuthority, PhysicalPageId, PhysicalSegmentId, RecordArtifactFile,
@@ -81,12 +88,31 @@ mod tests {
             frame(&authority, segment, generation, artifact, 2, 4, b"redo"),
         ];
 
-        let commands = super::exact_commands(frames, []).unwrap();
+        let commands = super::exact_commands(frames, [], &[]).unwrap();
 
         assert_eq!(commands.len(), 1);
         assert_eq!(commands[0].artifact(), artifact);
         assert_eq!(commands[0].bytes(), b"baseredo");
         assert_eq!(commands[0].byte_count(), 8);
+    }
+
+    #[test]
+    fn source_artifact_cannot_be_reused_as_a_recovery_staging_command() {
+        let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
+        let segment = PhysicalSegmentId::from_raw(7).unwrap();
+        let generation = PhysicalGeneration::from_raw(3).unwrap();
+        let artifact = RecordArtifactFile::Segment {
+            segment: 7,
+            generation: 3,
+        };
+        let frames = [frame(
+            &authority, segment, generation, artifact, 1, 0, b"base",
+        )];
+
+        assert_eq!(
+            super::exact_commands(frames, [], &[artifact]),
+            Err(ExecutionBasisDenial::Invalid)
+        );
     }
 
     fn frame(

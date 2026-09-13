@@ -17,7 +17,7 @@ fn compile_capability_does_not_widen_the_installed_effect_program() {
         .installed_operation(MultiTouchOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -82,7 +82,7 @@ fn entity_from_another_admitted_scope_cannot_become_an_effect_target() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,

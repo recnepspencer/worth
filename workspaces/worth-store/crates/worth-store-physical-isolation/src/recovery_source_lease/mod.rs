@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use sha2::{Digest, Sha256};
 
 mod bootstrap_lease;
+mod bootstrap_source;
 mod directory_durability;
 mod lease_release;
 mod record;
@@ -12,6 +13,12 @@ mod source_artifact_path;
 mod tests;
 
 pub use bootstrap_lease::{BootstrapReachabilityLease, ResolvedBootstrapSourceCut};
+pub use bootstrap_source::{
+    BootstrapSourceArtifact, BootstrapSourceArtifactFamily, BootstrapSourceEvidenceBinding,
+    BootstrapSourceFrontier, BootstrapSourceResolutionCounters, BootstrapSourceResolutionDenial,
+    BootstrapSourceResolutionRequest, PhysicalIsolationBootstrapSourceOwner,
+    ResolvedBootstrapRecoverySourceCut,
+};
 use directory_durability::sync_directory;
 use lease_release::release_lease;
 pub use lease_release::RecoverySourceLeaseReleaseReceipt;
@@ -202,7 +209,7 @@ impl RecoverySourceLeaseRegistry {
 
     pub fn admit_bootstrap_source_cut(
         &self,
-        resolved: worth_store_recovery_physics::ResolvedBootstrapRecoverySourceCut,
+        resolved: ResolvedBootstrapRecoverySourceCut,
     ) -> Result<ResolvedBootstrapSourceCut, RecoverySourceLeaseDenial> {
         let artifact_names = resolved
             .artifact_paths()

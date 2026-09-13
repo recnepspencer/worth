@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
     WorthQueryApplicationCommitPreparationRequest, WorthQueryRunningApplicationCommit,
 };
 use crate::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::{
-    retained_status_program, RetentionMutationBreadth,
+    retained_status_program, RetentionMutationBreadth, RETAINED_ACCOUNT_OUTPUT,
 };
 use crate::domain_computation::primary_graph::tests::application_attempt::{
     authenticated_principal, idempotency, resolved_account,
@@ -68,6 +68,15 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
     assert!(executed.is_same_authoritative_commit(&recovered));
     assert_eq!(executed.retained_preimage(), recovered.retained_preimage());
     assert_eq!(executed.dispatch_outbox(), recovered.dispatch_outbox());
+    let executed_output = executed
+        .output_correspondence()
+        .entity(RETAINED_ACCOUNT_OUTPUT)
+        .expect("fresh receipt must retain the bound output role");
+    let recovered_output = recovered
+        .output_correspondence()
+        .entity(RETAINED_ACCOUNT_OUTPUT)
+        .expect("idempotent receipt must recover the same output role");
+    assert_eq!(executed_output.entity_id(), recovered_output.entity_id());
     assert_eq!(executed.terminal().attempt_resources_released(), Some(true));
     assert_eq!(
         recovered.terminal().attempt_resources_released(),
@@ -183,12 +192,12 @@ fn stale_read_set_cleanup_preserves_the_interleaved_peer() {
         &world.application,
         progress_application_commit(&world.application, victim),
     );
-    assert!(matches!(
+    crate::domain_computation::primary_graph::tests::application_attempt::assert_product_basis_stale(
         victim,
-        WorthQueryApplicationCommitOutcome::Stale(_)
-    ));
+        "the interleaved victim bound to the product before the winner",
+    );
     assert_only_peer_remains(&world, baseline, both_attempts);
-    finish_peer(&world, peer, baseline, PeerExpectation::Stale);
+    finish_peer(&world, peer, baseline, PeerExpectation::ProductBasisStale);
 }
 
 #[test]
@@ -219,10 +228,10 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
         &world.application,
         progress_application_commit(&world.application, victim),
     );
-    assert!(matches!(
-        victim,
-        WorthQueryApplicationCommitOutcome::Cancelled
-    ));
+    assert!(
+        matches!(victim, WorthQueryApplicationCommitOutcome::Cancelled),
+        "cancelled victim must remain cancelled, got {victim:?}"
+    );
     assert_only_peer_remains(&world, baseline, both_attempts);
     finish_peer(&world, peer, baseline, PeerExpectation::Committed);
 }
@@ -315,8 +324,11 @@ fn finish_peer(
                 WorthQueryApplicationCommitTerminalKind::Recovered
             );
         }
-        (PeerExpectation::Stale, WorthQueryApplicationCommitOutcome::Stale(stale)) => {
-            assert!(stale.stale_fact_count() > 0);
+        (PeerExpectation::ProductBasisStale, outcome) => {
+            crate::domain_computation::primary_graph::tests::application_attempt::assert_product_basis_stale(
+                outcome,
+                "the interleaved peer bound to the product before the winner",
+            );
         }
         (expected, actual) => panic!("peer must reach {expected:?}, got {actual:?}"),
     }
@@ -328,7 +340,7 @@ fn finish_peer(
 enum PeerExpectation {
     Committed,
     AlreadyCommitted,
-    Stale,
+    ProductBasisStale,
 }
 
 fn start(

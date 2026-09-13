@@ -11,4 +11,4 @@ pub use context::{
 };
 pub use lane::{physical_isolation_lanes, PhysicalIsolationHarnessLane};
 pub use observer::{observe_physical_isolation_trace, PhysicalIsolationTraceFixtures};
-pub use replay::{assemble_physical_isolation_replay_bundle, physical_isolation_coverage_matrix};
+pub use replay::assemble_physical_isolation_replay_bundle;

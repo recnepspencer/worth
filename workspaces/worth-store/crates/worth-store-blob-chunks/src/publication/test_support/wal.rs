@@ -1,23 +1,19 @@
-use worth_proof::TransitionOutcome;
-use worth_store_physical_backend::{BackendDurabilityProfile, SimulatedStrictDurableProfile};
-use worth_store_recovery_physics::{
-    CrashBoundaryLayoutReport, LogSequenceNumber, PartialPublicationCrashEdge,
-    PartialPublicationReplayedCrashEdge, RecoveryCheckpointRecordSecurityMetadataEnvelope,
-    RecoveryCheckpointRecordSecurityMetadataIdentity, RecoveryEntryAdmission,
-    RecoveryReplayEntryGate, RecoveryRootSecurityMetadataEnvelope,
-    RecoverySecurityScopePropagation, RecoveryWalRecordSecurityMetadataEnvelope,
-    RecoveryWalRecordSecurityMetadataIdentity, WalAppendObservationScope, WalAppendReceipt,
-    WalLsnRange, WalSegmentGeneration, WalSegmentId,
+use worth_store_physical_backend::{
+    BackendDurabilityProfile, SimulatedStrictDurableProfile, WalAppendObservationScope,
+    WalAppendReceipt,
 };
-use worth_store_security::{
-    admit_store_security_scope, StoreAdmittedSecurityScope, StoreAuthenticityRequirement,
-    StoreCustodyPosture, StoreKeyScope, StoreKeyVersionPosture, StoreLegacySecurityPosture,
-    StoreSecurityScopeAdmissionExpectation, StoreSecurityScopeAdmissionRequest, StoreTenantScope,
+use worth_store_wal::{
+    LogSequenceNumber, PublicationDeclaration, WalFramePublicationScope, WalLsnRange,
+    WalSegmentGeneration, WalSegmentId,
 };
-use worth_store_wal::{PublicationDeclaration, WalFramePublicationScope};
 
-use crate::lifecycle::generation_registry_test_support::current_authority;
 use crate::publication::evidence::identity::BlobPublicationRecoveryOperationDigest;
+use crate::publication::evidence::BlobPublicationCrashEdge;
+use crate::publication::{
+    BlobPublicationBeforeWalReplayRead, BlobPublicationCrashBoundaryReport,
+    BlobPublicationReplayReadArtifact, BlobPublicationReplayReadDenial,
+    BlobPublicationReplayedCrashEdge,
+};
 use crate::BlobPublicationPreWalReplayEvidence;
 
 pub(crate) fn durable_wal_publication(frame_digest: &str) -> PublicationDeclaration {
@@ -32,7 +28,9 @@ pub(crate) fn durable_wal_publication(frame_digest: &str) -> PublicationDeclarat
     PublicationDeclaration::wal_frame(scope)
 }
 
-pub(crate) fn replayable_wal_classification(frame_digest: &str) -> CrashBoundaryLayoutReport {
+pub(crate) fn replayable_wal_classification(
+    frame_digest: &str,
+) -> BlobPublicationCrashBoundaryReport {
     let scope = WalAppendObservationScope::new(
         WalSegmentId::new(7).unwrap(),
         WalSegmentGeneration::new(1).unwrap(),
@@ -47,56 +45,73 @@ pub(crate) fn replayable_wal_classification(frame_digest: &str) -> CrashBoundary
         SimulatedStrictDurableProfile::REQUIRED_BARRIERS,
         None,
     );
-    CrashBoundaryLayoutReport::admit_crash_edge(
-        PartialPublicationCrashEdge::after_durability_before_ack(receipt),
+    BlobPublicationCrashBoundaryReport::admit_crash_edge(
+        BlobPublicationCrashEdge::after_durability_before_ack(receipt),
     )
     .expect("phase-22 crash report should admit replayable WAL evidence")
 }
 
 pub(crate) fn pre_wal_replay_edge(
     operation_digest: &BlobPublicationRecoveryOperationDigest,
-) -> PartialPublicationReplayedCrashEdge {
+) -> BlobPublicationReplayedCrashEdge {
     with_recovery_replay_entry(operation_digest.as_str(), |replay_entry| {
         let artifact = replay_entry
-            .read_partial_publication_before_wal_append()
+            .read_blob_publication_before_wal_append()
             .expect("test recovery entry carries protected before-WAL replay bytes");
-        PartialPublicationReplayedCrashEdge::from_replay_read_artifact(artifact)
+        BlobPublicationReplayedCrashEdge::from_replay_read_artifact(artifact)
             .expect("test pre-wal replay witness should admit through production readmission")
     })
 }
 
-pub(crate) fn with_recovery_entry<R>(
-    operation_digest: &str,
-    run: impl FnOnce(RecoveryEntryAdmission<'_>) -> R,
-) -> R {
-    worth_store_test_support::with_admitted_recovery_partial_publication_entry(
-        operation_digest,
-        run,
-    )
+pub(crate) struct RecoveryReplayReadProbe {
+    entry_digest: String,
+    replay_read: Option<BlobPublicationBeforeWalReplayRead>,
 }
 
 pub(crate) fn with_recovery_replay_entry<R>(
     operation_digest: &str,
-    run: impl FnOnce(RecoveryReplayEntryGate<'_>) -> R,
+    run: impl FnOnce(RecoveryReplayReadProbe) -> R,
 ) -> R {
-    with_recovery_entry(operation_digest, |recovery_entry| {
-        run(replay_entry_from_recovery_entry(
-            operation_digest,
-            recovery_entry,
-        ))
+    let replay_read = BlobPublicationBeforeWalReplayRead::from_admitted_crash_edge(
+        BlobPublicationCrashEdge::before_wal_append(operation_digest),
+    )
+    .expect("test recovery entry carries admitted before-WAL replay bytes");
+    run(RecoveryReplayReadProbe {
+        entry_digest: operation_digest.to_owned(),
+        replay_read: Some(replay_read),
     })
 }
 
 pub(crate) fn with_generic_recovery_replay_entry<R>(
     operation_digest: &str,
-    run: impl FnOnce(RecoveryReplayEntryGate<'_>) -> R,
+    run: impl FnOnce(RecoveryReplayReadProbe) -> R,
 ) -> R {
-    worth_store_test_support::with_admitted_recovery_entry(operation_digest, |recovery_entry| {
-        run(replay_entry_from_recovery_entry(
-            operation_digest,
-            recovery_entry,
-        ))
+    run(RecoveryReplayReadProbe {
+        entry_digest: operation_digest.to_owned(),
+        replay_read: None,
     })
+}
+
+impl RecoveryReplayReadProbe {
+    pub(crate) fn read_blob_publication_before_wal_append(
+        &self,
+    ) -> Result<BlobPublicationReplayReadArtifact, BlobPublicationReplayReadDenial> {
+        let Some(replay_read) = self.replay_read.clone() else {
+            return Err(BlobPublicationReplayReadDenial::NotBeforeWalAppend {
+                actual_operation_digest: None,
+            });
+        };
+        Ok(replay_read.into_replay_read_artifact(self.entry_digest.clone()))
+    }
+
+    pub(crate) fn read_blob_publication_checkpoint_cutover(
+        &self,
+        _operation_digest: &str,
+    ) -> Result<BlobPublicationReplayReadArtifact, BlobPublicationReplayReadDenial> {
+        Err(BlobPublicationReplayReadDenial::NotBeforeWalAppend {
+            actual_operation_digest: None,
+        })
+    }
 }
 
 pub(crate) fn chunk_write_replay_evidence(
@@ -107,70 +122,4 @@ pub(crate) fn chunk_write_replay_evidence(
     );
     BlobPublicationPreWalReplayEvidence::from_chunk_write_replay(digest, &replay)
         .expect("chunk-write replay evidence should admit")
-}
-
-fn replay_entry_from_recovery_entry<'runtime>(
-    operation_digest: &str,
-    recovery_entry: RecoveryEntryAdmission<'runtime>,
-) -> RecoveryReplayEntryGate<'runtime> {
-    let admitted_scope = recovery_security_scope(operation_digest);
-    let wal_record = RecoveryWalRecordSecurityMetadataEnvelope::from_admitted_scope(
-        RecoveryWalRecordSecurityMetadataIdentity::new(7),
-        &admitted_scope,
-        StoreKeyVersionPosture::Current,
-        StoreLegacySecurityPosture::NativeScoped,
-    );
-    let checkpoint_record = RecoveryCheckpointRecordSecurityMetadataEnvelope::from_admitted_scope(
-        RecoveryCheckpointRecordSecurityMetadataIdentity::new(1),
-        &admitted_scope,
-        StoreKeyVersionPosture::Current,
-        StoreLegacySecurityPosture::NativeScoped,
-    );
-    let recovery_root = RecoveryRootSecurityMetadataEnvelope::from_recovery_entry(
-        &recovery_entry,
-        &admitted_scope,
-        StoreKeyVersionPosture::Current,
-        StoreLegacySecurityPosture::NativeScoped,
-    );
-    let security_scope = match RecoverySecurityScopePropagation::admit_required(
-        Some(&wal_record),
-        Some(&checkpoint_record),
-        Some(&recovery_root),
-        &recovery_entry,
-    ) {
-        TransitionOutcome::Success(security_scope) => security_scope,
-        outcome => panic!("recovery security scope should propagate: {outcome:?}"),
-    };
-    match RecoveryReplayEntryGate::before_source_precedence(recovery_entry, security_scope) {
-        TransitionOutcome::Success(replay_entry) => replay_entry,
-        outcome => panic!("recovery replay entry gate should admit: {outcome:?}"),
-    }
-}
-
-fn recovery_security_scope(operation_digest: &str) -> StoreAdmittedSecurityScope {
-    let authority = current_authority(
-        &format!("{operation_digest}.recovery-replay-scope"),
-        "recovery-replay",
-    );
-    let key_scope = StoreKeyScope::RepairScopeEnvelope;
-    let tenant_scope = StoreTenantScope::RepairBlastRadius;
-    let authenticity = StoreAuthenticityRequirement::required(
-        worth_store_security::StoreAuthenticityRequirementClass::AuthenticatedRepairRead,
-    );
-    let custody = StoreCustodyPosture::InternalStoreCustody;
-    let expectation =
-        StoreSecurityScopeAdmissionExpectation::new(key_scope, tenant_scope, authenticity, custody);
-    let request = StoreSecurityScopeAdmissionRequest::new(
-        &authority,
-        key_scope,
-        StoreKeyVersionPosture::Current,
-        tenant_scope,
-        authenticity,
-        custody,
-        expectation,
-    );
-    match admit_store_security_scope(request) {
-        TransitionOutcome::Success(admitted_scope) => admitted_scope,
-        outcome => panic!("recovery security scope should admit: {outcome:?}"),
-    }
 }

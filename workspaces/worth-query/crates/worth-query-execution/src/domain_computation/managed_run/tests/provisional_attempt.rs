@@ -128,7 +128,7 @@ fn proposal_dimensions_and_symbol_order_are_checked_before_provider_staging() {
     let state = state();
     let (mut running, graph) = provisional_run(Arc::clone(&state));
     let (staged, fresh) = staged_with_fresh_read_set(&mut running, &graph);
-    let basis = proposal_parts(staged.plan().basis_identity(), 1);
+    let basis = proposal_parts(1);
     let effect_authority = staged.effect_authority();
     let first = effect_authority
         .admit_proposal_basis(&fresh, basis.clone())
@@ -174,7 +174,7 @@ fn proposal_dimensions_and_symbol_order_are_checked_before_provider_staging() {
 
     let wrong_generation = staged
         .effect_authority()
-        .admit_proposal_basis(&fresh, proposal_parts(staged.plan().basis_identity(), 2))
+        .admit_proposal_basis(&fresh, proposal_parts(2))
         .unwrap();
     let program = staged
         .effect_authority()
@@ -196,6 +196,44 @@ fn proposal_dimensions_and_symbol_order_are_checked_before_provider_staging() {
     );
     assert_eq!(state.lock().unwrap().stage_calls, 0);
     cleanup(running);
+}
+
+#[test]
+fn proposal_from_a_peer_session_cannot_be_repaired_by_equal_rendered_basis() {
+    let first_state = state();
+    let (mut first_run, first_graph) = provisional_run(Arc::clone(&first_state));
+    let (first_staged, first_fresh) = staged_with_fresh_read_set(&mut first_run, &first_graph);
+    let proposal = first_staged
+        .effect_authority()
+        .admit_proposal_basis(&first_fresh, proposal_parts(1))
+        .expect("the originating session admits its proposal");
+
+    let second_state = state();
+    let (mut second_run, second_graph) = provisional_run(Arc::clone(&second_state));
+    let (second_staged, second_fresh) = staged_with_fresh_read_set(&mut second_run, &second_graph);
+    assert_eq!(
+        first_staged.plan().basis_identity(),
+        second_staged.plan().basis_identity()
+    );
+    let failure = second_staged
+        .effect_authority()
+        .lower_provisional_program(
+            &second_fresh,
+            [effect_step(WorthQueryProvisionalEffectAction::Replace {
+                target_identity: "base".into(),
+            })
+            .with_proposal_basis(proposal)],
+        )
+        .err()
+        .expect("a peer terminal binding cannot adopt the proposal");
+    assert_eq!(
+        failure.kind(),
+        WorthQueryProvisionalDenialKind::ProposalBasisMismatch
+    );
+    let _ = first_staged.abort();
+    let _ = second_staged.abort();
+    cleanup(first_run);
+    cleanup(second_run);
 }
 
 #[derive(Clone, Copy)]
@@ -280,16 +318,12 @@ pub(super) fn state() -> Arc<Mutex<ProvisionalProviderState>> {
     }))
 }
 
-fn proposal_parts(
-    semantic_basis_identity: &str,
-    target_generation: u64,
-) -> WorthQueryProvisionalProposalBasisParts {
+fn proposal_parts(target_generation: u64) -> WorthQueryProvisionalProposalBasisParts {
     WorthQueryProvisionalProposalBasisParts {
         source_occurrence: "source-1".to_owned(),
         search_occurrence: "search-1".to_owned(),
         candidate_identity: "candidate-a".to_owned(),
         transformation_evidence: "transform-1".to_owned(),
-        semantic_basis_identity: semantic_basis_identity.to_owned(),
         target_generation,
         installed_policy_identity: "policy-1".to_owned(),
         correspondence_identity: "correspondence-1".to_owned(),
@@ -312,7 +346,6 @@ fn changed_proposal_dimensions(
     changed!(search_occurrence, "search-2".to_owned());
     changed!(candidate_identity, "candidate-b".to_owned());
     changed!(transformation_evidence, "transform-2".to_owned());
-    changed!(semantic_basis_identity, "other-basis".to_owned());
     changed!(target_generation, 2);
     changed!(installed_policy_identity, "policy-2".to_owned());
     changed!(correspondence_identity, "correspondence-2".to_owned());

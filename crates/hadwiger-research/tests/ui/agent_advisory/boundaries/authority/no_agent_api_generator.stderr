@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `generate_with_openai_api` found for struct `hadwiger_research::facade::AgentExplorationBatch` in the current scope
- --> tests/ui/agent_advisory/boundaries/authority/no_agent_api_generator.rs:4:36
-  |
-4 |     let _ = AgentExplorationBatch::generate_with_openai_api("prompt");
-  |                                    ^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::AgentExplorationBatch`

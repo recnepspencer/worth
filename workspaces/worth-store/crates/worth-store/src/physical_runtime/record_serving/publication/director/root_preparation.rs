@@ -122,12 +122,6 @@ impl RecordPublicationDirector {
                 })
             }
         };
-        let frontier = self
-            .preparation
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .allocation_frontier
-            .clone();
         let candidate = RecordArtifactFile::CatalogCandidate {
             publication: candidate_publication,
         };
@@ -144,7 +138,6 @@ impl RecordPublicationDirector {
                 access: self.access,
                 current_root: &current_root,
                 current_free_space: &current_free_space,
-                frontier: &frontier,
                 placement,
                 capacity_transition,
             },

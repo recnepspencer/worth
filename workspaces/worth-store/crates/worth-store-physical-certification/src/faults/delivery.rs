@@ -277,12 +277,6 @@ const fn observed_boundary_satisfies_localization(
     matches!(
         (expected, actual_boundary),
         (
-            ExpectedFaultLocalization::PreDecodeBoundary,
-            ObservedFaultBoundary::PreDecodeIntegrityDenial { .. }
-        ) | (
-            ExpectedFaultLocalization::PhysicalIntegrityBoundary,
-            ObservedFaultBoundary::PhysicalIntegrityBoundary { .. }
-        ) | (
             ExpectedFaultLocalization::FreshRuntimeRecoveryBoundary,
             ObservedFaultBoundary::FreshRuntimeCrashRecovery { .. }
         ) | (

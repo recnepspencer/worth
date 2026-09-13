@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use worth_foundational::facade::{AspectKey, AspectValue, CanonicalFieldPath, StructAspectValue};
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct WorthQueryGraphReadRow {
     entity_identity: Arc<str>,
     aspect_values: Vec<(AspectKey, AspectValue)>,

@@ -317,3 +317,15 @@ fn trust_boundary_bridge_and_readmission_preserve_compatibility_truth_without_di
         readmitted.payload().fact_inventory()
     );
 }
+
+/// Native merge fixture shared by retained-replay storage proofs.
+pub(crate) fn emitted_merge_replay_event() -> crate::diagnostics::replay::ReplayEvent {
+    let (mut runtime, feature, main, _) = build_phase10_runtime();
+    runtime
+        .merge_raw()
+        .from(feature)
+        .into(main.clone())
+        .run()
+        .unwrap();
+    latest_branch_merge_event(&runtime, main.id)
+}

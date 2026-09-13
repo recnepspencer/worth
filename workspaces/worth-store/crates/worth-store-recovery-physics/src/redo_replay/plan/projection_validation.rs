@@ -1,3 +1,4 @@
+use super::projection_admission::{admit_projection, IntegrityAdmittedRecoveryProjection};
 use super::projection_materialization::{projected_record_bytes, validate_extent_closure};
 use super::*;
 use worth_store_physical_format::RecordArtifactFile;
@@ -5,8 +6,10 @@ use worth_store_physical_format::RecordArtifactFile;
 pub(super) fn validate_projection_semantics(
     records: &[PhysicalRedoRecord],
     projection: &PersistedPhysicalRecoveryProjection,
+    store: StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
-) -> Result<(), PhysicalRedoPlanningDenial> {
+) -> Result<Box<[super::projection_admission::AdmittedInlineFrame]>, PhysicalRedoPlanningDenial> {
+    let admitted = admit_projection(projection, store, format)?;
     validate_root_state(projection)?;
     if records.len() != projection.record_identities().len() {
         return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
@@ -19,17 +22,19 @@ pub(super) fn validate_projection_semantics(
             .collect::<Vec<_>>();
         if placements.len() != 1
             || placements[0].payload_bytes() != record.bytes().len() as u64
-            || projected_record_bytes(*identity, *placements[0], projection, format)?
-                != record.bytes()
+            || projected_record_bytes(*identity, *placements[0], &admitted)? != record.bytes()
         {
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
         }
     }
-    for frame in projection.frames() {
+    for (frame_index, frame) in projection.frames().iter().enumerate() {
         match frame.subject() {
             PersistedPhysicalDataFrameSubject::InlinePage(page) => {
-                let descriptors = inspect_inline_page_records(format, frame.bytes())
-                    .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
+                let descriptors = admitted
+                    .inline_frames()
+                    .iter()
+                    .find(|value| value.frame_index == frame_index)
+                    .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
                 let RecordArtifactFile::Segment {
                     segment: artifact_segment,
                     generation: artifact_generation,
@@ -37,7 +42,7 @@ pub(super) fn validate_projection_semantics(
                 else {
                     return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
                 };
-                for descriptor in descriptors {
+                for (descriptor, _) in &descriptors.records {
                     let exact = projection
                         .placements()
                         .iter()
@@ -50,9 +55,8 @@ pub(super) fn validate_projection_semantics(
                                     && value.page() == page.page_id()
                                     && value.page_generation() == page.generation().get()
                                     && value.slot() == descriptor.slot()
-                                    && value.slot_generation() == descriptor.slot_generation().get()
-                                    && value.payload_bytes()
-                                        == u64::from(descriptor.payload_bytes())
+                                    && value.slot_generation() == descriptor.slot_generation()
+                                    && value.payload_bytes() == descriptor.payload_bytes()
                             }
                             CurrentPhysicalRecordPlacement::Extent(_) => false,
                         });
@@ -71,46 +75,17 @@ pub(super) fn validate_projection_semantics(
                     return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
                 }
             }
-            PersistedPhysicalDataFrameSubject::ExtentChunk(chunk) => {
-                let (_, decoded_format) = decode_extent_chunk(frame.bytes(), chunk)
-                    .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
-                if decoded_format != format {
-                    return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
-                }
-            }
+            PersistedPhysicalDataFrameSubject::ExtentChunk(_) => {}
         }
     }
-    for manifest in projection.manifests() {
-        let (decoded, decoded_format) = DurableExtentManifest::decode(manifest.bytes())
-            .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
-        if decoded_format != format
-            || manifest.artifact()
-                != (worth_store_physical_format::RecordArtifactFile::ExtentManifest {
-                    extent: decoded.extent().get(),
-                    generation: decoded.generation(),
-                })
-            || !projection
-                .placements()
-                .iter()
-                .any(|placement| match placement {
-                    CurrentPhysicalRecordPlacement::Extent(value) => {
-                        value.record() == decoded.record()
-                            && value.extent() == decoded.extent()
-                            && value.extent_generation() == decoded.generation()
-                    }
-                    CurrentPhysicalRecordPlacement::Inline(_) => false,
-                })
-        {
-            return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
-        }
-    }
-    validate_bidirectional_closure(projection, format)?;
-    validate_resulting_lsns(records, projection)
+    validate_bidirectional_closure(projection, &admitted)?;
+    validate_resulting_lsns(records, projection, &admitted)?;
+    Ok(admitted.into_inline_frames())
 }
 
 fn validate_bidirectional_closure(
     projection: &PersistedPhysicalRecoveryProjection,
-    format: PhysicalRecordFormatDeclaration,
+    admitted: &IntegrityAdmittedRecoveryProjection<'_>,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
     validate_segment_frame_cardinality(projection)?;
     for placement in projection.placements() {
@@ -123,21 +98,27 @@ fn validate_bidirectional_closure(
                         frame.subject()
                             == PersistedPhysicalDataFrameSubject::InlinePage(value.page_cell())
                     })
-                    .filter_map(|frame| inspect_inline_page_records(format, frame.bytes()).ok())
-                    .flatten()
-                    .filter(|descriptor| {
-                        descriptor.record() == value.record()
-                            && descriptor.slot() == value.slot()
-                            && descriptor.slot_generation().get() == value.slot_generation()
-                            && u64::from(descriptor.payload_bytes()) == value.payload_bytes()
+                    .filter_map(|frame| {
+                        projection
+                            .frames()
+                            .iter()
+                            .position(|candidate| core::ptr::eq(candidate, frame))
                     })
+                    .filter_map(|index| {
+                        admitted
+                            .inline_frames()
+                            .iter()
+                            .find(|value| value.frame_index == index)
+                    })
+                    .flat_map(|frame| frame.records.iter())
+                    .filter(|(descriptor, _)| *descriptor == *value)
                     .count();
                 if matching != 1 {
                     return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
                 }
             }
             CurrentPhysicalRecordPlacement::Extent(value) => {
-                validate_extent_closure(*value, projection, format)?;
+                validate_extent_closure(*value, admitted)?;
             }
         }
     }
@@ -241,8 +222,9 @@ fn validate_root_state(
 fn validate_resulting_lsns(
     records: &[PhysicalRedoRecord],
     projection: &PersistedPhysicalRecoveryProjection,
+    admitted: &IntegrityAdmittedRecoveryProjection<'_>,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
-    for frame in projection.frames() {
+    for (index, frame) in projection.frames().iter().enumerate() {
         let matching = records
             .iter()
             .filter(|record| {
@@ -253,13 +235,23 @@ fn validate_resulting_lsns(
             .map(|record| record.lsn().get())
             .max()
             .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
-        let kind = match frame.subject() {
-            PersistedPhysicalDataFrameSubject::InlinePage(_) => DurableFrameKind::InlinePage,
-            PersistedPhysicalDataFrameSubject::ExtentChunk(_) => DurableFrameKind::Extent,
+        let found = match frame.subject() {
+            PersistedPhysicalDataFrameSubject::InlinePage(_) => admitted
+                .inline_frames()
+                .iter()
+                .find(|value| value.frame_index == index)
+                .map(|value| value.page_lsn),
+            PersistedPhysicalDataFrameSubject::ExtentChunk(_) => admitted
+                .extent_chunks()
+                .iter()
+                .find(|value| value.frame_index == index)
+                .map(|value| value.page_lsn),
         };
-        let found = decode_data_frame_page_lsn(frame.bytes(), kind)
-            .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
-        if found.get() != matching {
+        if found
+            .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?
+            .get()
+            != matching
+        {
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
         }
     }

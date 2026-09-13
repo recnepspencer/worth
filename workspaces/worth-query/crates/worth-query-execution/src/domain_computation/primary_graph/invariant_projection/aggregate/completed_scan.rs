@@ -3,7 +3,7 @@
 use std::sync::{Arc, Mutex};
 
 use worth_foundational::facade::AspectValue;
-use worth_query_installation::facade::TypedApplicationSignedAggregateValue;
+use worth_query_installation::facade::ApplicationSignedAggregateValueBinding;
 
 use super::cache_resolution::UncachedAggregatePlan;
 use super::execution::AggregateWorkAccounting;
@@ -123,14 +123,20 @@ impl AggregateScanReader<'_, '_> {
 }
 
 impl CompletedAggregateScan {
-    pub(super) fn publish<Value>(
+    pub(super) fn publish<Binding>(
         self,
         cache: &Arc<Mutex<WorthQueryAggregateProjections>>,
         scope: &mut WorthQueryRealizedProjectionScope,
-    ) -> WorthQueryInvariantAggregate<Value>
+    ) -> Result<WorthQueryInvariantAggregate<Binding::Value>, WorthQueryInvariantAggregateDenial>
     where
-        Value: TypedApplicationSignedAggregateValue,
+        Binding: ApplicationSignedAggregateValueBinding,
     {
+        let value = Binding::decode_aggregate(self.sum).map_err(|_| {
+            denial(
+                WorthQueryInvariantAggregateDenialKind::InvalidScalar,
+                self.plan.field_member(),
+            )
+        })?;
         scope.record(self.plan.target());
         cache
             .lock()
@@ -142,10 +148,10 @@ impl CompletedAggregateScan {
                 self.sum,
                 self.source_count,
             );
-        WorthQueryInvariantAggregate {
-            value: Value::from_aggregate_i64(self.sum),
+        Ok(WorthQueryInvariantAggregate {
+            value,
             source_count: self.source_count,
-        }
+        })
     }
 }
 

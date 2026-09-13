@@ -396,8 +396,9 @@ line-cap checks, boundary enforcement, and agent-context checks prove:
 
 Milestone 9.17 receives stable package identity, declaration provenance,
 complete typed package records, and fresh readmission. It adds in-memory owner
-bases, branch-local MVCC, Runtime Bridge composite history/currentness, and
-Query carriage without adding persistence or moving package authority.
+bases, branch-local MVCC, installed Runtime Bridge correspondence, dedicated
+Runtime World composite history/currentness, and Query carriage without adding
+persistence or moving package authority.
 
 Worth Store integration later receives the same descriptive package archive
 as one input to physical application composition. Store defines continuous

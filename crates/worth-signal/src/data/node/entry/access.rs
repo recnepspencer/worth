@@ -84,23 +84,44 @@ impl NodeEntry {
 
     /// Whether this node is tombstoned.
     pub fn is_tombstoned(&self) -> bool {
-        self.warm.tombstoned
+        self.definition.tombstoned
     }
 
     /// Mark this node as tombstoned.
     #[cfg(test)]
     pub fn set_tombstoned(&mut self, tombstoned: bool) {
-        self.warm.tombstoned = tombstoned;
+        self.definition.tombstoned = tombstoned;
     }
 
     /// Per-node evaluation policy descriptor.
     pub fn get_eval_config(&self) -> &NodeEvaluationConfig {
-        &self.warm.eval_config
+        &self.definition.eval_config
     }
 
     /// Replace per-node evaluation policy descriptor.
     pub fn set_eval_config(&mut self, config: NodeEvaluationConfig) {
-        self.warm.eval_config = config.upgrade_legacy_output_equivalence();
+        self.definition.eval_config = config.upgrade_legacy_output_equivalence();
+    }
+
+    pub(crate) const fn conditional_contract_generation(&self) -> u64 {
+        self.definition.conditional_contract_generation
+    }
+
+    pub(crate) const fn conditional_contract_occurrence(&self) -> u64 {
+        self.definition.conditional_contract_occurrence
+    }
+
+    pub(crate) fn install_conditional_contract_occurrence(
+        &mut self,
+        occurrence: u64,
+    ) -> Option<u64> {
+        let next = self
+            .definition
+            .conditional_contract_generation
+            .checked_add(1)?;
+        self.definition.conditional_contract_generation = next;
+        self.definition.conditional_contract_occurrence = occurrence;
+        Some(next)
     }
 
     pub(crate) const fn pending_cause_set_id(

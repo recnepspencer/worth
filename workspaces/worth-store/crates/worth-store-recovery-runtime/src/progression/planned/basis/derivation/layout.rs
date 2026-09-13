@@ -10,18 +10,20 @@ pub(super) fn assemble(
     materialization: ProjectedMaterializationBasis,
     actions: StagingActionBasis,
 ) -> Result<RecoveryStagingLayoutPlan, ExecutionBasisDenial> {
+    let source_artifacts = selected_source_artifacts(selection, selected_source);
     let commands = super::super::command::exact_commands(
         materialization.frames.values().cloned(),
         materialization
             .manifests
             .values()
             .map(|manifest| (manifest.artifact(), manifest.bytes().into())),
+        &source_artifacts,
     )?;
     let write_bytes = commands.iter().try_fold(0_u64, |bytes, command| {
         bytes.checked_add(command.byte_count())
     });
     let write_bytes = write_bytes.ok_or(ExecutionBasisDenial::Invalid)?;
-    let base = base_image(selection, selected_source, pending, materialization);
+    let base = base_image(selection, pending, materialization, source_artifacts);
     Ok(RecoveryStagingLayoutPlan {
         source_generation: pending.source_generation,
         staging_generation: pending.staging_generation,
@@ -36,9 +38,9 @@ pub(super) fn assemble(
 
 fn base_image(
     selection: &PhysicalSourceSelection,
-    selected_source: &RecoverySelectedSourceInventory,
     pending: &PendingProjectionBasis<'_>,
     materialization: ProjectedMaterializationBasis,
+    source_artifacts: Box<[RecordArtifactFile]>,
 ) -> RecoveryBaseImagePlan {
     let ProjectedMaterializationBasis {
         frames: _,
@@ -61,10 +63,14 @@ fn base_image(
         .map(|(ordinal, placement)| base_action(ordinal, placement, &projected_records))
         .collect::<Vec<_>>()
         .into_boxed_slice();
-    let source_artifacts = selected_source_artifacts(selection, selected_source);
     RecoveryBaseImagePlan {
         selected_selector: selection.root().selected().selector(),
         selected_root: selection.root().selected().manifest().clone(),
+        selected_root_topology: selection
+            .page_facts()
+            .routing_topology()
+            .to_vec()
+            .into_boxed_slice(),
         destination_generation: pending.staging_generation,
         actions,
         segment_updates: segment_updates

@@ -15,6 +15,12 @@ pub(in crate::physical_runtime::record_serving) struct ServingRecordArtifacts<'m
 }
 
 impl<'media> ServingRecordArtifacts<'media> {
+    pub(in crate::physical_runtime::record_serving) fn resident_admission_context(
+        &self,
+    ) -> Option<crate::physical_runtime::integrity::ResidentAdmissionContext<'_>> {
+        self.reader.resident_admission_context()
+    }
+
     pub(in crate::physical_runtime::record_serving) fn new(
         media: &'media QualifiedFilesystemMedia,
         loader: &'media (dyn FrameLoadPort + Send + Sync),

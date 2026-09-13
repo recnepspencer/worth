@@ -13,8 +13,10 @@ pub use denial::{
     PhysicalSemanticBoundaryOutcome, SemanticVisibilityCannotMintPhysicalStability,
 };
 pub use foundational_roles::PhysicalSemanticBoundaryRoleEvidence;
+#[cfg(any(test, feature = "certification-authority"))]
+pub use physical_read_stability_authority::physical_read_stability_authority_for_certification_test;
 pub use physical_read_stability_authority::{
-    admit_physical_read_stability_authority, admit_post_compaction_read_stability_authority,
+    admit_post_compaction_read_stability_authority,
     admit_post_publication_read_stability_authority, PhysicalReadStabilityAuthority,
     PhysicalReadStabilityCorrelationBasis,
 };

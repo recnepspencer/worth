@@ -8,6 +8,7 @@ pub enum WorthQueryWorkflowStartDenialKind {
     ArtifactAuthority(crate::domain_installation::WorthQueryArtifactDenial),
     ConditionalExecution(worth_runtime_bridge::facade::BridgeConditionalDenialKind),
     ConditionalReentry(crate::domain_installation::WorthQueryConditionalAdmissionDenial),
+    ManagedRun(String),
 }
 
 #[derive(Debug)]

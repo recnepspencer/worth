@@ -14,15 +14,19 @@ fn operation_graph_capacity_denial_and_drop_return_exact_reservations() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_owned(),
@@ -36,7 +40,7 @@ fn operation_graph_capacity_denial_and_drop_return_exact_reservations() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let authorize = || {
-        world.application.authorize_operation(
+        world.selected_product().authorize_operation(
             &principal,
             &account,
             &operation,

@@ -1,7 +1,8 @@
 use std::path::Path;
 
+use crate::OfflinePhysicalArtifactFamily;
 use worth_store_physical_backend::{OfflineMediaConsistencyBasis, OfflineMediaFileIdentity};
-use worth_store_physical_format::{OfflinePhysicalArtifactFamily, PhysicalGenerationOwner};
+use worth_store_physical_format::PhysicalGenerationOwner;
 
 use super::OfflineInspectionCounters;
 

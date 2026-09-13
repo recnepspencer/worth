@@ -26,9 +26,14 @@ pub(super) fn admitted_family_for_store(
 
 #[test]
 fn corruption_assessment_adapts_physical_and_import_authority() {
-    let record =
-        super::readmission_test_support::authoritative_quarantine_record("classification-owner");
-    let quarantine = layout_corruption().assess_physical_quarantine(admitted_family(), record);
+    let observation = super::readmission_test_support::authoritative_quarantine_observation(
+        "classification-owner",
+    );
+    let quarantine = layout_corruption().assess_quarantine_observation(
+        admitted_family(),
+        observation.identity().clone(),
+        observation.class(),
+    );
     assert!(matches!(
         quarantine.view(),
         LayoutCorruptionView::Quarantined(witness) if witness.family() == family()
@@ -49,14 +54,16 @@ fn corruption_assessment_adapts_physical_and_import_authority() {
 fn corruption_owner_inventory_equals_ordinary_owner_outputs() {
     use std::collections::BTreeSet;
 
-    let record =
-        super::readmission_test_support::authoritative_quarantine_record("classification-matrix");
-    let quarantine = layout_corruption().assess_physical_quarantine(
+    let observation = super::readmission_test_support::authoritative_quarantine_observation(
+        "classification-matrix",
+    );
+    let quarantine = layout_corruption().assess_quarantine_observation(
         admitted_family_for_store("store.new.strategy"),
-        record.clone(),
+        observation.identity().clone(),
+        observation.class(),
     );
     let readmission = layout_corruption()
-        .require_record_backed_recovery_readmission(
+        .require_observation_bound_recovery_readmission(
             quarantine,
             &super::readmission_test_support::current_authority(
                 "store.new.strategy",
@@ -76,7 +83,11 @@ fn corruption_owner_inventory_equals_ordinary_owner_outputs() {
             )
             .case_id(),
         layout_corruption()
-            .assess_physical_quarantine(admitted_family(), record)
+            .assess_quarantine_observation(
+                admitted_family(),
+                observation.identity().clone(),
+                observation.class(),
+            )
             .case_id(),
         readmission.case_id(),
         layout_corruption()

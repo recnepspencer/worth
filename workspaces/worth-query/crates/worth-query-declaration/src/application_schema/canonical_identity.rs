@@ -4,9 +4,11 @@ use super::canonical_basis::{
     ApplicationSchemaCanonicalBasis, ApplicationSchemaCanonicalBasisBudgetDenial,
     ApplicationSchemaCanonicalBasisWork, APPLICATION_SCHEMA_DOMAIN,
 };
-use super::{ApplicationSchemaIdentity, ApplicationSchemaMember};
+use super::{
+    ApplicationSchemaContributionProvenance, ApplicationSchemaIdentity, ApplicationSchemaMember,
+};
 
-const RULE_VERSION: &str = "worth-query-application-schema-v11";
+const RULE_VERSION: &str = "worth-query-application-schema-v13";
 
 pub(super) struct ApplicationSchemaCanonicalHeader<'a> {
     pub owner: &'a str,
@@ -18,8 +20,9 @@ pub(super) struct ApplicationSchemaCanonicalHeader<'a> {
 pub(super) fn canonical_identity(
     header: ApplicationSchemaCanonicalHeader<'_>,
     members: &[ApplicationSchemaMember],
+    contributions: &[ApplicationSchemaContributionProvenance],
 ) -> ApplicationSchemaIdentity {
-    canonical_identity_with_limits(header, members, u64::MAX, u64::MAX)
+    canonical_identity_with_limits(header, members, contributions, u64::MAX, u64::MAX)
         .expect("ordinary schema construction uses an unbounded source observation")
         .0
 }
@@ -27,6 +30,7 @@ pub(super) fn canonical_identity(
 pub(super) fn canonical_identity_with_limits(
     header: ApplicationSchemaCanonicalHeader<'_>,
     members: &[ApplicationSchemaMember],
+    contributions: &[ApplicationSchemaContributionProvenance],
     maximum_source_bytes: u64,
     maximum_entries: u64,
 ) -> Result<
@@ -36,8 +40,10 @@ pub(super) fn canonical_identity_with_limits(
     ),
     ApplicationSchemaCanonicalBasisBudgetDenial,
 > {
-    let mut canonical = ApplicationSchemaCanonicalBasis::with_member_capacity_and_limits(
+    let contribution_entries = contribution_entry_capacity(contributions);
+    let mut canonical = ApplicationSchemaCanonicalBasis::with_capacity_and_limits(
         members.len(),
+        contribution_entries,
         maximum_source_bytes,
         maximum_entries,
     );
@@ -45,6 +51,7 @@ pub(super) fn canonical_identity_with_limits(
     canonical.text("header.name", header.name);
     canonical.u32("header.major", header.major);
     canonical.u32("header.minor", header.minor);
+    append_contributions(&mut canonical, contributions);
     canonical.usize("member-count", members.len());
     for (index, member) in members.iter().enumerate() {
         append_member(&mut canonical, index, member);
@@ -61,9 +68,44 @@ pub(super) fn canonical_identity_with_limits(
     Ok((ApplicationSchemaIdentity::from_canonical_basis(basis), work))
 }
 
+fn contribution_entry_capacity(contributions: &[ApplicationSchemaContributionProvenance]) -> usize {
+    contributions.iter().fold(1usize, |entries, contribution| {
+        entries
+            .saturating_add(2)
+            .saturating_add(contribution.member_ordinals().len())
+    })
+}
+
+fn append_contributions(
+    canonical: &mut ApplicationSchemaCanonicalBasis,
+    contributions: &[ApplicationSchemaContributionProvenance],
+) {
+    canonical.usize("contribution-count", contributions.len());
+    for (contribution_index, contribution) in contributions.iter().enumerate() {
+        canonical.text(
+            format!("contribution[{contribution_index}].identity"),
+            contribution.identity().as_str(),
+        );
+        canonical.usize(
+            format!("contribution[{contribution_index}].member-count"),
+            contribution.member_ordinals().len(),
+        );
+        for (member_index, ordinal) in contribution.member_ordinals().iter().enumerate() {
+            canonical.u32(
+                format!("contribution[{contribution_index}].member[{member_index}].ordinal"),
+                *ordinal,
+            );
+        }
+    }
+}
+
 mod member;
 use member::append_member;
 
 #[cfg(test)]
 #[path = "canonical_identity_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "canonical_identity_version_tests.rs"]
+mod version_tests;

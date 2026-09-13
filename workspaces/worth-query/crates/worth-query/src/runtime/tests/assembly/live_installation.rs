@@ -3,8 +3,7 @@ use super::super::support::*;
 #[test]
 fn runtime_live_declaration_denies_backend_admission_before_subscription_install() {
     let source_declarations = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(DenyingSchemaAdapter)
         .source_adapter(CountingSourceAdapter::new(source_declarations.clone()))
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -37,8 +36,7 @@ fn runtime_live_declaration_denies_backend_admission_before_subscription_install
 
 #[test]
 fn runtime_live_declaration_closes_active_subscription_when_source_declaration_fails() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::fail_declare())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -79,8 +77,7 @@ fn runtime_live_declaration_closes_active_subscription_when_source_declaration_f
 
 #[test]
 fn runtime_equivalent_live_declarations_share_active_lane_with_distinct_consumers() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -153,8 +150,7 @@ fn runtime_equivalent_live_declarations_share_active_lane_with_distinct_consumer
 #[test]
 fn runtime_live_declaration_denies_before_source_when_subscription_activation_rejects() {
     let source_declarations = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(CountingSourceAdapter::new(source_declarations.clone()))
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -188,8 +184,7 @@ fn runtime_live_declaration_denies_before_source_when_subscription_activation_re
 #[test]
 fn runtime_live_declaration_denies_when_admission_receipt_drifts_from_request() {
     let source_declarations = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(DriftingSchemaReceiptAdapter)
         .source_adapter(CountingSourceAdapter::new(source_declarations.clone()))
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -223,8 +218,7 @@ fn runtime_live_declaration_denies_when_admission_receipt_drifts_from_request() 
 #[test]
 fn runtime_live_declaration_denies_when_activation_receipt_drifts_from_request() {
     let source_declarations = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(CountingSourceAdapter::new(source_declarations.clone()))
         .snapshot_identity(TestSnapshotIdentityAdapter)

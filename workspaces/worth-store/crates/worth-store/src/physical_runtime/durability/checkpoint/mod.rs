@@ -9,6 +9,7 @@ mod request;
 mod retained_wal_tail;
 mod runtime_owner;
 mod work_port;
+mod yieldpoint;
 
 pub use capture::PhysicalCheckpointCaptureBasis;
 pub(in crate::physical_runtime) use capture::PhysicalCheckpointCaptureFoundation;
@@ -27,9 +28,13 @@ pub(in crate::physical_runtime) use publication::{
     NamespaceDurableCheckpointPublication, PhysicalCheckpointPublication,
 };
 pub use reopen::PhysicalBindingCompactionReopenFailure;
+pub(in crate::physical_runtime::durability) use reopen::{
+    admit_binding_payload, binding_frame_bytes, physical_range,
+};
 pub(in crate::physical_runtime) use reopen::{
-    reopen_binding_compaction, PhysicalBindingCompactionRecordStreamFailure,
-    PhysicalBindingCompactionReopenCounters, ReopenedPhysicalBindingCompaction,
+    reopen_binding_compaction, NamespaceDurablePhysicalBindingCompactionReopen,
+    PhysicalBindingCompactionRebuildBasis, PhysicalBindingCompactionReopenCounters,
+    ReopenedPhysicalBindingCompaction,
 };
 pub use request::{
     PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointRequest,
@@ -41,3 +46,5 @@ pub use runtime_owner::{PhysicalCheckpointShutdown, PhysicalCheckpointSubmission
 pub(in crate::physical_runtime) use work_port::{
     PhysicalCheckpointActionFailure, PhysicalCheckpointWorkPort,
 };
+pub(in crate::physical_runtime) use yieldpoint::PhysicalCheckpointYieldpointOwner;
+pub use yieldpoint::{PhysicalCheckpointPauseGate, PhysicalCheckpointStep};

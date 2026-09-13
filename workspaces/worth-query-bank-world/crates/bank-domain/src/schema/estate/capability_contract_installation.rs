@@ -251,11 +251,17 @@ fn target(
     field: ApplicationCapabilityFieldDimension,
 ) -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(CapabilityOperationField::reference(), action),
+        ApplicationCapabilityValueBinding::new(
+            CapabilityOperationField::reference(),
+            crate::schema::encoded_bank_value(action),
+        ),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityEstate::reference()),
         relation,
         field,
-        ApplicationCapabilityValueBinding::new(CapabilityPurposeField::reference(), purpose),
+        ApplicationCapabilityValueBinding::new(
+            CapabilityPurposeField::reference(),
+            crate::schema::encoded_bank_value(purpose),
+        ),
     )
 }
 
@@ -268,7 +274,7 @@ fn constraints(
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
                 CapabilityGrantStatusField::reference(),
-                CapabilityGrantStatus::Active,
+                crate::schema::encoded_bank_value(CapabilityGrantStatus::Active),
             ),
             ApplicationCapabilityWorkflowDefinition::new(
                 ApplicationCapabilityFieldBinding::from_reference(
@@ -321,7 +327,7 @@ fn delegation() -> ApplicationCapabilityDelegationDefinition {
         ),
         ApplicationCapabilityValueBinding::new(
             CapabilityGrantStatusField::reference(),
-            CapabilityGrantStatus::Revoked,
+            crate::schema::encoded_bank_value(CapabilityGrantStatus::Revoked),
         ),
     ))
 }

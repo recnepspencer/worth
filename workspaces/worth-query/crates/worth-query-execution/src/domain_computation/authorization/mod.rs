@@ -48,7 +48,6 @@ pub(in crate::domain_computation) use decision_facts::{
 pub(in crate::domain_computation) use delegation_progression::{
     WorthQueryDelegationActivationBinding, WorthQueryDelegationActivationEffect,
 };
-pub(super) use denial::exact_basis_snapshot_denial;
 pub use denial::{
     WorthQueryApplicationAuthorizationExplanationCause, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,
@@ -63,6 +62,8 @@ pub use elevation_progression::{
     WorthQueryMandatoryReviewAuthorizationDenial,
 };
 pub(in crate::domain_computation) use installed_policy::WorthQueryInstalledAuthorizationRegistry;
+pub(in crate::domain_computation) use operation_progression::admit_capability_access;
+pub(in crate::domain_computation) use operation_progression::progress_conventional_operation;
 pub use operation_progression::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use operation_progression::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use operation_progression::WorthQueryOperationAdmissionIdentity;

@@ -20,6 +20,7 @@ fn identity(field: ApplicationSchemaMember) -> super::ApplicationSchemaIdentity 
             minor: 0,
         },
         &[field],
+        &[],
     )
 }
 
@@ -32,6 +33,7 @@ fn field(presence: ApplicationFieldPresence) -> ApplicationSchemaMember {
         scalar_family: ScalarAspectType::UInt64,
         value_type: std::any::type_name::<u64>().to_string(),
         unit: None,
+        frame: None,
         writable: false,
         equality_queryable: true,
     }

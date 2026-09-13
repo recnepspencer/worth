@@ -1,6 +1,7 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryParameterRef, ApplicationQueryResultFieldRef,
 };
+use worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
 
 use super::{
     Activity, ActivityFacts, ActivitySequence, ActivitySequenceResultSlot, CrossRootQuery,
@@ -8,7 +9,7 @@ use super::{
 };
 
 pub(crate) fn status_parameter<Query>(
-) -> ApplicationQueryParameterRef<Query, StatusParameter, String> {
+) -> ApplicationQueryParameterRef<Query, StatusParameter, StringApplicationValueBinding> {
     ApplicationQueryParameterRef::from_query_identifier("status")
 }
 

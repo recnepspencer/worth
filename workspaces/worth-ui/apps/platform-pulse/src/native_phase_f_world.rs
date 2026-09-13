@@ -55,8 +55,6 @@ fn adjudicate(receipt: worth_ui_native_platform::UiNativePlatformCloseReceipt) -
     crate::native_phase_f_world_evidence::publish(&receipt, shutdown);
     if trace_matches_contract(shutdown.presentation_transitions())
         && shutdown.presentation_transition_trace_complete()
-        && !shutdown.presentation_semantic_frontiers().is_empty()
-        && shutdown.presentation_semantic_frontier_trace_complete()
         && !shutdown.text_presentation_work().is_empty()
         && shutdown.text_presentation_work_trace_complete()
         && !receipt.text_atlas_plan_observations().is_empty()
@@ -81,7 +79,7 @@ fn adjudicate(receipt: worth_ui_native_platform::UiNativePlatformCloseReceipt) -
 }
 
 fn trace_matches_contract(transitions: &[Transition]) -> bool {
-    let [a_pending, b_supersedes, a_stale, b_completed, b_duplicate, c_pending, c_unresolved, c_recovery, reconstruction, terminal] =
+    let [a_pending, b_supersedes, a_stale, b_retry, b_completed, b_duplicate, c_pending, c_unresolved, c_recovery, reconstruction, terminal] =
         transitions
     else {
         return false;
@@ -90,6 +88,7 @@ fn trace_matches_contract(transitions: &[Transition]) -> bool {
         Kind::Pending,
         Kind::Superseded,
         Kind::StaleCompletionRejected,
+        Kind::Pending,
         Kind::Completed,
         Kind::DuplicateCompletionRejected,
         Kind::Pending,
@@ -105,7 +104,9 @@ fn trace_matches_contract(transitions: &[Transition]) -> bool {
         && same_request(*a_pending, *a_stale)
         && !same_request(*a_pending, *b_supersedes)
         && a_pending.binding() == b_supersedes.binding()
-        && same_request(*b_supersedes, *b_completed)
+        && !same_request(*b_supersedes, *b_retry)
+        && b_supersedes.binding() == b_retry.binding()
+        && same_request(*b_retry, *b_completed)
         && same_request(*b_completed, *b_duplicate)
         && same_request(*c_pending, *c_unresolved)
         && same_request(*c_unresolved, *c_recovery)

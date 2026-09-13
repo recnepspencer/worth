@@ -286,8 +286,7 @@ fn semantic_relation_binding_rejects_incomplete_correspondence() {
         .definition()
         .relations
         .keys()
-        .filter(|key| key.kind == RelationKind::SharesPilotageZone)
-        .next()
+        .find(|key| key.kind == RelationKind::SharesPilotageZone)
         .expect("Court has the repeated pilotage relation");
 
     let mut incomplete = original.clone();

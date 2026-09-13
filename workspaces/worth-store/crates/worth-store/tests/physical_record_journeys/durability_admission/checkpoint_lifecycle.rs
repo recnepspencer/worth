@@ -24,6 +24,8 @@ use super::super::{configuration, durability, serving_from_initialization, succe
 
 #[path = "checkpoint_lifecycle/observation.rs"]
 mod observation;
+#[path = "checkpoint_lifecycle/scrub_source.rs"]
+mod scrub_source;
 
 pub(super) fn pause_checkpoint_at_phase(
     gate: &CertificationPhysicalExecutionPauseGate,

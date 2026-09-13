@@ -1,7 +1,7 @@
 use super::super::support::*;
 #[test]
 fn runtime_builder_rejects_missing_backend_inputs() {
-    let error = match WorthQueryRuntime::builder().build() {
+    let error = match WorthQueryRuntime::builder(test_product_world_resources()).build() {
         Ok(_) => panic!("builder should reject missing v1 backend"),
         Err(error) => error,
     };
@@ -13,7 +13,7 @@ fn runtime_builder_rejects_missing_backend_inputs() {
 
 #[test]
 fn runtime_builder_rejects_incomplete_backend_parts() {
-    let error = WorthQueryRuntime::builder()
+    let error = WorthQueryRuntime::builder(test_product_world_resources())
         .build_backend_from_parts()
         .build();
     let error = match error {
@@ -27,8 +27,7 @@ fn runtime_builder_rejects_incomplete_backend_parts() {
     assert!(error.to_string().contains("runtime_bridge(...)"));
     assert!(error.to_string().contains("build_backend_from_parts()"));
 
-    let error = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let error = test_product_runtime_builder()
         .build_backend_from_parts()
         .build();
     let error = match error {
@@ -41,8 +40,7 @@ fn runtime_builder_rejects_incomplete_backend_parts() {
     ));
     assert!(error.to_string().contains("schema_adapter(...)"));
 
-    let error = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let error = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .build_backend_from_parts()
         .build();
@@ -56,8 +54,7 @@ fn runtime_builder_rejects_incomplete_backend_parts() {
     ));
     assert!(error.to_string().contains("source_adapter(...)"));
 
-    let error = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let error = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .build_backend_from_parts()
@@ -72,8 +69,7 @@ fn runtime_builder_rejects_incomplete_backend_parts() {
     ));
     assert!(error.to_string().contains("snapshot_identity(...)"));
 
-    let error = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let error = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -89,8 +85,7 @@ fn runtime_builder_rejects_incomplete_backend_parts() {
     ));
     assert!(error.to_string().contains("write_authority(...)"));
 
-    let error = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let error = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -104,8 +99,7 @@ fn runtime_builder_rejects_incomplete_backend_parts() {
     assert!(matches!(error, WorthQueryRuntimeError::MissingSignalSink));
     assert!(error.to_string().contains("signal_sink(...)"));
 
-    let error = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let error = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -123,8 +117,7 @@ fn runtime_builder_rejects_incomplete_backend_parts() {
     ));
     assert!(error.to_string().contains("subscription_activation(...)"));
 
-    let error = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let error = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -140,8 +133,7 @@ fn runtime_builder_rejects_incomplete_backend_parts() {
     assert!(matches!(error, WorthQueryRuntimeError::MissingPreviewBasis));
     assert!(error.to_string().contains("preview_basis(...)"));
 
-    let error = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let error = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .write_authority(TestWriteAuthority)
@@ -164,8 +156,7 @@ fn runtime_builder_rejects_incomplete_backend_parts() {
 
 #[test]
 fn runtime_builder_accepts_bridge_backed_backend_parts() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .write_authority(TestWriteAuthority)
@@ -326,7 +317,7 @@ fn runtime_builder_rejects_replacing_explicit_backend_with_backend_parts() {
             .inspector_evidence(TestInspectorEvidence),
     )
     .expect("explicit backend should build for replacement test");
-    let error = WorthQueryRuntime::builder()
+    let error = WorthQueryRuntime::builder(test_product_world_resources())
         .backend(explicit_backend)
         .runtime_bridge(test_bridge())
         .schema_adapter(TestSchemaAdapter)
@@ -370,8 +361,7 @@ fn runtime_builder_rejects_explicit_backend_with_stray_backend_parts() {
             .inspector_evidence(TestInspectorEvidence),
     )
     .expect("explicit backend should build for stray-parts test");
-    let error = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let error = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .backend(explicit_backend)
         .build();

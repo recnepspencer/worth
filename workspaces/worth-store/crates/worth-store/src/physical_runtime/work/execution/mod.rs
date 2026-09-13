@@ -1,4 +1,5 @@
 mod command;
+pub(in crate::physical_runtime) use command::PhysicalInspectionExecutorCommand;
 mod joined_outcome;
 mod outcome;
 pub(super) mod settlement;

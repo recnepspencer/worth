@@ -4,10 +4,12 @@ use std::path::Path;
 use sha2::{Digest, Sha256};
 use worth_store_authority::StoreCurrentAuthorityIdentity;
 use worth_store_physical_backend::BackendTargetProfile;
-use worth_store_recovery_physics::{DurabilityReplayIdentity, DurabilityReplayKind};
 
 use super::{ReplicationProgressStoreError, Snapshot, StoredReplicationPeerProgress};
-use crate::{ReplicationLineageIdentity, ReplicationPeerId, ReplicationSourceEpoch};
+use crate::{
+    DurabilityReplayIdentity, DurabilityReplayKind, ReplicationLineageIdentity, ReplicationPeerId,
+    ReplicationSourceEpoch,
+};
 
 const MAGIC: &[u8; 8] = b"WORTHRPS";
 const VERSION: u16 = 2;

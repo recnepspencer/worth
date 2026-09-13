@@ -1,7 +1,7 @@
 use worth_store_physical_backend::{
     ArtifactTreeFailure, BackendQueueExecutionCompletion, MediaOperationIdentity,
 };
-use worth_store_wal::{CheckpointCoveredWalCleanupDenial, WalSegmentArtifactIdentity};
+use worth_store_wal::WalSegmentArtifactIdentity;
 
 use super::{
     RecoveryCleanupArtifactRevalidationDenial, RecoveryCleanupArtifactRevalidationProgress,
@@ -38,7 +38,6 @@ pub struct IndeterminateRecoveryCleanupPhysicalRemoval {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecoveryCleanupRemovalDenialCause {
     Admission,
-    TerminalCoverage(CheckpointCoveredWalCleanupDenial),
     Preparation(ArtifactTreeFailure),
     Revalidation(RecoveryCleanupArtifactRevalidationDenial),
     Removal(ArtifactTreeFailure),
@@ -165,9 +164,7 @@ impl RecoveryCleanupRemovalDenialCause {
     pub const fn failure(self) -> ArtifactTreeFailure {
         match self {
             Self::Preparation(failure) | Self::Removal(failure) => failure,
-            Self::Admission | Self::TerminalCoverage(_) | Self::Revalidation(_) => {
-                ArtifactTreeFailure::recovery_denial()
-            }
+            Self::Admission | Self::Revalidation(_) => ArtifactTreeFailure::recovery_denial(),
         }
     }
 }

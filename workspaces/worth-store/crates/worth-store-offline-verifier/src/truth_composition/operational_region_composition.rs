@@ -1,13 +1,11 @@
-use worth_store_physical_format::OfflinePhysicalArtifactFamily;
-use worth_store_physical_integrity::{classify_offline_integrity, OfflineIntegrityPosture};
-
+use crate::OfflinePhysicalArtifactFamily;
 use crate::{OfflineStructuralIdentification, StructurallyWalkedMedia};
 
 use super::interruptible_sort;
 use super::{
-    EvidenceBoundTruthRegion, OfflineAuthorityClass, OfflineRecoveryAvailability,
-    OfflineSecurityEvidencePosture, OfflineTruthEvidenceSet, OperationalTruthCompositionDenial,
-    OperationalTruthRegion,
+    integrity_posture::classify_offline_integrity, EvidenceBoundTruthRegion, OfflineAuthorityClass,
+    OfflineIntegrityPosture, OfflineRecoveryAvailability, OfflineSecurityEvidencePosture,
+    OfflineTruthEvidenceSet, OperationalTruthCompositionDenial, OperationalTruthRegion,
 };
 
 pub(super) fn reject_invalid_media_shape(

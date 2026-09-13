@@ -22,6 +22,7 @@ members = [
     "crates/worth-store-lsm-authority",
     "crates/worth-store-maintenance",
     "crates/worth-store-modes",
+    "crates/worth-store-offline-integrity-observer",
     "crates/worth-store-offline-verifier",
     "crates/worth-store-operations",
     "crates/worth-store-physical-backend",
@@ -48,7 +49,7 @@ members = [
 [workspace.package]
 edition = "2021"
 version = "0.1.0"
-license = "UNLICENSED"
+license = "BUSL-1.1"
 
 [workspace.dependencies]
 worth-store = { path = "crates/worth-store" }
@@ -72,6 +73,7 @@ worth-store-live-query = { path = "crates/worth-store-live-query" }
 worth-store-lsm-authority = { path = "crates/worth-store-lsm-authority" }
 worth-store-maintenance = { path = "crates/worth-store-maintenance" }
 worth-store-modes = { path = "crates/worth-store-modes" }
+worth-store-offline-integrity-observer = { path = "crates/worth-store-offline-integrity-observer" }
 worth-store-offline-verifier = { path = "crates/worth-store-offline-verifier" }
 worth-store-operations = { path = "crates/worth-store-operations" }
 worth-store-physical-backend = { path = "crates/worth-store-physical-backend" }
@@ -92,7 +94,6 @@ worth-store-subscription-support = { path = "crates/worth-store-subscription-sup
 worth-store-test-support = { path = "crates/worth-store-test-support", default-features = false }
 worth-store-tiering = { path = "crates/worth-store-tiering" }
 worth-store-wal = { path = "crates/worth-store-wal" }
-
 [workspace.lints.rust]
 unsafe_code = "forbid"
 

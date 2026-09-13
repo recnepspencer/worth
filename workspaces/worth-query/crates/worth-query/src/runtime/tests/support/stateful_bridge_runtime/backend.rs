@@ -40,12 +40,9 @@ impl WorthQueryMergeSnapshotOwner for StatefulBridgeRuntimeBackend {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) {
         self.state
-            .borrow_mut()
-            .relational_runtime
-            .as_mut()
-            .expect("merge fixture retains its relational runtime")
-            .snapshots()
-            .release_snapshot(snapshot)
+            .borrow()
+            .relational_source
+            .with_runtime_mut(|runtime| runtime.snapshots().release_snapshot(snapshot))
             .expect("merge fixture closes its exact published snapshot once");
     }
 }
@@ -53,6 +50,19 @@ impl WorthQueryMergeSnapshotOwner for StatefulBridgeRuntimeBackend {
 impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
     fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {
         self.support_profile.clone()
+    }
+
+    fn prepare_product_source(
+        &self,
+    ) -> Result<
+        worth_query_execution::facade::integration::WorthQueryProductRelationalInstallation,
+        crate::runtime::WorthQueryProductSourceDenial,
+    > {
+        let source = self.state.borrow().relational_source.clone();
+        let branch = source.with_runtime(|runtime| runtime.main_branch_identity());
+        source
+            .prepare_product_source(&branch)
+            .map_err(crate::runtime::WorthQueryProductSourceDenial::Basis)
     }
 
     fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {

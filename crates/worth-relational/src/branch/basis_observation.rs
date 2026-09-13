@@ -26,6 +26,7 @@ pub(crate) fn issue_admitted_relational_branch_basis_with_retention(
         inner: Arc::new(AdmittedRelationalBranchBasisInner {
             descriptor,
             identity,
+            admission_identity: super::RelationalBranchBasisAdmissionIdentity::issue(),
             root,
             _authority: issue_relational_branch_observation_authority(),
             retention,

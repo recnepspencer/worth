@@ -1,0 +1,79 @@
+error[E0599]: no method named `with_scope` found for struct `IntegrityValidatedRootManifest<'media>` in the current scope
+ --> tests/ui/scope_substitution.rs:9:23
+  |
+9 |     let _ = validated.with_scope(other_scope);
+  |                       ^^^^^^^^^^
+  |
+help: there is a method `scope` with a similar name, but with different arguments
+ --> src/validation/validated/root_manifest.rs
+  |
+  |     pub const fn scope(&self) -> PhysicalArtifactScope {
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `with_scope` found for struct `IntegrityValidatedPhysicalWorkObligation<'media>` in the current scope
+  --> tests/ui/scope_substitution.rs:16:23
+   |
+16 |     let _ = validated.with_scope(other_scope);
+   |                       ^^^^^^^^^^
+   |
+help: there is a method `scope` with a similar name, but with different arguments
+  --> src/validation/validated/physical_work_obligation.rs
+   |
+   |     pub const fn scope(&self) -> PhysicalArtifactScope {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `with_wal_lsn_range` found for struct `PhysicalArtifactScope` in the current scope
+  --> tests/ui/scope_substitution.rs:20:19
+   |
+20 |     let _ = scope.with_wal_lsn_range(3, 4);
+   |                   ^^^^^^^^^^^^^^^^^^ method not found in `PhysicalArtifactScope`
+
+error[E0599]: no method named `with_scope` found for struct `IntegrityValidatedExtentManifest<'media>` in the current scope
+  --> tests/ui/scope_substitution.rs:27:23
+   |
+27 |     let _ = validated.with_scope(other_scope);
+   |                       ^^^^^^^^^^
+   |
+help: there is a method `scope` with a similar name, but with different arguments
+  --> src/validation/validated/extent_manifest.rs
+   |
+   |     pub const fn scope(&self) -> PhysicalArtifactScope {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `with_scope` found for struct `IntegrityValidatedExtentChunkFrame<'media>` in the current scope
+  --> tests/ui/scope_substitution.rs:34:23
+   |
+34 |     let _ = validated.with_scope(other_scope);
+   |                       ^^^^^^^^^^
+   |
+help: there is a method `scope` with a similar name, but with different arguments
+  --> src/validation/validated/extent_chunk.rs
+   |
+   |     pub const fn scope(&self) -> PhysicalArtifactScope {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `with_scope` found for struct `IntegrityValidatedCheckpointDirtyBasis<'media>` in the current scope
+  --> tests/ui/scope_substitution.rs:41:23
+   |
+41 |     let _ = validated.with_scope(other_scope);
+   |                       ^^^^^^^^^^
+   |
+help: there is a method `scope` with a similar name, but with different arguments
+  --> src/validation/validated/checkpoint/dirty_basis.rs
+   |
+   |     pub const fn scope(&self) -> PhysicalArtifactScope {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/scope_substitution.rs:45:59
+   |
+45 |     let _ = PhysicalArtifactScope::checkpoint_dirty_basis(identity, range);
+   |             --------------------------------------------- ^^^^^^^^ expected `PhysicalCheckpointIdentity`, found `CheckpointStreamHeaderScopeIdentity`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> src/validation/artifact_scope/checkpoint.rs
+   |
+   |     pub const fn checkpoint_dirty_basis(
+   |                  ^^^^^^^^^^^^^^^^^^^^^^

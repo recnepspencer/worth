@@ -46,6 +46,10 @@ where
             >,
         ) -> Result<(), SignalError>,
     {
+        if let Some((_, mutation, _)) = self.sealed_owner_port_slots() {
+            let cancellation = crate::branch::SignalOwnerCancellationSource::new();
+            return mutation.advance_exact(expected, runtime_ctx, &cancellation.token(), apply);
+        }
         let preflight = self.preflight_signal_branch_advance(expected)?;
         let transaction = self.execute_signal_branch_advance(runtime_ctx, &preflight, apply)?;
         let advanced_basis = self
@@ -54,6 +58,7 @@ where
         Ok(SignalBranchAdvanceOutcome::owner_issued(
             advanced_basis,
             transaction,
+            None,
         ))
     }
 

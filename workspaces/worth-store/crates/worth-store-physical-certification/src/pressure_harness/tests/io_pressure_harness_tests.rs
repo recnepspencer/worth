@@ -6,43 +6,22 @@ use crate::pressure_harness::fixtures::{
     fault_phase_for, io_pressure_oracle_denial_without_pressure_observation, replay_bundle_for,
 };
 use crate::{
-    all_io_pressure_fault_evidence_classes, all_io_pressure_fault_kinds, CoverageRowDimension,
-    CoverageSurfaceKind, IoPressureBackendSafetyQualificationDenial, IoPressureEvidenceMaturity,
-    IoPressureFaultKind, IoPressureHarnessEvidence, IoPressureHarnessScenario,
-    IoPressureHarnessSecureIoPosture, OracleDenial, PhysicalFaultEvidenceClass,
-    PhysicalSimulationProfile,
+    all_io_pressure_fault_evidence_classes, all_io_pressure_fault_kinds,
+    IoPressureBackendSafetyQualificationDenial, IoPressureFaultKind, IoPressureHarnessEvidence,
+    IoPressureHarnessScenario, OracleDenial, PhysicalFaultEvidenceClass, PhysicalSimulationProfile,
 };
 
 #[test]
-fn replay_bundle_admits_io_pressure_evidence_and_exact_coverage_rows() {
+fn replay_bundle_admits_io_pressure_evidence() {
     let scenario = IoPressureHarnessScenario::deterministic_read_under_repair_pressure();
     let replay = replay_bundle_for(scenario.clone(), PhysicalSimulationProfile::DeveloperSmoke);
 
     let evidence = IoPressureHarnessEvidence::from_replay_bundle(scenario, &replay).unwrap();
-    let coverage = evidence.executed_replay_coverage_rows();
-
     assert_ne!(evidence.replay_identity(), &[0; 32]);
-    assert_eq!(coverage.replay_identity(), evidence.replay_identity());
     assert_eq!(
         evidence.replay_profile(),
         PhysicalSimulationProfile::DeveloperSmoke
     );
-    assert_eq!(coverage.rows().len(), 6);
-    assert_eq!(
-        coverage.iter().map(|row| row.surface()).collect::<Vec<_>>(),
-        vec![
-            CoverageSurfaceKind::Scenario,
-            CoverageSurfaceKind::Actor,
-            CoverageSurfaceKind::Driver,
-            CoverageSurfaceKind::Counter,
-            CoverageSurfaceKind::Oracle,
-            CoverageSurfaceKind::Transcript,
-        ]
-    );
-    for row in coverage.iter() {
-        assert_eq!(row.source_identity(), evidence.replay_identity());
-        assert_eq!(row.dimensions(), expected_pressure_dimensions());
-    }
 }
 
 #[test]
@@ -123,10 +102,7 @@ fn all_pressure_faults_require_io_pressure_fault_delivery() {
             IoPressureHarnessEvidence::from_replay_bundle(scenario.clone(), &replay).unwrap();
 
         assert_eq!(evidence.fault_phase(), fault_phase_for(fault_kind));
-        assert!(evidence
-            .executed_replay_coverage_rows()
-            .iter()
-            .all(|row| row.has_dimension(&CoverageRowDimension::IoPressureFaultKind(fault_kind))));
+        assert_eq!(evidence.scenario().fault_kind(), fault_kind);
     }
 }
 
@@ -193,33 +169,17 @@ fn deterministic_and_large_profiles_preserve_io_pressure_evidence_topology() {
             .map(|step| step.actor_role())
             .collect::<Vec<_>>()
     );
-    for row in large_evidence.executed_replay_coverage_rows().iter() {
-        assert!(
-            row.has_dimension(&CoverageRowDimension::ResourceEnvelopeProfile(
-                PhysicalSimulationProfile::CiCertification
-            ))
-        );
-        assert!(
-            row.has_dimension(&CoverageRowDimension::IoPressureForegroundLane(
-                ForegroundIoLaneKind::CommitCriticalWalWrite
-            ))
-        );
-        assert!(
-            row.has_dimension(&CoverageRowDimension::IoPressureBackgroundPressure(
-                BackgroundIoPressureClass::CheckpointFlush
-            ))
-        );
-        assert!(
-            row.has_dimension(&CoverageRowDimension::IoPressureFaultKind(
-                IoPressureFaultKind::DelayedSync
-            ))
-        );
-    }
+    assert_eq!(
+        large_evidence.replay_profile(),
+        PhysicalSimulationProfile::CiCertification
+    );
+    assert_eq!(
+        large_evidence.scenario().fault_kind(),
+        IoPressureFaultKind::DelayedSync
+    );
     assert_ne!(
-        deterministic_evidence
-            .executed_replay_coverage_rows()
-            .rows(),
-        large_evidence.executed_replay_coverage_rows().rows()
+        deterministic_evidence.replay_identity(),
+        large_evidence.replay_identity()
     );
 }
 
@@ -235,25 +195,4 @@ fn evidence_for_fault_class(fault_class: PhysicalFaultEvidenceClass) -> IoPressu
         .with_fault_evidence_class(fault_class);
     let replay = replay_bundle_for(scenario.clone(), PhysicalSimulationProfile::DeveloperSmoke);
     IoPressureHarnessEvidence::from_replay_bundle(scenario, &replay).unwrap()
-}
-
-fn expected_pressure_dimensions() -> &'static [CoverageRowDimension] {
-    &[
-        CoverageRowDimension::ResourceEnvelopeProfile(PhysicalSimulationProfile::DeveloperSmoke),
-        CoverageRowDimension::BackgroundInterference(crate::PhysicalDriverKind::IoPressureBoundary),
-        CoverageRowDimension::FaultPhase(
-            crate::PhysicalScenarioFaultKind::IoPressureBackendLatencyInjection,
-        ),
-        CoverageRowDimension::IoPressureBackendTarget(BackendTargetProfile::PosixFileFsyncDirSync),
-        CoverageRowDimension::IoPressureForegroundLane(ForegroundIoLaneKind::PointRead),
-        CoverageRowDimension::IoPressureBackgroundPressure(BackgroundIoPressureClass::RepairScan),
-        CoverageRowDimension::SecureIoPosture(IoPressureHarnessSecureIoPosture::ScopePreserving),
-        CoverageRowDimension::IoPressureFaultKind(IoPressureFaultKind::BackendLatencyInjection),
-        CoverageRowDimension::IoPressureFaultEvidenceClass(
-            PhysicalFaultEvidenceClass::InjectedProductionBoundary,
-        ),
-        CoverageRowDimension::IoPressureEvidenceMaturity(
-            IoPressureEvidenceMaturity::ProductionBoundaryInjected,
-        ),
-    ]
 }

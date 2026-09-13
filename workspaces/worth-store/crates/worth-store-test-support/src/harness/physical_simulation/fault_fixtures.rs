@@ -3,9 +3,6 @@ use worth_store_physical_certification::{
     ExpectedFaultLocalization, FaultDeliveryAttempt, ObservedFaultBoundary,
     PhysicalArtifactFaultLocus, PhysicalFaultFieldKind, PhysicalFaultOffset,
 };
-use worth_store_physical_integrity::{
-    PhysicalBoundaryLocalization, PhysicalContainerIntegrityDenialKind, PreDecodePhysicalDenialKind,
-};
 
 pub fn wal_frame_payload_fault_locus() -> PhysicalArtifactFaultLocus {
     PhysicalArtifactFaultLocus::wal_frame(
@@ -38,19 +35,6 @@ pub fn io_pressure_fault_locus() -> PhysicalArtifactFaultLocus {
         PhysicalFaultFieldKind::SlotState,
         PhysicalFaultOffset::at(16),
         ExpectedFaultLocalization::ProductionDriverBoundary,
-    )
-}
-
-pub const fn observed_checksum_mismatch_boundary() -> ObservedFaultBoundary {
-    ObservedFaultBoundary::pre_decode_integrity_denial_kind(
-        PreDecodePhysicalDenialKind::ChecksumMismatch,
-    )
-}
-
-pub const fn observed_torn_frame_boundary() -> ObservedFaultBoundary {
-    ObservedFaultBoundary::physical_integrity_boundary(
-        PhysicalContainerIntegrityDenialKind::TornFrame,
-        PhysicalBoundaryLocalization::FrameBody,
     )
 }
 

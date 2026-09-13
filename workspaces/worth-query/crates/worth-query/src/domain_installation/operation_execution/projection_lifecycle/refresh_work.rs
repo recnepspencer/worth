@@ -1,5 +1,4 @@
 use crate::ordinary::live::WorthQueryManagedLiveDelivery;
-use crate::runtime::WorthQueryStagedOwnerDeliveryAdmission;
 
 /// Exact work performed by one lifecycle refresh.
 ///
@@ -25,32 +24,6 @@ pub struct WorthQueryLiveProjectionRefreshWork {
     projection_calls: usize,
     native_rebind_calls: usize,
     impact_classifications: usize,
-    impact_classification_reuses: usize,
-    conditional_decision_reuses: usize,
-    conditional_reentry_runtime_key_checks: usize,
-    conditional_reentry_lowering_identity_checks: usize,
-    conditional_reentry_installed_lowering_lookups: usize,
-    conditional_reentry_signal_graph_checks: usize,
-    conditional_reentry_signal_contract_checks: usize,
-    conditional_reentry_snapshot_identity_checks: usize,
-    conditional_reentry_query_rebindings: usize,
-    conditional_reentry_unrelated_lowering_scans: usize,
-    causal_staged_changes_inspected: usize,
-    causal_owner_changes_inspected: usize,
-    causal_keys_materialized: usize,
-    causal_key_lookups: usize,
-    conditional_dependency_checks: usize,
-    conditional_semantic_reads: usize,
-    conditional_condition_checks: usize,
-    conditional_condition_deferrals: usize,
-    conditional_temporal_deferrals: usize,
-    conditional_on_demand_deferrals: usize,
-    conditional_comparator_checks: usize,
-    conditional_compute_contacts: usize,
-    conditional_reverted_clean_outcomes: usize,
-    conditional_semantic_changes: usize,
-    conditional_reuse_checks: usize,
-    conditional_decisions_delivered: usize,
 }
 
 impl WorthQueryLiveProjectionRefreshWork {
@@ -93,56 +66,6 @@ impl WorthQueryLiveProjectionRefreshWork {
         _impact: &crate::domain_installation::WorthQueryImpactDecision,
     ) {
         self.impact_classifications = 1;
-    }
-
-    pub(super) fn retain_impact_reuse(&mut self) {
-        self.impact_classification_reuses = 1;
-    }
-
-    pub(super) fn begin_conditional_decision_reentry(&mut self) {
-        self.conditional_decision_reuses = 1;
-    }
-
-    pub(super) fn retain_conditional_decision_reentry(
-        &mut self,
-        counters: worth_runtime_bridge::facade::BridgeConditionalReentryCounters,
-    ) {
-        self.conditional_reentry_runtime_key_checks = counters.runtime_key_checks;
-        self.conditional_reentry_lowering_identity_checks = counters.lowering_identity_checks;
-        self.conditional_reentry_installed_lowering_lookups = counters.installed_lowering_lookups;
-        self.conditional_reentry_signal_graph_checks = counters.signal_graph_checks;
-        self.conditional_reentry_signal_contract_checks = counters.signal_contract_checks;
-        self.conditional_reentry_snapshot_identity_checks = counters.snapshot_identity_checks;
-        self.conditional_reentry_query_rebindings = counters.query_continuation_rebindings;
-        self.conditional_reentry_unrelated_lowering_scans = counters.unrelated_lowering_scans;
-    }
-
-    pub(super) fn retain_causal_admission(
-        &mut self,
-        causal: WorthQueryStagedOwnerDeliveryAdmission,
-    ) {
-        self.causal_staged_changes_inspected = causal.staged_changes_inspected();
-        self.causal_owner_changes_inspected = causal.owner_changes_inspected();
-        self.causal_keys_materialized = causal.causal_keys_materialized();
-        self.causal_key_lookups = causal.causal_key_lookups();
-    }
-
-    pub(super) fn retain_conditional(
-        &mut self,
-        counters: crate::domain_installation::WorthQueryOperationExecutionCounters,
-    ) {
-        self.conditional_dependency_checks = counters.conditional_dependency_checks;
-        self.conditional_semantic_reads = counters.conditional_semantic_reads;
-        self.conditional_condition_checks = counters.conditional_condition_checks;
-        self.conditional_condition_deferrals = counters.conditional_condition_deferrals;
-        self.conditional_temporal_deferrals = counters.conditional_temporal_deferrals;
-        self.conditional_on_demand_deferrals = counters.conditional_on_demand_deferrals;
-        self.conditional_comparator_checks = counters.conditional_comparator_checks;
-        self.conditional_compute_contacts = counters.conditional_compute_contacts;
-        self.conditional_reverted_clean_outcomes = counters.conditional_reverted_clean_outcomes;
-        self.conditional_semantic_changes = counters.conditional_semantic_changes;
-        self.conditional_reuse_checks = counters.conditional_reuse_checks;
-        self.conditional_decisions_delivered = counters.conditional_decisions_delivered;
     }
 
     pub(super) fn retain_projection(&mut self) {
@@ -219,109 +142,5 @@ impl WorthQueryLiveProjectionRefreshWork {
 
     pub fn impact_classifications(self) -> usize {
         self.impact_classifications
-    }
-
-    pub fn impact_classification_reuses(self) -> usize {
-        self.impact_classification_reuses
-    }
-
-    pub fn conditional_decision_reuses(self) -> usize {
-        self.conditional_decision_reuses
-    }
-
-    pub fn conditional_reentry_runtime_key_checks(self) -> usize {
-        self.conditional_reentry_runtime_key_checks
-    }
-
-    pub fn conditional_reentry_lowering_identity_checks(self) -> usize {
-        self.conditional_reentry_lowering_identity_checks
-    }
-
-    pub fn conditional_reentry_installed_lowering_lookups(self) -> usize {
-        self.conditional_reentry_installed_lowering_lookups
-    }
-
-    pub fn conditional_reentry_signal_graph_checks(self) -> usize {
-        self.conditional_reentry_signal_graph_checks
-    }
-
-    pub fn conditional_reentry_signal_contract_checks(self) -> usize {
-        self.conditional_reentry_signal_contract_checks
-    }
-
-    pub fn conditional_reentry_snapshot_identity_checks(self) -> usize {
-        self.conditional_reentry_snapshot_identity_checks
-    }
-
-    pub fn conditional_reentry_query_rebindings(self) -> usize {
-        self.conditional_reentry_query_rebindings
-    }
-
-    pub fn conditional_reentry_unrelated_lowering_scans(self) -> usize {
-        self.conditional_reentry_unrelated_lowering_scans
-    }
-
-    pub fn causal_staged_changes_inspected(self) -> usize {
-        self.causal_staged_changes_inspected
-    }
-
-    pub fn causal_owner_changes_inspected(self) -> usize {
-        self.causal_owner_changes_inspected
-    }
-
-    pub fn causal_keys_materialized(self) -> usize {
-        self.causal_keys_materialized
-    }
-
-    pub fn causal_key_lookups(self) -> usize {
-        self.causal_key_lookups
-    }
-
-    pub fn conditional_dependency_checks(self) -> usize {
-        self.conditional_dependency_checks
-    }
-
-    pub fn conditional_semantic_reads(self) -> usize {
-        self.conditional_semantic_reads
-    }
-
-    pub fn conditional_condition_checks(self) -> usize {
-        self.conditional_condition_checks
-    }
-
-    pub fn conditional_condition_deferrals(self) -> usize {
-        self.conditional_condition_deferrals
-    }
-
-    pub fn conditional_temporal_deferrals(self) -> usize {
-        self.conditional_temporal_deferrals
-    }
-
-    pub fn conditional_on_demand_deferrals(self) -> usize {
-        self.conditional_on_demand_deferrals
-    }
-
-    pub fn conditional_comparator_checks(self) -> usize {
-        self.conditional_comparator_checks
-    }
-
-    pub fn conditional_compute_contacts(self) -> usize {
-        self.conditional_compute_contacts
-    }
-
-    pub fn conditional_reverted_clean_outcomes(self) -> usize {
-        self.conditional_reverted_clean_outcomes
-    }
-
-    pub fn conditional_semantic_changes(self) -> usize {
-        self.conditional_semantic_changes
-    }
-
-    pub fn conditional_reuse_checks(self) -> usize {
-        self.conditional_reuse_checks
-    }
-
-    pub fn conditional_decisions_delivered(self) -> usize {
-        self.conditional_decisions_delivered
     }
 }

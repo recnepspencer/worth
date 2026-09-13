@@ -1,0 +1,24 @@
+error[E0308]: mismatched types
+ --> tests/ui/cross_stage_prepared_publication.rs:8:25
+  |
+8 |     consume_with_signal(prepared);
+  |     ------------------- ^^^^^^^^ expected `PreparedCompositePublicationWithSignal`, found `PreparedCompositePublicationWithoutSignal`
+  |     |
+  |     arguments to this function are incorrect
+  |
+note: function defined here
+ --> tests/ui/cross_stage_prepared_publication.rs:5:4
+  |
+5 | fn consume_with_signal(_: PreparedCompositePublicationWithSignal) {}
+  |    ^^^^^^^^^^^^^^^^^^^ -----------------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/cross_stage_prepared_publication.rs:14:53
+   |
+14 |     PreparedCompositePublicationWithoutSignal::from(prepared)
+   |     ----------------------------------------------- ^^^^^^^^ expected `PreparedCompositePublicationWithoutSignal`, found `PreparedCompositePublicationWithSignal`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> $RUST/core/src/convert/mod.rs

@@ -15,4 +15,6 @@ mod state;
 mod timeout;
 
 pub(in crate::logic::transaction::runtime) use state::ResourceRuntimeState;
-pub(super) use timeout::plan::ResolvedResourceTimeoutPlan;
+pub(super) use timeout::plan::{
+    resolve_descriptor_timeout_plan, ResolvedResourceTimeoutPlan, ScheduledResourceTimeoutAdmission,
+};

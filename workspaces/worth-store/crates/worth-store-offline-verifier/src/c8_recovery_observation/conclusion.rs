@@ -1,16 +1,18 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) struct RecoveryObserverConclusion {
-    artifact_set_digest: [u8; 32],
-}
+#[path = "conclusion/artifacts.rs"]
+mod artifacts;
+#[path = "conclusion/evidence.rs"]
+mod evidence;
+#[path = "conclusion/model.rs"]
+mod model;
+#[path = "conclusion/reducer.rs"]
+mod reducer;
+#[path = "conclusion/selectors.rs"]
+mod selectors;
 
-impl RecoveryObserverConclusion {
-    pub(super) const fn new(artifact_set_digest: [u8; 32]) -> Self {
-        Self {
-            artifact_set_digest,
-        }
-    }
+pub(super) use model::RecoveryObserverConclusion;
 
-    pub(super) const fn artifact_set_digest(self) -> [u8; 32] {
-        self.artifact_set_digest
-    }
+pub(super) fn conclude(
+    artifacts: &[super::artifact_walk::ObservedRecoveryArtifact],
+) -> Result<RecoveryObserverConclusion, super::RecoveryObserverWalTopologyDenial> {
+    reducer::conclude(artifacts)
 }

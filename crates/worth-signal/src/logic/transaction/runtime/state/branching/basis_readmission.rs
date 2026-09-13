@@ -1,6 +1,5 @@
 use crate::branch::{
-    admit_runtime_signal_branch_observation, AdmittedSignalBranchBasis,
-    SignalBranchBasisCompatibilityDenial, SignalBranchBasisDescriptor,
+    AdmittedSignalBranchBasis, SignalBranchBasisCompatibilityDenial, SignalBranchBasisDescriptor,
     SignalBranchBasisLifecyclePosture, SignalBranchBasisReadmissionDenial,
     SIGNAL_BRANCH_BASIS_DESCRIPTOR_SCHEMA_VERSION,
 };
@@ -19,6 +18,9 @@ where
         &self,
         descriptor: SignalBranchBasisDescriptor,
     ) -> Result<AdmittedSignalBranchBasis, SignalBranchBasisReadmissionDenial> {
+        if self.owner_services.is_sealed() {
+            return self.owner_services.readmit_legacy_descriptor(descriptor);
+        }
         if descriptor.schema_version() != SIGNAL_BRANCH_BASIS_DESCRIPTOR_SCHEMA_VERSION {
             return Err(
                 SignalBranchBasisReadmissionDenial::UnsupportedDescriptorVersion {
@@ -81,25 +83,39 @@ where
                 axes: mismatch.axes().to_vec(),
             });
         }
-        let retention = self
-            .branches
-            .acquire_admitted_retention(branch_id)
-            .map_err(|denial| match denial {
-                crate::branch::SignalBranchRetentionAcquisitionDenial::CapacityExhausted {
-                    maximum_active_leases,
-                } => SignalBranchBasisReadmissionDenial::UnavailableRetention {
-                    maximum_active_leases,
-                },
-                crate::branch::SignalBranchRetentionAcquisitionDenial::IdentityExhausted => {
-                    SignalBranchBasisReadmissionDenial::RetentionIdentityExhausted
-                }
-                _ => unreachable!("admitted retention acquisition has no basis validation path"),
-            })?;
-        Ok(admit_runtime_signal_branch_observation(
+        self.admit_unsealed_canonical_basis_with_retention(
             descriptor.observation().clone(),
             branch_id,
-            retention,
-        ))
+            || self.branches.acquire_admitted_retention(branch_id),
+        )
+        .map_err(|denial| match denial {
+            crate::branch::SignalBranchRetentionAcquisitionDenial::OwnerUnavailable(
+                unavailable,
+            ) => SignalBranchBasisReadmissionDenial::OwnerUnavailable(unavailable),
+            crate::branch::SignalBranchRetentionAcquisitionDenial::OperationCapacityExhausted {
+                maximum_in_flight_operations,
+            } => SignalBranchBasisReadmissionDenial::OperationCapacityExhausted {
+                maximum_in_flight_operations,
+            },
+            crate::branch::SignalBranchRetentionAcquisitionDenial::OwnerReentry => {
+                SignalBranchBasisReadmissionDenial::OwnerReentry
+            }
+            crate::branch::SignalBranchRetentionAcquisitionDenial::CapacityExhausted {
+                maximum_active_leases,
+            } => SignalBranchBasisReadmissionDenial::UnavailableRetention {
+                maximum_active_leases,
+            },
+            crate::branch::SignalBranchRetentionAcquisitionDenial::IdentityExhausted => {
+                SignalBranchBasisReadmissionDenial::RetentionIdentityExhausted
+            }
+            crate::branch::SignalBranchRetentionAcquisitionDenial::RetiredBranch { branch_id } => {
+                SignalBranchBasisReadmissionDenial::RetiredBranch { branch_id }
+            }
+            crate::branch::SignalBranchRetentionAcquisitionDenial::UnknownBranch { branch_id } => {
+                SignalBranchBasisReadmissionDenial::UnknownBranch { branch_id }
+            }
+            _ => SignalBranchBasisReadmissionDenial::OwnerInvariantViolation { branch_id },
+        })
     }
 
     pub fn validate_signal_basis_compatibility(

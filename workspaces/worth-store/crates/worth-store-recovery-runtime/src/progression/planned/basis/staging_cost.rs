@@ -1,3 +1,4 @@
+use super::frame_identity::frame_identity;
 use super::*;
 
 pub(super) fn preflight_staging_cost(
@@ -40,27 +41,6 @@ pub(super) fn preflight_staging_cost(
         }
     }
     Ok(admission.allocated_bytes)
-}
-
-fn frame_identity(
-    subject: worth_store_physical_format::PersistedPhysicalDataFrameSubject,
-) -> PhysicalRedoTargetIdentity {
-    match subject {
-        worth_store_physical_format::PersistedPhysicalDataFrameSubject::InlinePage(page) => {
-            PhysicalRedoTargetIdentity::InlinePage {
-                segment: page.segment_id().get(),
-                page: page.page_id().get(),
-                generation: page.generation().get(),
-            }
-        }
-        worth_store_physical_format::PersistedPhysicalDataFrameSubject::ExtentChunk(chunk) => {
-            PhysicalRedoTargetIdentity::ExtentChunk {
-                extent: chunk.extent_cell().extent_id().get(),
-                generation: chunk.extent_cell().generation().get(),
-                chunk: chunk.ordinal(),
-            }
-        }
-    }
 }
 
 struct StagingCostAdmission {

@@ -81,8 +81,7 @@ fn current_origin(
     match expected {
         InvalidationOriginBinding::SourceAdmission { .. } => {
             let generation = graph
-                .get_entry(target)?
-                .direct_invalidation_basis()
+                .node_direct_invalidation_basis(target)?
                 .map(|basis| basis.generation())
                 .ok_or_else(|| {
                     SignalError::invalid_input("source invalidation basis was released")

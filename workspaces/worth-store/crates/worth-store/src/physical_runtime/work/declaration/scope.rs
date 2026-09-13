@@ -17,6 +17,7 @@ pub struct PhysicalWorkScope {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum PhysicalWorkScopeMembers {
+    Inspection(worth_store_physical_format::PhysicalArtifactReadRange),
     Artifact(RecordArtifactFile),
     One(RecordFrameCoordinate),
     Batch(Box<[RecordFrameCoordinate]>),
@@ -28,6 +29,23 @@ enum PhysicalWorkScopeMembers {
 }
 
 impl PhysicalWorkScope {
+    pub(in crate::physical_runtime) const fn inspection(
+        range: worth_store_physical_format::PhysicalArtifactReadRange,
+    ) -> Self {
+        Self {
+            members: PhysicalWorkScopeMembers::Inspection(range),
+        }
+    }
+
+    pub const fn inspection_target(
+        &self,
+    ) -> Option<worth_store_physical_format::PhysicalArtifactReadRange> {
+        match self.members {
+            PhysicalWorkScopeMembers::Inspection(range) => Some(range),
+            _ => None,
+        }
+    }
+
     pub fn artifact(artifact: RecordArtifactFile) -> Self {
         Self {
             members: PhysicalWorkScopeMembers::Artifact(artifact),
@@ -101,7 +119,7 @@ impl PhysicalWorkScope {
 
     pub fn coordinates(&self) -> &[RecordFrameCoordinate] {
         match &self.members {
-            PhysicalWorkScopeMembers::Artifact(_) => &[],
+            PhysicalWorkScopeMembers::Artifact(_) | PhysicalWorkScopeMembers::Inspection(_) => &[],
             PhysicalWorkScopeMembers::Checkpoint(_)
             | PhysicalWorkScopeMembers::WalAppend(_)
             | PhysicalWorkScopeMembers::WalBarrier(_) => &[],
@@ -115,7 +133,9 @@ impl PhysicalWorkScope {
     pub const fn artifact_target(&self) -> Option<RecordArtifactFile> {
         match &self.members {
             PhysicalWorkScopeMembers::Artifact(artifact) => Some(*artifact),
-            PhysicalWorkScopeMembers::One(_) | PhysicalWorkScopeMembers::Batch(_) => None,
+            PhysicalWorkScopeMembers::One(_)
+            | PhysicalWorkScopeMembers::Batch(_)
+            | PhysicalWorkScopeMembers::Inspection(_) => None,
             PhysicalWorkScopeMembers::Checkpoint(_)
             | PhysicalWorkScopeMembers::WalAppend(_)
             | PhysicalWorkScopeMembers::WalBarrier(_) => None,
@@ -167,7 +187,8 @@ impl PhysicalWorkScope {
 
     pub const fn member_count(&self) -> usize {
         match &self.members {
-            PhysicalWorkScopeMembers::Artifact(_)
+            PhysicalWorkScopeMembers::Inspection(_)
+            | PhysicalWorkScopeMembers::Artifact(_)
             | PhysicalWorkScopeMembers::One(_)
             | PhysicalWorkScopeMembers::Checkpoint(_)
             | PhysicalWorkScopeMembers::WalAppend(_)
@@ -182,6 +203,10 @@ impl PhysicalWorkScope {
         let mut digest = Sha256::new();
         digest.update(b"worth-store.physical-work-scope.v1");
         digest.update((self.member_count() as u64).to_le_bytes());
+        if let Some(range) = self.inspection_target() {
+            super::inspection_digest::include(&mut digest, range);
+            return digest.finalize().into();
+        }
         if let PhysicalWorkScopeMembers::Artifact(artifact) = &self.members {
             digest.update(b"artifact");
             let name = artifact.file_name();

@@ -16,23 +16,6 @@ pub(in crate::domain_computation::primary_graph) struct ConditionalRuntimeAffini
 }
 
 impl ConditionalRuntimeAffinity {
-    pub(super) fn for_installation<Schema>(
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        installation: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
-    ) -> ConditionalRuntimeAffinity {
-        ConditionalRuntimeAffinity {
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            installation_runtime: installation.runtime_ordinal(),
-            installation_generation: installation.generation().ordinal(),
-            provider_identity: runtime
-                .primary_graph_authority
-                .provider_identity()
-                .to_string(),
-            branch_identity: super::super::application_branch::PRIMARY_APPLICATION_BRANCH
-                .to_string(),
-        }
-    }
-
     pub(super) fn bind(
         &self,
         identity: &super::canonical_identity::WorthQueryTemporalBindingIdentity,
@@ -60,19 +43,22 @@ impl ConditionalRuntimeAffinity {
 pub(in crate::domain_computation::primary_graph) fn require_complete_binding_inventory<Schema>(
     expected: usize,
     bindings: &[Box<dyn WorthQueryPendingConditionalOperation<Schema>>],
+    output_readiness_count: usize,
 ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
     let unique = bindings
         .iter()
         .map(|binding| binding.binding_identity())
         .collect::<BTreeSet<_>>();
-    if bindings.len() == expected && unique.len() == expected {
+    if bindings.len().saturating_add(output_readiness_count) == expected
+        && unique.len().saturating_add(output_readiness_count) == expected
+    {
         Ok(())
     } else {
         Err(WorthQueryConditionalRuntimeInstallationDenial::new(
             WorthQueryConditionalRuntimeInstallationDenialKind::IncompleteBindingInventory,
             format!(
                 "expected {expected} exact conditional bindings, admitted {}",
-                unique.len()
+                unique.len().saturating_add(output_readiness_count)
             ),
         ))
     }
@@ -81,8 +67,9 @@ pub(in crate::domain_computation::primary_graph) fn require_complete_binding_inv
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph) fn install_pending_bindings<Schema>(
     bindings: Vec<Box<dyn WorthQueryPendingConditionalOperation<Schema>>>,
-    bridge: &mut super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    bridge: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+    authoritative_commit_cursor: u64,
     runtime_authority: u64,
     installation_runtime: u64,
     installation_generation: u64,
@@ -101,7 +88,7 @@ pub(in crate::domain_computation::primary_graph) fn install_pending_bindings<Sch
     };
     let mut registry = WorthQueryConditionalOperationRegistry::default();
     for binding in bindings {
-        let installed = binding.install(bridge.conditional_mut(), graph, &affinity)?;
+        let installed = binding.install(bridge, graph, &affinity, authoritative_commit_cursor)?;
         registry.install(installed).map_err(|()| {
             WorthQueryConditionalRuntimeInstallationDenial::new(
                 WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,

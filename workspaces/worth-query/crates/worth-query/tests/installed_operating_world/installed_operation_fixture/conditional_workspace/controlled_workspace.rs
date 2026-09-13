@@ -3,8 +3,7 @@ use worth_query::facade::{consumer_kit, domain};
 use super::installation::conditional_installation_pair_in_partitions;
 use super::providers::DirectConditionalCompute;
 use super::{
-    conditional_installation, conditional_workspace_builder, conditional_workspace_with,
-    GeometryDomain, ReadFamily, ReadVertex, ReadVertexExecutor,
+    conditional_installation, conditional_workspace_with, GeometryDomain, ReadFamily, ReadVertex,
 };
 
 pub(crate) fn conditional_controlled_workspace(
@@ -13,20 +12,7 @@ pub(crate) fn conditional_controlled_workspace(
 ) -> Result<consumer_kit::WorthQueryControlledTestWorkspace, consumer_kit::WorthQueryTestBackendError>
 {
     let installation = conditional_installation(&node);
-    conditional_workspace_builder(vec![node])
-        .conditional_runtime(installation.bridge, installation.graph)
-        .conditional_node(
-            GeometryDomain,
-            ReadVertex,
-            ReadFamily,
-            super::ConditionalModelGraph,
-            domain::WorthQueryConditionalNodeLocation::operation(installation.node_identity)
-                .unwrap(),
-            vec![installation.dependency],
-            installation.providers,
-            DirectConditionalCompute,
-        )
-        .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
+    super::conditional_workspace_with_builder(node, installation, DirectConditionalCompute)
         .controlled_workspace(name)
 }
 
@@ -65,21 +51,12 @@ where
         owner_placement.partition,
         donor_placement.partition,
     );
-    let owner = conditional_workspace_builder(vec![node.clone()])
-        .conditional_runtime(owner_installation.bridge, owner_installation.graph)
-        .conditional_node(
-            GeometryDomain,
-            ReadVertex,
-            ReadFamily,
-            super::ConditionalModelGraph,
-            domain::WorthQueryConditionalNodeLocation::operation(owner_installation.node_identity)
-                .unwrap(),
-            vec![owner_installation.dependency],
-            owner_installation.providers,
-            DirectConditionalCompute,
-        )
-        .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
-        .controlled_workspace(owner_placement.name)?;
+    let owner = super::conditional_workspace_with_builder(
+        node.clone(),
+        owner_installation,
+        DirectConditionalCompute,
+    )
+    .controlled_workspace(owner_placement.name)?;
     let donor = conditional_workspace_with(
         donor_placement.name,
         node,

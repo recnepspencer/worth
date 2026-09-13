@@ -21,8 +21,5 @@ pub use btree::{
     deterministic_stale_child_btree_read_preflight, deterministic_stale_child_btree_read_source,
     DeterministicBTreeReplayWorld,
 };
-pub use integrity::{
-    authoritative_layout_quarantine_record, layout_integrity_authority,
-    unresolved_layout_authority_record, LayoutIntegrityAuthorityFixture,
-};
+pub use integrity::{layout_integrity_authority, LayoutIntegrityAuthorityFixture};
 pub use rebuild::execute_root_manifest_rebuild_source;

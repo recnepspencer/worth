@@ -24,6 +24,8 @@ pub enum BackupArtifactCoverage {
         checkpoint_identity: String,
         manifest_generation: u64,
         durable_checkpoint_lsn: u64,
+        authority_fingerprint: [u8; 32],
+        frontier_digest: [u8; 32],
     },
     WalSegment {
         start_lsn: u64,
@@ -194,10 +196,14 @@ fn portable_coverage(
             checkpoint_identity,
             manifest_generation,
             durable_checkpoint_lsn,
+            authority_fingerprint,
+            frontier_digest,
         } => Bundle::CheckpointManifest {
             checkpoint_identity: checkpoint_identity.clone(),
             manifest_generation: *manifest_generation,
             durable_checkpoint_lsn: *durable_checkpoint_lsn,
+            authority_fingerprint: *authority_fingerprint,
+            frontier_digest: *frontier_digest,
         },
         BackupArtifactCoverage::WalSegment {
             start_lsn,
@@ -222,6 +228,8 @@ impl BackupArtifactCoverage {
         checkpoint_identity: impl Into<String>,
         manifest_generation: u64,
         durable_checkpoint_lsn: u64,
+        authority_fingerprint: [u8; 32],
+        frontier_digest: [u8; 32],
     ) -> Option<Self> {
         let checkpoint_identity = checkpoint_identity.into();
         (!checkpoint_identity.trim().is_empty() && manifest_generation > 0).then_some(
@@ -229,6 +237,8 @@ impl BackupArtifactCoverage {
                 checkpoint_identity,
                 manifest_generation,
                 durable_checkpoint_lsn,
+                authority_fingerprint,
+                frontier_digest,
             },
         )
     }

@@ -96,8 +96,8 @@ optimization.
 6. Remove the path-bound `WalAppendPlanner` from the ordinary
    `worth-store-wal` root facade. Keep bounded reconstructive inspection under
    its explicit inspection owner where still required.
-7. Update owner documentation, public API and removal inventories, and the
-   living closure ledger.
+7. Update owner documentation and public API guidance. Let Git history retain
+   the removed-source record; do not maintain a parallel inventory or ledger.
 
 ## Evidence
 

@@ -4,7 +4,7 @@ use worth_store_physical_format::{
     InMemoryPhysicalFormatReplayArtifact, PhysicalPageId, PhysicalReference, PhysicalSegmentId,
     PhysicalStoreIdentity,
 };
-use worth_store_recovery_physics::AdmittedRecoverySource;
+use worth_store_recovery_physics::PhysicalSourceSelection;
 use worth_store_security::StoreCurrentSecurityScopeWitnessSet;
 
 #[derive(Debug, Clone)]
@@ -35,7 +35,7 @@ pub struct BTreeReplayPhysicalSource {
     pub(super) root_reference: PhysicalReference,
     pub(super) replay_artifact: InMemoryPhysicalFormatReplayArtifact,
     pub(super) expected_store_identity: PhysicalStoreIdentity,
-    pub(super) durable_source: AdmittedRecoverySource,
+    pub(super) durable_source: PhysicalSourceSelection,
 }
 
 impl BTreeReplayPhysicalSource {
@@ -44,7 +44,7 @@ impl BTreeReplayPhysicalSource {
         root_reference: PhysicalReference,
         replay_artifact: InMemoryPhysicalFormatReplayArtifact,
         expected_store_identity: PhysicalStoreIdentity,
-        durable_source: AdmittedRecoverySource,
+        durable_source: PhysicalSourceSelection,
     ) -> Self {
         Self {
             readiness,

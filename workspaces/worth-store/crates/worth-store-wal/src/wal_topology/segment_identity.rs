@@ -6,7 +6,7 @@ pub struct WalSegmentId {
 }
 
 impl WalSegmentId {
-    pub fn new(value: u64) -> Result<Self, WalTopologyDenial> {
+    pub const fn new(value: u64) -> Result<Self, WalTopologyDenial> {
         if value == 0 {
             return Err(WalTopologyDenial::new(
                 WalTopologyDenialKind::EmptySegmentId,
@@ -26,7 +26,7 @@ pub struct WalSegmentGeneration {
 }
 
 impl WalSegmentGeneration {
-    pub fn new(value: u64) -> Result<Self, WalTopologyDenial> {
+    pub const fn new(value: u64) -> Result<Self, WalTopologyDenial> {
         if value == 0 {
             return Err(WalTopologyDenial::new(
                 WalTopologyDenialKind::InvalidSegmentGeneration,

@@ -51,6 +51,21 @@ A comparator may suppress Signal work while the truth change remains real.
 Conversely, Query may use direct truth for a local field patch without claiming
 that Signal executed.
 
+Product-bound delivery adds one identity rule: every existing patch granule
+carries the committed product branch and composite commit occurrence that
+authorized it. Query admits delivery only against the matching selected
+product. It never publishes a half-current view assembled from a new
+Relational head and an old Signal basis. A retained Signal component may still
+evaluate a Relational-only publication without advancing its own component
+basis; the delivery evidence records those as separate contacts.
+
+Matching, nonmatching, delayed, and slow-consumer paths retain the existing
+bounded queue and backpressure policy. Exhaustion after `Performed` delays or
+retains the committed artifact for typed projection retry; it does not
+reclassify the publication or rerun authoritative effects. Closing a live
+consumer releases its product observation, evaluation binding, and queued
+delivery custody.
+
 ## How It Executes
 
 1. Install Query semantic dependencies and their Bridge correspondence.

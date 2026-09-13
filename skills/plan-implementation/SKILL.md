@@ -7,6 +7,11 @@ description: Create an implementation plan for a specified WORTH milestone phase
 
 Create an implementation plan for the requested phase or slice.
 
+For each phase, prioritize the smallest working end-to-end production journey
+that can provide meaningful feedback. Reach that MVP checkpoint as soon as
+reasonably possible, then expand and harden the same journey against the full
+acceptance requirements.
+
 Do not implement the plan or edit files during this turn.
 
 As you plan:
@@ -15,7 +20,8 @@ As you plan:
   performance, composition, domain-structure, testing, and DX laws.
 - Review the relevant context, including the governing specification, current
   implementation, relevant public APIs, tests, upstream authorities, and
-  downstream consumers.
+  downstream consumers. Reuse established findings and investigate unresolved
+  boundaries needed for the journey rather than repeating a broad review.
 - Identify the adversarial constraint the work must survive.
 - Plan the appropriate causal scope. Include required foundations,
   integrations, cutovers, and proof work even when they cross files, crates, or
@@ -41,7 +47,27 @@ boundaries absorb growth without unrelated edits or ownership changes.
 Write one coherent implementation path rather than a loose collection of
 possibilities.
 
-Order the plan by dependency and authority. For each step, explain:
+Start the plan with three concrete things:
+
+- The first working journey: its real input, production path, observable result,
+  and focused test or demonstration that will provide feedback.
+- Its necessary prerequisites: which specific step each prerequisite blocks.
+  Schedule each fix immediately before completing the behavior it enables.
+- The remaining completion work: required scenarios, failure handling, lifecycle
+  coverage, and performance evidence beyond the first working journey.
+
+The MVP may narrow scenario coverage, polish, and optimization, but it must use
+the real production owners and authority boundaries. A disconnected fixture,
+stubbed internal integration, or isolated passing test cannot establish that the
+journey works. Include focused verification with the first working version;
+preserve every acceptance requirement for phase closure.
+
+Use feedback from that journey and unmet acceptance requirements to order later
+work. Defer general cleanup, speculative abstractions, and optimization unless a
+concrete obstruction or governing requirement makes them necessary. Keep the
+working journey as the integration checkpoint while expanding and hardening it.
+
+Respect dependency and authority within this sequence. For each step, explain:
 
 - what the step requires
 - what must change

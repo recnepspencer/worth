@@ -64,6 +64,11 @@ impl<Schema, Operation, Input, Scope>
             effects,
             emission_retained_bytes,
             emission_retained_bytes_ceiling,
+            conditional_definition: None,
+            validator_work_admission:
+                super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
+            output_correspondence: Default::default(),
+            retain_output_demand_observation: false,
         };
         validate_elevation_request_program(&program)?;
         Ok(WorthQueryElevationRequestProgram { program })
@@ -141,11 +146,13 @@ fn request_effects(
             kind: binding.elevation_kind(),
             key: elevation_key.clone(),
             fields: elevation_fields,
+            partition: super::effect_program::WorthQueryApplicationCreationPartition::Issued,
         },
         WorthQueryApplicationRealizedEffect::CreateEntity {
             kind: binding.review_kind(),
             key: review_key.clone(),
             fields: review_fields,
+            partition: super::effect_program::WorthQueryApplicationCreationPartition::Issued,
         },
         WorthQueryApplicationRealizedEffect::CreateRelation {
             kind: binding.requester_relation(),
@@ -281,13 +288,24 @@ fn same_effect(
 ) -> bool {
     match (actual, expected) {
         (
-            WorthQueryApplicationRealizedEffect::CreateEntity { kind, key, fields },
+            WorthQueryApplicationRealizedEffect::CreateEntity {
+                kind,
+                key,
+                fields,
+                partition,
+            },
             WorthQueryApplicationRealizedEffect::CreateEntity {
                 kind: expected_kind,
                 key: expected_key,
                 fields: expected_fields,
+                partition: expected_partition,
             },
-        ) => kind == expected_kind && key == expected_key && fields == expected_fields,
+        ) => {
+            kind == expected_kind
+                && key == expected_key
+                && fields == expected_fields
+                && partition == expected_partition
+        }
         (
             WorthQueryApplicationRealizedEffect::CreateRelation {
                 kind,

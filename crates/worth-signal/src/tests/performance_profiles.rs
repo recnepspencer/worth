@@ -72,7 +72,15 @@ pub(super) fn perf_contract<'a>(
     timing_policy: PerfTimingPolicy,
     phase_metrics: &'a [&'a str],
 ) -> PerfCaseContract<'a> {
-    PerfCaseContract::new(suite, profile, "serial", timing_policy, phase_metrics, &[])
+    PerfCaseContract::new(
+        suite,
+        profile,
+        "serial",
+        timing_policy,
+        phase_metrics,
+        &[],
+        &[],
+    )
 }
 
 pub(super) fn hot_family_contract<'a>(
@@ -88,6 +96,26 @@ pub(super) fn hot_family_contract<'a>(
         "serial",
         timing_policy,
         phase_metrics,
+        &[],
+        access_counter_maxima,
+    )
+}
+
+pub(super) fn hot_family_contract_with_scoped_allocations<'a>(
+    suite: &'a str,
+    profile: &'a str,
+    timing_policy: PerfTimingPolicy,
+    phase_metrics: &'a [&'a str],
+    scoped_allocation_metrics: &'a [&'a str],
+    access_counter_maxima: &'a [(&'a str, u128)],
+) -> PerfCaseContract<'a> {
+    PerfCaseContract::new(
+        suite,
+        profile,
+        "serial",
+        timing_policy,
+        phase_metrics,
+        scoped_allocation_metrics,
         access_counter_maxima,
     )
 }

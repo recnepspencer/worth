@@ -97,16 +97,20 @@ impl<'grant> PhysicalDirtyReplacementReservation<'grant> {
             .lease
             .take()
             .expect("armed dirty replacement retains its clean lease");
-        if let Err(reason) = lease.owner.finish_dirty_replacement(
+        let resident_generation = match lease.owner.finish_dirty_replacement(
             self.allocation_use.scope(),
             lease.key,
             &lease.bytes,
             Arc::clone(&replacement),
         ) {
-            self.release_reservation();
-            return Err(PhysicalDirtyReplacementError::Residency(reason));
-        }
+            Ok(generation) => generation,
+            Err(reason) => {
+                self.release_reservation();
+                return Err(PhysicalDirtyReplacementError::Residency(reason));
+            }
+        };
         lease.bytes = replacement;
+        lease.resident_generation = resident_generation;
         self.release_reservation();
         Ok(DirtyPhysicalFrame { lease: Some(lease) })
     }
@@ -135,6 +139,15 @@ impl Drop for PhysicalDirtyReplacementReservation<'_> {
 }
 
 impl DirtyPhysicalFrame {
+    pub fn resident_generation(
+        &self,
+    ) -> crate::physical_residency::PhysicalResidentFrameGeneration {
+        self.lease
+            .as_ref()
+            .expect("dirty physical frame retains its lease")
+            .resident_generation()
+    }
+
     pub fn pool_incarnation(&self) -> PhysicalResidencyIncarnation {
         self.lease
             .as_ref()

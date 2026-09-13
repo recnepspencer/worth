@@ -1,0 +1,7 @@
+error[E0277]: the trait bound `ManagedSignalBranchReference: From<AuthorityWitness<Auth>>` is not satisfied
+ --> tests/ui/branch_reference/generic_authority_cannot_mint_managed_reference.rs:7:15
+  |
+7 |     authority.into()
+  |               ^^^^ the trait `From<AuthorityWitness<Auth>>` is not implemented for `ManagedSignalBranchReference`
+  |
+  = note: required for `AuthorityWitness<Auth>` to implement `Into<ManagedSignalBranchReference>`

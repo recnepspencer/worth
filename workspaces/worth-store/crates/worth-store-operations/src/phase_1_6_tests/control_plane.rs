@@ -3,7 +3,7 @@ use super::support::*;
 #[test]
 fn admitted_cut_reopens_idempotently_and_abandonment_durably_releases_its_lease() {
     let scenario = BackupScenario::new("cut-reopen");
-    let authority = crate::backup::export::current_authority("s10-cut-reopen");
+    let authority = scenario.authority();
     let operation = OperationalOperationId::new("backup-cut-reopen").expect("operation");
     let first_control = scenario.control_store();
     let first = OnlineBackupIntent::new(
@@ -67,7 +67,7 @@ fn admitted_cut_reopens_idempotently_and_abandonment_durably_releases_its_lease(
 #[test]
 fn concurrent_backups_of_one_cut_keep_reclaim_protection_until_the_last_release() {
     let scenario = BackupScenario::new("shared-cut-lease-holders");
-    let authority = crate::backup::export::current_authority("s10-shared-cut-lease-holders");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let first = OnlineBackupIntent::new(
         OperationalOperationId::new("shared-cut-first").expect("first operation"),
@@ -148,7 +148,7 @@ fn concurrent_backups_of_one_cut_keep_reclaim_protection_until_the_last_release(
 #[test]
 fn control_replay_rejects_a_recovery_object_before_exceeding_its_byte_budget() {
     let scenario = BackupScenario::new("bounded-control-recovery-object");
-    let authority = crate::backup::export::current_authority("s10-bounded-control-recovery-object");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let _admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("bounded-control-recovery-object").expect("operation"),
@@ -188,7 +188,7 @@ fn fresh_process_recovers_the_physical_reclaim_interlock_from_control_media() {
             std::iter::empty::<ProtectedOperationalMediaLocation>(),
         )
         .expect("child reopens control media");
-        let authority = crate::backup::export::current_authority("s10-lease-recovery");
+        let authority = crate::backup::export::current_authority("store.physical.default_instance");
         let selection = TestControlStoreFencingProvider::selected(
             &authority,
             &control,
@@ -233,7 +233,7 @@ fn fresh_process_recovers_the_physical_reclaim_interlock_from_control_media() {
     }
 
     let scenario = BackupScenario::new("lease-recovery");
-    let authority = crate::backup::export::current_authority("s10-lease-recovery");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-lease-recovery").expect("operation"),
@@ -278,7 +278,7 @@ fn fresh_process_recovers_the_physical_reclaim_interlock_from_control_media() {
 #[test]
 fn recovered_cut_refuses_source_mutation_instead_of_minting_resume_authority() {
     let scenario = BackupScenario::new("mutated-recovery-source");
-    let authority = crate::backup::export::current_authority("s10-mutated-recovery-source");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-mutated-recovery-source").expect("operation"),
@@ -324,7 +324,7 @@ fn recovered_cut_refuses_source_mutation_instead_of_minting_resume_authority() {
 #[test]
 fn selected_control_state_fails_closed_when_its_lease_object_is_missing() {
     let scenario = BackupScenario::new("missing-lease-object");
-    let authority = crate::backup::export::current_authority("s10-missing-lease-object");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let _admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-missing-lease-object").expect("operation"),

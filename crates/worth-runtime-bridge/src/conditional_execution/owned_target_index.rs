@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::sync::{Arc, PoisonError, RwLock};
 
 use super::{
     BridgeConditionalDenial, BridgeConditionalDenialKind, BridgeInstalledConditionalLowering,
@@ -17,9 +18,22 @@ struct BridgeOwnedConditionalTargetBucket {
     targets: BTreeMap<InstalledCorrespondenceTarget, usize>,
 }
 
+pub(super) struct BridgeOwnedConditionalTargetReservation {
+    index: Arc<RwLock<BridgeOwnedConditionalTargetIndex>>,
+    correspondences: Arc<[crate::correspondence::BridgeInstalledSemanticCorrespondence]>,
+    active: bool,
+}
+
 impl BridgeOwnedConditionalTargetIndex {
+    pub(super) fn retained_target_reference_count(&self) -> usize {
+        self.by_dependency
+            .values()
+            .flat_map(|bucket| bucket.targets.values())
+            .sum()
+    }
+
     pub(super) fn register(&mut self, lowering: &BridgeInstalledConditionalLowering) {
-        for correspondence in &lowering.correspondences {
+        for correspondence in lowering.correspondences.iter() {
             let dependency = correspondence.dependency();
             let key = dependency.canonical_registration_key();
             let bucket = self.by_dependency.entry(key).or_insert_with(|| {
@@ -39,8 +53,15 @@ impl BridgeOwnedConditionalTargetIndex {
     }
 
     pub(super) fn unregister(&mut self, lowering: &BridgeInstalledConditionalLowering) {
+        self.unregister_correspondences(&lowering.correspondences);
+    }
+
+    fn unregister_correspondences(
+        &mut self,
+        correspondences: &[crate::correspondence::BridgeInstalledSemanticCorrespondence],
+    ) {
         let mut empty = Vec::new();
-        for correspondence in &lowering.correspondences {
+        for correspondence in correspondences {
             let dependency = correspondence.dependency();
             let key = dependency.canonical_registration_key();
             let bucket = self
@@ -68,6 +89,58 @@ impl BridgeOwnedConditionalTargetIndex {
         }
     }
 
+    pub(super) fn reserve_existing(
+        index: &Arc<RwLock<Self>>,
+        correspondences: Arc<[crate::correspondence::BridgeInstalledSemanticCorrespondence]>,
+    ) -> Result<BridgeOwnedConditionalTargetReservation, BridgeConditionalDenial> {
+        let mut installed = index.write().unwrap_or_else(PoisonError::into_inner);
+        for correspondence in correspondences.iter() {
+            let dependency = correspondence.dependency();
+            let key = dependency.canonical_registration_key();
+            let bucket = installed
+                .by_dependency
+                .get(&key)
+                .filter(|bucket| bucket.dependency == *dependency)
+                .ok_or_else(|| {
+                    BridgeConditionalDenial::new(
+                        BridgeConditionalDenialKind::DeclarationCorrespondenceMismatch,
+                        "definition successor lost its installed semantic target bucket",
+                    )
+                })?;
+            for target in correspondence.targets.as_slice() {
+                let references = bucket.targets.get(target).ok_or_else(|| {
+                    BridgeConditionalDenial::new(
+                        BridgeConditionalDenialKind::DeclarationCorrespondenceMismatch,
+                        "definition successor lost an exact installed semantic target",
+                    )
+                })?;
+                references.checked_add(1).ok_or_else(|| {
+                    BridgeConditionalDenial::new(
+                        BridgeConditionalDenialKind::ConditionalEvaluationAdmissionCapacity,
+                        "owned conditional target reference count is exhausted",
+                    )
+                })?;
+            }
+        }
+        for correspondence in correspondences.iter() {
+            let key = correspondence.dependency().canonical_registration_key();
+            let bucket = installed.by_dependency.get_mut(&key).unwrap_or_else(|| {
+                unreachable!("validated successor target bucket remains installed")
+            });
+            for target in correspondence.targets.as_slice() {
+                if let Some(references) = bucket.targets.get_mut(target) {
+                    *references += 1;
+                }
+            }
+        }
+        drop(installed);
+        Ok(BridgeOwnedConditionalTargetReservation {
+            index: Arc::clone(index),
+            correspondences,
+            active: true,
+        })
+    }
+
     pub(super) fn resolve(
         &self,
         dependency: &BridgeSemanticDependencyCandidate,
@@ -91,5 +164,22 @@ impl BridgeOwnedConditionalTargetIndex {
                 )
             },
         )
+    }
+}
+
+impl BridgeOwnedConditionalTargetReservation {
+    pub(super) fn commit(mut self) {
+        self.active = false;
+    }
+}
+
+impl Drop for BridgeOwnedConditionalTargetReservation {
+    fn drop(&mut self) {
+        if self.active {
+            self.index
+                .write()
+                .unwrap_or_else(PoisonError::into_inner)
+                .unregister_correspondences(&self.correspondences);
+        }
     }
 }

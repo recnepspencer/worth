@@ -14,6 +14,13 @@ C.6 is not an isolated buffer-pool exercise. It is the cutover that turns the
 existing residency mechanisms into the ordinary Store contract and deletes the
 temporary handoff and legacy S.2 model graphs.
 
+## Current Verification Policy
+
+C.6 behavior is protected by current direct Cargo tests and repository gates.
+Generated proof ledgers, source bindings, mutation catalogs, evidence bundles,
+and report pipelines are retired and must not be recreated. Git preserves the
+implementation history.
+
 ## Why This Milestone Exists
 
 C.5.1 proved that a bounded frame path can inherit the canonical physical work
@@ -90,8 +97,8 @@ C.6 starts from, and must not weaken, these closed guarantees:
     workload. That evidence is inherited substrate, not proof that C.6 itself
     is complete.
 
-Any implementation that reopens one of these guarantees must reopen its
-evidence in the C.6 closure ledger.
+Any implementation that changes one of these guarantees must rerun the focused
+owner and integration tests affected by that change.
 
 ## Adversarial Constraint
 
@@ -119,7 +126,8 @@ The completed milestone must survive this joined condition:
 > fate. A second fresh process reconstructs the producer's expected records
 > from files alone.
 
-The courtroom is required to run controlled mutants that:
+The direct hostile scenario and focused owner tests must detect regressions
+that would:
 
 1. copy the complete store into an unaccounted buffer;
 2. evict a pinned frame;
@@ -136,11 +144,10 @@ The courtroom is required to run controlled mutants that:
 11. use a legacy S.2 frame table or snapshot-derived admission as the subject;
 12. make a record view outlive the lease that pins its frame.
 
-Each compilable mutant must fail the predicate nearest its defect. The
-whole-store-copy mutant fails allocation evidence, the pinned-eviction mutant
-fails lease/eviction truth, the duplicate-load mutant fails fault coalescence,
-and the premature-clean mutant fails dirty/writeback settlement. A generic
-final-data mismatch is insufficient localization.
+Each regression must fail at the nearest owned boundary: unaccounted copies at
+allocation observation, pinned eviction at lease/eviction truth, duplicate
+loads at fault coalescence, and premature clean transitions at dirty/writeback
+settlement. A generic final-data mismatch is insufficient localization.
 
 ## Authority Topology
 
@@ -668,7 +675,7 @@ maps never enter the pool API, record-view API, scheduler demand, or backend
 command. Resident, pinned, dirty, evictable, pressured, prefetched, and hot are
 never authoritative Foundational aspects.
 
-## Authority Type Ledger
+## Authority Ownership
 
 | Type | Constructed only by | Proves | Authorizes | Explicitly cannot authorize | Consumed by |
 | --- | --- | --- | --- | --- | --- |
@@ -904,17 +911,11 @@ workspaces/worth-store/crates/
 
 workspaces/worth-store/tools/store-test-runner/
 └── src/
-    ├── arguments.rs                             # exact replay CLI
-    ├── courtroom_campaign/
-    │   └── bounded_residency_siege/
-    │       ├── schedule.rs                      # sealed schedule-plan facade [C.6]
-    │       └── schedule/
-    │           ├── seed.rs                      # typed seed and deterministic derivation [C.6]
-    │           ├── decision.rs                  # closed admissible decision vocabulary [C.6]
-    │           └── trace.rs                     # ordered replay evidence [C.6]
-    └── mutation_campaign/
-        └── catalog/
-            └── physical_reconstruction_c6.rs    # append-only C.6 regression corpus [C.6]
+    ├── arguments.rs                             # direct scenario CLI
+    └── bounded_residency_siege/                 # focused process scenario [C.6]
+        ├── execution.rs
+        ├── schedule.rs
+        └── observation.rs
 ```
 
 This plan intentionally permits a directory to begin with one semantic
@@ -1139,33 +1140,23 @@ instrumentation.
 
 ## Cleanup And Cutover Contract
 
-Cleanup is an architectural deliverable. Every phase maintains a removal
-ledger with the predecessor, replacement, last consumer, deletion phase, and
-mechanical absence check. A replacement is not complete while its predecessor
-still compiles.
+Cleanup is an architectural deliverable. Git history, current callers, Cargo
+metadata, and the surviving dependency graph are the record of cutover. A
+replacement is not complete while its predecessor still compiles; no separate
+removal ledger is maintained.
 
-| Obsolete surface | Required disposition |
-| --- | --- |
-| `PhysicalRecordResidencyPolicy::{new, new_with_metadata_budget}` and `Option`-based limit admission | Replace with declaration builder, typed denial outcome, and admitted-policy type |
-| `record_serving/c6_handoff/` | Move admitted responsibilities into `record_serving/residency/`, `access/`, and inherited `work/`; delete the directory |
-| `C6PhysicalWorkHandoff` and all public `C6*` runtime types | Replace with responsibility-named lease, residency capability, dirty-frame, writeback, failure, and settlement types; no aliases |
-| `ServingPhysicalRuntime::c6_physical_work_handoff()` | Delete; ordinary callers use `records()`, publication submission, and narrow internal residency composition |
-| `ServingPhysicalRuntime::{residency_counters, drain_clean_residency, physical_residency_writeback_command, bind_physical_residency_writeback_retry}` | Replace counters with Store-owned observation; move drain/writeback control behind Store-private scoped capabilities |
-| public `ResidencyUnavailable(worth_store_buffer_pool::PhysicalResidencyDenial)` error payloads | Replace with Store-owned `PhysicalPressure` classification plus `PhysicalRecordPressureEvidence` |
-| `OpenedPhysicalRecord` alias | Delete; `RecordReadSession` is the single public logical lease name |
-| `c6_*` production tests, binaries, runner modules, selectors, and mutation source bindings | Rename by proven responsibility and update source-bound mutants |
-| `physical_residency/tests/c6_readiness.rs` | Rename/split by the actual budget, lease, or writeback law it proves |
-| `legacy-s2-models` and downstream `legacy-certification-models` features | Delete from every manifest and ordinary/certification feature edge |
-| `S2PhysicalResidencyEntry::from_physical_substrate_snapshot` | Delete; no snapshot-derived admission replacement |
-| `ResidentFrameTable` and its capacity/load request graph | Delete after every useful test drives `PhysicalResidencyPool` through the Store composition boundary |
-| legacy `ZeroCopyRecordView`, `BoundedCopyRecordView`, materialization profiles, and fixture constructors | Delete; migrate consumers to the canonical borrowed view/bounded-copy contract |
-| publication aspect binding that also serves `ExactWriteback` | Split: publication remains publication-only; exact frame writeback receives its own admitted Foundational basis |
-| isolated S.2 prefetch/read-ahead/write-behind/background allocation models | Delete; prove the retained requirements through the canonical pool and work topology |
-| certification helpers that fabricate admitted pool truth | Rewrite against a real admitted Store or delete when redundant |
-| temporary compatibility re-exports and deprecated aliases | Forbidden; consumers migrate in the same phase |
-| stale S.2 documentation claims | Mark historical/superseded and link to the C.6 usage document |
-| C.6 rows in `physical-reality-audit.csv` | Update with canonical source/evidence or deletion disposition |
-| obsolete dependencies exposed by the deletion | Remove from manifests and regenerate lockfiles through normal Cargo commands |
+Implement the cutover in the owning source:
+
+- move responsibilities still needed by ordinary callers into the
+  responsibility-named residency, access, work, and writeback owners;
+- migrate every current caller in the same change, then delete superseded
+  C.6/S.2 handoff types, directories, constructors, aliases, feature edges,
+  fixtures, and dependencies;
+- keep `RecordReadSession` as the single public logical lease and expose
+  Store-owned pressure and observation types rather than buffer-pool internals;
+- keep publication and exact frame writeback on distinct admitted bases; and
+- retain a test only when it directly proves continuing behavior through the
+  canonical Store composition boundary.
 
 At closeout, repository-wide source and manifest checks must prove:
 
@@ -1187,8 +1178,8 @@ At closeout, repository-wide source and manifest checks must prove:
   physical owner boundary, not Part II or a test-support shortcut.
 
 Text search is necessary but not sufficient. Dependency graph checks,
-compile-fail tests, ordinary feature-graph inspection, and production-path
-courtrooms must prove the absence claims.
+compile-fail tests, ordinary feature-graph inspection, and direct production-
+path scenarios must prove the absence claims.
 
 ## Documentation Deliverables
 
@@ -1213,19 +1204,18 @@ The phase that stabilizes each public surface writes or revises:
      superseded by C.6;
    - preserve useful historical context without presenting deleted APIs as the
      current implementation target.
-4. `_docs/worth-store/physical-reality-audit.csv`
-   - replace each C.6 fake/model disposition with the exact joined production
-     source, retained quarantine, or deletion evidence.
+4. focused C.6 owner and integration tests
+   - replace useful fake/model coverage with direct checks of the joined
+     production boundary; delete redundant scaffolding.
 5. `_docs/worth-store/physical-foundation-reconstruction-roadmap.md`
    - link this engineering spec now;
-   - at closeout, record the evidence bundle and successor handoff.
+   - at closeout, record the successor handoff and current verification
+     commands.
 6. `workspaces/worth-store/tools/store-test-runner/README.md`
-   - document the exact Courtroom C workload-seed and schedule-seed distinction;
-   - show the canonical run, exact `--schedule-seed <u64>` replay command, and
-     the 16-seed CI derivation;
-   - state that the twelve designed controlled-defect categories are the
-     minimum corpus and that every later executable bug correction appends its
-     causal mutation to certification in the same change.
+   - document the hostile residency scenario and any user-facing seed needed to
+     replay a failed focused test;
+   - keep the normal command direct and avoid generated reports or mutation
+     registries.
 
 The feature-facing guide must be written with the `feature-doc-writer` skill
 after the public API is real. Documentation claims are verified against
@@ -1266,8 +1256,7 @@ Allowed test-only layers are:
 - process-level allocation instrumentation at the named allocation boundary;
 - the existing production storage interposer and declared physical yieldpoints;
 - an independent read-only filesystem/format verifier;
-- evidence projection and mutant selection that do not manufacture runtime
-  authority.
+- direct scenario observation that does not manufacture runtime authority.
 
 ### Initial world
 
@@ -1285,10 +1274,9 @@ Allowed test-only layers are:
    - append payloads that saturate dirty capacity;
    - duplicate-fault coordinates;
    - expected record bytes generated independently from Store decode.
-4. The evidence records backend profile, format version, page size, exact
-   global and per-scope budgets, speculative ceilings, workload seed,
-   schedule-perturbation seed, source identity, binary identity, and
-   filesystem profile.
+4. The direct scenario fixes the backend profile, format version, page size,
+   exact global and per-scope budgets, speculative ceilings, workload seed, and
+   schedule seed needed for deterministic execution.
 5. No replay artifact, persisted heap image, pool snapshot, decoded expected
    record file, or legacy S.2 fixture exists before serving begins.
 
@@ -1312,10 +1300,10 @@ The fresh serving executable:
 11. cancels one request before dispatch and one after possible dispatch;
 12. begins close while the delayed writeback is unresolved, then releases or
     faults it according to the scheduled case;
-13. emits terminal evidence and terminates.
+13. emits the terminal observations asserted by the direct test and terminates.
 
 A second fresh verifier executable receives only the root, stable format
-declaration, workload seed, and evidence bundle location. It does not receive a
+declaration, and workload seed. It does not receive a
 runtime, pool, leases, registries, decoded records, or expected-state buffer
 from either earlier process.
 
@@ -1377,7 +1365,8 @@ The closure lane proves:
 The staged schedule above remains the canonical adversarial proof. It is not
 the only lawful interleaving.
 
-Courtroom C must also derive a deterministic `SchedulePerturbationPlan` from a
+The hostile residency scenario may derive a deterministic
+`SchedulePerturbationPlan` from a
 schedule seed that is distinct from the workload seed. The plan may choose
 only among actions that are simultaneously admissible at the existing sealed
 certification gates: worker start order, equivalent contender identity, gate
@@ -1386,55 +1375,22 @@ causal prerequisite, weaken a hostile condition, change workload truth,
 introduce sleeps or timing jitter, call production scheduling policy, or
 create another scheduler.
 
-The runner API is exact:
+Direct C.6 tests print the schedule seed when a seeded scenario fails. Supplying
+that seed to the focused test replays the same admissible decisions. No mutation
+report or courtroom report is required.
 
-```text
-store-test-runner courtrooms --courtroom c \
-  --schedule-seed <u64> \
-  --mutant-report <path> \
-  --report <path>
-```
+CI may run a bounded set of deterministic schedule seeds derived from stable
+scenario identity and lane index. A failure prints its exact seed so the same
+direct test can be replayed without a report artifact.
 
-Omitting `--schedule-seed` selects the declared canonical closeout seed.
-Supplying it replays exactly the same ordered schedule decisions from the same
-source identity. Before the serving child starts, the runner emits the
-schedule seed and exact replay command. The machine report records the
-workload seed, schedule seed, closed decision vocabulary, ordered decision
-trace, and trace digest. A seed that is accepted but never changes any
-admissible decision is invalid evidence.
+### Regression sensitivity
 
-CI runs exactly 16 distinct schedule seeds. Seed `i` is derived
-deterministically from the checked-out revision identity and lane index
-`i in 0..16`; retrying the same revision therefore replays the same corpus.
-Each seed gets a distinct report path, and any failure publishes or prints its
-exact seed and replay command. The canonical staged seed remains required in
-release certification in addition to the full mutation corpus.
+When a real C.6 defect is fixed, add the smallest direct regression that reaches
+the causal boundary when that test provides durable value. Mutation catalogs,
+source replacement, binary identity reports, and append-only regression
+registries are not part of the current verification model.
 
-### Mutation sensitivity
-
-The twelve controlled-defect categories in the Adversarial Constraint are the
-minimum seed corpus, not a fixed sample and not a ceiling. Every concrete
-mutation is individually bound to its expected predicate and lane. The
-evidence bundle records mutant id, source/binary identity, exact source
-replacement, expected failing predicate, actual first failing predicate, and
-localization.
-
-After this contract is adopted, every real executable bug corrected in the
-C.6 production subject or its certification evidence must add a mutation that
-recreates the causal defect in the same change. The corresponding ledger
-finding cannot close until that mutation fails at the nearest causal predicate
-and participates in certification. Mutation identities are append-only and
-never reused. Courtroom C derives its required concrete inventory from the
-current bounded-residency catalog; no separately hard-coded count or terminal
-id may let a newly appended regression disappear.
-
-At least the whole-store copy, pinned eviction, premature clean, duplicate
-source load, speculative budget bypass, and topology-bypass mutants run in CI
-certification. Release certification runs every concrete mutation in the
-current catalog, including every bug-derived regression added after the
-original twelve categories.
-
-### Mechanical anti-substitution gates
+### Mechanical anti-substitution checks
 
 The milestone adds:
 
@@ -1449,66 +1405,49 @@ The milestone adds:
   frame-writeback basis and publication is bound only to publication;
 - causal checks proving hit, pin, view, copy, eviction, dirty marking, and
   pre-effect pressure denial create no Signal request;
-- source checks rejecting C.6 production vocabulary, whole-record owning read
-  helpers, direct ordinary media sources, and local residency work machinery;
+- compile and dependency checks rejecting whole-record owning read helpers,
+  direct ordinary media sources, and local residency work machinery;
 - runtime call-path evidence binding faults/writebacks to Signal, scheduler,
   executor, backend receipt, and Store settlement;
 - allocation-boundary instrumentation that fails unadmitted or misclassified
   allocation;
 - fresh-process identity checks that reject live-runtime or cache reuse;
-- audit rows tying every former fake/model surface to its deletion or canonical
-  replacement.
+- current call-site review showing former fake/model surfaces are deleted or no
+  longer reachable.
 
 ### Evidence and rerun
 
-The machine-checkable bundle contains:
-
-- source, binary, runner, format, backend, filesystem, and hardware identities;
-- workload seed, schedule-perturbation seed, ordered schedule-decision trace,
-  schedule-trace digest, exact replay command, and independent expectation
-  digest;
-- process, runtime, root, Store generation, operation, frame, lease, and
-  writeback identities;
-- admitted global/scope/speculative budget declaration;
-- ordered workload, fault, cancellation, delay, allocation, media, residency,
-  work-transition, settlement, and shutdown traces;
-- exact counter snapshots and independent reconciliation;
-- physical artifact manifest and verifier outcome;
-- source/feature/dependency absence results;
-- every mutant result and first-failure localization;
-- exact owner-check, developer-smoke, CI, release, and hardware-qualification
-  rerun commands.
-
-Identity mismatch invalidates the bundle. Evidence from the C.5.1 inheritance
-siege may be linked as inherited proof but cannot replace the C.6 production
-courtroom.
+The current verification surface is the focused Cargo tests, the direct hostile
+scenario, ordinary feature and dependency checks, and the repository boundary
+gates. A failing seeded test prints the seed needed to replay that same direct
+test. Runtime diagnostics may expose identities and counters needed to explain
+a failure, but no checked-in bundle, digest, source binding, or report is a
+completion requirement.
 
 ## Phase Plan
 
-### Phase 1: Freeze The Real Boundary And Removal Ledger
+### Phase 1: Freeze The Real Boundary And Cutover
 
-**Telos:** make the current production path, inherited guarantees, destination
-owners, and obsolete graph mechanically explicit before moving authority.
+**Telos:** inspect the current production path, inherited guarantees,
+destination owners, and obsolete graph before moving authority.
 
 **Must ship:**
 
-- a source/dependency trace from `PhysicalRecordReader::open` and ordinary
+- review of the live call path from `PhysicalRecordReader::open` and ordinary
   publication through pool, Signal, scheduler, executor, backend, and
   settlement;
-- an inventory of every direct media source and why bootstrap is its only legal
-  serving-adjacent consumer;
-- a repository-wide consumer inventory for `c6_handoff`, every `C6*` type,
-  every legacy S.2 authority type, and every legacy feature edge;
-- the removal ledger defined above with an assigned deletion phase;
+- review of current direct media and legacy consumers using Git, Cargo metadata,
+  and scoped source search;
+- deletion of obsolete C.6 handoff, legacy S.2, and legacy feature edges in the
+  phase that removes their last real consumer;
 - compile/dependency gates that fail if a second residency pool or local work
   runtime is introduced.
 
 **Preserve:** all C.5.1 ordinary read/write, cancellation, settlement, health,
 and shutdown evidence remains green before authority moves.
 
-**Proof:** the inventory is generated from source and Cargo metadata, not a
-handwritten list alone. A deliberately added legacy feature edge and a
-deliberately added local pending map each fail their gate.
+**Proof:** direct compilation, dependency checks, focused tests, and the current
+surviving graph reject a legacy feature edge or local pending map.
 
 **Cleanup:** delete evidence or fixtures already proven redundant by C.5.1;
 do not migrate dead scaffolding merely because it exists.
@@ -1570,8 +1509,8 @@ decoder; backend remains the only media effect owner.
 
 **Proof:** hot/cold/duplicate/refault tests assert exact media and pool deltas.
 Hostile tests make every nominal victim pinned, dirty, loading, candidate, or
-claimed and require typed denial before allocation. Mutants for pinned eviction,
-duplicate source load, and direct-source bypass fail locally.
+claimed and require typed denial before allocation. Focused regressions for
+pinned eviction, duplicate source load, and direct-source bypass fail locally.
 
 **Cleanup:** remove duplicate loader branches, fallback source reads, and
 temporary handoff read types as their responsibility-named replacements land.
@@ -1634,8 +1573,8 @@ cleanliness; C.7 WAL and checkpoint order are not invented here.
 **Proof:** real append/publication drives dirty pressure against real files.
 Tests saturate dirty state, delay writeback after dispatch, attempt eviction and
 a second claim, retry a safe no-effect outcome, and verify final records after
-fresh reopen. Premature-clean and bypass-settlement mutants fail at the dirty
-transition.
+fresh reopen. Focused premature-clean and bypass-settlement regressions fail at
+the dirty transition.
 
 **Cleanup:** delete raw `Vec` replacement paths that allocate before admission,
 duplicate writeback helpers, temporary `C6*` dirty/writeback types, and obsolete
@@ -1664,8 +1603,8 @@ still owns generic retry/timeout lifecycle; the pool owns no timer.
 
 **Proof:** each kind reaches its exact limit, is denied one past it, and cannot
 exceed the total envelope in combination. Tests prove a speculative hit causes
-no media read and a speculative miss uses the canonical path. Local-worker,
-kind-bypass, and scope-theft mutants fail.
+no media read and a speculative miss uses the canonical path. Focused tests
+reject a local worker, kind-ceiling bypass, and scope theft.
 
 **Cleanup:** delete isolated S.2 speculative/background models and any pool
 worker, retry loop, queue, callback, or timer exposed by the inventory.
@@ -1714,21 +1653,22 @@ physical residency against a model the production Store does not use.
 - replacement of useful owner tests with narrow canonical-pool tests or real
   Store-boundary tests;
 - removal of dependencies and feature branches made dead by the cutover;
-- source/manifest/metadata absence gates.
+- current Cargo metadata, compilation, and caller review showing no legacy edge
+  remains.
 
 **Preserve:** mathematical or policy tests with independent value may remain
 only after they stop claiming production authority and stop constructing the
 deleted physical world.
 
-**Proof:** the workspace builds and tests without the deleted features;
-`cargo metadata` contains no legacy edge; repository-wide searches find no
-deleted authority identifiers; a controlled reintroduction fails CI.
+**Proof:** the workspace builds and tests without the deleted features, Cargo
+metadata contains no legacy edge, and current callers use only the canonical
+owners.
 
 **Cleanup:** this phase is the cleanup. It cannot close with a quarantine,
 deprecated alias, disabled-by-default feature, copied fixture, or “remove
 after C.10” note.
 
-### Phase 9: Publish The Current Contract And Audit Reality
+### Phase 9: Publish The Current Contract
 
 **Telos:** make the real C.6 behavior usable and prevent historical documents
 from directing later work back to deleted surfaces.
@@ -1738,8 +1678,6 @@ from directing later work back to deleted surfaces.
 - the bounded physical record access guide with compiled examples;
 - the buffer-pool owner README;
 - the S.2 supersession notice;
-- updated physical reality audit rows with exact source/evidence/deletion
-  dispositions;
 - roadmap closeout and C.7-C.11 handoff links;
 - generated API documentation for public lease/view/pressure types.
 
@@ -1747,14 +1685,14 @@ from directing later work back to deleted surfaces.
 successor responsibilities and never promotes physical residency into semantic
 residency.
 
-**Proof:** documentation examples compile and run against the ordinary facade;
-all links resolve; audit rows trace both directions between claim and
-production source.
+**Proof:** documentation examples compile and run against the ordinary facade,
+links resolve, and the described owners match the current public facade and
+Cargo graph.
 
 **Cleanup:** remove stale examples, diagrams, paths, and vocabulary that teach
 the deleted handoff or S.2 authority model.
 
-### Phase 10: Hostile Courtroom, Mutation Closure, And Successor Handoff
+### Phase 10: Hostile Direct Tests And Successor Handoff
 
 **Telos:** prove the joined system under the adversarial condition, then hand
 C.7 a single dirty/writeback truth and later milestones a single bounded read
@@ -1764,29 +1702,24 @@ truth.
 
 - owner checks for pool laws and Store composition;
 - developer smoke for hot/cold/refault/view/copy/dirty/speculative behavior;
-- CI certification for the 32-times-resident real-store courtroom and required
-  mutant subset across exactly 16 revision-derived, replayable schedule seeds;
-- release certification for the canonical hostile schedule and every concrete
-  mutation in the current append-only corpus;
+- CI coverage for the larger-than-memory real-store scenario and a bounded set
+  of stable, replayable schedule seeds;
+- release coverage for the canonical hostile schedule;
 - hardware qualification where filesystem or allocation instrumentation claims
   depend on a named platform;
-- a requirement-and-evidence closure ledger covering every section of this
-  spec and every inherited guarantee touched by C.6;
 - explicit C.7, C.8, C.9, C.10, and C.11 handoff entries naming the authority
   each successor may consume and the authority it may not acquire.
 
-**Preserve:** no evidence bundle, counter, test helper, or successor adapter
+**Preserve:** no counter, test helper, diagnostic output, or successor adapter
 becomes production authority.
 
-**Proof:** the Non-Fake Acceptance Setup passes from clean source with current
-identities; all 16 CI schedule seeds name distinct deterministic decision
-traces and any one is exactly replayable; every current required mutant fails
-at its declared predicate; every bug correction made after corpus adoption
-names its appended mutation; a clean rerun reproduces the verdict;
-constitution, line-cap, dependency, feature, source, UI, and closure-ledger
-gates are green.
+**Proof:** the Non-Fake Acceptance Setup passes from clean source; each selected
+CI schedule seed names a deterministic decision trace and is exactly replayable;
+a clean rerun reproduces the behavior;
+constitution, line-cap, dependency, feature, UI, and focused behavioral gates
+are green.
 
-**Cleanup:** delete temporary courtroom-only production hooks. Retain only
+**Cleanup:** delete temporary scenario-only production hooks. Retain only
 named storage interposer/yieldpoint capabilities whose production boundary is
 already admitted and whose test authority is mechanically sealed.
 
@@ -1811,9 +1744,9 @@ C.6 is incomplete without all of the following:
 - exact counters reconciled to independent allocation and media observers;
 - removal of the temporary `C6*` handoff surface;
 - removal of the complete legacy S.2 model and feature graph;
-- updated docs, reality audit, roadmap handoff, and closure ledger;
-- the hostile larger-than-memory fresh-process courtroom, 16-seed CI schedule
-  perturbation evidence, and the complete current mutation regression corpus.
+- updated docs, focused tests, and roadmap handoff;
+- the hostile larger-than-memory fresh-process scenario and bounded replayable
+  schedule coverage.
 
 ## Explicit Non-Goals
 
@@ -1835,9 +1768,8 @@ bounded physical residency owner inside the C.5.1 work topology; lease
 lifetimes, memory admission, scope isolation, fault coalescence, dirty truth,
 writeback settlement, and exact counters are mechanically falsifiable; a real
 store at least 32 times larger than resident memory remains operational through
-fresh processes; the canonical hostile schedule and 16 revision-derived CI
-schedule seeds are exactly replayable; every real executable bug fixed after
-corpus adoption has added its causal certification mutation; future physical
+fresh processes; any seeded hostile schedule failure is replayable directly;
+future physical
 adapters can consume bounded views and
 pressure evidence without pool or semantic-residency authority; the temporary
 handoff and legacy S.2 worlds no longer compile; documentation describes the

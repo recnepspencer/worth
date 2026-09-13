@@ -57,6 +57,8 @@ mod foundational_evidence;
 mod generation_policy_truth;
 #[path = "physical_record_journeys/identity_process.rs"]
 mod identity_process;
+#[path = "physical_record_journeys/integrity_scrub.rs"]
+mod integrity_scrub;
 #[path = "physical_record_journeys/locator_free_space.rs"]
 mod locator_free_space;
 #[path = "physical_record_journeys/manifest_fixture.rs"]
@@ -81,6 +83,8 @@ mod record_chunk_views;
 mod residency_pressure_processes;
 #[path = "physical_record_journeys/residency_writeback_fresh_reopen.rs"]
 mod residency_writeback_fresh_reopen;
+#[path = "physical_record_journeys/resident_checksum_cost.rs"]
+mod resident_checksum_cost;
 #[path = "c5/scale_invalid_worlds.rs"]
 mod scale_invalid_worlds;
 #[path = "c5/scale_policy_evolution.rs"]
@@ -89,14 +93,15 @@ mod scale_policy_evolution;
 mod scale_support;
 #[path = "physical_record_journeys/scan_journeys.rs"]
 mod scan_journeys;
-#[path = "physical_record_journeys/scenario_artifact_evidence.rs"]
-mod scenario_artifact_evidence;
 #[path = "physical_record_journeys/scenario_configuration.rs"]
 mod scenario_configuration;
 #[path = "physical_record_journeys/scenario_evidence.rs"]
 mod scenario_evidence;
 #[path = "physical_record_journeys/scenario_process_evidence.rs"]
 mod scenario_process_evidence;
+#[cfg(feature = "recovery-runtime-owner")]
+#[path = "physical_record_journeys/scheduled_reopen_admission.rs"]
+mod scheduled_reopen_admission;
 #[path = "physical_record_journeys/segment_journeys.rs"]
 mod segment_journeys;
 #[path = "physical_record_journeys/segment_truth.rs"]

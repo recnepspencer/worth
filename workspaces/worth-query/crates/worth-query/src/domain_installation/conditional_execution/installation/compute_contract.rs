@@ -89,6 +89,14 @@ pub trait WorthQueryConditionalNodeComputeProvider<D, O, F>: Send + Sync + 'stat
 
     fn semantic_contract(&self) -> Self::SemanticContract;
 
+    fn retained_heap_bytes(
+        &self,
+        semantic_contract: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    >;
+
     fn execution_resource_support(
         &self,
     ) -> crate::domain_installation::WorthQueryExecutionResourceSupport;

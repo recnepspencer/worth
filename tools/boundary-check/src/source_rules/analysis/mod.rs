@@ -38,6 +38,7 @@ mod path_dependencies;
 mod public_reachability;
 mod query_fence;
 mod source_reachability;
+mod store_integrity_routes;
 mod type_alias_reachability;
 mod use_binding_resolution;
 mod workspace_crates;
@@ -88,6 +89,7 @@ pub(super) fn validate(
             &governed,
             &module_graph,
         ));
+        diagnostics.extend(store_integrity_routes::enforce(&governed, &module_graph));
         let reachable = match public_reachability::externally_reachable_items(
             &module_graph,
             &governed.crate_root,

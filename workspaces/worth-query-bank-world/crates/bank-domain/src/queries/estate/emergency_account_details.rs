@@ -63,12 +63,32 @@ pub const fn estate_emergency_account_details(
     EstateEmergencyAccountDetailsRequest { estate, access }
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateEmergencyAccountDetailsQueryParametersBinding for EstateEmergencyAccountDetailsQueryParameters { identity: "EstateEmergencyAccountDetailsQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateEmergencyAccountDetailsQueryResultBinding for EstateEmergencyAccountDetails { identity: "EstateEmergencyAccountDetails" });
 worth_query_application_query!(
-    pub EstateEmergencyAccountDetailsQuery in BankSchema,
-    parameters EstateEmergencyAccountDetailsQueryParameters,
-    result EstateEmergencyAccountDetails,
-    scope EstateCase,
+    pub EstateEmergencyAccountDetailsQuery for BankSchema,
+    identity "EstateEmergencyAccountDetailsQuery",
+    parameters EstateEmergencyAccountDetailsQueryParametersBinding,
+    result EstateEmergencyAccountDetailsQueryResultBinding,
+    scope EstateCase => "EstateCase",
     name "estate_emergency_account_details"
+);
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateEmergencyAccountDetailsRequestBinding for EstateEmergencyAccountDetailsRequest { identity: "EstateEmergencyAccountDetailsRequest" });
+worth_query_decl::facade::worth_query_query_binding!(
+    pub EstateEmergencyAccountDetailsQueryBinding for EstateEmergencyAccountDetailsRequest, schema BankSchema,
+    identity "worth.bank.estate-emergency-account-details-query-binding.v1",
+    input EstateEmergencyAccountDetailsRequestBinding,
+    query EstateEmergencyAccountDetailsQuery,
+    parameters EstateEmergencyAccountDetailsQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
+    result EstateEmergencyAccountDetailsQueryResultBinding,
+    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
+        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
+    scope EstateCase, crate::schema::EstateCaseRecord, crate::schema::EstateCaseIdentityField,
+        EstateCaseId, worth_query_decl::facade::application_schema::ReadOnly,
+        worth_query_decl::facade::application_schema::NoApplicationUnit,
+    field crate::schema::EstateCaseIdentityField::reference(),
+    value EstateEmergencyAccountDetailsRequest::estate,
+    limits results 1_024, work 100_000
 );
 
 pub fn estate_emergency_account_details_definition() -> ApplicationQueryDefinition<
@@ -78,16 +98,20 @@ pub fn estate_emergency_account_details_definition() -> ApplicationQueryDefiniti
     EstateEmergencyAccountDetails,
     EstateCase,
 > {
-    let field = RestrictedBankField::AccountDetails;
+    let field = || {
+        crate::schema::encoded_bank_value::<crate::schema::RestrictedBankFieldBinding>(
+            RestrictedBankField::AccountDetails,
+        )
+    };
     let influence = ApplicationQueryInfluenceContract::forbid_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
         "estate-emergency-account-details",
         ViewEstateEmergencyProtectionCapability::reference(),
     )
-    .disclose_relation_by(estate_account(), field, influence.clone())
-    .disclose_field_by(account_identity(), field, influence.clone())
-    .disclose_field_by(account_name(), field, influence.clone())
-    .disclose_field_by(account_status(), field, influence);
+    .disclose_relation_by(estate_account(), field(), influence.clone())
+    .disclose_field_by(account_identity(), field(), influence.clone())
+    .disclose_field_by(account_name(), field(), influence.clone())
+    .disclose_field_by(account_status(), field(), influence);
     ApplicationQueryDefinitionBuilder::declare(EstateEmergencyAccountDetailsQuery::reference())
         .root(EstateCase::reference())
         .scope(EstateCase::reference())

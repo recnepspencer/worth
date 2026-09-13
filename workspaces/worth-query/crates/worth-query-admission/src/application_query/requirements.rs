@@ -115,7 +115,7 @@ fn relations(
                 relation.relation,
                 direction,
                 relation.depth,
-                vec![WorthQueryGraphReadTraversalOperator::DeclarationTraversal],
+                vec![WorthQueryGraphReadTraversalOperator::DirectEdge],
             )
         })
         .collect()

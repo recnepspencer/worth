@@ -5,28 +5,36 @@ use crate::data::node::NodeContract;
 
 impl SignalGraph {
     pub fn get_contract(&self, id: NodeId) -> Result<&NodeContract, SignalError> {
-        Ok(&self.warm_ref(id)?.eval_config.contract)
+        Ok(&self.definition_ref(id)?.eval_config.contract)
     }
 
     pub fn node_schema_binding(
         &self,
         id: NodeId,
     ) -> Result<Option<&crate::schema::data::SignalSchemaBinding>, SignalError> {
-        Ok(self.warm_ref(id)?.eval_config.schema_binding.as_ref())
+        Ok(self.definition_ref(id)?.eval_config.schema_binding.as_ref())
     }
 
     pub fn node_merge_strategy_name(
         &self,
         id: NodeId,
     ) -> Result<Option<&crate::logic::transaction::MergeStrategyName>, SignalError> {
-        Ok(self.warm_ref(id)?.eval_config.merge_strategy_name.as_ref())
+        Ok(self
+            .definition_ref(id)?
+            .eval_config
+            .merge_strategy_name
+            .as_ref())
     }
 
     pub fn node_conflict_policy_name(
         &self,
         id: NodeId,
     ) -> Result<Option<&crate::logic::transaction::ConflictPolicyName>, SignalError> {
-        Ok(self.warm_ref(id)?.eval_config.conflict_policy_name.as_ref())
+        Ok(self
+            .definition_ref(id)?
+            .eval_config
+            .conflict_policy_name
+            .as_ref())
     }
 
     pub fn node_identity_matcher_name(
@@ -34,7 +42,7 @@ impl SignalGraph {
         id: NodeId,
     ) -> Result<Option<&crate::logic::transaction::IdentityMatcherName>, SignalError> {
         Ok(self
-            .warm_ref(id)?
+            .definition_ref(id)?
             .eval_config
             .identity_matcher_name
             .as_ref())
@@ -45,7 +53,7 @@ impl SignalGraph {
         id: NodeId,
     ) -> Result<Option<&crate::logic::transaction::SourceOnlyPolicyName>, SignalError> {
         Ok(self
-            .warm_ref(id)?
+            .definition_ref(id)?
             .eval_config
             .source_only_policy_name
             .as_ref())
@@ -55,7 +63,11 @@ impl SignalGraph {
         &self,
         id: NodeId,
     ) -> Result<Option<&crate::logic::transaction::DeletionPolicyName>, SignalError> {
-        Ok(self.warm_ref(id)?.eval_config.deletion_policy_name.as_ref())
+        Ok(self
+            .definition_ref(id)?
+            .eval_config
+            .deletion_policy_name
+            .as_ref())
     }
 
     pub fn node_conflict_isolation_policy_name(
@@ -63,7 +75,7 @@ impl SignalGraph {
         id: NodeId,
     ) -> Result<Option<&crate::logic::transaction::ConflictIsolationPolicyName>, SignalError> {
         Ok(self
-            .warm_ref(id)?
+            .definition_ref(id)?
             .eval_config
             .conflict_isolation_policy_name
             .as_ref())
@@ -73,7 +85,10 @@ impl SignalGraph {
         &self,
         id: NodeId,
     ) -> Result<&[crate::logic::transaction::AspectMergePolicyBinding], SignalError> {
-        Ok(&self.warm_ref(id)?.eval_config.aspect_merge_policy_bindings)
+        Ok(&self
+            .definition_ref(id)?
+            .eval_config
+            .aspect_merge_policy_bindings)
     }
 
     pub fn validate_schema_bindings_against(

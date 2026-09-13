@@ -140,8 +140,8 @@ fn capability_portable_identity_preserves_schema_meaning_across_a_module_move() 
         minor: 0,
     };
     let original =
-        super::super::canonical_identity::canonical_identity(header(), &original_members);
-    let moved = super::super::canonical_identity::canonical_identity(header(), &moved_members);
+        super::super::canonical_identity::canonical_identity(header(), &original_members, &[]);
+    let moved = super::super::canonical_identity::canonical_identity(header(), &moved_members, &[]);
 
     assert_eq!(original, moved);
     assert_ne!(

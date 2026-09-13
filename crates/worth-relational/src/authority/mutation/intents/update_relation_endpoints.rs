@@ -90,6 +90,7 @@ pub(super) fn apply(
                         kind: AdjacencyDeltaKind::Created { source, target },
                     },
                 ],
+                version_id,
             );
             Ok::<_, CommitConflict>((kind_id, old_endpoints, old_authoritative_aspect_state))
         })?;

@@ -9,12 +9,18 @@ mod conditional_execution;
 mod construction;
 mod consumer_support;
 mod declaration_authority;
+pub use declaration_authority::{
+    WorthQueryDeclarationAuthorityRuntime, WorthQueryDeclarationAuthorityRuntimeBuilder,
+};
 mod domain_operation_executors;
 mod domain_packages;
 mod graph_participation;
 mod host_installation;
 mod lowering;
+mod owned_async_source;
 mod primary_graph;
+mod product_bridge;
+mod product_source;
 mod workflow_parallel_admission;
 mod workflow_stage_executors;
 pub use primary_graph::{
@@ -60,8 +66,9 @@ impl QueuedInvariantRegistrations {
     }
 }
 
-#[derive(Default)]
 pub struct WorthQueryRuntimeBuilder {
+    product_world_resources:
+        worth_query_execution::facade::integration::WorthQueryProductWorldResources,
     backend: Option<Result<Box<dyn WorthQueryRuntimeBackend>, WorthQueryRuntimeError>>,
     backend_parts: WorthQueryRuntimeBackendParts,
     queued_invariant_registrations: QueuedInvariantRegistrations,
@@ -79,9 +86,13 @@ pub struct WorthQueryRuntimeBuilder {
     native_aspect_contracts:
         crate::runtime::native_aspect_contracts::WorthQueryNativeAspectContractRegistry,
     conditional_runtime_bridge: Option<worth_runtime_bridge::facade::RuntimeBridge>,
-    conditional_signal_graph: Option<worth_signal::facade::SignalGraph>,
+    conditional_signal_graph: Option<Box<worth_signal::facade::SignalGraph>>,
+    conditional_execution_resources: Option<super::WorthQueryConditionalExecutionResources>,
+    pending_relational_product_bridge:
+        Option<product_bridge::WorthQueryPendingRelationalProductBridge>,
     pending_conditional_installations:
         Vec<Box<dyn crate::domain_installation::PendingConditionalInstallation>>,
+    pending_owned_async_declarations: Vec<super::WorthQueryOwnedAsyncRequestDeclaration>,
     pending_primary_graph_installation:
         Option<Box<dyn primary_graph::PendingPrimaryGraphInstallation>>,
     primary_runtime_invalidation_installation: Option<
@@ -98,8 +109,31 @@ pub use host_installation::{
 };
 
 impl WorthQueryRuntimeBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(
+        product_world_resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
+    ) -> Self {
+        Self {
+            product_world_resources,
+            backend: None,
+            backend_parts: WorthQueryRuntimeBackendParts::default(),
+            queued_invariant_registrations: QueuedInvariantRegistrations::default(),
+            pending_domain_installations: Default::default(),
+            pending_graph_participations: Default::default(),
+            pending_domain_operation_executors: Default::default(),
+            pending_workflow_stage_executors: Default::default(),
+            pending_workflow_parallel_admission_providers: Default::default(),
+            consumer_support_postures: Default::default(),
+            native_aspect_contracts: Default::default(),
+            conditional_runtime_bridge: None,
+            conditional_signal_graph: None,
+            conditional_execution_resources: None,
+            pending_relational_product_bridge: None,
+            pending_conditional_installations: Vec::new(),
+            pending_owned_async_declarations: Vec::new(),
+            pending_primary_graph_installation: None,
+            primary_runtime_invalidation_installation: None,
+            host_execution_installation: None,
+        }
     }
 
     /// Shares the execution-owned primary graph that produces granular
@@ -119,6 +153,14 @@ impl WorthQueryRuntimeBuilder {
 
     pub fn relational_runtime(mut self, runtime: RelationalRuntime) -> Self {
         self.backend_parts = self.backend_parts.relational_runtime(runtime);
+        self
+    }
+
+    pub fn relational_source_owner(
+        mut self,
+        owner: worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner,
+    ) -> Self {
+        self.backend_parts = self.backend_parts.relational_source_owner(owner);
         self
     }
 
@@ -282,6 +324,12 @@ impl WorthQueryRuntimeBuilder {
             return self;
         }
         if let Err(error) = self.lower_queued_invariant_registrations_into_backend_parts() {
+            self.backend = Some(Err(error));
+            self.backend_parts = WorthQueryRuntimeBackendParts::new();
+            self.queued_invariant_registrations = QueuedInvariantRegistrations::default();
+            return self;
+        }
+        if let Err(error) = self.install_pending_relational_product_bridge() {
             self.backend = Some(Err(error));
             self.backend_parts = WorthQueryRuntimeBackendParts::new();
             self.queued_invariant_registrations = QueuedInvariantRegistrations::default();

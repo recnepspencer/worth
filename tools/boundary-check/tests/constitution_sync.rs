@@ -11,22 +11,52 @@ fn workspace_root() -> PathBuf {
 }
 
 #[test]
-fn naming_doc_declares_canonical_machine_constitution() {
+fn public_contracts_are_declared_by_the_canonical_machine_constitution() {
     let root = workspace_root();
-    let naming = fs::read_to_string(root.join("cad/docs/worthy-foundations/NAMING.md"))
-        .expect("read naming doc");
-    assert!(
-        naming.contains("Canonical machine constitution: `tools/boundary-check/config/road1.toml`")
+    let config_text = fs::read_to_string(root.join("tools/boundary-check/config/road1.toml"))
+        .expect("read road1.toml");
+    let config: toml::Value = toml::from_str(&config_text).expect("parse road1.toml");
+
+    assert_eq!(
+        config
+            .get("forbidden_root_prefixes")
+            .and_then(|value| value.as_array())
+            .expect("forbidden_root_prefixes")
+            .iter()
+            .filter_map(|value| value.as_str())
+            .collect::<Vec<_>>(),
+        ["workspaces/"]
     );
-    assert!(naming.contains("`worth-entry-adoption`"));
-    assert!(naming.contains("`worth-derived-publication`"));
+    assert_eq!(
+        config
+            .get("machine_authority")
+            .and_then(|authority| authority.get("mirrored_docs"))
+            .and_then(|value| value.as_array())
+            .expect("machine_authority.mirrored_docs")
+            .len(),
+        0,
+        "removed private docs must not remain machine authority"
+    );
+
+    let born_paths = config
+        .get("born_crates")
+        .and_then(|value| value.as_array())
+        .expect("born_crates")
+        .iter()
+        .filter_map(|row| row.get("path").and_then(|value| value.as_str()))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        born_paths,
+        [
+            "workspaces/worth-contracts/crates/worth-schema-core",
+            "workspaces/worth-contracts/crates/worth-schema-graph"
+        ]
+    );
 }
 
 #[test]
-fn naming_doc_and_config_agree_on_query_audience_framework_family() {
+fn canonical_config_declares_the_query_audience_framework_family() {
     let root = workspace_root();
-    let naming = fs::read_to_string(root.join("cad/docs/worthy-foundations/NAMING.md"))
-        .expect("read naming doc");
     let config_text = fs::read_to_string(root.join("tools/boundary-check/config/road1.toml"))
         .expect("read road1.toml");
     let config: toml::Value = toml::from_str(&config_text).expect("parse road1.toml");
@@ -74,23 +104,6 @@ fn naming_doc_and_config_agree_on_query_audience_framework_family() {
         ["worth-query-decl", "worth-query-host", "worth-query-replay"]
     );
 
-    for package in [
-        "worth-query",
-        "worth-query-certification",
-        "worth-query-decl",
-        "worth-query-host",
-        "worth-query-replay",
-    ] {
-        assert!(
-            naming.contains(&format!("`{package}`")),
-            "NAMING.md must name framework package {package}"
-        );
-    }
-
-    assert!(
-        naming.contains("Framework-family exception: Query workspace"),
-        "NAMING.md must declare the Query workspace framework-family exception"
-    );
     assert!(
         !config_text.contains("query_host_bands"),
         "retired query_host_bands must not remain in road1.toml"
@@ -98,27 +111,62 @@ fn naming_doc_and_config_agree_on_query_audience_framework_family() {
 }
 
 #[test]
-fn boundaries_doc_routes_match_machine_contract_nouns() {
+fn public_manifests_resolve_contracts_without_private_cad_paths() {
     let root = workspace_root();
-    let boundaries = fs::read_to_string(root.join("cad/docs/worthy-foundations/BOUNDARIES.md"))
-        .expect("read boundaries doc");
-    assert!(boundaries.contains("worth-entry-adoption"));
-    assert!(boundaries.contains("worth-derived-publication"));
-    assert!(boundaries.contains("worthy-derived-brep"));
+    for manifest in ["Cargo.toml", "workspaces/worth-query/Cargo.toml"] {
+        let text = fs::read_to_string(root.join(manifest)).expect("read public manifest");
+        assert!(
+            !text.contains("cad/"),
+            "{manifest} must not depend on the intentionally removed private tree"
+        );
+    }
+    assert!(root
+        .join("workspaces/worth-contracts/crates/worth-schema-graph/Cargo.toml")
+        .is_file());
 }
 
 #[test]
-fn deferred_follow_on_surface_is_named_not_smuggled() {
+fn live_automation_and_tooling_have_no_private_cad_dependency() {
     let root = workspace_root();
-    assert!(!root
-        .join("cad/workspaces/worth-entry/crates/worth-entry-adoption")
-        .exists());
-    assert!(!root
-        .join("cad/workspaces/worth-derived/crates/worth-derived-publication")
-        .exists());
-    assert!(!root
-        .join("cad/workspaces/worthy-derived/crates/worthy-derived-brep")
-        .exists());
+    let fixture_root = root.join("tools/boundary-check/tests");
+    for governed_root in [".github/workflows", "scripts", "tools"] {
+        assert_live_tree_has_no_cad_reference(
+            &root.join(governed_root),
+            &fixture_root,
+            governed_root,
+        );
+    }
+}
+
+fn assert_live_tree_has_no_cad_reference(
+    path: &std::path::Path,
+    fixture_root: &std::path::Path,
+    label: &str,
+) {
+    if path.starts_with(fixture_root)
+        || path.file_name().and_then(|name| name.to_str()) == Some("target")
+    {
+        return;
+    }
+    if path.is_dir() {
+        for entry in fs::read_dir(path).expect("read governed automation or tooling directory") {
+            let entry = entry.expect("read governed automation or tooling entry");
+            assert_live_tree_has_no_cad_reference(&entry.path(), fixture_root, label);
+        }
+        return;
+    }
+    let Some(extension) = path.extension().and_then(|extension| extension.to_str()) else {
+        return;
+    };
+    if !matches!(extension, "rs" | "toml" | "yml" | "yaml" | "sh" | "ps1") {
+        return;
+    }
+    let text = fs::read_to_string(path).expect("read governed automation or tooling file");
+    assert!(
+        !text.contains("cad/"),
+        "{label} live file {} must not depend on the intentionally removed private tree",
+        path.display()
+    );
 }
 
 #[test]

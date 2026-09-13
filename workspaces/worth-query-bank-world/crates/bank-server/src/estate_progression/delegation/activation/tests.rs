@@ -101,7 +101,11 @@ fn ancestor_revocation_after_grandchild_materialization_denies_final_commit() {
         .application_runtime()
         .compare_and_commit_capability_delegation(program, idempotency(133));
     assert_provider_currentness_denial(outcome);
-    assert_grant_absent(&fixture, GRANDCHILD);
+    assert!(!grant_is_visible(
+        &fixture,
+        &fixture.authenticate_executor(),
+        GRANDCHILD,
+    ));
 }
 
 #[test]
@@ -158,7 +162,7 @@ fn activation_program_cannot_cross_runtime_session_authority() {
 }
 
 #[test]
-fn unrelated_revocation_does_not_stale_the_exact_activation_support() {
+fn unrelated_revocation_invalidates_the_old_product_basis_and_fresh_delegation_commits() {
     let fixture = delegation_world("delegation-provider-unrelated-currentness");
     let specialist = fixture.authenticate();
     let action = delegated_action();
@@ -172,7 +176,7 @@ fn unrelated_revocation_does_not_stale_the_exact_activation_support() {
         .materialize_delegation(admission, command.child)
         .expect("the exact activation program must retain only relevant support");
 
-    fixture
+    let revoked = fixture
         .runtime
         .revoke_estate_capability(
             &specialist,
@@ -184,14 +188,20 @@ fn unrelated_revocation_does_not_stale_the_exact_activation_support() {
             &request_scope(),
         )
         .expect("an unrelated authority should revoke independently");
+    assert!(matches!(revoked, BankMutationCommitOutcome::Committed(_)));
     let outcome = fixture
         .runtime
         .application_runtime()
         .compare_and_commit_capability_delegation(program, idempotency(141));
-    assert!(matches!(
-        outcome,
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
+    assert_product_basis_stale(outcome);
+    assert!(!grant_is_visible(&fixture, &specialist, CHILD));
+
+    let fresh = fixture
+        .runtime
+        .delegate_estate_capability(&specialist, action, idempotency(141), &request_scope())
+        .expect("fresh admission must preserve progress unrelated to the delegation");
+    assert!(matches!(fresh, BankMutationCommitOutcome::Committed(_)));
+    assert!(grant_is_visible(&fixture, &specialist, CHILD));
 }
 
 #[test]
@@ -325,25 +335,44 @@ fn assert_provider_currentness_denial(outcome: WorthQueryApplicationCommitOutcom
     );
 }
 
-fn assert_child_absent(fixture: &crate::estate_capability_admission::fixture::CapabilityFixture) {
-    assert_grant_absent(fixture, CHILD);
+fn assert_product_basis_stale(outcome: WorthQueryApplicationCommitOutcome) {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("an old materialized program must retain its exact product basis: {outcome:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
 }
 
-fn assert_grant_absent(
+fn assert_child_absent(fixture: &crate::estate_capability_admission::fixture::CapabilityFixture) {
+    assert!(!grant_is_visible(
+        fixture,
+        &fixture.authenticate_executor(),
+        CHILD,
+    ));
+}
+
+fn grant_is_visible(
     fixture: &crate::estate_capability_admission::fixture::CapabilityFixture,
+    principal: &BankAuthenticatedPrincipal,
     grant: CapabilityGrantId,
-) {
+) -> bool {
     let result = fixture
         .runtime
         .query(crate::queries::estate_governance_context(ESTATE))
-        .as_principal(&fixture.authenticate_executor())
+        .as_principal(principal)
         .controls(BankReadControls::current(request_scope(), 1, 20_000).unwrap())
         .execute()
-        .expect("independent governance authority must read authoritative post-denial state");
-    assert!(result.rows()[0]
+        .expect("governance authority must read authoritative delegation state");
+    result.rows()[0]
         .capabilities()
         .iter()
-        .all(|capability| capability.id() != grant));
+        .any(|capability| capability.id() == grant)
 }
 
 fn idempotency(seed: u8) -> WorthQueryApplicationIdempotencyBinding {

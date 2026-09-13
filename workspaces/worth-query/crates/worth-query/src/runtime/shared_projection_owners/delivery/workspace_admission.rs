@@ -8,9 +8,6 @@ impl super::super::super::WorthQueryWorkspace {
         impact: &Arc<crate::domain_installation::WorthQueryImpactDecision>,
         invalidation_seed: &Arc<crate::domain_installation::WorthQuerySharedInvalidationSeed>,
         sharing: &Arc<crate::domain_installation::WorthQueryAdmittedProjectionSharing>,
-        conditional_decision: Option<
-            &Arc<crate::domain_installation::WorthQueryConditionalProvenance>,
-        >,
     ) -> bool {
         self.runtime.readmits_current_shared_invalidation_epoch(
             readmission,
@@ -18,7 +15,6 @@ impl super::super::super::WorthQueryWorkspace {
             impact,
             invalidation_seed,
             sharing,
-            conditional_decision,
         )
     }
 

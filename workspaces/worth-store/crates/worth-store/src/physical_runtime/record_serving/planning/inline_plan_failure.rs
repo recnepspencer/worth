@@ -110,6 +110,9 @@ pub(in crate::physical_runtime::record_serving) fn manifest_lookup_failure(
         super::super::access::manifest_routing::ManifestLookupFailure::Frame(kind) => {
             layout_failure(super::super::residency::frame_loading::FrameLoadFailure::new(kind))
         }
+        super::super::access::manifest_routing::ManifestLookupFailure::ResidentAdmission(
+            denial,
+        ) => resident_admission_failure(denial),
         super::super::access::manifest_routing::ManifestLookupFailure::Damaged => {
             RecordAppendError::Denied(RecordAppendDenial::PublishedLayoutDamaged)
         }
@@ -117,4 +120,46 @@ pub(in crate::physical_runtime::record_serving) fn manifest_lookup_failure(
             RecordAppendError::Denied(RecordAppendDenial::from_residency(reason))
         }
     }
+}
+
+fn resident_admission_failure(
+    denial: crate::physical_runtime::integrity::resident_admission::denial::ResidentIntegrityAdmissionDenial,
+) -> RecordAppendError {
+    use crate::physical_runtime::integrity::resident_admission::denial::ResidentIntegrityAdmissionDenial;
+    use worth_store_physical_integrity::PhysicalIntegrityRejection;
+
+    if let Some(residency) = denial.residency_unavailability() {
+        return RecordAppendError::Denied(RecordAppendDenial::from_residency(residency));
+    }
+    let denial = match denial {
+        ResidentIntegrityAdmissionDenial::LifecycleGenerationChanged => {
+            RecordAppendDenial::PhysicalReadWorkUnavailable(
+                super::super::RecordReadWorkDenial::RuntimeReleased,
+            )
+        }
+        ResidentIntegrityAdmissionDenial::Validation(PhysicalIntegrityRejection::Damaged(_)) => {
+            RecordAppendDenial::PublishedLayoutDamaged
+        }
+        ResidentIntegrityAdmissionDenial::Validation(PhysicalIntegrityRejection::Unsupported(
+            _,
+        ))
+        | ResidentIntegrityAdmissionDenial::BootstrapUnsupportedFormat(_)
+        | ResidentIntegrityAdmissionDenial::BootstrapScopeMismatch(_) => {
+            RecordAppendDenial::PlacementFormatMismatch
+        }
+        ResidentIntegrityAdmissionDenial::Validation(
+            PhysicalIntegrityRejection::Unknown(_) | PhysicalIntegrityRejection::Indeterminate(_),
+        )
+        | ResidentIntegrityAdmissionDenial::SourceScopeMismatch => {
+            RecordAppendDenial::ServingRequiresInspection
+        }
+        ResidentIntegrityAdmissionDenial::SourceIncarnationMismatch
+        | ResidentIntegrityAdmissionDenial::FrameGenerationChanged
+        | ResidentIntegrityAdmissionDenial::RetainedRecordInvalidated
+        | ResidentIntegrityAdmissionDenial::RetainedRecordChanged
+        | ResidentIntegrityAdmissionDenial::Frame(_) => {
+            RecordAppendDenial::ServingRequiresInspection
+        }
+    };
+    RecordAppendError::Denied(denial)
 }

@@ -46,6 +46,9 @@ impl RecoveryPublicationPlan {
     pub fn candidates(&self) -> &[RecoveryPublicationCandidateArtifact] {
         &self.candidates
     }
+    pub fn referenced_artifacts(&self) -> &[RecordArtifactFile] {
+        &self.referenced_artifacts
+    }
     pub fn created_artifacts(&self) -> &[RecordArtifactFile] {
         &self.created_artifacts
     }
@@ -66,6 +69,7 @@ impl RecoveryPublicationPlan {
                 root_protocol: self.root_protocol,
                 current_selector: self.current_selector,
                 recovered_root: self.recovered_root,
+                referenced_artifacts: self.referenced_artifacts,
                 created_artifacts: self.created_artifacts,
             },
             self.candidates,
@@ -108,6 +112,9 @@ impl RecoveryPublicationExpectation {
     }
     pub fn created_artifacts(&self) -> &[RecordArtifactFile] {
         &self.created_artifacts
+    }
+    pub fn referenced_artifacts(&self) -> &[RecordArtifactFile] {
+        &self.referenced_artifacts
     }
 }
 

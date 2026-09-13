@@ -83,6 +83,16 @@ fn each_streamed_chunk_requires_consumption_before_the_next_provider_step() {
         .expect("managed projection should seal stream evidence");
     assert_eq!(stream.chunk_count(), 2);
     assert_eq!(stream.row_count(), 2);
+    assert_eq!(stream.product().row_count(), 2);
+    assert_eq!(stream.product().rows().count(), 2);
+    assert_eq!(
+        completion.receipt().work_report().output_retained_bytes(),
+        stream.retained_bytes()
+    );
+    assert_eq!(
+        completion.receipt().work_report().retained_bytes(),
+        stream.retained_bytes()
+    );
 }
 
 #[test]

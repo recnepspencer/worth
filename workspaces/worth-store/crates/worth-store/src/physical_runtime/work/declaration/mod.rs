@@ -29,5 +29,6 @@ pub use wal_append_scope::{PhysicalWalAppendScope, PhysicalWalFrameWriteDisposit
 pub use wal_barrier_scope::PhysicalWalBarrierScope;
 pub(in crate::physical_runtime) use wal_reclamation_scope::PhysicalWalReclamationScope;
 
+mod inspection_digest;
 #[cfg(test)]
 mod tests;

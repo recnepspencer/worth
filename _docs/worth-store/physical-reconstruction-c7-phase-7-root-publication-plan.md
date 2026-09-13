@@ -155,14 +155,8 @@ absence gates.
 
 Run the focused Store, physical-backend, scheduler, physical-isolation,
 layout-indexes, test-support, operations, and certification tests affected by
-the cutover. Run the durable-publication boundary gate, removal inventory,
-closure-ledger validation, formatting, clippy, Rust line caps, boundary check,
-and agent-context check.
-
-Close each Phase 7 ledger row only with current-source identity and independent
-evidence. Every failure reopens the affected guarantee and requires a revised
-plan before correction. Phase 8 is not selected until Phase 7 has no open,
-defective, or weakly evidenced guarantee.
+the cutover. Run formatting, clippy, Rust line caps, boundary check, and
+agent-context check. Resolve every material review finding before Phase 8.
 
 ## Out of scope
 

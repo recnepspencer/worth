@@ -47,7 +47,8 @@ fn runtime_retains_the_exact_installed_index_owner() {
 
 #[test]
 fn runtime_retains_the_installer_owned_query_resource_profile() {
-    let resources = WorthQueryApplicationQueryResourceProfile::bounded(12_000, 3_000, 400).unwrap();
+    let resources =
+        WorthQueryApplicationQueryResourceProfile::bounded(12_000, 3_000, 400, 64).unwrap();
     let runtime = WorthQueryExecutionRuntimeInstaller::new()
         .application_query_resources(resources)
         .install(

@@ -1,11 +1,13 @@
+#[cfg(any(test, debug_assertions))]
+use crate::data::error::SignalError;
+#[cfg(any(test, debug_assertions))]
+use crate::data::handle::NodeId;
+
 use crate::data::graph::signal_graph::SignalGraph;
 
 impl SignalGraph {
     #[cfg(any(test, debug_assertions))]
-    pub(crate) fn assert_bidirectional_consistency(
-        &self,
-    ) -> Result<(), crate::data::error::SignalError> {
-        use crate::data::{error::SignalError, handle::NodeId};
+    pub(crate) fn assert_bidirectional_consistency(&self) -> Result<(), SignalError> {
         for (index, slot) in self.arena.nodes.iter().enumerate() {
             if !slot.is_occupied() {
                 continue;

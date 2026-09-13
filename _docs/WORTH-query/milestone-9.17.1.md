@@ -2,10 +2,10 @@
 
 Status: Closed on 2026-08-28. Phases 1-13 are implemented, independently
 reviewed, and verified. Milestone 9.17.1.1 is the required corrective
-prerequisite discovered after closure; Milestone 9.17.2 must consume that
-corrected Relational and Signal owner-component surface and may not recreate
-component currentness, retention, mutation, publication, or settlement
-authority in Runtime Bridge.
+prerequisite discovered after closure; Milestone 9.17.1.2 is the final
+owner-service correction. Milestone 9.17.2 must consume both
+corrected owner-component surfaces and may not recreate component currentness,
+retention, mutation, publication, or settlement authority in Runtime World.
 
 ## Goal
 
@@ -30,7 +30,7 @@ MVCC is the primary deliverable. The certification world ships first because
 the implementation must not author its own oracle after its mechanics are
 chosen. The vocabulary and owner-basis work exists to make MVCC authority
 honest and to give 9.17.2 a stable language for composing owner results. This
-milestone does not create a composite world commit, a product branch, Bridge
+milestone does not create a composite world commit, a product branch, Runtime World
 composition authority, or a public Query branch workflow.
 
 Closure means a caller can observe an exact Relational branch basis, execute a
@@ -68,10 +68,13 @@ branch snapshot -> detached transaction -> prepared candidate
 No arrow above mints a product branch or composite commit.
 ```
 
-[Milestone 9.17.2](./milestone-9.17.2.md) may orchestrate the frozen owner
-ports. It may not reconstruct owner currentness from descriptors or wrap the
-current global Relational mutation lane. [Milestone 9.17.3](./milestone-9.17.3.md)
-then carries the resulting composite authority through Query.
+[Milestone 9.17.1.2](./milestone-9.17.1.2.md) first completes the Relational
+bundle and Signal independent-progress boundary. Then
+[Milestone 9.17.2](./milestone-9.17.2.md) may orchestrate the frozen owner ports
+through the dedicated Runtime World composition owner. It may not reconstruct
+owner currentness from descriptors or wrap either owner runtime in a global
+mutex. [Milestone 9.17.3](./milestone-9.17.3.md) then carries the resulting
+composite authority through Query.
 
 ## Authority And Responsibility Matrix
 
@@ -83,7 +86,8 @@ then carries the resulting composite authority through Query.
 | Relational branch head, MVCC, conflict, commit, and retention | `worth-relational` | Query, Bridge, Foundational, Proof |
 | Supply Chain semantic definition, production compiler, independent oracle, and comparison | Relational certification subsystem, with production effects only through public owner facades | private runtime access, production-derived expected results |
 | Signal definition/snapshot branch basis and lifecycle | `worth-signal` | Relational, Query, Bridge |
-| Future component correspondence and product currentness | 9.17.2 Runtime Bridge | either component owner in 9.17.1 |
+| Installed component correspondence | Runtime Bridge | either component owner in 9.17.1 |
+| Future composite history and product currentness | 9.17.2 Runtime World owner | either component owner in 9.17.1 |
 | Query session carriage and public workflow | 9.17.3 | this milestone |
 
 Foundational standardizes what a branch reference observation means when it
@@ -158,7 +162,7 @@ surfaces over the same Foundational grammar used by Relational. Its private
 numeric keys and graph storage may remain private implementation details.
 
 Signal state remains memory-resident. Its exact basis and owner readmission
-surface must be sufficient for Runtime Bridge composition without introducing
+surface must be sufficient for Runtime World composition without introducing
 a serialized component artifact in this milestone.
 
 ### Shared substrates
@@ -1987,12 +1991,12 @@ The minimum later merge matrix combines:
 ancestry-exact, and structurally shared. It does not implement merge selection,
 conflict policy, multi-parent commits, or merge publication.
 
-## Exact Handoff To Milestone 9.17.2
+## Exact Owner-Basis Handoff Toward Milestone 9.17.2
 
-Milestone 9.17.1.1 corrects the concurrency, settlement, retention, lifecycle,
-facade, evidence, and documentation mechanics of this handoff without changing
-its owner boundaries. After that correction closes, 9.17.2 receives only these
-public owner capabilities:
+Milestone 9.17.1.1 corrects Relational concurrency/settlement and retention;
+Milestone 9.17.1.2 completes Relational lifecycle/basis ports and Signal
+independent services. Neither changes owner meaning. After
+both corrections close, 9.17.2 receives only these public owner capabilities:
 
 - obtain or readmit an owner-issued exact component-basis descriptor;
 - retain and release that exact basis for a named external composition
@@ -2010,8 +2014,9 @@ A prepared candidate is pre-effect. `PerformedRelationalCommit` is post-effect.
 An admitted component basis says only that its component owner recognizes the
 exact state. None of them says that a product branch moved.
 
-9.17.2 may order and correlate these owner calls, retain successful owner
-results, and mint composite authority after its own rules succeed. It may not:
+9.17.2 may order and correlate these owner calls through `worth-runtime-world`,
+retain successful owner results, and mint composite authority after its own
+rules succeed. It may not:
 
 - inspect or mutate candidate internals;
 - reconstruct currentness from branch id, commit id, version, generation, or
@@ -2023,6 +2028,6 @@ results, and mint composite authority after its own rules succeed. It may not:
   or
 - reintroduce a global cross-owner lock.
 
-If 9.17.2 needs an additional owner operation, 9.17.1's owner contract must be
-reopened and proved at the owner boundary. Bridge-local imitation is not an
-allowed extension mechanism.
+If 9.17.2 needs an additional owner operation, the applicable owner contract
+must be corrected and proved at that owner boundary. Runtime World- or
+Bridge-local imitation is not an allowed extension mechanism.

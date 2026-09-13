@@ -14,11 +14,7 @@ use worth_store_layout_indexes::{
 use worth_store_physical_format::{
     PhysicalReferenceAuthority, PhysicalRootManifestRebuildSource, PhysicalStoreIdentity,
 };
-use worth_store_security::{
-    StoreAuthenticityRequirement, StoreAuthenticityRequirementClass, StoreCustodyPosture,
-    StoreKeyScope, StoreTenantScope,
-};
-use worth_store_test_support::{admit_security_scope_fixture, SecurityScopeFixtureAuthority};
+use worth_store_security::admitted_tenant_page_security_scope_for_layout_partition_test;
 
 #[test]
 fn root_manifest_rebuild_reaches_exact_parity_through_production_owners() {
@@ -77,15 +73,7 @@ fn execute_root_rebuild(page: u64) -> worth_store_layout_indexes::DerivedIndexRe
 }
 
 fn btree_strategy() -> LayoutStrategyRegistrySnapshot {
-    let security = admit_security_scope_fixture(
-        SecurityScopeFixtureAuthority::Current,
-        StoreKeyScope::PageEnvelope,
-        StoreTenantScope::TenantPhysicalBoundary,
-        StoreAuthenticityRequirement::required(
-            StoreAuthenticityRequirementClass::AuthenticatedFrame,
-        ),
-        StoreCustodyPosture::InternalStoreCustody,
-    );
+    let security = admitted_tenant_page_security_scope_for_layout_partition_test();
     let declaration = layout_declarations()
         .declaration(DurableArtifactFamilyId::PhysicalPage)
         .expect("physical pages declare a layout");

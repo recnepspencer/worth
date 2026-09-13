@@ -55,7 +55,7 @@ fn distinct_configuration_labels_cannot_disguise_one_filesystem_failure_domain()
 #[test]
 fn materialization_target_cannot_overlap_any_control_media_surface() {
     let scenario = BackupScenario::new("control-target-overlap");
-    let authority = crate::backup::export::current_authority("s10-control-target-overlap");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-control-target-overlap").expect("operation"),
@@ -89,7 +89,7 @@ fn materialization_target_cannot_overlap_any_control_media_surface() {
 #[test]
 fn source_media_cannot_be_reclassified_as_a_backup_target_after_control_open() {
     let scenario = BackupScenario::new("source-target-reclassification");
-    let authority = crate::backup::export::current_authority("s10-source-target-reclassification");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-source-target-reclassification").expect("operation"),

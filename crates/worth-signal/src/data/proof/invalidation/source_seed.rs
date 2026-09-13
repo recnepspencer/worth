@@ -2,6 +2,8 @@ use crate::data::aspect::Aspect;
 use crate::data::handle::NodeId;
 use crate::data::proof::PartitionScopeSet;
 
+mod retained_charge;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SourceRecomputeSeed {
     source: NodeId,

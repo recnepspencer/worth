@@ -145,6 +145,7 @@ pub(crate) type CorrespondenceResolvedRecipe = Recipe<
 pub struct BridgeInstalledSemanticCorrespondence {
     pub(crate) ready: CorrespondenceReadyRecipe,
     pub(crate) targets: ProvenCorrespondenceTargets,
+    admission_identity: super::BridgeCorrespondenceAdmissionIdentity,
     admission_counters: CorrespondenceAdmissionCounters,
 }
 
@@ -189,6 +190,7 @@ impl BridgeInstalledSemanticCorrespondence {
         Self {
             ready,
             targets,
+            admission_identity: super::BridgeCorrespondenceAdmissionIdentity::issue(),
             admission_counters,
         }
     }
@@ -217,6 +219,10 @@ impl BridgeInstalledSemanticCorrespondence {
 
     pub fn admission_counters(&self) -> CorrespondenceAdmissionCounters {
         self.admission_counters
+    }
+
+    pub(crate) fn admission_identity(&self) -> &super::BridgeCorrespondenceAdmissionIdentity {
+        &self.admission_identity
     }
 }
 

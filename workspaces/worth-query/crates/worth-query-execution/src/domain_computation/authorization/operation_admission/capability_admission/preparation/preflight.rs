@@ -3,7 +3,6 @@
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityRequest, ApplicationCapabilityRequestProjection,
 };
-use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationCapability,
     WorthQueryInstalledApplicationOperationGraphAuthority,
@@ -40,8 +39,15 @@ pub(super) fn validate_static_authority<
 ) -> Result<(), WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
-    Operation: 'static,
-    Input: worth_query_declaration::facade::portable_identity::WorthQueryPortableType + 'static,
+    Operation:
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + 'static,
+    <Operation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = Input,
+        >,
+    Input: 'static,
 {
     if principal.is_expired() {
         return Err(denial(
@@ -126,6 +132,30 @@ where
     Ok(projection)
 }
 
+pub(super) fn validate_input<Schema, Operation, Input>(
+    input: &Input,
+    operation: &WorthQueryInstalledApplicationOperationGraphAuthority<Schema, Operation, Input>,
+) -> Result<(), WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+    Operation:
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + 'static,
+    Operation::InputBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = Input,
+        >,
+{
+    <Operation::InputBinding as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::validate(input)
+        .map_err(|_| {
+            denial(
+                WorthQueryOperationAuthorizationDenialKind::InvalidOperationInput,
+                operation.operation(),
+            )
+        })
+}
+
 pub(super) fn sample_trusted_time<Schema, Capability, Operation, Input>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
@@ -151,8 +181,15 @@ pub(super) fn resolve_installed_operation<Schema, Capability, Operation, Input>(
 >
 where
     Schema: ApplicationSchema,
-    Operation: 'static,
-    Input: WorthQueryPortableType + 'static,
+    Operation:
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + 'static,
+    <Operation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = Input,
+        >,
+    Input: 'static,
 {
     runtime
         .installed_schema
@@ -178,6 +215,7 @@ pub(super) fn mint_operation_admission<Schema, Capability, Operation, Input>(
 
 pub(super) fn start_graph_work<Schema, Principal, PrincipalIdentity, Capability, Operation, Input>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: crate::basis::WorthQueryProductBranchLease,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperationGraphAuthority<Schema, Operation, Input>,
@@ -187,6 +225,7 @@ where
 {
     start_capability_graph_work(
         runtime,
+        product,
         operation,
         principal.principal_entity_id(),
         WorthQueryGraphWorkAccessContextAffinity::installed_capability(

@@ -24,6 +24,7 @@ pub struct PhysicalRecoveryStagingCommand<'bytes> {
 pub enum PhysicalRecoveryStagingMaterialization {
     Created(PerformedRecoveryPhysicalEffect<RecoveryStagingWriteAction>),
     AlreadyMaterialized(CompletedRecoveryStagingWrite),
+    CompletedFromExactPrefix(PerformedRecoveryPhysicalEffect<RecoveryStagingWriteAction>),
 }
 
 pub enum PhysicalRecoveryStagingMaterializationEvidence {
@@ -78,6 +79,12 @@ pub enum PhysicalRecoveryStagingCommandIndeterminate {
         materialization: Option<PhysicalRecoveryStagingMaterializationEvidence>,
         synchronization: Option<CompletedArtifactTreePublicationEffect>,
         outcome: crate::physical_runtime::PhysicalSignalSettlementOutcome,
+    },
+    Yieldpoint {
+        stage: PhysicalRecoveryStagingCommandStage,
+        materialization: Option<PhysicalRecoveryStagingMaterializationEvidence>,
+        synchronization: Option<CompletedArtifactTreePublicationEffect>,
+        wait: crate::physical_runtime::PhysicalRecoveryYieldpointWaitResult,
     },
 }
 
@@ -180,7 +187,7 @@ impl PhysicalRecoveryStagingCommandIndeterminate {
                 *scheduler
             }
             Self::Scheduler { posture, .. } => Some(*posture),
-            Self::Signal { .. } => {
+            Self::Signal { .. } | Self::Yieldpoint { .. } => {
                 Some(crate::physical_runtime::PhysicalWorkSchedulerPosture::Executed)
             }
         }
@@ -190,12 +197,14 @@ impl PhysicalRecoveryStagingCommandIndeterminate {
 impl PhysicalRecoveryStagingMaterialization {
     pub fn physical(&self) -> &CompletedRecoveryStagingWrite {
         match self {
-            Self::Created(performed) => match performed.occurrence() {
-                super::RecoveryPhysicalEffectOccurrence::StagingWrite(occurrence) => {
-                    occurrence.physical()
+            Self::Created(performed) | Self::CompletedFromExactPrefix(performed) => {
+                match performed.occurrence() {
+                    super::RecoveryPhysicalEffectOccurrence::StagingWrite(occurrence) => {
+                        occurrence.physical()
+                    }
+                    _ => unreachable!("staging-write evidence has its exact action"),
                 }
-                _ => unreachable!("staging-write evidence has its exact action"),
-            },
+            }
             Self::AlreadyMaterialized(physical) => physical,
         }
     }

@@ -1,10 +1,10 @@
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
 use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, EqualityPredicate, TypedApplicationValue,
-    WritePosture,
+    ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, EqualityPredicate, WritePosture,
 };
-use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
+use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationQueryRootPathGuard {
@@ -55,10 +55,10 @@ impl ApplicationQueryRootPathGuard {
             EqualityPredicate,
             Unit,
         >,
-        expected: Value,
+        expected: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Self
     where
-        Value: TypedApplicationValue + WorthQueryPortableType,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -68,7 +68,7 @@ impl ApplicationQueryRootPathGuard {
             aspect: field.aspect().to_owned(),
             field: field.field().to_owned(),
             scalar_family: field.scalar_family(),
-            value_type: Value::PORTABLE_TYPE_IDENTITY,
+            value_type: Field::Binding::IDENTITY,
             expected: expected.into_foundational_value(),
         }
     }

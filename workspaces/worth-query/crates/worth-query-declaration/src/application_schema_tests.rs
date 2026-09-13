@@ -1,12 +1,12 @@
 use crate::facade::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationAspectRef, ApplicationEntityRef,
-    ApplicationFieldPresence, ApplicationFieldRef, ApplicationOperationMarkerIdentity,
-    ApplicationOperationRef, ApplicationSchema, ApplicationSchemaAuthoringContext,
-    ApplicationSchemaAuthoringDenialKind, ApplicationSchemaBindingIdentity,
-    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
-    ApplicationSchemaDeclarationDenial, ApplicationUnitMarker, DeclaredApplicationFieldValue,
-    DeclaredApplicationUnit, EqualityPredicate, OperationCreates, OperationExpectsFact, ReadOnly,
-    TypedApplicationValue, TypedOperationBuilder, TypedUnitApplicationValue,
+    ApplicationAspectMarkerIdentity, ApplicationAspectRef, ApplicationEntityMarkerIdentity,
+    ApplicationEntityRef, ApplicationFieldMarkerIdentity, ApplicationFieldPresence,
+    ApplicationFieldRef, ApplicationOperationMarkerIdentity, ApplicationOperationRef,
+    ApplicationSchema, ApplicationSchemaAuthoringContext, ApplicationSchemaAuthoringDenialKind,
+    ApplicationSchemaBindingIdentity, ApplicationSchemaDeclaration,
+    ApplicationSchemaDeclarationBuilder, ApplicationSchemaDeclarationDenial, ApplicationUnitMarker,
+    DeclaredApplicationFieldValue, DeclaredApplicationUnit, EqualityPredicate, OperationCreates,
+    OperationExpectsFact, ReadOnly, TypedOperationBuilder,
 };
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
@@ -30,22 +30,28 @@ struct InvalidOwnerSchema;
 struct DottedMemberSchema;
 struct IdentifierEntity;
 
-impl ApplicationOperationMarkerIdentity for SchemaOperation {
-    type Schema = Schema;
-    type Input = SchemaInput;
+crate::worth_query_structured_value_binding!(
+    SchemaInputBinding for SchemaInput {
+        identity: "worth.query.test.schema-input"
+    }
+);
+crate::worth_query_structured_value_binding!(
+    ProgramInputBinding for () {
+        identity: "worth.rust.unit"
+    }
+);
+
+impl ApplicationOperationMarkerIdentity<Schema> for SchemaOperation {
+    type InputBinding = SchemaInputBinding;
     const IDENTIFIER: &'static str = "SchemaOperation";
 }
 
-impl ApplicationOperationMarkerIdentity for ProgramOperation {
-    type Schema = ProgramSchema;
-    type Input = ();
+impl ApplicationOperationMarkerIdentity<ProgramSchema> for ProgramOperation {
+    type InputBinding = ProgramInputBinding;
     const IDENTIFIER: &'static str = "ProgramOperation";
 }
 
-impl ApplicationAspectMarkerIdentity for Aspect {
-    type Schema = Schema;
-    type Entity = Entity;
-
+impl ApplicationAspectMarkerIdentity<Schema, Entity> for Aspect {
     const IDENTIFIER: &'static str = "Aspect";
     const ASPECT_IDENTITY: worth_foundational::facade::AspectIdentity =
         worth_foundational::facade::AspectIdentity(0x9161_2301);
@@ -53,14 +59,28 @@ impl ApplicationAspectMarkerIdentity for Aspect {
         worth_foundational::facade::AspectContractRevision(2);
 }
 
+impl ApplicationEntityMarkerIdentity<Schema> for Entity {
+    const IDENTIFIER: &'static str = "Entity";
+}
+
 impl DeclaredApplicationFieldValue for Field {
     type Value = u64;
+    type Binding = crate::facade::application_schema::U64ApplicationValueBinding;
     const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
 }
 
 impl DeclaredApplicationFieldValue for CurrencyField {
     type Value = CurrencyValue;
+    type Binding = CurrencyValueBinding;
     const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
+}
+
+impl ApplicationFieldMarkerIdentity<Schema, Entity, Aspect> for Field {
+    const IDENTIFIER: &'static str = "Field";
+}
+
+impl ApplicationFieldMarkerIdentity<Schema, Entity, Aspect> for CurrencyField {
+    const IDENTIFIER: &'static str = "CurrencyField";
 }
 
 crate::worth_query_application_schema! {
@@ -73,7 +93,7 @@ crate::worth_query_application_schema! {
     }
 }
 
-crate::worth_query_entity!(MacroNamespacedEntity in MacroNamespacedSchema);
+crate::worth_query_entity!(MacroNamespacedEntity for MacroNamespacedSchema);
 
 impl OperationCreates<ProgramOperation> for ProgramEntity {}
 impl OperationExpectsFact<SchemaOperation> for Field {}
@@ -88,16 +108,32 @@ impl ApplicationUnitMarker<Usd> for UsdCurrency {
     const NAME: &'static str = "UsdCurrency";
 }
 
-impl TypedApplicationValue for CurrencyValue {
-    const SCALAR_FAMILY: ScalarAspectType = ScalarAspectType::Int64;
+struct CurrencyValueBinding;
 
-    fn into_foundational_value(self) -> AspectValue {
-        AspectValue::Int64(0)
-    }
-}
-
-impl TypedUnitApplicationValue for CurrencyValue {
+impl crate::facade::application_schema::ApplicationScalarValueBinding for CurrencyValueBinding {
+    type Value = CurrencyValue;
     type Unit = Usd;
+    type Decode = crate::facade::application_schema::ApplicationValueDecodeUnavailable;
+    type Identity = crate::facade::application_schema::ApplicationValueIsNotIdentity;
+    type SignedAggregate =
+        crate::facade::application_schema::ApplicationValueSignedAggregateUnavailable;
+
+    const IDENTITY_NAME: &'static str = "worth.query.test.currency_value.v1";
+    const SCALAR_FAMILY: ScalarAspectType = ScalarAspectType::Int64;
+    const UNIT: Option<crate::facade::application_schema::ApplicationUnitIdentity> =
+        Some(crate::facade::application_schema::ApplicationUnitIdentity::declared("UsdCurrency"));
+
+    fn validate(
+        _: &Self::Value,
+    ) -> Result<(), crate::facade::application_schema::ApplicationValueValidationDenial> {
+        Ok(())
+    }
+
+    fn encode(
+        _: &Self::Value,
+    ) -> Result<AspectValue, crate::facade::application_schema::ApplicationValueEncodeDenial> {
+        Ok(AspectValue::Int64(0))
+    }
 }
 
 impl ApplicationSchema for Schema {

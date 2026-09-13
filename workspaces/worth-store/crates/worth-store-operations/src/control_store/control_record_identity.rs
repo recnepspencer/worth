@@ -107,12 +107,12 @@ fn fingerprint_kind(kind: &OperationalControlRecordKind, digest: &mut Sha256) {
             workflow,
             plan_fingerprint,
             receipt_fingerprint,
-            owner_tag,
+            owner_kind,
         } => {
             digest.update([workflow_tag(*workflow)]);
             digest.update(plan_fingerprint);
             digest.update(receipt_fingerprint);
-            digest.update([*owner_tag]);
+            digest.update([owner_kind.tag()]);
         }
         Kind::ReplicaBootstrapTransferRecorded {
             authorization_plan_fingerprint,

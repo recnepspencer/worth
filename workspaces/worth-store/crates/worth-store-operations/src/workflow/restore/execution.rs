@@ -1,12 +1,3 @@
-use worth_store_authority::StoreCurrentAuthorityWitness;
-use worth_store_physical_backend::{
-    NonCurrentStagingExecutionDenial, NonCurrentStagingExecutionReceipt,
-    NonCurrentStagingOwnerExecutionDenial, PhysicalRecoveryStagingOwner,
-};
-use worth_store_recovery_physics::{
-    BackupRestoreReplayDenial, RecoveredBackupFrontierReceipt, RecoveryPhysicsBackupRestoreOwner,
-};
-
 use crate::authorization::{
     consume_authorization_through, record_recovery_staging_completion,
     recover_authorization_consumption, StagingAuthorizationContinuation,
@@ -16,8 +7,16 @@ use crate::{
     AuthorizationConsumptionDenial, AuthorizationConsumptionReceipt,
     AuthorizationRevocationObservation, OperationalControlStore, OperationalTransitionId,
 };
+use worth_store_authority::StoreCurrentAuthorityWitness;
+use worth_store_physical_backend::{
+    NonCurrentStagingExecutionDenial, NonCurrentStagingExecutionReceipt,
+    NonCurrentStagingOwnerExecutionDenial, PhysicalRecoveryStagingOwner,
+};
 
-use super::{AuthorizedBackupRestorePlan, LoweredBackupRestorePlan};
+use super::{
+    AuthorizedBackupRestorePlan, BackupRestoreReplayDenial, BackupRestoreReplayOwner,
+    BackupRestoreReplayPlan, LoweredBackupRestorePlan, RecoveredBackupFrontierReceipt,
+};
 
 #[derive(Debug)]
 pub enum BackupRestoreReadinessDenial {
@@ -32,7 +31,7 @@ pub struct ExecutionReadyBackupRestore<'a> {
     staging_authority: worth_store_authority::StoreCurrentAuthorityIdentity,
     security_scope: crate::OperationalSecurityScope,
     backend: worth_store_physical_backend::LoweredNonCurrentStagingPlan,
-    recovery: worth_store_recovery_physics::BackupRestoreReplayPlan,
+    recovery: BackupRestoreReplayPlan,
     owner_verification: worth_store_offline_verifier::StagedRecoveryOwnerVerificationSet,
     _target_admission: crate::control_store::NonCurrentRecoveryTargetAdmission,
     control: &'a dyn crate::OperationalControlStorePort,
@@ -123,7 +122,7 @@ impl AuthorizedBackupRestorePlan {
         )
     }
 
-    #[cfg(feature = "certification-test-authority")]
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub fn ready_with_certification_control_store<'a>(
         self,
         control: &'a OperationalControlStore,
@@ -239,7 +238,7 @@ impl LoweredBackupRestorePlan {
     }
 }
 
-#[cfg(feature = "certification-test-authority")]
+#[cfg(any(test, feature = "certification-test-authority"))]
 impl<'a> ExecutionReadyBackupRestore<'a> {
     pub fn with_certification_control_store(
         mut self,
@@ -256,8 +255,8 @@ impl ExecutionReadyBackupRestore<'_> {
         ports: &Ports,
     ) -> Result<ExecutedBackupRestore, BackupRestoreExecutionDenial>
     where
-        Ports: crate::StagingAuthorizationContinuationPort
-            + worth_store_recovery_physics::StagedWalApplicationPort,
+        Ports:
+            crate::StagingAuthorizationContinuationPort + crate::workflow::StagedWalApplicationPort,
     {
         let staging_authority = self.staging_authority;
         let security_scope = self.security_scope;
@@ -265,7 +264,7 @@ impl ExecutionReadyBackupRestore<'_> {
         let staged = PhysicalRecoveryStagingOwner::execute_lowered_guarded_with_owner_effect(
             self.backend,
             |boundary| continuation.admit(boundary),
-            |staging| RecoveryPhysicsBackupRestoreOwner::execute(self.recovery, staging, ports),
+            |staging| BackupRestoreReplayOwner::execute(self.recovery, staging, ports),
         );
         let (backend, recovered_frontier) = match staged {
             Ok(receipts) => receipts,
@@ -292,9 +291,7 @@ impl ExecutionReadyBackupRestore<'_> {
             self.authorization,
             crate::OperationalWorkflowKind::Restore,
             &backend,
-            crate::workflow::recovery_owner_receipt::restored_frontier_owner_receipt_identity(
-                recovered_frontier,
-            ),
+            crate::workflow::restore::restored_frontier_owner_receipt_identity(recovered_frontier),
         )
         .map_err(BackupRestoreExecutionDenial::Control)?;
         record_recovery_staging_completion(

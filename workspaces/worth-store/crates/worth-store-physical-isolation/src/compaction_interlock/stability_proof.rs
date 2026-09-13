@@ -1,13 +1,12 @@
-use super::{CompactionReadInterlockDenial, CompactionRewritePublication};
-use crate::CurrentPhysicalRoot;
-use worth_store_recovery_physics::{
-    CompactionCutoverRecoveryPosture, CompactionGenerationVisibility,
+use super::{
+    CompactionReadInterlockDenial, CompactionRecoveryEvidence, CompactionRewritePublication,
 };
+use crate::CurrentPhysicalRoot;
 
 #[derive(Debug, Clone)]
 pub struct CompactionCutoverStabilityProof {
     publication: CompactionRewritePublication,
-    recovery_posture: CompactionCutoverRecoveryPosture,
+    recovery_evidence: CompactionRecoveryEvidence,
 }
 
 impl CompactionCutoverStabilityProof {
@@ -28,16 +27,16 @@ impl CompactionCutoverStabilityProof {
 
     pub fn admit(
         publication: CompactionRewritePublication,
-        recovery_posture: CompactionCutoverRecoveryPosture,
+        recovery_evidence: CompactionRecoveryEvidence,
     ) -> Result<Self, CompactionReadInterlockDenial> {
-        match recovery_posture.visibility() {
-            CompactionGenerationVisibility::VisibleAfterAdmittedCutover { .. } => Ok(Self {
+        match recovery_evidence {
+            CompactionRecoveryEvidence::SelectedProduct(_) => Ok(Self {
                 publication,
-                recovery_posture,
+                recovery_evidence,
             }),
-            CompactionGenerationVisibility::ResidueRejected(rejection) => Err(
-                CompactionReadInterlockDenial::BackendResidueCandidateSelection(rejection.reason()),
-            ),
+            CompactionRecoveryEvidence::Residue(kind) => {
+                Err(CompactionReadInterlockDenial::BackendResidueCandidateSelection(kind))
+            }
         }
     }
 
@@ -53,8 +52,8 @@ impl CompactionCutoverStabilityProof {
         &self.publication
     }
 
-    pub const fn recovery_posture(&self) -> &CompactionCutoverRecoveryPosture {
-        &self.recovery_posture
+    pub const fn recovery_evidence(&self) -> CompactionRecoveryEvidence {
+        self.recovery_evidence
     }
 
     pub fn plan_post_cutover_read(

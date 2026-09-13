@@ -1,8 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
+use worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity;
 use worth_store_physical_format::RecordArtifactFile;
-use worth_store_recovery_physics::WalSegmentArtifactIdentity;
 use worth_store_recovery_runtime::{
     RecoveryCleanupDispositionKind, RecoveryCleanupEvidence, RecoveryCleanupTarget,
 };

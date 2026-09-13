@@ -1,9 +1,11 @@
-use worth_store_recovery_physics::UnacknowledgedDurableWal;
 use worth_store_wal::{PublicationScope, WalFramePublicationScope};
 
 use super::super::types::reachability_staging::BlobReachabilityStagingIdentity;
 use super::super::types::{BlobPublicationWalCommit, BlobPublicationWalPayload};
-use super::super::{BlobPublicationCounterSnapshot, BlobPublicationDenial, BlobPublicationIntent};
+use super::super::{
+    BlobPublicationCounterSnapshot, BlobPublicationDenial, BlobPublicationDurableWal,
+    BlobPublicationIntent,
+};
 
 pub(crate) fn verify_staging_payload_match(
     payload: &BlobPublicationWalPayload,
@@ -29,7 +31,7 @@ pub(crate) fn verify_wal_frame_scope(
 
 pub(crate) fn require_matching_replay_identity(
     declared: &WalFramePublicationScope,
-    replayed: &UnacknowledgedDurableWal,
+    replayed: &BlobPublicationDurableWal,
     payload: &BlobPublicationWalPayload,
     counters: BlobPublicationCounterSnapshot,
 ) -> Result<(), BlobPublicationDenial> {

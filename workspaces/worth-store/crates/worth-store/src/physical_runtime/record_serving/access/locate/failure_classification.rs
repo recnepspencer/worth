@@ -82,7 +82,68 @@ pub(in crate::physical_runtime::record_serving) fn manifest_failure(
             FrameLoadFailureKind::Backend(failure),
         )),
         ManifestLookupFailure::Frame(kind) => read_failure(FrameLoadFailure::new(kind)),
+        ManifestLookupFailure::ResidentAdmission(denial) => resident_admission_failure(denial),
         ManifestLookupFailure::Damaged => RecordReadDenial::ArtifactDamaged,
         ManifestLookupFailure::Residency(reason) => RecordReadDenial::from_residency(reason),
     }
+}
+
+fn resident_admission_failure(
+    denial: crate::physical_runtime::integrity::resident_admission::denial::ResidentIntegrityAdmissionDenial,
+) -> RecordReadDenial {
+    use crate::physical_runtime::integrity::resident_admission::denial::ResidentIntegrityAdmissionDenial;
+    use worth_store_physical_integrity::PhysicalIntegrityRejection;
+
+    if let Some(residency) = denial.residency_unavailability() {
+        return RecordReadDenial::from_residency(residency);
+    }
+    match denial {
+        ResidentIntegrityAdmissionDenial::LifecycleGenerationChanged => {
+            RecordReadDenial::PhysicalWork(RecordReadWorkDenial::RuntimeReleased)
+        }
+        ResidentIntegrityAdmissionDenial::Validation(PhysicalIntegrityRejection::Damaged(_)) => {
+            RecordReadDenial::ArtifactDamaged
+        }
+        ResidentIntegrityAdmissionDenial::Validation(PhysicalIntegrityRejection::Unsupported(
+            _,
+        ))
+        | ResidentIntegrityAdmissionDenial::BootstrapUnsupportedFormat(_)
+        | ResidentIntegrityAdmissionDenial::BootstrapScopeMismatch(_) => {
+            RecordReadDenial::FormatMismatch
+        }
+        ResidentIntegrityAdmissionDenial::Validation(
+            PhysicalIntegrityRejection::Unknown(_) | PhysicalIntegrityRejection::Indeterminate(_),
+        )
+        | ResidentIntegrityAdmissionDenial::SourceScopeMismatch => {
+            RecordReadDenial::ArtifactUnavailable
+        }
+        ResidentIntegrityAdmissionDenial::SourceIncarnationMismatch
+        | ResidentIntegrityAdmissionDenial::FrameGenerationChanged
+        | ResidentIntegrityAdmissionDenial::RetainedRecordInvalidated
+        | ResidentIntegrityAdmissionDenial::RetainedRecordChanged
+        | ResidentIntegrityAdmissionDenial::Frame(_) => RecordReadDenial::ArtifactUnavailable,
+    }
+}
+
+#[cfg(test)]
+pub(in crate::physical_runtime) fn assert_actual_lifecycle_manifest_denial_maps_without_damage(
+    denial: crate::physical_runtime::integrity::resident_admission::denial::ResidentIntegrityAdmissionDenial,
+) {
+    use super::super::manifest_routing::ManifestLookupFailure;
+    use crate::physical_runtime::record_serving::{
+        RecordAppendDenial, RecordAppendError, RecordReadWorkDenial,
+    };
+
+    assert_eq!(
+        manifest_failure(ManifestLookupFailure::ResidentAdmission(denial)),
+        RecordReadDenial::PhysicalWork(RecordReadWorkDenial::RuntimeReleased)
+    );
+    assert!(matches!(
+        crate::physical_runtime::record_serving::planning::inline_plan_failure::manifest_lookup_failure(
+            ManifestLookupFailure::ResidentAdmission(denial)
+        ),
+        RecordAppendError::Denied(RecordAppendDenial::PhysicalReadWorkUnavailable(
+            RecordReadWorkDenial::RuntimeReleased
+        ))
+    ));
 }

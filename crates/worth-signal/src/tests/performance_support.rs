@@ -1,8 +1,14 @@
 mod measurement_capture;
+mod measurement_output;
+mod measurement_protocol;
+#[cfg(feature = "test-peak-allocation")]
+mod peak_allocation;
 mod profile_comparison;
+mod regression_budgets;
 mod workload_construction;
 
-pub(crate) use measurement_capture::{PerfCaseContract, PerfMeasurement, PerfTimingPolicy};
+pub(crate) use measurement_capture::{PerfCaseContract, PerfMeasurement};
+pub(crate) use measurement_protocol::PerfTimingPolicy;
 pub(crate) use workload_construction::{build_chain_graph, with_perf_topology_asserts_disabled};
 
 pub(crate) fn capture_and_certify_perf_samples<F>(

@@ -1,10 +1,10 @@
-use worth_store_physical_format::PersistedCompactionCutoverRecord;
+use worth_store_physical_integrity::VerifiedCheckpointCompactionCutover;
 
 use super::PhysicalCheckpointBase;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SelectedCompactionProduct {
-    cutover: PersistedCompactionCutoverRecord,
+    cutover: VerifiedCheckpointCompactionCutover,
 }
 
 impl SelectedCompactionProduct {
@@ -14,7 +14,7 @@ impl SelectedCompactionProduct {
         Self { cutover }
     }
 
-    pub const fn cutover(self) -> PersistedCompactionCutoverRecord {
+    pub const fn cutover(self) -> VerifiedCheckpointCompactionCutover {
         self.cutover
     }
 }

@@ -1,5 +1,5 @@
+use crate::{BlobReplaySourceAdmission, BlobReplaySourceKind};
 use worth_store_physical_backend::BlobPhysicalManifestValidation;
-use worth_store_recovery_physics::{BlobReplaySourceAdmission, BlobReplaySourceKind};
 
 use crate::{
     BlobGeneration, BlobObjectClassification, BlobObjectId, ChunkTreeRoot, LogicalContentDigest,

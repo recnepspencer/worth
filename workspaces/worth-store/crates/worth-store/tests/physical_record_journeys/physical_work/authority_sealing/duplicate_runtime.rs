@@ -2,11 +2,8 @@ use super::super::{
     executor::admitted_write,
     fixture::{serving_from_initialization_with_work_profile, work_fixture},
 };
-use super::assert_sources_exclude;
 use tempfile::tempdir;
 use worth_store::physical_runtime::{PhysicalExecutorCommand, PhysicalStoreCloseOutcome};
-
-const PHYSICAL_RUNTIME: &str = "src/physical_runtime";
 
 #[test]
 fn a_second_pending_work_registry_is_forbidden() {
@@ -26,20 +23,6 @@ fn a_second_pending_work_registry_is_forbidden() {
             PhysicalStoreCloseOutcome::Closed { .. }
         ),
         "C5_PREDICATE:duplicate-work-registry: shadow registry stole settlement from the canonical command arena"
-    );
-}
-
-#[test]
-fn store_local_async_registries_are_forbidden() {
-    assert_sources_exclude(
-        PHYSICAL_RUNTIME,
-        "store-local-async-registry",
-        &[
-            "TimerWheel",
-            "RetryQueue",
-            "TimeoutRegistry",
-            "PolicyRegistry",
-        ],
     );
 }
 

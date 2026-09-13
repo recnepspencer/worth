@@ -1,4 +1,4 @@
-use worth_store_recovery_physics::{
+use super::candidate_evaluation::{
     discover_recovery_candidates, RecoveryCandidate, RecoveryCandidateObservation,
     RecoveryCandidateSet,
 };
@@ -30,6 +30,7 @@ pub enum OperationalTruthCompositionDenial {
     DuplicatePhysicalSource,
     EmptyMedia,
     AllocationFailed,
+    ConflictingFrontierEvidence,
     CoverageOverflow,
     Interrupted(crate::OfflineInspectionDenial),
     OwnedAllocationBudgetExceeded { admitted: u64, limit: u64 },
@@ -130,8 +131,14 @@ pub(crate) fn compose_operational_truth_with_owner_candidates(
         region_count,
     };
     reject_interruption().map_err(OperationalTruthCompositionDenial::Interrupted)?;
-    let candidates = discover_recovery_candidates(owner_candidates)
-        .map_err(|_| OperationalTruthCompositionDenial::AllocationFailed)?;
+    let candidates = discover_recovery_candidates(owner_candidates).map_err(|denial| match denial {
+        super::candidate_evaluation::RecoveryCandidateDiscoveryDenial::AllocationFailed => {
+            OperationalTruthCompositionDenial::AllocationFailed
+        }
+        super::candidate_evaluation::RecoveryCandidateDiscoveryDenial::ConflictingFrontierEvidence => {
+            OperationalTruthCompositionDenial::ConflictingFrontierEvidence
+        }
+    })?;
     let actual_peak_owned_allocation_bytes = walked_owned_allocation_bytes
         .checked_add(evidence_owned_allocation_bytes)
         .and_then(|bytes| bytes.checked_add(candidate_input_owned_allocation_bytes))

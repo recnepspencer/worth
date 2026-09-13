@@ -1,8 +1,8 @@
 use super::{
     recovery_staging_control_replay::observe_owner_receipt,
     selected_control_replay_contract::SelectedControlReplayDenial,
-    OperationalControlHistoryViolation, OperationalOperationId, OperationalWorkflowKind,
-    SelectedControlReplay,
+    OperationalControlHistoryViolation, OperationalOperationId, OperationalOwnerReceiptKind,
+    OperationalWorkflowKind, SelectedControlReplay,
 };
 
 impl SelectedControlReplay {
@@ -14,7 +14,7 @@ impl SelectedControlReplay {
         workflow: OperationalWorkflowKind,
         plan_fingerprint: [u8; 32],
         receipt_fingerprint: [u8; 32],
-        owner_tag: u8,
+        owner_kind: OperationalOwnerReceiptKind,
     ) -> Result<(), SelectedControlReplayDenial> {
         observe_owner_receipt(
             &mut self.recovery_staging,
@@ -22,7 +22,7 @@ impl SelectedControlReplay {
             workflow,
             plan_fingerprint,
             receipt_fingerprint,
-            owner_tag,
+            owner_kind,
         )
         .map_err(|kind| {
             SelectedControlReplayDenial::Invalid(OperationalControlHistoryViolation::new(

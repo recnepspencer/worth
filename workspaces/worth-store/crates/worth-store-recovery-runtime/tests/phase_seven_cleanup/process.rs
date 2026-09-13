@@ -5,11 +5,11 @@ use std::process::{Command, Output};
 
 use super::phase_three_support::{limit_declaration, recovery_request_with_limits};
 use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity;
 use worth_store::physical_runtime::{
     PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
     PhysicalCheckpointRequest,
 };
-use worth_store_recovery_physics::WalSegmentArtifactIdentity;
 use worth_store_recovery_runtime::{
     PhysicalRecoveryLimits, PhysicalRecoveryOutcome, RecoveryCleanupTarget,
 };
@@ -287,6 +287,7 @@ fn cleanup_limits(cleanup_bytes: u64, cleanup_candidates: u64) -> PhysicalRecove
     declaration.distinct_pages_and_extents = 4_096;
     declaration.operation_bindings = 4_096;
     declaration.staging_bytes = 64 * 1024 * 1024;
+    declaration.recovery_memory_bytes = 64 * 1024 * 1024;
     declaration.dirty_frames = 4_096;
     declaration.publication_effects = 64;
     declaration.cleanup_candidates = cleanup_candidates;

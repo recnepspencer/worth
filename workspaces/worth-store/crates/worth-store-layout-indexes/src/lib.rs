@@ -2,16 +2,12 @@
 
 mod access;
 mod access_planning;
-#[cfg(test)]
-mod architecture_residue_tests;
 mod artifact_family;
 mod backup_verification;
 mod blob_basis;
 pub mod bootstrap;
 mod catalog;
 pub mod compaction_projection;
-#[cfg(test)]
-mod counter_authority_residue_tests;
 pub mod customization;
 pub mod declarations;
 pub mod evolution;
@@ -26,8 +22,6 @@ mod read;
 mod recovery;
 mod strategy;
 pub mod strategy_declarations;
-#[cfg(test)]
-mod topology_residue_tests;
 
 pub use access::execution::{
     btree_lookup_readiness_cases, degraded_scan_readiness_cases, AccessPathCounterSnapshot,
@@ -148,9 +142,11 @@ pub use read::{
     WalLookupRequest,
 };
 pub use recovery::{
-    btree_replay_cases, layout_btree_recovery, BTreeReplayCaseId, BTreeReplayDenialKind,
-    BTreeReplayDenied, BTreeReplayLocation, BTreeReplayOutcome, BTreeReplayPhysicalSource,
-    BTreeReplayRequest, BTreeReplayView, LayoutBTreeRecovery,
+    btree_replay_cases, layout_btree_recovery, AdmittedBTreeReplayPhysicalSource,
+    AdmittedBTreeReplaySource, BTreeReplayCaseId, BTreeReplayDenialKind, BTreeReplayDenied,
+    BTreeReplayLocation, BTreeReplayOutcome, BTreeReplayPhysicalSource,
+    BTreeReplayPhysicalSourceIdentity, BTreeReplayRequest, BTreeReplayRootAgreement,
+    BTreeReplaySourceDenial, BTreeReplayView, LayoutBTreeRecovery,
 };
 pub use strategy::btree::execution::{
     btree_lookup_execution_cases, btree_replay_runtime,
@@ -248,5 +244,5 @@ pub(crate) use declarations::layout_declarations;
 mod operational_repair;
 pub use operational_repair::{
     LayoutRepairConsequence, LayoutRepairConsequenceDenial, LayoutRepairConsequenceOwner,
-    LayoutRepairConsequencePlan, LayoutRepairConsequenceReceipt,
+    LayoutRepairConsequencePlan, LayoutRepairConsequenceReceipt, LayoutRepairRegionObservation,
 };

@@ -1,13 +1,3 @@
-use sha2::{Digest, Sha256};
-use worth_store_physical_backend::{
-    LoweredNonCurrentStagingPlan, NonCurrentStagingArtifact, NonCurrentStagingLoweringDenial,
-    NonCurrentStagingPlanRequest, PhysicalRecoveryStagingOwner,
-};
-use worth_store_recovery_physics::{
-    BackupRestoreReplayDenial, BackupRestoreReplayPlan, BackupRestoreReplayRequest,
-    RecoveryPhysicsBackupRestoreOwner,
-};
-
 use crate::authorization::{
     authorize_lowered_plan, AuthorizationReplayPolicy, AuthorizedOperationalPlan,
     LoweredOperationalPlan,
@@ -17,8 +7,16 @@ use crate::{
     AuthorizationDenial, AuthorizationRevocationObservation, ExternalOperatorAssertion,
     OperationalAuthorizationPort,
 };
+use sha2::{Digest, Sha256};
+use worth_store_physical_backend::{
+    LoweredNonCurrentStagingPlan, NonCurrentStagingArtifact, NonCurrentStagingLoweringDenial,
+    NonCurrentStagingPlanRequest, PhysicalRecoveryStagingOwner,
+};
 
-use super::{BackupRestoreOperation, EvidenceBoundBackupRestorePlan};
+use super::{
+    BackupRestoreOperation, BackupRestoreReplayDenial, BackupRestoreReplayOwner,
+    BackupRestoreReplayPlan, BackupRestoreReplayRequest, EvidenceBoundBackupRestorePlan,
+};
 
 #[derive(Debug)]
 pub enum BackupRestoreLoweringDenial {
@@ -65,14 +63,13 @@ impl EvidenceBoundBackupRestorePlan {
         ))
         .map_err(BackupRestoreLoweringDenial::Backend)?;
         let manifest = self.backup.custody().structural().materialized().manifest();
-        let recovery = RecoveryPhysicsBackupRestoreOwner::lower(
-            BackupRestoreReplayRequest::from_verified_backup(
+        let recovery =
+            BackupRestoreReplayOwner::lower(BackupRestoreReplayRequest::from_verified_backup(
                 manifest,
                 self.source_identity,
                 backend.binding(),
-            ),
-        )
-        .map_err(BackupRestoreLoweringDenial::Recovery)?;
+            ))
+            .map_err(BackupRestoreLoweringDenial::Recovery)?;
         let footprint = OwnerPlanFootprint::bounded(0, backend.binding().expected_bytes())
             .ok_or(BackupRestoreLoweringDenial::InvalidFootprint)?;
         let owner_verification =

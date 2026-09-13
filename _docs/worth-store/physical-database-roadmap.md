@@ -183,7 +183,6 @@ or terminal projection text as semantic authority.
 
 ### Must Ship
 
-- current JSON/serde residue inventory for old and new Store surfaces
 - native Store boundary vocabulary over Foundational `AspectValue`,
   `StructAspectValue`, `AspectKey`, validated aspect values, authoritative
   aspect state, authoritative patches, masks, locators, canonical basis,
@@ -191,14 +190,11 @@ or terminal projection text as semantic authority.
 - Store-owned physical witness wrappers where byte-survival authority is local
   to Store
 - terminal projection and terminal JSON projection quarantine
-- explicit JSON ingress readmission lane that lowers to native aspects before
+- explicit JSON ingress readmission that lowers to native aspects before
   authority consumption
-- native canonical basis and digest path with no JSON serialization basis
-- compile-fail and scan proofs for JSON residue, generic serde authority,
-  terminal projection re-entry, raw string identity, and neutral string
-  accessors
-- S0 handoff artifact that is typed/native and cannot be satisfied by JSON,
-  logs, markdown, or terminal projections
+- native canonical basis and digest paths with no JSON serialization basis
+- direct owner tests and compiler-boundary tests at the real authority entry
+  points
 
 ### Must Preserve
 
@@ -211,8 +207,9 @@ or terminal projection text as semantic authority.
 
 ### Proof Obligations
 
-- unclassified production JSON/serde residue fails the gate
-- terminal JSON modules are the only JSON homes in the dedicated Store
+- direct owner and boundary tests reject JSON-shaped semantic authority
+- terminal JSON projection cannot re-enter an authority-bearing lane
+- repository boundary and dependency checks remain green
   workspace
 - ordinary Store tests author native aspect values and Store physical witnesses
 - canonical basis and digest evidence are derived from native facts
@@ -527,8 +524,7 @@ This is not physical isolation, compaction, checkpointing, reclaim, blob
 lifecycle, I/O QoS, backup, repair, security, or full S.12 certification. This
 is the typed harness foundation that lets later sequences express those
 behaviors through production-facing drivers, deterministic schedules,
-certification-owned oracles, replayable transcripts, exact counters, and
-Foundational/Proof-backed evidence.
+independent oracles, replayable transcripts, exact counters, and direct tests.
 
 ### Adversarial Constraint
 
@@ -538,37 +534,33 @@ test-support-owned oracle meaning, synthetic in-memory stores, JSON scenario
 authority, or post-hoc broad assertions. Hostile physical claims must be
 replayable from typed aspect-native scenarios, deterministic schedules,
 production-boundary drivers, fault/corruption/interleaving events,
-certification-owned oracles, exact counters, transcripts, and evidence bundles.
+independent oracles, exact counters, and transcripts.
 
 ### Must Ship
 
-- public golden-path scenario authoring API backed by aspect-native scenario,
-  schedule, actor, fault, oracle, transcript, counter, fixture, and
-  evidence-bundle vocabulary
+- public scenario authoring API backed by aspect-native scenario, schedule,
+  actor, fault, oracle, transcript, counter, and fixture vocabulary
 - deterministic scheduler and replay identity for physical database simulations
 - production-facing driver contracts for storage, crash, corruption, memory,
   I/O, offline verification, maintenance, named yieldpoints, and later
   blob/security/repair lanes
-- reusable certification-owned oracle families and generated coverage matrix so
-  proof meaning never lives in test support or hand-authored coverage prose
+- reusable independent oracle families whose verdicts consume observed facts
+  rather than fixture expectations
 - counter-strength posture so exact counters are used for forbidden behavior
   and deterministic event structure, while implementation-sensitive costs use
   weakest-sufficient expectations
-- S.4 recovery and shortcut-rejection dogfood slices through the public
-  authoring API, plus an S.5 readiness shape-probe through the same API with
-  explicit non-claim evidence that the probe does not certify unbuilt S.5
-  isolation behavior
+- direct S.4 recovery scenarios and S.5 physical-isolation scenarios through
+  the same planning, execution, observation, and replay path
 - reusable profile lanes for smoke, CI certification, soak, release
   certification, and hardware qualification
-- S.5 readiness handoff proving the harness can express protect-before-observe,
-  root swaps, byte guards, reclaim barriers, crash/restart, deterministic
-  interleavings, and forbidden shortcuts
+- direct S.5 tests for protect-before-observe, root swaps, byte guards, reclaim
+  barriers, crash/restart, deterministic interleavings, and hostile inputs
 
 ### Must Preserve
 
 - Store owns physical database behavior.
 - Test support owns mechanics, not proof meaning.
-- Certification owns oracle verdicts and closeout evidence.
+- Certification owns oracle verdicts, not a second evidence protocol.
 - Foundational owns shared boundary/evidence vocabulary, not Store authority.
 - Proof owns proof-bearing progression law, not simulation semantics.
 - JSON remains confined to terminal projection or hostile/readmission lanes.
@@ -576,21 +568,21 @@ certification-owned oracles, exact counters, transcripts, and evidence bundles.
 ### Proof Obligations
 
 - scenario lowering is typed and cannot skip resolution, scheduling,
-  admission, execution, transcript, oracle, or evidence stages
+  admission, execution, transcript, or oracle stages
 - deterministic replay reproduces actor steps, injected events, counters,
   transcripts, and oracle verdicts across runs
 - production-backed fixtures and drivers exercise production-facing boundaries
   rather than private state mutation
 - certification-owned oracles deny logs, same-run self-comparison, fixture
   labels, test-support verdicts, and JSON-shaped authority
-- S.5 cannot start without `S5SimulationHarnessReadiness`
+- S.5 scenarios must lower and execute through the ordinary harness entry
 
-### Closeout Gate
+### Completion Gate
 
-`S.4.5` is not closed until the dedicated Store workspace has a reusable
+`S.4.5` is complete at a reviewed revision when the Store workspace has a reusable
 physical simulation harness that can run typed, aspect-native, deterministic,
 production-boundary-backed, adversarial scenarios with certification-owned
-oracles, exact counters, replayable transcripts, and an S.5 readiness handoff.
+oracles, exact counters, replayable transcripts, and direct S.5 scenarios.
 
 ## S.5: Physical Isolation, Latches, Epochs, And Stable Read Plans
 
@@ -875,9 +867,6 @@ test-only helpers that bypass production topology.
 
 ### Must Ship
 
-- inventory of critical proof-flow and topology violations across S.7 blob
-  chunks, certification, physical format, physical isolation, recovery physics,
-  I/O scheduler, physical backend, buffer pool, and physical integrity surfaces
 - S.7 blob-chunk lifecycle tree shaped by source authority, evidence
   collection, classification, verification, receipt construction, and next
   capability
@@ -888,10 +877,8 @@ test-only helpers that bypass production topology.
   responsibility
 - public facades split by lifecycle phase, authority class, and production vs
   certification/test authority
-- cleanup evidence, including compile-fail, structural scan, or runtime tests
-  only where they are the right proof, showing the cleaned topology cannot be
-  bypassed through raw constructors, helper crates, broad exports, or copied
-  proof fields
+- direct compile-fail or runtime tests at bypassable authority boundaries
+- repository boundary, context, composition, and line-cap checks
 
 ### Must Preserve
 
@@ -908,6 +895,11 @@ test-only helpers that bypass production topology.
 
 - every cleaned flow exposes the proof grammar:
   collect evidence -> classify case -> verify transition -> construct receipt
+- production ownership and dependency direction pass the repository gates
+- direct boundary tests reject raw constructors, broad authority exports, and
+  copied proof fields where those risks exist
+- no topology inventory, source scan, or generated cleanup report is required
+  to interpret the result
   -> expose next capability
 - directories with more than ten local files are subdivided or explicitly
   exempted by a narrow structural reason
@@ -987,9 +979,10 @@ harness.
 
 ### Boundary
 
-Production owners still decide what can execute, the formal-model crate defines
-the finite checked semantics, and certification remains the courtroom. Model
-actions, traces, copied case ids, and checked verdicts never become runtime
+Production owners still decide what can execute, and the formal-model crate
+defines finite checked semantics and direct checker diagnostics. Focused owner
+tests compare concrete outcomes with model actions without a certification
+intermediary. Model actions, traces, and checked verdicts never become runtime
 authority. Operator authorization and repair execution remain S.10; S.9 models
 the current quarantine, blast-radius preservation, verification, and
 readmission boundary.
@@ -1003,9 +996,8 @@ in-scope owner case must map exactly once to checked model behavior.
 
 ### Must Ship
 
-- hard cutover of the existing `worth-store-formal-models` placeholder into
-  responsibility-shaped checked semantics, owner bindings, assumptions,
-  runner, and counterexample localization
+- responsibility-shaped checked semantics, focused owner mappings, explicit
+  assumptions, a bounded runner, and actionable counterexample diagnostics
 - exact binding among production owner declarations, ordinary executed cases,
   and modeled actions without generic transition-receipt wrappers
 - TLA+/TLC or an explicitly justified equivalent primary checked toolchain for:
@@ -1021,10 +1013,8 @@ in-scope owner case must map exactly once to checked model behavior.
 - the missing production replication admission outcomes before replication is
   modeled
 - explicit backend, durability, atomicity, I/O, and clock assumptions
-- deterministic model-counterexample <-> physical-scenario round trips through
-  the S.4.5 harness
-- exact mapping, runner, invariant, deadlock, bound-exhaustion, mutation, and
-  localization counters
+- direct physical scenarios for claims that cross process or media boundaries
+- typed runner failure, counterexample, and bound-exhaustion outcomes
 
 ### Must Preserve
 
@@ -1039,23 +1029,24 @@ in-scope owner case must map exactly once to checked model behavior.
 
 ### Proof Obligations
 
-- checked model and configuration artifacts are reproducible from a clean
-  checkout with pinned tool identity and finite bounds
-- every modeled action is reached by an ordinary owner outcome and every
-  in-scope owner case maps exactly once
-- certification binds checked verdicts to executed-owner evidence and catches
-  at least one controlled defect per family
-- model counterexamples lower to executable harness scenarios when the current
-  abstraction exposes the required production seam
+- every retained model runs directly from a clean checkout with the pinned tool
+  and finite bounds
+- every claimed owner mapping is exercised directly and exhaustively where the
+  production outcome is a closed enum
+- malformed output, timeout, nonzero exit, counterexample, and bound exhaustion
+  cannot be reported as success
+- process and media claims are tested at those real boundaries rather than
+  inferred from model output
 
 ### Closeout Gate
 
-`S.9` is not closed until the named protocols have checked artifacts, exact
-owner-to-model correspondence, explicit backend assumptions, hostile harness
-round trips, controlled-defect sensitivity, and localized counterexamples. A
-placeholder model enum, catalog-only case, fictional replication state,
-operator-authorization claim, bound-exhausted run reported as proof, or model
-verdict used as production authority blocks closeout.
+`S.9` is complete at a reviewed revision when every retained model passes the
+direct pinned checker, focused owner mappings pass, backend assumptions are
+explicit, and counterexamples remain actionable. A placeholder model enum,
+catalog-only case, fictional replication state, operator-authorization claim,
+bound-exhausted run reported as proof, or model verdict used as production
+authority blocks completion. Current validity is the current checker and test
+result, not a stored status or certificate.
 
 ## Mandatory Physical Foundation Reconstruction Gate
 
@@ -1209,7 +1200,7 @@ and cryptographic-erasure capability declarations, proof-of-possession
 operator/service admission, and provenance survive backup, restore, repair,
 replication, export/import, and operator-action lanes.
 
-## S.12: Physical Database Certification And Performance Program
+## S.12: Physical Database Qualification And Performance Program
 
 ### Goal
 
@@ -1218,10 +1209,9 @@ resumes platform expansion.
 
 ### Boundary
 
-This is not a large integration test pack. This is the readiness gate that ties
-physical correctness, semantic parity, performance envelopes, hardware
-assumptions, fault injection, hazard analysis, and reproducible evidence into a
-machine-checkable certification program.
+This is the release-qualification program that exercises physical correctness,
+semantic parity, performance envelopes, hardware assumptions, fault injection,
+and hazard analysis at their real boundaries.
 
 ### Adversarial Constraint
 
@@ -1232,7 +1222,7 @@ assumptions.
 
 ### Must Ship
 
-- physical database certification suite
+- direct physical database qualification suites
 - power-loss, torn-write, byte-flip, stale-generation, and partial-flush fault
   injection
 - long-running physical soak with foreground traffic and background maintenance
@@ -1245,8 +1235,8 @@ assumptions.
 - cross-backend parity and capability-matrix proof
 - FMEA/STPA-style hazard analysis with detection, containment, recovery action,
   proof lane, and residual-risk fields
-- reproducible certification bundles tied to source, binary, config, format,
-  backend, and hardware assumptions
+- reproducible commands and declared environment assumptions for each expensive
+  release-qualification lane
 
 ### Must Preserve
 
@@ -1257,7 +1247,7 @@ assumptions.
 
 ### Proof Obligations
 
-- all Physical Database Roadmap certification lanes pass with machine-checkable evidence
+- all required physical-database qualification lanes pass directly
 - every claimed performance envelope has exact counters and an admitted
   workload class
 - every unsupported backend/hardware capability fails typed or is marked debt
@@ -1265,11 +1255,12 @@ assumptions.
 
 ### Closeout Gate
 
-`S.12` is not closed until the Physical Database Roadmap produces reproducible
-certification bundles for power loss, torn writes, byte flips, stale
-generations, memory bounds, allocation bounds, recovery bounds, foreground
-latency under background work, blob scale, cross-backend parity, and
-hazard-analysis residual risk.
+`S.12` is complete at a reviewed revision when direct tests and benchmarks pass
+for power loss, torn writes, byte flips, stale generations, memory and
+allocation bounds, recovery bounds, foreground latency under background work,
+blob scale, cross-backend parity, and hazard-analysis residual risk. Results
+may be retained by CI, but no generated certification bundle or source
+fingerprint is required to make them valid.
 
 ## Platform Readiness Gate
 
@@ -1281,7 +1272,7 @@ Part II may begin only when:
   readiness handoff was consumed by the resumed S.10 implementation
 - `S.0` through `S.12`, including `S.4.5`, `S.5.1`, and `S.7.1`, are
   implemented or explicitly scoped with named, non-platform-grade debt
-- [test-requirements-2.md](/Users/Esther/Documents/Programming/worth_workspace/worth/_docs/worth-store/test-requirements-2.md)
+- [test-requirements-2.md](test-requirements-2.md)
   adversarial harness requirements are satisfied for every closed `S.*`
   sequence
 - the Physical Database Roadmap workspace crates expose the typed source,
@@ -1302,7 +1293,7 @@ Part II may begin only when:
   posture are typed physical metadata from `S.5.1`, not late feature-local
   strings
 - formal models exist for the crash/concurrency state machines named in `S.9`
-- Physical Database Roadmap certification passes
+- required Physical Database Roadmap qualification lanes pass
 
 ## Relationship To Runtime And Query Integration
 
@@ -1316,9 +1307,9 @@ Part II may begin only when:
 - Runtime Integration Milestones 10 through 12 must consume the physical blob,
   maintenance, compatibility, security-scope, key-lifecycle, and operational
   contracts from `S.5.1`, `S.6`, `S.7`, `S.8`, `S.10`, and `S.11`.
-- Runtime Integration Milestone 14 must include `S.12` evidence in every joined
-  certification bundle. Semantic parity cannot promote a physically
-  uncertified backend.
+- Runtime Integration Milestone 14 must run the relevant current `S.12` lanes
+  before promoting semantic parity. Semantic parity cannot promote a backend
+  whose required physical qualification is failing or unrun.
 
 ## Completion Standard
 

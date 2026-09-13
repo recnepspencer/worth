@@ -1,3 +1,6 @@
+mod retained_charge;
+mod work_admission;
+
 mod artifact_records;
 mod branch_records;
 mod observations;

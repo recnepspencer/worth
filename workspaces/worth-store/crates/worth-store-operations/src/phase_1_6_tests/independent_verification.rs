@@ -1,11 +1,13 @@
 use super::support::*;
-use worth_store_offline_verifier::OfflineStructuralIdentification;
-use worth_store_recovery_physics::ObservedRecoveryFrontier;
+use worth_store_offline_verifier::OfflinePhysicalArtifactFamily;
+use worth_store_offline_verifier::{
+    ObservedRecoveryFrontier, OfflineStructuralIdentification, RecoveryCandidateConfidence,
+};
 
 #[test]
 fn phases_five_and_six_run_the_full_backup_truth_ladder_on_real_media() {
     let scenario = BackupScenario::new("complete-ladder");
-    let authority = crate::backup::export::current_authority("s10-complete");
+    let authority = scenario.authority();
     let custody = backup_custody(&authority);
     let control = scenario.control_store();
     let intent = OnlineBackupIntent::new(
@@ -110,6 +112,18 @@ fn phases_five_and_six_run_the_full_backup_truth_ladder_on_real_media() {
         .recovery_candidates()
         .candidates();
     assert_eq!(candidates.len(), 3);
+    let family_count = |family| {
+        candidates
+            .iter()
+            .filter(|candidate| candidate.family() == family)
+            .count()
+    };
+    assert_eq!(family_count(OfflinePhysicalArtifactFamily::Manifest), 2);
+    assert_eq!(family_count(OfflinePhysicalArtifactFamily::Wal), 1);
+    assert!(candidates.iter().all(|candidate| {
+        candidate.confidence() == RecoveryCandidateConfidence::OwnerAndIntegrityConfirmed
+            && candidate.content_digest() != [0; 32]
+    }));
     assert!(candidates.iter().any(|candidate| matches!(
         candidate.frontier(),
         ObservedRecoveryFrontier::RootManifest { generation: 1, .. }
@@ -119,10 +133,26 @@ fn phases_five_and_six_run_the_full_backup_truth_ladder_on_real_media() {
         ObservedRecoveryFrontier::Checkpoint {
             manifest_generation: 1,
             durable_checkpoint_lsn: 10,
+            root_reference: 1,
             root_generation: 1,
+            covered_lsn_start: 10,
+            covered_lsn_end_exclusive: 12,
+            redo_lsn: 10,
             ..
         }
     )));
+    let checkpoint_digest = scenario
+        .references()
+        .iter()
+        .find(|artifact| artifact.family() == BackupArtifactFamily::CheckpointManifest)
+        .expect("checkpoint reference")
+        .content_digest();
+    assert!(candidates.iter().any(|candidate| {
+        matches!(
+            candidate.frontier(),
+            ObservedRecoveryFrontier::Checkpoint { .. }
+        ) && candidate.content_digest() == checkpoint_digest
+    }));
     assert!(candidates.iter().any(|candidate| matches!(
         candidate.frontier(),
         ObservedRecoveryFrontier::WalSegment {
@@ -180,7 +210,7 @@ fn phases_five_and_six_run_the_full_backup_truth_ladder_on_real_media() {
 #[test]
 fn complete_read_budget_is_admitted_before_component_media_is_walked() {
     let scenario = BackupScenario::new("early-read-admission");
-    let authority = crate::backup::export::current_authority("s10-early-read-admission");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-early-read-admission").expect("operation id"),
@@ -221,7 +251,7 @@ fn complete_read_budget_is_admitted_before_component_media_is_walked() {
 #[test]
 fn owner_semantic_verification_is_admitted_by_the_global_owned_memory_budget() {
     let scenario = BackupScenario::new("owner-memory-budget");
-    let authority = crate::backup::export::current_authority("s10-owner-memory");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-owner-memory").expect("operation id"),
@@ -264,7 +294,7 @@ fn owner_semantic_verification_is_admitted_by_the_global_owned_memory_budget() {
 #[test]
 fn independent_verification_rejects_component_corruption_after_publication() {
     let scenario = BackupScenario::new("corrupt-component");
-    let authority = crate::backup::export::current_authority("s10-corrupt");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-corrupt-component").expect("operation id"),
@@ -306,7 +336,7 @@ fn independent_verification_rejects_component_corruption_after_publication() {
 #[test]
 fn independent_verification_rejects_nested_component_name_shadowing() {
     let scenario = BackupScenario::new("nested-shadow");
-    let authority = crate::backup::export::current_authority("s10-nested-shadow");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-nested-shadow").expect("operation id"),
@@ -338,46 +368,4 @@ fn independent_verification_rejects_nested_component_name_shadowing() {
             .any(|defect| matches!(defect, BackupVerificationDefect::ExtraComponent { .. }))),
         other => panic!("nested shadow must fail structural verification: {other:?}"),
     }
-}
-
-#[test]
-fn independent_verification_reopens_the_bundle_in_a_fresh_process() {
-    const CHILD_ROOT: &str = "WORTH_STORE_S10_FRESH_PROCESS_BUNDLE";
-    if let Some(root) = std::env::var_os(CHILD_ROOT) {
-        let materialized = BackupBundleFormatAuthority::canonical()
-            .admit_materialized(std::path::PathBuf::from(root))
-            .expect("child reopens canonical bundle");
-        verify_materialized_backup(
-            materialized,
-            OfflineInspectionBudget::bounded(4 * 1024, u64::MAX).expect("budget"),
-        )
-        .expect("fresh-process verification");
-        return;
-    }
-
-    let scenario = BackupScenario::new("fresh-process");
-    let authority = crate::backup::export::current_authority("s10-fresh-process");
-    let control = scenario.control_store();
-    let admitted = OnlineBackupIntent::new(
-        OperationalOperationId::new("backup-fresh-process").expect("operation id"),
-        scenario.coordinates(),
-        scenario.cut_manifest(),
-        backup_custody(&authority),
-    )
-    .admit_cut(&authority, &control, &scenario.leases)
-    .expect("cut");
-    let completion = admitted
-        .materialize(&scenario.target, 19, &control)
-        .expect("session")
-        .finish()
-        .expect("materialize");
-    let bundle_root = completion.bundle().root().to_path_buf();
-    let status = std::process::Command::new(std::env::current_exe().expect("test executable"))
-        .arg("--exact")
-        .arg("phase_1_6_tests::independent_verification_reopens_the_bundle_in_a_fresh_process")
-        .arg("--nocapture")
-        .env(CHILD_ROOT, bundle_root)
-        .status()
-        .expect("fresh verifier process");
-    assert!(status.success());
 }

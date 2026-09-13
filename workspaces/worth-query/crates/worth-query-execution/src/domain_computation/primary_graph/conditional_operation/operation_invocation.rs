@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationSchema, ApplicationSchemaMember,
-    EqualityPredicate, OperationWrites, TypedApplicationReadableValue, TypedApplicationValue,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
+    ApplicationScalarValueBinding, ApplicationSchema, ApplicationSchemaMember,
+    DeclaredApplicationFieldValue, EqualityPredicate, OperationWrites,
     WorthQueryTemporalIntentRevisionValue, WritableCapability, WritePosture,
 };
 
@@ -135,15 +136,19 @@ impl<
     >
 where
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
-    IdentityValue: TypedApplicationReadableValue,
+    IdentityField: DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField::Binding: ApplicationReadableScalarValueBinding<Value = IdentityValue>,
     IdentityWrite: WritePosture,
     IdentityUnit: ApplicationFieldUnit,
-    RevisionField: OperationWrites<Operation>,
-    RevisionValue: WorthQueryTemporalIntentRevisionValue,
+    RevisionField:
+        OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = RevisionValue>,
+    RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue>
+        + WorthQueryTemporalIntentRevisionValue,
     RevisionWrite: WritableCapability,
     RevisionUnit: ApplicationFieldUnit,
     LifecycleField: OperationWrites<Operation>,
-    LifecycleValue: TypedApplicationValue,
+    LifecycleField: DeclaredApplicationFieldValue<Value = LifecycleValue>,
+    LifecycleField::Binding: ApplicationScalarValueBinding<Value = LifecycleValue>,
     LifecycleWrite: WritableCapability,
     LifecycleUnit: ApplicationFieldUnit,
 {
@@ -322,7 +327,7 @@ fn field_coordinates<Schema, Entity, Aspect, Field, Value, Write, Predicate, Uni
     field: &ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Predicate, Unit>,
 ) -> TemporalFieldCoordinates<'_>
 where
-    Value: TypedApplicationValue,
+    Field: DeclaredApplicationFieldValue<Value = Value>,
     Unit: ApplicationFieldUnit,
 {
     TemporalFieldCoordinates {

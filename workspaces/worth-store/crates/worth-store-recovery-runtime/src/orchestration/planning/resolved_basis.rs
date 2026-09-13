@@ -18,8 +18,15 @@ pub(super) struct PageObservationResult {
     pub(super) observations: Vec<worth_store_recovery_physics::RecoveryPageObservation>,
     pub(super) artifact_reads: u64,
     pub(super) bytes_read: u64,
+    pub(super) candidate_artifact_reads: u64,
+    pub(super) candidate_bytes_read: u64,
+    pub(super) candidate_peak_materialization_bytes: u64,
+    pub(super) successor_root_integrity_admissions: u64,
+    pub(super) successor_root_interpretations: u64,
     pub(super) inline_truth: Option<super::page_observation::InlineAllocationTruth>,
     pub(super) selected_source: crate::progression::RecoverySelectedSourceInventory,
+    pub(super) manifest_budget: super::manifest_entry_budget::ManifestEntryBudget,
+    pub(super) integrity: crate::integrity_ingress::RecoveryIntegrityIngressCounters,
 }
 
 pub(super) struct ResolvedPlanningBasis {
@@ -38,8 +45,24 @@ impl ResolvedPlanningBasis {
             &self.sample,
             &self.fates,
             self.redo.counters(),
-            self.observed_pages.artifact_reads,
-            self.observed_pages.bytes_read,
+            self.observed_pages
+                .artifact_reads
+                .saturating_add(self.observed_pages.candidate_artifact_reads),
+            self.observed_pages
+                .bytes_read
+                .saturating_add(self.observed_pages.candidate_bytes_read),
+        )
+        .with_successor_candidate_observation(
+            self.observed_pages.candidate_artifact_reads,
+            self.observed_pages.candidate_bytes_read,
+            self.observed_pages.candidate_peak_materialization_bytes,
+        )
+        .with_page_extent_integrity(
+            self.observed_pages.integrity.attempted(),
+            self.observed_pages.integrity.admitted(),
+            self.observed_pages.integrity.rejected(),
+            self.observed_pages.integrity.owner_projection_entries(),
+            self.observed_pages.integrity.owner_decoder_entries(),
         )
     }
 }
@@ -138,11 +161,13 @@ pub(super) fn resolve(
             .retained_previous()
             .map(|previous| (previous.manifest(), previous.selector().format())),
         context.selection.page_facts().placements(),
-        &observation_targets,
+        &admitted.redo,
         admitted.format,
         read_ceiling.addressed_reads,
+        context.limits.manifest_entries,
         admitted.remaining_manifest_entries,
         remaining_observation_bytes,
+        &mut context.integrity_trace,
     );
     context.authority.media = media;
     let planning_counters = counters::after_fates(
@@ -151,14 +176,28 @@ pub(super) fn resolve(
         PhysicalRedoPlanCounters::default(),
         attempt.artifact_reads,
         attempt.bytes_read,
+    )
+    .with_page_extent_integrity(
+        attempt.integrity.attempted(),
+        attempt.integrity.admitted(),
+        attempt.integrity.rejected(),
+        attempt.integrity.owner_projection_entries(),
+        attempt.integrity.owner_decoder_entries(),
     );
     let mut observed_pages = match attempt.result {
         Ok(observed) => PageObservationResult {
             observations: observed.observations,
             artifact_reads: attempt.artifact_reads,
             bytes_read: attempt.bytes_read,
+            candidate_artifact_reads: 0,
+            candidate_bytes_read: 0,
+            candidate_peak_materialization_bytes: 0,
+            successor_root_integrity_admissions: 0,
+            successor_root_interpretations: 0,
             inline_truth: observed.inline_truth,
             selected_source: observed.selected_source,
+            manifest_budget: observed.manifest_budget,
+            integrity: attempt.integrity,
         },
         Err(denial) => {
             let limit = observation_limit(&context, &denial, remaining_observation_bytes);
@@ -178,6 +217,13 @@ pub(super) fn resolve(
         PhysicalRedoPlanCounters::default(),
         observed_pages.artifact_reads,
         observed_pages.bytes_read,
+    )
+    .with_page_extent_integrity(
+        observed_pages.integrity.attempted(),
+        observed_pages.integrity.admitted(),
+        observed_pages.integrity.rejected(),
+        observed_pages.integrity.owner_projection_entries(),
+        observed_pages.integrity.owner_decoder_entries(),
     );
     let inline_truth = observed_pages
         .inline_truth

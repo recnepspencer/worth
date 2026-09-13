@@ -73,12 +73,10 @@ pub enum BackupCutSourceVerificationDenial {
 
 pub fn verify_backup_cut_sources(
     manifest: &BackupCutManifest,
-    root_generation: u64,
     budget: OfflineInspectionBudget,
 ) -> Result<BackupCutSourceVerificationReport, BackupCutSourceVerificationDenial> {
     verify_backup_cut_sources_with_cancellation(
         manifest,
-        root_generation,
         budget,
         OfflineInspectionCancellation::new(),
     )
@@ -86,7 +84,6 @@ pub fn verify_backup_cut_sources(
 
 pub fn verify_backup_cut_sources_with_cancellation(
     manifest: &BackupCutManifest,
-    root_generation: u64,
     budget: OfflineInspectionBudget,
     cancellation: OfflineInspectionCancellation,
 ) -> Result<BackupCutSourceVerificationReport, BackupCutSourceVerificationDenial> {
@@ -134,6 +131,7 @@ pub fn verify_backup_cut_sources_with_cancellation(
         .try_reserve_exact(manifest.artifacts().len())
         .map_err(|_| BackupCutSourceVerificationDenial::AllocationFailed)?;
     let mut counters = OwnerSemanticVerificationCounters::default();
+    let mut expected_root = None;
     for (index, artifact) in manifest.artifacts().iter().enumerate() {
         media
             .reject_interruption()
@@ -157,7 +155,7 @@ pub fn verify_backup_cut_sources_with_cancellation(
         let verification = verify_owner_artifact(
             &mut reader,
             actual_bytes,
-            root_generation,
+            expected_root,
             &row,
             budget.max_buffer_bytes(),
         );
@@ -169,6 +167,9 @@ pub fn verify_backup_cut_sources_with_cancellation(
             .ok_or(BackupCutSourceVerificationDenial::CounterOverflow)?;
         match verification {
             Ok(verified) => {
+                if verified.root_publication().is_some() {
+                    expected_root = verified.root_publication();
+                }
                 counters = counters
                     .record(verified.observation())
                     .ok_or(BackupCutSourceVerificationDenial::CounterOverflow)?;

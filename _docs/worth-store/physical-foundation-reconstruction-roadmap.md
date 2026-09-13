@@ -21,7 +21,7 @@ earns a physical claim.
 ```text
 Physical Database Roadmap S.9 implementation state reopened
   -> C.1 direct test execution and iteration cleanup
-  -> C.2 manual physical reality audit and claim quarantine
+  -> C.2 historical audit (retired; current inspection is phase-local)
   -> C.3 sealed physical runtime authority and lifecycle
   -> C.4 production media boundary and stable store namespace
   -> C.5 durable page, segment, extent, and manifest path
@@ -33,7 +33,7 @@ Physical Database Roadmap S.9 implementation state reopened
   -> C.10 stable reads, scheduled I/O, and maintenance interference
   -> C.11 layout, index, and native blob adoption
   -> C.12 formal protocol rebinding to executable owner transitions
-  -> C.13 physical-foundation recertification and S.10 re-entry
+  -> C.13 joined physical-platform integration and S.10 entry
   -> Physical Database Roadmap S.10
   -> S.11
   -> S.12
@@ -117,9 +117,9 @@ is never a physical disjointness proof.
   recovery, and certification cannot remain broad bags or duplicated execution
   paths.
 - `domain_structure_laws.md` protects ownership and truth-source topology. The
-  strongest constraint is that local tests must construct only the owner they
-  falsify, while cross-owner proof lives in an explicit courtroom and physical
-  boundary crossings are spatially locatable.
+  strongest constraint is that local tests construct only the owner they
+  falsify, focused integration tests cross real owner boundaries, and physical
+  boundary crossings remain spatially locatable.
 - `perf_laws.md` protects visible cost and semantic locality. The strongest
   constraint is that test execution cost, resident memory, I/O breadth,
   recovery work, amplification, and interference all require named boundaries
@@ -197,8 +197,9 @@ leaving ordinary iteration so expensive that broad verification is avoided.
 9. Compile-fail proof remains mandatory for authority and dependency
    boundaries, but it runs through consolidated, cache-sharing UI suites rather
    than hundreds of cold nested Cargo projects.
-10. S.1 through S.9 closeout is reopened. C.13, not historical green runs,
-    decides which claims are restored.
+10. S.1 through S.9 closeout is reopened. Current direct evidence from each
+    owning phase and the joined C.13 integration scenario decides which claims
+    are restored; historical status does not.
 11. S.10, S.11, and S.12 remain in their existing conceptual order after this
     program. Part II still begins only after the complete physical roadmap
     closes.
@@ -248,9 +249,9 @@ leaving ordinary iteration so expensive that broad verification is avoided.
 
 Every `C.3` through `C.13` engineering spec must contain a
 `Non-Fake Acceptance Setup` section. C.1 is the test-execution foundation and
-uses its own direct truth contract; C.2 is the manual reality audit and uses its
-own two-direction trace, narrow-probe, and code-quarantine contract. Making
-either milestone's reports certify themselves would be recursive. A physical
+uses its own direct truth contract. C.2 is retired historical context, not a
+current audit, report, or gate. Current phases inspect their causal production
+paths directly and use focused owner, boundary, and process tests. A physical
 test requirement in C.3 through C.13 is incomplete unless it fixes all of the
 following before implementation begins:
 
@@ -302,13 +303,12 @@ following before implementation begins:
 - Assert memory, allocation, I/O, amplification, and recovery bounds at their
   named measurement boundaries.
 
-### Mutation sensitivity
+### Hostile sensitivity
 
 - Name at least one controlled defect the milestone must detect.
-- Name the exact lane and localization expected to fail for that defect.
-- A mutant that merely fails compilation does not prove runtime sensitivity.
-- The closeout bundle records mutant id, expected failing predicate, actual
-  failing predicate, and localization.
+- Protect it with a direct hostile test at the narrowest real boundary.
+- A compile failure proves only a type boundary; behavioral claims require a
+  behavioral test.
 
 ### Mechanical anti-substitution gates
 
@@ -329,13 +329,12 @@ reject the substitutes relevant to its claim. The common forbidden set is:
 
 ### Evidence and rerun
 
-- Emit a machine-checkable bundle containing source identity, binary identity,
-  backend and hardware profile, seed, workload trace, fault schedule, process
-  identities, artifact manifest, counter snapshot, oracle result, runtime
-  result, and every certification predicate.
-- The bundle must identify the command and mode required to rerun the lane.
-- Stale source, binary, format, profile, or harness identity invalidates the
-  bundle rather than silently reusing it.
+- Git identifies the reviewed source revision and Cargo identifies the built
+  targets and features.
+- A failing randomized or process test prints the seed and scenario needed to
+  rerun it.
+- Tests and boundary checks return the verdict directly. Do not create a
+  second proof bundle, source-identity layer, or validator for the test run.
 
 This contract is a floor. Each milestone below fixes its own concrete setup so
 an implementation cannot satisfy the words through a neighboring fake.
@@ -350,7 +349,7 @@ The proof model has five distinct execution products:
   consolidated UI smoke, and small hostile schedules. The warm target is under
   one minute on the declared reference development machine.
 - **CI certification**: owner tests plus medium physical scenarios, real fresh-
-  process reopen, representative mutation lanes, and stores larger than the
+  process reopen, direct adversarial regressions, and stores larger than the
   configured memory budget. Jobs are partitioned by proof family.
 - **Release certification**: long crash, corruption, maintenance, blob, and
   cross-backend campaigns with independent offline verification.
@@ -383,10 +382,8 @@ authority hierarchy around them.
 
 ### Must Ship
 
-- one on-demand Cargo-derived target catalog that assigns every test target to
-  exactly one CI lane without checked-in generated inventories
 - real, documented `store-owner`, `store-smoke`, `store-ui`, and `store-ci`
-  entrypoints backed by one unique execution planner
+  entrypoints backed by direct command planning
 - Worth Store-local development and test profiles that avoid full Windows PDB
   generation where it is not required
 - consolidation of the scenario explosion into a small number of
@@ -395,7 +392,7 @@ authority hierarchy around them.
 - consolidation of compile-fail fixtures behind cache-sharing UI runners with
   stable expected diagnostics and no per-case cold target directory
 - removal of nested Cargo invocations from ordinary behavioral tests;
-  structural preflight becomes an explicit job with reusable evidence
+  repository structural checks remain explicit direct commands
 - owner-local or subsystem-local fixture/support surfaces replacing the broad
   `worth-store-test-support` dependency where local tests do not need the full
   physical platform
@@ -403,8 +400,8 @@ authority hierarchy around them.
   ordinary production graph by default
 - partitioned CI jobs with cache identity bound to OS, toolchain, profile,
   feature lane, and lockfile
-- concise elapsed and unit-count observation with optional disposable JSON
-  output; successful local commands produce no mandatory evidence files
+- concise elapsed and unit-count console output; successful local commands
+  produce no report or evidence files
 - deletion of recursive behavior fingerprints, preservation ledgers, plan/run
   seals, source-edit authority, custom CI aggregates, closeout bundles, and C.2
   readiness tokens
@@ -420,133 +417,41 @@ authority hierarchy around them.
   one shared physical contract and run developer smoke; change one test/UI
   expectation and run its owning product. Run complete UI and CI products from
   the committed revision.
-- **Independent observation:** Cargo metadata names targets, Cargo/test process
+- **Independent observation:** Cargo manifests name targets, Cargo/test process
   results name behavioral outcomes, ordinary target-directory observation
   distinguishes cold from warm work, and GitHub matrix status names CI
   completion. No runner-produced artifact certifies another runner artifact.
 - **Assertions:** owner check does not build certification or unrelated owner
   crates; developer smoke runs the declared vertical specimens; UI fixtures
   share compilation roots; no ordinary lane creates a per-case Cargo target;
-  the preserved-proof manifest has no unclassified test.
+  each dedicated scenario, UI, and formal target is selected by its direct
+  lane, while ordinary tests run through owner CI.
 - **Controlled defects:** invert one UI expectation and one ordinary assertion.
   Each direct owning product must fail for the intended reason. Planner tests
-  separately reject duplicate units, stale zero-match filters, and ambiguous
-  target classification.
+  reject duplicate units, and nextest rejects stale zero-match filters.
 - **Forbidden substitutes:** excluding tests from all modes, replacing tests
   with source scans, timing only a no-change green run, or declaring success
   solely because `cargo nextest` is installed cannot close this milestone.
 
 ### Closeout Gate
 
-`C.1` closes only when ordinary owner work no longer compiles the courtroom,
+`C.1` closes only when ordinary owner work no longer compiles broad
+certification-only suites,
 developer smoke exercises real declared specimens with a warm reference target
-under one minute, UI proof no longer performs per-fixture cold builds, every
-Cargo test target has one CI lane, and no recursive test-authority path remains.
+under one minute, UI proof no longer performs per-fixture cold builds, direct
+dedicated targets resolve to real tests, and no recursive test-authority path remains.
 Exact timing is observation, but unbounded or unexplained iteration cost blocks
 closure.
 
-## C.2: Manual Physical Reality Audit And Claim Quarantine
+## C.2: Historical Physical Reality Audit (Retired)
 
-### Goal
+The one-time C.2 audit identified the original reconstruction boundary. Its
+inventories, manual trace contract, probes, dispositions, and closeout gate are
+retired. Git history is their archive.
 
-Replace milestone folklore with a manually resolved physical-reality audit of
-which mechanisms exist, which production path invokes them, and which claims
-remain unearned.
-
-### Boundary
-
-This milestone does not implement persistence and does not build a semantic
-code-mapping engine. Broad string and dependency searches discover candidates;
-human code tracing follows S.1 through S.9 claims from public facade to terminal
-effect and follows real writers back toward product composition. Narrow
-executable probes settle material ambiguity. Production code and boundary tests,
-not the audit document, prevent unearned platform-grade promotion while
-reconstruction is underway.
-
-### Must Ship
-
-- one checked-in CSV as the primary audit deliverable, with stable claim ids,
-  exact source locations, discovery searches, manually traced terminal effects,
-  reproduction commands where behavior is disputed, dispositions, and target
-  reconstruction milestones
-- an owner-by-owner manually traced topology for physical format, backend,
-  buffer pool, WAL, recovery, integrity, isolation, scheduler, layout/indexes,
-  blobs, formal models, operations, readiness, and certification
-- resolved claim classifications distinguishing:
-  - production-reachable physical effect
-  - production-reachable in-memory model
-  - certification-only mechanism
-  - isolated real mechanism not called by the canonical runtime
-  - vocabulary or plan without execution
-  - duplicate or conflicting authority
-  - explicitly unavailable or quarantined behavior
-- explicit columns naming the claimed and actual terminal effects, artifact
-  family, physical writer, reader, durability boundary, reopen source,
-  independent verifier, final classification, and path kind, plus the search,
-  trace, probe, disposition, and target-milestone fields needed for manual
-  review
-- two-direction trace coverage: claimed public facades down to terminal effects,
-  and real file writers upward to their actual product or non-product callers
-- quarantine of platform-grade promotion and closeout receipts that can be
-  satisfied by `PersistedPhysicalLayout`, `PlatformPhysicalReplayArtifact`, or
-  other supplied representations rather than discovered bytes
-- a preserve, refactor, connect-later, quarantine, or delete decision for every
-  duplicate runtime, fake backend, test-only oracle, and mechanism island
-- explicit identification of any physical type or path that currently claims
-  branch identity, semantic writer admission, MVCC visibility, Query planning,
-  semantic recovery readmission, or global semantic authority, plus a delete,
-  relocate-to-Part-II, or narrow-to-physical-fact disposition
-- a runtime-integration gap column for each physical owner, recording whether
-  it contributes a stable branch-agnostic capability/evidence surface or still
-  forces whole-runtime borrowing, raw internal access, supplied heap truth, or
-  semantic knowledge into a future adapter
-- a C.3 through C.13 blocker assignment in the same CSV so the audit does not
-  become a second planning authority
-- no generated semantic reachability map, source hash hierarchy, readiness
-  token, proof receipt, or program whose output substitutes for manual tracing
-
-### Non-Fake Acceptance Setup
-
-- **Production subject:** every public physical Store facade and every method or
-  promotion surface that claims open, append, read, flush, checkpoint, recover,
-  compact, verify, reopen, readiness, or platform-grade status.
-- **Initial world:** create a uniquely identified empty directory and invoke
-  the current ordinary facade exactly as product code would. No test fixture
-  may pre-supply pages, manifests, WAL frames, layouts, or replay state.
-- **Execution:** use repository-wide string and dependency searches to discover
-  candidates, manually trace both directions, then attempt one append, declared
-  durability, process exit, and fresh-process reopen using only the directory
-  and production configuration. Record exact reproduction commands in the
-  affected CSV rows.
-- **Independent observation:** a fresh observer uses ordinary OS filesystem APIs
-  to record actual paths, lengths, and bytes. Cargo metadata and callsite
-  searches provide candidates only; the reviewer records the manually verified
-  call chain and uncertainty instead of promoting search results into
-  reachability proof.
-- **Assertions:** every physical claim resolves to a concrete effect path or a
-  typed `Unimplemented/Unavailable/Uncertified` classification. Missing files,
-  supplied replay state, heap-only mutation, and certification-only calls are
-  recorded as failures, not interpreted optimistically.
-- **Controlled defects:** use the existing heap-backed
-  `PhysicalStoreRuntime` and the real writers in
-  `worth-store-physical-certification` as deliberately misleading review
-  seeds. Manual tracing must classify both honestly from opposite directions,
-  and the production promotion boundary must reject the heap-only claim
-  independently of the CSV.
-- **Forbidden substitutes:** grep-only proof of reachability, generated call
-  graphs treated as semantic truth, a purpose-built ledger authority, a test
-  that writes the expected files itself, or a CSV row without an inspected
-  source path do not count.
-
-### Closeout Gate
-
-`C.2` closes only when every reopened S.1 through S.9 claim has a manually
-verified production path or an explicit unearned classification, every real
-writer has been reverse-traced to its actual caller class, dishonest promotion
-is mechanically unavailable outside the audit, and later specs can name the
-exact owner seam they must connect without guessing from vocabulary. Every
-semantic-authority claim found below the future adapter boundary must also have
-an explicit deletion, relocation, or physical-fact narrowing milestone.
+Current phases inspect their own causal production paths and rely on direct
+compilation, focused owner and boundary tests, process scenarios, and repository
+gates. C.2 imposes no current deliverable, report, inventory, or validity state.
 
 ## C.3: Sealed Physical Runtime Authority And Lifecycle
 
@@ -1094,22 +999,14 @@ authority.
 ### Current Contract And Successor Links
 
 Phase 10 closes C.6 on one Store-owned bounded-residency contract with the
-parallel S.2 authority graph removed. The final v10 hostile fresh-process
-courtroom accepted a Store 106.5 times larger than its resident budget under
-the canonical schedule; all 16 revision-derived CI lanes produced distinct,
-exactly replayable decision traces; and the append-only mutation corpus killed
-all 37 executions `42..78` at their declared predicates. The twelve designed
-controlled-defect categories remain the minimum corpus, and every later
-executable C.6 or certification-evidence bug correction must append its causal
-mutation before its finding can close. Current developer guidance and completed
-closure evidence:
+parallel S.2 authority graph removed. Current validity comes from the checked-out
+code, direct Cargo tests, and repository gates; historical campaign reports and
+mutation catalogs are retained only in Git history. Current developer guidance
+and completed contracts:
 
 - [C.6 engineering specification](./physical-reconstruction-c6-buffer-pool-runtime-join.md)
 - [bounded physical record access guide](./bounded-physical-record-access.md)
 - [buffer-pool owner README](../../workspaces/worth-store/crates/worth-store-buffer-pool/README.md)
-- [Phase 8 deletion closure](./physical-reconstruction-c6-phase-8-closure-ledger.md)
-- [Phase 9 documentation closure](./physical-reconstruction-c6-phase-9-closure-ledger.md)
-- [Phase 10 hostile-courtroom and mutation closure](./physical-reconstruction-c6-phase-10-closure-ledger.md)
 
 C.6 hands bounded physical truth forward through these exact successor
 boundaries. These are insertion contracts, not empty successor modules or
@@ -1119,7 +1016,7 @@ permission to publish C.6 internals early.
 | --- | --- | --- | --- |
 | [C.7 durability ordering](#c7-wal-checkpoint-root-publication-and-acknowledgment-join) | Store-composed dirty/writeback typestate and `PhysicalWritebackSettlement` identity, effect fate, recovery disposition, and Signal settlement | pool construction, frame-table or clean-transition control, or a durability decision inferred from dirty state; C.7 supplies WAL and durability policy | `record_serving/residency/dirty/`; the Store-owned `FrameWritebackPort` remains private and the successor typestate is not ordinarily exported before C.7 installs its adapter |
 | [C.8 fresh-process recovery](#c8-fresh-process-recovery-and-reopen) | `RecoveryPhysicalAllocation`, runtime/generation binding, and public physical effect-fate and recovery-disposition evidence | live pool contents, frame-table constructors, eviction control, or a hidden unlimited reconstruction mode | `worth-store-recovery-physics::RecoveryMemoryAllocation` consumes the runtime-borrowed Recovery allocation; reconstruction must enter through a future Recovery-owned port |
-| [C.9 physical integrity](#c9-physical-integrity-corruption-localization-and-offline-truth) | borrowed `PhysicalRecordChunkView`, `PhysicalRecordChunkBasis`, and Verification/Scrub-scoped allocation | pool, pin, eviction, frame-loading, or integrity authority inferred from unverified bytes | `worth-store-physical-integrity::ProtectedPhysicalByteView::from_store_chunk` copies only the basis and borrow before integrity admission |
+| [C.9 physical integrity](#c9-physical-integrity-corruption-localization-and-offline-truth) | frame-owned exact-source admission and Verification/Scrub-scoped allocation | pool, pin, eviction, frame-loading, or integrity authority inferred from unverified bytes | Store's private resident admission binds validated results to the C.6 frame lifetime; scrub emits descriptive observations only |
 | [C.10 stable reads and scheduled I/O](#c10-stable-reads-scheduled-io-and-maintenance-interference) | lease-bound chunks, `PhysicalRecordPressureEvidence`, Maintenance-scoped allocation, and Store-composed scheduler-ready physical work | semantic MVCC, Query authority, direct scheduler ownership, or a second scheduler | `worth-store-physical-isolation::PhysicalByteGuard::from_record_chunk` owns the current lease adapter; future scheduling enters through the Store composition boundary |
 | [C.11 layout, indexes, and native blobs](#c11-layout-index-and-native-blob-adoption) | `BlobPhysicalAllocation` and bounded `RecordReadSession` chunk streaming with Store/runtime/generation evidence | whole-blob materialization, pool control, or semantic liveness inferred from physical residency | `worth-store-blob-chunks::streaming` consumes exact Blob allocations and bounded source/observation streams; whole-object vector substitutes remain explicit denials |
 
@@ -1131,11 +1028,8 @@ Engineering spec:
 Current caller and operator contract:
 [physical-durability-and-checkpoints.md](physical-durability-and-checkpoints.md)
 
-Cutover and closure evidence:
-[closure ledger](physical-reconstruction-c7-closure-ledger.md),
-[public API ledger](physical-reconstruction-c7-public-api.csv),
-[removal ledger](physical-reconstruction-c7-removal-ledger.csv), and
-[physical-reality audit](physical-reality-audit.csv).
+The public durability contract and focused C.7 tests are the current cutover
+authority. Historical closeout details remain available in Git history.
 
 ### Goal
 
@@ -1355,7 +1249,21 @@ generation freshness through its Store owner, advance past effects only from
 concrete performed evidence, terminate the recovery session exactly once, and
 keep versioned cross-process reports descriptive.
 
+The C.8 successor value remains `RecoveredPhysicalRuntimeHandoff`. C.9 joins
+the C.8 recovery architecture at two seams: integrity ingress before
+owner-specific recovery interpretation, and the recovered-runtime handoff for
+resident admission, quarantine observation, and scrub. The handoff does not
+mint integrity admission. C.10 consumes the handoff to add stable reads,
+epochs, reclaim, scheduled I/O, and maintenance interference. Descriptive
+recovery and observer reports cannot be promoted into either successor's
+authority.
+
 ## C.9: Physical Integrity, Corruption Localization, And Offline Truth
+
+The governing [C.9 specification](physical-reconstruction-c9-integrity-and-offline-truth.md)
+freezes the current family matrix and implementation boundaries. Caller and
+operator behavior is documented in the
+[integrity guide](physical-integrity-and-offline-verification.md).
 
 ### Goal
 
@@ -1385,14 +1293,15 @@ logical mutation may be retried.
   distinct authority paths
 - quarantine observations separated from reachability mutation and repair
   authorization
-- classification of intact authority, damaged authority, rebuildable derived
-  state, quarantined region, unsupported version, unknown, and indeterminate
+- separate validator-outcome, owner-disposition, and quarantine-posture axes
+  preserving intact authority, damaged authority, rebuildable derived state,
+  quarantined region, unsupported version, unknown, and indeterminate
 - verifier/runtime disagreement as explicit evidence rather than hidden
   reconciliation
-- typed integrity evidence stable enough to cross the future adapter boundary:
+- descriptive integrity observations stable enough to cross the future adapter boundary:
   exact artifact identity, generation, damaged range, authority/derivation
-  class, quarantine posture, and physical recovery options without semantic
-  policy conclusions
+  class and quarantine posture, without recovery options, mutation authority,
+  or semantic policy conclusions
 - exact checked, failed, skipped-decode, quarantined, rebuildable, unknown,
   and bytes-read counters
 
@@ -1403,8 +1312,9 @@ logical mutation may be retried.
   seams or by an offline artifact editor only after the process is dead and the
   target field is predeclared.
 - **Initial world:** independently recorded clean artifact manifest containing
-  at least authority pages, derived pages, WAL, checkpoint, root manifest, and
-  free-space metadata.
+  every current authoritative family, including pages/extents, WAL, checkpoint,
+  root protocol, and free-space metadata. C.9 has no current derived family;
+  dormant index/blob formats cannot stand in for one.
 - **Execution:** apply checksum, length, generation, pointer, payload, removal,
   duplication, and stale-version operators to isolated copies; run runtime
   reopen and offline verification independently.
@@ -1584,96 +1494,86 @@ semantic reachability from its own artifact graph.
 
 ### Goal
 
-Rebind S.9 models and certification mappings to the reconstructed runtime's
-actual durability, recovery, visibility, quarantine, admission, and
-publication transitions.
+Run S.9 checked law against the reconstructed runtime's actual durability,
+recovery, visibility, quarantine, admission, and publication transitions
+without a certification intermediary.
 
 ### Boundary
 
-Formal models define finite checked law; production owners execute and decide;
-certification observes correspondence. Model actions, copied ids, and checked
-verdicts do not become runtime authority. C.12 models only transitions with a
-production physical owner in this reconstruction sequence. Semantic commit,
-branch admission, MVCC visibility, recovery readmission, Query pushdown, and
+Formal models define finite checked law; production owners execute and decide.
+Focused tests map concrete owner outcomes to model actions, and the pinned TLC
+command checks the model directly. Model actions and checker verdicts never
+become runtime authority. C.12 models only transitions with a production
+physical owner in this reconstruction sequence. Semantic commit, branch
+admission, MVCC visibility, recovery readmission, Query pushdown, and
 replication remain outside its model authority.
 
 ### Must Ship
 
-- complete state/action mapping from C.7 through C.11 owner transitions to the
-  required WAL/checkpoint, recovery-source, stable-read/reclaim,
-  compaction/publication, physical quarantine/recovery admission, and physical
-  import models
-- removal or rejection of modeled states with no production owner outcome and
-  production outcomes with no modeled case where the roadmap requires coverage
+- direct TLC execution for every current checked protocol family
+- focused owner integration tests for each claimed mapping from concrete owner
+  behavior to WAL/checkpoint, recovery-source, stable-read/reclaim,
+  compaction/publication, quarantine/recovery admission, or physical import law
+- compiler-exhaustive mapping where a production outcome is a closed enum;
+  explicit capability gaps where no production owner exists
 - explicit backend, atomicity, durability, clock, scheduling, and bounded-state
   assumptions
-- counterexample lowering into C.1 certification scenarios through production
-  yieldpoints and the C.4 media interposer
-- executed-trace lifting back into model actions without allowing trace
-  observations to authorize production
-- controlled weakened-transition variants for each model family
+- transient counterexample diagnostics that identify the checked protocol and
+  illegal edge when TLC supplies that information
+- fresh-process or media-interposed tests only where the claim actually crosses
+  a process or media boundary
 - explicit negative mapping proving that branch writers, semantic generations,
   global semantic authority, Query visibility, and replica meaning have no
   C.12 production witness and therefore cannot be smuggled in as modeled
   physical actions
-- exact mapping, action, invariant, deadlock, bound, counterexample, and
-  localization evidence
 
 ### Non-Fake Acceptance Setup
 
-- **Production subject:** named reconstructed owner transitions, not model-only
-  catalog rows or certification-generated receipts.
-- **Initial world:** a checked model configuration with finite bounds and a
-  generated production scenario covering every mapped action at least once.
-- **Execution:** check the model; execute the production scenario through real
-  runtime/media boundaries; translate an injected model counterexample into a
-  runnable production schedule; lift the resulting owner trace for comparison.
-- **Independent observation:** mapping completeness is generated from owner
-  declarations and model metadata. Certification may compare identities and
-  transitions but cannot supply owner outcomes.
-- **Assertions:** exact bidirectional mapping, explicit bound-exhaustion
-  posture, invariant parity, deterministic counterexample identity, and no
-  model verdict accepted by a production API.
-- **Controlled defect:** weaken one owner transition without changing the model
-  and weaken one model invariant without changing the owner. Conformance and
-  mutation predicates must fail in opposite directions.
-- **Forbidden substitutes:** fictional owner cases, checked-model success with
-  unreachable actions, bound exhaustion reported as proof, or model verdicts
-  used as production witnesses cannot close this milestone.
+- **Production subject:** named reconstructed owner transitions exercised by
+  focused tests, not catalog rows or generated receipts.
+- **Checked subject:** the committed TLA+ artifact, configuration, explicit
+  bounds, and backend assumptions invoked by the pinned runner.
+- **Assertions:** exact expected owner outcomes in focused tests; distinct typed
+  success, counterexample, unsupported-backend, tool-failure, and
+  bound-exhaustion verdicts from the runner.
+- **Diagnostics:** counterexamples are printed for the failed run and may be
+  retained by CI; Store does not build a report, digest, inventory, matrix,
+  trace-lifting layer, localization receipt, or evidence archive around them.
+- **Forbidden substitutes:** fictional owner cases, generated mapping
+  inventories, coverage matrices, bound exhaustion reported as proof, or model
+  verdicts used as production witnesses cannot close this milestone.
 
 ### Closeout Gate
 
-`C.12` closes only when S.9 checked law corresponds exactly to the real
-reconstructed transitions and controlled divergence is detected and localized
-from either side, with no modeled branch, semantic commit, Query, or replication
-transition promoted in advance of its production owner.
+`C.12` closes only when the pinned command checks every current S.9 model,
+focused tests exercise every claimed production mapping directly, unsupported
+owner cases remain explicit, and no modeled branch, semantic commit, Query, or
+replication transition is promoted in advance of its production owner.
 
-## C.13: Physical-Foundation Recertification And S.10 Re-entry
+## C.13: Joined Physical-Platform Integration And S.10 Entry
 
 ### Goal
 
-Re-evaluate every S.1 through S.9 claim over the reconstructed production
-runtime, retire obsolete paths, and produce the only handoff allowed to resume
-S.10.
+Exercise the reconstructed S.1 through S.9 owners together through the ordinary
+production runtime, remove obsolete paths exposed by that integration, and
+provide the bounded handoff needed to begin S.10.
 
 ### Boundary
 
-This milestone adds no new physical feature. It is the correction courtroom
-and source cutover. S.10, S.11, S.12, and Part II retain their own future
-closeout obligations. C.13 may certify the physical facade shape that those
-programs consume; it cannot issue Part II semantic readiness or pre-authorize
-branch, Query, or replica behavior.
+This milestone adds no new physical feature. It is a joined integration and
+source-cutover phase. S.10, S.11, S.12, and Part II retain their own future
+obligations. C.13 may expose the physical facade shape those programs consume;
+it cannot issue Part II semantic readiness or pre-authorize branch, Query, or
+replica behavior.
 
 ### Must Ship
 
-- generated S.1 through S.9 capability-to-owner-to-production-path-to-proof
-  matrix
 - hard deletion or non-production quarantine of heap runtimes, replay-based
   reopen, duplicate backends, fake physical fixtures, obsolete certification
   paths, and shadow authority discovered by the program
 - dependency checks proving ordinary product paths reach only the canonical
   runtime facade and physical owners depend in the admitted direction
-- a runtime-integration handoff matrix proving the public physical facade
+- direct public-facade compilation and focused integration tests proving it
   exposes independently borrowable bounded reads, independently borrowable
   generation-fenced mutation submission, exact physical scope, exact terminal
   and recovery fate, capability negotiation, lifecycle/drainage, and pressure
@@ -1682,20 +1582,17 @@ branch, Query, or replica behavior.
 - cross-milestone hostile execution combining real writes, stores larger than
   memory, checkpoint/WAL recovery, corruption, stable readers, scheduled
   maintenance, index rebuild, and blob streaming
-- mutation-sensitivity aggregate covering acknowledgment inversion, live-state
-  reuse, checksum bypass, generation bypass, reclaim-with-live-lease,
+- focused regressions at the owning boundaries for acknowledgment inversion,
+  live-state reuse, checksum bypass, generation bypass, reclaim-with-live-lease,
   scheduler bypass, broad scan, full materialization, derived-authority
   promotion, model/owner drift, accidental whole-Store submission
   serialization, and branch-label-based physical admission
-- reproducible source, binary, format, backend, harness, and profile-bound
-  evidence bundle
 - typed `S10PhysicalPlatformReadiness` or equivalently responsibility-named
   handoff whose private construction requires every restored claim and whose
   payload exposes the exact S.10 owner ports
-- a non-authoritative Part II compatibility report bound to the same facade and
-  evidence, carried forward through S.10 through S.12 rather than a second
-  runtime or readiness token; it records whether the lower contracts required
-  by the runtime-integration roadmap remain available and branch-agnostic
+- direct adapter-facing compilation proving the lower contracts required by the
+  runtime-integration roadmap remain available and branch-agnostic, without a
+  carried compatibility report or second readiness token
 - explicit list of remaining non-platform-grade or unsupported capability
   profiles; no unnamed debt
 
@@ -1711,7 +1608,7 @@ branch, Query, or replica behavior.
   capabilities continue during checkpoint, scrub,
   rewrite, reclaim, index rebuild, and blob streaming; inject crash and
   corruption at declared seams; start a fresh recovery process; run offline
-  verification; repeat controlled mutants.
+  verification; run direct regressions for known failure modes.
 - **Independent observation:** an external history model supplies semantic
   expectations; the offline verifier supplies physical classification; OS/media
   observation supplies actual artifact and barrier evidence. None receives
@@ -1719,22 +1616,20 @@ branch, Query, or replica behavior.
 - **Assertions:** all restored S.1 through S.9 predicates, exact resource and
   interference counters, deterministic recovery, independent classification,
   zero forbidden paths, concurrent progress for disjoint physical submissions,
-  exact coordination for shared physical scope, absence of semantic branch
-  authority below the adapter boundary, full mutation localization, and
-  evidence freshness.
-- **Controlled defects:** all named aggregate mutants must fail the specific
-  predicate and no unrelated green lane may mask that failure.
+  exact coordination for shared physical scope, and absence of semantic branch
+  authority below the adapter boundary.
 - **Forbidden substitutes:** combining milestone receipts without rerunning the
-  joined system, using a memory backend, reusing a live process, omitting large-
+  joined system, using a memory backend, reusing a live process, omitting larger-
   than-memory pressure, or granting readiness through a public constructor
   cannot close this milestone.
 
 ### Closeout Gate
 
-`C.13` closes only when S.1 through S.9 are true of one real physical database
-runtime, every obsolete substitute is unreachable from production, the joined
-hostile program detects its controlled defects, and the sealed S.10 readiness
-handoff is issued from fresh evidence.
+`C.13` closes only when S.1 through S.9 work together in one real physical
+database runtime, every obsolete substitute is unreachable from production,
+the joined hostile scenario and focused owner regressions are green, and the
+sealed S.10 readiness handoff is constructible only from the completed runtime
+progression.
 
 ## Required Engineering Specs
 
@@ -1742,7 +1637,7 @@ Each reconstruction milestone receives a separate engineering spec before
 implementation:
 
 - `physical-reconstruction-c1-test-execution-architecture.md`
-- `physical-reconstruction-c2-manual-reality-audit.md`
+- focused owner-path inspection and boundary-check output
 - `physical-reconstruction-c3-sealed-runtime-lifecycle.md`
 - `physical-reconstruction-c4-production-media-boundary.md`
 - `physical-reconstruction-c5-durable-physical-record-path.md`
@@ -1754,7 +1649,7 @@ implementation:
 - `physical-reconstruction-c10-isolation-and-io-coordination.md`
 - `physical-reconstruction-c11-layout-index-blob-adoption.md`
 - `physical-reconstruction-c12-formal-owner-rebinding.md`
-- `physical-reconstruction-c13-recertification-and-s10-readiness.md`
+- `physical-reconstruction-c13-platform-integration-and-s10-entry.md`
 
 C.3 through C.13 specs, including C.5.1, inherit the Non-Fake Physical
 Acceptance Test Contract,
@@ -1762,9 +1657,8 @@ then make their setup more concrete. Repeating only “control, hostile, and
 reopen lane” is not sufficient; the spec must name executables, initial files,
 process deaths, forbidden inputs, independent observers, exact counters, and
 controlled defects. C.1 instead closes through direct Cargo/test execution and
-ordinary CI status. C.2 closes through manually resolved two-direction traces,
-reproducible narrow probes where needed, and code-level denial of false claims,
-as defined by its engineering spec.
+ordinary CI status. C.2 is retired historical context and imposes no current
+closeout work; each current phase inspects and tests its own causal boundaries.
 
 Every C.3 through C.13 spec also inherits the Part I/Part II handoff law in
 `Relationship To The Two Store Roadmaps` and Product Decision Lock items 17
@@ -1793,40 +1687,32 @@ boundary proof.
   inside the Part I composition layer.
 - Existing strong mechanisms and tests are preserved when they can bind to the
   production path without weakening ownership.
-- Certification remains a courtroom, never a production authority source.
+- Test and certification infrastructure never becomes a production authority
+  source.
 - Store larger than memory, crash, corruption, stable reads, maintenance,
   blobs, and independent verification remain non-negotiable physical claims.
 
 ## Acceptance Evidence
 
-The reconstruction program emits:
+Current validity is queried from the current tree. Each phase runs the focused
+owner tests, affected integration or process scenarios, compile-time authority
+checks, and repository boundary gates proportionate to its change. Git records
+history; Cargo metadata and current callers expose the live graph. Generated
+catalogs, audit CSVs, proof bundles, mutation reports, source fingerprints, and
+report-to-report reconciliation are not program deliverables.
 
-- Cargo-derived test catalog and direct execution products
-- manually resolved physical-reality audit CSV with artifact-family and blocker
-  classifications
-- runtime authority and lifecycle compile-time proof
-- media capability qualification evidence
-- real physical artifact manifests
-- physical-work authority, lifecycle, dependency, and duplicate-path deletion
-  evidence
-- runtime-integration facade evidence for independent physical capabilities,
-  disjoint-scope concurrency, exact effect fate, and absence of semantic branch
-  authority
-- bounded-memory and allocation evidence
-- durability and crash-boundary evidence
-- fresh-process recovery and determinism evidence
-- corruption localization and offline-verifier comparison
-- isolation and interference evidence
-- layout, amplification, rebuild, and blob-streaming evidence
-- formal owner/model conformance and mutation evidence
-- joined S.1 through S.9 recertification bundle
-- sealed S.10 physical-platform readiness handoff
+The final joined evidence is a real physical database scenario covering
+larger-than-memory access, durability and crash boundaries, fresh-process
+recovery, corruption localization, stable reads, maintenance interference,
+layout/index rebuild, and blob streaming, with focused owner tests providing
+local failure diagnosis. The sealed S.10 handoff remains a production typestate
+boundary, not a certification receipt.
 
 ## Sequencing Rules
 
 - C.1 closes before any later milestone begins implementation.
-- C.2 closes before a spec may preserve or delete an existing mechanism based
-  on assumed production reachability.
+- Current caller, Cargo-graph, and owner-boundary inspection precedes any phase's
+  decision to preserve or delete an existing mechanism.
 - C.3 and C.4 establish the only runtime and media seams later milestones may
   consume.
 - C.5 precedes buffer, WAL, recovery, integrity, isolation, layout, and blob
@@ -1846,7 +1732,7 @@ The reconstruction program emits:
 - C.10 precedes C.11 closeout so index and blob rewrite/reclaim use real stable
   reads and scheduled I/O.
 - C.12 follows the executable transitions it models.
-- C.13 is last and is the only route back into S.10.
+- C.13 is last and is the joined production integration route into S.10.
 
 ## Completion Standard
 
@@ -1878,7 +1764,7 @@ This roadmap is complete only when Worth Store can honestly say:
 - stable readers survive real maintenance and scheduled I/O interference
 - layouts, indexes, and blobs use the same canonical physical platform
 - formal laws map to executable owner transitions
-- S.1 through S.9 have been recertified over the joined production runtime
+- S.1 through S.9 have been revalidated over the joined production runtime
 - S.10 receives a sealed readiness handoff rather than another vocabulary claim
 
 Only then may operational recovery resume. The later runtime-integration

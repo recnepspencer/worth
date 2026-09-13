@@ -1,3 +1,7 @@
+use super::readmission::{
+    RecoveryLayoutReadmissionClass, RecoveryLayoutReadmissionIdentity,
+    RecoveryLayoutReadmissionWitness,
+};
 use worth_foundational::{aspects, AspectContract, AspectValue, InternedString, ScalarAspectType};
 use worth_proof::TransitionOutcome;
 use worth_store_aspect_native::{
@@ -5,59 +9,74 @@ use worth_store_aspect_native::{
     StorePhysicalBoundaryWitness,
 };
 use worth_store_authority::{require_current_store_authority, StoreCurrentAuthorityWitness};
-use worth_store_contracts::{StorePhysicalAuthorityWitness, ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE};
-use worth_store_physical_format::{
-    PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId, PhysicalReferenceScope,
-    PhysicalSegmentId,
+use worth_store_contracts::{
+    StableDigest, StorePhysicalAuthorityWitness, ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
 };
-use worth_store_physical_integrity::{
-    AuthorityDamageBoundary, ExecutedQuarantineFinding, PhysicalQuarantineAuthority,
-    QuarantineRecord, QuarantineSealRequest,
-};
-use worth_store_recovery_physics::RecoveryLayoutReadmissionWitness;
 use worth_store_security::{
     admit_store_security_scope, StoreAdmittedSecurityScope, StoreAuthenticityRequirement,
     StoreCustodyPosture, StoreKeyScope, StoreKeyVersionPosture,
     StoreSecurityScopeAdmissionExpectation, StoreSecurityScopeAdmissionRequest, StoreTenantScope,
 };
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct LayoutQuarantineObservationFixture {
+    identity: RecoveryLayoutReadmissionIdentity,
+    class: RecoveryLayoutReadmissionClass,
+}
+
+impl LayoutQuarantineObservationFixture {
+    pub(super) const fn identity(&self) -> &RecoveryLayoutReadmissionIdentity {
+        &self.identity
+    }
+
+    pub(super) const fn class(&self) -> RecoveryLayoutReadmissionClass {
+        self.class
+    }
+}
+
 pub(super) fn import_witness(
     family: crate::PhysicalArtifactFamily,
     seed: &str,
 ) -> RecoveryLayoutReadmissionWitness {
-    let record = unresolved_authority_record(seed);
+    let observation = unresolved_authority_observation(seed);
     let authority = current_authority("store.new.strategy", seed);
     let security = current_security_scope("store.new.strategy", seed);
-    worth_store_recovery_physics::layout_readmission()
-        .admit_import(family.id(), &record, &authority, security.witnesses())
-        .expect("record-backed import witness should admit")
+    super::readmission::layout_readmission()
+        .admit_import(
+            family.id(),
+            observation.identity(),
+            observation.class(),
+            &authority,
+            security.witnesses(),
+        )
+        .expect("observation-bound import witness should admit")
 }
 
 pub(super) fn quarantine_witness(
     family: crate::PhysicalArtifactFamily,
     seed: &str,
 ) -> RecoveryLayoutReadmissionWitness {
-    let record = authoritative_quarantine_record(seed);
-    record_backed_witness(family, &record, seed)
+    let observation = authoritative_quarantine_observation(seed);
+    observation_bound_witness(family, &observation, seed)
 }
 
-pub(super) fn record_backed_witness(
+pub(super) fn observation_bound_witness(
     family: crate::PhysicalArtifactFamily,
-    record: &QuarantineRecord,
+    observation: &LayoutQuarantineObservationFixture,
     seed: &str,
 ) -> RecoveryLayoutReadmissionWitness {
-    record_backed_witness_for_store(family, record, "store.new.strategy", seed)
+    observation_bound_witness_for_store(family, observation, "store.new.strategy", seed)
 }
 
-pub(super) fn record_backed_witness_for_store(
+pub(super) fn observation_bound_witness_for_store(
     family: crate::PhysicalArtifactFamily,
-    record: &QuarantineRecord,
+    observation: &LayoutQuarantineObservationFixture,
     store_authority_key: &str,
     seed: &str,
 ) -> RecoveryLayoutReadmissionWitness {
-    record_backed_witness_for_scope(
+    observation_bound_witness_for_scope(
         family,
-        record,
+        observation,
         store_authority_key,
         seed,
         StoreKeyScope::StoreManagedRoot,
@@ -65,9 +84,9 @@ pub(super) fn record_backed_witness_for_store(
     )
 }
 
-pub(super) fn record_backed_witness_for_scope(
+pub(super) fn observation_bound_witness_for_scope(
     family: crate::PhysicalArtifactFamily,
-    record: &QuarantineRecord,
+    observation: &LayoutQuarantineObservationFixture,
     store_authority_key: &str,
     seed: &str,
     key_scope: StoreKeyScope,
@@ -75,15 +94,28 @@ pub(super) fn record_backed_witness_for_scope(
 ) -> RecoveryLayoutReadmissionWitness {
     let authority = current_authority(store_authority_key, seed);
     let security = current_security_scope_with(store_authority_key, seed, key_scope, tenant_scope);
-    worth_store_recovery_physics::layout_readmission()
-        .admit_quarantine(family.id(), record, &authority, security.witnesses())
-        .expect("record-backed quarantine witness should admit")
+    super::readmission::layout_readmission()
+        .admit_quarantine(
+            family.id(),
+            observation.identity(),
+            observation.class(),
+            &authority,
+            security.witnesses(),
+        )
+        .expect("observation-bound quarantine witness should admit")
 }
 
-pub(super) fn authoritative_quarantine_record(seed: &str) -> QuarantineRecord {
-    let finding = ExecutedQuarantineFinding::authoritative_quarantine(test_scope(seed));
-    PhysicalQuarantineAuthority::seal(QuarantineSealRequest::from_executed_finding(finding))
-        .expect("authoritative quarantine record should seal")
+pub(super) fn authoritative_quarantine_observation(
+    seed: &str,
+) -> LayoutQuarantineObservationFixture {
+    observation(seed, RecoveryLayoutReadmissionClass::QuarantineRecovery)
+}
+
+pub(super) fn unresolved_authority_observation(seed: &str) -> LayoutQuarantineObservationFixture {
+    observation(
+        seed,
+        RecoveryLayoutReadmissionClass::ImportBoundaryReadmission,
+    )
 }
 
 pub(super) fn current_authority(identity_key: &str, value: &str) -> StoreCurrentAuthorityWitness {
@@ -127,21 +159,16 @@ pub(super) fn current_security_scope_with(
     }
 }
 
-fn unresolved_authority_record(seed: &str) -> QuarantineRecord {
-    let finding = ExecutedQuarantineFinding::unresolved_authority(
-        test_scope(seed),
-        AuthorityDamageBoundary::BackendResidue,
-    );
-    PhysicalQuarantineAuthority::seal(QuarantineSealRequest::from_executed_finding(finding))
-        .expect("unresolved-authority quarantine record should seal")
-}
-
-fn test_scope(seed: &str) -> PhysicalReferenceScope {
-    PhysicalReferenceScope::derived_index(
-        PhysicalGenerationAuthority::for_canonical_physical_format()
-            .page_cell(segment(seed), page(seed))
-            .with_page_generation(generation(seed)),
-    )
+fn observation(
+    seed: &str,
+    class: RecoveryLayoutReadmissionClass,
+) -> LayoutQuarantineObservationFixture {
+    let digest = StableDigest::new(format!("sha256:layout-quarantine:{seed}"))
+        .expect("test observation digest is non-empty");
+    LayoutQuarantineObservationFixture {
+        identity: RecoveryLayoutReadmissionIdentity::QuarantineObservation(digest),
+        class,
+    }
 }
 
 fn boundary_fact(identity_key: &str, value: &str) -> StoreAspectBoundaryFact {
@@ -189,22 +216,4 @@ fn physical_witness() -> StorePhysicalBoundaryWitness {
         .expect("test physical authority scope should be valid"),
     )
     .expect("test physical boundary witness should admit")
-}
-
-fn segment(seed: &str) -> PhysicalSegmentId {
-    PhysicalSegmentId::from_raw(seed_basis(seed) + 1).expect("test segment id is non-zero")
-}
-
-fn page(seed: &str) -> PhysicalPageId {
-    PhysicalPageId::from_raw(seed_basis(seed) + 11).expect("test page id is non-zero")
-}
-
-fn generation(seed: &str) -> PhysicalGeneration {
-    PhysicalGeneration::from_raw(seed_basis(seed) + 5).expect("test generation is non-zero")
-}
-
-fn seed_basis(seed: &str) -> u64 {
-    seed.bytes().enumerate().fold(17_u64, |acc, (index, byte)| {
-        acc + ((index as u64 + 1) * byte as u64)
-    })
 }

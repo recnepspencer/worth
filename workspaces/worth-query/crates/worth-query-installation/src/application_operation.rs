@@ -1,6 +1,8 @@
 mod authorization_mode;
 mod authorization_path_artifact;
 mod authorization_requirement;
+pub(crate) mod binding;
+mod candidate_demand;
 mod conditional_binding;
 mod conditional_clock;
 mod conditional_provider;
@@ -29,6 +31,11 @@ pub(crate) use authorization_requirement::{
 pub use authorization_requirement::{
     WorthQueryInstalledAbilityRequirement, WorthQueryInstalledAuthorizationPath,
 };
+pub use binding::{
+    WorthQueryInstalledApplicationMutationBinding, WorthQueryInstalledBoundMutationOperation,
+    WorthQueryInstalledBoundMutationPrincipal,
+};
+pub(in crate::application_operation) use candidate_demand::WorthQueryApplicationCandidateDemand;
 pub use conditional_binding::{
     WorthQueryApplicationConditionalOperationBinding,
     WorthQueryPortableApplicationConditionalOperationBinding,

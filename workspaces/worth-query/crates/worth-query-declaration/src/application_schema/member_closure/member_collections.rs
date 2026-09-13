@@ -100,9 +100,9 @@ pub(super) fn collect_relations(
     members
         .iter()
         .filter_map(|member| match member {
-            ApplicationSchemaMember::Relation { relation, from, to } => {
-                Some((relation.as_str(), from.as_str(), to.as_str()))
-            }
+            ApplicationSchemaMember::Relation {
+                relation, from, to, ..
+            } => Some((relation.as_str(), from.as_str(), to.as_str())),
             _ => None,
         })
         .collect()

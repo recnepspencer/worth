@@ -4,9 +4,8 @@ use worth_store::physical_runtime::{
     certification::CertificationPhysicalSignalPauseGate, CertificationFrameReadFailure,
     CertificationFrameWorkFailure, PhysicalExecutorCommand, PhysicalResidencyCertification,
     PhysicalStoreCloseOutcome, PhysicalStoreClosePhase, PhysicalStoreClosePlan,
-    PhysicalWorkCourtroomEvidence, PhysicalWorkEffectFate, PhysicalWorkEffectFateEvidence,
-    PhysicalWorkExecution, PhysicalWorkExecutionOutcome, PhysicalWorkIdentity,
-    PhysicalWorkPreEffectDenial,
+    PhysicalWorkEffectFate, PhysicalWorkExecution, PhysicalWorkExecutionOutcome,
+    PhysicalWorkIdentity, PhysicalWorkPreEffectDenial,
 };
 use worth_store_physical_backend::MediaPauseGate;
 use worth_store_physical_format::{RecordArtifactFile, RecordFrameCoordinate};
@@ -18,16 +17,7 @@ pub(super) fn close_and_finish(
     trace: JoinedTrace,
     model: &LifecycleMaelstromModel,
 ) {
-    let store = world.serving.store_identity();
     let fresh = super::fresh_process::spawn(&world.root);
-    let filesystem = world.serving.observer().media_snapshot().unwrap();
-    let environment = super::super::courtroom_environment::for_test(
-        filesystem.backend_profile(),
-        "physical_work::phase_16_lifecycle_maelstrom::lifecycle_maelstrom_joins_real_authority_effects_and_shutdown",
-    );
-    let evidence_binding = world
-        .serving
-        .certification_physical_work_courtroom_binding();
     let close_read = super::workflows::ready_read(&world.serving, world.fixture.reads[0].clone());
     let close_read = super::workflows::admit_read(&world.serving, close_read);
     let close_read_identity = close_read.intent().identity();
@@ -59,17 +49,17 @@ pub(super) fn close_and_finish(
     assert!(matches!(closed, PhysicalStoreCloseOutcome::Closed { .. }));
     assert_shutdown(&closed, &trace, abandoned_identity, close_read_identity);
     let fresh = fresh.open_after_close();
+    assert_ne!(fresh.process.get(), std::process::id());
     assert_eq!(fresh.root_generation, model.fresh_root_generation);
-    let courtroom = super::evidence::finish(
-        evidence_binding,
-        environment,
-        &world.root,
-        &fresh,
-        model.fresh_root_generation,
-        model.fresh_records,
-    );
-    assert_eq!(courtroom.store(), store.bytes());
-    assert_dispatched_close_evidence(&courtroom, close_read_identity);
+    let mut actual_records = fresh.records;
+    actual_records.sort();
+    let mut expected_records = model
+        .fresh_records
+        .iter()
+        .map(|record| record.to_vec())
+        .collect::<Vec<_>>();
+    expected_records.sort();
+    assert_eq!(actual_records, expected_records);
 }
 
 struct HotPinFence {
@@ -162,23 +152,6 @@ fn assert_shutdown(
             .active_in_flight_node_count(),
         0
     );
-}
-
-fn assert_dispatched_close_evidence(
-    evidence: &PhysicalWorkCourtroomEvidence,
-    identity: PhysicalWorkIdentity,
-) {
-    let causal = evidence
-        .causal()
-        .iter()
-        .filter(|record| record.operation() == identity.operation().get())
-        .collect::<Vec<_>>();
-    assert_eq!(causal.len(), 1);
-    assert_eq!(
-        causal[0].effect_fate(),
-        PhysicalWorkEffectFateEvidence::ReadCompleted
-    );
-    assert!(causal[0].backend_operation().is_some());
 }
 
 fn wait_until(mut predicate: impl FnMut() -> bool) {

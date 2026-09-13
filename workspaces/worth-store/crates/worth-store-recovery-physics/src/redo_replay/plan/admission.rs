@@ -4,12 +4,14 @@ use super::*;
 
 pub fn admit_physical_redo_members(
     mut members: Vec<PhysicalRedoMemberInput>,
+    store: StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
     limits: PhysicalRedoAdmissionLimits,
 ) -> Result<AdmittedPhysicalRedoMembers, PhysicalRedoPlanningDenial> {
     members.sort_unstable_by_key(|member| member.lsn_range.start());
     let mut admitted = Vec::with_capacity(members.len());
     let mut targets = 0_u64;
+    let mut scratch_bytes = 0_u64;
     let mut distinct = BTreeSet::new();
     let mut projection = limits.projection;
     let mut prior_end = None;
@@ -25,7 +27,13 @@ pub fn admit_physical_redo_members(
             Some((&mut distinct, limits.distinct_targets)),
             projection,
         )?;
-        validate_projection_semantics(&records, &decoded, format)?;
+        scratch_bytes = super::supersession::admit_scratch_bytes(
+            scratch_bytes,
+            &records,
+            &decoded,
+            limits.recovery_memory_bytes,
+        )?;
+        let inline_frames = validate_projection_semantics(&records, &decoded, store, format)?;
         targets = targets
             .checked_add(
                 records
@@ -42,16 +50,28 @@ pub fn admit_physical_redo_members(
             fate: member.fate(),
             records,
             projection: decoded,
+            inline_frames,
         });
     }
     let group_allocations = validate_admitted_groups(&admitted)?;
     Ok(AdmittedPhysicalRedoMembers {
+        scratch_bytes,
         members: admitted.into_boxed_slice(),
         group_allocations,
     })
 }
 
 impl AdmittedPhysicalRedoMembers {
+    /// Requires exact membership in the projection-validated WAL observation set.
+    /// A decoded target alone does not carry this closure or operation-fate proof.
+    pub fn contains_exact_observation_target(&self, target: &PhysicalRedoTarget) -> bool {
+        self.members
+            .iter()
+            .filter(|member| member.fate == RecoveryOperationFate::Indeterminate)
+            .flat_map(|member| member.records.iter())
+            .any(|record| record.targets().contains(target))
+    }
+
     pub fn target_identities(&self) -> Box<[PhysicalRedoTargetIdentity]> {
         self.members
             .iter()
@@ -71,8 +91,10 @@ impl AdmittedPhysicalRedoMembers {
         self,
         observations: Vec<RecoveryPageObservation>,
     ) -> Result<ImmutablePhysicalRedoPlan, PhysicalRedoPlanningDenial> {
+        let superseded = super::supersession::observed_predecessors(&self.members, &observations)?;
         let group_allocations = self.group_allocations;
         let mut page_cursor = RecoveryPageCursor::new(observations)?;
+        page_cursor.retain_observed_predecessors(superseded);
         let mut decisions = Vec::new();
         let mut planned_records = Vec::new();
         let mut projections = Vec::new();
@@ -109,6 +131,7 @@ impl AdmittedPhysicalRedoMembers {
         let recovery_root_allocation_bytes =
             applied_group_allocation(&group_allocations, &projections, &decisions)?;
         Ok(ImmutablePhysicalRedoPlan {
+            scratch_bytes: self.scratch_bytes,
             records: planned_records.into_boxed_slice(),
             decisions: decisions.into_boxed_slice(),
             projections: projections.into_boxed_slice(),

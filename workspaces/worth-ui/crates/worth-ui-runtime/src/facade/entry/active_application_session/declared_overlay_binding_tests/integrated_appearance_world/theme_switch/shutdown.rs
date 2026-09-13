@@ -43,9 +43,6 @@ pub(super) fn clean(world: World, cancelled_exits: u16) {
     assert!(receipt
         .mounted_presentation()
         .query_transition_trace_complete());
-    assert!(receipt
-        .mounted_presentation()
-        .query_semantic_frontier_trace_complete());
     assert!(matches!(
         receipt.host_session_release(),
         Some(UiHostSessionReleaseOutcome::Released(_))

@@ -6,6 +6,8 @@ use super::{
 };
 use crate::physical_runtime::record_serving::AdmittedPhysicalRecordFormat;
 
+const CANONICAL_FRAME_METADATA_BYTES: u64 = 3 * 1024 * 1024;
+
 pub(in crate::physical_runtime::record_serving::admission) fn canonical_residency_policy(
     format: AdmittedPhysicalRecordFormat,
 ) -> AdmittedPhysicalRecordResidencyPolicy {
@@ -15,7 +17,9 @@ pub(in crate::physical_runtime::record_serving::admission) fn canonical_residenc
     PhysicalRecordResidencyPolicy::builder()
         .total_bytes(bytes(384 * 1024 * 1024))
         .resident_bytes(bytes(64 * 1024 * 1024))
-        .metadata_bytes(bytes(2 * 1024 * 1024))
+        // C.9 retains one exact-scope validation record in every C.6 frame
+        // entry, so the declared metadata envelope includes that fixed cost.
+        .metadata_bytes(bytes(CANONICAL_FRAME_METADATA_BYTES))
         .frame_entries(count(4096))
         .pinned_frames(count(256))
         .pin_leases(count(512))

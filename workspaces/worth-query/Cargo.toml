@@ -22,7 +22,7 @@ default-members = [
 [workspace.package]
 edition = "2021"
 version = "0.1.0"
-license = "UNLICENSED"
+license = "BUSL-1.1"
 
 [workspace.dependencies]
 worth-query = { path = "crates/worth-query" }
@@ -42,7 +42,7 @@ worth-proof = { path = "../../crates/worth-proof" }
 worth-relational = { path = "../../crates/worth-relational" }
 worth-runtime-bridge = { path = "../../crates/worth-runtime-bridge" }
 worth-signal = { path = "../../crates/worth-signal" }
-worth-schema-graph = { path = "../../cad/workspaces/worth-contracts/crates/worth-schema-graph" }
+worth-schema-graph = { path = "../worth-contracts/crates/worth-schema-graph" }
 
 arc-swap = "1"
 proc-macro2 = { version = "1", features = ["span-locations"] }

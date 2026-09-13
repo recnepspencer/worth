@@ -1,6 +1,8 @@
 mod apply;
 mod metadata;
 mod prepared_apply;
+mod work;
+pub(crate) use work::EvaluationWork;
 
 pub use metadata::EvaluationExecutionMetadata;
 pub(crate) use prepared_apply::apply_prepared_evaluation_after_dependencies_with_policy;

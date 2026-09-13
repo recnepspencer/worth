@@ -99,6 +99,8 @@ impl PoolInner {
                 loading_identity: Some(identity),
                 loading_waiters: 0,
                 artifact_posture: FrameArtifactPosture::Fragment,
+                resident_generation: None,
+                integrity_validation: None,
             },
         );
         state
@@ -146,11 +148,22 @@ impl PoolInner {
             );
             return Err((denial, terminal));
         }
-        state
+        let resident_generation = state.advance_resident_generation().map_err(|denial| {
+            let terminal = Self::fail_loading_state(
+                &mut state,
+                key,
+                identity,
+                PhysicalFrameLoadTerminalKind::AllocationFailed,
+            );
+            (Self::deny(&mut state, denial), terminal)
+        })?;
+        let entry = state
             .frames
             .get_mut(&key.coordinate)
-            .expect("loading reservation exists")
-            .state = FrameState::Resident(Arc::clone(&bytes));
+            .expect("loading reservation exists");
+        entry.state = FrameState::Resident(Arc::clone(&bytes));
+        entry.resident_generation = Some(resident_generation);
+        entry.invalidate_integrity_validation();
         state.loading_frames -= 1;
         state.accounting.finish_loading();
         self.changed.notify_all();
@@ -158,6 +171,7 @@ impl PoolInner {
             owner: Arc::clone(self),
             key,
             bytes,
+            resident_generation,
         })
     }
 

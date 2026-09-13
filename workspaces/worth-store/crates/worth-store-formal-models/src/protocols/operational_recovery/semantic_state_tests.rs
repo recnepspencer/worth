@@ -150,7 +150,6 @@ fn action(binding: Binding) -> OperationalRecoveryAction {
         kind: OperationalRecoveryActionKind::WorkflowOpened,
         owner_tag: None,
         binding,
-        evidence_identity: id(21),
     }
 }
 

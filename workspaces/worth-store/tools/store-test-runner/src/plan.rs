@@ -1,22 +1,21 @@
-use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::path::Path;
 
-use crate::catalog::TestCatalog;
-use crate::classification::CiTestLane;
-use crate::product::TestProduct;
+use crate::product::{CiTestLane, TestProduct};
 
 mod execution_unit;
 mod integration_product;
 mod offline_observer_build;
 mod owner_product;
+mod process_scenario_product;
 mod smoke_product;
 mod structural_product;
 
 use execution_unit::apply_ci_profiles;
-pub(crate) use execution_unit::{CargoTargetDirectoryPolicy, TestExecutionUnit};
-use integration_product::integration_lane;
-use offline_observer_build::offline_observer_build;
+pub(crate) use execution_unit::TestExecutionUnit;
+use integration_product::{formal, scenario, ui};
 use owner_product::{owner, owner_ci};
+use process_scenario_product::process_scenario;
 use smoke_product::smoke;
 use structural_product::structural;
 
@@ -27,60 +26,40 @@ pub(crate) struct TestPlan {
 }
 
 impl TestPlan {
-    pub(crate) fn build(
-        product: &TestProduct,
-        catalog: &TestCatalog,
-        workspace_root: &Path,
-    ) -> Result<Self, String> {
+    pub(crate) fn build(product: &TestProduct, workspace_root: &Path) -> Result<Self, String> {
         let mut units = match product {
-            TestProduct::Owner { package } => owner(package, catalog, workspace_root)?,
-            TestProduct::Smoke => smoke(catalog, workspace_root)?,
-            TestProduct::Ui => integration_lane(CiTestLane::Ui, None, catalog, workspace_root)?,
-            TestProduct::Mutants => {
-                return Err("mutation campaigns execute outside the ordinary test plan".into());
-            }
-            TestProduct::Courtrooms { .. } => {
-                return Err("courtroom campaigns execute outside the ordinary test plan".into());
-            }
+            TestProduct::Owner { package } => owner(package, workspace_root),
+            TestProduct::Smoke => smoke(workspace_root),
+            TestProduct::Ui => ui(None, workspace_root),
             TestProduct::Ci {
                 lane: selected,
                 shard,
             } => match selected {
                 CiTestLane::OwnerUnit if shard.is_none() => owner_ci(workspace_root),
                 CiTestLane::Structural if shard.is_none() => structural(workspace_root)?,
-                CiTestLane::OwnerUnit | CiTestLane::Structural => {
-                    return Err(format!("the {selected} partition is not shardable"))
+                CiTestLane::ProcessScenario if shard.is_none() => process_scenario(workspace_root),
+                CiTestLane::OwnerUnit | CiTestLane::ProcessScenario | CiTestLane::Structural => {
+                    return Err(format!("the {selected} partition is not shardable"));
                 }
-                selected_lane => integration_lane(*selected_lane, *shard, catalog, workspace_root)?,
+                CiTestLane::Scenario => scenario(*shard, workspace_root),
+                CiTestLane::Ui => ui(*shard, workspace_root),
+                CiTestLane::Formal => formal(*shard, workspace_root),
             },
         };
         if matches!(product, TestProduct::Ci { .. }) {
             apply_ci_profiles(&mut units);
         }
-        Self::new(product.clone(), units)
-    }
-
-    fn new(product: TestProduct, mut units: Vec<TestExecutionUnit>) -> Result<Self, String> {
         if units.is_empty() {
             return Err(format!(
-                "test product `{}` selected zero units",
+                "test product `{}` selected no commands",
                 product.name()
             ));
         }
-        units.sort_by(|left, right| left.identity().cmp(right.identity()));
-        let mut origins = BTreeMap::new();
-        for unit in &units {
-            if let Some(first) =
-                origins.insert(unit.identity().to_owned(), unit.origin().to_owned())
-            {
-                return Err(format!(
-                    "duplicate execution unit `{}` from `{first}` and `{}`",
-                    unit.identity(),
-                    unit.origin()
-                ));
-            }
-        }
-        Ok(Self { product, units })
+        reject_duplicate_units(product, &units)?;
+        Ok(Self {
+            product: product.clone(),
+            units,
+        })
     }
 
     pub(crate) fn product_name(&self) -> String {
@@ -90,6 +69,23 @@ impl TestPlan {
     pub(crate) fn units(&self) -> &[TestExecutionUnit] {
         &self.units
     }
+}
+
+fn reject_duplicate_units(
+    product: &TestProduct,
+    units: &[TestExecutionUnit],
+) -> Result<(), String> {
+    let mut identities = BTreeSet::new();
+    for unit in units {
+        if !identities.insert(unit.identity()) {
+            return Err(format!(
+                "test product `{}` repeats execution unit `{}`",
+                product.name(),
+                unit.identity()
+            ));
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

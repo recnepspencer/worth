@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `unchecked` found for struct `hadwiger_research::facade::TilingCandidateEquivalenceProof` in the current scope
- --> tests/ui/tiling_equivalence/boundaries/unchecked_equivalence_constructor_forbidden.rs:4:46
-  |
-4 |     let _ = TilingCandidateEquivalenceProof::unchecked();
-  |                                              ^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::TilingCandidateEquivalenceProof`

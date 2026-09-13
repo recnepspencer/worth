@@ -1,23 +1,24 @@
 use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
 
 use worth_signal::facade::{
-    ClockAdvanceRequest, ClockDomain, ClockTick, SignalGraph, SignalRuntime, TemporalCondition,
-    TemporalWakeId, TemporalWakeRetirementReason,
+    ClockTick, TemporalCondition, TemporalWakeId, TemporalWakeRetirementReason,
 };
 
 use super::contract::{
-    BridgeManagedClockLease, BridgeManagedDueWake, BridgeManagedDueWakeBatch,
-    BridgeManagedTemporalDenial, BridgeManagedTemporalDenialKind,
-    BridgeManagedTemporalIntentIdentity, BridgeManagedTemporalIntentLifecycle,
-    BridgeManagedTemporalIntentReconciliation,
+    BridgeManagedClockLease, BridgeManagedDueWake, BridgeManagedTemporalDenial,
+    BridgeManagedTemporalDenialKind, BridgeManagedTemporalIntentIdentity,
+    BridgeManagedTemporalIntentLifecycle, BridgeManagedTemporalIntentReconciliation,
 };
 
 pub(super) struct BridgeManagedTemporalIntentRecord {
-    revision: u64,
-    due_coordinate: u64,
-    idempotency_identity: Arc<str>,
-    source_record_identity: crate::relational_identity::RelationalBridgeRecordIdentityParts,
-    wake_id: TemporalWakeId,
+    pub(super) revision: u64,
+    pub(super) due_coordinate: u64,
+    pub(super) idempotency_identity: Arc<str>,
+    pub(super) source_record_identity:
+        crate::relational_identity::RelationalBridgeRecordIdentityParts,
+    pub(super) wake_id: TemporalWakeId,
+    pub(super) observation_baselines:
+        Arc<super::super::observation_retention::BridgeObservationBaselines>,
 }
 
 pub(in crate::conditional_execution) struct BridgeManagedClockLane {
@@ -26,12 +27,18 @@ pub(in crate::conditional_execution) struct BridgeManagedClockLane {
     pub(super) source_identity: Arc<str>,
     pub(super) timeline_identity: Arc<str>,
     pub(super) lease: Arc<BridgeManagedClockLease>,
-    maximum_active_intents: usize,
-    maximum_due_wakes_per_observation: NonZeroUsize,
+    pub(super) maximum_active_intents: usize,
+    pub(super) maximum_due_wakes_per_observation: NonZeroUsize,
     last_observation: Option<(u64, u64)>,
-    signal: SignalRuntime<(), (), (), (), ()>,
-    intents: BTreeMap<BridgeManagedTemporalIntentIdentity, BridgeManagedTemporalIntentRecord>,
-    wake_to_intent: BTreeMap<TemporalWakeId, BridgeManagedTemporalIntentIdentity>,
+    pub(super) quarantined: bool,
+    #[cfg(test)]
+    pub(super) fault: Option<super::quarantine::Fault>,
+    pub(super) retention: Arc<super::super::retention::BridgeRetentionLedger>,
+    pub(super) signal: worth_signal::facade::branch::SignalConditionalTemporalPartition<(), (), ()>,
+    pub(super) intents:
+        BTreeMap<BridgeManagedTemporalIntentIdentity, BridgeManagedTemporalIntentRecord>,
+    pub(super) wake_to_intent: BTreeMap<TemporalWakeId, BridgeManagedTemporalIntentIdentity>,
+    _reservation: super::super::retention::BridgeRetentionReservation,
 }
 
 impl BridgeManagedClockLane {
@@ -42,9 +49,14 @@ impl BridgeManagedClockLane {
         lease: Arc<BridgeManagedClockLease>,
         maximum_active_intents: usize,
         maximum_due_wakes_per_observation: NonZeroUsize,
+        signal: worth_signal::facade::branch::SignalConditionalTemporalPartition<(), (), ()>,
+        retention: Arc<super::super::retention::BridgeRetentionLedger>,
+        reservation: super::super::retention::BridgeRetentionReservation,
     ) -> Self {
         Self {
             lifecycle_token: Default::default(),
+            retention,
+            _reservation: reservation,
             lowering,
             source_identity,
             timeline_identity,
@@ -52,9 +64,10 @@ impl BridgeManagedClockLane {
             maximum_active_intents,
             maximum_due_wakes_per_observation,
             last_observation: None,
-            signal: SignalRuntime::builder(SignalGraph::new())
-                .with_kernel_defaults()
-                .build(),
+            quarantined: false,
+            #[cfg(test)]
+            fault: None,
+            signal,
             intents: BTreeMap::new(),
             wake_to_intent: BTreeMap::new(),
         }
@@ -88,19 +101,6 @@ impl BridgeManagedClockLane {
 
     pub(super) fn record_observation(&mut self, sequence: u64, coordinate: u64) {
         self.last_observation = Some((sequence, coordinate));
-    }
-
-    pub(super) fn advance_signal_clock(
-        &mut self,
-        coordinate: u64,
-    ) -> Result<u64, BridgeManagedTemporalDenial> {
-        self.signal
-            .advance_clock(ClockAdvanceRequest::new(
-                ClockDomain::MonotonicExecution,
-                ClockTick::new(coordinate),
-            ))
-            .map(|advance| advance.ordinal().get())
-            .map_err(signal_denial)
     }
 
     pub(super) fn reconcile_active_intent(
@@ -137,15 +137,23 @@ impl BridgeManagedClockLane {
             };
         }
 
+        let observation_baselines =
+            super::super::observation_retention::BridgeObservationBaselines::new(&self.retention)
+                .map_err(|denial| {
+                BridgeManagedTemporalDenial::new(
+                    BridgeManagedTemporalDenialKind::RetentionCapacityExhausted,
+                    denial.detail(),
+                )
+            })?;
         let old_wake = existing.wake_id;
-        let replacement = self
-            .signal
-            .supersede_temporal_wake(
-                old_wake,
-                TemporalCondition::at_or_after(ClockTick::new(due_coordinate)),
-                ClockTick::new(due_coordinate),
-            )
-            .map_err(signal_denial)?;
+        self.begin_effect()?;
+        let replacement = self.signal.supersede_temporal_wake(
+            old_wake,
+            TemporalCondition::at_or_after(ClockTick::new(due_coordinate)),
+            ClockTick::new(due_coordinate),
+        );
+        let replacement = self.admit_signal_result(replacement)?;
+        self.after_signal_before_publication()?;
         self.wake_to_intent.remove(&old_wake);
         self.wake_to_intent
             .insert(replacement.scheduled().id(), identity.clone());
@@ -157,8 +165,10 @@ impl BridgeManagedClockLane {
                 idempotency_identity,
                 source_record_identity,
                 wake_id: replacement.scheduled().id(),
+                observation_baselines,
             },
         );
+        self.finish_effect();
         Ok(BridgeManagedTemporalIntentReconciliation::Superseded)
     }
 
@@ -176,13 +186,21 @@ impl BridgeManagedClockLane {
                 "managed temporal-intent capacity was exhausted before Signal admission",
             ));
         }
-        let wake = self
-            .signal
-            .schedule_temporal_wake(
-                TemporalCondition::at_or_after(ClockTick::new(due_coordinate)),
-                ClockTick::new(due_coordinate),
-            )
-            .map_err(signal_denial)?;
+        let observation_baselines =
+            super::super::observation_retention::BridgeObservationBaselines::new(&self.retention)
+                .map_err(|denial| {
+                BridgeManagedTemporalDenial::new(
+                    BridgeManagedTemporalDenialKind::RetentionCapacityExhausted,
+                    denial.detail(),
+                )
+            })?;
+        self.begin_effect()?;
+        let wake = self.signal.schedule_temporal_wake(
+            TemporalCondition::at_or_after(ClockTick::new(due_coordinate)),
+            ClockTick::new(due_coordinate),
+        );
+        let wake = self.admit_signal_result(wake)?;
+        self.after_signal_before_publication()?;
         self.wake_to_intent.insert(wake.id(), identity.clone());
         self.intents.insert(
             identity,
@@ -192,8 +210,10 @@ impl BridgeManagedClockLane {
                 idempotency_identity,
                 source_record_identity,
                 wake_id: wake.id(),
+                observation_baselines,
             },
         );
+        self.finish_effect();
         Ok(BridgeManagedTemporalIntentReconciliation::Installed)
     }
 
@@ -230,80 +250,35 @@ impl BridgeManagedClockLane {
             }
         };
         let wake_id = existing.wake_id;
-        self.signal
-            .retire_temporal_wake(wake_id, reason)
-            .map_err(signal_denial)?;
+        self.begin_effect()?;
+        let retirement = self.signal.retire_temporal_wake(wake_id, reason);
+        self.admit_signal_result(retirement)?;
+        self.after_signal_before_publication()?;
         self.intents.remove(identity);
         self.wake_to_intent.remove(&wake_id);
+        self.finish_effect();
         Ok(BridgeManagedTemporalIntentReconciliation::Retired)
     }
 
-    pub(super) fn promote_due(
-        &mut self,
-        binding_identity: &Arc<str>,
-    ) -> Result<BridgeManagedDueWakeBatch, BridgeManagedTemporalDenial> {
-        let bounded = self
-            .signal
-            .promote_due_temporal_wakes_ready_bounded(self.maximum_due_wakes_per_observation)
-            .map_err(signal_denial)?;
-        let frontier_before = bounded.promotion().frontier_before();
-        let frontier_after = bounded.promotion().frontier_after();
-        let wakes = bounded
-            .promotion()
-            .ready_wakes()
-            .iter()
-            .map(|wake| self.join_due_wake(binding_identity, wake))
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(BridgeManagedDueWakeBatch {
-            wakes,
-            due_work_remaining: bounded.due_work_remaining(),
-            frontier_width_before: frontier_before.scheduled_frontier_width(),
-            frontier_width_after: frontier_after.scheduled_frontier_width(),
-        })
+    pub(in crate::conditional_execution) fn revoke_liveness(&self) {
+        self.lease.revoke();
     }
 
-    fn join_due_wake(
+    pub(super) fn closure_counts(
         &self,
-        binding_identity: &Arc<str>,
-        wake: &worth_signal::facade::ReadyTemporalWake,
-    ) -> Result<BridgeManagedDueWake, BridgeManagedTemporalDenial> {
-        let identity = self.wake_to_intent.get(&wake.id()).ok_or_else(|| {
-            BridgeManagedTemporalDenial::new(
-                BridgeManagedTemporalDenialKind::MissingIntentAssociation,
-                "Signal promoted a wake without its Bridge temporal-intent association",
-            )
-        })?;
-        let intent = self.intents.get(identity).ok_or_else(|| {
-            BridgeManagedTemporalDenial::new(
-                BridgeManagedTemporalDenialKind::MissingIntentAssociation,
-                "Bridge wake association lost its active temporal intent",
-            )
-        })?;
-        Ok(BridgeManagedDueWake {
-            binding_identity: Arc::clone(binding_identity),
-            intent_identity: identity.clone(),
-            revision: intent.revision,
-            idempotency_identity: Arc::clone(&intent.idempotency_identity),
-            source_record_identity: intent.source_record_identity,
-            due_coordinate: intent.due_coordinate,
-            ready_coordinate: wake.ready_tick().get(),
-            signal_wake_id: wake.id(),
-            scheduled_ordinal: wake.scheduled_ordinal(),
-            ready_ordinal: wake.ready_ordinal(),
-        })
-    }
-
-    pub(super) fn closure_counts(&self) -> (usize, usize, usize) {
-        let wake_summary = self.signal.temporal_wake_summary();
-        (
+    ) -> Result<(usize, usize, usize), BridgeManagedTemporalDenial> {
+        let wake_summary = self.signal.temporal_wake_summary().map_err(signal_denial)?;
+        Ok((
             self.intents.len(),
             wake_summary.scheduled_count() as usize,
             wake_summary.ready_count() as usize,
-        )
+        ))
     }
 }
 
-fn signal_denial(error: worth_signal::facade::SignalError) -> BridgeManagedTemporalDenial {
+pub(super) fn signal_denial(
+    error: worth_signal::facade::branch::SignalConditionalTemporalPartitionDenial,
+) -> BridgeManagedTemporalDenial {
     BridgeManagedTemporalDenial::new(
         BridgeManagedTemporalDenialKind::SignalTemporalFailure,
         format!("Signal temporal authority denied managed time: {error:?}"),

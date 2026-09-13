@@ -6,7 +6,9 @@ mod publication;
 mod reopen;
 mod semantics;
 mod settlement;
+mod source_admission;
 mod staging;
+mod wal_admission;
 
 pub use capacity::PhysicalRecoveryCoordinationCapacity;
 pub(in crate::physical_runtime) use cleanup::PhysicalRecoveryCleanupRemovalCommand;

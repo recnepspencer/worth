@@ -4,7 +4,7 @@ use crate::BackupMaterializationAbandonmentRetry;
 #[test]
 fn cancelled_materialization_durably_releases_its_cut_and_removes_incomplete_output() {
     let scenario = BackupScenario::new("cancel-materialization");
-    let authority = crate::backup::export::current_authority("s10-cancel-materialization");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-cancel-materialization").expect("operation"),
@@ -50,7 +50,7 @@ fn cancelled_materialization_durably_releases_its_cut_and_removes_incomplete_out
 #[test]
 fn abandonment_control_failure_preserves_the_live_session_for_an_exact_retry() {
     let scenario = BackupScenario::new("abandon-materialization-retry");
-    let authority = crate::backup::export::current_authority("s10-abandon-materialization-retry");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-abandon-materialization-retry").expect("operation"),
@@ -104,7 +104,7 @@ fn abandonment_control_failure_preserves_the_live_session_for_an_exact_retry() {
 #[test]
 fn cancellation_during_manifest_publication_abandons_without_publishing_a_backup() {
     let scenario = BackupScenario::new("cancel-publication");
-    let authority = crate::backup::export::current_authority("s10-cancel-publication");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-cancel-publication").expect("operation"),
@@ -140,7 +140,7 @@ fn cancellation_during_manifest_publication_abandons_without_publishing_a_backup
 #[test]
 fn every_owner_component_copy_and_sync_boundary_is_cancellable_without_advancing() {
     let scenario = BackupScenario::new("cancel-every-owner-boundary");
-    let authority = crate::backup::export::current_authority("s10-cancel-every-owner-boundary");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let admitted = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-cancel-every-owner-boundary").expect("operation"),

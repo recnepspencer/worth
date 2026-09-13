@@ -1,9 +1,8 @@
 use crate::basis_lifecycle::BasisOperationLane;
 use crate::domain_installation::{
-    admit_granular_invalidation_deliveries, admit_primary_runtime_granular_batch,
-    admit_primary_runtime_granular_invalidations, WorthQueryAdmittedInvalidationBatch,
-    WorthQueryAdmittedInvalidationImpact, WorthQueryLiveBoundDomainProjection,
-    WorthQuerySemanticDependencyRole,
+    admit_primary_runtime_granular_batch, admit_primary_runtime_granular_invalidations,
+    WorthQueryAdmittedInvalidationBatch, WorthQueryAdmittedInvalidationImpact,
+    WorthQueryLiveBoundDomainProjection, WorthQuerySemanticDependencyRole,
 };
 
 use super::admission::{scope_for, strategy_for};
@@ -75,13 +74,7 @@ pub fn maintain_primary_runtime_granular_invalidations<
     }
     let admitted = admit_primary_runtime_granular_invalidations(live.snapshot(), binding, receipt)
         .map_err(WorthQueryPrimaryGranularMaintenanceDenial::Admission)?;
-    maintain_admitted_batch(
-        live,
-        workspace,
-        admitted,
-        MaintenanceSource::BoundPrimaryRuntime,
-        None,
-    )
+    maintain_admitted_batch(live, workspace, admitted, None)
 }
 
 /// Perform Query-owned maintenance from an execution-owned primary batch.
@@ -106,13 +99,7 @@ pub fn maintain_primary_runtime_granular_batch<
     }
     let admitted = admit_primary_runtime_granular_batch(live.snapshot(), binding, batch)
         .map_err(WorthQueryPrimaryGranularMaintenanceDenial::Admission)?;
-    maintain_admitted_batch(
-        live,
-        workspace,
-        admitted,
-        MaintenanceSource::BoundPrimaryRuntime,
-        None,
-    )
+    maintain_admitted_batch(live, workspace, admitted, None)
 }
 
 /// Perform primary granular maintenance against a retained Query collection
@@ -135,51 +122,14 @@ pub fn maintain_primary_runtime_granular_collection_batch<
     }
     let admitted = admit_primary_runtime_granular_batch(live.snapshot(), binding, batch)
         .map_err(WorthQueryPrimaryGranularMaintenanceDenial::Admission)?;
-    maintain_admitted_batch(
-        live,
-        workspace,
-        admitted,
-        MaintenanceSource::BoundPrimaryRuntime,
-        Some(collection),
-    )
-}
-
-pub fn maintain_granular_invalidation_deliveries<
-    D: 'static,
-    O: 'static,
-    F: 'static,
-    L: BasisOperationLane,
->(
-    live: &WorthQueryLiveBoundDomainProjection<D, O, F, L>,
-    workspace: &mut crate::runtime::WorthQueryWorkspace,
-    deliveries: impl IntoIterator<
-        Item = worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery,
-    >,
-) -> Result<WorthQueryPrimaryGranularMaintenanceOutcome, WorthQueryPrimaryGranularMaintenanceDenial>
-{
-    let admitted = admit_granular_invalidation_deliveries(live.snapshot(), deliveries)
-        .map_err(WorthQueryPrimaryGranularMaintenanceDenial::Admission)?;
-    maintain_admitted_batch(
-        live,
-        workspace,
-        admitted,
-        MaintenanceSource::LocalOwner,
-        None,
-    )
-}
-
-#[derive(Clone, Copy)]
-enum MaintenanceSource {
-    LocalOwner,
-    BoundPrimaryRuntime,
+    maintain_admitted_batch(live, workspace, admitted, Some(collection))
 }
 
 fn maintain_admitted_batch<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>(
     live: &WorthQueryLiveBoundDomainProjection<D, O, F, L>,
     workspace: &mut crate::runtime::WorthQueryWorkspace,
     admitted: WorthQueryAdmittedInvalidationBatch,
-    source: MaintenanceSource,
-    mut collection: Option<&mut crate::domain_installation::WorthQueryCollectionConsumerWindow>,
+    collection: Option<&mut crate::domain_installation::WorthQueryCollectionConsumerWindow>,
 ) -> Result<WorthQueryPrimaryGranularMaintenanceOutcome, WorthQueryPrimaryGranularMaintenanceDenial>
 {
     if admitted.is_empty() {
@@ -214,19 +164,12 @@ fn maintain_admitted_batch<D: 'static, O: 'static, F: 'static, L: BasisOperation
         .collect::<Vec<_>>();
     let plan = coalesced_plan(&impacts, source_read_basis)
         .ok_or(WorthQueryPrimaryGranularMaintenanceDenial::MixedMaintenancePosture)?;
-    let refresh = match source {
-        MaintenanceSource::LocalOwner => {
-            let correspondence = impacts[0].correspondence_receipt().clone();
-            live.refresh_owner_delivery(&correspondence, workspace)
-        }
-        MaintenanceSource::BoundPrimaryRuntime => {
-            let basis = plan
-                .source_read_basis()
-                .ok_or(WorthQueryPrimaryGranularMaintenanceDenial::MixedMaintenancePosture)?;
-            live.refresh_granular_scope(plan.scope(), basis, workspace)
-        }
-    }
-    .map_err(WorthQueryPrimaryGranularMaintenanceDenial::Execution)?;
+    let basis = plan
+        .source_read_basis()
+        .ok_or(WorthQueryPrimaryGranularMaintenanceDenial::MixedMaintenancePosture)?;
+    let refresh = live
+        .refresh_granular_scope(plan.scope(), basis, workspace)
+        .map_err(WorthQueryPrimaryGranularMaintenanceDenial::Execution)?;
     let maintenance_owner = live.maintenance_owner_identity().to_owned();
     let projection = super::prepare_projection_maintenance(
         workspace,
@@ -279,7 +222,6 @@ fn maintain_admitted_batch<D: 'static, O: 'static, F: 'static, L: BasisOperation
     workspace.apply_projection_maintenance(&maintenance_owner, derived.projection_commit);
     if let Some(pending) = derived.collection_commit {
         collection
-            .as_deref_mut()
             .expect("collection commits are prepared only for a retained collection")
             .apply_granular_maintenance(pending);
     }

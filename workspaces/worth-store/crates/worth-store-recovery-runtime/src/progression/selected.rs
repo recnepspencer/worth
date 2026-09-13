@@ -5,17 +5,20 @@ use worth_store_recovery_physics::{PhysicalSourceSelection, SelectedPhysicalRoot
 
 use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryOutcome, PhysicalRecoveryRefusal,
-    PhysicalRecoveryRefusalKind,
+    PhysicalRecoveryRefusalKind, PhysicalRecoverySourceDenial,
 };
 use crate::orchestration::RecoveryCoordination;
 
-use super::PhysicalRecoveryDiscoveryCounters;
+use super::{PhysicalRecoveryDiscoveryCounters, RecoveryIntegrityEvidence};
 
 pub struct SelectedPhysicalRecovery {
     authority: AdmittedPlatformAuthority,
     coordination: RecoveryCoordination,
     selection: PhysicalSourceSelection,
+    integrity: RecoveryIntegrityEvidence,
     counters: PhysicalRecoveryDiscoveryCounters,
+    root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
+    integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
 impl SelectedPhysicalRecovery {
@@ -27,13 +30,19 @@ impl SelectedPhysicalRecovery {
         authority: AdmittedPlatformAuthority,
         coordination: RecoveryCoordination,
         selection: PhysicalSourceSelection,
+        integrity: RecoveryIntegrityEvidence,
         counters: PhysicalRecoveryDiscoveryCounters,
+        root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
+        integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     ) -> Self {
         Self {
             authority,
             coordination,
             selection,
+            integrity,
             counters,
+            root_protocol_denials,
+            integrity_trace,
         }
     }
 
@@ -93,10 +102,31 @@ impl SelectedPhysicalRecovery {
         self.counters
     }
 
+    pub fn root_protocol_denials(&self) -> &[PhysicalRecoverySourceDenial] {
+        &self.root_protocol_denials
+    }
+
+    pub const fn integrity_observation_count(&self) -> u64 {
+        self.integrity_trace.counters().attempted
+    }
+
+    pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
+        self.integrity_trace.observations()
+    }
+
+    pub fn wal_integrity_observations(
+        &self,
+    ) -> &[crate::entry::PhysicalRecoveryWalIntegrityObservation] {
+        self.integrity.observations().wal()
+    }
+
     pub fn cancel_before_reconstruction(self) -> PhysicalRecoveryOutcome {
         let Self {
             authority,
             coordination,
+            integrity,
+            root_protocol_denials,
+            integrity_trace,
             ..
         } = self;
         assert!(coordination.shutdown_is_quiescent());
@@ -104,10 +134,15 @@ impl SelectedPhysicalRecovery {
         let AdmittedPlatformAuthority { media, session, .. } = authority;
         drop(media);
         session.refuse();
-        PhysicalRecoveryOutcome::Refused(PhysicalRecoveryRefusal::new(
-            PhysicalRecoveryRefusalKind::CancelledBeforeReconstruction,
-            recovery_effects,
-        ))
+        PhysicalRecoveryOutcome::Refused(
+            PhysicalRecoveryRefusal::new(
+                PhysicalRecoveryRefusalKind::CancelledBeforeReconstruction,
+                recovery_effects,
+            )
+            .with_root_protocol_denials(root_protocol_denials)
+            .with_integrity_trace(integrity_trace)
+            .with_integrity_observations(integrity.into_observations()),
+        )
     }
 
     pub(crate) fn into_parts(
@@ -116,13 +151,19 @@ impl SelectedPhysicalRecovery {
         AdmittedPlatformAuthority,
         RecoveryCoordination,
         PhysicalSourceSelection,
+        RecoveryIntegrityEvidence,
         PhysicalRecoveryDiscoveryCounters,
+        Vec<PhysicalRecoverySourceDenial>,
+        crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     ) {
         (
             self.authority,
             self.coordination,
             self.selection,
+            self.integrity,
             self.counters,
+            self.root_protocol_denials,
+            self.integrity_trace,
         )
     }
 }

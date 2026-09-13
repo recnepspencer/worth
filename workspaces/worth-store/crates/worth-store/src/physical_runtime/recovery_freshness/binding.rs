@@ -3,8 +3,9 @@ use std::num::NonZeroU64;
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
-use worth_store_physical_format::{store_namespace::StableStoreIdentity, VerifiedCheckpointStream};
-use worth_store_wal::{VerifiedWalFrame, WalLsnRange};
+use worth_store_physical_format::store_namespace::StableStoreIdentity;
+use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_wal::WalLsnRange;
 
 use crate::physical_runtime::durability::{
     DecodedPhysicalMutationBindingRecord, PersistedPhysicalMutationAttemptBinding,
@@ -16,11 +17,20 @@ use crate::physical_runtime::{
 };
 
 mod accessors;
+mod checkpoint_basis;
 mod failure;
+#[cfg(test)]
+mod merge_tests;
+mod wal_frame_input;
 mod wal_payload;
 
+pub use checkpoint_basis::{
+    StoreRecoveryCheckpointBindingBasis, StoreRecoveryCheckpointBindingRebuilder,
+};
 pub use failure::StoreRecoveryBindingSampleFailure;
 use failure::{empty_failure, sample_failure};
+pub(super) use wal_frame_input::sample_binding;
+use wal_frame_input::RecoveryWalFrameInput;
 use wal_payload::decode_wal_member_payload;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -84,11 +94,12 @@ pub enum StoreRecoveryBindingSampleDenial {
     RedoByteLimit,
 }
 
-pub(super) fn sample_binding<'frame>(
+fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
     freshness: &super::PhysicalRecoveryFreshnessAuthority,
+    checkpoint_basis: Option<&StoreRecoveryCheckpointBindingBasis>,
     media: &AdmittedRecoveryFilesystemMedia,
     checkpoint: &VerifiedCheckpointStream,
-    wal_frames: impl IntoIterator<Item = &'frame VerifiedWalFrame>,
+    wal_frames: impl IntoIterator<Item = &'frame Frame>,
     maximum_operation_bindings: u64,
     maximum_redo_bytes: u64,
 ) -> Result<StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure> {
@@ -117,27 +128,17 @@ pub(super) fn sample_binding<'frame>(
     let idempotency = PhysicalIdempotencyPolicy::from_recovery_binding(retention);
     let context = PhysicalBindingDecodingContext::new(store, policy, idempotency);
     let selected_generation = checkpoint.compaction_cutover().product_generation();
-    let mut operations = BTreeMap::new();
+    let mut operations = checkpoint_basis
+        .ok_or_else(|| empty_failure(StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding))?
+        .operations(checkpoint, maximum_operation_bindings)?;
     let mut wal_members = Vec::new();
     let mut wal_group_bindings = Vec::new();
     let mut redo_bytes = 0_u64;
-    for record in checkpoint.binding_records() {
-        let decoded =
-            DecodedPhysicalMutationBindingRecord::decode(record, context).map_err(|_| {
-                sample_failure(
-                    StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding,
-                    &operations,
-                    wal_members.len(),
-                    redo_bytes,
-                )
-            })?;
-        let evidence = checkpoint_evidence(decoded, selected_generation);
-        merge_evidence(&mut operations, evidence, maximum_operation_bindings)
-            .map_err(|denial| sample_failure(denial, &operations, wal_members.len(), redo_bytes))?;
-    }
     for frame in wal_frames {
-        let (binding_bytes, canonical_redo) = decode_wal_member_payload(frame.payload())
-            .map_err(|denial| sample_failure(denial, &operations, wal_members.len(), redo_bytes))?;
+        let (binding_bytes, canonical_redo) = decode_wal_member_payload(frame.recovery_payload())
+            .map_err(|denial| {
+            sample_failure(denial, &operations, wal_members.len(), redo_bytes)
+        })?;
         redo_bytes = redo_bytes
             .checked_add(canonical_redo.len() as u64)
             .ok_or_else(|| {
@@ -160,7 +161,7 @@ pub(super) fn sample_binding<'frame>(
         let binding = PersistedPhysicalMutationAttemptBinding::decode_from_wal_member(
             binding_bytes,
             context,
-            frame.lsn_range(),
+            frame.recovery_lsn_range(),
             redo_digest,
         )
         .map_err(|_| {
@@ -182,7 +183,7 @@ pub(super) fn sample_binding<'frame>(
             .map_err(|denial| sample_failure(denial, &operations, wal_members.len(), redo_bytes))?;
         wal_group_bindings.push((binding.mutation(), group, binding.idempotency_identity()));
         wal_members.push(StoreRecoveryWalMember {
-            lsn_range: frame.lsn_range(),
+            lsn_range: frame.recovery_lsn_range(),
             operation_identity,
             group_identity: group.group_identity().bytes(),
             group_member_identity: group.member_identity().bytes(),
@@ -357,6 +358,9 @@ fn merge_evidence(
         {
             return Err(StoreRecoveryBindingSampleDenial::ConflictingOperationEvidence);
         }
+        if conflicting_terminal_fates(existing.fate, evidence.fate) {
+            return Err(StoreRecoveryBindingSampleDenial::ConflictingOperationEvidence);
+        }
         if existing.fate == StoreRecoveryOperationFate::Indeterminate
             && evidence.fate != StoreRecoveryOperationFate::Indeterminate
         {
@@ -369,4 +373,13 @@ fn merge_evidence(
     }
     operations.insert(key, evidence);
     Ok(())
+}
+
+fn conflicting_terminal_fates(
+    existing: StoreRecoveryOperationFate,
+    incoming: StoreRecoveryOperationFate,
+) -> bool {
+    existing != StoreRecoveryOperationFate::Indeterminate
+        && incoming != StoreRecoveryOperationFate::Indeterminate
+        && existing != incoming
 }

@@ -88,7 +88,7 @@ where
         WorthQueryElevationCloseAuthorizationDenial,
     >
     where
-        Operation: ApplicationOperationMarkerIdentity,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
@@ -120,7 +120,7 @@ fn bind_close<Schema, Capability, Operation, Input>(
 ) -> Result<WorthQueryElevationCloseDraft, WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
     Input: 'static,
 {

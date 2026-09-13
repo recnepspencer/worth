@@ -6,6 +6,7 @@ use crate::portable_identity::WorthQueryPortableTypeIdentity;
 pub(super) fn validate_member_identity_uniqueness(
     members: &[ApplicationSchemaMember],
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
+    let mut mutations = BTreeSet::new();
     let mut operations = BTreeMap::<&str, &WorthQueryPortableTypeIdentity>::new();
     let mut effects = BTreeMap::<&str, &WorthQueryPortableTypeIdentity>::new();
     let mut query_types = BTreeSet::<&str>::new();
@@ -14,8 +15,17 @@ pub(super) fn validate_member_identity_uniqueness(
     let mut context_types = BTreeSet::<&WorthQueryPortableTypeIdentity>::new();
     let mut slot_types = BTreeSet::<&WorthQueryPortableTypeIdentity>::new();
     let mut provenance_types = BTreeSet::<&WorthQueryPortableTypeIdentity>::new();
+    let mut invariants = BTreeSet::new();
     for member in members {
         let duplicate = match member {
+            ApplicationSchemaMember::ApplicationMutation { description } => {
+                !mutations.insert(description.binding_identity())
+            }
+            ApplicationSchemaMember::ApplicationInvariant {
+                invariant,
+                execution_point,
+                ..
+            } => !invariants.insert((invariant.as_str(), *execution_point)),
             ApplicationSchemaMember::Operation {
                 operation,
                 input_type,

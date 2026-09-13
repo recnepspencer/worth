@@ -29,6 +29,13 @@ impl WorthQueryManagedRunAdmission<'_> {
                 ));
             }
         };
+        if !request.matches_operation_product(operation) {
+            return Err(WorthQueryManagedWorkflowRunAdmissionFailure::new(
+                WorthQueryManagedWorkflowRunAdmissionFailureKind::ProductBasisMismatch,
+                "managed workflow run selection does not match the operation's exact World product occurrence",
+                resource_attempt,
+            ));
+        }
         let lower = match admit_managed_lower_execution_basis(
             self.bridge,
             self.relational,
@@ -79,6 +86,7 @@ impl WorthQueryManagedRunAdmission<'_> {
             &resource_attempt,
             &lower.bridge,
             &lower.relational,
+            lower.product_observation.as_ref(),
             counters,
         ) {
             Ok(counters) => counters,

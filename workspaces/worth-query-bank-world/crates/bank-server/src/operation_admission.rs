@@ -5,6 +5,7 @@ use bank_domain::schema::*;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::declaration::application_schema::TypedMutationPreconditions;
 use worth_query_host::facade::primary_graph::WorthQueryAdmittedApplicationOperation;
+use worth_query_host::facade::product::WorthQueryProductBranchAdmissionDenial;
 
 use crate::{
     BankAuthenticatedPrincipal, BankAuthorizationDenial, BankEntityResolutionDenial,
@@ -97,6 +98,7 @@ impl<Operation, Input, Scope, ScopeIdentity: Copy>
 
 #[derive(Debug)]
 pub enum BankOperationAdmissionError {
+    ProductSelection(WorthQueryProductBranchAdmissionDenial),
     ScopeResolution(BankEntityResolutionDenial),
     OperationInstallation(BankOperationInstallationDenial),
     Authorization(BankAuthorizationDenial),
@@ -105,6 +107,9 @@ pub enum BankOperationAdmissionError {
 impl std::fmt::Display for BankOperationAdmissionError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ProductSelection(error) => {
+                write!(formatter, "product selection denied: {error:?}")
+            }
             Self::ScopeResolution(error) => {
                 write!(formatter, "scope resolution denied: {}", error.code())
             }

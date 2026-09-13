@@ -145,10 +145,11 @@ impl PoolInner {
                 .expect("validated target remains resident");
             state.accounting.remove_frame(removed.accounting_removal());
         }
-        let entry = state
+        let mut entry = state
             .frames
             .remove(&source.coordinate)
             .expect("validated source remains resident");
+        entry.invalidate_integrity_validation();
         state.frames.insert(target.coordinate, entry);
         state.append_evictable(target.coordinate);
         state.accounting.record_identity_transition();

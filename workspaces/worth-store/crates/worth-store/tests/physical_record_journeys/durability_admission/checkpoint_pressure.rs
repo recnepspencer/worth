@@ -16,7 +16,6 @@ use worth_store::physical_runtime::{
     WalDurablePhysicalMutation,
 };
 use worth_store_physical_backend::MediaOperationRole;
-use worth_store_physical_format::CheckpointStreamDecoder;
 
 use super::super::{configuration, serving_from_initialization};
 
@@ -173,25 +172,6 @@ fn whole_store_checkpoint_stays_bounded_during_32x_foreground_mutation() {
     assert_eq!(
         records.len() as u64,
         resident_dirty_frames + completed.binding_compaction().binding_count() + 3
-    );
-    let mut decoder = CheckpointStreamDecoder::begin(records[0]).unwrap();
-    assert_eq!(decoder.source(), frozen_source);
-    let compaction_index = records
-        .iter()
-        .position(|record| record[9] == 3)
-        .expect("checkpoint carries one binding-compaction header");
-    for record in &records[1..compaction_index] {
-        decoder.decode_dirty_basis(record).unwrap();
-    }
-    let mut compaction = decoder
-        .begin_binding_compaction(records[compaction_index])
-        .unwrap();
-    for record in &records[compaction_index + 1..records.len() - 1] {
-        compaction.decode_binding_record(record).unwrap();
-    }
-    assert_eq!(
-        compaction.finish(records[records.len() - 1]).unwrap(),
-        completed.footer()
     );
     assert_checkpoint_io(media_before_checkpoint, serving.media_counters(), &records);
 

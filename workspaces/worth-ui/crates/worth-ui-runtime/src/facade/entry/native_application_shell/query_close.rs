@@ -1,9 +1,6 @@
 pub(crate) struct UiNativeApplicationQueryCloseObservation {
     closed_query_resources: u64,
     transitions: Box<[worth_ui_query_binding::WorthUiPresentationTransitionObservation]>,
-    semantic_frontiers:
-        Box<[worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation]>,
-    semantic_frontier_trace_complete: bool,
     text_presentation_work:
         Box<[crate::native_platform::text_presentation::UiNativeTextPresentationWorkObservation]>,
     text_presentation_work_trace_complete: bool,
@@ -20,9 +17,6 @@ pub(crate) struct UiNativeApplicationQueryCloseObservation {
 pub(super) struct UiNativeApplicationQueryCloseInput {
     pub(super) closed_resources: u64,
     pub(super) transitions: Box<[worth_ui_query_binding::WorthUiPresentationTransitionObservation]>,
-    pub(super) semantic_frontiers:
-        Box<[worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation]>,
-    pub(super) semantic_frontier_trace_complete: bool,
     pub(super) text_work:
         Box<[crate::native_platform::text_presentation::UiNativeTextPresentationWorkObservation]>,
     pub(super) text_work_trace_complete: bool,
@@ -41,8 +35,6 @@ impl UiNativeApplicationQueryCloseObservation {
         Self {
             closed_query_resources: input.closed_resources,
             transitions: input.transitions,
-            semantic_frontiers: input.semantic_frontiers,
-            semantic_frontier_trace_complete: input.semantic_frontier_trace_complete,
             text_presentation_work: input.text_work,
             text_presentation_work_trace_complete: input.text_work_trace_complete,
             authored_mounted_instances: input.authored_mounted_instances,
@@ -58,8 +50,6 @@ impl UiNativeApplicationQueryCloseObservation {
         Self::from_runtime(UiNativeApplicationQueryCloseInput {
             closed_resources: 0,
             transitions: Box::new([]),
-            semantic_frontiers: Box::new([]),
-            semantic_frontier_trace_complete: true,
             text_work: Box::new([]),
             text_work_trace_complete: true,
             authored_mounted_instances: Box::new([]),
@@ -87,16 +77,6 @@ impl UiNativeApplicationQueryCloseObservation {
 
     pub(crate) const fn transition_trace_complete(&self) -> bool {
         self.transition_trace_complete
-    }
-
-    pub(crate) fn semantic_frontiers(
-        &self,
-    ) -> &[worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation] {
-        &self.semantic_frontiers
-    }
-
-    pub(crate) const fn semantic_frontier_trace_complete(&self) -> bool {
-        self.semantic_frontier_trace_complete
     }
 
     pub(crate) fn text_presentation_work(

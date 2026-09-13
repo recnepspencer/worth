@@ -99,10 +99,28 @@ pub(super) fn projection_with_allocation(
     page_capacity: u32,
     used_pages: u32,
 ) -> PersistedPhysicalRecoveryProjection {
+    projection_with_page_allocation(
+        data_page_count,
+        page_generation,
+        artifact_generation,
+        page_capacity,
+        used_pages,
+        2,
+    )
+}
+
+pub(super) fn projection_with_page_allocation(
+    data_page_count: u32,
+    page_generation: u64,
+    artifact_generation: u64,
+    page_capacity: u32,
+    used_pages: u32,
+    page_id: u64,
+) -> PersistedPhysicalRecoveryProjection {
     let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
     let segment = PhysicalSegmentId::from_raw(1).unwrap();
     let page = authority
-        .page_cell(segment, PhysicalPageId::from_raw(2).unwrap())
+        .page_cell(segment, PhysicalPageId::from_raw(page_id).unwrap())
         .with_page_generation(PhysicalGeneration::from_raw(page_generation).unwrap());
     let coordinate = RecordFrameCoordinate::new(
         RecordArtifactFile::Segment {
@@ -116,14 +134,14 @@ pub(super) fn projection_with_allocation(
     let frame = PersistedPhysicalRecoveryFrame::new(
         PersistedPhysicalDataFrameSubject::InlinePage(page),
         coordinate,
-        &result_bytes_with_page_generation(page_generation),
+        &result_bytes_for_page(page_generation, page_id),
     )
     .unwrap();
     let record = PersistedRecordIdentity::new([1; 16], 1).unwrap();
     let slot = authority
         .slot_cell(
             segment,
-            PhysicalPageId::from_raw(2).unwrap(),
+            page.page_id(),
             PhysicalRecordSlot::from_raw(1).unwrap(),
         )
         .with_slot_generation(PhysicalGeneration::from_raw(1).unwrap());
@@ -206,11 +224,15 @@ pub(super) fn result_bytes() -> Vec<u8> {
 }
 
 fn result_bytes_with_page_generation(page_generation: u64) -> Vec<u8> {
+    result_bytes_for_page(page_generation, 2)
+}
+
+pub(super) fn result_bytes_for_page(page_generation: u64, page_id: u64) -> Vec<u8> {
     let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
     let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
     let segment = PhysicalSegmentId::from_raw(1).unwrap();
     let page = authority
-        .page_cell(segment, PhysicalPageId::from_raw(2).unwrap())
+        .page_cell(segment, PhysicalPageId::from_raw(page_id).unwrap())
         .with_page_generation(PhysicalGeneration::from_raw(page_generation).unwrap());
     let record = PersistedRecordIdentity::new([1; 16], 1).unwrap();
     let slot = authority

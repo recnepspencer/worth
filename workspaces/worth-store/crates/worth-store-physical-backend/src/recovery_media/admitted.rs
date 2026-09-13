@@ -4,6 +4,7 @@ use super::{BoundedRecoveryFilesystemDiscovery, RecoveryFilesystemQualificationE
 
 pub struct AdmittedRecoveryFilesystemMedia {
     pub(super) parts: crate::filesystem_media::recovery_qualification::AdmittedRecoveryParts,
+    pub(super) discovery_incarnations_issued: u64,
     #[cfg(feature = "certification-test-authority")]
     certification_cleanup_handle:
         Option<crate::filesystem_media::CertificationRetainedMediaFileHandle>,
@@ -19,8 +20,16 @@ impl AdmittedRecoveryFilesystemMedia {
     pub(crate) const fn from_parts(
         parts: crate::filesystem_media::recovery_qualification::AdmittedRecoveryParts,
     ) -> Self {
+        Self::from_discovery(parts, 0)
+    }
+
+    pub(super) const fn from_discovery(
+        parts: crate::filesystem_media::recovery_qualification::AdmittedRecoveryParts,
+        discovery_incarnations_issued: u64,
+    ) -> Self {
         Self {
             parts,
+            discovery_incarnations_issued,
             #[cfg(feature = "certification-test-authority")]
             certification_cleanup_handle: None,
         }
@@ -80,11 +89,20 @@ impl AdmittedRecoveryFilesystemMedia {
     }
 
     pub fn bounded_discovery(
-        self,
+        mut self,
         maximum_entries: u64,
         maximum_bytes: u64,
     ) -> Result<BoundedRecoveryFilesystemDiscovery, RecoveryFilesystemQualificationError> {
-        BoundedRecoveryFilesystemDiscovery::new(self.parts, maximum_entries, maximum_bytes)
+        self.discovery_incarnations_issued = self
+            .discovery_incarnations_issued
+            .checked_add(1)
+            .ok_or(RecoveryFilesystemQualificationError::InvalidDiscoveryLimit)?;
+        BoundedRecoveryFilesystemDiscovery::new(
+            self.parts,
+            self.discovery_incarnations_issued,
+            maximum_entries,
+            maximum_bytes,
+        )
     }
 
     /// Validates one Store scheduler binding against the admitted backend

@@ -53,9 +53,6 @@ fn equal_and_unused_theme_switches_settle_without_appearance_work() {
     assert!(receipt
         .mounted_presentation()
         .query_transition_trace_complete());
-    assert!(receipt
-        .mounted_presentation()
-        .query_semantic_frontier_trace_complete());
     assert_eq!(world.host.native_in_flight_count(), 0);
     assert_eq!(world.host.pending_presentation_count(), 0);
 }

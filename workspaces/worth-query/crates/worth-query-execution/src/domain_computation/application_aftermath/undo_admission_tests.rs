@@ -151,12 +151,17 @@ fn terminal_and_expired_recovery_map_to_already_consumed_and_stale() {
 fn undo_intent_identity_invariant_across_posting_and_lineage_fanout() {
     let aftermath_digest = CanonicalDigestId::new([0x44; 32]);
     let installed = [0x55; 32];
+    let committed = crate::domain_computation::primary_graph::committed_recoverable_application();
     let mut digests = Vec::new();
     for (postings, lineage) in [(10usize, 1usize), (1000, 100)] {
         let _discarded_fanout = (postings, lineage);
-        let intent =
-            super::WorthQueryUndoIntentIdentity::derive_parts(42, installed, aftermath_digest, 7)
-                .expect("intent");
+        let intent = super::WorthQueryUndoIntentIdentity::derive_parts(
+            committed.committed_product_publication(),
+            installed,
+            aftermath_digest,
+            7,
+        )
+        .expect("intent");
         assert_eq!(intent.work().basis_preparations(), 1);
         assert_eq!(intent.work().digest_derivations(), 1);
         assert_eq!(intent.work().digest_text_materializations(), 0);

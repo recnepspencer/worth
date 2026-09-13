@@ -4,7 +4,8 @@ use worth_relational::facade::identity::{EntityId, PartitionId};
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{
     AspectFieldPatch, CreateIntent, DeleteEntityIntent, DeleteRelationIntent, EntityMutationIntent,
-    EntitySpec, MutationIntent, RelationMutationIntent, RelationSpec, UpdateEntityFieldsIntent,
+    EntityReference, EntitySpec, MutationIntent, RelationMutationIntent, RelationSpec,
+    UpdateEntityFieldsIntent,
 };
 
 use super::world::{values, MixedEffectAxes};
@@ -56,6 +57,28 @@ pub(super) fn observe(
             })
             .collect(),
         retained_bytes,
+    }
+}
+
+pub(super) fn assert_created_partition(
+    prepared: WorthQueryPreparedApplicationProviderAttempt,
+    expected: PartitionId,
+) {
+    for intent in &prepared.effects.batch().intents {
+        match intent {
+            MutationIntent::Create(CreateIntent::Entity(spec)) => {
+                assert_eq!(spec.partition_id, expected);
+            }
+            MutationIntent::Create(CreateIntent::Relation(spec)) => {
+                assert_eq!(spec.partition_id, expected);
+                for endpoint in [&spec.source, &spec.target] {
+                    if let EntityReference::Created(created) = endpoint {
+                        assert_eq!(created.partition_id, expected);
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 }
 

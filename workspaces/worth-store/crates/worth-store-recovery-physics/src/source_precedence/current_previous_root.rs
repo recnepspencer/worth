@@ -1,4 +1,7 @@
-use worth_store_physical_format::BootstrapCatalog;
+use worth_store_physical_format::{
+    store_namespace::StableStoreIdentity, CurrentRootCatalogGeneration,
+    PhysicalRecordFormatDeclaration,
+};
 
 use super::{PhysicalRootSlotObservation, PhysicalRootSourceCandidate};
 
@@ -29,18 +32,42 @@ pub enum PhysicalRootSelectionDenial {
     PreviousFallbackAnchorIdentityMismatch,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PhysicalBootstrapFallbackAnchor {
+    store: StableStoreIdentity,
+    format: PhysicalRecordFormatDeclaration,
+    current_root_generation: CurrentRootCatalogGeneration,
+}
+
+impl PhysicalBootstrapFallbackAnchor {
+    pub const fn from_integrity_projection(
+        store: StableStoreIdentity,
+        format: PhysicalRecordFormatDeclaration,
+        current_root_generation: CurrentRootCatalogGeneration,
+    ) -> Self {
+        Self {
+            store,
+            format,
+            current_root_generation,
+        }
+    }
+}
+
 pub fn select_current_previous_root(
     current: PhysicalRootSlotObservation,
     previous: PhysicalRootSlotObservation,
-    fallback_anchor: Option<BootstrapCatalog>,
+    fallback_anchor: Option<PhysicalBootstrapFallbackAnchor>,
 ) -> Result<SelectedPhysicalRoot, PhysicalRootSelectionDenial> {
     match current {
-        PhysicalRootSlotObservation::Admitted(current) => select_current(current, previous),
-        PhysicalRootSlotObservation::Rejected {
-            selector: Some(_), ..
-        } => Err(PhysicalRootSelectionDenial::CurrentRootRejected),
+        PhysicalRootSlotObservation::Candidate(current) => select_current(current, previous),
+        PhysicalRootSlotObservation::SelectorRejected(
+            super::PhysicalRootSelectorDenial::Conflict,
+        )
+        | PhysicalRootSlotObservation::RootRejected { .. } => {
+            Err(PhysicalRootSelectionDenial::CurrentRootRejected)
+        }
         PhysicalRootSlotObservation::Absent => Err(PhysicalRootSelectionDenial::NoAdmittedRoot),
-        PhysicalRootSlotObservation::Rejected { selector: None, .. } => {
+        PhysicalRootSlotObservation::SelectorRejected(_) => {
             select_previous(previous, fallback_anchor)
         }
     }
@@ -54,7 +81,7 @@ fn select_current(
     let previous_expected_or_observed = current_selector.linked_selector().is_some()
         || !matches!(&previous, PhysicalRootSlotObservation::Absent);
     let retained_previous = match (current_selector.linked_selector(), previous) {
-        (Some(previous_identity), PhysicalRootSlotObservation::Admitted(previous)) => {
+        (Some(previous_identity), PhysicalRootSlotObservation::Candidate(previous)) => {
             let previous_selector = previous.selector();
             let reciprocal = current_selector.linked_root_generation()
                 == Some(previous_selector.root_generation())
@@ -78,9 +105,9 @@ fn select_current(
 
 fn select_previous(
     previous: PhysicalRootSlotObservation,
-    fallback_anchor: Option<BootstrapCatalog>,
+    fallback_anchor: Option<PhysicalBootstrapFallbackAnchor>,
 ) -> Result<SelectedPhysicalRoot, PhysicalRootSelectionDenial> {
-    let PhysicalRootSlotObservation::Admitted(previous) = previous else {
+    let PhysicalRootSlotObservation::Candidate(previous) = previous else {
         return Err(PhysicalRootSelectionDenial::NoAdmittedRoot);
     };
     let selector = previous.selector();
@@ -93,13 +120,13 @@ fn select_previous(
     let Some(anchor) = fallback_anchor else {
         return Err(PhysicalRootSelectionDenial::PreviousFallbackUnanchored);
     };
-    if anchor.store_identity() != selector.store_identity() {
+    if anchor.store != selector.store_identity() {
         return Err(PhysicalRootSelectionDenial::PreviousFallbackAnchorStoreMismatch);
     }
-    if anchor.format() != selector.format() {
+    if anchor.format != selector.format() {
         return Err(PhysicalRootSelectionDenial::PreviousFallbackAnchorFormatMismatch);
     }
-    let anchor_generation = anchor.current_root().generation().get();
+    let anchor_generation = anchor.current_root_generation.get();
     if anchor_generation != linked_generation {
         return Err(PhysicalRootSelectionDenial::PreviousFallbackAnchorGenerationMismatch);
     }
@@ -144,21 +171,27 @@ mod tests {
             ProposedStoreIdentity, StableStoreIdentity, StoreNamespaceIdentityRecord,
             StoreNamespaceVersion,
         },
-        BootstrapCatalog, CurrentRootCatalogEntry, CurrentRootCatalogGeneration,
         DurablePhysicalRootManifest, DurableRootSelector, FreeSpaceBlockReference, FreeSpaceKey,
         PhysicalRecordFormatDeclaration, RecordAllocationClass, RootSelectorIdentity,
         RootSelectorRole,
     };
 
     use super::*;
-    use crate::{admit_physical_root_slot, PhysicalRootSlotObservation};
+    use crate::{
+        observe_structured_physical_root_candidate, PhysicalRootCandidateDenial,
+        PhysicalRootManifestDenial, PhysicalRootSelectorDenial, PhysicalRootSlotObservation,
+    };
 
     #[test]
     fn current_role_wins_even_when_previous_has_the_higher_generation() {
         let current = slot(RootSelectorRole::Current, 20, 2, Some((19, 9)));
         let previous = slot(RootSelectorRole::Previous, 19, 9, Some((20, 2)));
         let selected = select_current_previous_root(current, previous, None).unwrap();
-        assert_eq!(selected.role(), SelectedPhysicalRootRole::Current);
+        assert_eq!(
+            selected.role(),
+            SelectedPhysicalRootRole::Current,
+            "MUTANT_PREDICATE:c8-current-selector-outranks-higher-generation"
+        );
         assert_eq!(selected.selected().manifest().generation(), 2);
         assert_eq!(
             selected
@@ -172,19 +205,34 @@ mod tests {
 
     #[test]
     fn torn_current_uses_only_the_linked_previous_slot() {
-        let mut current_bytes = selector(RootSelectorRole::Current, 20, 2, Some((19, 1))).encode();
-        current_bytes[8] ^= 0xff;
-        let current = admit_physical_root_slot(
-            store(),
-            RootSelectorRole::Current,
-            Some(&current_bytes),
-            None,
-            4,
+        let current =
+            PhysicalRootSlotObservation::SelectorRejected(PhysicalRootSelectorDenial::Integrity);
+        let previous = slot(RootSelectorRole::Previous, 1, 1, Some((2, 2)));
+        let selected = select_current_previous_root(current, previous, Some(catalog(2))).unwrap();
+        assert_eq!(selected.role(), SelectedPhysicalRootRole::PreviousFallback);
+        assert_eq!(selected.selected().manifest().generation(), 1);
+    }
+
+    #[test]
+    fn authority_mismatched_current_preserves_previous_fallback() {
+        let current = PhysicalRootSlotObservation::SelectorRejected(
+            PhysicalRootSelectorDenial::AuthorityMismatch,
         );
         let previous = slot(RootSelectorRole::Previous, 1, 1, Some((2, 2)));
         let selected = select_current_previous_root(current, previous, Some(catalog(2))).unwrap();
         assert_eq!(selected.role(), SelectedPhysicalRootRole::PreviousFallback);
         assert_eq!(selected.selected().manifest().generation(), 1);
+    }
+
+    #[test]
+    fn conflicting_current_blocks_even_with_an_exact_anchored_previous() {
+        let current =
+            PhysicalRootSlotObservation::SelectorRejected(PhysicalRootSelectorDenial::Conflict);
+        let previous = slot(RootSelectorRole::Previous, 1, 1, Some((2, 2)));
+        assert_eq!(
+            select_current_previous_root(current, previous, Some(catalog(2))),
+            Err(PhysicalRootSelectionDenial::CurrentRootRejected)
+        );
     }
 
     #[test]
@@ -199,13 +247,10 @@ mod tests {
     #[test]
     fn valid_current_selector_with_missing_root_never_demotes_to_previous() {
         let current_selector = selector(RootSelectorRole::Current, 20, 2, Some((19, 1)));
-        let current = admit_physical_root_slot(
-            store(),
-            RootSelectorRole::Current,
-            Some(&current_selector.encode()),
-            None,
-            4,
-        );
+        let current = PhysicalRootSlotObservation::RootRejected {
+            denial: PhysicalRootManifestDenial::Integrity,
+            selector: current_selector,
+        };
         let previous = slot(RootSelectorRole::Previous, 19, 1, Some((20, 2)));
         assert_eq!(
             select_current_previous_root(current, previous, None),
@@ -221,6 +266,17 @@ mod tests {
         assert_eq!(selected.role(), SelectedPhysicalRootRole::Current);
         assert!(selected.retained_previous().is_none());
         assert!(selected.previous_rejected());
+    }
+
+    #[test]
+    fn root_generation_mismatch_is_rejected() {
+        let selector = selector(RootSelectorRole::Current, 20, 2, None);
+        let observed = observe_structured_physical_root_candidate(selector, manifest(3), format());
+        assert_eq!(
+            observed.rejection().map(|(denial, _)| denial),
+            Some(PhysicalRootCandidateDenial::RootGenerationMismatch),
+            "MUTANT_PREDICATE:c8-root-generation-binding-ignored"
+        );
     }
 
     #[test]
@@ -242,8 +298,7 @@ mod tests {
     ) -> PhysicalRootSlotObservation {
         let selector = selector(role, identity, generation, linked);
         let format = format();
-        let manifest = manifest(generation).encode(format);
-        admit_physical_root_slot(store(), role, Some(&selector.encode()), Some(&manifest), 4)
+        observe_structured_physical_root_candidate(selector, manifest(generation), format)
     }
 
     fn selector(
@@ -252,8 +307,18 @@ mod tests {
         generation: u64,
         linked: Option<(u64, u64)>,
     ) -> DurableRootSelector {
+        selector_for_store(store(), role, identity, generation, linked)
+    }
+
+    fn selector_for_store(
+        store: StableStoreIdentity,
+        role: RootSelectorRole,
+        identity: u64,
+        generation: u64,
+        linked: Option<(u64, u64)>,
+    ) -> DurableRootSelector {
         DurableRootSelector::new(
-            store(),
+            store,
             format(),
             RootSelectorIdentity::new(identity).unwrap(),
             role,
@@ -277,11 +342,11 @@ mod tests {
         PhysicalRecordFormatDeclaration::builder().admit().unwrap()
     }
 
-    fn catalog(generation: u64) -> BootstrapCatalog {
-        BootstrapCatalog::new(
+    fn catalog(generation: u64) -> PhysicalBootstrapFallbackAnchor {
+        PhysicalBootstrapFallbackAnchor::from_integrity_projection(
             store(),
             format(),
-            CurrentRootCatalogEntry::new(CurrentRootCatalogGeneration::new(generation).unwrap()),
+            CurrentRootCatalogGeneration::new(generation).unwrap(),
         )
     }
 

@@ -1,25 +1,27 @@
 use super::CheckpointReadInterlockDenial;
 use crate::{CheckpointPublicationRoot, CurrentPhysicalRoot};
-use worth_store_recovery_physics::{
-    CheckpointCutoverReceipt, CheckpointPageLsnFrontier, CheckpointValidation,
+use worth_store_physical_format::{CheckpointWalSourceRange, PhysicalCheckpointSource};
+use worth_store_physical_integrity::{
+    VerifiedCheckpointCompactionCutover, VerifiedCheckpointStream,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CheckpointPublicationReadmission {
     checkpoint_root: CheckpointPublicationRoot,
     published_current_root: CurrentPhysicalRoot,
-    cutover_receipt: CheckpointCutoverReceipt,
-    page_lsn_frontier: CheckpointPageLsnFrontier,
-    frontier_bound_to_cutover: bool,
+    checkpoint_source: PhysicalCheckpointSource,
+    compaction_cutover: VerifiedCheckpointCompactionCutover,
+    checkpoint_wal_bound_to_cutover: bool,
 }
 
 impl CheckpointPublicationReadmission {
     pub fn admit(
         checkpoint_root: CheckpointPublicationRoot,
         published_current_root: CurrentPhysicalRoot,
-        validation: &CheckpointValidation,
-        cutover_receipt: CheckpointCutoverReceipt,
+        checkpoint: &VerifiedCheckpointStream,
     ) -> Result<Self, CheckpointReadInterlockDenial> {
+        let checkpoint_source = checkpoint.source();
+        let compaction_cutover = checkpoint.compaction_cutover();
         if checkpoint_root.epoch() != published_current_root.epoch() {
             return Err(
                 CheckpointReadInterlockDenial::CheckpointPublicationRootNotReadmitted {
@@ -30,39 +32,44 @@ impl CheckpointPublicationReadmission {
         }
         if !checkpoint_root
             .checkpoint_identity()
-            .matches_checkpoint_id(validation.checkpoint_id())
+            .matches_physical_checkpoint_identity(checkpoint_source.identity())
         {
             return Err(CheckpointReadInterlockDenial::CheckpointPublicationRootCheckpointMismatch);
         }
-        if cutover_receipt.checkpoint_id() != validation.checkpoint_id() {
-            return Err(CheckpointReadInterlockDenial::CheckpointCutoverReceiptMismatch);
-        }
-        let validation_range = validation.manifest().covered_lsn_range();
-        let receipt_range = cutover_receipt.covered_lsn_range();
-        if receipt_range != validation_range {
+        if compaction_cutover.checkpoint() != checkpoint_source.identity()
+            || compaction_cutover.root() != checkpoint_source.root()
+        {
             return Err(
-                CheckpointReadInterlockDenial::CheckpointCutoverRangeMismatch {
-                    validation_range,
-                    receipt_range,
+                CheckpointReadInterlockDenial::CheckpointPublicationCompactionProductMismatch,
+            );
+        }
+        let checkpoint_range = checkpoint_source.wal();
+        let product_range = compaction_cutover.checkpoint_wal();
+        if product_range != checkpoint_range {
+            return Err(
+                CheckpointReadInterlockDenial::CheckpointPublicationWalRangeMismatch {
+                    checkpoint_range,
+                    product_range,
                 },
             );
         }
-        let page_lsn_frontier = validation.manifest().page_lsn_frontier().clone();
-        for (_, page_lsn) in page_lsn_frontier.pages() {
-            if !receipt_range.contains(page_lsn.lsn()) {
-                return Err(
-                    CheckpointReadInterlockDenial::PageLsnFrontierOutsideCutoverRange {
-                        page_lsn: *page_lsn,
-                    },
-                );
-            }
+        let cutoff_lsn = compaction_cutover.wal_cutoff_lsn_exclusive();
+        if cutoff_lsn < checkpoint_range.admitted_begin_lsn()
+            || cutoff_lsn > checkpoint_range.covered_end_lsn_exclusive()
+        {
+            return Err(
+                CheckpointReadInterlockDenial::CompactionCutoffOutsideCheckpointWalRange {
+                    cutoff_lsn,
+                    checkpoint_range,
+                },
+            );
         }
         Ok(Self {
             checkpoint_root,
             published_current_root,
-            cutover_receipt,
-            page_lsn_frontier,
-            frontier_bound_to_cutover: true,
+            checkpoint_source,
+            compaction_cutover,
+            checkpoint_wal_bound_to_cutover: true,
         })
     }
 
@@ -74,15 +81,19 @@ impl CheckpointPublicationReadmission {
         self.published_current_root
     }
 
-    pub const fn cutover_receipt(&self) -> &CheckpointCutoverReceipt {
-        &self.cutover_receipt
+    pub const fn checkpoint_source(&self) -> PhysicalCheckpointSource {
+        self.checkpoint_source
     }
 
-    pub const fn page_lsn_frontier(&self) -> &CheckpointPageLsnFrontier {
-        &self.page_lsn_frontier
+    pub const fn compaction_cutover(&self) -> VerifiedCheckpointCompactionCutover {
+        self.compaction_cutover
     }
 
-    pub const fn frontier_bound_to_cutover(&self) -> bool {
-        self.frontier_bound_to_cutover
+    pub const fn checkpoint_wal_range(&self) -> CheckpointWalSourceRange {
+        self.checkpoint_source.wal()
+    }
+
+    pub const fn checkpoint_wal_bound_to_cutover(&self) -> bool {
+        self.checkpoint_wal_bound_to_cutover
     }
 }

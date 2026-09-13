@@ -1,5 +1,0 @@
-error[E0599]: no variant or associated item named `GlobalAnything` found for enum `TilingEquivalenceScope` in the current scope
- --> tests/ui/tiling_equivalence/boundaries/global_equivalence_scope_forbidden.rs:4:37
-  |
-4 |     let _ = TilingEquivalenceScope::GlobalAnything;
-  |                                     ^^^^^^^^^^^^^^ variant or associated item not found in `TilingEquivalenceScope`

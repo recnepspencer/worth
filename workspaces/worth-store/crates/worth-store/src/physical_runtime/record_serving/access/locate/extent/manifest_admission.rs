@@ -1,19 +1,23 @@
+use super::super::failure_classification::read_failure;
+use super::super::PhysicalRecordReader;
+use crate::physical_runtime::record_serving::work_semantics::integrity_admission::{
+    admit_extent_manifest as admit_clean_extent_manifest, CleanExtentAdmissionDenial,
+};
+use crate::physical_runtime::record_serving::{
+    residency::record_frame_reader::RecordFrameReader, PhysicalRecordId, RecordReadDenial,
+    RecordReadObservation,
+};
 use worth_store_physical_format::{
     DurableExtentManifest, DurableExtentRecordPlacement, RecordArtifactFile,
     DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
-};
-
-use super::super::failure_classification::read_failure;
-use super::super::PhysicalRecordReader;
-use crate::physical_runtime::record_serving::{
-    residency::record_frame_reader::RecordFrameReader, PhysicalRecordId, RecordReadDenial,
-    RecordReadObservation, StalePhysicalRecordPlacement,
 };
 
 pub(super) struct AdmittedExtentManifest {
     pub(super) artifact: RecordArtifactFile,
     pub(super) manifest: DurableExtentManifest,
     pub(super) artifact_bytes: std::num::NonZeroU64,
+    pub(super) integrity_membership:
+        worth_store_physical_integrity::IntegrityValidatedExtentMembership,
 }
 
 pub(super) struct ExtentManifestAdmission<'admission, 'media> {
@@ -28,7 +32,7 @@ pub(super) struct ExtentManifestAdmission<'admission, 'media> {
 pub(super) fn admit_extent_manifest(
     mut admission: ExtentManifestAdmission<'_, '_>,
 ) -> Result<AdmittedExtentManifest, RecordReadDenial> {
-    let manifest = admission.load_manifest()?;
+    let (manifest, integrity_membership) = admission.load_manifest()?;
     let artifact = RecordArtifactFile::Extent {
         extent: admission.placement.extent().get(),
         generation: admission.placement.extent_generation(),
@@ -38,11 +42,20 @@ pub(super) fn admit_extent_manifest(
         artifact,
         manifest,
         artifact_bytes,
+        integrity_membership,
     })
 }
 
 impl ExtentManifestAdmission<'_, '_> {
-    fn load_manifest(&mut self) -> Result<DurableExtentManifest, RecordReadDenial> {
+    fn load_manifest(
+        &mut self,
+    ) -> Result<
+        (
+            DurableExtentManifest,
+            worth_store_physical_integrity::IntegrityValidatedExtentMembership,
+        ),
+        RecordReadDenial,
+    > {
         let bytes = self
             .artifacts
             .load_bounded(
@@ -67,7 +80,9 @@ impl ExtentManifestAdmission<'_, '_> {
         match self.project_manifest(&bytes) {
             Ok(manifest) => Ok(manifest),
             Err(denial) => {
-                bytes.reject_projection_failure();
+                if !preserves_resident_bytes(denial) {
+                    bytes.reject_projection_failure();
+                }
                 Err(denial)
             }
         }
@@ -75,25 +90,61 @@ impl ExtentManifestAdmission<'_, '_> {
 
     fn project_manifest(
         &mut self,
-        bytes: &[u8],
-    ) -> Result<DurableExtentManifest, RecordReadDenial> {
-        let (manifest, format) =
-            DurableExtentManifest::decode(bytes).map_err(|_| RecordReadDenial::ArtifactDamaged)?;
-        if format != self.reader.format.declaration()
-            || manifest.record() != self.record.persisted()
+        frame: &crate::physical_runtime::record_serving::residency::frame_loading::LoadedPhysicalFrame,
+    ) -> Result<
+        (
+            DurableExtentManifest,
+            worth_store_physical_integrity::IntegrityValidatedExtentMembership,
+        ),
+        RecordReadDenial,
+    > {
+        let admitted = admit_clean_extent_manifest(
+            frame,
+            self.reader.residency.resident_admission_context(),
+            self.reader.store,
+            self.reader.format.declaration(),
+            self.placement,
+        )
+        .map_err(|denial| {
+            if denial == CleanExtentAdmissionDenial::ExtentMembership {
+                self.observation.check_generation(false);
+            }
+            denial.read_denial()
+        })?;
+        let manifest = admitted.manifest;
+        if manifest.record() != self.record.persisted()
             || manifest.logical_bytes() != self.placement.payload_bytes()
         {
             return Err(RecordReadDenial::FormatMismatch);
         }
-        if !self
-            .observation
-            .check_generation(manifest.extent_cell() == self.placement.extent_cell())
-        {
-            return Err(RecordReadDenial::StalePlacement(
-                StalePhysicalRecordPlacement::ExtentMembership,
-            ));
-        }
-        Ok(manifest)
+        self.observation.check_generation(true);
+        Ok((manifest, admitted.membership))
+    }
+}
+
+fn preserves_resident_bytes(denial: RecordReadDenial) -> bool {
+    matches!(
+        denial,
+        RecordReadDenial::ArtifactUnavailable
+            | RecordReadDenial::PhysicalWork(
+                crate::physical_runtime::record_serving::RecordReadWorkDenial::RuntimeReleased
+            )
+            | RecordReadDenial::ResidencyUnavailable(_)
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn proof_unavailability_preserves_extent_manifest_resident_bytes() {
+        assert!(preserves_resident_bytes(
+            CleanExtentAdmissionDenial::Unavailable.read_denial()
+        ));
+        assert!(!preserves_resident_bytes(
+            CleanExtentAdmissionDenial::Damaged.read_denial()
+        ));
     }
 }
 

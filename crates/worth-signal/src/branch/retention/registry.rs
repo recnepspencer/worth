@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 
-use worth_foundational::{FoundationalBranchTargetBasis, FoundationalBranchTargetEncoding};
+use worth_foundational::FoundationalBranchTargetEncoding;
 
-use crate::branch::SignalBranchBasisDescriptor;
 use crate::state::SignalBranchId;
 
 use super::accounting::{
@@ -11,11 +10,24 @@ use super::accounting::{
     SignalRetentionReleaseAccounting, SignalRetentionTerminalAccounting,
     SignalRetentionTerminalCause,
 };
-use super::lease::{SignalBranchAdmissionLease, SignalBranchRetentionLease};
+use super::lease::{SignalBranchAdmissionLease, SignalBranchAdmissionReservation};
 use super::outcome::{
     SignalBranchRetentionAcquisitionDenial, SignalBranchRetentionOwnerPosture,
     SignalBranchRetentionTerminalCounts,
 };
+
+#[path = "registry/admitted_reservations.rs"]
+mod admitted_reservations;
+#[path = "registry/retirement_fence.rs"]
+mod retirement_fence;
+pub(crate) use retirement_fence::{
+    SignalBranchRetirementRetentionCounts, SignalExternalRetentionAcquisition,
+};
+#[cfg(test)]
+#[path = "registry/test_observation.rs"]
+mod test_observation;
+#[cfg(test)]
+pub(crate) use test_observation::SignalRetentionLedgerObservation;
 
 const DEFAULT_MAXIMUM_ACTIVE_SIGNAL_BRANCH_LEASES: usize = 4_096;
 
@@ -78,10 +90,13 @@ struct SignalRetentionLedger {
 
 #[derive(Debug)]
 struct SignalRetentionLedgerState {
+    owner_open: bool,
     next_lease_id: u64,
+    reserved_admitted_lease_count: usize,
     admitted_leases: HashMap<u64, SignalBranchId>,
     external_leases: HashMap<u64, SignalExternalObligationRecord>,
     admitted_count_by_branch: HashMap<SignalBranchId, u32>,
+    reserved_admitted_count_by_branch: HashMap<SignalBranchId, u32>,
     external_count_by_branch: HashMap<SignalBranchId, u32>,
     external_count_by_target: HashMap<SignalRetainedTargetKey, u32>,
 }
@@ -101,10 +116,13 @@ impl SignalBranchRetentionRegistry {
             ledger: Arc::new(SignalRetentionLedger {
                 maximum_active_leases: DEFAULT_MAXIMUM_ACTIVE_SIGNAL_BRANCH_LEASES,
                 state: Mutex::new(SignalRetentionLedgerState {
+                    owner_open: true,
                     next_lease_id: 0,
+                    reserved_admitted_lease_count: 0,
                     admitted_leases: HashMap::new(),
                     external_leases: HashMap::new(),
                     admitted_count_by_branch: HashMap::new(),
+                    reserved_admitted_count_by_branch: HashMap::new(),
                     external_count_by_branch: HashMap::new(),
                     external_count_by_target: HashMap::new(),
                 }),
@@ -124,39 +142,20 @@ impl SignalBranchRetentionRegistry {
         &self,
         branch_id: SignalBranchId,
     ) -> Result<SignalBranchAdmissionLease, SignalBranchRetentionAcquisitionDenial> {
-        let lease_id = self.ledger.admit_lease_identity(branch_id)?;
-        Ok(SignalBranchAdmissionLease::owner_issued(
-            self.binding(),
-            lease_id,
-            branch_id,
-        ))
+        Ok(self.reserve_admitted(branch_id, 1)?.into_one())
     }
 
-    /// Open one external obligation over the exact immutable target the
-    /// supplied descriptor names.
-    ///
-    /// Only owner affinity and bounded owner resources are decided here.
-    /// Branch lifecycle, definition agreement, and continued target
-    /// availability are decided by the runtime operation that owns those
-    /// truths, and currentness is decided by nobody: an exact obligation over
-    /// a historical target is legitimate.
-    pub(crate) fn acquire_external(
+    pub(crate) fn reserve_admitted(
         &self,
-        descriptor: SignalBranchBasisDescriptor,
-    ) -> Result<SignalBranchRetentionLease, SignalBranchRetentionAcquisitionDenial> {
-        let Some(target) = descriptor.observation().target().as_basis() else {
-            return Err(SignalBranchRetentionAcquisitionDenial::ForeignBasis);
-        };
-        if target.graph_instance_id() != self.owner.runtime_instance_id.to_string() {
-            return Err(SignalBranchRetentionAcquisitionDenial::ForeignBasis);
-        }
-        let key = SignalRetainedTargetKey(target.canonical_encoding());
-        let branch_id = descriptor.owner_branch_id();
-        let lease_id = self.ledger.retain_exact_target(branch_id, key)?;
-        Ok(SignalBranchRetentionLease::owner_issued(
-            descriptor,
-            self.binding(),
-            lease_id,
+        branch_id: SignalBranchId,
+        lease_count: usize,
+    ) -> Result<SignalBranchAdmissionReservation, SignalBranchRetentionAcquisitionDenial> {
+        let lease_ids = self
+            .ledger
+            .reserve_admitted_lease_identities(branch_id, lease_count)?;
+        let binding = self.binding();
+        Ok(SignalBranchAdmissionReservation::owner_reserved(
+            binding, lease_ids, branch_id,
         ))
     }
 
@@ -171,13 +170,50 @@ impl SignalBranchRetentionRegistry {
     pub(crate) fn terminal_counts(&self) -> SignalBranchRetentionTerminalCounts {
         self.ledger.terminality.counts()
     }
+
+    pub(crate) fn admitted_or_reserved_count(&self, branch_id: SignalBranchId) -> u32 {
+        let state = self.ledger.lock();
+        obligation_count(&state.admitted_count_by_branch, &branch_id).saturating_add(
+            obligation_count(&state.reserved_admitted_count_by_branch, &branch_id),
+        )
+    }
+
+    pub(crate) fn close_owner(&self) {
+        self.ledger.lock().owner_open = false;
+    }
+}
+
+impl Drop for SignalBranchRetentionRegistry {
+    fn drop(&mut self) {
+        self.close_owner();
+    }
 }
 
 impl SignalBranchRetentionBinding {
+    /// Relate concrete issuing owners without treating lifecycle posture as
+    /// identity. An operation admitted before Closing may still consume its
+    /// exact owner-issued basis while the owner remains alive.
+    pub(crate) fn owner_identity_relationship(
+        &self,
+        owner: &Self,
+    ) -> SignalBranchRetentionOwnerRelationship {
+        let (Some(issuing_owner), Some(observed_owner)) =
+            (self.owner.upgrade(), owner.owner.upgrade())
+        else {
+            return SignalBranchRetentionOwnerRelationship::OwnerLost;
+        };
+        if Arc::ptr_eq(&issuing_owner, &observed_owner) {
+            SignalBranchRetentionOwnerRelationship::SameOwner
+        } else {
+            SignalBranchRetentionOwnerRelationship::DifferentOwner
+        }
+    }
+
     pub(crate) fn owner_posture(&self) -> SignalBranchRetentionOwnerPosture {
-        match self.owner.upgrade() {
-            Some(_) => SignalBranchRetentionOwnerPosture::Live,
-            None => SignalBranchRetentionOwnerPosture::Lost,
+        if self.owner.upgrade().is_some() && self.ledger.lock().owner_open {
+            SignalBranchRetentionOwnerPosture::Live
+        } else {
+            SignalBranchRetentionOwnerPosture::Lost
         }
     }
 
@@ -190,7 +226,16 @@ impl SignalBranchRetentionBinding {
         else {
             return SignalBranchRetentionOwnerRelationship::OwnerLost;
         };
-        if Arc::ptr_eq(&issuing_owner, &observed_owner) {
+        let ledgers_open = if Arc::ptr_eq(&self.ledger, &owner.ledger) {
+            self.ledger.lock().owner_open
+        } else {
+            let issuing_open = self.ledger.lock().owner_open;
+            let observed_open = owner.ledger.lock().owner_open;
+            issuing_open && observed_open
+        };
+        if !ledgers_open {
+            SignalBranchRetentionOwnerRelationship::OwnerLost
+        } else if Arc::ptr_eq(&issuing_owner, &observed_owner) {
             SignalBranchRetentionOwnerRelationship::SameOwner
         } else {
             SignalBranchRetentionOwnerRelationship::DifferentOwner
@@ -219,39 +264,30 @@ impl SignalBranchRetentionBinding {
         SignalBranchRetentionOwnerPosture,
         Option<SignalRetentionReleaseAccounting>,
     ) {
-        let posture = self.owner_posture();
-        let accounting = self.ledger.release_exact_target(lease_id);
+        let (posture, accounting) = self.ledger.terminate_external(lease_id);
         self.ledger
             .terminality
             .record(cause, posture, accounting.is_some());
         (posture, accounting)
     }
-
-    pub(crate) fn release_admitted(&self, lease_id: u64, branch_id: SignalBranchId) {
-        self.ledger.release_admitted(lease_id, branch_id);
-    }
-
-    pub(crate) fn rebind_admitted(
-        &self,
-        lease_id: u64,
-        previous_branch_id: SignalBranchId,
-        branch_id: SignalBranchId,
-    ) {
-        self.ledger
-            .rebind_admitted(lease_id, previous_branch_id, branch_id);
-    }
 }
 
 impl SignalRetentionLedger {
-    fn admit_lease_identity(
+    fn terminate_external(
         &self,
-        branch_id: SignalBranchId,
-    ) -> Result<u64, SignalBranchRetentionAcquisitionDenial> {
+        lease_id: u64,
+    ) -> (
+        SignalBranchRetentionOwnerPosture,
+        Option<SignalRetentionReleaseAccounting>,
+    ) {
         let mut state = self.lock();
-        let lease_id = self.reserve_lease_identity(&mut state)?;
-        increment_obligation_count(&mut state.admitted_count_by_branch, branch_id);
-        state.admitted_leases.insert(lease_id, branch_id);
-        Ok(lease_id)
+        let posture = if state.owner_open {
+            SignalBranchRetentionOwnerPosture::Live
+        } else {
+            SignalBranchRetentionOwnerPosture::Lost
+        };
+        let accounting = Self::release_exact_target_locked(&mut state, lease_id);
+        (posture, accounting)
     }
 
     fn retain_exact_target(
@@ -270,8 +306,10 @@ impl SignalRetentionLedger {
         Ok(lease_id)
     }
 
-    fn release_exact_target(&self, lease_id: u64) -> Option<SignalRetentionReleaseAccounting> {
-        let mut state = self.lock();
+    fn release_exact_target_locked(
+        state: &mut SignalRetentionLedgerState,
+        lease_id: u64,
+    ) -> Option<SignalRetentionReleaseAccounting> {
         let record = state.external_leases.remove(&lease_id)?;
         let remaining_branch_leases =
             decrement_obligation_count(&mut state.external_count_by_branch, &record.branch_id);
@@ -284,33 +322,15 @@ impl SignalRetentionLedger {
         })
     }
 
-    fn release_admitted(&self, lease_id: u64, branch_id: SignalBranchId) {
-        let mut state = self.lock();
-        if state.admitted_leases.remove(&lease_id) == Some(branch_id) {
-            decrement_obligation_count(&mut state.admitted_count_by_branch, &branch_id);
-        }
-    }
-
-    fn rebind_admitted(
-        &self,
-        lease_id: u64,
-        previous_branch_id: SignalBranchId,
-        branch_id: SignalBranchId,
-    ) {
-        let mut state = self.lock();
-        if state.admitted_leases.get(&lease_id) != Some(&previous_branch_id) {
-            return;
-        }
-        state.admitted_leases.insert(lease_id, branch_id);
-        decrement_obligation_count(&mut state.admitted_count_by_branch, &previous_branch_id);
-        increment_obligation_count(&mut state.admitted_count_by_branch, branch_id);
-    }
-
     fn reserve_lease_identity(
         &self,
         state: &mut SignalRetentionLedgerState,
     ) -> Result<u64, SignalBranchRetentionAcquisitionDenial> {
-        if state.admitted_leases.len() + state.external_leases.len() >= self.maximum_active_leases {
+        if state.admitted_leases.len()
+            + state.external_leases.len()
+            + state.reserved_admitted_lease_count
+            >= self.maximum_active_leases
+        {
             return Err(SignalBranchRetentionAcquisitionDenial::CapacityExhausted {
                 maximum_active_leases: self.maximum_active_leases,
             });

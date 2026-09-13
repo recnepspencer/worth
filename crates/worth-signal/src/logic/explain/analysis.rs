@@ -10,9 +10,8 @@ pub(super) fn classify_condition_decision(
     graph: &SignalGraph,
     node: NodeId,
     condition: &EvaluationCondition,
+    dirty_aspects: crate::data::aspect::AspectMask,
 ) -> Option<ConditionDecision> {
-    let entry = graph.get_entry(node).ok()?;
-    let dirty_aspects = entry.get_dirty_aspects();
     let max_delta = max_dependency_delta(graph, node).ok()?;
 
     match condition {
@@ -39,9 +38,11 @@ fn max_dependency_delta(graph: &SignalGraph, node: NodeId) -> Result<u64, Signal
         if !graph.is_alive(snapshot_entry.source) {
             continue;
         }
-        let current_version = graph
-            .get_entry(snapshot_entry.source)?
-            .version_for_scope(snapshot_entry.aspect, snapshot_entry.scope.as_ref());
+        let current_version = graph.node_version_for_scope(
+            snapshot_entry.source,
+            snapshot_entry.aspect,
+            snapshot_entry.scope.as_ref(),
+        )?;
         max_delta = max_delta.max(current_version.abs_diff(snapshot_entry.cached_version));
     }
     Ok(max_delta)

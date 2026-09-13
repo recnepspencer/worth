@@ -123,7 +123,7 @@ impl ReplicationAdmissionRuntime {
     pub fn peer_progress(
         &self,
         peer_id: &ReplicationPeerId,
-    ) -> Option<&worth_store_recovery_physics::DurabilityReplayIdentity> {
+    ) -> Option<&crate::DurabilityReplayIdentity> {
         self.peer_progress
             .get(peer_id)
             .map(|progress| &progress.replay)

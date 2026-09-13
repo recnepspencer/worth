@@ -22,6 +22,8 @@ pub(in crate::physical_runtime) struct RecordServingState {
     pub(in crate::physical_runtime) previous_root: Option<DurablePhysicalRootManifest>,
     pub(in crate::physical_runtime) publication_residue: RecordPublicationResidueObservation,
     pub(in crate::physical_runtime) free_space: DurableFreeSpaceManifestHeader,
+    pub(in crate::physical_runtime) root_protocol_counters:
+        crate::physical_runtime::RootProtocolRouteCounters,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -24,11 +24,11 @@ pub(super) fn resolve_upstream_causes(
         let subscription = dependency.scope_ref().cloned();
         let current_version = if graph.is_alive(dependency.source()) {
             lineage.traversal_cost_mut().note_source_version_lookup();
-            Some(
-                graph
-                    .get_entry(dependency.source())?
-                    .version_for_scope(dependency.aspect(), dependency.scope_ref()),
-            )
+            Some(graph.node_version_for_scope(
+                dependency.source(),
+                dependency.aspect(),
+                dependency.scope_ref(),
+            )?)
         } else {
             None
         };

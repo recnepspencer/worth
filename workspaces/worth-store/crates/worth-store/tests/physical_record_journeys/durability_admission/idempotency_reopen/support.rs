@@ -9,7 +9,6 @@ use worth_store::physical_runtime::{
     PhysicalMutationRequest, PhysicalWalGroupAppendOutcome, PhysicalWalGroupBarrierOutcome,
     PreparedPhysicalMutation, SealedPhysicalDurabilityGroupMembers, ServingPhysicalRuntime,
 };
-use worth_store_physical_format::CheckpointStreamDecoder;
 
 pub(super) fn prepare(
     submission: &worth_store::physical_runtime::certification::CertificationPhysicalRecordSubmission,
@@ -90,21 +89,10 @@ pub(super) struct IndependentCheckpointReopenCounters {
 pub(super) fn inspect_checkpoint_reopen(root: &Path) -> IndependentCheckpointReopenCounters {
     let bytes = fs::read(root.join("families/checkpoint.current")).unwrap();
     let records = checkpoint_records(&bytes);
-    let mut decoder = CheckpointStreamDecoder::begin(records[0]).unwrap();
     let compaction_index = records
         .iter()
         .position(|record| record[9] == 3)
         .expect("checkpoint carries a binding-compaction header");
-    for record in &records[1..compaction_index] {
-        decoder.decode_dirty_basis(record).unwrap();
-    }
-    let mut compaction = decoder
-        .begin_binding_compaction(records[compaction_index])
-        .unwrap();
-    for record in &records[compaction_index + 1..records.len() - 1] {
-        compaction.decode_binding_record(record).unwrap();
-    }
-    compaction.finish(records[records.len() - 1]).unwrap();
     let dirty_bytes = records[1..compaction_index]
         .iter()
         .map(|record| record.len() as u64)
@@ -117,7 +105,7 @@ pub(super) fn inspect_checkpoint_reopen(root: &Path) -> IndependentCheckpointReo
     }
 }
 
-fn checkpoint_records(bytes: &[u8]) -> Vec<&[u8]> {
+pub(super) fn checkpoint_records(bytes: &[u8]) -> Vec<&[u8]> {
     let mut records = Vec::new();
     let mut offset = 0;
     while offset < bytes.len() {
@@ -129,4 +117,22 @@ fn checkpoint_records(bytes: &[u8]) -> Vec<&[u8]> {
         offset = end;
     }
     records
+}
+
+pub(super) fn reseal_record_crc(record: &mut [u8]) {
+    let checksum_offset = record.len() - 4;
+    let checksum = crc32c(&record[..checksum_offset]);
+    record[checksum_offset..].copy_from_slice(&checksum.to_le_bytes());
+}
+
+fn crc32c(bytes: &[u8]) -> u32 {
+    let mut crc = !0_u32;
+    for byte in bytes {
+        crc ^= u32::from(*byte);
+        for _ in 0..8 {
+            let mask = 0_u32.wrapping_sub(crc & 1);
+            crc = (crc >> 1) ^ (0x82f6_3b78 & mask);
+        }
+    }
+    !crc
 }

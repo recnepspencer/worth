@@ -32,7 +32,10 @@ pub struct NamespaceFileHandle<'owner, Access = MutableFileAccess> {
     access: PhantomData<Access>,
 }
 
-#[cfg(feature = "certification-test-authority")]
+#[cfg(all(
+    feature = "certification-test-authority",
+    feature = "recovery-runtime-owner"
+))]
 #[derive(Debug)]
 pub(crate) struct CertificationRetainedMediaFileHandle {
     _file: std::fs::File,
@@ -61,7 +64,10 @@ impl<Access> NamespaceFileHandle<'_, Access> {
     }
 }
 
-#[cfg(feature = "certification-test-authority")]
+#[cfg(all(
+    feature = "certification-test-authority",
+    feature = "recovery-runtime-owner"
+))]
 impl NamespaceFileHandle<'_, ReadOnlyFileAccess> {
     pub(crate) fn retain_for_certification(self) -> CertificationRetainedMediaFileHandle {
         let Self {

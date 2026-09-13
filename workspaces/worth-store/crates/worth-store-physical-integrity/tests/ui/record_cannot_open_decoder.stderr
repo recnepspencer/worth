@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/ui/record_cannot_open_decoder.rs:5:41
+  |
+5 |     let _ = DurableRootSelector::decode(record);
+  |             --------------------------- ^^^^^^ expected `&[u8]`, found `PhysicalIntegrityValidationRecord`
+  |             |
+  |             arguments to this function are incorrect
+  |
+note: associated function defined here
+ --> $WORKSPACE/crates/worth-store-physical-format/src/root_selector.rs
+  |
+  |     pub fn decode(bytes: &[u8]) -> Result<Self, RootSelectorDecodeDenial> {
+  |            ^^^^^^

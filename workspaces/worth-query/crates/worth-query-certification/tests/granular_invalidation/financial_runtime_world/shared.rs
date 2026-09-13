@@ -167,10 +167,7 @@ fn revoked_lease_does_not_disturb_the_survivor() {
 
 fn baseline_and_amend(host: &mut FinancialCourtroomWorld) {
     assert!(matches!(
-        host.application
-            .conditional_clock(&host.curve_clock)
-            .unwrap()
-            .observe(),
+        host.conditional_clock(&host.curve_clock).unwrap().observe(),
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
     ));
     host.amend_curve(2, 4_260, 5_100);
@@ -181,12 +178,7 @@ fn baseline_and_amend(host: &mut FinancialCourtroomWorld) {
 fn observe(
     host: &mut FinancialCourtroomWorld,
 ) -> WorthQueryConditionalClockObservationReceipt<CourtroomClock> {
-    match host
-        .application
-        .conditional_clock(&host.curve_clock)
-        .unwrap()
-        .observe()
-    {
+    match host.conditional_clock(&host.curve_clock).unwrap().observe() {
         WorthQueryConditionalClockObservationOutcome::Accepted(receipt) => receipt,
         _ => panic!("the due financial curve observation was not accepted"),
     }

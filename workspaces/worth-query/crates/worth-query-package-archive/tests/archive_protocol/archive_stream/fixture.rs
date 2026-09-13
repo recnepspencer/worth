@@ -1,6 +1,7 @@
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
     ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    StringApplicationValueBinding,
 };
 use worth_query_installation::facade::{
     WorthQueryPortableApplicationConditionalOperationBinding,
@@ -16,19 +17,24 @@ struct CompleteInput;
 worth_query_declaration::worth_query_portable_type!(
     CompleteInput => "worth.query.archive.stream.input"
 );
-worth_query_declaration::worth_query_entity!(CompleteEntity in CompleteSchema);
+worth_query_declaration::worth_query_entity!(CompleteEntity for CompleteSchema);
 worth_query_declaration::worth_query_aspect!(
-    Profile in CompleteSchema, CompleteEntity;
+    Profile for CompleteSchema, CompleteEntity;
     identity = AspectIdentity(0x9162_1300),
     revision = AspectContractRevision(1),
 );
 worth_query_declaration::worth_query_field!(
-    Name in CompleteSchema, CompleteEntity, Profile: String, read_only, equality
+    Name for CompleteSchema, CompleteEntity, Profile:
+    String => StringApplicationValueBinding, read_only, equality
+);
+worth_query_declaration::worth_query_structured_value_binding!(
+    CompleteInputBinding for CompleteInput {
+        identity: "worth.query.archive.stream.input"
+    }
 );
 
-impl ApplicationOperationMarkerIdentity for CompleteOperation {
-    type Schema = CompleteSchema;
-    type Input = CompleteInput;
+impl ApplicationOperationMarkerIdentity<CompleteSchema> for CompleteOperation {
+    type InputBinding = CompleteInputBinding;
     const IDENTIFIER: &'static str = "ArchiveStreamOperation";
 }
 

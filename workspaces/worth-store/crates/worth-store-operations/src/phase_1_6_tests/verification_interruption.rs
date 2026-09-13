@@ -3,7 +3,7 @@ use super::support::*;
 #[test]
 fn backup_verification_honors_cancellation_before_reopening_bundle_media() {
     let scenario = BackupScenario::new("cancel-backup-verification");
-    let authority = crate::backup::export::current_authority("s10-cancel-backup-verification");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let completion = OnlineBackupIntent::new(
         OperationalOperationId::new("backup-cancel-verification").expect("operation"),

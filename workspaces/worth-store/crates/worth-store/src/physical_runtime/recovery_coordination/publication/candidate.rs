@@ -18,6 +18,9 @@ pub struct PhysicalRecoveryPublicationCandidate {
 pub enum PhysicalRecoveryPublicationCandidateMaterialization {
     Created(PerformedRecoveryPhysicalEffect<RecoveryPublicationCandidateMaterializationAction>),
     AlreadyMaterialized(CompletedRecoveryStagingWrite),
+    CompletedFromExactPrefix(
+        PerformedRecoveryPhysicalEffect<RecoveryPublicationCandidateMaterializationAction>,
+    ),
 }
 
 pub struct CompletedPhysicalRecoveryPublicationCandidate {
@@ -76,12 +79,14 @@ impl CompletedPhysicalRecoveryPublicationCandidate {
 impl PhysicalRecoveryPublicationCandidateMaterialization {
     pub fn physical(&self) -> &CompletedRecoveryStagingWrite {
         match self {
-            Self::Created(performed) => match performed.occurrence() {
+            Self::Created(performed) | Self::CompletedFromExactPrefix(performed) => {
+                match performed.occurrence() {
                 super::super::RecoveryPhysicalEffectOccurrence::PublicationCandidateMaterialization(
                     occurrence,
                 ) => occurrence.physical(),
                 _ => unreachable!("publication-candidate evidence has its exact action"),
-            },
+                }
+            }
             Self::AlreadyMaterialized(physical) => physical,
         }
     }

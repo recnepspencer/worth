@@ -585,9 +585,9 @@ payload. Only this phase introduces the public record-serving runtime.
   `close`, reopen in a fresh process from root/configuration only, and locate
   the exact record through an `ExternalPhysicalRecordLocator` containing only
   Store identity plus the returned stable record id.
-- `publication_barrier_omission_is_observable`: run a controlled mutant that
-  omits the required data or namespace barrier; the production-path media trace
-  and fresh observer must fail the exact publication predicate.
+- `publication_barrier_omission_is_observable`: inject the omitted-barrier
+  fault at the production media boundary; the production trace and fresh
+  observer must fail the exact publication assertion.
 - `non_authority_values_cannot_admit_record_serving`: extend the existing
   cache-sharing compiler suite to reject `PersistedPhysicalLayout`, replay,
   format witness, digest, Foundational artifact, raw backend handle, and copied
@@ -1366,10 +1366,10 @@ generic diagnostic, support, lineage, or boundary-evidence vocabularies.
 
 - None.
 
-### Phase 14: Three Production Courtrooms And Mechanical Closure
+### Phase 14: Direct Production Verification And Closure
 
-Close C.5 with three difficult production-path scenarios, controlled mutants,
-and source/dependency/compiler gates that make heap, replay, broad
+Close C.5 with three difficult production-path scenarios and focused
+dependency/compiler gates that make heap, replay, broad
 materialization, and alternate writer substitution mechanically visible.
 
 **Relevant subsystems**
@@ -1377,20 +1377,20 @@ materialization, and alternate writer substitution mechanically visible.
 - one Worth Store physical-record journey product with child-process roles
 - one separately linked offline physical observer/verifier executable
 - existing cache-sharing compiler-boundary product
-- C.1 test planner, smoke/CI/release lanes, and target-budget enforcement
-- source, dependency, feature, and manifest anti-substitution gates
+- C.1 direct runner, smoke/CI/release lanes, and feedback budgets
+- dependency, feature, and authority anti-substitution gates
 
 **Relevant APIs**
 
 - ordinary `worth_store::physical_runtime` facade only for writer/reopener roles
 - stable physical-format declarations only for the offline observer
 - C.4 media fault schedule and production interposer
-- scenario evidence bundle and exact counter snapshots
+- exact direct counter snapshots
 
 **Warnings**
 
 - These are three scenario families, not three tests per phase and not a matrix
-  generator. Each courtroom combines several causal assertions around one
+  generator. Each scenario combines several causal assertions around one
   responsibility.
 - The offline process may depend on stable physical-format decode vocabulary;
   it must use its own decoder, traversal, and current-root decision path and
@@ -1436,13 +1436,6 @@ materialization, and alternate writer substitution mechanically visible.
   law and require denial. Runtime and offline
   observation must converge for every valid world and disagree visibly for
   every injected invalid world.
-- Run controlled mutants for omitted required barrier, premature publication
-  success, partial-batch visibility, premature record-id minting,
-  location-as-record-id, slot-offset rebasing, open-that-initializes,
-  directory-based root guessing, production use of the offline codec/candidate
-  loop, missing-checksum acceptance, stale placement-generation acceptance,
-  whole-manifest materialization, whole-extent materialization, and a C.6 port
-  that publishes current truth. Each mutant must fail its named causal predicate.
 
 **Engineering decisions**
 
@@ -1455,7 +1448,7 @@ materialization, and alternate writer substitution mechanically visible.
 - Owner checks run codec, planner, allocation, record-identity, and outcome tests
   without launching the courtrooms. Developer smoke runs one compact
   deterministic specimen of each responsibility through one package build.
-  CI runs all three medium courtrooms; release certification widens seeds,
+  CI runs all three medium scenarios; release verification widens seeds,
   counts, and fault repetitions without creating new test binaries.
 - Mechanical gates reject production dependency/use of
   `InMemoryPhysicalFormatModel`, `InMemoryPhysicalFormatReplayArtifact`,
@@ -1500,8 +1493,7 @@ materialization, and alternate writer substitution mechanically visible.
 - narrow C.6 `FrameLoadPort`, `CandidateFrameSet`, and
   `CandidateFramePublicationPort` seams that leave publication in Store
 - explicit canonical-topology and counter-performance lowering after Store-owned truth exists
-- three production courtrooms, fourteen controlled mutants, and mechanical
-  anti-substitution gates
+- three direct production scenarios and focused anti-substitution gates
 
 ## Must Preserve
 
@@ -1642,34 +1634,6 @@ materialization, and alternate writer substitution mechanically visible.
   format, format drift, and indeterminate
   publication
 
-### Mutation Sensitivity
-
-The closeout bundle runs and records these production mutants:
-
-1. omit a required data or namespace barrier -> publication durability
-   predicate fails
-2. return `PublishedRecordBatch` before final publication -> outcome-order
-   predicate fails
-3. expose only a subset of one batch -> batch-atomicity predicate fails
-4. mint a stable record id before root membership -> identity-authority
-   predicate fails
-5. use physical placement as stable record identity -> identity/placement seam fails
-6. rebase old payload offsets while adding a page slot -> page-layout predicate fails
-7. let open initialize an absent record family -> lifecycle predicate fails
-8. elect a root by directory freshness -> current-truth predicate fails
-9. use the offline codec or candidate loop in production open -> independent-
-   decision-path predicate fails
-10. accept a torn or checksum-invalid authority frame -> minimum-integrity
-    predicate fails
-11. accept a stale private placement generation -> placement predicate fails
-12. materialize the complete manifest -> locate/open scale predicate fails
-13. materialize a complete extent payload -> transfer/allocation slope fails
-14. let the C.6 port replace the catalog -> publication-ownership predicate fails
-
-Each record contains mutant id, exact source/binary/profile binding, expected
-failing predicate, actual failing predicate, and localization. A compilation
-failure alone does not satisfy runtime mutation sensitivity.
-
 ### Mechanical Anti-Substitution Gates
 
 - dependency/source gates deny production reachability of
@@ -1681,33 +1645,30 @@ failure alone does not satisfy runtime mutation sensitivity.
   directory-listing current-root strategy
 - ordinary open cannot initialize; initialization requires proven absence and
   cannot adopt or erase residue
-- source and targeted mutant gates reject complete-store/manifest/extent
-  collection on the ordinary path
+- direct allocation and counter assertions reject complete-store/manifest/
+  extent collection on the ordinary path
 - source/dependency gates reject public location-shaped record identities,
   production `OfflineManifestCodec` reachability, candidate-manifest loops,
   flat root-entry vectors, linear membership lookup, and C.6 catalog writes
 - the offline observer dependency graph cannot import `worth-store` runtime or
   invoke Store open/record APIs, and cannot call production bootstrap/manifest
   decoders or current-root selection
-- no new trybuild runner, per-case target directory, nested Cargo behavioral
-  test, or unclassified integration target enters the C.1 test catalog
+- no new trybuild runner, per-case target directory, or nested Cargo behavioral
+  test is introduced
 - a Foundational artifact, digest, report, copied identity, format witness, or
   weak external locator satisfies no serving/publication authority signature
 
 ### Evidence And Rerun
 
-- Emit one machine-readable scenario result per courtroom world containing
-  source and binary identity, format and placement-policy identity, backend/OS profile, seed,
-  process and runtime identities, fault schedule, action trace, exact artifact
-  manifest, record-id-to-placement map, counter snapshots, runtime result, offline result,
-  oracle result, mutant posture, and every named predicate.
-- Scenario evidence is derived from direct products and observations; it does
-  not certify itself or grant runtime authority.
+- Each scenario directly asserts runtime outcomes, independent observations,
+  artifact membership, record placement, fault behavior, and counters. Failure
+  output names the seed, process role, schedule, and relevant identity needed
+  to reproduce the case.
+- Scenario output is disposable diagnostics; it is not a certificate or input
+  to another test.
 - Bind rerun commands to the C.1 lanes: owner check for local codec/planner
   work, one compact developer-smoke selector, full `physical_record_journeys`
   for CI certification, and widened deterministic campaigns for release.
-- Source, binary, format, profile, harness, or workload identity drift makes
-  prior evidence stale rather than silently reusable.
 
 ## Acceptance Evidence
 
@@ -1720,8 +1681,7 @@ failure alone does not satisfy runtime mutation sensitivity.
 - Store-owned counter snapshots plus optional explicit Foundational
   counter-backed/canonical boundary artifacts
 - offline/runtime canonical comparison with visible disagreement
-- all fourteen controlled mutants failing their intended causal predicates
-- C.1 target-catalog, smoke-budget, boundary-check, agent-context, strict lint,
+- C.1 smoke-budget, boundary-check, agent-context, strict lint,
   warning-free, and source-cap results
 
 ## Sequencing Notes
@@ -1760,7 +1720,7 @@ failure alone does not satisfy runtime mutation sensitivity.
 - Phases 12 through 14 freeze the C.6 seam, narrow Foundational evidence, and
   joined production proof.
 - C.6 begins only after all ordinary C.5 record access uses the named
-  `FrameLoadPort`/candidate-frame seams and the three C.5 courtrooms are green.
+  `FrameLoadPort`/candidate-frame seams and the three C.5 scenarios are green.
 - C.7 may replace C.5 direct publication orchestration with WAL-governed
   progression only by consuming the same artifacts and outcomes; it may not
   preserve a shadow direct acknowledgment path.

@@ -87,6 +87,8 @@ pub(in crate::physical_runtime) struct RecordPublicationFoundation {
     pub(in crate::physical_runtime) residue: RecordPublicationResidueObservation,
     pub(in crate::physical_runtime) frame_ports: RecordFramePorts,
     pub(in crate::physical_runtime) generation: crate::physical_runtime::LifecycleGeneration,
+    pub(in crate::physical_runtime) lifecycle:
+        Arc<crate::physical_runtime::lifecycle::LifecycleState>,
 }
 
 struct RecordPreparationState {
@@ -122,6 +124,7 @@ impl RecordPublicationDirector {
                 foundation.frame_ports,
                 CanonicalFrameReadSource::new(planning_read),
                 writeback,
+                foundation.lifecycle,
             ),
             mutation,
             generation: foundation.generation,
@@ -185,11 +188,18 @@ impl RecordPublicationDirector {
         self.root_owner.snapshot()
     }
 
+    pub(in crate::physical_runtime) fn pause_mutation_at(
+        &self,
+        checkpoint: crate::physical_runtime::durability::PhysicalMutationCheckpoint,
+    ) -> crate::physical_runtime::durability::PhysicalMutationPauseGate {
+        self.mutations.pause_at(checkpoint)
+    }
+
     #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn pause_mutation_at_for_certification(
         &self,
         checkpoint: crate::physical_runtime::durability::CertificationPhysicalMutationCheckpoint,
     ) -> crate::physical_runtime::durability::CertificationPhysicalMutationPauseGate {
-        self.mutations.pause_at_for_certification(checkpoint)
+        self.mutations.pause_at(checkpoint)
     }
 }

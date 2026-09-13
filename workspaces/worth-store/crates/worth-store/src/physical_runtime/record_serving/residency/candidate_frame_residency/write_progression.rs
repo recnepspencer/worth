@@ -33,7 +33,7 @@ impl CandidateFrameEffectFailure for super::super::super::CanonicalRecordMutatio
 }
 
 impl StoreCandidateFramePublicationSession<'_> {
-    pub(in crate::physical_runtime::record_serving::residency) fn write_frame<EffectFailure>(
+    pub(in crate::physical_runtime::record_serving) fn write_frame<EffectFailure>(
         &mut self,
         frame: CandidateFrame,
         store_write: &mut dyn FnMut(&[u8]) -> Result<CandidateFramePhysicalWrite, EffectFailure>,
@@ -45,9 +45,7 @@ impl StoreCandidateFramePublicationSession<'_> {
             .map_err(RecoverableCandidateFrameWriteFailure::into_cause)
     }
 
-    pub(in crate::physical_runtime::record_serving::residency) fn write_frame_recoverable<
-        EffectFailure,
-    >(
+    pub(in crate::physical_runtime::record_serving) fn write_frame_recoverable<EffectFailure>(
         &mut self,
         frame: CandidateFrame,
         store_write: &mut dyn FnMut(&[u8]) -> Result<CandidateFramePhysicalWrite, EffectFailure>,

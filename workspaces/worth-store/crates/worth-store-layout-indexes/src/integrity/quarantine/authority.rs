@@ -1,4 +1,4 @@
-use worth_store_physical_integrity::{DamageClassification, QuarantineRecord};
+use super::super::readmission::RecoveryLayoutReadmissionClass;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::integrity) enum LayoutQuarantineAuthorityClass {
@@ -7,16 +7,15 @@ pub(in crate::integrity) enum LayoutQuarantineAuthorityClass {
 }
 
 pub(in crate::integrity) fn classify_quarantine_authority(
-    record: &QuarantineRecord,
+    class: RecoveryLayoutReadmissionClass,
 ) -> LayoutQuarantineAuthorityClass {
-    match record.damage_classification() {
-        DamageClassification::RebuildableDerivedDamage(_) => {
+    match class {
+        RecoveryLayoutReadmissionClass::RebuildableDerivedObservation => {
             LayoutQuarantineAuthorityClass::DerivedProjectionDamage
         }
-        DamageClassification::IntactPhysicalBoundary(_)
-        | DamageClassification::QuarantinedPhysicalDamage(_)
-        | DamageClassification::UnrecoverableAuthorityDamage(_)
-        | DamageClassification::IndeterminatePhysicalDamage(_) => {
+        RecoveryLayoutReadmissionClass::QuarantineRecovery
+        | RecoveryLayoutReadmissionClass::ImportBoundaryReadmission
+        | RecoveryLayoutReadmissionClass::NoForegroundAuthority => {
             LayoutQuarantineAuthorityClass::AuthoritativeQuarantineRequired
         }
     }

@@ -16,6 +16,7 @@ pub struct PhysicalRecoveryLimitDeclaration {
     pub distinct_pages_and_extents: u64,
     pub operation_bindings: u64,
     pub staging_bytes: u64,
+    pub recovery_memory_bytes: u64,
     pub dirty_frames: u64,
     pub concurrent_commands: u64,
     pub publication_effects: u64,
@@ -63,7 +64,7 @@ impl PhysicalRecoveryLimits {
 }
 
 impl PhysicalRecoveryLimitDeclaration {
-    const fn values(self) -> [u64; 18] {
+    const fn values(self) -> [u64; 19] {
         [
             self.selector_candidates,
             self.checkpoint_candidates,
@@ -77,6 +78,7 @@ impl PhysicalRecoveryLimitDeclaration {
             self.distinct_pages_and_extents,
             self.operation_bindings,
             self.staging_bytes,
+            self.recovery_memory_bytes,
             self.dirty_frames,
             self.concurrent_commands,
             self.publication_effects,
@@ -87,7 +89,7 @@ impl PhysicalRecoveryLimitDeclaration {
     }
 }
 
-fn limit_identity(values: [u64; 18]) -> [u8; 32] {
+fn limit_identity(values: [u64; 19]) -> [u8; 32] {
     let mut digest = Sha256::new();
     for value in values {
         digest.update(value.to_le_bytes());
@@ -95,7 +97,7 @@ fn limit_identity(values: [u64; 18]) -> [u8; 32] {
     digest.finalize().into()
 }
 
-const LIMIT_DIMENSIONS: [&str; 18] = [
+const LIMIT_DIMENSIONS: [&str; 19] = [
     "selector-candidates",
     "checkpoint-candidates",
     "manifest-bytes",
@@ -108,6 +110,7 @@ const LIMIT_DIMENSIONS: [&str; 18] = [
     "distinct-pages-and-extents",
     "operation-bindings",
     "staging-bytes",
+    "recovery-memory-bytes",
     "dirty-frames",
     "concurrent-commands",
     "publication-effects",
@@ -137,7 +140,7 @@ mod tests {
 
     #[test]
     fn each_dimension_must_be_finite_and_nonzero() {
-        let baseline = [1; 18];
+        let baseline = [1; 19];
         for index in 0..baseline.len() {
             let mut values = baseline;
             values[index] = 0;
@@ -153,7 +156,7 @@ mod tests {
         }
     }
 
-    fn declaration(values: [u64; 18]) -> PhysicalRecoveryLimitDeclaration {
+    fn declaration(values: [u64; 19]) -> PhysicalRecoveryLimitDeclaration {
         PhysicalRecoveryLimitDeclaration {
             selector_candidates: values[0],
             checkpoint_candidates: values[1],
@@ -167,12 +170,13 @@ mod tests {
             distinct_pages_and_extents: values[9],
             operation_bindings: values[10],
             staging_bytes: values[11],
-            dirty_frames: values[12],
-            concurrent_commands: values[13],
-            publication_effects: values[14],
-            cleanup_candidates: values[15],
-            cleanup_bytes: values[16],
-            observation_bytes: values[17],
+            recovery_memory_bytes: values[12],
+            dirty_frames: values[13],
+            concurrent_commands: values[14],
+            publication_effects: values[15],
+            cleanup_candidates: values[16],
+            cleanup_bytes: values[17],
+            observation_bytes: values[18],
         }
     }
 }

@@ -241,6 +241,8 @@ impl PoolInner {
                 } else {
                     FrameArtifactPosture::Fragment
                 },
+                resident_generation: None,
+                integrity_validation: None,
             },
         );
         state
@@ -285,12 +287,17 @@ impl PoolInner {
         let generation = state
             .advance_dirty_generation()
             .map_err(|denial| Self::deny(&mut state, denial))?;
+        let resident_generation = state
+            .advance_resident_generation()
+            .map_err(|denial| Self::deny(&mut state, denial))?;
         let entry = state
             .frames
             .get_mut(&key.coordinate)
             .expect("validated candidate remains reserved");
         entry.state = FrameState::Resident(Arc::clone(&bytes));
         entry.dirty_generation = Some(generation);
+        entry.resident_generation = Some(resident_generation);
+        entry.invalidate_integrity_validation();
         state.loading_frames -= 1;
         state.accounting.finish_loading();
         self.changed.notify_all();
@@ -299,6 +306,7 @@ impl PoolInner {
                 owner: Arc::clone(self),
                 key,
                 bytes,
+                resident_generation,
             }),
         })
     }

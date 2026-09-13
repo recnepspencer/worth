@@ -85,14 +85,17 @@ fn evaluate_custom_registration(
     >,
     prepared_scope: &crate::validation::data::PreparedCustomInvariantScope,
 ) -> RegisteredInvariantEvaluation {
+    let work = prepared_execution.work_meter();
     let context = CustomInvariantExecutionContext::new(
         runtime,
         packet.observation,
         packet.version_id,
         packet.current_version_id,
         prepared_scope,
+        work.clone(),
+        std::sync::Arc::new(registration.access_contract().clone()),
     );
-    let verdicts = match prepared_execution.evaluate(&context) {
+    let mut verdicts = match prepared_execution.evaluate(&context) {
         crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
             crate::validation::data::CustomInvariantVerdict::Pass,
         ) => vec![InvariantVerdict::Pass],
@@ -106,7 +109,10 @@ fn evaluate_custom_registration(
                     "custom invariant '{}' reported a structural violation",
                     registration.rule_id().as_str()
                 ),
-                fields: crate::validation::data::InvariantViolationFields::None,
+                fields:
+                    crate::validation::data::InvariantViolationFields::CustomInvariantViolation {
+                        identity: registration.descriptor().identity.clone(),
+                    },
             },
         )],
         crate::validation::data::PreparedCustomInvariantExecutionOutcome::Failure(failure) => {
@@ -123,11 +129,28 @@ fn evaluate_custom_registration(
             )]
         }
     };
+    let custom_provenance = context.provenance();
+    if work.exceeded() {
+        verdicts = vec![InvariantVerdict::Violation(
+            crate::validation::data::InvariantViolation {
+                class: registration.execution_point().class(),
+                code: crate::diagnostics::data::DiagnosticCode::InvariantViolation,
+                detail: format!(
+                    "custom invariant '{}' exceeded its installed work budget",
+                    registration.rule_id().as_str(),
+                ),
+                fields:
+                    crate::validation::data::InvariantViolationFields::CustomInvariantViolation {
+                        identity: registration.descriptor().identity.clone(),
+                    },
+            },
+        )];
+    }
     RegisteredInvariantEvaluation {
         reported_rule: InvariantReportedRule::Custom(registration.descriptor().identity.clone()),
         groups: registration.groups(),
         cost: registration.cost_class(),
-        custom_provenance: Some(context.provenance()),
+        custom_provenance: Some(custom_provenance),
         verdicts,
     }
 }

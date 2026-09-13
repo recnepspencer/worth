@@ -1,5 +1,3 @@
-use worth_store_physical_integrity::PreDecodePhysicalDenialKind;
-
 use super::damage_case::BlobDamageCase;
 use crate::corruption::types::{BlobCorruptionDetectionSource, BlobCorruptionPlacementClass};
 
@@ -37,27 +35,6 @@ pub(crate) const fn classify_streaming_read_damage_from_checksum_match(
     }
 }
 
-pub(crate) const fn map_pre_decode_denial_kind(
-    kind: PreDecodePhysicalDenialKind,
-) -> BlobDamageCase {
-    match kind {
-        PreDecodePhysicalDenialKind::ChecksumMismatch
-        | PreDecodePhysicalDenialKind::UnsupportedChecksumAlgorithm => {
-            BlobDamageCase::ChecksumMismatch
-        }
-        PreDecodePhysicalDenialKind::AuthenticityRequiredPhysicalDenial
-        | PreDecodePhysicalDenialKind::AuthenticityResultPhysicalIdentityMismatch => {
-            BlobDamageCase::AuthenticityFailure
-        }
-        PreDecodePhysicalDenialKind::StaleGeneration => BlobDamageCase::StaleGeneration,
-        PreDecodePhysicalDenialKind::EntryWitnessMismatch
-        | PreDecodePhysicalDenialKind::TruncatedPhysicalPage
-        | PreDecodePhysicalDenialKind::TruncatedPhysicalFrame
-        | PreDecodePhysicalDenialKind::PhysicalHeaderDenied
-        | PreDecodePhysicalDenialKind::PoisonedPhysicalInput => BlobDamageCase::MissingChunk,
-    }
-}
-
 pub(crate) const fn classify_localization_eligibility_from_frontier_match(
     generation_matches_frontier: bool,
     ordinal_in_frontier: bool,
@@ -78,33 +55,5 @@ pub(crate) const fn damage_case_for_localization_denial(
         LocalizationEligibilityCase::GenerationFrontierMismatch => BlobDamageCase::StaleGeneration,
         LocalizationEligibilityCase::OrdinalNotInFrontier => BlobDamageCase::MissingChunk,
         LocalizationEligibilityCase::FrontierMatched => BlobDamageCase::ChecksumMismatch,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use worth_store_physical_integrity::PreDecodePhysicalDenialKind;
-
-    #[test]
-    fn pre_decode_denial_kind_maps_to_distinct_blob_damage_cases() {
-        assert_eq!(
-            map_pre_decode_denial_kind(PreDecodePhysicalDenialKind::ChecksumMismatch),
-            BlobDamageCase::ChecksumMismatch
-        );
-        assert_eq!(
-            map_pre_decode_denial_kind(
-                PreDecodePhysicalDenialKind::AuthenticityRequiredPhysicalDenial
-            ),
-            BlobDamageCase::AuthenticityFailure
-        );
-        assert_eq!(
-            map_pre_decode_denial_kind(PreDecodePhysicalDenialKind::StaleGeneration),
-            BlobDamageCase::StaleGeneration
-        );
-        assert_eq!(
-            map_pre_decode_denial_kind(PreDecodePhysicalDenialKind::TruncatedPhysicalPage),
-            BlobDamageCase::MissingChunk
-        );
     }
 }

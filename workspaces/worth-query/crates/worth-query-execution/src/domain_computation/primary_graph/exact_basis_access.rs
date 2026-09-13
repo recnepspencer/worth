@@ -1,12 +1,23 @@
 use worth_relational::facade::{
-    branch::RelationalBranchBasisDenial,
-    history::{BranchId, RelationalCommitReceipt},
+    branch::AdmittedRelationalBranchBasis,
     runtime::RelationalRuntime,
     snapshots::{RelationalSnapshotAdmissionDenial, SnapshotHandle},
 };
+#[cfg(test)]
+use worth_relational::facade::{branch::RelationalBranchBasisDenial, history::BranchId};
+
+pub(crate) fn open_exact_basis_snapshot(
+    runtime: &mut RelationalRuntime,
+    basis: &AdmittedRelationalBranchBasis,
+) -> Result<SnapshotHandle, RelationalSnapshotAdmissionDenial> {
+    runtime
+        .snapshots()
+        .snapshot_for_observation(&basis.observation())
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WorthQueryExactBasisSnapshotDenial {
+    #[cfg(test)]
     BranchIdentityUnavailable,
     BranchObservationUnavailable,
     RetentionCapacityExhausted,
@@ -21,6 +32,7 @@ pub(crate) enum WorthQueryExactBasisSnapshotDenial {
     SnapshotIdentityExhausted,
 }
 
+#[cfg(test)]
 fn observation_denial(denial: RelationalBranchBasisDenial) -> WorthQueryExactBasisSnapshotDenial {
     match denial {
         RelationalBranchBasisDenial::RetentionCapacityExhausted => {
@@ -58,6 +70,7 @@ impl From<RelationalSnapshotAdmissionDenial> for WorthQueryExactBasisSnapshotDen
 /// Opens an ephemeral snapshot from the Relational owner's exact current
 /// branch observation. The descriptive branch name never selects storage on
 /// its own.
+#[cfg(test)]
 pub(crate) fn open_current_branch_snapshot(
     runtime: &mut RelationalRuntime,
     branch: &BranchId,
@@ -72,48 +85,4 @@ pub(crate) fn open_current_branch_snapshot(
         .snapshots()
         .snapshot_for_observation(&basis.observation())
         .map_err(Into::into)
-}
-
-pub(crate) fn open_current_main_snapshot(
-    runtime: &mut RelationalRuntime,
-) -> Result<SnapshotHandle, WorthQueryExactBasisSnapshotDenial> {
-    let identity = runtime.main_branch_identity();
-    let (_, basis) = runtime
-        .observe_branch(&identity)
-        .map_err(observation_denial)?;
-    runtime
-        .snapshots()
-        .snapshot_for_observation(&basis.observation())
-        .map_err(Into::into)
-}
-
-/// Reads the current canonical head only through an owner-admitted repeatable
-/// observation.
-pub(crate) fn current_branch_head(
-    runtime: &RelationalRuntime,
-    branch: &BranchId,
-) -> Result<Option<RelationalCommitReceipt>, WorthQueryExactBasisSnapshotDenial> {
-    let basis = current_branch_basis(runtime, branch)?;
-    runtime
-        .history()
-        .branch_head_for_observation(&basis.observation())
-        .map_err(|_| WorthQueryExactBasisSnapshotDenial::BranchObservationUnavailable)
-}
-
-/// Carries the owner-admitted immutable root when downstream work must use
-/// more than the descriptive head receipt.
-pub(crate) fn current_branch_basis(
-    runtime: &RelationalRuntime,
-    branch: &BranchId,
-) -> Result<
-    worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    WorthQueryExactBasisSnapshotDenial,
-> {
-    let identity = runtime
-        .branch_identity(branch)
-        .map_err(|_| WorthQueryExactBasisSnapshotDenial::BranchIdentityUnavailable)?;
-    let (_, basis) = runtime
-        .observe_branch(&identity)
-        .map_err(observation_denial)?;
-    Ok(basis)
 }

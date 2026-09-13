@@ -25,19 +25,20 @@ worth-store-offline-verifier.workspace = true
 worth-store-operations = { workspace = true, features = ["certification-test-authority"] }
 worth-store-physical-backend = { workspace = true, features = ["certification-test-authority"] }
 worth-store-physical-format = { workspace = true, features = ["certification-test-authority"] }
-worth-store-physical-integrity.workspace = true
 worth-store-physical-isolation = { workspace = true, features = ["certification-authority"] }
 worth-store-reclaim-policy = { workspace = true, features = ["certification-test-authority"] }
 worth-store-readiness.workspace = true
-worth-store-recovery-physics = { workspace = true, features = ["certification-test-authority"] }
+worth-store-recovery-physics.workspace = true
 worth-store-recovery-runtime.workspace = true
 worth-store-replication.workspace = true
 worth-store-security = { workspace = true, features = ["certification-test-authority"] }
 worth-store-tiering = { workspace = true, features = ["certification-test-authority"] }
 
 [dev-dependencies]
+serde_json = "1"
 tempfile = "3"
 worth-store-formal-models.workspace = true
+worth-store-physical-integrity.workspace = true
 worth-store-test-support = { workspace = true, features = ["certification-world"] }
 
 [features]

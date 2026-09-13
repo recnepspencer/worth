@@ -5,7 +5,11 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use super::measurement_capture::{PerfCaseContract, PerfCaseSummary, PerfTimingPolicy};
+use super::measurement_capture::{PerfCaseContract, PerfCaseSummary};
+use super::measurement_protocol::PerfTimingPolicy;
+use super::regression_budgets::{
+    ALLOCATION, MEDIAN_ONLY, PHASE, STRICT_MAX, STRICT_MEDIAN, STRICT_P95,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct PerfBaselineFile {
@@ -25,6 +29,11 @@ struct PerfEnvironmentFingerprint {
 }
 
 pub(super) fn certify_against_baseline(contract: PerfCaseContract<'_>, summary: &PerfCaseSummary) {
+    if super::measurement_output::capture_requested() {
+        // Explicit capture is measurement-only. The runner compares only after
+        // every profile and its workload assertions have completed successfully.
+        return;
+    }
     let key = baseline_case_key(&summary.suite, &summary.profile, &summary.executor);
     let mut baseline = load_baseline_file();
     if update_perf_baseline() {
@@ -39,6 +48,7 @@ pub(super) fn certify_against_baseline(contract: PerfCaseContract<'_>, summary: 
         .cases
         .get(&key)
         .unwrap_or_else(|| panic!("missing perf baseline case for {key}"));
+    assert_frozen_sample_count(&key, summary.sample_count, expected.sample_count);
 
     if baseline.environment.as_ref() == Some(&current_environment_fingerprint()) {
         match contract.timing_policy {
@@ -47,19 +57,19 @@ pub(super) fn certify_against_baseline(contract: PerfCaseContract<'_>, summary: 
                     "elapsed median",
                     summary.elapsed_micros.median,
                     expected.elapsed_micros.median,
-                    1.20,
+                    STRICT_MEDIAN,
                 );
                 assert_perf_regression_budget(
                     "elapsed p95",
                     summary.elapsed_micros.p95,
                     expected.elapsed_micros.p95,
-                    1.25,
+                    STRICT_P95,
                 );
                 assert_perf_regression_budget(
                     "elapsed max",
                     summary.elapsed_micros.max,
                     expected.elapsed_micros.max,
-                    1.35,
+                    STRICT_MAX,
                 );
             }
             PerfTimingPolicy::MedianOnly => {
@@ -67,7 +77,7 @@ pub(super) fn certify_against_baseline(contract: PerfCaseContract<'_>, summary: 
                     "elapsed median",
                     summary.elapsed_micros.median,
                     expected.elapsed_micros.median,
-                    1.35,
+                    MEDIAN_ONLY,
                 );
             }
             PerfTimingPolicy::StructuralOnly => {}
@@ -93,25 +103,40 @@ pub(super) fn certify_against_baseline(contract: PerfCaseContract<'_>, summary: 
         "allocated bytes median",
         summary.allocated_bytes.median,
         expected.allocated_bytes.median,
-        1.10,
+        ALLOCATION,
     );
     assert_perf_regression_budget(
         "allocated bytes max",
         summary.allocated_bytes.max,
         expected.allocated_bytes.max,
-        1.10,
+        ALLOCATION,
+    );
+    if let (Some(observed), Some(expected)) = (summary.allocation_calls, expected.allocation_calls)
+    {
+        assert_perf_regression_budget(
+            "allocation calls median",
+            observed.median,
+            expected.median,
+            ALLOCATION,
+        );
+        assert_perf_regression_budget(
+            "allocation calls max",
+            observed.max,
+            expected.max,
+            ALLOCATION,
+        );
+    }
+    assert_perf_regression_budget(
+        "end live bytes median",
+        summary.end_live_bytes.median,
+        expected.end_live_bytes.median,
+        ALLOCATION,
     );
     assert_perf_regression_budget(
-        "peak live bytes median",
-        summary.peak_live_bytes.median,
-        expected.peak_live_bytes.median,
-        1.10,
-    );
-    assert_perf_regression_budget(
-        "peak live bytes max",
-        summary.peak_live_bytes.max,
-        expected.peak_live_bytes.max,
-        1.10,
+        "end live bytes max",
+        summary.end_live_bytes.max,
+        expected.end_live_bytes.max,
+        ALLOCATION,
     );
 
     for (counter, observed) in &summary.access_counters {
@@ -142,10 +167,44 @@ pub(super) fn certify_against_baseline(contract: PerfCaseContract<'_>, summary: 
                 &format!("phase metric {phase_metric} median"),
                 observed.median,
                 expected.median,
-                1.25,
+                PHASE,
             );
         }
     }
+
+    for scoped_metric in contract.scoped_allocation_metrics {
+        let observed = summary
+            .scoped_allocation_metrics
+            .get(*scoped_metric)
+            .unwrap_or_else(|| {
+                panic!("missing observed scoped allocation {scoped_metric} for {key}")
+            });
+        let expected = expected
+            .scoped_allocation_metrics
+            .get(*scoped_metric)
+            .unwrap_or_else(|| {
+                panic!("missing baseline scoped allocation {scoped_metric} for {key}")
+            });
+        assert_perf_regression_budget(
+            &format!("scoped allocation {scoped_metric} median"),
+            observed.median,
+            expected.median,
+            ALLOCATION,
+        );
+        assert_perf_regression_budget(
+            &format!("scoped allocation {scoped_metric} max"),
+            observed.max,
+            expected.max,
+            ALLOCATION,
+        );
+    }
+}
+
+fn assert_frozen_sample_count(key: &str, observed: usize, expected: usize) {
+    assert_eq!(
+        observed, expected,
+        "sample count changed for {key}; stale golden evidence cannot certify the frozen protocol"
+    );
 }
 
 fn assert_perf_regression_budget(label: &str, observed: u128, expected: u128, tolerance: f64) {
@@ -211,5 +270,80 @@ fn current_environment_fingerprint() -> PerfEnvironmentFingerprint {
         profile: env::var("PROFILE").unwrap_or_else(|_| "unknown".to_string()),
         toolchain: env::var("RUSTUP_TOOLCHAIN").ok(),
         processor_identifier: env::var("PROCESSOR_IDENTIFIER").ok(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::{json, Value};
+
+    use super::PerfCaseSummary;
+
+    #[test]
+    fn stale_sample_count_cannot_certify_the_frozen_protocol() {
+        assert!(std::panic::catch_unwind(|| {
+            super::assert_frozen_sample_count("chain|balanced|serial", 21, 7)
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn old_peak_key_is_decode_only_alias_for_end_live() {
+        let checked = super::load_baseline_file();
+        let checked_case = checked.cases.values().next().expect("checked perf case");
+        assert!(checked_case.end_live_bytes.max > 0);
+
+        let legacy = decode_summary(summary_json("peak_live_bytes", 41));
+        assert_eq!(legacy.end_live_bytes.median, 42);
+        assert_honest_encoding(&legacy, 42);
+
+        let honest = decode_summary(summary_json("end_live_bytes", 81));
+        assert_eq!(honest.end_live_bytes.median, 82);
+        assert_honest_encoding(&honest, 82);
+
+        let mut ambiguous = summary_json("end_live_bytes", 81);
+        ambiguous["peak_live_bytes"] = numeric_summary(41);
+        assert!(serde_json::from_value::<PerfCaseSummary>(ambiguous).is_err());
+    }
+
+    fn decode_summary(value: Value) -> PerfCaseSummary {
+        serde_json::from_value(value).expect("valid performance summary")
+    }
+
+    fn assert_honest_encoding(summary: &PerfCaseSummary, expected_median: u128) {
+        let encoded = serde_json::to_value(summary).unwrap();
+        assert_eq!(
+            encoded["end_live_bytes"]["median"].as_u64(),
+            Some(expected_median as u64)
+        );
+        assert!(encoded.get("peak_live_bytes").is_none());
+        assert!(encoded.get("legacy_end_live_bytes").is_none());
+    }
+
+    fn summary_json(end_live_key: &str, start: u128) -> Value {
+        let mut summary = json!({
+            "suite": "directional_contract",
+            "profile": "balanced",
+            "executor": "serial",
+            "sample_count": 5,
+            "elapsed_micros": numeric_summary(1),
+            "allocation_calls": numeric_summary(11),
+            "allocated_bytes": numeric_summary(21),
+            "access_counters": {},
+            "phase_metrics": {},
+            "scoped_allocation_metrics": {},
+        });
+        summary[end_live_key] = numeric_summary(start);
+        summary
+    }
+
+    fn numeric_summary(start: u128) -> Value {
+        json!({
+            "min": start,
+            "median": start + 1,
+            "p95": start + 2,
+            "p99": start + 3,
+            "max": start + 4,
+        })
     }
 }

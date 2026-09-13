@@ -2,7 +2,7 @@
 pub struct CheckpointReadInterlockCounters {
     root_epoch_checks: u64,
     manifest_epoch_checks: u64,
-    page_lsn_frontier_checks: u64,
+    checkpoint_wal_range_checks: u64,
     readmission_checks: u64,
     publication_swaps: u64,
     copied_report_denials: u64,
@@ -11,11 +11,11 @@ pub struct CheckpointReadInterlockCounters {
 }
 
 impl CheckpointReadInterlockCounters {
-    pub(crate) const fn admitted(frontier_pages: u64) -> Self {
+    pub(crate) const fn admitted() -> Self {
         Self {
             root_epoch_checks: 1,
             manifest_epoch_checks: 1,
-            page_lsn_frontier_checks: frontier_pages,
+            checkpoint_wal_range_checks: 1,
             readmission_checks: 1,
             publication_swaps: 1,
             copied_report_denials: 0,
@@ -47,8 +47,8 @@ impl CheckpointReadInterlockCounters {
         self.manifest_epoch_checks
     }
 
-    pub const fn page_lsn_frontier_checks(self) -> u64 {
-        self.page_lsn_frontier_checks
+    pub const fn checkpoint_wal_range_checks(self) -> u64 {
+        self.checkpoint_wal_range_checks
     }
 
     pub const fn readmission_checks(self) -> u64 {

@@ -5,9 +5,9 @@ use super::super::super::fixture::{
 };
 use super::super::capability_progression::time;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
-    WorthQueryElevationCloseOutcome, WorthQueryElevationClosureKind,
-    WorthQueryOperationAuthorizationDenialKind,
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
+    WorthQueryApplicationCommitOutcome, WorthQueryElevationCloseOutcome,
+    WorthQueryElevationClosureKind, WorthQueryOperationAuthorizationDenialKind,
 };
 
 #[test]
@@ -117,13 +117,20 @@ fn exact_relation_set_drift_stales_close_and_returns_approved_authority() {
     let program = super::terminal_lifecycle_support::materialize_close(&world, &request, approved);
     super::mutation::add_self_approver(&world, "elevation-2", requester);
 
-    let WorthQueryElevationCloseOutcome::Stale(stale, approved) = world
+    let outcome = world
         .application
-        .compare_and_commit_elevation_close(program, idempotency(175, 175))
-    else {
-        panic!("duplicate approver state must stale the retained whole-relation proof");
+        .compare_and_commit_elevation_close(program, idempotency(175, 175));
+    let WorthQueryElevationCloseOutcome::Denied(denial, approved) = outcome else {
+        panic!("the close bound to the prior product must deny before effects: {outcome:?}");
     };
-    assert_eq!(stale.stale_fact_count(), 1);
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
     assert_eq!(approved.requester(), requester);
 }
 

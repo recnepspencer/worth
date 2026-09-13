@@ -7,6 +7,7 @@ mod installation;
 #[path = "world/scenario.rs"]
 mod scenario;
 
+use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryOperationAuthorizationDenial, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode,
@@ -31,6 +32,7 @@ type InstalledBinding = WorthQueryInstalledPrincipalBinding<
     ExternalMapping,
     Principal,
     u64,
+    U64ApplicationValueBinding,
 >;
 
 pub(super) struct InstalledWorld {
@@ -43,11 +45,15 @@ pub(crate) fn real_denial(scenario: CompositionScenario) -> WorthQueryOperationA
     let request = authentication::request_scope();
     let external =
         authentication::authenticate_external(world.runtime.installed_schema(), &request);
-    let principal = world
+    let selected = world
         .runtime
+        .on_branch(world.runtime.current_world())
+        .select()
+        .expect("the published product branch must remain admitted");
+    let principal = selected
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -61,8 +67,7 @@ pub(crate) fn real_denial(scenario: CompositionScenario) -> WorthQueryOperationA
         )
         .unwrap();
 
-    world
-        .runtime
+    selected
         .admit_capability_access(&principal, &capability, PublicationInput, &request)
         .err()
         .unwrap_or_else(|| panic!("{scenario:?} must deny at real capability admission"))

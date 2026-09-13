@@ -23,6 +23,7 @@ pub use entities::*;
 pub use fields::*;
 pub use policies::*;
 pub use relations::*;
+pub use values::*;
 
 use worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder;
 

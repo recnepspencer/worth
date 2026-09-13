@@ -18,12 +18,8 @@ mod checkpoint_retained_wal_tail;
 mod checkpoint_wal_reclamation;
 #[path = "durability_admission/closeout_handoff.rs"]
 mod closeout_handoff;
-#[path = "durability_admission/closeout_source_identity.rs"]
-mod closeout_source_identity;
 #[path = "durability_admission/data_durability.rs"]
 mod data_durability;
-#[path = "durability_admission/durability_documentation.rs"]
-mod durability_documentation;
 #[path = "durability_admission/group_commit.rs"]
 mod group_commit;
 #[path = "durability_admission/idempotency_reopen.rs"]
@@ -34,20 +30,16 @@ mod independent_wal_oracle;
 mod managed_mutation;
 #[path = "durability_admission/mutation_preparation.rs"]
 mod mutation_preparation;
-#[path = "durability_admission/source_shape.rs"]
-mod source_shape;
+#[path = "durability_admission/stream_failure.rs"]
+mod stream_failure;
 #[path = "durability_admission/wal_append.rs"]
 mod wal_append;
 #[path = "durability_admission/wal_attempt_binding_inspection.rs"]
 mod wal_attempt_binding_inspection;
 #[path = "durability_admission/wal_barrier.rs"]
 mod wal_barrier;
-#[path = "durability_admission/wal_documentation.rs"]
-mod wal_documentation;
 #[path = "durability_admission/wal_group_continuation.rs"]
 mod wal_group_continuation;
-#[path = "durability_admission/wal_ownership_shape.rs"]
-mod wal_ownership_shape;
 #[path = "durability_admission/wal_preparation_authority.rs"]
 mod wal_preparation_authority;
 #[path = "durability_admission/wal_reopen.rs"]

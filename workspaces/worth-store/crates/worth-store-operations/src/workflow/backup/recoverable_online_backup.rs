@@ -109,7 +109,6 @@ impl RecoverableOnlineBackup {
         };
         let source_verification = match worth_store_offline_verifier::verify_backup_cut_sources(
             cut.manifest(),
-            cut.coordinates().root_generation(),
             inspection_budget,
         ) {
             Ok(report) => report,

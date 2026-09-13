@@ -31,6 +31,13 @@ impl PhysicalRecoveryOpenRequest {
     }
 
     pub fn admit(self) -> Result<AdmittedPhysicalRecovery, PhysicalRecoveryRefusal> {
-        admit_request(self)
+        admit_request(self, None)
+    }
+
+    pub(crate) fn admit_with_process_yieldpoint(
+        self,
+        yieldpoint: worth_store::physical_runtime::PhysicalRecoveryProcessYieldpoint,
+    ) -> Result<AdmittedPhysicalRecovery, PhysicalRecoveryRefusal> {
+        admit_request(self, Some(yieldpoint))
     }
 }

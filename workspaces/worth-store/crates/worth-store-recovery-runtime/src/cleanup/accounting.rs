@@ -1,7 +1,8 @@
 use worth_store::physical_runtime::{
     PhysicalRecoveryCleanupFreshnessReadDenialKind, PhysicalRecoveryCleanupRemovalDenialKind,
-    RecoveryCleanupArtifactRevalidationDenial, RecoveryCleanupArtifactRevalidationProgress,
-    StoreRecoveryCleanupFreshnessFailure, StoreRecoveryCleanupFreshnessSample,
+    PhysicalRecoveryCleanupRemovalIndeterminate, RecoveryCleanupArtifactRevalidationDenial,
+    RecoveryCleanupArtifactRevalidationProgress, StoreRecoveryCleanupFreshnessFailure,
+    StoreRecoveryCleanupFreshnessSample,
 };
 
 use crate::handoff::{
@@ -98,6 +99,9 @@ impl RecoveryCleanupAccounting {
             | PhysicalRecoveryCleanupFreshnessReadDenialKind::InvalidSelector => {
                 self.record_freshness_scheduler(true, false, false, true);
             }
+            PhysicalRecoveryCleanupFreshnessReadDenialKind::Yieldpoint(_) => {
+                self.record_freshness_scheduler(true, false, true, false);
+            }
         }
     }
 
@@ -166,7 +170,11 @@ impl RecoveryCleanupAccounting {
             RecoveryCleanupDeferralEvidence::IndeterminateEffect { evidence, .. } => {
                 self.counters.actions_attempted += 1;
                 self.counters.indeterminate_effects += 1;
-                self.record_removal_scheduler(true, false, false, true);
+                let interrupted = matches!(
+                    evidence,
+                    PhysicalRecoveryCleanupRemovalIndeterminate::Yieldpoint { .. }
+                );
+                self.record_removal_scheduler(true, false, interrupted, !interrupted);
                 self.record_revalidation(evidence.revalidation(), None);
             }
             RecoveryCleanupDeferralEvidence::PublishedGenerationChanged { .. }

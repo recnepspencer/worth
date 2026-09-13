@@ -80,7 +80,7 @@ fn retained_call_cannot_replace_the_current_sealed_step() {
 
     for _ in 0..2 {
         workspace
-            .observe_operating_world()
+            .observe_operating_world(workspace.current_world())
             .unwrap()
             .family(ReadFamily)
             .bind(&installed, FederatedRead)

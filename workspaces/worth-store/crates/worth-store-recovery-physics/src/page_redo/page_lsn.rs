@@ -1,4 +1,4 @@
-use crate::{LogSequenceNumber, WalLsnRange};
+use worth_store_wal::{LogSequenceNumber, WalLsnRange};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PageLsn {

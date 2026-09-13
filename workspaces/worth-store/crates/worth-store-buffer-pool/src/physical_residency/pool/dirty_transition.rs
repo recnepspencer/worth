@@ -23,11 +23,14 @@ impl PoolInner {
         key: PhysicalFrameKey,
         expected: &Arc<Vec<u8>>,
         replacement: Arc<Vec<u8>>,
-    ) -> Result<(), PhysicalResidencyDenial> {
+    ) -> Result<PhysicalResidentFrameGeneration, PhysicalResidencyDenial> {
         let mut state = self.lock();
         validate_clean_frame(&mut state, key, expected)?;
         let generation = state
             .advance_dirty_generation()
+            .map_err(|denial| Self::deny(&mut state, denial))?;
+        let resident_generation = state
+            .advance_resident_generation()
             .map_err(|denial| Self::deny(&mut state, denial))?;
         let entry = state
             .frames
@@ -39,8 +42,10 @@ impl PoolInner {
         entry.allocation_scope = scope;
         entry.dirty = true;
         entry.dirty_generation = Some(generation);
+        entry.resident_generation = Some(resident_generation);
+        entry.invalidate_integrity_validation();
         state.accounting.mark_dirty(!was_candidate);
-        Ok(())
+        Ok(resident_generation)
     }
 
     pub(crate) fn release_dirty_replacement(

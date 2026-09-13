@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::ServingPhysicalRuntime;
@@ -15,7 +13,6 @@ pub(super) struct ScenarioProcessEvidence {
     media_owner_identity: Option<String>,
     mutation_attempt_identity: Option<String>,
     backend_profile_identity: Option<String>,
-    binary_identity: String,
 }
 
 impl ScenarioProcessEvidence {
@@ -30,11 +27,10 @@ impl ScenarioProcessEvidence {
             media_owner_identity: Some(hex(&mutation.owner().bytes())),
             mutation_attempt_identity: Some(hex(&mutation.attempt().bytes())),
             backend_profile_identity: Some(profile_identity(media.backend_profile())),
-            binary_identity: current_binary_identity(),
         }
     }
 
-    pub(super) fn offline_process(stdout: &str, binary: &Path) -> Self {
+    pub(super) fn offline_process(stdout: &str) -> Self {
         let process_id = stdout
             .lines()
             .find_map(|line| line.strip_prefix("C5_OFFLINE_PROCESS "))
@@ -49,7 +45,6 @@ impl ScenarioProcessEvidence {
             media_owner_identity: None,
             mutation_attempt_identity: None,
             backend_profile_identity: None,
-            binary_identity: binary_identity(binary),
         }
     }
 
@@ -62,8 +57,8 @@ impl ScenarioProcessEvidence {
             .unwrap_or_else(|| panic!("child process did not emit evidence for role `{role}`"))
     }
 
-    pub(super) fn binary_identity(&self) -> &str {
-        &self.binary_identity
+    pub(super) const fn process_id(&self) -> u32 {
+        self.process_id
     }
 }
 
@@ -73,17 +68,6 @@ pub(super) fn emit_process(role: &str, runtime: &ServingPhysicalRuntime) {
         "{PROCESS_PREFIX}{}",
         serde_json::to_string(&evidence).unwrap()
     );
-}
-
-pub(super) fn binary_identity(path: &Path) -> String {
-    hex(&Sha256::digest(std::fs::read(path).unwrap()))
-}
-
-pub(super) fn current_binary_identity() -> String {
-    static IDENTITY: std::sync::OnceLock<String> = std::sync::OnceLock::new();
-    IDENTITY
-        .get_or_init(|| binary_identity(&std::env::current_exe().unwrap()))
-        .clone()
 }
 
 fn profile_identity(profile: &worth_store_physical_backend::FilesystemBackendProfile) -> String {

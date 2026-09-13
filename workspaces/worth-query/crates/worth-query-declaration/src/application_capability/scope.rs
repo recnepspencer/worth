@@ -1,6 +1,6 @@
 use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef, TypedApplicationValue,
-    WritePosture,
+    ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationRelationRef, DeclaredApplicationFieldValue, WritePosture,
 };
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
@@ -32,7 +32,7 @@ impl ApplicationCapabilityFieldBinding {
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -40,7 +40,7 @@ impl ApplicationCapabilityFieldBinding {
             entity: field.entity().to_string(),
             aspect: field.aspect().to_string(),
             field: field.field().to_string(),
-            scalar_family: Value::SCALAR_FAMILY,
+            scalar_family: field.scalar_family(),
             value_type: field.value_type_name().to_string(),
         }
     }
@@ -75,10 +75,10 @@ pub struct ApplicationCapabilityValueBinding {
 impl ApplicationCapabilityValueBinding {
     pub fn new<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>(
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        value: Value,
+        value: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -143,7 +143,7 @@ impl ApplicationCapabilityFieldDimension {
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {

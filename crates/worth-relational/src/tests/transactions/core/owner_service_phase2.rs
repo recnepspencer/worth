@@ -1,6 +1,9 @@
-use std::sync::{Arc, Barrier};
+use std::sync::{mpsc, Arc, Barrier};
+use std::time::Duration;
 
 use crate::tests::support::*;
+
+const CLOSE_START_ACK_TIMEOUT: Duration = Duration::from_secs(1);
 
 #[test]
 fn phase2_ports_are_cloneable_sendable_and_shared_borrow_services() {
@@ -143,6 +146,49 @@ fn paused_fork_does_not_block_an_unrelated_fork() {
         .join()
         .expect("paused fork worker joins")
         .expect("branch A fork completes after release");
+}
+
+#[test]
+fn fork_basis_return_holds_owner_admission_across_post_install_close_boundary() {
+    let runtime = runtime_with_test_schema();
+    create_entity(&runtime, "post-install-close-anchor");
+    let port = runtime.fork_port();
+    let (_, source) = port
+        .observe_fork_source(&BranchId("main".to_owned()))
+        .expect("fork source observes before the controlled boundary");
+    let reached = Arc::new(Barrier::new(2));
+    let release = Arc::new(Barrier::new(2));
+    let worker_port = port.clone();
+    let worker_reached = Arc::clone(&reached);
+    let worker_release = Arc::clone(&release);
+    let worker = std::thread::spawn(move || {
+        worker_port.fork_branch_with_post_install_test_pause(
+            BranchId("post-install-close-target".to_owned()),
+            source,
+            &worker_reached,
+            &worker_release,
+        )
+    });
+
+    reached.wait();
+    let (close_started_tx, close_started_rx) = mpsc::channel();
+    runtime
+        .owner_binding()
+        .install_test_close_start_ack(close_started_tx);
+    let closer = std::thread::spawn(move || {
+        drop(runtime);
+    });
+    close_started_rx
+        .recv_timeout(CLOSE_START_ACK_TIMEOUT)
+        .expect("close acknowledges lifecycle admission before the fork is released");
+    release.wait();
+
+    let (outcome, basis) = worker
+        .join()
+        .expect("fork worker does not panic")
+        .expect("the admitted basis returns across the post-install boundary");
+    assert_eq!(basis.identity(), outcome.target_identity());
+    closer.join().expect("owner close worker does not panic");
 }
 
 #[test]

@@ -1,10 +1,9 @@
 use crate::{
-    admit_physical_counter_evidence, CertifiedPhysicalScenario, ExecutedTranscriptParts,
-    GeneratedCoverageMatrix, HarnessCoverageStage, ObservedPhysicalTrace, PhysicalCoverageRegistry,
+    admit_physical_counter_evidence, ExecutedTranscriptParts, ObservedPhysicalTrace,
     PhysicalExecutedCounterEvidence, PhysicalFaultEvent, PhysicalInterleavingSchedule,
-    PhysicalIsolationInterleavingOracle, PhysicalIsolationMutationEvidence,
-    PhysicalProofOracleVerdict, PhysicalSimulationPlan, PhysicalSimulationTranscript,
-    ProductionBackedPhysicalFixture, ReusablePhysicalOracleFamily, SimulationReplayBundle,
+    PhysicalIsolationInterleavingOracle, PhysicalProofOracleVerdict, PhysicalSimulationPlan,
+    PhysicalSimulationTranscript, ProductionBackedPhysicalFixture, ReusablePhysicalOracleFamily,
+    SimulationReplayBundle,
 };
 
 pub fn assemble_physical_isolation_replay_bundle(
@@ -35,35 +34,6 @@ pub fn assemble_physical_isolation_replay_bundle(
     let transcript = PhysicalSimulationTranscript::from_executed_parts(parts).unwrap();
     crate::DetachedSimulationReplayParts::from_transcript(&transcript)
         .admit_replay_bundle()
-        .unwrap()
-}
-
-pub fn physical_isolation_coverage_matrix(
-    scenario: &CertifiedPhysicalScenario,
-    plan: &PhysicalSimulationPlan,
-    replay: &SimulationReplayBundle,
-    mutation: &PhysicalIsolationMutationEvidence,
-) -> GeneratedCoverageMatrix {
-    PhysicalCoverageRegistry::for_sequence(HarnessCoverageStage::SimulationAdmission)
-        .register_scenario(scenario)
-        .unwrap()
-        .register_plan(plan)
-        .unwrap()
-        .register_schedule(replay.schedule())
-        .unwrap()
-        .register_actor_set()
-        .unwrap()
-        .register_driver_contracts(plan.driver_contracts())
-        .unwrap()
-        .register_oracle_verdicts(replay.oracle_verdicts())
-        .unwrap()
-        .register_counter_receipt(replay.counter_receipt())
-        .unwrap()
-        .register_transcript(replay)
-        .unwrap()
-        .register_mutation_result(mutation.physical())
-        .unwrap()
-        .generate_matrix()
         .unwrap()
 }
 

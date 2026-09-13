@@ -17,6 +17,15 @@ impl BridgeConditionalProviderSemantics for Trigger {
     fn semantic_contract(&self) -> Self::SemanticContract {
         self.0
     }
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        crate::facade::BridgeConditionalProviderHeapRetention,
+        crate::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(crate::facade::BridgeConditionalProviderHeapRetention::none())
+    }
 }
 
 impl BridgeConditionalTriggerProvider for Trigger {
@@ -31,6 +40,15 @@ impl BridgeConditionalProviderSemantics for Decision {
     type SemanticContract = worth_signal::facade::InstalledSignalConditionDecision;
     fn semantic_contract(&self) -> Self::SemanticContract {
         self.0
+    }
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        crate::facade::BridgeConditionalProviderHeapRetention,
+        crate::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(crate::facade::BridgeConditionalProviderHeapRetention::none())
     }
 }
 
@@ -59,6 +77,15 @@ impl BridgeConditionalProviderSemantics for Comparator {
     fn semantic_contract(&self) -> Self::SemanticContract {
         self.0
     }
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        crate::facade::BridgeConditionalProviderHeapRetention,
+        crate::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(crate::facade::BridgeConditionalProviderHeapRetention::none())
+    }
 }
 
 struct AlternateCompute(u64);
@@ -67,6 +94,15 @@ impl BridgeConditionalProviderSemantics for AlternateCompute {
     type SemanticContract = u64;
     fn semantic_contract(&self) -> Self::SemanticContract {
         self.0
+    }
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        crate::facade::BridgeConditionalProviderHeapRetention,
+        crate::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(crate::facade::BridgeConditionalProviderHeapRetention::none())
     }
 }
 

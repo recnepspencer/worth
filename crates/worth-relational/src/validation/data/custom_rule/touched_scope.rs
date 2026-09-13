@@ -11,6 +11,7 @@ use crate::identity::data::{EntityId, PartitionId, RelationId};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TouchedStructuralSet {
+    direct_visible_entity_ids: Arc<[EntityId]>,
     visible_entity_ids: Arc<[EntityId]>,
     visible_relation_ids: Arc<[RelationId]>,
     touched_partitions: Arc<[PartitionId]>,
@@ -23,6 +24,7 @@ pub struct TouchedStructuralSet {
 
 impl TouchedStructuralSet {
     pub(crate) fn new(
+        direct_visible_entity_ids: Arc<[EntityId]>,
         visible_entity_ids: Arc<[EntityId]>,
         visible_relation_ids: Arc<[RelationId]>,
         touched_partitions: Arc<[PartitionId]>,
@@ -33,6 +35,7 @@ impl TouchedStructuralSet {
         planned_relation_endpoint_updates: Arc<[PlannedRelationEndpointUpdate]>,
     ) -> Self {
         Self {
+            direct_visible_entity_ids,
             visible_entity_ids,
             visible_relation_ids,
             touched_partitions,
@@ -42,6 +45,13 @@ impl TouchedStructuralSet {
             planned_relation_deletes,
             planned_relation_endpoint_updates,
         }
+    }
+
+    /// Entities directly named by the mutation, including both old and new
+    /// endpoints of changed relations. Adjacency-only traversal neighbors are
+    /// excluded.
+    pub fn direct_visible_entity_ids(&self) -> &[EntityId] {
+        &self.direct_visible_entity_ids
     }
 
     pub fn visible_entity_ids(&self) -> &[EntityId] {

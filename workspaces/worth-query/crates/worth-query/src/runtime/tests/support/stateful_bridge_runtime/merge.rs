@@ -8,22 +8,19 @@ pub(super) fn capture_merge_authority(
     target_branch: &crate::runtime::WorthQueryAdmittedBranchName,
     source_branch: &crate::runtime::WorthQueryAdmittedBranchName,
 ) -> Result<WorthQueryBackendMergeAuthority, WorthQueryWorkspaceError> {
-    let state = state.borrow();
-    let runtime = state.relational_runtime.as_ref().ok_or_else(|| {
-        WorthQueryWorkspaceError::new("stateful bridge fixture has no relational merge authority")
-    })?;
-    WorthQueryBackendMergeAuthority::capture(runtime, target_branch, source_branch)
+    state.borrow().relational_source.with_runtime(|runtime| {
+        WorthQueryBackendMergeAuthority::capture(runtime, target_branch, source_branch)
+    })
 }
 
 pub(super) fn validate_merge_authority(
     state: &SharedState,
     authority: &WorthQueryBackendMergeAuthority,
 ) -> Result<(), WorthQueryWorkspaceError> {
-    let state = state.borrow();
-    let runtime = state.relational_runtime.as_ref().ok_or_else(|| {
-        WorthQueryWorkspaceError::new("stateful bridge fixture has no relational merge authority")
-    })?;
-    authority.validate_against(runtime)
+    state
+        .borrow()
+        .relational_source
+        .with_runtime(|runtime| authority.validate_against(runtime))
 }
 
 pub(super) fn execute_merge(
@@ -31,13 +28,6 @@ pub(super) fn execute_merge(
     authority: &WorthQueryBackendMergeAuthority,
     declaration: &crate::workflow::LoweredMergeWorkflowDeclaration,
 ) -> Result<MergeExecutionOutcome, crate::effect_lifecycle::RelationalEffectExecutionFailure> {
-    let mut state = state.borrow_mut();
-    let runtime = state.relational_runtime.as_mut().ok_or_else(|| {
-        (
-            crate::effect_lifecycle::EffectExecutionDenialKind::MissingRelationalAuthority,
-            "stateful bridge fixture has no relational merge authority".to_string(),
-        )
-    })?;
     if declaration.merge_request().target_branch() != authority.target_branch()
         || declaration.merge_request().source_branch() != authority.source_branch()
     {
@@ -47,5 +37,10 @@ pub(super) fn execute_merge(
         )
             .into());
     }
-    crate::effect_lifecycle::execute_lowered_merge(runtime, declaration)
+    state
+        .borrow()
+        .relational_source
+        .with_runtime_mut(|runtime| {
+            crate::effect_lifecycle::execute_lowered_merge(runtime, declaration)
+        })
 }

@@ -220,7 +220,7 @@ fn relation_exists(
     members.iter().any(|member| {
         matches!(
             member,
-            ApplicationSchemaMember::Relation { relation, from, to }
+            ApplicationSchemaMember::Relation { relation, from, to, .. }
                 if relation == binding.relation()
                     && from == binding.from()
                     && to == binding.to()

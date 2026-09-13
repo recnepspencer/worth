@@ -2,11 +2,10 @@ use std::io::Read;
 use std::path::Path;
 
 use sha2::{Digest, Sha256};
-
-const MAGIC: &[u8; 8] = b"WORTHWAL";
-const VERSION: u16 = 1;
-const HEADER_BYTES: usize = 116;
-const FOOTER_BYTES: usize = 32;
+use worth_store_physical_format::wal_frame::{
+    decode_wal_frame_v1_header, WalFrameV1ChecksumCalculator, WAL_FRAME_V1_FOOTER_BYTES,
+    WAL_FRAME_V1_HEADER_BYTES,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BoundedWalSegmentVerificationRequest {
@@ -34,7 +33,7 @@ impl BoundedWalSegmentVerificationRequest {
             && generation > 0
             && start_lsn < end_exclusive_lsn
             && expected_bytes > 0
-            && max_buffer_bytes > HEADER_BYTES + FOOTER_BYTES)
+            && max_buffer_bytes > WAL_FRAME_V1_HEADER_BYTES + WAL_FRAME_V1_FOOTER_BYTES)
             .then_some(Self {
                 segment_id,
                 generation,
@@ -131,7 +130,9 @@ pub fn verify_bounded_wal_segment_from_reader(
         });
     }
 
-    let chunk_bytes = (request.max_buffer_bytes - HEADER_BYTES - FOOTER_BYTES).min(64 * 1024);
+    let chunk_bytes =
+        (request.max_buffer_bytes - WAL_FRAME_V1_HEADER_BYTES - WAL_FRAME_V1_FOOTER_BYTES)
+            .min(64 * 1024);
     let mut buffer = Vec::new();
     buffer
         .try_reserve_exact(chunk_bytes)
@@ -143,60 +144,64 @@ pub fn verify_bounded_wal_segment_from_reader(
     let mut prior_lsn_end = None;
 
     while bytes_read < actual {
-        if actual - bytes_read < (HEADER_BYTES + FOOTER_BYTES) as u64 {
+        if actual - bytes_read < (WAL_FRAME_V1_HEADER_BYTES + WAL_FRAME_V1_FOOTER_BYTES) as u64 {
             return Err(BoundedWalSegmentDenial::InvalidFrame);
         }
-        let mut header = [0_u8; HEADER_BYTES];
+        let mut header = [0_u8; WAL_FRAME_V1_HEADER_BYTES];
         reader
             .read_exact(&mut header)
             .map_err(BoundedWalSegmentDenial::Io)?;
         artifact_digest.update(header);
-        let fields = decode_header(&header)?;
-        if fields.segment_id != request.segment_id {
+        let fields = decode_wal_frame_v1_header(&header)
+            .map_err(|_| BoundedWalSegmentDenial::InvalidFrame)?;
+        if fields.segment_id() != request.segment_id {
             return Err(BoundedWalSegmentDenial::SegmentBindingMismatch);
         }
-        if fields.generation != request.generation {
+        if fields.generation() != request.generation {
             return Err(BoundedWalSegmentDenial::GenerationBindingMismatch);
         }
-        if prior_lsn_end.is_some_and(|prior| prior != fields.lsn_start) {
+        if prior_lsn_end.is_some_and(|prior| prior != fields.lsn_start()) {
             return Err(BoundedWalSegmentDenial::NonContiguousLsn);
         }
-        if frame_count == 0 && fields.lsn_start != request.start_lsn {
+        if frame_count == 0 && fields.lsn_start() != request.start_lsn {
             return Err(BoundedWalSegmentDenial::CoverageMismatch);
         }
-        let encoded_bytes = (HEADER_BYTES + FOOTER_BYTES) as u64 + fields.payload_bytes;
+        let encoded_bytes =
+            (WAL_FRAME_V1_HEADER_BYTES + WAL_FRAME_V1_FOOTER_BYTES) as u64 + fields.payload_bytes();
         if encoded_bytes > actual - bytes_read {
             return Err(BoundedWalSegmentDenial::InvalidFrame);
         }
 
-        let mut payload_digest = Sha256::new();
-        let mut frame_digest = Sha256::new();
-        frame_digest.update(header);
-        let mut payload_remaining = fields.payload_bytes;
+        let mut checksums = WalFrameV1ChecksumCalculator::new(&header);
+        let mut payload_remaining = fields.payload_bytes();
         while payload_remaining > 0 {
             let take = usize::try_from(payload_remaining.min(chunk_bytes as u64))
                 .expect("bounded WAL chunk fits usize");
             reader
                 .read_exact(&mut buffer[..take])
                 .map_err(BoundedWalSegmentDenial::Io)?;
-            payload_digest.update(&buffer[..take]);
-            frame_digest.update(&buffer[..take]);
+            checksums
+                .update_payload(&buffer[..take])
+                .map_err(|_| BoundedWalSegmentDenial::InvalidFrame)?;
             artifact_digest.update(&buffer[..take]);
             payload_remaining -= take as u64;
         }
-        if payload_digest.finalize()[..] != header[84..116] {
-            return Err(BoundedWalSegmentDenial::PayloadDigestMismatch);
-        }
-        let mut footer = [0_u8; FOOTER_BYTES];
+        let mut footer = [0_u8; WAL_FRAME_V1_FOOTER_BYTES];
         reader
             .read_exact(&mut footer)
             .map_err(BoundedWalSegmentDenial::Io)?;
         artifact_digest.update(footer);
-        if frame_digest.finalize()[..] != footer {
+        let calculated = checksums
+            .finish_calculation(fields)
+            .map_err(|_| BoundedWalSegmentDenial::InvalidFrame)?;
+        if calculated.payload() != fields.payload_digest() {
+            return Err(BoundedWalSegmentDenial::PayloadDigestMismatch);
+        }
+        if calculated.frame() != footer {
             return Err(BoundedWalSegmentDenial::FrameDigestMismatch);
         }
 
-        prior_lsn_end = Some(fields.lsn_end);
+        prior_lsn_end = Some(fields.lsn_end());
         frame_count = frame_count
             .checked_add(1)
             .ok_or(BoundedWalSegmentDenial::CounterOverflow)?;
@@ -219,48 +224,8 @@ pub fn verify_bounded_wal_segment_from_reader(
         frame_count,
         bytes_read,
         decoder_allocation_bytes: chunk_bytes as u64,
-        peak_buffer_bytes: (HEADER_BYTES + FOOTER_BYTES + chunk_bytes) as u64,
+        peak_buffer_bytes: (WAL_FRAME_V1_HEADER_BYTES + WAL_FRAME_V1_FOOTER_BYTES + chunk_bytes)
+            as u64,
         artifact_digest: request.expected_digest,
     })
-}
-
-#[derive(Debug, Clone, Copy)]
-struct WalFrameHeader {
-    segment_id: u64,
-    generation: u64,
-    lsn_start: u64,
-    lsn_end: u64,
-    payload_bytes: u64,
-}
-
-fn decode_header(header: &[u8; HEADER_BYTES]) -> Result<WalFrameHeader, BoundedWalSegmentDenial> {
-    if &header[..8] != MAGIC
-        || read_u16(header, 8) != VERSION
-        || read_u16(header, 10) as usize != HEADER_BYTES
-    {
-        return Err(BoundedWalSegmentDenial::InvalidFrame);
-    }
-    let value = WalFrameHeader {
-        segment_id: read_u64(header, 12),
-        generation: read_u64(header, 20),
-        lsn_start: read_u64(header, 28),
-        lsn_end: read_u64(header, 36),
-        payload_bytes: read_u64(header, 44),
-    };
-    if value.segment_id == 0
-        || value.generation == 0
-        || value.lsn_start >= value.lsn_end
-        || value.payload_bytes == 0
-    {
-        return Err(BoundedWalSegmentDenial::InvalidFrame);
-    }
-    Ok(value)
-}
-
-fn read_u16(bytes: &[u8], offset: usize) -> u16 {
-    u16::from_le_bytes(bytes[offset..offset + 2].try_into().expect("fixed header"))
-}
-
-fn read_u64(bytes: &[u8], offset: usize) -> u64 {
-    u64::from_le_bytes(bytes[offset..offset + 8].try_into().expect("fixed header"))
 }

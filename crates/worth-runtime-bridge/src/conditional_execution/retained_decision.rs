@@ -4,22 +4,37 @@ use worth_signal::facade::SignalConditionalDecisionEvidence;
 
 use super::{
     BridgeConditionalDecisionEvidence, BridgeConditionalDenial, BridgeConditionalDenialKind,
-    BridgeConditionalSemanticObservation, BridgeInstalledConditionalLowering,
-    BridgeOwnedSignalRuntime,
+    BridgeInstalledConditionalLowering, BridgeOwnedSignalRuntime,
 };
 
 pub(super) struct BridgeRetainedConditionalDecisionCore {
     pub(super) bridge_runtime_key: u64,
     pub(super) lowering: Arc<BridgeInstalledConditionalLowering>,
-    pub(super) bridge_snapshot_identity: Option<crate::snapshot::TruthSnapshotIdentity>,
+    // Exact admitted reader custody, including pool return on final core drop.
+    // This is not a transfer of a source owner's registration retention lease.
+    pub(super) source_snapshot: Option<
+        Arc<
+            crate::snapshot::AdmittedSnapshotContext<Box<dyn crate::snapshot::TruthSnapshotReader>>,
+        >,
+    >,
     pub(super) signal_snapshot_projection: Arc<str>,
     pub(super) signal_execution_projection: Arc<str>,
     pub(super) attempt: u64,
     pub(super) signal: SignalConditionalDecisionEvidence,
-    pub(super) semantic_observations: Arc<[BridgeConditionalSemanticObservation]>,
+    pub(super) semantic_observations: super::observation_retention::BridgeRetainedObservations,
     pub(super) bridge_execution_counters: super::BridgeConditionalExecutionCounters,
-    pub(super) triggering_change_set:
-        Option<crate::correspondence::BridgeDeliveredCorrespondenceChangeSet>,
+    pub(super) triggering_change_set: Option<super::retention::BridgeRetainedTrigger>,
+    pub(super) _reservation: super::retention::BridgeRetentionReservation,
+}
+
+impl BridgeRetainedConditionalDecisionCore {
+    pub(super) fn bridge_snapshot_identity(
+        &self,
+    ) -> Option<&crate::snapshot::TruthSnapshotIdentity> {
+        self.source_snapshot
+            .as_ref()
+            .map(|source| source.snapshot_identity())
+    }
 }
 
 /// Bridge-owned handle to one exact Signal evaluation. It is intentionally
@@ -48,7 +63,7 @@ impl BridgeOwnedSignalRuntime {
         self.validate_retained_core(core, request.lowering, &mut counters)?;
         counters.snapshot_identity_checks = 2;
         if core.signal_snapshot_projection.as_ref() != request.snapshot_identity
-            || core.bridge_snapshot_identity.as_ref() != request.bridge_snapshot_identity
+            || core.bridge_snapshot_identity() != request.bridge_snapshot_identity
         {
             return Err(BridgeConditionalDenial::new(
                 BridgeConditionalDenialKind::SnapshotAdmission,
@@ -57,7 +72,10 @@ impl BridgeOwnedSignalRuntime {
             .with_reentry_counters(counters));
         }
         counters.query_continuation_rebindings = 1;
+        let reservation =
+            super::retention::reserve_reentry(&self.retention, request.query_binding_identity)?;
         Ok(BridgeConditionalDecisionEvidence {
+            _reservation: reservation,
             core: Arc::clone(core),
             query_binding_identity: request.query_binding_identity.into(),
             query_capability_identity: request.query_capability_identity,
@@ -82,25 +100,17 @@ impl BridgeOwnedSignalRuntime {
         }
         counters.lowering_identity_checks = 1;
         counters.installed_lowering_lookups = 1;
-        if !Arc::ptr_eq(&core.lowering, lowering)
-            || !self
-                .conditional_lowerings
-                .get(&lowering.signal_node())
-                .is_some_and(|installed| Arc::ptr_eq(installed, lowering))
-        {
+        if !Arc::ptr_eq(&core.lowering, lowering) {
             return Err(BridgeConditionalDenial::new(
                 BridgeConditionalDenialKind::StaleLowering,
                 "retained conditional decision lost its exact installed lowering",
             )
             .with_reentry_counters(*counters));
         }
+        self.require_live_installed_lowering(lowering)
+            .map_err(|denial| denial.with_reentry_counters(*counters))?;
         counters.signal_graph_checks = 1;
-        let graph = self
-            .signal_runtime
-            .graph()
-            .installed_graph_capability()
-            .graph_instance_id();
-        if lowering.signal_graph_instance_id() != graph {
+        if lowering.signal_graph_instance_id() != self.signal_graph_instance_id {
             return Err(BridgeConditionalDenial::new(
                 BridgeConditionalDenialKind::ForeignSignalGraph,
                 "retained conditional decision belongs to another Signal graph",

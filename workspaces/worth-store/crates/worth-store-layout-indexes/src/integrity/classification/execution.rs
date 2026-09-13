@@ -1,8 +1,8 @@
-use worth_store_authority::StoreCurrentAuthorityWitness;
-use worth_store_recovery_physics::{
+use super::super::readmission::{
     RecoveryLayoutReadmissionAdmissionDenial, RecoveryLayoutReadmissionClass,
     RecoveryLayoutReadmissionWitness,
 };
+use worth_store_authority::StoreCurrentAuthorityWitness;
 
 use crate::LayoutCorruptionClassification;
 
@@ -25,20 +25,25 @@ impl LayoutCorruptionAssessment {
         )
     }
 
-    pub fn assess_physical_quarantine(
+    pub fn assess_quarantine_observation(
         &self,
         family: crate::AdmittedPhysicalArtifactFamily,
-        record: worth_store_physical_integrity::QuarantineRecord,
+        observation_identity: super::super::readmission::RecoveryLayoutReadmissionIdentity,
+        observation_class: RecoveryLayoutReadmissionClass,
     ) -> LayoutCorruptionOutcome {
-        match classify_quarantine_authority(&record) {
+        match classify_quarantine_authority(observation_class) {
             LayoutQuarantineAuthorityClass::DerivedProjectionDamage => self
                 .assess_derived_projection(
                     LayoutCorruptionClassification::derived_projection_rebuild_to_parity(),
                 ),
             LayoutQuarantineAuthorityClass::AuthoritativeQuarantineRequired => {
                 LayoutCorruptionOutcome::quarantined(
-                    LayoutQuarantineWitness::from_record(family, record),
-                    super::LayoutCorruptionCounterSnapshot::quarantine_record(),
+                    LayoutQuarantineWitness::from_observation(
+                        family,
+                        observation_identity,
+                        observation_class,
+                    ),
+                    super::LayoutCorruptionCounterSnapshot::quarantine_observation(),
                 )
             }
         }
@@ -55,7 +60,7 @@ impl LayoutCorruptionAssessment {
         )
     }
 
-    pub fn require_record_backed_recovery_readmission(
+    pub fn require_observation_bound_recovery_readmission(
         &self,
         required: LayoutCorruptionOutcome,
         current_store_authority: &StoreCurrentAuthorityWitness,
@@ -84,7 +89,8 @@ fn require_quarantine_readmission(
     counters: super::LayoutCorruptionCounterSnapshot,
 ) -> Result<LayoutCorruptionOutcome, CorruptionDenial> {
     let family = quarantine.family();
-    let record = quarantine.record();
+    let observation_identity = quarantine.observation_identity();
+    let observation_class = quarantine.observation_class();
     let admitted_family = quarantine.admitted_family();
     let current_security_identity = current_security_scope.key_scope().identity();
     if admitted_family.security_identity() != current_security_identity {
@@ -94,10 +100,11 @@ fn require_quarantine_readmission(
             current: current_security_identity,
         });
     }
-    match worth_store_recovery_physics::layout_readmission()
+    match super::super::readmission::layout_readmission()
         .admit_quarantine(
             admitted_family.family_id(),
-            record,
+            observation_identity,
+            observation_class,
             current_store_authority,
             current_security_scope,
         )
@@ -107,7 +114,7 @@ fn require_quarantine_readmission(
             RecoveryLayoutReadmissionClass::QuarantineRecovery => {
                 Ok(LayoutCorruptionOutcome::quarantine_readmission_required(
                     QuarantineReadmissionRequirement::new(quarantine, witness.identity().clone()),
-                    counters.with_record_backed_readmission(),
+                    counters.with_observation_bound_readmission(),
                 ))
             }
             RecoveryLayoutReadmissionClass::NoForegroundAuthority => {
@@ -119,7 +126,7 @@ fn require_quarantine_readmission(
             Err(CorruptionDenial::NoForegroundReadAuthority { family })
         }
         Err(_) => {
-            Err(CorruptionDenial::QuarantineRecordBackedReadmissionEvidenceRequired { family })
+            Err(CorruptionDenial::QuarantineObservationReadmissionEvidenceRequired { family })
         }
     }
 }

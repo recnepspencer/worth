@@ -9,7 +9,9 @@ fn one_root_binds_real_construct_boolean_transform_and_cross_domain_operations()
     let mut workspace =
         operating_world_family_workspace("installed-public-facade-family-root").unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
-    let root = workspace.observe_operating_world().unwrap();
+    let root = workspace
+        .observe_operating_world(workspace.current_world())
+        .unwrap();
     let construct = root
         .family(ConstructFamily)
         .bind(&domain, ConstructOperation)

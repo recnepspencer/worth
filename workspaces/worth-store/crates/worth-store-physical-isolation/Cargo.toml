@@ -23,12 +23,14 @@ worth-store-security.workspace = true
 worth-store-wal.workspace = true
 
 [features]
-certification-authority = ["worth-store-recovery-physics/certification-test-authority", "worth-store-wal/certification-authority"]
+certification-authority = [
+    "worth-store-wal/certification-authority",
+]
 
 [dev-dependencies]
 tempfile = "3"
 worth-store-physical-backend = { workspace = true, features = ["certification-test-authority"] }
-worth-store-recovery-physics = { workspace = true, features = ["certification-test-authority"] }
+worth-store-recovery-physics.workspace = true
 worth-store-wal = { workspace = true, features = ["certification-authority"] }
 
 [lints]

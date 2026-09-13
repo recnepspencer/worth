@@ -3,6 +3,7 @@ pub struct RecoveryReportCounters {
     recovery_effects: u64,
     cleanup_performed: u64,
     cleanup_deferred: u64,
+    peak_recovery_bytes: u64,
 }
 
 impl RecoveryReportCounters {
@@ -10,11 +11,13 @@ impl RecoveryReportCounters {
         recovery_effects: u64,
         cleanup_performed: u64,
         cleanup_deferred: u64,
+        peak_recovery_bytes: u64,
     ) -> Self {
         Self {
             recovery_effects,
             cleanup_performed,
             cleanup_deferred,
+            peak_recovery_bytes,
         }
     }
 
@@ -26,5 +29,8 @@ impl RecoveryReportCounters {
     }
     pub const fn cleanup_deferred(self) -> u64 {
         self.cleanup_deferred
+    }
+    pub const fn peak_recovery_bytes(self) -> u64 {
+        self.peak_recovery_bytes
     }
 }

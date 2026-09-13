@@ -235,7 +235,7 @@ impl OperationalControlRecord {
         workflow: super::OperationalWorkflowKind,
         plan_fingerprint: [u8; 32],
         receipt_fingerprint: [u8; 32],
-        owner_tag: u8,
+        owner_kind: super::OperationalOwnerReceiptKind,
     ) -> Self {
         Self {
             authority_identity,
@@ -245,7 +245,7 @@ impl OperationalControlRecord {
                 workflow,
                 plan_fingerprint,
                 receipt_fingerprint,
-                owner_tag,
+                owner_kind,
             },
         }
     }

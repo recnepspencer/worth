@@ -1,8 +1,8 @@
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     AdmittedPhysicalRecordFormat, AdmittedRecordAccessPolicy, ExternalPhysicalRecordLocator,
-    PhysicalRecordAccessPolicy, PhysicalRecordOpen, RecordAppendBatch, RecordBootstrapDenial,
-    RecordByteLimit, RecordReadDenial, RecordReadLimits,
+    PhysicalRecordAccessPolicy, PhysicalRecordOpen, PhysicalRootProtocolRoute, RecordAppendBatch,
+    RecordBootstrapDenial, RecordByteLimit, RecordReadDenial, RecordReadLimits,
 };
 use worth_store_physical_backend::MediaOperationRole;
 
@@ -48,6 +48,13 @@ fn permissive_access_policy_cannot_expand_fixed_page_reads() {
     let reopened = success(open_record_store!(media(&root), |durability| {
         PhysicalRecordOpen::new(format, access, durability)
     }));
+    assert_eq!(
+        reopened
+            .root_protocol_counters()
+            .root_entries(PhysicalRootProtocolRoute::OrdinaryOpen),
+        2,
+        "generation two ordinary open admits both current and previous addressed roots",
+    );
     reopened
         .certification_physical_residency()
         .drain_unpinned_clean_frames();

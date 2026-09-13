@@ -29,16 +29,11 @@ fn replacing_dependency_snapshot_reports_delta() {
     let mut updated = crate::data::dependency::DependencySnapshot::empty();
     updated.record(source, ASPECT_A, 5, None);
     updated.record(source, ASPECT_B, 7, None);
-    let mut shape_store = crate::data::dependency::DependencySnapshotShapeStore::default();
-
     let delta = graph
         .replace_dep_snapshot_committed(
             node,
             crate::data::dependency::CommittedSnapshotUpdate::Replace(
-                crate::data::dependency::ReplacementSnapshotUpdate::from_snapshot(
-                    updated,
-                    &mut shape_store,
-                ),
+                crate::data::dependency::ReplacementSnapshotUpdate::from_snapshot(updated),
             ),
         )
         .unwrap();
@@ -60,16 +55,11 @@ fn replacing_identical_dependency_snapshot_is_a_noop() {
     baseline.record(source, ASPECT_A, 3, None);
     graph.set_dep_snapshot(node, baseline.clone()).unwrap();
     let first_id = graph.get_entry(node).unwrap().get_dep_snapshot_id();
-    let mut shape_store = crate::data::dependency::DependencySnapshotShapeStore::default();
-
     let delta = graph
         .replace_dep_snapshot_committed(
             node,
             crate::data::dependency::CommittedSnapshotUpdate::Replace(
-                crate::data::dependency::ReplacementSnapshotUpdate::from_snapshot(
-                    baseline,
-                    &mut shape_store,
-                ),
+                crate::data::dependency::ReplacementSnapshotUpdate::from_snapshot(baseline),
             ),
         )
         .unwrap();
@@ -136,7 +126,6 @@ fn shared_dependency_snapshot_reports_storage_sharing_without_implying_semantics
     let replace = crate::data::dependency::CommittedSnapshotUpdate::Replace(
         crate::data::dependency::ReplacementSnapshotUpdate::from_snapshot(
             shared_left.into_snapshot(),
-            &mut shape_store,
         ),
     );
     let basis = crate::data::dependency::StableShapeSnapshotBasis::prove(
@@ -193,10 +182,7 @@ fn snapshot_storage_telemetry_distinguishes_replacement_from_version_only_delta(
         .replace_dep_snapshot_committed(
             node,
             crate::data::dependency::CommittedSnapshotUpdate::Replace(
-                crate::data::dependency::ReplacementSnapshotUpdate::from_snapshot(
-                    replaced,
-                    &mut crate::data::dependency::DependencySnapshotShapeStore::default(),
-                ),
+                crate::data::dependency::ReplacementSnapshotUpdate::from_snapshot(replaced),
             ),
         )
         .unwrap();

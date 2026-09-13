@@ -1,31 +1,12 @@
 mod arguments;
-#[cfg(test)]
-mod c5_1_sealing_gate;
-mod catalog;
-mod classification;
-#[cfg(feature = "physical-work-evidence")]
-mod courtroom_campaign;
-#[cfg(test)]
-mod durable_publication_boundary_gate;
 mod execution;
-#[cfg(test)]
-mod fresh_process_recovery_boundary_gate;
-mod local_source_fingerprint;
-mod mutation_campaign;
-#[cfg(test)]
-mod physical_residency_boundary_gate;
-#[cfg(feature = "physical-work-evidence")]
-pub mod physical_work_evidence;
-#[cfg(test)]
-mod physical_writer_gate;
+mod phase_eight_process_suite;
 mod plan;
 mod product;
-mod report;
 
 use std::path::{Path, PathBuf};
 
 use arguments::Arguments;
-use catalog::TestCatalog;
 
 pub fn run_from_environment() -> Result<(), String> {
     let arguments = std::env::args().skip(1).collect::<Vec<_>>();
@@ -38,50 +19,16 @@ pub fn run_from_environment() -> Result<(), String> {
 }
 
 fn run(arguments: Arguments, workspace_root: &Path) -> Result<(), String> {
-    if matches!(arguments.product, product::TestProduct::Mutants) {
-        return mutation_campaign::run(
-            workspace_root,
-            mutation_campaign::MutationCampaignRequest {
-                scope: arguments.mutation_scope,
-                list: arguments.list,
-                preflight: arguments.preflight,
-                selected: arguments.mutant,
-                first: arguments.first_mutant,
-                report: arguments.report.as_deref(),
-            },
-        );
-    }
-    if let product::TestProduct::Courtrooms { courtroom } = arguments.product {
-        #[cfg(feature = "physical-work-evidence")]
-        {
-            return courtroom_campaign::run(
-                workspace_root,
-                courtroom_campaign::CourtroomCampaignRequest {
-                    courtroom,
-                    list: arguments.list,
-                    target_root: arguments.target_root.as_deref(),
-                    mutant_report: arguments.mutant_report.as_deref(),
-                    report: arguments.report.as_deref(),
-                    schedule_seed: arguments.schedule_seed,
-                    ci_schedule_lane: arguments.ci_schedule_lane,
-                    crash_seam: arguments.crash_seam.as_deref(),
-                },
-            );
-        }
-        #[cfg(not(feature = "physical-work-evidence"))]
-        {
-            let _ = courtroom;
-            return Err(
-                "courtroom campaigns require the runner feature `physical-work-evidence`".into(),
-            );
-        }
-    }
     run_planned_product(arguments, workspace_root)
 }
 
+#[doc(hidden)]
+pub fn run_process_scenario_from_environment() -> Result<(), String> {
+    phase_eight_process_suite::run(&workspace_root(), None)
+}
+
 fn run_planned_product(arguments: Arguments, workspace_root: &Path) -> Result<(), String> {
-    let catalog = TestCatalog::load(workspace_root)?;
-    let plan = plan::TestPlan::build(&arguments.product, &catalog, workspace_root)?;
+    let plan = plan::TestPlan::build(&arguments.product, workspace_root)?;
 
     if arguments.list {
         for unit in plan.units() {
@@ -91,24 +38,14 @@ fn run_planned_product(arguments: Arguments, workspace_root: &Path) -> Result<()
     }
 
     println!("{}: {} unit(s)", plan.product_name(), plan.units().len());
-    let report = execution::execute(&plan, arguments.target_root.as_deref());
-    if let Some(path) = arguments.report.as_deref() {
-        report::write(path, &report)?;
-        println!("report: {}", path.display());
-    }
+    let started = std::time::Instant::now();
+    execution::execute(plan.units(), arguments.target_root.as_deref())?;
     println!(
-        "{}: {} in {:.2}s",
+        "{}: passed in {:.2}s",
         plan.product_name(),
-        if report.success { "passed" } else { "failed" },
-        report.elapsed_ms as f64 / 1_000.0
+        started.elapsed().as_secs_f64()
     );
-    if report.success {
-        Ok(())
-    } else {
-        Err(report
-            .failure
-            .unwrap_or_else(|| "test execution failed".into()))
-    }
+    Ok(())
 }
 
 fn workspace_root() -> PathBuf {

@@ -212,7 +212,7 @@ fn provider_semantic_drift_is_preserved_through_continuity_and_affinity_denials(
                 role: worth_runtime_bridge::facade::BridgeConditionalProviderRole::Compute
             }
         )
-    ));
+    ), "{:?}", continuity.conditional_continuity_mismatch());
     assert_eq!(continuity.counters().lower_runtime_contacts, 0);
 
     let affinity = subject.replacement_with(&candidate).unwrap_err();
@@ -274,7 +274,7 @@ where
                 ordinal: 0
             }
         )
-    ));
+    ), "{:?}", denial.conditional_affinity_mismatch());
     assert_eq!(denial.lower_runtime_contacts(), 0);
 }
 
@@ -318,6 +318,16 @@ impl domain::WorthQueryConditionalNodeComputeProvider<GeometryDomain, ReadVertex
 
     fn semantic_contract(&self) -> Self::SemanticContract {
         7
+    }
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
     }
 
     fn execution_resource_support(&self) -> domain::WorthQueryExecutionResourceSupport {

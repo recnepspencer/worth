@@ -1,6 +1,7 @@
 use crate::blob_basis::BlobGenerationBasis;
+use worth_store_physical_format::CheckpointWalSourceRange;
 use worth_store_physical_format::PhysicalEpoch;
-use worth_store_recovery_physics::{CheckpointCoveredLsnRange, LogSequenceNumber};
+use worth_store_wal::LogSequenceNumber;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CoverageBasisKind {
@@ -15,7 +16,7 @@ pub enum PhysicalCoverageBasis {
     WalLsn(LogSequenceNumber),
     RootEpoch(PhysicalEpoch),
     BlobGeneration(BlobGenerationBasis),
-    CheckpointFrontier(CheckpointCoveredLsnRange),
+    CheckpointFrontier(CheckpointWalSourceRange),
 }
 
 impl PhysicalCoverageBasis {
@@ -31,7 +32,7 @@ impl PhysicalCoverageBasis {
         Self::BlobGeneration(generation)
     }
 
-    pub const fn checkpoint_frontier(range: CheckpointCoveredLsnRange) -> Self {
+    pub const fn checkpoint_frontier(range: CheckpointWalSourceRange) -> Self {
         Self::CheckpointFrontier(range)
     }
 
@@ -88,8 +89,8 @@ impl LayoutWatermark {
             }
             PhysicalCoverageBasis::CheckpointFrontier(range) => Self::ranged(
                 CoverageBasisKind::CheckpointFrontier,
-                range.range().start().get(),
-                range.range().end_exclusive().get(),
+                range.admitted_begin_lsn(),
+                range.covered_end_lsn_exclusive(),
             ),
         }
     }

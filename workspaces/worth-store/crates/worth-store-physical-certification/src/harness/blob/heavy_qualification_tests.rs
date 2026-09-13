@@ -10,30 +10,7 @@ use worth_store_blob_chunks::{
 use super::heavy_qualification::{
     canonical_heavy_fixture_pattern_plan_for_seed, non_canonical_chaos_stress_plan_for_seed,
 };
-use crate::{
-    synthetic_blob_harness_replay_bundle_for_test_support, BlobHarnessProfile,
-    BlobHarnessScenarioSeed, OracleFamilyKind, PhysicalProofOracleKind,
-};
-
-#[test]
-#[ignore = "release-scale blob qualification"]
-fn heavy_replay_bundle_carries_evidence_oracles() {
-    let replay =
-        synthetic_blob_harness_replay_bundle_for_test_support(heavy_multi_gb_scenario_seed());
-
-    assert!(replay.oracle_verdicts().iter().any(|verdict| {
-        verdict.oracle() == PhysicalProofOracleKind::BlobHeavyQualificationEvidence
-            && verdict.kind() == crate::PhysicalProofOracleVerdictKind::Satisfied
-    }));
-    assert!(replay.oracle_verdicts().iter().any(|verdict| {
-        verdict.oracle() == PhysicalProofOracleKind::BlobHeavyCleanup
-            && verdict.kind() == crate::PhysicalProofOracleVerdictKind::Satisfied
-    }));
-    assert!(replay.oracle_verdicts().iter().any(|verdict| {
-        verdict.oracle() == PhysicalProofOracleKind::BlobHeavyPatternLane
-            && verdict.kind() == crate::PhysicalProofOracleVerdictKind::Satisfied
-    }));
-}
+use crate::{BlobHarnessProfile, BlobHarnessScenarioSeed, OracleFamilyKind};
 
 #[test]
 fn lowered_plan_requires_heavy_qualification_oracle_family() {

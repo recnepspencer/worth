@@ -8,6 +8,7 @@ use super::{
 
 pub(crate) fn admit_request(
     request: PhysicalRecoveryOpenRequest,
+    yieldpoint: Option<worth_store::physical_runtime::PhysicalRecoveryProcessYieldpoint>,
 ) -> Result<AdmittedPhysicalRecovery, PhysicalRecoveryRefusal> {
     let PhysicalRecoveryOpenRequest {
         presentation,
@@ -34,19 +35,22 @@ pub(crate) fn admit_request(
         registered_session,
     } = admitted;
     let mut admitted = admitted;
-    let coordination =
-        match RecoveryCoordination::fresh(&mut admitted.media, registered_session, admitted.limits)
-        {
-            Ok(coordination) => coordination,
-            Err(_) => {
-                let recovery_effects = admitted.media.recovery_effect_count();
-                admitted.refuse();
-                return Err(PhysicalRecoveryRefusal::new(
-                    PhysicalRecoveryRefusalKind::CoordinationUnavailable,
-                    recovery_effects,
-                ));
-            }
-        };
+    let coordination = match RecoveryCoordination::fresh(
+        &mut admitted.media,
+        registered_session,
+        admitted.limits,
+        yieldpoint,
+    ) {
+        Ok(coordination) => coordination,
+        Err(_) => {
+            let recovery_effects = admitted.media.recovery_effect_count();
+            admitted.refuse();
+            return Err(PhysicalRecoveryRefusal::new(
+                PhysicalRecoveryRefusalKind::CoordinationUnavailable,
+                recovery_effects,
+            ));
+        }
+    };
     if !coordination.is_ready() {
         let recovery_effects = admitted.media.recovery_effect_count();
         admitted.refuse();
@@ -306,6 +310,7 @@ mod tests {
             distinct_pages_and_extents: scale,
             operation_bindings: scale,
             staging_bytes: scale * 4096,
+            recovery_memory_bytes: scale * 1024 * 1024,
             dirty_frames: scale,
             concurrent_commands: scale,
             publication_effects: 2,

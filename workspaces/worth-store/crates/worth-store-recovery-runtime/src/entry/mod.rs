@@ -3,19 +3,26 @@ mod authority;
 mod authority_binding;
 mod configuration;
 mod counters;
+mod integrity_observations;
 mod limits;
 mod outcome;
 mod publication;
 mod reopen;
 mod request;
+mod root_protocol_counters;
 mod session;
 mod source_denial;
 mod staging;
+mod successor_candidate;
 
 pub use authority::{PhysicalRecoveryPlatformAdmissionError, PhysicalRecoveryPlatformAuthority};
 pub use authority_binding::PhysicalRecoveryEntryBindingDrift;
 pub use configuration::PhysicalRecoveryStaticConfiguration;
 pub use counters::PhysicalRecoveryAdmissionCounters;
+pub use integrity_observations::{
+    PhysicalRecoveryIntegrityObservations, PhysicalRecoveryWalIntegrityObservation,
+    PhysicalRecoveryWalIntegrityObservationOutcome,
+};
 pub use limits::{
     PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDenial, PhysicalRecoveryLimits,
 };
@@ -31,14 +38,20 @@ pub use publication::{
 };
 pub use reopen::{PhysicalRecoveryReopenCounters, PhysicalRecoveryReopenFailure};
 pub use request::PhysicalRecoveryOpenRequest;
+pub use root_protocol_counters::PhysicalRecoveryRootProtocolCounters;
 pub use session::PhysicalRecoverySessionIdentity;
 pub use source_denial::{
-    PhysicalManifestObservationDenial, PhysicalRecoveryMediaObservationFailure,
-    PhysicalRecoverySourceDenial,
+    PhysicalManifestObservationDenial, PhysicalRecoveryCheckpointIntegrityDenial,
+    PhysicalRecoveryMediaObservationFailure, PhysicalRecoveryRootProtocolArtifact,
+    PhysicalRecoveryRootProtocolDenial, PhysicalRecoverySourceDenial,
+    PhysicalRecoveryWalIntegrityDenial,
 };
 pub use staging::{
     PhysicalRecoveryStagingCounters, PhysicalRecoveryStagingDenial,
     PhysicalRecoveryStagingSettlement, PhysicalRecoveryStagingSettlementLedger,
+};
+pub use successor_candidate::{
+    PhysicalRecoverySuccessorCandidateDenial, PhysicalRecoverySuccessorCandidateMismatch,
 };
 
 pub(crate) use authority::{AdmittedPlatformAdmission, AdmittedPlatformAuthority};

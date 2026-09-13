@@ -1,12 +1,46 @@
 root_manifest = "Cargo.toml"
-forbidden_root_prefixes = ["cad/workspaces/"]
+forbidden_root_prefixes = ["workspaces/"]
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
 sources = ["worth-runtime-bridge"]
-forbidden_targets = []
+forbidden_targets = ["worth-runtime-world"]
 forbidden_target_prefixes = ["worth-query"]
 guidance = "Runtime Bridge owns neutral crossing contracts and must not import Query declaration, installation, execution, replay, or monolith authority"
+
+[[dependency_denials]]
+workspace_manifest = "Cargo.toml"
+sources = ["worth-relational", "worth-signal"]
+forbidden_targets = ["worth-runtime-world"]
+forbidden_target_prefixes = []
+guidance = "Runtime World is the composition owner above the component runtimes; lower owners cannot acquire a reverse dependency"
+
+[[dependency_denials]]
+workspace_manifest = "Cargo.toml"
+sources = ["worth-runtime-world"]
+forbidden_targets = []
+forbidden_target_prefixes = ["worth-query", "worth-store", "worth-cert", "worthy"]
+guidance = "Runtime World is memory-resident composition authority and cannot depend on Query, Store, certification, UI, or application lanes"
+
+[[dependency_denials]]
+workspace_manifest = "Cargo.toml"
+sources = ["worth-runtime-bridge"]
+forbidden_targets = ["worth-relational"]
+forbidden_target_prefixes = []
+guidance = "Runtime Bridge is the neutral crossing owner and cannot acquire a direct Relational runtime dependency"
+
+[[source_dependency_allowlists]]
+workspace_manifest = "Cargo.toml"
+sources = ["worth-runtime-world"]
+allowed_targets = [
+  "worth-foundational",
+  "worth-proof",
+  "worth-relational",
+  "worth-runtime-bridge",
+  "worth-signal",
+  "trybuild",
+]
+guidance = "Runtime World may depend only on the approved foundational, proof, component-owner, and bridge facades; trybuild is test-only contract evidence"
 
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
@@ -385,11 +419,7 @@ guidance = "Milestone 3.10.1: DSL owns authored meaning but must not define or i
 
 [machine_authority]
 canonical_config = "tools/boundary-check/config/road1.toml"
-mirrored_docs = [
-  "cad/docs/worthy-foundations/NAMING.md",
-  "cad/docs/worthy-foundations/BOUNDARIES.md",
-  "cad/docs/worthy-foundations/ARCHITECTURE.md",
-]
+mirrored_docs = []
 
 [naming]
 bands = ["schema", "dsl", "entry", "resolver", "solver", "derived", "pack", "app", "ui", "cert"]
@@ -581,8 +611,7 @@ internal_packages = [
 label = "worth-query-host::primary_graph"
 source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"
 reexport = "worth_query_execution::facade::primary_graph"
-owner_source = "workspaces/worth-query/crates/worth-query-execution/src/facade.rs"
-namespace = "primary_graph"
+owner_source = "workspaces/worth-query/crates/worth-query-execution/src/facade/primary_graph.rs"
 
 [[rule_contracts.query_audience.facade_surfaces]]
 label = "worth-query-host::provisional_aftermath"
@@ -620,7 +649,7 @@ authority_packages = ["worth-query"]
 
 [[rule_contracts.replay_surfaces]]
 label = "certification replay"
-package_prefixes = ["worth-query-replay", "worth-cert-replay", "worthy-cert-replay"]
+package_prefixes = ["worth-cert-replay", "worthy-cert-replay"]
 cert_domains = ["replay", "reconstruction"]
 
 [routing_proof]
@@ -678,23 +707,15 @@ source_band = "ui"
 allowed_target_bands = ["entry", "derived", "dsl"]
 
 [[born_crates]]
-path = "cad/workspaces/worth-contracts/crates/worth-schema-core"
+path = "workspaces/worth-contracts/crates/worth-schema-core"
 package = "worth-schema-core"
 
 [[born_crates]]
-path = "cad/workspaces/worth-contracts/crates/worth-schema-graph"
+path = "workspaces/worth-contracts/crates/worth-schema-graph"
 package = "worth-schema-graph"
 
-[[born_crates]]
-path = "cad/workspaces/worth-packs/crates/worth-pack-registry"
-package = "worth-pack-registry"
-
-[[born_crates]]
-path = "cad/workspaces/worth-certification/crates/worth-cert-adoption"
-package = "worth-cert-adoption"
-
 [[seed_skeletons]]
-path = "cad/workspaces/worth-contracts/crates/worth-schema-core"
+path = "workspaces/worth-contracts/crates/worth-schema-core"
 package = "worth-schema-core"
 lib_rs = "src/lib.rs"
 facade_rs = "src/facade.rs"
@@ -712,7 +733,7 @@ allowed_entries = [
 ]
 
 [[seed_skeletons]]
-path = "cad/workspaces/worth-contracts/crates/worth-schema-graph"
+path = "workspaces/worth-contracts/crates/worth-schema-graph"
 package = "worth-schema-graph"
 lib_rs = "src/lib.rs"
 facade_rs = "src/facade.rs"
@@ -725,56 +746,14 @@ allowed_entries = [
   "src/promotion.rs",
 ]
 
-[[seed_skeletons]]
-path = "cad/workspaces/worth-packs/crates/worth-pack-registry"
-package = "worth-pack-registry"
-lib_rs = "src/lib.rs"
-facade_rs = "src/facade.rs"
-allowed_entries = [
-  "AGENT_CONTEXT.md",
-  "Cargo.toml",
-  "src",
-  "src/contribution_descriptor.rs",
-  "src/contribution_kind.rs",
-  "src/facade.rs",
-  "src/lib.rs",
-  "src/pack_name.rs",
-  "src/registration.rs",
-]
-
 [[subworkspaces]]
-path = "cad/workspaces/worth-contracts"
+path = "workspaces/worth-contracts"
 allowed_crate_prefixes = ["worth-schema-"]
 member_lane = "crates/*"
 
-[[subworkspaces]]
-path = "cad/workspaces/worth-entry"
-allowed_crate_prefixes = ["worth-entry-"]
-member_lane = "crates/*"
-
-[[subworkspaces]]
-path = "cad/workspaces/worth-derived"
-allowed_crate_prefixes = ["worth-derived-"]
-member_lane = "crates/*"
-
-[[subworkspaces]]
-path = "cad/workspaces/worth-packs"
-allowed_crate_prefixes = ["worth-pack-"]
-member_lane = "crates/*"
-
-[[subworkspaces]]
-path = "cad/workspaces/worth-certification"
-allowed_crate_prefixes = ["worth-cert-"]
-member_lane = "crates/*"
-
-[[context_workspaces]]
-path = "workspaces/worth-ui"
-package_prefix = "worth-ui"
-certification_packages = ["worth-ui-certification"]
-
 [legacy_reference_ratchet]
 governed_roots = [
-  "cad/workspaces/",
+  "workspaces/worth-contracts/",
   "tools/",
   "crates/worth-proof/",
 ]

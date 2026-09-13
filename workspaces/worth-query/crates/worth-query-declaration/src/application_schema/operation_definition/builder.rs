@@ -6,12 +6,12 @@ use crate::application_aftermath::{
 
 use super::super::capabilities::OperationEmits;
 use super::super::{
-    ApplicationEffectRef, ApplicationExternalEffectPayload, ApplicationOperationRef,
+    ApplicationEffectMarkerIdentity, ApplicationEffectRef, ApplicationExternalEffectBinding,
+    ApplicationOperationRef, ApplicationStructuredValueBinding,
     WorthQueryExternalEffectCorrelationFamily,
 };
 use super::contract_slots::DeclaredExternalEffectSlot;
 use super::definition::ApplicationOperationDefinition;
-use crate::portable_identity::WorthQueryPortableType;
 
 /// Typestate authoring for one operation's singleton static contracts.
 ///
@@ -25,6 +25,7 @@ pub struct ApplicationOperationDefinitionBuilder<
     const AFTERMATH_DECIDED: bool,
 > {
     operation: &'static str,
+    input_type: crate::portable_identity::WorthQueryPortableTypeIdentity,
     external_effect: Option<DeclaredExternalEffectSlot>,
     aftermath: Option<PortableApplicationAftermathContract>,
     marker: PhantomData<fn(Input) -> (Schema, Operation)>,
@@ -43,10 +44,7 @@ impl<Schema> AftermathAssociationAuthority<Schema> {
     }
 }
 
-impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
-where
-    Input: WorthQueryPortableType,
-{
+impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input> {
     /// Starts the operation definition that must explicitly select both static
     /// singleton contract slots before schema registration.
     pub fn definition(
@@ -54,6 +52,7 @@ where
     ) -> ApplicationOperationDefinitionBuilder<Schema, Operation, Input, false, false> {
         ApplicationOperationDefinitionBuilder {
             operation: self.name(),
+            input_type: self.input_identity(),
             external_effect: None,
             aftermath: None,
             marker: PhantomData,
@@ -71,6 +70,7 @@ impl<Schema, Operation, Input, const AFTERMATH_DECIDED: bool>
     {
         ApplicationOperationDefinitionBuilder {
             operation: self.operation,
+            input_type: self.input_type,
             external_effect: None,
             aftermath: self.aftermath,
             marker: PhantomData,
@@ -84,16 +84,17 @@ impl<Schema, Operation, Input, const AFTERMATH_DECIDED: bool>
         correlation_family: WorthQueryExternalEffectCorrelationFamily,
     ) -> ApplicationOperationDefinitionBuilder<Schema, Operation, Input, true, AFTERMATH_DECIDED>
     where
-        Effect: OperationEmits<Operation>,
-        Payload: ApplicationExternalEffectPayload + WorthQueryPortableType,
+        Effect: ApplicationEffectMarkerIdentity<Schema> + OperationEmits<Operation>,
+        Effect::PayloadBinding: ApplicationExternalEffectBinding<Value = Payload>,
     {
         ApplicationOperationDefinitionBuilder {
             operation: self.operation,
+            input_type: self.input_type,
             external_effect: Some(DeclaredExternalEffectSlot {
                 effect: effect.name().to_string(),
-                rust_payload_type: Payload::PORTABLE_TYPE_IDENTITY,
-                protocol: Payload::PROTOCOL,
-                maximum_payload_bytes: Payload::MAX_EXTERNAL_BYTES,
+                rust_payload_type: Effect::PayloadBinding::IDENTITY,
+                protocol: Effect::PayloadBinding::PROTOCOL,
+                maximum_payload_bytes: Effect::PayloadBinding::MAX_EXTERNAL_BYTES,
                 correlation_family,
             }),
             aftermath: self.aftermath,
@@ -117,6 +118,7 @@ impl<Schema, Operation, Input, const EXTERNAL_EFFECT_DECIDED: bool>
     > {
         ApplicationOperationDefinitionBuilder {
             operation: self.operation,
+            input_type: self.input_type,
             external_effect: self.external_effect,
             aftermath: None,
             marker: PhantomData,
@@ -136,6 +138,7 @@ impl<Schema, Operation, Input, const EXTERNAL_EFFECT_DECIDED: bool>
     > {
         ApplicationOperationDefinitionBuilder {
             operation: self.operation,
+            input_type: self.input_type,
             external_effect: self.external_effect,
             aftermath:
                 Some(
@@ -150,13 +153,11 @@ impl<Schema, Operation, Input, const EXTERNAL_EFFECT_DECIDED: bool>
 
 impl<Schema, Operation, Input>
     ApplicationOperationDefinitionBuilder<Schema, Operation, Input, true, true>
-where
-    Input: WorthQueryPortableType,
 {
     pub fn finish(self) -> ApplicationOperationDefinition<Schema, Operation, Input> {
         ApplicationOperationDefinition {
             operation: self.operation,
-            input_type: Input::PORTABLE_TYPE_IDENTITY,
+            input_type: self.input_type,
             external_effect: self.external_effect,
             aftermath: self.aftermath,
             marker: PhantomData,
@@ -171,14 +172,26 @@ mod tests {
     };
 
     use super::ApplicationOperationRef;
-    use crate::application_schema::ApplicationOperationMarkerIdentity;
+    use crate::application_schema::{
+        ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding,
+        ApplicationValueValidationDenial,
+    };
 
     struct Schema;
     struct Operation;
+    struct InputBinding;
 
-    impl ApplicationOperationMarkerIdentity for Operation {
-        type Schema = Schema;
-        type Input = ();
+    impl ApplicationStructuredValueBinding for InputBinding {
+        type Value = ();
+        const IDENTITY_NAME: &'static str = "worth.query.test.operation-input.v1";
+
+        fn validate(_: &Self::Value) -> Result<(), ApplicationValueValidationDenial> {
+            Ok(())
+        }
+    }
+
+    impl ApplicationOperationMarkerIdentity<Schema> for Operation {
+        type InputBinding = InputBinding;
         const IDENTIFIER: &'static str = "Operation";
     }
 

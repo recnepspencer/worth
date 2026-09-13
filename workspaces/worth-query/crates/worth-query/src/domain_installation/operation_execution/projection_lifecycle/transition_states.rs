@@ -155,7 +155,6 @@ macro_rules! operational_refresh {
                     self.transitioned.successor().source(),
                     self.transitioned.successor().handle(),
                     workspace,
-                    None,
                 )
             }
         }

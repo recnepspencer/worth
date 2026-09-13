@@ -153,11 +153,13 @@ fn causal_fact_survives_index_publication_failure_via_relational_owner_read() {
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
     let program = admitted_program(&world, &principal, &account, &request, "causal-replacement");
-    let branch = crate::domain_computation::primary_graph::primary_relational_branch_id();
     let parent = world
-        .application
-        .relational_branch_head(&branch)
-        .expect("fixture branch-head observation is admitted")
+        .selected_product()
+        .product()
+        .relational_basis()
+        .observation()
+        .commit_receipt()
+        .cloned()
         .expect("fixture has an authoritative branch head");
     let pending = WorthQueryPendingAftermathCausality::undo_of(parent.clone());
 
@@ -179,9 +181,11 @@ fn causal_fact_survives_index_publication_failure_via_relational_owner_read() {
     assert_eq!(carried.parent(), &parent);
     assert_eq!(carried.child(), receipt.commit_reference());
 
+    let selected = world.selected_product();
     let reread = world
         .application
-        .committed_aftermath_causality(&pending)
+        .primary_provider
+        .resolve_aftermath_causality_at_basis(selected.product().relational_basis(), &pending, None)
         .expect("owner read succeeds")
         .expect("co-committed fact remains visible");
     assert_eq!(reread, *carried);
@@ -197,11 +201,13 @@ fn idempotency_without_the_claimed_causal_fact_is_not_equivalent() {
     let account = resolved_account(&world, "open", &request);
     let first = admitted_program(&world, &principal, &account, &request, "plain-commit");
     let retry = admitted_program(&world, &principal, &account, &request, "plain-commit");
-    let branch = crate::domain_computation::primary_graph::primary_relational_branch_id();
     let parent = world
-        .application
-        .relational_branch_head(&branch)
-        .expect("fixture branch-head observation is admitted")
+        .selected_product()
+        .product()
+        .relational_basis()
+        .observation()
+        .commit_receipt()
+        .cloned()
         .expect("fixture head");
     assert!(matches!(
         world

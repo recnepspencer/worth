@@ -1,8 +1,7 @@
 use sha2::{Digest, Sha256};
+use worth_store::physical_runtime::recovery_wal::{WalLsnRange, WalSegmentArtifactIdentity};
 use worth_store_physical_format::PhysicalCheckpointIdentity;
-use worth_store_recovery_physics::{
-    PhysicalRecoveryResidueKind, WalLsnRange, WalSegmentArtifactIdentity,
-};
+use worth_store_recovery_physics::PhysicalRecoveryResidueKind;
 
 use crate::progression::RecoveryPublicationExpectation;
 
@@ -146,7 +145,9 @@ fn hash_wal(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use worth_store_recovery_physics::{LogSequenceNumber, WalSegmentGeneration, WalSegmentId};
+    use worth_store::physical_runtime::recovery_wal::{
+        LogSequenceNumber, WalSegmentGeneration, WalSegmentId,
+    };
 
     #[test]
     fn exact_wal_digest_changes_candidate_identity() {

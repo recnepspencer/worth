@@ -1,6 +1,6 @@
 use crate::diagnostics::policy::OrdinaryAccessLane;
 use crate::diagnostics::summary::{ExecutionHistorySummary, GraphSummary};
-use crate::logic::transaction::runtime::state::branching::fork::SignalBranchForkDenial;
+use crate::logic::transaction::runtime::state::branching::SignalBranchForkDenial;
 use crate::state::{
     SignalBranchHandle, SignalSnapshotV1, SnapshotDependencyRestoreMode, SnapshotRestoreIntent,
 };

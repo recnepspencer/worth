@@ -13,8 +13,10 @@ use super::super::{PhysicalRecordReader, RecordPublicationResidueObservation};
 #[path = "serving_runtime/certification/mod.rs"]
 mod certification;
 mod physical_work;
+mod scrub;
 
 pub struct ServingPhysicalRuntime {
+    scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner,
     parts: PhysicalStoreInstanceParts,
 }
 
@@ -23,7 +25,10 @@ impl ServingPhysicalRuntime {
         foundation: PhysicalStoreInstanceFoundation,
     ) -> Result<Self, super::super::RecordServingAdmissionInspectionRequired> {
         match PhysicalStoreInstanceParts::from_record_admission(foundation) {
-            Ok(parts) => Ok(Self { parts }),
+            Ok(parts) => Ok(Self {
+                scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner::new(),
+                parts,
+            }),
             Err(failure) => {
                 let (identity, terminal, cause) = failure.abort();
                 Err(super::super::RecordServingAdmissionInspectionRequired::new(
@@ -81,6 +86,18 @@ impl ServingPhysicalRuntime {
             .counters()
     }
 
+    pub const fn root_protocol_counters(
+        &self,
+    ) -> crate::physical_runtime::RootProtocolRouteCounters {
+        self.parts.root_protocol_counters
+    }
+
+    pub fn resident_admission_counters(
+        &self,
+    ) -> crate::physical_runtime::ResidentAdmissionCounters {
+        self.parts.residency.ports().resident_integrity_counters()
+    }
+
     /// Returns read-only residency evidence for this serving Store generation.
     ///
     /// The observation exposes admitted limits and executed counters, never
@@ -135,6 +152,7 @@ impl ServingPhysicalRuntime {
                 frame_ports,
                 super::super::residency::frame_loading::CanonicalFrameReadSource::new(read),
                 writeback,
+                self.parts.core.lifecycle_state(),
             ),
         }
     }
@@ -148,6 +166,25 @@ impl ServingPhysicalRuntime {
         crate::physical_runtime::durability::PhysicalCheckpointRuntimeOwner::submission(
             &self.parts.checkpoint,
         )
+    }
+
+    /// Installs a bounded production C4 pause at one physical mutation seam.
+    ///
+    /// The gate controls scheduling of the ordinary mutation worker; it does
+    /// not mint an alternate publication or residency authority.
+    pub fn pause_physical_mutation_at(
+        &self,
+        checkpoint: crate::physical_runtime::production::PhysicalMutationCheckpoint,
+    ) -> crate::physical_runtime::production::PhysicalMutationPauseGate {
+        self.parts.publication.pause_mutation_at(checkpoint)
+    }
+
+    /// Installs a bounded production C4 pause at one checkpoint effect seam.
+    pub fn pause_physical_checkpoint_at(
+        &self,
+        step: crate::physical_runtime::production::PhysicalCheckpointStep,
+    ) -> crate::physical_runtime::production::PhysicalCheckpointPauseGate {
+        self.parts.checkpoint.pause_at(step)
     }
 
     pub fn observer(&self) -> PhysicalRecordObserver {
@@ -188,6 +225,7 @@ impl ServingPhysicalRuntime {
     }
 
     pub fn close_plan(self) -> crate::physical_runtime::PhysicalStoreClosePlan {
+        drop(self.scrub);
         crate::physical_runtime::PhysicalStoreClosePlan::new(self.parts)
     }
 
@@ -196,6 +234,7 @@ impl ServingPhysicalRuntime {
     }
 
     pub fn abort_with_evidence(self) -> crate::physical_runtime::PhysicalStoreAbortOutcome {
+        drop(self.scrub);
         crate::physical_runtime::PhysicalStoreAbortOutcome::execute(self.parts)
     }
 }

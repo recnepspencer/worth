@@ -36,3 +36,8 @@ pub use structurally_walked_media::{
 pub(crate) use structurally_walked_media::{
     OwnerDecodedArtifactBinding, OwnerObservationBindingDenial,
 };
+mod structural_observation;
+pub use structural_observation::{
+    classify_offline_artifact_family, observe_bounded_physical_bytes,
+    OfflinePhysicalArtifactFamily, OfflineStructuralObservation,
+};

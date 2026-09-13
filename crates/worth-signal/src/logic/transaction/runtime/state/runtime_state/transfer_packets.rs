@@ -28,6 +28,10 @@ where
     pub fn into_state(self) -> BranchState<D, I, T> {
         self.state
     }
+
+    pub fn state(&self) -> &BranchState<D, I, T> {
+        &self.state
+    }
 }
 
 #[derive(Debug)]
@@ -57,6 +61,10 @@ where
 
     pub fn into_state(self) -> BranchState<D, I, T> {
         self.state
+    }
+
+    pub fn state(&self) -> &BranchState<D, I, T> {
+        &self.state
     }
 }
 

@@ -58,6 +58,10 @@ impl<'a, S> OverlayStateView<'a, S> {
             staged,
         }
     }
+
+    pub(crate) fn base_partition_access(&self) -> &'a dyn PartitionAccess {
+        self.base_partitions
+    }
 }
 
 impl<S: PartitionAccess> PartitionAccess for OverlayStateView<'_, S> {

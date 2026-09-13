@@ -58,6 +58,7 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
     let admitted_session = admit_provider_session(
         &mut running,
         &world.application.primary_graph_authority,
+        attempt_basis.retained_product(),
         mutation_run,
     )
     .unwrap_or_else(|_| panic!("overlay fixture must admit its real provider session"));

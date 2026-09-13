@@ -228,27 +228,29 @@ impl WorthServerQueryWorkspaceProvider for StatefulCountingMutationWorkspaceProv
             .request_context()
             .workspace_target()
             .workspace_id();
-        WorthQueryRuntime::builder()
-            .aspect_contracts(query_handoff_aspect_contracts())
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new(
-                    "aspect_contracts",
-                    format!("failed to install compatibility mutation aspect contracts: {error}"),
-                )
-            })?
-            .backend(StatefulCountingMutationRuntimeBackend::new(
-                self.support_profile.clone(),
-                self.attempted_writes.clone(),
-                self.snapshot_version.clone(),
-            ))
-            .build()
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
-            })?
-            .workspace(workspace_id)
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
-            })
+        WorthQueryRuntime::builder(
+            worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
+        )
+        .aspect_contracts(query_handoff_aspect_contracts())
+        .map_err(|error| {
+            WorthServerQueryWorkspaceBindingError::new(
+                "aspect_contracts",
+                format!("failed to install compatibility mutation aspect contracts: {error}"),
+            )
+        })?
+        .backend(StatefulCountingMutationRuntimeBackend::new(
+            self.support_profile.clone(),
+            self.attempted_writes.clone(),
+            self.snapshot_version.clone(),
+        ))
+        .build()
+        .map_err(|error| {
+            WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
+        })?
+        .workspace(workspace_id)
+        .map_err(|error| {
+            WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
+        })
     }
 }
 

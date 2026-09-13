@@ -52,7 +52,10 @@ impl ApplicationCapabilityRequest<BankSchema, FreezeEstateAccountCapability> for
         Ok(estate_request(self, estate).related_entity(
             ApplicationCapabilityRelatedEntitySelector::new(
                 CapabilityAccount::reference(),
-                ApplicationCapabilityEntitySelector::new(AccountIdentity::reference(), account),
+                ApplicationCapabilityEntitySelector::new(
+                    AccountIdentity::reference(),
+                    crate::schema::encoded_bank_value::<crate::schema::AccountIdBinding>(account),
+                ),
             ),
         ))
     }

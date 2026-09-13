@@ -6,6 +6,8 @@ mod replay_cursor;
 mod replay_cursor_admission;
 mod scan;
 mod segment_identity;
+#[cfg(test)]
+mod tests;
 
 pub use denial::{WalTopologyDenial, WalTopologyDenialKind};
 pub use lsn::LogSequenceNumber;

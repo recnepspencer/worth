@@ -11,6 +11,7 @@ use super::fixture::installed_world;
 fn mutation_refreshes_every_exact_performed_commit_across_branches() {
     let world = installed_world(&[("index-refresh", WorthQueryPrincipalMappingStatus::Enabled)]);
     let graph = world
+        .application
         .runtime
         .primary_graph()
         .expect("fixture publishes its primary graph");

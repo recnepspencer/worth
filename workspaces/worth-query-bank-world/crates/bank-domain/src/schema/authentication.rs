@@ -1,5 +1,6 @@
 use worth_query_decl::facade::authentication::{
-    WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
+    WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
+    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
 use worth_query_decl::facade::{
     worth_query_aspect, worth_query_field, worth_query_principal_binding,
@@ -9,28 +10,28 @@ use crate::model::BankPrincipalId;
 
 use super::entities::{ExternalPrincipalMapping, Principal};
 use super::relations::ExternalPrincipal;
-use super::BankSchema;
+use super::{BankPrincipalIdBinding, BankSchema};
 
-worth_query_aspect!(pub ExternalPrincipalIdentity in BankSchema,
+worth_query_aspect!(pub ExternalPrincipalIdentity for BankSchema,
     ExternalPrincipalMapping; identity = AspectIdentity(0x91611001), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub ExternalIdentityKey in BankSchema,
+    pub ExternalIdentityKey for BankSchema,
     ExternalPrincipalMapping,
     ExternalPrincipalIdentity:
-    WorthQueryExternalPrincipalIdentity, read_only, equality
+    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality
 );
 worth_query_field!(
-    pub ExternalMappingStatus in BankSchema,
+    pub ExternalMappingStatus for BankSchema,
     ExternalPrincipalMapping,
     ExternalPrincipalIdentity:
-    WorthQueryPrincipalMappingStatus, read_write, equality
+    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality
 );
-worth_query_aspect!(pub PrincipalIdentity in BankSchema, Principal; identity = AspectIdentity(0x91611002), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PrincipalIdentity for BankSchema, Principal; identity = AspectIdentity(0x91611002), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub PrincipalIdentityField in BankSchema,
+    pub PrincipalIdentityField for BankSchema,
     Principal,
     PrincipalIdentity:
-    BankPrincipalId, read_only, equality
+    BankPrincipalId => BankPrincipalIdBinding, read_only, equality
 );
 worth_query_principal_binding!(
     pub BankPrincipalBinding in BankSchema,

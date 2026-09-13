@@ -173,6 +173,9 @@ impl WorthQueryRequestedElevation {
 
 #[derive(Debug)]
 pub enum WorthQueryElevationRequestOutcome {
+    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(super::WorthQueryApplicationNoEffect),
     Requested(WorthQueryRequestedElevation),
     AlreadyRequested(WorthQueryRequestedElevation),
     Stale(WorthQueryApplicationStaleAttempt),
@@ -203,6 +206,9 @@ pub(in crate::domain_computation::primary_graph) fn requested_outcome(
         WorthQueryApplicationCommitOutcome::Stale(stale) => {
             WorthQueryElevationRequestOutcome::Stale(stale)
         }
+        WorthQueryApplicationCommitOutcome::ProductStale(stale) => {
+            WorthQueryElevationRequestOutcome::ProductStale(stale)
+        }
         WorthQueryApplicationCommitOutcome::Cancelled => {
             WorthQueryElevationRequestOutcome::Cancelled
         }
@@ -213,6 +219,12 @@ pub(in crate::domain_computation::primary_graph) fn requested_outcome(
         WorthQueryApplicationCommitOutcome::Aborted => WorthQueryElevationRequestOutcome::Aborted,
         WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
             WorthQueryElevationRequestOutcome::Deferred(deferred)
+        }
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
+            WorthQueryElevationRequestOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
+            WorthQueryElevationRequestOutcome::NoEffect(no_effect)
         }
         WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
             WorthQueryElevationRequestOutcome::SettlementDeferred(deferred)

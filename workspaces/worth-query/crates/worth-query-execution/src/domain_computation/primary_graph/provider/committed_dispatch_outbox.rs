@@ -9,7 +9,9 @@ use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::application_aftermath::{
     WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord,
 };
-use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationCommitReceipt, WorthQueryCommittedProductPublication,
+};
 
 #[cfg(test)]
 mod layout_tests;
@@ -21,8 +23,6 @@ mod test_support;
 mod work;
 
 use restoration::{required_fields, restore_record};
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use test_support::commit_and_observe_fixture;
 #[cfg(test)]
 pub(in crate::domain_computation) use test_support::{
     commit_distinct_records_and_admit_fixture, commit_observe_and_admit_fixture,
@@ -36,6 +36,12 @@ pub use work::WorthQueryCommittedDispatchOutboxReadWork;
 /// provider owner module can seal production observations.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCommittedDispatchOutboxObservation {
+    owner: WorthQueryCommittedDispatchOutboxOwnerObservation,
+    committed_product_publication: WorthQueryCommittedProductPublication,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct WorthQueryCommittedDispatchOutboxOwnerObservation {
     record: WorthQueryDispatchOutboxRecord,
     commit: RelationalCommitReceipt,
     record_ref: RecordRef,
@@ -61,6 +67,64 @@ pub enum WorthQueryCommittedDispatchOutboxReadDenial {
 use WorthQueryCommittedDispatchOutboxReadDenial as Denial;
 
 impl WorthQueryCommittedDispatchOutboxObservation {
+    const fn seal(
+        owner: WorthQueryCommittedDispatchOutboxOwnerObservation,
+        committed_product_publication: WorthQueryCommittedProductPublication,
+    ) -> Self {
+        Self {
+            owner,
+            committed_product_publication,
+        }
+    }
+
+    pub const fn record(&self) -> &WorthQueryDispatchOutboxRecord {
+        self.owner.record()
+    }
+
+    pub const fn commit_reference(&self) -> &RelationalCommitReceipt {
+        self.owner.commit_reference()
+    }
+
+    pub const fn committed_product_publication(&self) -> &WorthQueryCommittedProductPublication {
+        &self.committed_product_publication
+    }
+
+    pub const fn record_ref(&self) -> &RecordRef {
+        self.owner.record_ref()
+    }
+
+    pub const fn relational_runtime_instance_id(&self) -> u64 {
+        self.owner.relational_runtime_instance_id()
+    }
+
+    pub const fn work(&self) -> WorthQueryCommittedDispatchOutboxReadWork {
+        self.owner.work()
+    }
+
+    /// Corruption probe for proving the World axis is checked independently
+    /// from the Relational runtime axis.
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn with_relational_runtime_instance_for_test(
+        mut self,
+        runtime: u64,
+    ) -> Self {
+        self.owner.relational_runtime_instance_id = runtime;
+        self
+    }
+
+    /// Substitution probe for proving the exact World publication is paired
+    /// with its own Relational owner row before transport admission.
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn with_product_publication_for_test(
+        mut self,
+        publication: WorthQueryCommittedProductPublication,
+    ) -> Self {
+        self.committed_product_publication = publication;
+        self
+    }
+}
+
+impl WorthQueryCommittedDispatchOutboxOwnerObservation {
     const fn seal(
         record: WorthQueryDispatchOutboxRecord,
         commit: RelationalCommitReceipt,
@@ -111,6 +175,12 @@ impl WorthQueryPrimaryGraphProvider {
             receipt.commit_reference(),
             receipt.provider_runtime_instance_id(),
         )
+        .map(|owner| {
+            WorthQueryCommittedDispatchOutboxObservation::seal(
+                owner,
+                receipt.committed_product_publication().clone(),
+            )
+        })
         .map(Some)
     }
 
@@ -124,6 +194,12 @@ impl WorthQueryPrimaryGraphProvider {
             binding.commit_reference(),
             binding.runtime_instance_id(),
         )
+        .map(|owner| {
+            WorthQueryCommittedDispatchOutboxObservation::seal(
+                owner,
+                binding.committed_product_publication().clone(),
+            )
+        })
     }
 
     fn observe_expected(
@@ -131,7 +207,7 @@ impl WorthQueryPrimaryGraphProvider {
         binding: &super::WorthQueryCommittedDispatchOutboxBinding,
         expected_commit: &worth_relational::facade::history::RelationalCommitReceipt,
         expected_runtime: u64,
-    ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
+    ) -> Result<WorthQueryCommittedDispatchOutboxOwnerObservation, Denial> {
         let layout = self.graph.layout.provider_dispatch_outbox().clone();
         let expected_commit = expected_commit.clone();
         let retained_basis = self
@@ -197,7 +273,7 @@ struct CommittedOutboxRead<'a> {
 }
 
 impl CommittedOutboxRead<'_> {
-    fn resolve(&mut self) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
+    fn resolve(&mut self) -> Result<WorthQueryCommittedDispatchOutboxOwnerObservation, Denial> {
         let RecordRef::Entity(entity_id) = self.binding.record_ref() else {
             return Err(Denial::NotAuthoritative);
         };
@@ -215,7 +291,7 @@ impl CommittedOutboxRead<'_> {
         if committed.commit() != self.expected_commit {
             return Err(Denial::CommitMismatch);
         }
-        Ok(WorthQueryCommittedDispatchOutboxObservation::seal(
+        Ok(WorthQueryCommittedDispatchOutboxOwnerObservation::seal(
             record,
             committed.commit().clone(),
             RecordRef::Entity(entity_id),

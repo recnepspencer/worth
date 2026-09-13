@@ -1,3 +1,5 @@
+mod retained_charge;
+
 use serde::{Deserialize, Serialize};
 
 use crate::data::graph::SignalGraph;
@@ -53,52 +55,33 @@ impl GraphSummary {
         let mut sample_dirty_nodes = Vec::new();
         let mut sample_nodes_with_execution_record = Vec::new();
 
-        for index in 0..graph.arena_capacity() {
-            let Some(node) = graph.live_node_id_at(index) else {
-                continue;
-            };
-            let Ok(state) = graph.get_state(node) else {
-                continue;
-            };
-            match state {
+        for node in graph.diagnostic_nodes() {
+            match node.state() {
                 NodeState::Clean => clean_node_count += 1,
                 NodeState::MaybeStale => maybe_stale_node_count += 1,
                 NodeState::Dirty => {
                     dirty_node_count += 1;
                     if sample_dirty_nodes.len() < detail_limit.get() {
-                        sample_dirty_nodes.push(node);
+                        sample_dirty_nodes.push(node.node());
                     }
                 }
             }
-            let Ok(dependencies) = graph.dependencies_of(node) else {
-                continue;
-            };
+            let dependencies = node.dependencies();
             dependency_edge_count += dependencies.len() as u32;
-            if let Ok(subscribers) = graph.subscribers_of(node) {
-                subscriber_edge_count += subscribers.len() as u32;
-            }
+            subscriber_edge_count += node.subscribers().len() as u32;
             if dependencies.iter().any(|edge| edge.scope_ref().is_some()) {
                 nodes_with_partition_scopes += 1;
             }
-            if graph
-                .node_runtime_artifact_state_present(node)
-                .unwrap_or(false)
-            {
+            if node.node_runtime_artifact_state_present() {
                 nodes_with_trace_summary += 1;
-                if graph
-                    .node_execution_trace_stamp(node)
-                    .ok()
-                    .flatten()
-                    .and_then(|stamp| stamp.execution_record_id)
-                    .is_some()
-                {
+                if node.execution_record_present() {
                     nodes_with_execution_record += 1;
                     if sample_nodes_with_execution_record.len() < detail_limit.get() {
-                        sample_nodes_with_execution_record.push(node);
+                        sample_nodes_with_execution_record.push(node.node());
                     }
                 }
             }
-            if graph.causality_of(node).unwrap_or(None).is_some() {
+            if node.causality_present() {
                 nodes_with_causality += 1;
             }
         }

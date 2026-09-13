@@ -86,7 +86,7 @@ impl DiagnosticCode {
 
     pub(super) fn default_legal_home(self) -> LegalHome {
         let pointer = match self {
-            Self::Bc1001IllegalCrateName | Self::Bc1002UnreservedDomain => "tools/boundary-check/config/road1.toml [naming] and cad/docs/worthy-foundations/NAMING.md",
+            Self::Bc1001IllegalCrateName | Self::Bc1002UnreservedDomain => "tools/boundary-check/config/road1.toml [naming]",
             Self::Bc2001BandDependencyViolation | Self::Bc2002WorthToWorthyInversion => "tools/boundary-check/config/road1.toml [rule_contracts]",
             Self::Bc3001DirectQueryEngine | Self::Bc3002WrongQueryAudience | Self::Bc3101QuerySourcePath | Self::Bc3102QueryPublicSignature | Self::Bc3103QueryPublicReexport => "tools/boundary-check/config/road1.toml [rule_contracts.query_audience]; consume Query only through the audience facade configured for the crate band",
             Self::Bc3003QueryAudienceFacadeContract => "tools/boundary-check/config/road1.toml [rule_contracts.query_audience]; restore the configured workspaces/worth-query package or audience leaf",

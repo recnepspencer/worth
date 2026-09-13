@@ -1,14 +1,10 @@
-use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, RecordArtifactFile, RecordFrameCoordinate,
 };
 
 use super::super::{PhysicalWorkOperationFamily, PhysicalWorkRecoveryDisposition};
-
-mod codec;
-pub(super) use codec::{encode_family, encode_target};
-
-pub(super) const RECOVERY_RECORD_BYTES: usize = 160;
+use super::format_mapping::{operation_from_format, target_from_format};
+use super::integrity_admission::IntegrityAdmittedPhysicalWorkProjection;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalWorkRecoveryTarget {
@@ -45,56 +41,6 @@ pub struct PhysicalWorkRecoveryLocator {
     recovery: PhysicalWorkRecoveryDisposition,
 }
 
-pub(super) fn decode_locator(
-    expected_store: StableStoreIdentity,
-    file_name: &str,
-    record: &[u8],
-) -> Option<PhysicalWorkRecoveryLocator> {
-    if record.len() != RECOVERY_RECORD_BYTES
-        || &record[..8] != b"WPEFFECT"
-        || record[16..32] != expected_store.bytes()
-        || record[10..16].iter().any(|byte| *byte != 0)
-    {
-        return None;
-    }
-    let checksum: [u8; 32] = Sha256::digest(&record[..128]).into();
-    if checksum != record[128..] {
-        return None;
-    }
-    let family = codec::decode_family(record[9])?;
-    if matches!(
-        family,
-        PhysicalWorkOperationFamily::ArtifactMetadataRead
-            | PhysicalWorkOperationFamily::ArtifactRangeRead
-    ) {
-        return None;
-    }
-    let runtime = read_u64(record, 32)?;
-    let generation = read_u64(record, 40)?;
-    let operation = read_u64(record, 48)?;
-    if runtime == 0 || generation == 0 || operation == 0 {
-        return None;
-    }
-    let expected_name = format!("effect-{runtime:016x}-{generation:016x}-{operation:016x}.pending");
-    if file_name != expected_name {
-        return None;
-    }
-    if record[8] != 6 {
-        return None;
-    }
-    let (target, payload_digest) = codec::decode_target(record)?;
-    Some(PhysicalWorkRecoveryLocator {
-        store: expected_store,
-        runtime,
-        generation,
-        operation,
-        family,
-        target,
-        payload_digest,
-        recovery: PhysicalWorkRecoveryDisposition::InspectionRequired,
-    })
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalCheckpointRecoveryAction {
     CreateCandidate { byte_count: u64 },
@@ -126,13 +72,31 @@ impl From<super::super::PhysicalCheckpointWorkAction> for PhysicalCheckpointReco
     }
 }
 
-fn read_u64(record: &[u8], offset: usize) -> Option<u64> {
-    Some(u64::from_le_bytes(
-        record.get(offset..offset + 8)?.try_into().ok()?,
-    ))
-}
-
 impl PhysicalWorkRecoveryLocator {
+    pub(super) fn from_integrity_admitted(
+        admitted: IntegrityAdmittedPhysicalWorkProjection,
+    ) -> Option<Self> {
+        let family = operation_from_format(admitted.operation());
+        if matches!(
+            family,
+            PhysicalWorkOperationFamily::ArtifactMetadataRead
+                | PhysicalWorkOperationFamily::ArtifactRangeRead
+        ) {
+            return None;
+        }
+        let identity = admitted.identity();
+        Some(Self {
+            store: admitted.scope().store_identity(),
+            runtime: identity.runtime().get(),
+            generation: identity.generation().get(),
+            operation: identity.operation().get(),
+            family,
+            target: target_from_format(admitted.target())?,
+            payload_digest: admitted.payload_digest(),
+            recovery: PhysicalWorkRecoveryDisposition::InspectionRequired,
+        })
+    }
+
     pub const fn store(self) -> StableStoreIdentity {
         self.store
     }

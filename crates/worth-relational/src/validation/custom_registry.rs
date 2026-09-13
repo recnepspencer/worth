@@ -14,9 +14,15 @@ pub(crate) struct DuplicateCustomInvariantRegistration {
 #[derive(Debug, Clone, Default)]
 pub(crate) struct FrozenCustomInvariantRegistry {
     registrations: Arc<[CustomInvariantRegistration]>,
-    #[cfg(test)]
-    index_by_identity_and_execution_point:
-        Arc<BTreeMap<(CustomInvariantSemanticIdentity, InvariantExecutionPoint), usize>>,
+    index_by_identity_and_execution_point: Arc<
+        BTreeMap<
+            (
+                crate::validation::data::CustomInvariantRuleId,
+                InvariantExecutionPoint,
+            ),
+            usize,
+        >,
+    >,
 }
 
 impl FrozenCustomInvariantRegistry {
@@ -28,7 +34,7 @@ impl FrozenCustomInvariantRegistry {
             let identity = registration.descriptor().identity.clone();
             let execution_point = registration.execution_point();
             if index_by_identity_and_execution_point
-                .insert((identity.clone(), execution_point), index)
+                .insert((identity.rule_id.clone(), execution_point), index)
                 .is_some()
             {
                 return Err(DuplicateCustomInvariantRegistration {
@@ -39,7 +45,6 @@ impl FrozenCustomInvariantRegistry {
         }
         Ok(Self {
             registrations: registrations.into(),
-            #[cfg(test)]
             index_by_identity_and_execution_point: Arc::new(index_by_identity_and_execution_point),
         })
     }
@@ -52,15 +57,15 @@ impl FrozenCustomInvariantRegistry {
         self.registrations.iter()
     }
 
-    #[cfg(test)]
     pub(crate) fn get(
         &self,
         identity: &CustomInvariantSemanticIdentity,
         execution_point: InvariantExecutionPoint,
     ) -> Option<&CustomInvariantRegistration> {
         self.index_by_identity_and_execution_point
-            .get(&(identity.clone(), execution_point))
+            .get(&(identity.rule_id.clone(), execution_point))
             .and_then(|index| self.registrations.get(*index))
+            .filter(|registration| &registration.descriptor().identity == identity)
     }
 }
 
@@ -95,6 +100,8 @@ mod tests {
                 },
                 display_name: Arc::from(self.rule_id),
                 operational: CustomInvariantOperationalMetadata {
+                    maximum_work_units: std::num::NonZeroU64::new(1).unwrap(),
+                    access: crate::validation::data::CustomInvariantAccessContract::default(),
                     execution_point: self.execution_point,
                     groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                     cost_class: InvariantCostClass::Touched,

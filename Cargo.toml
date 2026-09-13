@@ -1,13 +1,11 @@
 [workspace]
 resolver = "2"
-# Road 1 sub-workspaces under cad/workspaces own their own package membership.
+# Road 1 sub-workspaces under workspaces own their own package membership.
 # Keep them out of the root workspace so whole-world orchestration must route
 # through explicit --manifest-path calls rather than silent root ownership.
-exclude = ["cad/workspaces/*", "workspaces/*", "crates/worth-geom"]
+exclude = ["workspaces/*"]
 members = [
     "crates/worth-harness",
-    "crates/worth-math",
-    "crates/hadwiger-research",
 
 
     "crates/worth-runtime-bridge",
@@ -18,33 +16,23 @@ members = [
     "crates/worth-signal",
     "crates/worth-signal-wasm",
     "crates/worth-relational",
+    "crates/worth-runtime-world",
 ]
 
 [workspace.metadata.worth_topology]
 role = "thin_orchestrator"
-road1_subworkspaces = [
-    "cad/workspaces/worth-contracts",
-    "cad/workspaces/worth-entry",
-    "cad/workspaces/worth-derived",
-    "cad/workspaces/worth-packs",
-    "cad/workspaces/worth-certification",
-]
-forbidden_member_prefixes = ["cad/workspaces/"]
+road1_subworkspaces = ["workspaces/worth-contracts"]
+forbidden_member_prefixes = ["workspaces/"]
 boundary_check_manifest = "tools/boundary-check/Cargo.toml"
 boundary_check_config = "tools/boundary-check/config/road1.toml"
 
 [workspace.package]
 edition = "2021"
 version = "0.1.0"
-license = "UNLICENSED"
+license = "BUSL-1.1"
 
 [workspace.dependencies]
 worth-harness = { path = "crates/worth-harness", version = "0.1.0" }
-# Internal crates - kernel
-worth-math = { path = "crates/worth-math" }
-hadwiger-research = { path = "crates/hadwiger-research" }
-
-
 worth-runtime-bridge = { path = "crates/worth-runtime-bridge" }
 worth-server = { path = "crates/worth-server" }
 worth-server-client-generation = { path = "crates/worth-server-client-generation" }
@@ -53,21 +41,16 @@ worth-query-decl = { path = "workspaces/worth-query/crates/worth-query-decl" }
 worth-query-host = { path = "workspaces/worth-query/crates/worth-query-host" }
 worth-query-publication = { path = "workspaces/worth-query/crates/worth-query-publication" }
 worth-query-replay = { path = "workspaces/worth-query/crates/worth-query-replay" }
-worth-schema-graph = { path = "cad/workspaces/worth-contracts/crates/worth-schema-graph" }
+worth-schema-graph = { path = "workspaces/worth-contracts/crates/worth-schema-graph" }
 worth-foundational = { path = "crates/worth-foundational" }
 worth-proof = { path = "crates/worth-proof" }
 worth-signal = { path = "crates/worth-signal" }
 worth-signal-wasm = { path = "crates/worth-signal-wasm" }
 worth-relational = { path = "crates/worth-relational" }
-
-# Benchmarking
-criterion = { version = "0.5", features = ["html_reports"] }
+worth-runtime-world = { path = "crates/worth-runtime-world" }
 
 # Testing
 trybuild = "1.0"
-varisat = "0.2.1"
-good_lp = { version = "1.15.2", default-features = false, features = ["minilp"] }
-clarabel = "0.11.1"
 
 # Observability
 tracing = "0.1"

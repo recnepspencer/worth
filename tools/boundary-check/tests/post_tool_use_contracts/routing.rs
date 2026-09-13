@@ -20,7 +20,7 @@ fn every_governed_root_routes_and_adjacent_paths_skip() {
     let command = configured_hook_command();
     let workspace = hostile_workspace();
     for path in [
-        "cad/workspaces/example/src/lib.rs",
+        "workspaces/worth-contracts/crates/worth-schema-core/src/lib.rs",
         "workspaces/worth-query/crates/worth-query/src/lib.rs",
         "workspaces/worth-query/crates/worth-query-certification/Cargo.toml",
         "tools/new-constitutional-tool/src/lib.rs",
@@ -38,6 +38,7 @@ fn every_governed_root_routes_and_adjacent_paths_skip() {
         );
     }
     for path in [
+        "cad/workspaces/example/src/lib.rs",
         "cad/docs/road.md",
         "workspaces/worth-ui/crates/worth-ui/src/lib.rs",
         "examples/unrelated/Cargo.toml",

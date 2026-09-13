@@ -19,6 +19,7 @@ Read by capability area:
 - [Lineage, Provenance, Receipts, And Support Truth](./lineage-provenance-receipts-and-support-truth/README.md)
 - [Performance, Layout, And Enforcement Vocabulary](./performance/README.md)
 - [Scoped Merge And Cherry-Pick Vocabulary](./scoped-merge-adoption.md)
+- [Physical Integrity And Offline Observation](../../../_docs/worth-store/physical-integrity-and-offline-verification.md): portable descriptive facts, never runtime/recovery/repair authority.
 
 If you are working through the milestones in order, Milestone 7 is where the
 crate stops talking only about artifacts, transitions, and diagnostics, and

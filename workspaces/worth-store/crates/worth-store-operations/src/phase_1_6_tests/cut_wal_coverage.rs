@@ -3,7 +3,7 @@ use super::support::*;
 #[test]
 fn backup_cut_admission_rejects_a_wal_interval_not_closed_by_owner_coverage() {
     let scenario = BackupScenario::new("wal-gap");
-    let authority = crate::backup::export::current_authority("s10-wal-gap");
+    let authority = scenario.authority();
     let control = scenario.control_store();
     let uncovered = BackupCutCoordinates::new(
         "lineage-a",

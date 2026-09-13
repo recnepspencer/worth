@@ -41,7 +41,7 @@ pub struct BankRejectPendingPayment {
     pub(in crate::ordinary::mutation) payment: PaymentId,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct BankPaymentInitiationOutcome {
     outcome: BankMutationOutcome,
     continuation: Option<BankPendingPaymentContinuation>,

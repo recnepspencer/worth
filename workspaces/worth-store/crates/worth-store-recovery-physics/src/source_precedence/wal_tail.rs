@@ -1,15 +1,22 @@
-use worth_store_wal::{
-    InterruptedWalTail, VerifiedWalArtifact, VerifiedWalFrame, WalLsnRange,
-    WalSegmentArtifactIdentity, WalSegmentInspection,
-};
+use worth_store_wal::{WalLsnRange, WalSegmentArtifactIdentity, WalSegmentInspection};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalWalSegmentCandidate {
     inspection: WalSegmentInspection,
-    interrupted_tail: Option<InterruptedWalTail>,
-    verified_artifact: Option<VerifiedWalArtifact>,
+    interrupted_tail: Option<PhysicalWalInterruptionFacts>,
+    frame_facts: Box<[PhysicalWalFrameFacts]>,
     selected_frame_start: usize,
     selected_range: Option<WalLsnRange>,
     selected_bytes: Option<u64>,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PhysicalWalFrameFacts {
+    lsn_range: WalLsnRange,
+    encoded_bytes: u64,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PhysicalWalInterruptionFacts {
+    valid_prefix_bytes: u64,
+    observed_bytes: u64,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SelectedPhysicalWalTail {
@@ -29,33 +36,32 @@ pub enum SelectedPhysicalWalTailDenial {
     CounterOverflow,
 }
 impl PhysicalWalSegmentCandidate {
-    pub fn verified(
+    pub fn from_frame_facts(
         inspection: WalSegmentInspection,
-        interrupted_tail: Option<InterruptedWalTail>,
-    ) -> Self {
-        Self {
+        interrupted_tail: Option<PhysicalWalInterruptionFacts>,
+        frame_facts: Vec<PhysicalWalFrameFacts>,
+    ) -> Option<Self> {
+        if frame_facts.len() as u64 != inspection.frame_count()
+            || frame_facts.first()?.lsn_range().start() != inspection.lsn_range().start()
+            || frame_facts.last()?.lsn_range().end_exclusive()
+                != inspection.lsn_range().end_exclusive()
+            || frame_facts
+                .windows(2)
+                .any(|pair| pair[0].lsn_range().end_exclusive() != pair[1].lsn_range().start())
+            || frame_facts.iter().try_fold(0_u64, |total, frame| {
+                total.checked_add(frame.encoded_bytes())
+            })? != inspection.byte_count()
+        {
+            return None;
+        }
+        Some(Self {
             inspection,
             interrupted_tail,
-            verified_artifact: None,
+            frame_facts: frame_facts.into_boxed_slice(),
             selected_frame_start: 0,
             selected_range: None,
             selected_bytes: None,
-        }
-    }
-
-    pub(crate) fn verified_with_artifact(
-        verified_artifact: VerifiedWalArtifact,
-        interrupted_tail: Option<InterruptedWalTail>,
-    ) -> Self {
-        let inspection = verified_artifact.inspection();
-        Self {
-            inspection,
-            interrupted_tail,
-            verified_artifact: Some(verified_artifact),
-            selected_frame_start: 0,
-            selected_range: None,
-            selected_bytes: None,
-        }
+        })
     }
 
     pub const fn identity(&self) -> WalSegmentArtifactIdentity {
@@ -66,18 +72,12 @@ impl PhysicalWalSegmentCandidate {
         self.inspection
     }
 
-    pub const fn interrupted_tail(&self) -> Option<InterruptedWalTail> {
+    pub const fn interrupted_tail(&self) -> Option<PhysicalWalInterruptionFacts> {
         self.interrupted_tail
     }
 
-    pub fn frames(&self) -> &[VerifiedWalFrame] {
-        self.verified_artifact.as_ref().map_or(&[], |artifact| {
-            &artifact.frames()[self.selected_frame_start..]
-        })
-    }
-
-    pub(super) fn into_verified_artifact(self) -> Option<VerifiedWalArtifact> {
-        self.verified_artifact
+    pub fn frame_facts(&self) -> &[PhysicalWalFrameFacts] {
+        &self.frame_facts[self.selected_frame_start..]
     }
 
     fn selected_range(&self) -> WalLsnRange {
@@ -88,7 +88,7 @@ impl PhysicalWalSegmentCandidate {
     fn selected_frame_count(&self) -> u64 {
         self.selected_range
             .map_or(self.inspection.frame_count(), |_| {
-                self.frames().len() as u64
+                self.frame_facts().len() as u64
             })
     }
 
@@ -106,25 +106,30 @@ impl PhysicalWalSegmentCandidate {
             return Ok(Some(self));
         }
         let first = self
-            .frames()
+            .frame_facts()
             .iter()
             .position(|frame| frame.lsn_range().start().get() >= frontier)
             .ok_or(SelectedPhysicalWalTailDenial::CheckpointFrontierMismatch)?;
-        if self.frames()[first].lsn_range().start().get() != frontier {
+        if self.frame_facts()[first].lsn_range().start().get() != frontier {
             return Err(SelectedPhysicalWalTailDenial::CheckpointFrontierMismatch);
         }
         self.selected_frame_start = self
             .selected_frame_start
             .checked_add(first)
             .ok_or(SelectedPhysicalWalTailDenial::CounterOverflow)?;
-        let start = self.frames().first().unwrap().lsn_range().start();
-        let end = self.frames().last().unwrap().lsn_range().end_exclusive();
+        let start = self.frame_facts().first().unwrap().lsn_range().start();
+        let end = self
+            .frame_facts()
+            .last()
+            .unwrap()
+            .lsn_range()
+            .end_exclusive();
         self.selected_range = Some(
             WalLsnRange::new(start, end)
                 .map_err(|_| SelectedPhysicalWalTailDenial::CheckpointFrontierMismatch)?,
         );
         self.selected_bytes = Some(
-            self.frames()
+            self.frame_facts()
                 .iter()
                 .try_fold(0_u64, |bytes, frame| {
                     bytes.checked_add(frame.encoded_bytes())
@@ -239,161 +244,46 @@ impl SelectedPhysicalWalTail {
         self.byte_count
     }
 
-    pub fn frames(&self) -> impl Iterator<Item = &VerifiedWalFrame> {
-        self.segments.iter().flat_map(|segment| segment.frames())
+    pub fn frame_facts(&self) -> impl Iterator<Item = &PhysicalWalFrameFacts> {
+        self.segments
+            .iter()
+            .flat_map(|segment| segment.frame_facts())
+    }
+}
+
+impl PhysicalWalFrameFacts {
+    pub fn new(lsn_range: WalLsnRange, encoded_bytes: u64) -> Option<Self> {
+        (encoded_bytes != 0).then_some(Self {
+            lsn_range,
+            encoded_bytes,
+        })
+    }
+
+    pub const fn lsn_range(self) -> WalLsnRange {
+        self.lsn_range
+    }
+
+    pub const fn encoded_bytes(self) -> u64 {
+        self.encoded_bytes
+    }
+}
+
+impl PhysicalWalInterruptionFacts {
+    pub fn new(valid_prefix_bytes: u64, observed_bytes: u64) -> Option<Self> {
+        (valid_prefix_bytes != 0 && observed_bytes > valid_prefix_bytes).then_some(Self {
+            valid_prefix_bytes,
+            observed_bytes,
+        })
+    }
+
+    pub const fn valid_prefix_bytes(self) -> u64 {
+        self.valid_prefix_bytes
+    }
+
+    pub const fn observed_bytes(self) -> u64 {
+        self.observed_bytes
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use worth_store_wal::{
-        inspect_verified_wal_active_tail, inspect_verified_wal_segment, prepare_wal_frame_append,
-        WalSegmentArtifactIdentity, WalSegmentGeneration, WalSegmentId,
-    };
-
-    use super::*;
-
-    #[test]
-    fn semantic_segment_order_is_deterministic_and_checkpoint_contiguous() {
-        let first = complete_candidate(1, 10, 20);
-        let second = complete_candidate(2, 20, 30);
-        let selected = admit_physical_wal_tail(10, vec![second, first]).unwrap();
-        assert_eq!(selected.segments()[0].identity().segment().get(), 1);
-        assert_eq!(selected.segments()[1].identity().segment().get(), 2);
-        assert_eq!(selected.frame_count(), 2);
-    }
-
-    #[test]
-    fn whole_checkpoint_covered_artifacts_are_retained_as_cleanup_facts() {
-        let covered = complete_candidate(1, 0, 10);
-        let retained = complete_candidate(2, 10, 20);
-        let selected = admit_physical_wal_tail(10, vec![retained, covered]).unwrap();
-
-        assert_eq!(selected.segments().len(), 1);
-        assert_eq!(selected.segments()[0].identity().segment().get(), 2);
-        assert_eq!(selected.checkpoint_covered().len(), 1);
-        assert_eq!(
-            selected.checkpoint_covered()[0].identity().segment().get(),
-            1
-        );
-        assert_eq!(
-            selected.checkpoint_covered()[0].lsn_range().start().get(),
-            0
-        );
-        assert_eq!(
-            selected.checkpoint_covered()[0]
-                .lsn_range()
-                .end_exclusive()
-                .get(),
-            10
-        );
-        assert!(selected.checkpoint_covered()[0].byte_count() > 0);
-        assert!(selected.checkpoint_covered()[0].cleanup_safe());
-    }
-
-    #[test]
-    fn interrupted_checkpoint_covered_artifact_remains_an_unsafe_cleanup_fact() {
-        let covered = interrupted_candidate(1, 0, 10, 20);
-        let observed = covered.interrupted_tail().unwrap().observed_bytes();
-        let retained = complete_candidate(2, 10, 20);
-        let selected = admit_physical_wal_tail(10, vec![retained, covered]).unwrap();
-
-        assert_eq!(selected.checkpoint_covered().len(), 1);
-        assert!(!selected.checkpoint_covered()[0].cleanup_safe());
-        assert_eq!(selected.checkpoint_covered()[0].byte_count(), observed);
-    }
-
-    #[test]
-    fn segment_and_lsn_gaps_are_independently_rejected() {
-        assert_eq!(
-            admit_physical_wal_tail(
-                10,
-                vec![complete_candidate(1, 10, 20), complete_candidate(3, 20, 30)],
-            ),
-            Err(SelectedPhysicalWalTailDenial::SegmentGap)
-        );
-        assert_eq!(
-            admit_physical_wal_tail(
-                10,
-                vec![complete_candidate(1, 10, 20), complete_candidate(2, 21, 30)],
-            ),
-            Err(SelectedPhysicalWalTailDenial::LsnGap)
-        );
-    }
-
-    #[test]
-    fn interrupted_suffix_is_legal_only_on_the_terminal_segment() {
-        let interrupted = interrupted_candidate(1, 10, 20, 30);
-        let terminal = admit_physical_wal_tail(10, vec![interrupted.clone()]).unwrap();
-        assert!(terminal.segments()[0].interrupted_tail().is_some());
-        assert_eq!(
-            admit_physical_wal_tail(10, vec![interrupted, complete_candidate(2, 20, 30)],),
-            Err(SelectedPhysicalWalTailDenial::InterruptedMiddleSegment)
-        );
-    }
-
-    fn complete_candidate(segment: u64, start: u64, end: u64) -> PhysicalWalSegmentCandidate {
-        let directory = tempfile::tempdir().unwrap();
-        let plan = prepare_wal_frame_append(
-            directory.path(),
-            segment,
-            1,
-            start,
-            end,
-            "test-frame",
-            b"payload",
-        )
-        .unwrap();
-        let identity = identity(segment);
-        let verified = inspect_verified_wal_segment(identity, plan.encoded_frame()).unwrap();
-        PhysicalWalSegmentCandidate::verified_with_artifact(verified.to_owned_artifact(), None)
-    }
-
-    fn interrupted_candidate(
-        segment: u64,
-        start: u64,
-        first_end: u64,
-        second_end: u64,
-    ) -> PhysicalWalSegmentCandidate {
-        let directory = tempfile::tempdir().unwrap();
-        let first = prepare_wal_frame_append(
-            directory.path(),
-            segment,
-            1,
-            start,
-            first_end,
-            "first-frame",
-            b"first",
-        )
-        .unwrap();
-        let path = directory.path().join(first.relative_path());
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(&path, first.encoded_frame()).unwrap();
-        let second = prepare_wal_frame_append(
-            directory.path(),
-            segment,
-            1,
-            first_end,
-            second_end,
-            "second-frame",
-            b"second",
-        )
-        .unwrap();
-        let mut bytes = first.encoded_frame().to_vec();
-        bytes.extend_from_slice(&second.encoded_frame()[..20]);
-        let active = inspect_verified_wal_active_tail(identity(segment), &bytes).unwrap();
-        let interruption = active.interrupted_tail();
-        let verified = active.into_verified_prefix();
-        PhysicalWalSegmentCandidate::verified_with_artifact(
-            verified.to_owned_artifact(),
-            interruption,
-        )
-    }
-
-    fn identity(segment: u64) -> WalSegmentArtifactIdentity {
-        WalSegmentArtifactIdentity::new(
-            WalSegmentId::new(segment).unwrap(),
-            WalSegmentGeneration::new(1).unwrap(),
-        )
-    }
-}
+mod tests;

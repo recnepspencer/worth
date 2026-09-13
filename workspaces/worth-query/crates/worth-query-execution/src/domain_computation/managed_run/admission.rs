@@ -65,6 +65,7 @@ fn validate_direct_run(
         resource_attempt,
         bridge_basis,
         relational_basis,
+        None,
         counters,
     )
 }
@@ -87,6 +88,7 @@ pub(super) fn validate_direct_run_lower(
     resource_attempt: &WorthQueryDirectExecutionResourceAttempt,
     bridge_basis: &BridgeBoundExecutionBasis,
     relational_basis: &WorthQueryManagedRelationalObservation,
+    product_observation: Option<&worth_runtime_world::facade::ProductBranchObservation>,
     counters: WorthQueryManagedRunCounters,
 ) -> Result<WorthQueryManagedRunCounters, WorthQueryManagedRunDenial> {
     validate_run_lower(
@@ -94,6 +96,7 @@ pub(super) fn validate_direct_run_lower(
         resource_attempt.attempt_identity().as_str(),
         bridge_basis,
         relational_basis,
+        product_observation,
         counters,
     )
 }
@@ -126,6 +129,7 @@ pub(super) fn validate_workflow_run_lower(
     resource_attempt: &WorthQueryWorkflowExecutionResourceAttempt,
     bridge_basis: &BridgeBoundExecutionBasis,
     relational_basis: &WorthQueryManagedRelationalObservation,
+    product_observation: Option<&worth_runtime_world::facade::ProductBranchObservation>,
     counters: WorthQueryManagedRunCounters,
 ) -> Result<WorthQueryManagedRunCounters, WorthQueryManagedRunDenial> {
     validate_run_lower(
@@ -133,6 +137,7 @@ pub(super) fn validate_workflow_run_lower(
         resource_attempt.attempt_identity().as_str(),
         bridge_basis,
         relational_basis,
+        product_observation,
         counters,
     )
 }
@@ -142,6 +147,7 @@ fn validate_run_lower(
     resource_attempt_identity: &str,
     bridge_basis: &BridgeBoundExecutionBasis,
     relational_basis: &WorthQueryManagedRelationalObservation,
+    product_observation: Option<&worth_runtime_world::facade::ProductBranchObservation>,
     mut counters: WorthQueryManagedRunCounters,
 ) -> Result<WorthQueryManagedRunCounters, WorthQueryManagedRunDenial> {
     counters.checked_bridge_intent();
@@ -156,7 +162,13 @@ fn validate_run_lower(
     counters.checked_relational_basis();
     validate_relational_snapshot(bridge_basis, relational_basis, &counters)?;
     counters.checked_semantic_basis();
-    validate_semantic_basis(operation, bridge_basis, relational_basis, &counters)?;
+    validate_semantic_basis(
+        operation,
+        bridge_basis,
+        relational_basis,
+        product_observation,
+        &counters,
+    )?;
     Ok(counters)
 }
 
@@ -221,7 +233,8 @@ fn validate_resource_attempt(
     let attempt_operation = attempt.binding_authority();
     if attempt_operation.binding_identity() != operation.binding_identity()
         || attempt.resources().binding_identity() != operation.binding_identity()
-        || attempt.provider_session().attempt_identity() != attempt.attempt_identity().as_str()
+        || attempt.managed_provider_session().attempt_identity()
+            != attempt.attempt_identity().as_str()
     {
         return Err(denial(
             WorthQueryManagedRunDenialKind::ResourceAttemptMismatch,
@@ -292,6 +305,7 @@ fn validate_semantic_basis(
     operation: &WorthQueryExecutionBoundOperationAuthority,
     bridge: &BridgeBoundExecutionBasis,
     relational: &WorthQueryManagedRelationalObservation,
+    product_observation: Option<&worth_runtime_world::facade::ProductBranchObservation>,
     counters: &WorthQueryManagedRunCounters,
 ) -> Result<(), WorthQueryManagedRunDenial> {
     let observation = WorthQueryManagedSemanticBasisObservation {
@@ -299,6 +313,7 @@ fn validate_semantic_basis(
         bridge_kind: bridge.request().basis_binding().truth_view_basis().kind(),
         bridge_authority_basis_digest: bridge.observation().authority_basis().digest(),
         relational_current_at_admission: relational.was_current_at_admission(),
+        product_observation,
     };
     match validate_managed_semantic_basis(observation) {
         Ok(()) => Ok(()),

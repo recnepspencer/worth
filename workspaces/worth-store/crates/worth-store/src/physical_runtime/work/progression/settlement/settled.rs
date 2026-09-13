@@ -28,6 +28,8 @@ impl SettledPhysicalWork {
 
     pub fn effect_identity(&self) -> Option<crate::physical_runtime::PhysicalEffectIdentity> {
         let backend = match &self.evidence {
+            PhysicalWorkSettlementEvidence::Inspection { physical, .. } => physical.operation(),
+            PhysicalWorkSettlementEvidence::InspectionDenied(_) => return None,
             PhysicalWorkSettlementEvidence::Metadata { physical, .. } => physical.operation(),
             PhysicalWorkSettlementEvidence::Read { physical, .. } => physical.operation(),
             PhysicalWorkSettlementEvidence::Write { physical, .. }
@@ -39,6 +41,8 @@ impl SettledPhysicalWork {
             PhysicalWorkSettlementEvidence::RecoveryStaging { physical, .. } => {
                 if let Some(created) = physical.created() {
                     created.write_operation()
+                } else if let Some(appended) = physical.appended() {
+                    appended.operation()
                 } else if let Some(verified) = physical.verified() {
                     verified.operation()
                 } else {

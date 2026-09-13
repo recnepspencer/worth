@@ -4,10 +4,10 @@ use worth_store_physical_backend::{
     OfflineMediaClosureEntry, OfflineMediaConsistencyBasis, OfflineMediaConsistencyBasisDenial,
     OfflineMediaReadDenial, ReadOnlyOfflineMediaCapability,
 };
-use worth_store_recovery_physics::{
+use worth_store_physical_isolation::{
     BootstrapSourceArtifact, BootstrapSourceArtifactFamily, BootstrapSourceEvidenceBinding,
     BootstrapSourceFrontier, BootstrapSourceResolutionDenial, BootstrapSourceResolutionRequest,
-    RecoveryPhysicsBootstrapSourceOwner, ResolvedBootstrapRecoverySourceCut,
+    PhysicalIsolationBootstrapSourceOwner, ResolvedBootstrapRecoverySourceCut,
 };
 use worth_store_replication::DisasterRecoveryComponentFamily;
 
@@ -101,7 +101,7 @@ impl IndependentlyVerifiedDisasterRecoveryBundle {
             )?,
             artifacts,
         )?;
-        RecoveryPhysicsBootstrapSourceOwner::resolve(request, media, resident_buffer_bytes)
+        PhysicalIsolationBootstrapSourceOwner::resolve(request, media, resident_buffer_bytes)
             .map_err(Into::into)
     }
 }

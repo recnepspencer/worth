@@ -20,6 +20,21 @@ pub struct ForegroundResourceBudget {
 }
 
 impl ForegroundResourceBudget {
+    pub(crate) const fn half_rounded_up(self) -> Self {
+        Self {
+            queue_slots: self.queue_slots.div_ceil(2),
+            bandwidth_tokens: self.bandwidth_tokens.div_ceil(2),
+            flush_permits: self.flush_permits.div_ceil(2),
+            sync_debt: self.sync_debt.div_ceil(2),
+            read_ahead_window: self.read_ahead_window.div_ceil(2),
+            write_back_window: self.write_back_window.div_ceil(2),
+            dirty_page_budget: self.dirty_page_budget.div_ceil(2),
+            worker_permits: self.worker_permits.div_ceil(2),
+            cache_residency_hints: self.cache_residency_hints.div_ceil(2),
+            reclaim_permits: self.reclaim_permits.div_ceil(2),
+        }
+    }
+
     pub const fn new() -> Self {
         Self {
             queue_slots: 0,

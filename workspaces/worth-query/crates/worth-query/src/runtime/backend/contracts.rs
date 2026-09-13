@@ -37,6 +37,15 @@ pub trait WorthQueryRuntimeBackend:
 {
     fn support_profile(&self) -> WorthQueryRuntimeSupportProfile;
     #[doc(hidden)]
+    fn prepare_product_source(
+        &self,
+    ) -> Result<
+        worth_query_execution::facade::integration::WorthQueryProductRelationalInstallation,
+        super::WorthQueryProductSourceDenial,
+    > {
+        Err(super::WorthQueryProductSourceDenial::Unsupported)
+    }
+    #[doc(hidden)]
     fn readmits_primary_graph_source(
         &self,
         _installation: &worth_query_execution::facade::primary_graph::WorthQueryGranularInvalidationInstallation,

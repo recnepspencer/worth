@@ -58,15 +58,49 @@ impl PhysicalInstanceForegroundCapacity {
         security: &IoSchedulerSecurityScopeAdmission,
     ) -> Result<PhysicalInstanceForegroundReservation, PhysicalInstanceForegroundAdmissionDenial>
     {
+        self.reserve_live(lane, backend, security, false)
+    }
+
+    /// Atomically reserves live resources while leaving at least half of every
+    /// configured resource dimension available to foreground work. The returned
+    /// lease remains charged until settlement or cancellation drops it.
+    pub fn reserve_background(
+        &self,
+        lane: ForegroundLaneDeclaration,
+        backend: &IoSchedulerBackendCapabilityAdmission,
+        security: &IoSchedulerSecurityScopeAdmission,
+    ) -> Result<PhysicalInstanceForegroundReservation, PhysicalInstanceForegroundAdmissionDenial>
+    {
+        self.reserve_live(lane, backend, security, true)
+    }
+
+    fn reserve_live(
+        &self,
+        lane: ForegroundLaneDeclaration,
+        backend: &IoSchedulerBackendCapabilityAdmission,
+        security: &IoSchedulerSecurityScopeAdmission,
+        background: bool,
+    ) -> Result<PhysicalInstanceForegroundReservation, PhysicalInstanceForegroundAdmissionDenial>
+    {
         let requested = lane.requested_budget();
         let mut state = lock(&self.state);
+        let protected = if background {
+            state.configured.half_rounded_up()
+        } else {
+            ForegroundResourceBudget::new()
+        };
+        if let Err((denial, _)) = require_capacity(protected, state.available) {
+            state.denied_reservations = state.denied_reservations.saturating_add(1);
+            return Err(PhysicalInstanceForegroundAdmissionDenial::Foreground(
+                denial,
+            ));
+        }
+        let eligible = state
+            .available
+            .checked_sub(protected)
+            .expect("protected capacity checked under lock");
         let receipt = match admit_physical_instance_foreground_reservation(
-            PhysicalInstanceForegroundAdmissionRequest::new(
-                lane,
-                backend,
-                security,
-                state.available,
-            ),
+            PhysicalInstanceForegroundAdmissionRequest::new(lane, backend, security, eligible),
         ) {
             Ok(receipt) => receipt,
             Err(denial) => {

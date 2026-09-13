@@ -1,6 +1,4 @@
-use worth_store_wal::{
-    VerifiedWalArtifact, WalLsnRange, WalSegmentArtifactIdentity, WalSegmentInspection,
-};
+use worth_store_wal::{WalLsnRange, WalSegmentArtifactIdentity, WalSegmentInspection};
 
 use super::PhysicalWalSegmentCandidate;
 
@@ -11,7 +9,6 @@ use super::PhysicalWalSegmentCandidate;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CheckpointCoveredWalArtifact {
     inspection: WalSegmentInspection,
-    verified_artifact: Option<VerifiedWalArtifact>,
     byte_count: u64,
     cleanup_safe: bool,
 }
@@ -22,7 +19,6 @@ impl CheckpointCoveredWalArtifact {
         let inspection = candidate.inspection();
         Self {
             inspection,
-            verified_artifact: candidate.into_verified_artifact(),
             byte_count: interruption.map_or(inspection.byte_count(), |tail| tail.observed_bytes()),
             cleanup_safe: interruption.is_none(),
         }
@@ -49,11 +45,6 @@ impl CheckpointCoveredWalArtifact {
     }
 
     pub const fn cleanup_safe(&self) -> bool {
-        self.cleanup_safe && self.verified_artifact.is_some()
-    }
-
-    pub fn into_verified_artifact(self) -> Option<VerifiedWalArtifact> {
-        self.cleanup_safe.then_some(())?;
-        self.verified_artifact
+        self.cleanup_safe
     }
 }

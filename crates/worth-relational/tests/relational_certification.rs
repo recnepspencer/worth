@@ -63,6 +63,8 @@ mod observation_contracts;
 mod oracle_ancestry;
 #[path = "relational_certification/oracle_application.rs"]
 mod oracle_application;
+#[path = "relational_certification/owner_service_completion.rs"]
+mod owner_service_completion;
 #[path = "relational_certification/preservation/recovery.rs"]
 mod preservation_recovery;
 #[path = "relational_certification/production_failures.rs"]

@@ -1,6 +1,6 @@
 use super::{CheckpointReadInterlockCounters, ReadDuringCheckpointVerdict};
 use crate::{CheckpointPublicationIdentity, ManifestEpoch, RootEpoch};
-use worth_store_recovery_physics::CheckpointCoveredLsnRange;
+use worth_store_physical_format::CheckpointWalSourceRange;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CheckpointInterlockFoundationalEvidence {
@@ -10,7 +10,7 @@ pub struct CheckpointInterlockFoundationalEvidence {
     no_mixed_root: bool,
     old_reader_retained_old_root: bool,
     post_publication_reader_observed_new_epoch: bool,
-    page_lsn_frontier_bound_to_cutover: bool,
+    checkpoint_wal_bound_to_cutover: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,7 +20,7 @@ pub struct CheckpointInterlockEvidenceOrigin {
     published_root_epoch: RootEpoch,
     old_manifest_epoch: ManifestEpoch,
     published_manifest_epoch: ManifestEpoch,
-    cutover_range: CheckpointCoveredLsnRange,
+    checkpoint_wal_range: CheckpointWalSourceRange,
 }
 
 impl CheckpointInterlockFoundationalEvidence {
@@ -35,10 +35,10 @@ impl CheckpointInterlockFoundationalEvidence {
             old_reader_retained_old_root: verdict.old_reader_retained_old_root(),
             post_publication_reader_observed_new_epoch: verdict
                 .post_publication_reader_observed_new_epoch(),
-            page_lsn_frontier_bound_to_cutover: proof
+            checkpoint_wal_bound_to_cutover: proof
                 .plan()
                 .transition()
-                .frontier_bound_to_cutover(),
+                .checkpoint_wal_bound_to_cutover(),
         }
     }
 
@@ -51,7 +51,7 @@ impl CheckpointInterlockFoundationalEvidence {
             old_reader_retained_old_root: evidence.old_reader_retained_old_root,
             post_publication_reader_observed_new_epoch: evidence
                 .post_publication_reader_observed_new_epoch,
-            page_lsn_frontier_bound_to_cutover: evidence.page_lsn_frontier_bound_to_cutover,
+            checkpoint_wal_bound_to_cutover: evidence.checkpoint_wal_bound_to_cutover,
         }
     }
 
@@ -79,8 +79,8 @@ impl CheckpointInterlockFoundationalEvidence {
         self.post_publication_reader_observed_new_epoch
     }
 
-    pub const fn page_lsn_frontier_bound_to_cutover(&self) -> bool {
-        self.page_lsn_frontier_bound_to_cutover
+    pub const fn checkpoint_wal_bound_to_cutover(&self) -> bool {
+        self.checkpoint_wal_bound_to_cutover
     }
 }
 
@@ -95,7 +95,7 @@ impl CheckpointInterlockEvidenceOrigin {
             published_root_epoch: published_root.epoch(),
             old_manifest_epoch: old_root.manifest_epoch(),
             published_manifest_epoch: published_root.manifest_epoch(),
-            cutover_range: transition.cutover_receipt().covered_lsn_range(),
+            checkpoint_wal_range: transition.checkpoint_wal_range(),
         }
     }
 
@@ -119,7 +119,7 @@ impl CheckpointInterlockEvidenceOrigin {
         self.published_manifest_epoch
     }
 
-    pub const fn cutover_range(&self) -> CheckpointCoveredLsnRange {
-        self.cutover_range
+    pub const fn checkpoint_wal_range(&self) -> CheckpointWalSourceRange {
+        self.checkpoint_wal_range
     }
 }

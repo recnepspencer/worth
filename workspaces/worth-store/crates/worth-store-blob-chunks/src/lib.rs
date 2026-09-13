@@ -135,5 +135,5 @@ mod operational_repair;
 pub mod security_metadata_compile_fail;
 pub use operational_repair::{
     BlobRepairConsequence, BlobRepairConsequenceDenial, BlobRepairConsequenceOwner,
-    BlobRepairConsequencePlan, BlobRepairConsequenceReceipt,
+    BlobRepairConsequencePlan, BlobRepairConsequenceReceipt, BlobRepairRegionObservation,
 };

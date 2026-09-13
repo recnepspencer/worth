@@ -1,5 +1,7 @@
 mod model;
 mod owner_mapping;
+#[cfg(test)]
+mod tests;
 
 pub use model::{
     QuarantineReadmissionDenial, QuarantineReadmissionModel, QuarantineReadmissionState,

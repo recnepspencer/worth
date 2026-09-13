@@ -5,6 +5,7 @@ use crate::logic::transaction::runtime::{
     ArtifactMergeAction, BranchMergePlan, MergeDecisionBasis, MergeTouchedNodeSet,
     MergedArtifactRecord, NodeReconciliationDecision, NodeReconciliationShape,
 };
+use crate::state::SignalSnapshotId;
 use crate::state::SnapshotArtifactRetentionPolicy;
 
 use super::super::branches::{LatestMergeReference, SnapshotBranchState, SnapshotStatePacket};
@@ -31,6 +32,7 @@ pub(super) fn finalize_artifacts<D, I, T>(
     prepared: &mut PreparedMergeExecution<D, I, T>,
     request: &crate::logic::transaction::runtime::BranchMergeRequest,
     plan: &BranchMergePlan,
+    snapshot_id: SignalSnapshotId,
 ) -> Result<ArtifactFinalization<D, I, T>, SignalError>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
@@ -45,7 +47,7 @@ where
         .target_state
         .graph_mut()
         .diagnostics_state_mut()
-        .allocate_snapshot_meta(request_metadata, artifact_retention);
+        .allocate_snapshot_meta_with_reserved_id(snapshot_id, request_metadata, artifact_retention);
     prepared
         .target_state
         .graph_mut()

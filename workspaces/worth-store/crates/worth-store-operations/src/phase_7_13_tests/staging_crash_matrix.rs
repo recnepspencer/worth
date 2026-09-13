@@ -140,13 +140,13 @@ impl crate::StagingAuthorizationContinuationPort for RevokeAtBoundary {
     }
 }
 
-impl worth_store_recovery_physics::StagedWalApplicationPort for RevokeAtBoundary {
+impl crate::workflow::StagedWalApplicationPort for RevokeAtBoundary {
     fn apply_staged_wal(
         &self,
-        request: worth_store_recovery_physics::StagedWalApplicationRequest<'_>,
+        request: crate::workflow::StagedWalApplicationRequest<'_>,
     ) -> Result<
-        worth_store_recovery_physics::StagedWalApplicationProviderReceipt,
-        worth_store_recovery_physics::StagedWalApplicationDenial,
+        crate::workflow::StagedWalApplicationProviderReceipt,
+        crate::workflow::StagedWalApplicationDenial,
     > {
         apply_fixture_wal(request)
     }

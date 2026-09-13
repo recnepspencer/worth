@@ -7,6 +7,7 @@ use std::time::Instant;
 
 #[path = "operation_admission/capability_admission/mod.rs"]
 mod capability_admission;
+pub(in crate::domain_computation) use capability_admission::admit_capability_access;
 pub use capability_admission::WorthQueryAdmittedApplicationCapabilityAccess;
 pub(in crate::domain_computation::authorization) use capability_admission::{
     WorthQueryCapabilityContextKey, WorthQueryCurrentCapabilityObservation,
@@ -122,6 +123,7 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     governed_input_identity: Option<[u8; 32]>,
     authorization_basis: WorthQueryOperationAuthorizationBasis<Input>,
     graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    source_facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
     _marker: PhantomData<fn(Input) -> (Schema, Operation, Scope)>,
 }
 

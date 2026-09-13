@@ -4,7 +4,6 @@
 pub mod append;
 pub mod artifact_store;
 pub mod checkpoint;
-mod cleanup_admission;
 pub mod recovery_read;
 pub mod wal_topology;
 
@@ -31,9 +30,9 @@ pub use artifact_store::{
     inspect_bounded_wal_active_tail_with_evidence, inspect_complete_wal_segment,
     inspect_interrupted_wal_segment_start, inspect_verified_wal_active_tail,
     inspect_verified_wal_segment, observe_checkpoint_artifact, observe_wal_frame_artifact,
-    prepare_wal_frame_append, CheckpointArtifactObservation, InterruptedWalSegmentStart,
-    InterruptedWalTail, VerifiedWalActiveTail, VerifiedWalArtifact, VerifiedWalFrame,
-    VerifiedWalFramePayload, VerifiedWalSegment, WalActiveTailInspectionDenial,
+    prepare_wal_frame_append, wal_frame_integrity_scope_identity, CheckpointArtifactObservation,
+    InterruptedWalSegmentStart, InterruptedWalTail, VerifiedWalActiveTail, VerifiedWalArtifact,
+    VerifiedWalFrame, VerifiedWalFramePayload, VerifiedWalSegment, WalActiveTailInspectionDenial,
     WalActiveTailInspectionFailure, WalArtifactInventory, WalArtifactInventoryIdentity,
     WalArtifactInventoryScan, WalArtifactObservation, WalArtifactObservationRead,
     WalArtifactScanCounters, WalArtifactStoreDenial, WalFrameAppendPlan,
@@ -45,10 +44,6 @@ pub use blob_records::{
     durable_phase_for_record_kind, record_kind_admits_recovery_replay, BlobWalRecordEnvelope,
     BlobWalRecordIdentity, BlobWalRecordKind, BlobWalRecordScopeDenial,
     BlobWalReplayRebuildWitness,
-};
-pub use cleanup_admission::{
-    admit_checkpoint_covered_wal_cleanup, CheckpointCoveredWalCleanupAdmission,
-    CheckpointCoveredWalCleanupDenial,
 };
 pub use durability::{WalQueueExecutionDeclaration, WalQueueExecutionKind, WalQueueGroupingScope};
 pub use operation_denial::{WalOperationDenial, WalOperationDenialKind};

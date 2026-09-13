@@ -173,7 +173,7 @@ fn diagnostics_history_and_replay_preserve_typed_advanced_reuse_origins() {
     }));
 
     let recent = runtime.observe().recent_execution_history_diagnostics();
-    let latest = recent.back().expect("recent history entry");
+    let latest = recent.last().expect("recent history entry");
     assert_eq!(
         latest
             .reuse_origin_counts

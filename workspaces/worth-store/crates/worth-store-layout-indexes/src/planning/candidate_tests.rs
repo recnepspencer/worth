@@ -97,17 +97,3 @@ fn exact_multi_range_and_grouped_prefix_paths_fail_closed_without_btree_counter_
         AccessPlanSelectionDenied::NoEligibleAlternative
     );
 }
-#[test]
-fn candidate_rejections_preserve_registry_denials_and_have_exact_case_inventory() {
-    use std::collections::HashSet;
-
-    let cases = super::SelectionCandidateRejectionCase::ALL;
-    assert_eq!(cases.len(), 18);
-    assert_eq!(cases.into_iter().collect::<HashSet<_>>().len(), cases.len());
-
-    let source = include_str!("candidates/set.rs");
-    assert!(!source.contains("fn map_denial("));
-    assert!(!source.contains("_ => SelectionCandidateRejection"));
-    assert!(source.contains("SelectionCandidateRejection::RegistryDenied("));
-    assert!(source.contains("Box::new(denial)"));
-}

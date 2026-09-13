@@ -6,6 +6,7 @@ use crate::domain_computation::provider_session::graph_provider::bounded_step::{
 pub(super) struct WorthQueryManagedProviderRetentionLedger {
     provider_bytes: usize,
     projection_bytes: usize,
+    output_bytes: usize,
     artifact_bytes: usize,
     peak_bytes: usize,
 }
@@ -19,6 +20,7 @@ impl WorthQueryManagedProviderRetentionLedger {
         self.provider_bytes =
             prior_provider_bytes.saturating_add(as_usize(evidence.provider_bytes()));
         self.projection_bytes = as_usize(evidence.projection_bytes());
+        self.output_bytes = self.output_bytes.max(as_usize(evidence.output_bytes()));
         self.record_peak();
     }
 
@@ -45,6 +47,36 @@ impl WorthQueryManagedProviderRetentionLedger {
         true
     }
 
+    pub(super) fn transfer_projection_to_output(
+        &mut self,
+        projection_bytes: usize,
+        additional_bytes: usize,
+    ) -> bool {
+        let Some(remaining) = self.projection_bytes.checked_sub(projection_bytes) else {
+            return false;
+        };
+        self.projection_bytes = remaining;
+        self.output_bytes = self
+            .output_bytes
+            .saturating_add(projection_bytes)
+            .saturating_add(additional_bytes);
+        self.record_peak();
+        true
+    }
+
+    pub(super) fn retain_output_envelope(&mut self, retained_bytes: usize) {
+        self.output_bytes = self.output_bytes.saturating_add(retained_bytes);
+        self.record_peak();
+    }
+
+    pub(super) fn release_output(&mut self, released_bytes: usize) -> bool {
+        let Some(remaining) = self.output_bytes.checked_sub(released_bytes) else {
+            return false;
+        };
+        self.output_bytes = remaining;
+        true
+    }
+
     pub(super) fn settle_artifacts(&mut self, retained_bytes: usize) {
         self.artifact_bytes = retained_bytes;
         self.record_peak();
@@ -53,11 +85,16 @@ impl WorthQueryManagedProviderRetentionLedger {
     pub(super) fn current_bytes(&self) -> usize {
         self.provider_bytes
             .saturating_add(self.projection_bytes)
+            .saturating_add(self.output_bytes)
             .saturating_add(self.artifact_bytes)
     }
 
     pub(super) const fn provider_bytes(&self) -> usize {
         self.provider_bytes
+    }
+
+    pub(super) const fn output_bytes(&self) -> usize {
+        self.output_bytes
     }
 
     pub(super) const fn peak_bytes(&self) -> usize {

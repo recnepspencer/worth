@@ -20,6 +20,13 @@ pub(crate) struct SignalBranchAdmissionLease {
     branch_id: SignalBranchId,
 }
 
+#[derive(Debug)]
+pub(crate) struct SignalBranchAdmissionReservation {
+    binding: SignalBranchRetentionBinding,
+    lease_ids: Vec<u64>,
+    branch_id: SignalBranchId,
+}
+
 /// Explicit external obligation over one exact immutable Signal target.
 ///
 /// It is deliberately not `Clone`: the obligation is the value, so it cannot be
@@ -59,6 +66,56 @@ impl SignalBranchAdmissionLease {
         self.binding
             .rebind_admitted(self.lease_id, self.branch_id, branch_id);
         self.branch_id = branch_id;
+    }
+
+    pub(crate) fn owner_identity_relationship(
+        &self,
+        owner: &SignalBranchRetentionBinding,
+    ) -> SignalBranchRetentionOwnerRelationship {
+        self.binding.owner_identity_relationship(owner)
+    }
+}
+
+impl SignalBranchAdmissionReservation {
+    pub(crate) fn owner_reserved(
+        binding: SignalBranchRetentionBinding,
+        lease_ids: Vec<u64>,
+        branch_id: SignalBranchId,
+    ) -> Self {
+        Self {
+            binding,
+            lease_ids,
+            branch_id,
+        }
+    }
+
+    pub(crate) fn take_one(&mut self) -> SignalBranchAdmissionLease {
+        let lease_id = self
+            .lease_ids
+            .pop()
+            .expect("an admitted-output reservation converts each reserved slot once");
+        self.binding
+            .activate_reserved_admitted(lease_id, self.branch_id);
+        SignalBranchAdmissionLease::owner_issued(self.binding.clone(), lease_id, self.branch_id)
+    }
+
+    pub(crate) fn into_one(mut self) -> SignalBranchAdmissionLease {
+        let lease = self.take_one();
+        debug_assert!(self.lease_ids.is_empty());
+        lease
+    }
+
+    pub(crate) fn rebind_all(&mut self, branch_id: SignalBranchId) {
+        self.binding
+            .rebind_reserved_admitted(self.lease_ids.len(), self.branch_id, branch_id);
+        self.branch_id = branch_id;
+    }
+}
+
+impl Drop for SignalBranchAdmissionReservation {
+    fn drop(&mut self) {
+        self.binding
+            .cancel_reserved_admitted_for_branch(self.lease_ids.len(), self.branch_id);
     }
 }
 

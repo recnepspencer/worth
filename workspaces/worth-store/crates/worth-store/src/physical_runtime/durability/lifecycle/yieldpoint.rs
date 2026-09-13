@@ -3,16 +3,19 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
 #[derive(Clone)]
-pub struct CertificationPhysicalMutationPauseGate {
-    checkpoint: CertificationPhysicalMutationCheckpoint,
+pub struct PhysicalMutationPauseGate {
+    checkpoint: PhysicalMutationCheckpoint,
     shared: Arc<PhysicalMutationPauseState>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum CertificationPhysicalMutationCheckpoint {
+pub enum PhysicalMutationCheckpoint {
     BeforeEffectCutover,
     AfterGroupSeal,
     AfterWalDurability,
+    /// A writeback claim and scheduler admission are live, immediately before
+    /// the physical writeback effect begins.
+    AfterWritebackAdmissionBeforeEffect,
     DuringDataSettlement,
     AfterDataSettlement,
     DuringRootPublication,
@@ -31,9 +34,7 @@ struct PhysicalMutationPauseProgress {
 }
 
 pub(super) struct PhysicalMutationYieldpointOwner {
-    gates: Mutex<
-        HashMap<CertificationPhysicalMutationCheckpoint, CertificationPhysicalMutationPauseGate>,
-    >,
+    gates: Mutex<HashMap<PhysicalMutationCheckpoint, PhysicalMutationPauseGate>>,
 }
 
 impl PhysicalMutationYieldpointOwner {
@@ -45,9 +46,9 @@ impl PhysicalMutationYieldpointOwner {
 
     pub(super) fn install(
         &self,
-        checkpoint: CertificationPhysicalMutationCheckpoint,
-    ) -> CertificationPhysicalMutationPauseGate {
-        let gate = CertificationPhysicalMutationPauseGate::new(checkpoint);
+        checkpoint: PhysicalMutationCheckpoint,
+    ) -> PhysicalMutationPauseGate {
+        let gate = PhysicalMutationPauseGate::new(checkpoint);
         self.gates
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -55,7 +56,7 @@ impl PhysicalMutationYieldpointOwner {
         gate
     }
 
-    pub(super) fn pause(&self, checkpoint: CertificationPhysicalMutationCheckpoint) {
+    pub(super) fn pause(&self, checkpoint: PhysicalMutationCheckpoint) {
         let gate = self
             .gates
             .lock()
@@ -68,8 +69,8 @@ impl PhysicalMutationYieldpointOwner {
     }
 }
 
-impl CertificationPhysicalMutationPauseGate {
-    fn new(checkpoint: CertificationPhysicalMutationCheckpoint) -> Self {
+impl PhysicalMutationPauseGate {
+    fn new(checkpoint: PhysicalMutationCheckpoint) -> Self {
         Self {
             checkpoint,
             shared: Arc::new(PhysicalMutationPauseState {
@@ -82,7 +83,7 @@ impl CertificationPhysicalMutationPauseGate {
         }
     }
 
-    pub const fn checkpoint(&self) -> CertificationPhysicalMutationCheckpoint {
+    pub const fn checkpoint(&self) -> PhysicalMutationCheckpoint {
         self.checkpoint
     }
 

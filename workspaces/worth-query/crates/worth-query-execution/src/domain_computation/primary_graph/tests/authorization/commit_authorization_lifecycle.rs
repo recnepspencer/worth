@@ -26,12 +26,19 @@ fn commit_authorization_rechecks_cancellation_when_governed() {
     let commit_authorization = admission
         .take_authorization_dependencies(world.application.authorization.bridge())
         .unwrap();
-    let serialization = world
+    let commit_lane = world
         .application
         .primary_provider
-        .serialize_application_commit();
+        .application_branch_commit_lane(
+            admission
+                .graph_work()
+                .mutation_product()
+                .unwrap()
+                .observation(),
+        );
+    let coordination = commit_lane.enter();
     let proof = commit_authorization
-        .authorize_application_commit(&world.application, &admission, &serialization)
+        .authorize_application_commit(&world.application, &admission, &coordination)
         .unwrap();
 
     cancellation.cancel();
@@ -56,15 +63,22 @@ fn commit_basis_cannot_be_paired_with_a_different_admitted_operation() {
     let source_authorization = source
         .take_authorization_dependencies(world.application.authorization.bridge())
         .unwrap();
-    let serialization = world
+    let commit_lane = world
         .application
         .primary_provider
-        .serialize_application_commit();
+        .application_branch_commit_lane(
+            target
+                .graph_work()
+                .mutation_product()
+                .unwrap()
+                .observation(),
+        );
+    let coordination = commit_lane.enter();
 
     let Err(denial) = source_authorization.authorize_application_commit(
         &world.application,
         &target,
-        &serialization,
+        &coordination,
     ) else {
         panic!("a commit basis must remain bound to its originating admission");
     };
@@ -87,15 +101,22 @@ fn commit_basis_cannot_be_revalidated_by_a_foreign_runtime() {
     let commit_authorization = admission
         .take_authorization_dependencies(source_world.application.authorization.bridge())
         .unwrap();
-    let serialization = source_world
+    let commit_lane = source_world
         .application
         .primary_provider
-        .serialize_application_commit();
+        .application_branch_commit_lane(
+            admission
+                .graph_work()
+                .mutation_product()
+                .unwrap()
+                .observation(),
+        );
+    let coordination = commit_lane.enter();
 
     let Err(denial) = commit_authorization.authorize_application_commit(
         &foreign_world.application,
         &admission,
-        &serialization,
+        &coordination,
     ) else {
         panic!("a foreign runtime must not revalidate an admitted operation");
     };

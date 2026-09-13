@@ -6,6 +6,7 @@ use worth_signal::facade::branch::{
     SignalBranchAdvanceDenial, SignalBranchBasisCompatibilityDenial,
     SignalBranchBasisReadmissionDenial, SignalBranchForkOperationDenial,
     SignalBranchRetentionReleaseDenial, SignalBranchRetentionReleaseOutcome, SignalBranchTarget,
+    SignalOwnerServiceCostSnapshot, SignalOwnerUnavailable,
     SIGNAL_BRANCH_BASIS_DESCRIPTOR_SCHEMA_VERSION,
 };
 use worth_signal::facade::runtime::SignalBranchRetirementDenial;
@@ -34,6 +35,8 @@ fn admitted_basis_clones_share_one_owner_admission() {
     fn assert_send_sync<T: Send + Sync>() {}
 
     assert_send_sync::<worth_signal::facade::branch::AdmittedSignalBranchBasis>();
+    assert_send_sync::<SignalOwnerServiceCostSnapshot>();
+    assert_send_sync::<SignalOwnerUnavailable>();
     let runtime = runtime();
     let branch = runtime.current_branch();
     let basis = runtime

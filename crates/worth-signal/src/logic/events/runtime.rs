@@ -305,6 +305,14 @@ where
             .map(|&idx| self.subscribers[idx].name)
             .collect()
     }
+
+    pub(crate) fn independent_branch_service_compatible(&self) -> bool {
+        self.pending.is_empty()
+            && self.subscribers.is_empty()
+            && self.context.staged_ids().is_empty()
+            && self.context.committed_ids().is_empty()
+            && self.event_router.is_none()
+    }
 }
 
 #[derive(Debug, Clone)]

@@ -48,11 +48,16 @@ impl BoundedRecoveryFilesystemDiscovery {
                 self.remaining_bytes -= length;
                 self.counters.bytes_read += length;
                 self.counters.addressed_artifacts_read += 1;
-                Ok(ObservedRecoveryArtifact { bytes: Some(bytes) })
+                Ok(ObservedRecoveryArtifact::new(
+                    self.parts.store_identity,
+                    context,
+                    offset,
+                    Some(bytes),
+                ))
             }
-            Err(failure) if failure.kind() == ArtifactTreeFailureKind::Absent => {
-                Ok(ObservedRecoveryArtifact { bytes: None })
-            }
+            Err(failure) if failure.kind() == ArtifactTreeFailureKind::Absent => Ok(
+                ObservedRecoveryArtifact::new(self.parts.store_identity, context, offset, None),
+            ),
             Err(failure) => Err(RecoveryDiscoveryFailure::Media {
                 artifact: context,
                 failure,

@@ -19,9 +19,29 @@ where
         touched_nodes: u32,
         commit_nanos: u128,
     ) -> TransactionResult {
-        let outcome = self.restore_baseline_if_requested(restore_baseline, outcome);
+        self.finalize_semantic_delta_with_rollback_status(
+            restore_baseline,
+            outcome,
+            touched_nodes,
+            commit_nanos,
+        )
+        .0
+    }
+
+    pub(super) fn finalize_semantic_delta_with_rollback_status(
+        &mut self,
+        restore_baseline: bool,
+        outcome: TransactionOutcome,
+        touched_nodes: u32,
+        commit_nanos: u128,
+    ) -> (TransactionResult, Option<crate::data::error::SignalError>) {
+        let (outcome, rollback_error) =
+            self.restore_baseline_if_requested(restore_baseline, outcome);
         let mut captured = self.capture_finalization_boundary(outcome, touched_nodes, commit_nanos);
         self.finalize_result_accounting(&mut captured.result);
-        self.publish_finalization_diagnostics(captured)
+        (
+            self.publish_finalization_diagnostics(captured),
+            rollback_error,
+        )
     }
 }

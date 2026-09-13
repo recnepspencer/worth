@@ -37,6 +37,8 @@ pub enum BackupBundleArtifactCoverage {
         checkpoint_identity: String,
         manifest_generation: u64,
         durable_checkpoint_lsn: u64,
+        authority_fingerprint: [u8; 32],
+        frontier_digest: [u8; 32],
     },
     WalSegment {
         start_lsn: u64,

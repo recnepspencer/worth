@@ -35,6 +35,30 @@ pub(crate) fn admitted_recovery(
     admitted_recovery_with_limits(root, limits())
 }
 
+pub(crate) fn admitted_recovery_for_format(
+    root: &Path,
+    format: PhysicalRecordFormatDeclaration,
+) -> worth_store_recovery_runtime::AdmittedPhysicalRecovery {
+    let limits = limits();
+    let configuration = PhysicalRecoveryStaticConfiguration::for_record_format(format);
+    let authority = PhysicalRecoveryPlatformAuthority::acquire(
+        root.to_path_buf(),
+        configuration.clone(),
+        limits,
+    )
+    .unwrap();
+    let profile = authority.qualified_backend_profile().clone();
+    PhysicalRecoveryOpenRequest::declare(
+        root.to_path_buf(),
+        configuration,
+        profile,
+        limits,
+        authority,
+    )
+    .admit()
+    .unwrap()
+}
+
 pub(crate) fn admitted_recovery_with_limits(
     root: &Path,
     limits: PhysicalRecoveryLimits,
@@ -84,6 +108,14 @@ pub(crate) fn publish_synthetic_genesis(
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
 ) {
     let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+    publish_synthetic_genesis_for_format(root, store, format);
+}
+
+pub(crate) fn publish_synthetic_genesis_for_format(
+    root: &Path,
+    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
+    format: PhysicalRecordFormatDeclaration,
+) {
     let free_entry =
         RecordFreeSpaceManifestEntry::new(RecordAllocationClass::Extent, 1, 1, 1, 1).unwrap();
     let free_block = PhysicalFreeSpaceMembershipBlock::leaf(7, 1, 1, vec![free_entry], 4).unwrap();
@@ -341,6 +373,7 @@ pub(crate) fn limit_declaration(
         distinct_pages_and_extents: 8,
         operation_bindings: 8,
         staging_bytes: 32 * 1024,
+        recovery_memory_bytes: 1024 * 1024,
         dirty_frames: 8,
         concurrent_commands: 8,
         publication_effects: 4,

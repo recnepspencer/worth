@@ -3,6 +3,22 @@ use super::source_corpus::{
     RUNTIME_STATE_SOURCE,
 };
 
+fn contains_direct_branch_state_store(source: &str, argument_prefix: &str) -> bool {
+    source.contains(&format!(".store_branch_state({argument_prefix}"))
+}
+
+#[test]
+fn branch_state_store_guard_distinguishes_method_calls_from_lookalike_helpers() {
+    assert!(contains_direct_branch_state_store(
+        "self.branches.store_branch_state(snapshot.meta.branch_id, state);",
+        "snapshot.meta.branch_id,"
+    ));
+    assert!(!contains_direct_branch_state_store(
+        "self.snapshot_restore_branch_state(snapshot.meta.branch_id, snapshot.meta.snapshot_id);",
+        "snapshot.meta.branch_id,"
+    ));
+}
+
 #[test]
 fn branch_snapshot_restore_packets_are_mediated_through_transition_helpers() {
     assert!(
@@ -15,14 +31,25 @@ fn branch_snapshot_restore_packets_are_mediated_through_transition_helpers() {
         "branch snapshot restore should rebuild stored branch state through the snapshot transition helper"
     );
     assert!(
+        BRANCHES_SOURCE.contains("prepare_owner_cell_restore")
+            && BRANCHES_SOURCE.contains("snapshot_state.into_branch_state("),
+        "sealed owner cells should rebuild branch state through the same snapshot transition"
+    );
+    assert!(
         !RUNTIME_SNAPSHOTTING_SOURCE.contains("let mut state = BranchState {")
             && !RUNTIME_SNAPSHOTTING_SOURCE.contains("let state = BranchState {"),
         "branch snapshot restore should not hand-assemble branch state by struct literal"
     );
     assert!(
         !RUNTIME_SNAPSHOTTING_SOURCE.contains("(snapshot, branch_catalog, state.clone())")
-            && !RUNTIME_SNAPSHOTTING_SOURCE.contains("store_branch_state(branch.id, branch_state)")
-            && !RUNTIME_SNAPSHOTTING_SOURCE.contains("store_branch_state(snapshot.meta.branch_id,")
+            && !contains_direct_branch_state_store(
+                RUNTIME_SNAPSHOTTING_SOURCE,
+                "branch.id, branch_state",
+            )
+            && !contains_direct_branch_state_store(
+                RUNTIME_SNAPSHOTTING_SOURCE,
+                "snapshot.meta.branch_id,",
+            )
             && !RUNTIME_SNAPSHOTTING_SOURCE.contains("insert_snapshot(snapshot.meta.snapshot_id,")
             && !MERGE_RUNTIME_EXECUTION_FINALIZATION_SOURCE
                 .contains("store_branch_state(request.target_branch.id,")
@@ -59,7 +86,7 @@ fn branch_snapshot_restore_packets_are_mediated_through_transition_helpers() {
             && !BRANCHES_SOURCE.contains("pub parent_branch_id:")
             && !BRANCHES_SOURCE.contains("pub forked_from_snapshot_id:")
             && !BRANCHES_SOURCE.contains("pub latest_merge_reference:")
-            && BRANCHES_SOURCE.contains("pub(in crate::logic::transaction::runtime) struct SnapshotStatePacket")
+            && BRANCHES_SOURCE.contains("pub(crate) struct SnapshotStatePacket")
             && BRANCHES_SOURCE.contains("pub fn packet(self, snapshot_id: SignalSnapshotId) -> SnapshotStatePacket"),
         "branch lifecycle transfer packets should not be assembled by open struct literal on runtime paths"
     );

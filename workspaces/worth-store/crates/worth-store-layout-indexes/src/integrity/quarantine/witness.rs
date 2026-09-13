@@ -1,61 +1,46 @@
 use crate::PhysicalArtifactFamily;
-use worth_store_physical_integrity::QuarantineRecord;
+
+use super::super::readmission::{
+    RecoveryLayoutReadmissionClass, RecoveryLayoutReadmissionIdentity,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LayoutQuarantineWitness {
-    basis: LayoutQuarantineBasis,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum LayoutQuarantineBasis {
-    RecordBacked {
-        family: crate::AdmittedPhysicalArtifactFamily,
-        record: Box<QuarantineRecord>,
-    },
+    family: crate::AdmittedPhysicalArtifactFamily,
+    observation_identity: RecoveryLayoutReadmissionIdentity,
+    observation_class: RecoveryLayoutReadmissionClass,
 }
 
 impl LayoutQuarantineWitness {
-    pub(in crate::integrity) fn from_record(
+    pub(in crate::integrity) fn from_observation(
         family: crate::AdmittedPhysicalArtifactFamily,
-        record: QuarantineRecord,
+        observation_identity: RecoveryLayoutReadmissionIdentity,
+        observation_class: RecoveryLayoutReadmissionClass,
     ) -> Self {
         Self {
-            basis: LayoutQuarantineBasis::RecordBacked {
-                family,
-                record: Box::new(record),
-            },
+            family,
+            observation_identity,
+            observation_class,
         }
     }
 
     pub const fn family(&self) -> PhysicalArtifactFamily {
-        match &self.basis {
-            LayoutQuarantineBasis::RecordBacked { family, .. } => {
-                family.lifecycle().declaration().family()
-            }
-        }
+        self.family.lifecycle().declaration().family()
     }
 
-    pub const fn record(&self) -> &QuarantineRecord {
-        match &self.basis {
-            LayoutQuarantineBasis::RecordBacked { record, .. } => record,
-        }
+    pub const fn observation_identity(&self) -> &RecoveryLayoutReadmissionIdentity {
+        &self.observation_identity
+    }
+
+    pub const fn observation_class(&self) -> RecoveryLayoutReadmissionClass {
+        self.observation_class
     }
 
     pub const fn admitted_family(&self) -> crate::AdmittedPhysicalArtifactFamily {
-        match &self.basis {
-            LayoutQuarantineBasis::RecordBacked { family, .. } => *family,
-        }
+        self.family
     }
 
-    pub fn readmission_identity(
-        &self,
-    ) -> worth_store_recovery_physics::RecoveryLayoutReadmissionIdentity {
-        worth_store_recovery_physics::RecoveryLayoutReadmissionIdentity::QuarantineReceipt(
-            self.record()
-                .receipt()
-                .foundational_basis()
-                .digest()
-                .clone(),
-        )
+    pub fn readmission_identity(&self) -> RecoveryLayoutReadmissionIdentity {
+        self.observation_identity.clone()
     }
 }

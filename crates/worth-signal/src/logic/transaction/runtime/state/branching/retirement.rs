@@ -38,6 +38,10 @@ impl SignalBranchRetirementRequest {
     pub(crate) fn expected_head(&self) -> &SignalBranchTransactionHead {
         &self.expected_head
     }
+
+    pub(crate) fn reason(&self) -> SignalBranchRetirementReason {
+        self.reason
+    }
 }
 
 impl<D, I, E, Ctx, T> SignalRuntime<D, I, E, Ctx, T>

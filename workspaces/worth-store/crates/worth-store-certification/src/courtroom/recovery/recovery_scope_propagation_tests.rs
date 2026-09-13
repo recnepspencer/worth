@@ -1,26 +1,11 @@
-use crate::courtroom::harness::test_support::integrity_handoff_test_support::intact_integrity_model_input;
-use crate::courtroom::harness::test_support::recovery_memory_allocation_test_support::with_recovery_memory_allocation;
-use worth_foundational::{
-    aspects, AspectContract, AspectKey, AspectValue, InternedString, ScalarAspectType,
-};
+use super::security_scope::{platform_recovery_scope, recovery_entry_identity};
 use worth_proof::TransitionOutcome;
-use worth_store_aspect_native::{
-    StoreAspectAuthorityInput, StoreAspectBoundaryFact, StoreAspectIdentity,
-    StorePhysicalBoundaryWitness,
-};
-use worth_store_authority::{require_current_store_authority, StoreCurrentAuthorityWitness};
-use worth_store_contracts::PhysicalAuthorityRecap;
-use worth_store_contracts::{StorePhysicalAuthorityWitness, ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE};
-use worth_store_recovery_physics::{
-    RecoveryCheckpointRecordSecurityMetadataEnvelope, RecoveryEntryAdmission,
-    RecoveryEntryAdmissionDecision, RecoveryReplayEntryGate, RecoveryRootSecurityMetadataEnvelope,
-    RecoverySecurityScopePropagation, RecoverySecurityScopePropagationInput,
-    RecoveryWalRecordSecurityMetadataEnvelope,
-};
+use worth_store_contracts::StableDigest;
 use worth_store_security::{
-    admit_store_security_scope, StoreAdmittedSecurityScope, StoreCustodyPosture,
-    StoreKeyVersionPosture, StoreLegacySecurityPosture, StoreSecurityScopeAdmissionRequest,
-    StoreSecurityScopePropagationDenialKind,
+    RecoveryCheckpointRecordSecurityMetadataEnvelope, RecoveryRootSecurityMetadataEnvelope,
+    RecoverySecurityScopePropagation, RecoverySecurityScopePropagationDenial,
+    RecoverySecurityScopePropagationInput, RecoveryWalRecordSecurityMetadataEnvelope,
+    StoreKeyVersionPosture, StoreLegacySecurityPosture, StoreSecurityScopePropagationDenialKind,
 };
 use worth_store_wal::{
     CheckpointRecordSecurityMetadataEnvelope, StoreCheckpointRecordIdentity,
@@ -29,132 +14,103 @@ use worth_store_wal::{
 
 #[test]
 fn recovery_scope_propagation_uses_wal_checkpoint_carrier_identities() {
-    with_admitted_entry("wal-carrier", |admission| {
-        let security_scope = recovery_scope_from_wal_carriers(
-            &admission,
-            "wal-carrier",
-            StoreKeyVersionPosture::Current,
-            StoreKeyVersionPosture::Current,
-            StoreKeyVersionPosture::Current,
-        )
-        .unwrap();
+    let entry_identity = recovery_entry_identity("wal-carrier");
+    let propagation = recovery_scope_from_wal_carriers(
+        &entry_identity,
+        StoreKeyVersionPosture::Current,
+        StoreKeyVersionPosture::Current,
+        StoreKeyVersionPosture::Current,
+    )
+    .expect("matching WAL-carried scope should admit");
 
-        let gate =
-            match RecoveryReplayEntryGate::before_source_precedence(admission, security_scope) {
-                TransitionOutcome::Success(gate) => gate,
-                other => {
-                    panic!("matching recovery entry and WAL-carried scope should gate: {other:?}")
-                }
-            };
-
-        assert_eq!(gate.security_scope().wal_record_identity().sequence(), 42);
-        assert_eq!(
-            gate.security_scope()
-                .checkpoint_record_identity()
-                .checkpoint_epoch(),
-            7
-        );
-        assert_eq!(
-            gate.security_scope()
-                .counters()
-                .wal_checkpoint_store_counters()
-                .preserved(),
-            1
-        );
-        assert_eq!(
-            gate.security_scope()
-                .counters()
-                .root_store_counters()
-                .preserved(),
-            1
-        );
-    });
+    assert_eq!(propagation.entry_identity(), &entry_identity);
+    assert_eq!(propagation.wal_record_identity().sequence(), 42);
+    assert_eq!(
+        propagation.checkpoint_record_identity().checkpoint_epoch(),
+        7
+    );
+    assert_eq!(
+        propagation
+            .counters()
+            .wal_checkpoint_store_counters()
+            .preserved(),
+        1
+    );
+    assert_eq!(propagation.counters().root_store_counters().preserved(), 1);
 }
 
 #[test]
 fn recovery_scope_denies_stale_wal_scope_before_replay_publication() {
-    with_admitted_entry("stale-wal", |admission| {
-        let denial = recovery_scope_from_wal_carriers(
-            &admission,
-            "stale-wal",
-            StoreKeyVersionPosture::Stale,
-            StoreKeyVersionPosture::Current,
-            StoreKeyVersionPosture::Current,
-        )
-        .unwrap_err();
+    let entry_identity = recovery_entry_identity("stale-wal");
+    let denial = recovery_scope_from_wal_carriers(
+        &entry_identity,
+        StoreKeyVersionPosture::Stale,
+        StoreKeyVersionPosture::Current,
+        StoreKeyVersionPosture::Current,
+    )
+    .unwrap_err();
 
-        assert_eq!(
-            denial.store_denial().kind(),
-            StoreSecurityScopePropagationDenialKind::StalePropagatedSecurityScope
-        );
-        assert_eq!(denial.store_denial().counters().stale(), 1);
-    });
+    assert_eq!(
+        denial.store_denial().kind(),
+        StoreSecurityScopePropagationDenialKind::StalePropagatedSecurityScope
+    );
+    assert_eq!(denial.store_denial().counters().stale(), 1);
 }
 
 #[test]
-fn recovery_scope_denies_unsupported_wal_checkpoint_scope_before_replay_publication() {
-    with_admitted_entry("bad-ckpt", |admission| {
-        let denial = recovery_scope_from_wal_carriers(
-            &admission,
-            "bad-ckpt",
-            StoreKeyVersionPosture::Unsupported,
-            StoreKeyVersionPosture::Unsupported,
-            StoreKeyVersionPosture::Current,
-        )
-        .unwrap_err();
+fn recovery_scope_denies_unsupported_scope_before_replay_publication() {
+    let entry_identity = recovery_entry_identity("unsupported-scope");
+    let denial = recovery_scope_from_wal_carriers(
+        &entry_identity,
+        StoreKeyVersionPosture::Unsupported,
+        StoreKeyVersionPosture::Current,
+        StoreKeyVersionPosture::Current,
+    )
+    .unwrap_err();
 
-        assert_eq!(
-            denial.store_denial().kind(),
-            StoreSecurityScopePropagationDenialKind::UnsupportedPropagatedSecurityScope
-        );
-        assert_eq!(denial.store_denial().counters().unsupported(), 1);
-    });
+    assert_eq!(
+        denial.store_denial().kind(),
+        StoreSecurityScopePropagationDenialKind::UnsupportedPropagatedSecurityScope
+    );
+    assert_eq!(denial.store_denial().counters().unsupported(), 1);
 }
 
 #[test]
 fn recovery_scope_missing_root_denies_before_replay_publication() {
-    with_admitted_entry("missing-root", |admission| {
-        let admitted = platform_recovery_scope("missing-root");
-        let wal = RecoveryWalRecordSecurityMetadataEnvelope::from_wal_record_envelope(&wal_record(
-            &admitted,
-            StoreKeyVersionPosture::Current,
-        ));
-        let checkpoint =
-            RecoveryCheckpointRecordSecurityMetadataEnvelope::from_checkpoint_record_envelope(
-                &checkpoint_record(&admitted, StoreKeyVersionPosture::Current),
-            );
-
-        let outcome = RecoverySecurityScopePropagation::admit_required(
-            Some(&wal),
-            Some(&checkpoint),
-            None,
-            &admission,
+    let entry_identity = recovery_entry_identity("missing-root");
+    let admitted = platform_recovery_scope("missing-root");
+    let wal = RecoveryWalRecordSecurityMetadataEnvelope::from_wal_record_envelope(&wal_record(
+        &admitted,
+        StoreKeyVersionPosture::Current,
+    ));
+    let checkpoint =
+        RecoveryCheckpointRecordSecurityMetadataEnvelope::from_checkpoint_record_envelope(
+            &checkpoint_record(&admitted, StoreKeyVersionPosture::Current),
         );
 
-        match outcome {
-            TransitionOutcome::Denied(denial) => {
-                assert_eq!(
-                    denial.store_denial().kind(),
-                    StoreSecurityScopePropagationDenialKind::MissingPropagatedSecurityScope
-                );
-                assert_eq!(denial.store_denial().counters().missing(), 1);
-            }
-            other => panic!("missing recovery root scope must deny before replay: {other:?}"),
-        }
-    });
+    let outcome = RecoverySecurityScopePropagation::admit_required(
+        Some(&wal),
+        Some(&checkpoint),
+        None,
+        &entry_identity,
+    );
+
+    match outcome {
+        TransitionOutcome::Denied(denial) => assert_eq!(
+            denial.store_denial().kind(),
+            StoreSecurityScopePropagationDenialKind::MissingPropagatedSecurityScope
+        ),
+        other => panic!("missing root must deny: {other:?}"),
+    }
 }
 
 fn recovery_scope_from_wal_carriers(
-    admission: &RecoveryEntryAdmission<'_>,
-    identity: &str,
+    entry_identity: &StableDigest,
     wal_key_version: StoreKeyVersionPosture,
     checkpoint_key_version: StoreKeyVersionPosture,
     root_key_version: StoreKeyVersionPosture,
-) -> Result<
-    RecoverySecurityScopePropagation,
-    worth_store_recovery_physics::RecoverySecurityScopePropagationDenial,
-> {
-    let admitted = platform_recovery_scope(identity);
+) -> Result<RecoverySecurityScopePropagation, RecoverySecurityScopePropagationDenial> {
+    let admitted = platform_recovery_scope(entry_identity.as_str());
     let wal = RecoveryWalRecordSecurityMetadataEnvelope::from_wal_record_envelope(&wal_record(
         &admitted,
         wal_key_version,
@@ -164,16 +120,17 @@ fn recovery_scope_from_wal_carriers(
             &checkpoint_record(&admitted, checkpoint_key_version),
         );
     let root = RecoveryRootSecurityMetadataEnvelope::from_recovery_entry(
-        admission,
+        entry_identity,
         &admitted,
         root_key_version,
         StoreLegacySecurityPosture::NativeScoped,
     );
+
     match RecoverySecurityScopePropagation::admit(RecoverySecurityScopePropagationInput::new(
         &wal,
         &checkpoint,
         &root,
-        admission,
+        entry_identity,
     )) {
         TransitionOutcome::Success(scope) => Ok(scope),
         TransitionOutcome::Denied(denial) => Err(denial),
@@ -185,7 +142,7 @@ fn recovery_scope_from_wal_carriers(
 }
 
 fn wal_record(
-    admitted: &StoreAdmittedSecurityScope,
+    admitted: &worth_store_security::StoreAdmittedSecurityScope,
     key_version: StoreKeyVersionPosture,
 ) -> WalRecordSecurityMetadataEnvelope {
     WalRecordSecurityMetadataEnvelope::wal_record(
@@ -199,7 +156,7 @@ fn wal_record(
 }
 
 fn checkpoint_record(
-    admitted: &StoreAdmittedSecurityScope,
+    admitted: &worth_store_security::StoreAdmittedSecurityScope,
     key_version: StoreKeyVersionPosture,
 ) -> CheckpointRecordSecurityMetadataEnvelope {
     CheckpointRecordSecurityMetadataEnvelope::checkpoint_record(
@@ -210,92 +167,4 @@ fn checkpoint_record(
             StoreLegacySecurityPosture::NativeScoped,
         ),
     )
-}
-
-fn with_admitted_entry<R>(identity: &str, run: impl FnOnce(RecoveryEntryAdmission<'_>) -> R) -> R {
-    with_recovery_memory_allocation(|memory_allocation| {
-        let decision = RecoveryEntryAdmission::admit(
-            intact_integrity_model_input(identity),
-            memory_allocation,
-            physical_authority(),
-        );
-        let RecoveryEntryAdmissionDecision::Admitted(admission) = decision else {
-            panic!("intact typed S.3/S.2/S.1 evidence admits recovery entry");
-        };
-        run(*admission)
-    })
-}
-
-fn physical_authority() -> PhysicalAuthorityRecap {
-    PhysicalAuthorityRecap::from_physical_format_authority(3, 2, 1).unwrap()
-}
-
-fn platform_recovery_scope(identity: &str) -> StoreAdmittedSecurityScope {
-    let authority = current_authority(identity, "recovery-replay");
-    match admit_store_security_scope(StoreSecurityScopeAdmissionRequest::platform_page_envelope(
-        &authority,
-        StoreKeyVersionPosture::Current,
-        StoreCustodyPosture::InternalStoreCustody,
-    )) {
-        TransitionOutcome::Success(admitted) => admitted,
-        other => panic!("platform recovery scope should admit: {other:?}"),
-    }
-}
-
-fn current_authority(identity_key: &str, value: &str) -> StoreCurrentAuthorityWitness {
-    require_current_store_authority(boundary_fact(identity_key, value))
-}
-
-fn boundary_fact(identity_key: &str, value: &str) -> StoreAspectBoundaryFact {
-    let key = aspect_key(identity_key);
-    let contract = scalar_string_contract(key.clone());
-    let admitted_state = match aspects()
-        .authoritative_state()
-        .admit([validated_scalar_value(&contract, value)])
-    {
-        TransitionOutcome::Success(state) => state,
-        outcome => panic!("state admission should succeed: {outcome:?}"),
-    };
-    StoreAspectBoundaryFact::from_admitted_state(
-        StoreAspectIdentity::from_aspect_key(key),
-        StoreAspectAuthorityInput::new(admitted_state, physical_witness()),
-    )
-    .expect("Store boundary fact should admit matching identity")
-}
-
-fn physical_witness() -> StorePhysicalBoundaryWitness {
-    StorePhysicalBoundaryWitness::from_physical_authority(
-        StorePhysicalAuthorityWitness::for_aspect_native_boundary(
-            ROADMAP_2_ASPECT_NATIVE_GATE_SCOPE,
-        )
-        .unwrap(),
-    )
-    .unwrap()
-}
-
-fn aspect_key(raw: &str) -> AspectKey {
-    aspects().vocabulary().key(raw).unwrap()
-}
-
-fn scalar_string_contract(aspect_key: AspectKey) -> AspectContract {
-    aspects()
-        .contract()
-        .for_key(aspect_key)
-        .identified_by(aspects().vocabulary().identity(1))
-        .at_revision(aspects().vocabulary().revision(1))
-        .scalar(ScalarAspectType::String)
-}
-
-fn validated_scalar_value(
-    contract: &AspectContract,
-    raw_value: &str,
-) -> worth_foundational::ContractValidatedAspectArtifact {
-    match aspects()
-        .validate()
-        .against(contract)
-        .value(AspectValue::String(InternedString::from(raw_value)))
-    {
-        TransitionOutcome::Success(value) => value,
-        outcome => panic!("validation should succeed: {outcome:?}"),
-    }
 }

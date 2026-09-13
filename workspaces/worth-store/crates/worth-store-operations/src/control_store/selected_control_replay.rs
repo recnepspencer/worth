@@ -309,14 +309,14 @@ impl SelectedControlReplay {
                 workflow,
                 plan_fingerprint,
                 receipt_fingerprint,
-                owner_tag,
+                owner_kind,
             } => self.observe_recovery_owner_receipt(
                 record_index,
                 &operation,
                 workflow,
                 plan_fingerprint,
                 receipt_fingerprint,
-                owner_tag,
+                owner_kind,
             )?,
             OperationalControlRecordKind::ReplicaBootstrapTransferRecorded { .. }
             | OperationalControlRecordKind::ReplicaBootstrapCompleted { .. }

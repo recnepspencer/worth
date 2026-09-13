@@ -21,7 +21,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
     let capability = context.elevated_access();
     let mut lease = context
         .world
-        .application
+        .selected_product()
         .open_governed_application_query_live::<
             ElevatedAccountActivityQuery,
             AccountSummaryParameters,
@@ -49,11 +49,11 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
     close_elevation(&context.world, &context.request, approved);
 
     assert_authorization_denied(
-        lease.poll(),
+        lease.next(&context.principal, &context.request),
         WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
     );
     assert!(matches!(
-        lease.poll(),
+        lease.next(&context.principal, &context.request),
         WorthQueryApplicationLiveOutcome::Closed
     ));
     drop(lease);
@@ -70,7 +70,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
     let capability = context.elevated_access();
     let mut lease = context
         .world
-        .application
+        .selected_product()
         .open_governed_application_query_live::<
             ElevatedAccountActivityQuery,
             AccountSummaryParameters,
@@ -96,11 +96,11 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
     commit_live_activity(&context.world, &context.committer, &context.request);
 
     assert_authorization_denied(
-        lease.poll(),
+        lease.next(&context.principal, &context.request),
         WorthQueryOperationAuthorizationDenialKind::ElevationExpired,
     );
     assert!(matches!(
-        lease.poll(),
+        lease.next(&context.principal, &context.request),
         WorthQueryApplicationLiveOutcome::Closed
     ));
     drop(lease);

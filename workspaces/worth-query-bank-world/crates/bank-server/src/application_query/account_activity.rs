@@ -2,18 +2,19 @@ use std::num::NonZeroUsize;
 
 use bank_domain::model::{AccountId, BankPrincipalId};
 use bank_domain::queries::{
-    AccountActivityLiveCause, AccountActivityQuery, AccountActivityQueryParameters,
-    AccountActivityQueryResult,
+    account_activity, AccountActivityLiveCause, AccountActivityQuery, AccountActivityQueryBinding,
+    AccountActivityQueryParameters, AccountActivityQueryResult,
 };
 use bank_domain::schema::{Account, AccountIdentity, BankSchema, Posting, Principal};
 use worth_query_host::facade::{
+    application_entry::WorthQueryApplicationRequestExt,
     declaration::application_query::ApplicationQueryParameterSet,
     domain::WorthQueryInstalledApplicationQuery,
     primary_graph::{
         WorthQueryApplicationEntityIdentity, WorthQueryApplicationLiveControls,
         WorthQueryApplicationLiveLease, WorthQueryApplicationQueryAccessContext,
-        WorthQueryApplicationQueryControls, WorthQueryApplicationQueryResumeControls,
-        WorthQueryPrincipalResolutionMode,
+        WorthQueryApplicationQueryResumeControls, WorthQueryPrincipalResolutionMode,
+        WorthQueryProductQueryControls, WorthQuerySelectedProductOperation,
     },
     publication::domain_computation::publish_application_result,
 };
@@ -26,10 +27,10 @@ pub use output::{
     BankAccountActivityQueryResult,
 };
 
-use super::{execute_one_shot, BankApplicationQueryDenial, BankApplicationQueryInvocation};
+use super::BankApplicationQueryDenial;
 use crate::{
     BankApplicationLiveCloseOutcome, BankAuthenticatedPrincipal, BankCommitReceipt,
-    BankIdentityRuntime,
+    BankIdentityRuntime, BankReadControls,
 };
 
 type QueryAccountActivityLiveLease<'runtime, 'principal> = WorthQueryApplicationLiveLease<
@@ -91,74 +92,85 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
         maximum_work: NonZeroUsize,
         request: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<BankAccountActivityHistoricalResult, BankApplicationQueryDenial> {
-        let prepared = self.prepare(request)?;
-        let basis = prepared
-            .runtime
-            .application_runtime()
-            .admit_application_historical_basis(
-                commit.recovery_evidence().historical_read(),
-                request,
-            )
-            .map_err(BankApplicationQueryDenial::from_admission)?;
-        let access = prepared.access();
-        let plan = prepared
-            .runtime
-            .application_runtime()
+        let application = self.runtime.application_runtime();
+        let history = application
+            .branches()
+            .history(application.current_world(), maximum_work)
+            .map_err(BankApplicationQueryDenial::from_product_selection)?;
+        let selected_commit = commit.publication().product_commit().composite_commit();
+        let entry = history
+            .entries()
+            .find(|entry| entry.selected_commit() == selected_commit)
+            .ok_or(BankApplicationQueryDenial::HistoricalCommitUnavailable)?;
+        let selected = history
+            .select(&entry)
+            .map_err(BankApplicationQueryDenial::from_product_selection)?;
+        let prepared = self.prepare(selected, request)?;
+        let PreparedAccountActivity {
+            runtime,
+            principal,
+            query,
+            scope,
+            selected,
+        } = prepared;
+        let access = WorthQueryApplicationQueryAccessContext::new(principal.query(), &scope);
+        let plan = selected
             .admit_application_query(
-                &prepared.query,
+                &query,
                 &access,
                 ApplicationQueryParameterSet::<AccountActivityQuery>::new(),
-                WorthQueryApplicationQueryControls::historical(
-                    basis,
-                    maximum_result_count,
-                    maximum_work,
-                    request,
-                ),
+                WorthQueryProductQueryControls::new(maximum_result_count, maximum_work, request),
             )
             .map_err(BankApplicationQueryDenial::from_admission)?;
-        let result = prepared
-            .runtime
+        let result = runtime
             .application_runtime()
-            .execute_application_query_historical(plan)
-            .map_err(BankApplicationQueryDenial::from_historical_execution)?;
+            .execute_application_query_one_shot(plan)
+            .map_err(BankApplicationQueryDenial::from_execution)?;
         Ok(publish_application_result(result.into_admitted_disclosed()))
     }
 
     pub fn execute(
         self,
-        controls: WorthQueryApplicationQueryControls<'_, BankSchema>,
+        controls: BankReadControls,
     ) -> Result<BankAccountActivityQueryResult, BankApplicationQueryDenial> {
-        execute_one_shot(
-            self.runtime,
-            self.principal,
-            BankApplicationQueryInvocation::new(
-                AccountActivityQuery::reference(),
-                AccountIdentity::reference(),
-                self.account,
-                ApplicationQueryParameterSet::<AccountActivityQuery>::new(),
-                controls,
-            ),
-        )
+        let result = self
+            .runtime
+            .application_runtime()
+            .request(self.principal.external(), controls.request())
+            .query(account_activity(self.account))
+            .limits(controls.maximum_result_count(), controls.maximum_work())
+            .execute()
+            .map_err(BankApplicationQueryDenial::from_request_query)?;
+        Ok(result)
     }
 
     pub fn page(
         self,
-        controls: WorthQueryApplicationQueryControls<'_, BankSchema>,
+        controls: BankReadControls,
     ) -> Result<BankAccountActivityPageResult, BankApplicationQueryDenial> {
-        let prepared = self.prepare(controls.request_scope())?;
-        let access = prepared.access();
-        let plan = prepared
-            .runtime
-            .application_runtime()
-            .admit_application_query(
-                &prepared.query,
+        let application = self.runtime.application_runtime();
+        let selected = application
+            .on_branch(application.current_world())
+            .select()
+            .map_err(BankApplicationQueryDenial::from_product_selection)?;
+        let prepared = self.prepare(selected, controls.request())?;
+        let PreparedAccountActivity {
+            runtime,
+            principal,
+            query,
+            scope,
+            selected,
+        } = prepared;
+        let access = WorthQueryApplicationQueryAccessContext::new(principal.query(), &scope);
+        let plan = selected
+            .admit_application_query_continuation(
+                &query,
                 &access,
                 ApplicationQueryParameterSet::<AccountActivityQuery>::new(),
-                controls,
+                controls.application_query_controls(),
             )
             .map_err(BankApplicationQueryDenial::from_admission)?;
-        let page = prepared
-            .runtime
+        let page = runtime
             .application_runtime()
             .execute_application_query_continuation_page(plan)
             .map_err(BankApplicationQueryDenial::from_continuation_execution)?;
@@ -170,7 +182,12 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
         continuation: BankAccountActivityContinuation,
         controls: WorthQueryApplicationQueryResumeControls<'_>,
     ) -> Result<BankAccountActivityPageResult, BankApplicationQueryDenial> {
-        let prepared = self.prepare(controls.request_scope())?;
+        let application = self.runtime.application_runtime();
+        let selected = application
+            .on_branch(application.current_world())
+            .select()
+            .map_err(BankApplicationQueryDenial::from_product_selection)?;
+        let prepared = self.prepare(selected, controls.request_scope())?;
         continuation.resume(prepared, controls)
     }
 
@@ -179,10 +196,20 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
         controls: WorthQueryApplicationLiveControls,
     ) -> Result<BankAccountActivityLiveLease<'runtime, 'principal>, BankApplicationQueryDenial>
     {
-        let prepared = self.prepare(controls.request())?;
-        let query = prepared
-            .runtime
-            .application_runtime()
+        let application = self.runtime.application_runtime();
+        let selected = application
+            .on_branch(application.current_world())
+            .select()
+            .map_err(BankApplicationQueryDenial::from_product_selection)?;
+        let prepared = self.prepare(selected, controls.request())?;
+        let PreparedAccountActivity {
+            principal,
+            query,
+            scope,
+            selected,
+            ..
+        } = prepared;
+        let query = selected
             .open_application_query_live::<
                 AccountActivityQuery,
                 AccountActivityQueryParameters,
@@ -193,9 +220,9 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
                 Posting,
                 AccountActivityLiveCause,
             >(
-                prepared.query,
-                prepared.principal.query(),
-                prepared.scope,
+                query,
+                principal.query(),
+                scope,
                 ApplicationQueryParameterSet::<AccountActivityQuery>::new(),
                 controls,
             )
@@ -205,14 +232,17 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
 
     fn prepare(
         self,
+        selected: WorthQuerySelectedProductOperation<'runtime, BankSchema>,
         request: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<PreparedAccountActivity<'runtime, 'principal>, BankApplicationQueryDenial> {
         let application = self.runtime.application_runtime();
-        let query = application
+        let query_binding = application
             .installed_schema()
-            .application_query(AccountActivityQuery::reference())
+            .installed_query_binding::<AccountActivityQueryBinding>()
             .map_err(BankApplicationQueryDenial::from_installation)?;
-        let scope = application
+
+        let query = query_binding.into_query();
+        let scope = selected
             .resolve_entity(
                 AccountIdentity::reference(),
                 self.account,
@@ -225,6 +255,7 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
             principal: self.principal,
             query,
             scope,
+            selected,
         })
     }
 }
@@ -254,6 +285,7 @@ struct PreparedAccountActivity<'runtime, 'principal> {
         Account,
     >,
     scope: WorthQueryApplicationEntityIdentity<BankSchema, Account>,
+    selected: WorthQuerySelectedProductOperation<'runtime, BankSchema>,
 }
 
 impl PreparedAccountActivity<'_, '_> {

@@ -22,7 +22,9 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             AccountingRevision::reference(),
             before.accounting_revision(),
         )
+        .unwrap()
         .expect_fact(Status::reference(), AccountStatus::Closed)
+        .unwrap()
         .controls(BankMutationControls::new(
             request_scope(),
             key("typed-mismatch"),
@@ -53,7 +55,9 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             AccountingRevision::reference(),
             before.accounting_revision(),
         )
+        .unwrap()
         .expect_fact(Status::reference(), before.status())
+        .unwrap()
         .controls(BankMutationControls::new(
             request_scope(),
             key("typed-send"),
@@ -75,7 +79,9 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             AccountingRevision::reference(),
             before.accounting_revision(),
         )
+        .unwrap()
         .expect_fact(Status::reference(), before.status())
+        .unwrap()
         .controls(BankMutationControls::new(
             request_scope(),
             key("typed-send"),
@@ -102,7 +108,9 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             AccountingRevision::reference(),
             before.accounting_revision().next().unwrap(),
         )
+        .unwrap()
         .expect_fact(Status::reference(), before.status())
+        .unwrap()
         .controls(BankMutationControls::new(
             request_scope(),
             key("typed-send"),

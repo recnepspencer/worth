@@ -81,7 +81,7 @@ fn materialize_segment(
 ) -> Result<(), RecordAppendError> {
     let page_bytes = u64::from(format.declaration().page_size().bytes());
     for (page_index, page) in segment.pages.into_iter().enumerate() {
-        let prior = certify_inline_prior(page.existing_frame.as_ref(), format)?;
+        let prior = certify_inline_prior(page.existing_frame.as_ref())?;
         let appends = page
             .records
             .iter()
@@ -194,22 +194,16 @@ fn materialize_extent(
 
 fn certify_inline_prior(
     image: Option<&super::ExistingDataFrameImage>,
-    format: AdmittedPhysicalRecordFormat,
 ) -> Result<Option<CertifiedPriorPageBasis>, RecordAppendError> {
     let Some(image) = image else {
         return Ok(None);
     };
-    let coordinate = image.coordinate();
-    let source = PhysicalDataFrameIdentity::inline_page(
-        image.page(),
-        coordinate.artifact(),
-        coordinate.offset(),
-        coordinate.length(),
-    )
-    .ok_or_else(invalid_plan)?;
-    CertifiedPriorPageBasis::for_materialized_source(source, format.declaration(), image.bytes())
-        .map(Some)
-        .ok_or_else(invalid_plan)
+    Ok(Some(
+        CertifiedPriorPageBasis::for_integrity_admitted_materialized_source(
+            image.admitted_prior_basis(),
+        )
+        .ok_or_else(invalid_plan)?,
+    ))
 }
 
 fn read_exact_source(

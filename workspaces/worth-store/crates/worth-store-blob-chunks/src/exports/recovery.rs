@@ -1,8 +1,10 @@
 // --- Capabilities (admission handles, next-step types) ---
 pub use crate::recovery::{
     BlobAdmittedRecoveryRecords, BlobRecoveryRecordSet, BlobRecoveryReplay,
-    BlobResumeReadmissionAuthority, BlobResumeReplay, BlobResumeSessionAdmitted,
-    BlobResumeSessionDeclaration, BlobResumeStoreAuthority,
+    BlobReplayAdmissionDenial, BlobReplayAdmissionDenialKind, BlobReplaySourceAdmission,
+    BlobReplaySourceKind, BlobReplaySourceOutcome, BlobReplaySourceOutcomeKind,
+    BlobResumeReadmissionAuthority, BlobResumeReplay, BlobResumeReplayReadmission,
+    BlobResumeSessionAdmitted, BlobResumeSessionDeclaration, BlobResumeStoreAuthority,
 };
 // --- Outcomes (transition receipts) ---
 pub use crate::recovery::{

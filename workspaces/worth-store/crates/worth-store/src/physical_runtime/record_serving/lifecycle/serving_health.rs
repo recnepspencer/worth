@@ -96,7 +96,8 @@ impl ServingHealth {
     ) {
         if matches!(
             kind,
-            RecordStreamFailureKind::ArtifactDamaged
+            RecordStreamFailureKind::ArtifactUnavailable
+                | RecordStreamFailureKind::ArtifactDamaged
                 | RecordStreamFailureKind::FormatMismatch
                 | RecordStreamFailureKind::StalePlacement
         ) {

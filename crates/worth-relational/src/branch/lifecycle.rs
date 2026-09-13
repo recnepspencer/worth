@@ -34,6 +34,7 @@ impl super::reference::RelationalBranchReferenceMutableState {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalBranchArchiveDenial {
+    OwnerUnavailable,
     ForeignRuntime,
     UnknownBranch(BranchId),
     AlreadyArchived(BranchId),
@@ -43,6 +44,7 @@ pub enum RelationalBranchArchiveDenial {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalBranchDeleteDenial {
+    OwnerUnavailable,
     ForeignRuntime,
     UnknownBranch(BranchId),
     MainBranch,

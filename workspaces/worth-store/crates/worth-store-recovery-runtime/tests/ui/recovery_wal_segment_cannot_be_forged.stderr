@@ -1,0 +1,14 @@
+error[E0624]: associated function `from_complete_frames` is private
+ --> tests/ui/recovery_wal_segment_cannot_be_forged.rs:8:42
+  |
+8 |       IntegrityAdmittedRecoveryWalSegment::from_complete_frames(
+  |                                            ^^^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: $WORKSPACE/crates/worth-store/src/physical_runtime/integrity/recovery_wal_admission.rs
+  |
+  | /     pub(in crate::physical_runtime) fn from_complete_frames(
+  | |         observed: &ObservedWalArtifact,
+  | |         identity: worth_store_wal::WalSegmentArtifactIdentity,
+  | |         frames: Vec<IntegrityAdmittedRecoveryWalFrame>,
+  | |     ) -> Option<Self> {
+  | |_____________________- private associated function defined here

@@ -292,10 +292,14 @@ fn coverage(coverage: &BackupArtifactCoverage) -> BackupBundleArtifactCoverage {
             checkpoint_identity,
             manifest_generation,
             durable_checkpoint_lsn,
+            authority_fingerprint,
+            frontier_digest,
         } => BackupBundleArtifactCoverage::CheckpointManifest {
             checkpoint_identity: checkpoint_identity.clone(),
             manifest_generation: *manifest_generation,
             durable_checkpoint_lsn: *durable_checkpoint_lsn,
+            authority_fingerprint: *authority_fingerprint,
+            frontier_digest: *frontier_digest,
         },
         BackupArtifactCoverage::WalSegment {
             start_lsn,

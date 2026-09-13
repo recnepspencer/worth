@@ -2,11 +2,10 @@ use std::collections::{BTreeSet, VecDeque};
 
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
-    durable_artifact_checksum, BoundedRootRoutingBlockDecodeDenial, ManifestBlockReference,
-    PhysicalRootRoutingBlock, RootRoutingBlockDecodeLimits,
+    ManifestBlockReference, PhysicalRootRoutingBlock, PhysicalTreeIdentity,
 };
 use worth_store_recovery_physics::{
-    PhysicalManifestBlockCandidate, PhysicalRootSlotObservation, PhysicalRootSourceCandidate,
+    PhysicalManifestBlockProjection, PhysicalRootSlotObservation, PhysicalRootSourceCandidate,
 };
 
 use crate::entry::{
@@ -15,12 +14,17 @@ use crate::entry::{
 };
 use crate::orchestration::discovery::DiscoveryFailure;
 
-pub(crate) enum ManifestFactsDiscovery {
+pub(crate) enum ManifestFactsState {
     Unavailable,
     Rejected(PhysicalManifestObservationDenial),
     Observed {
-        blocks: Vec<PhysicalManifestBlockCandidate>,
+        blocks: Vec<PhysicalManifestBlockProjection>,
     },
+}
+
+pub(crate) struct ManifestFactsDiscovery {
+    state: ManifestFactsState,
+    integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
 pub(super) struct ManifestObservationBudget<'a> {
@@ -37,8 +41,8 @@ pub(super) fn observe_manifest_facts(
     root: &PhysicalRootSlotObservation,
     mut budget: ManifestObservationBudget<'_>,
 ) -> Result<ManifestFactsDiscovery, DiscoveryFailure> {
-    let PhysicalRootSlotObservation::Admitted(root) = root else {
-        return Ok(ManifestFactsDiscovery::Unavailable);
+    let PhysicalRootSlotObservation::Candidate(root) = root else {
+        return Ok(ManifestFactsDiscovery::unavailable());
     };
     let mut pending = root
         .manifest()
@@ -47,25 +51,42 @@ pub(super) fn observe_manifest_facts(
         .collect::<VecDeque<_>>();
     let mut visited = BTreeSet::new();
     let mut candidates = Vec::new();
+    let mut integrity_trace = crate::integrity_ingress::RecoveryIntegrityIngressTrace::default();
     while let Some(reference) = pending.pop_front() {
         if !visited.insert((reference.generation(), reference.block())) {
-            return Ok(ManifestFactsDiscovery::Rejected(
+            return Ok(ManifestFactsDiscovery::rejected(
                 PhysicalManifestObservationDenial::DuplicateReference { reference },
+                integrity_trace,
             ));
         }
         let queued_blocks = pending.len() as u64;
-        let observed =
-            observe_manifest_block(discovery, root, reference, queued_blocks, &mut budget)?;
-        let (block, bytes) = match observed {
+        let observed = match observe_manifest_block(
+            discovery,
+            root,
+            reference,
+            queued_blocks,
+            &mut budget,
+            &mut integrity_trace,
+        ) {
             Ok(observed) => observed,
-            Err(denial) => return Ok(ManifestFactsDiscovery::Rejected(denial)),
+            Err(failure) => return Err(failure.with_integrity_trace(integrity_trace)),
         };
+        let projected = match observed {
+            Ok(observed) => observed,
+            Err(denial) => {
+                return Ok(ManifestFactsDiscovery::rejected(denial, integrity_trace));
+            }
+        };
+        let block = projected.block;
         if let PhysicalRootRoutingBlock::Branch { children, .. } = &block {
             pending.extend(children.iter().copied());
         }
-        candidates.push(PhysicalManifestBlockCandidate::new(reference, bytes));
+        candidates.push(projected.page_facts);
     }
-    Ok(ManifestFactsDiscovery::Observed { blocks: candidates })
+    Ok(ManifestFactsDiscovery::observed(
+        candidates,
+        integrity_trace,
+    ))
 }
 
 fn observe_manifest_block(
@@ -74,8 +95,12 @@ fn observe_manifest_block(
     reference: ManifestBlockReference,
     queued_blocks: u64,
     budget: &mut ManifestObservationBudget<'_>,
+    integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 ) -> Result<
-    Result<(PhysicalRootRoutingBlock, Vec<u8>), PhysicalManifestObservationDenial>,
+    Result<
+        crate::integrity_ingress::projection::AdmittedRootRoutingProjection,
+        PhysicalManifestObservationDenial,
+    >,
     DiscoveryFailure,
 > {
     consume_block_budget(budget)?;
@@ -92,36 +117,24 @@ fn observe_manifest_block(
                 *budget.remaining_bytes,
             )
         })?;
-    let Some(bytes) = artifact.into_bytes() else {
-        return Ok(Err(PhysicalManifestObservationDenial::MissingArtifact {
-            reference,
-        }));
-    };
+    let observed_bytes = artifact.bytes().map_or(0, |bytes| bytes.len() as u64);
     *budget.remaining_bytes = budget
         .remaining_bytes
-        .checked_sub(bytes.len() as u64)
+        .checked_sub(observed_bytes)
         .ok_or_else(|| DiscoveryFailure::from(PhysicalRecoveryBlock::DiscoveryLimit))?;
-    let observed = match decode_and_validate_manifest_block(
+    let observed = match admit_manifest_block(
+        &artifact,
+        discovery.store_identity(),
         root,
         reference,
-        &bytes,
-        RootRoutingBlockDecodeLimits {
-            leaf_entries: *budget.remaining_entries,
-            branch_children: budget.remaining_blocks.saturating_sub(queued_blocks),
-        },
+        integrity_trace,
     ) {
         Ok(observed) => observed,
-        Err(ManifestBlockObservationFailure::LeafEntryLimit { observed }) => {
-            let consumed = budget
-                .admitted_entries
-                .saturating_sub(*budget.remaining_entries);
-            return Err(super::discovery::discovery_limit(
-                PhysicalRecoveryLimitDimension::ManifestEntries,
-                consumed.saturating_add(observed),
-                budget.admitted_entries,
-            ));
-        }
-        Err(ManifestBlockObservationFailure::BranchChildLimit { observed }) => {
+        Err(ManifestBlockObservationFailure::Format(denial)) => return Ok(Err(denial)),
+    };
+    if let Some(children) = observed.block.children() {
+        let remaining = budget.remaining_blocks.saturating_sub(queued_blocks);
+        if children.len() as u64 > remaining {
             let consumed = budget
                 .admitted_blocks
                 .saturating_sub(*budget.remaining_blocks);
@@ -129,73 +142,50 @@ fn observe_manifest_block(
                 PhysicalRecoveryLimitDimension::ManifestEntries,
                 consumed
                     .saturating_add(queued_blocks)
-                    .saturating_add(observed),
+                    .saturating_add(children.len() as u64),
                 budget.admitted_blocks,
             ));
         }
-        Err(ManifestBlockObservationFailure::Format(denial)) => return Ok(Err(denial)),
-    };
-    consume_entry_budget(&observed, budget)?;
-    Ok(Ok((observed, bytes)))
+    }
+    consume_entry_budget(&observed.block, budget)?;
+    Ok(Ok(observed))
 }
 
-fn decode_and_validate_manifest_block(
+fn admit_manifest_block(
+    source: &worth_store::physical_runtime::ObservedRecoveryArtifact,
+    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
     root: &PhysicalRootSourceCandidate,
     reference: ManifestBlockReference,
-    bytes: &[u8],
-    limits: RootRoutingBlockDecodeLimits,
-) -> Result<PhysicalRootRoutingBlock, ManifestBlockObservationFailure> {
-    let (block, observed_format) =
-        PhysicalRootRoutingBlock::decode_bounded(bytes, root.manifest().node_capacity(), limits)
-            .map_err(|denial| match denial {
-                BoundedRootRoutingBlockDecodeDenial::Format(denial) => {
-                    ManifestBlockObservationFailure::Format(
-                        PhysicalManifestObservationDenial::Decode { reference, denial },
-                    )
-                }
-                BoundedRootRoutingBlockDecodeDenial::LeafEntries { observed, .. } => {
-                    ManifestBlockObservationFailure::LeafEntryLimit { observed }
-                }
-                BoundedRootRoutingBlockDecodeDenial::BranchChildren { observed, .. } => {
-                    ManifestBlockObservationFailure::BranchChildLimit { observed }
-                }
-            })?;
-    let expected_format = root.selector().format();
-    if observed_format != expected_format {
-        return Err(ManifestBlockObservationFailure::Format(
-            PhysicalManifestObservationDenial::FormatIdentity {
-                reference,
-                expected: expected_format,
-                observed: observed_format,
-            },
-        ));
-    }
-    let expected_tree = root.manifest().tree_identity();
-    if block.tree_identity() != expected_tree {
-        return Err(ManifestBlockObservationFailure::Format(
-            PhysicalManifestObservationDenial::TreeIdentity {
-                reference,
-                expected: expected_tree,
-                observed: block.tree_identity(),
-            },
-        ));
-    }
-    let observed_reference = block.reference(durable_artifact_checksum(bytes));
-    if observed_reference != reference {
-        return Err(ManifestBlockObservationFailure::Format(
-            PhysicalManifestObservationDenial::ReferenceIntegrity {
-                expected: reference,
-                observed: observed_reference,
-            },
-        ));
-    }
-    Ok(block)
+    integrity_trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+) -> Result<
+    crate::integrity_ingress::projection::AdmittedRootRoutingProjection,
+    ManifestBlockObservationFailure,
+> {
+    let tree = PhysicalTreeIdentity::new(root.manifest().tree_identity()).ok_or_else(|| {
+        ManifestBlockObservationFailure::Format(PhysicalManifestObservationDenial::Integrity {
+            reference,
+            denial: crate::entry::PhysicalRecoveryRootProtocolDenial::ScopeMismatch,
+        })
+    })?;
+    crate::integrity_ingress::projection::root_routing_block(
+        source,
+        store,
+        root.selector().format(),
+        tree,
+        reference,
+        root.manifest().node_capacity(),
+        integrity_trace,
+    )
+    .map_err(|rejection| {
+        ManifestBlockObservationFailure::Format(PhysicalManifestObservationDenial::Integrity {
+            reference,
+            denial: rejection.diagnostic(),
+        })
+    })
 }
 
 enum ManifestBlockObservationFailure {
     Format(PhysicalManifestObservationDenial),
-    LeafEntryLimit { observed: u64 },
-    BranchChildLimit { observed: u64 },
 }
 
 fn consume_block_budget(
@@ -235,10 +225,52 @@ fn consume_entry_budget(
 }
 
 impl ManifestFactsDiscovery {
-    pub(crate) fn block_count(&self) -> u64 {
-        match self {
-            Self::Observed { blocks, .. } => blocks.len() as u64,
-            Self::Unavailable | Self::Rejected(_) => 0,
+    const fn unavailable() -> Self {
+        Self {
+            state: ManifestFactsState::Unavailable,
+            integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
         }
+    }
+
+    const fn rejected(
+        denial: PhysicalManifestObservationDenial,
+        integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    ) -> Self {
+        Self {
+            state: ManifestFactsState::Rejected(denial),
+            integrity_trace,
+        }
+    }
+
+    const fn observed(
+        blocks: Vec<PhysicalManifestBlockProjection>,
+        integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    ) -> Self {
+        Self {
+            state: ManifestFactsState::Observed { blocks },
+            integrity_trace,
+        }
+    }
+
+    pub(crate) fn into_parts(
+        self,
+    ) -> (
+        ManifestFactsState,
+        crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+    ) {
+        (self.state, self.integrity_trace)
+    }
+
+    pub(crate) fn block_count(&self) -> u64 {
+        match &self.state {
+            ManifestFactsState::Observed { blocks } => blocks.len() as u64,
+            ManifestFactsState::Unavailable | ManifestFactsState::Rejected(_) => 0,
+        }
+    }
+
+    pub(super) const fn integrity_trace(
+        &self,
+    ) -> &crate::integrity_ingress::RecoveryIntegrityIngressTrace {
+        &self.integrity_trace
     }
 }

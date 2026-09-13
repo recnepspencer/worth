@@ -7,8 +7,6 @@ use crate::{
     ObservedPhysicalTrace, PhysicalInterleavingSchedule, PhysicalSimulationPlan,
     PhysicalSimulationPlanIdentity,
 };
-#[cfg(any(test, feature = "certification-test-support"))]
-use worth_store_blob_chunks::certification_test_authority::BlobHarnessExecutedWitness as BlobHarnessExecutedActorEvidence;
 
 use super::{
     evidence::{require_resource_observation_within_envelope, PhysicalResourceEnvelopeObservation},
@@ -59,39 +57,6 @@ impl PhysicalCounterExecutionSources {
                 .blob_harness_topology()
                 .map(|topology| topology.logical_bytes())
                 .unwrap_or(0),
-            protected_ranges: compaction.protected_ranges(),
-            compaction_candidate_ranges: compaction.candidate_ranges(),
-            range_comparisons: compaction.range_comparisons(),
-            overlapping_ranges: compaction.overlapping_ranges(),
-            copied_pages: compaction.copied_pages(),
-            publication_swaps: compaction.publication_swaps(),
-            blocked_reclaims: compaction.blocked_reclaims(),
-            residency,
-            io,
-        })
-    }
-
-    #[cfg(any(test, feature = "certification-test-support"))]
-    pub(crate) fn admit_for_blob_harness_execution(
-        plan: &PhysicalSimulationPlan,
-        schedule: &PhysicalInterleavingSchedule,
-        trace: &ObservedPhysicalTrace,
-        witness: &BlobHarnessExecutedActorEvidence,
-        residency: PhysicalResidencyObservation,
-        io_queue: IoQueueExecutedEvidenceSource,
-    ) -> Result<Self, CounterMismatchEvidence> {
-        require_executed_sources_match_plan(plan, schedule, trace)?;
-        let io = io_queue.counters();
-        let resource_observation =
-            resource_observation_from_sources(plan, residency.counters(), io);
-        require_resource_observation_within_envelope(plan, resource_observation)?;
-        let compaction = require_compaction_observation_for_contracts(plan, trace)?;
-        Ok(Self {
-            plan_identity: plan.identity().clone(),
-            actor_step_count: schedule.actor_steps().len() as u64,
-            shortcut_rejection_count: trace.shortcut_rejections().len() as u64,
-            blob_chunk_count: witness.executed_topology().chunk_count(),
-            blob_logical_bytes: witness.executed_topology().logical_bytes(),
             protected_ranges: compaction.protected_ranges(),
             compaction_candidate_ranges: compaction.candidate_ranges(),
             range_comparisons: compaction.range_comparisons(),

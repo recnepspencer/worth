@@ -10,7 +10,6 @@ description = "Roadmap 1 maintenance isolation and scheduling contracts."
 worth-store.workspace = true
 worth-store-contracts.workspace = true
 worth-store-layout-indexes.workspace = true
-worth-store-physical-integrity.workspace = true
 
 [dev-dependencies]
 worth-store-physical-format.workspace = true

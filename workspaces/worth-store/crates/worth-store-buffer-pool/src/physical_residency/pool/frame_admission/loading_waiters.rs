@@ -99,6 +99,9 @@ impl PoolInner {
                         owner: Arc::clone(self),
                         key,
                         bytes,
+                        resident_generation: entry
+                            .resident_generation
+                            .expect("joined resident frame has a byte-image generation"),
                     });
                 }
                 Some((LoadingJoinState::Failed(terminal), Some(found), waiters))

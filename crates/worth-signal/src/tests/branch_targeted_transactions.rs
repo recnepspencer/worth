@@ -37,7 +37,10 @@ fn ten_interleaved_branch_transactions_advance_only_their_owned_heads() {
         let plan = targeted_plan(&mut runtime, branch.clone());
         let receipt =
             match runtime.execute_branch_targeted_transaction(&mut (), plan, |transaction| {
-                transaction.mark_dirty(node, Aspect::new(ordinal as u8))
+                transaction.mark_dirty(
+                    node,
+                    Aspect::new((ordinal % crate::data::aspect::MAX_ASPECTS) as u8),
+                )
             }) {
                 TransitionOutcome::Success(receipt) => receipt,
                 other => panic!("expected targeted transaction success, got {other:?}"),
@@ -140,6 +143,13 @@ fn branch_targeted_dependency_rewiring_is_atomic_and_branch_local() {
         Err(SignalError::invalid_input("force rollback"))
     });
     assert!(matches!(failed, TransitionOutcome::Failed(_)));
+    runtime.switch_branch(branch.clone()).unwrap();
+    assert_eq!(
+        runtime.graph().dependency_sources_of(derived).unwrap(),
+        vec![source_a],
+        "aborted destination must restore its inherited dependency truth"
+    );
+    runtime.switch_branch(canonical.clone()).unwrap();
 
     let committed_plan = targeted_plan(&mut runtime, branch.clone());
     assert!(matches!(

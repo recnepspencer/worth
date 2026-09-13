@@ -65,7 +65,7 @@ impl ExactScenarioControlSelection {
         }
     }
 
-    #[cfg(feature = "certification-test-authority")]
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub fn with_selected_prefix_digest_for_controlled_defect(
         mut self,
         prefix_digest: [u8; 32],

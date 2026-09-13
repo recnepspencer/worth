@@ -1,12 +1,12 @@
-use worth_store_wal::InterruptedWalTail;
+use crate::source_precedence::PhysicalWalInterruptionFacts;
 
 use super::WalPrefixAdmissionDenial;
 
 pub(crate) fn classify_terminal_interruption(
     index: usize,
     segment_count: usize,
-    interruption: Option<InterruptedWalTail>,
-) -> Result<Option<InterruptedWalTail>, WalPrefixAdmissionDenial> {
+    interruption: Option<PhysicalWalInterruptionFacts>,
+) -> Result<Option<PhysicalWalInterruptionFacts>, WalPrefixAdmissionDenial> {
     if interruption.is_some() && index + 1 != segment_count {
         Err(WalPrefixAdmissionDenial::InterruptedMiddle)
     } else {

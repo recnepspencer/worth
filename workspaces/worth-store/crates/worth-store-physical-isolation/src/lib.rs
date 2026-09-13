@@ -106,8 +106,10 @@ pub use compaction_interlock::{
     CompactionMutationLaneReceipt, CompactionMutationLaneReceiptKind,
     CompactionOwnerCaseDeclaration, CompactionOwnerCaseId, CompactionOwnerCaseObservation,
     CompactionProtectedReferenceSet, CompactionReadInterlockCounters,
-    CompactionReadInterlockDenial, CompactionReadInterlockPlan, CompactionRewritePublication,
-    CompactionSourceIntegrityEvidence, DrainedCompactionReclaim, ReadDuringCompactionVerdict,
+    CompactionReadInterlockDenial, CompactionReadInterlockPlan, CompactionRecoveryEvidence,
+    CompactionRewritePublication, CompactionSourceIntegrityAdmission,
+    CompactionSourceIntegrityAdmissionDenial, CompactionSourceIntegrityEvidence,
+    DrainedCompactionReclaim, ReadDuringCompactionVerdict,
 };
 #[cfg(any(test, feature = "certification-authority"))]
 pub use epoch::next_root_epoch_for_certification;
@@ -194,8 +196,10 @@ pub use physical_read_plan::{
     TraversalAdmissionGuard, TraversalAdmissionReceipt, UnprotectedReadIntent,
     ValidatedRootObservation,
 };
+#[cfg(any(test, feature = "certification-authority"))]
+pub use physical_semantic_boundary::physical_read_stability_authority_for_certification_test;
 pub use physical_semantic_boundary::{
-    admit_physical_read_stability_authority, admit_post_compaction_read_stability_authority,
+    admit_post_compaction_read_stability_authority,
     admit_post_publication_read_stability_authority,
     correlate_semantic_visibility_with_physical_snapshot,
     deny_semantic_visibility_as_physical_stability, PhysicalReadStabilityAuthority,
@@ -207,33 +211,24 @@ pub use physical_semantic_boundary::{
 };
 pub use publication::{
     AllocatorPublicationFence, AtomicPhysicalRootSwap, CopyOnWritePublicationBinding,
-    CopyOnWritePublicationPlan, CrashStableFreeReusePosture, LoweredCopyOnWritePublicationPlan,
-    ManifestPublicationEpoch, NewRootPublicationProof, OldReachabilityPreservation,
-    PhysicalIdentityReuse, PhysicalPublicationCounterSnapshot, PhysicalPublicationDenial,
-    PhysicalPublicationFoundationalEvidence, PhysicalPublicationIntent,
+    CopyOnWritePublicationPlan, CrashStableFreeReusePosture, ExecutedPublicationRecoveryReceipt,
+    LoweredCopyOnWritePublicationPlan, ManifestPublicationEpoch, NewRootPublicationProof,
+    OldReachabilityPreservation, PhysicalIdentityReuse, PhysicalPublicationCounterSnapshot,
+    PhysicalPublicationDenial, PhysicalPublicationFoundationalEvidence, PhysicalPublicationIntent,
     PhysicalPublicationIntentKind, PhysicalPublicationReadiness, PhysicalPublicationReceipt,
-    PhysicalPublicationReleasePosture, PublicationCrashRecoveryOutcome, PublicationEpochPair,
-    PublicationEpochReadiness, PublicationLatchReadiness, PublicationRootCandidate,
-    PublicationRootSuccessorOwner, ReleasedOldReachability, RootPublicationEpoch,
-    RootSwapOrderingContract, ValidatedPhysicalPublicationIntent,
+    PhysicalPublicationReleasePosture, PublicationCrashRecoveryOutcome, PublicationCrashStage,
+    PublicationEpochPair, PublicationEpochReadiness, PublicationLatchReadiness,
+    PublicationRecoveryReplayInput, PublicationRootCandidate, PublicationRootSuccessorOwner,
+    RecoveredPublicationStructure, RecoveredPublicationStructureKind, ReleasedOldReachability,
+    RootPublicationEpoch, RootSwapOrderingContract, ValidatedPhysicalPublicationIntent,
 };
 pub use readiness::{
-    admit_physical_isolation_entry, admit_physical_isolation_entry_checked,
-    reject_copied_recovery_fields_as_physical_isolation_entry,
-    reject_foundational_or_proof_projection_as_physical_isolation_entry,
-    reject_json_authority_as_physical_isolation_entry,
-    reject_live_runtime_state_as_physical_isolation_entry,
-    reject_semantic_snapshot_as_physical_isolation_entry,
-    reject_stale_recovery_readiness_as_physical_isolation_entry,
-    reject_terminal_projection_as_physical_isolation_entry,
-    require_rebound_recovery_readiness_for_physical_isolation_entry,
-    PhysicalIsolationAdmittedEntryRecipe, PhysicalIsolationEntryAdmission,
-    PhysicalIsolationEntryCheckedOutcome, PhysicalIsolationEntryDenial,
+    PhysicalIsolationAdmittedEntryRecipe, PhysicalIsolationEntryDenial,
     PhysicalIsolationEntryEvidence, PhysicalIsolationEntryFoundationalEvidence,
     PhysicalIsolationEntryIdentity, PhysicalIsolationEntryProofProgression,
     PhysicalIsolationEntryProofRequest, PhysicalIsolationEntryRebindRequired,
-    PhysicalIsolationEntryRequest, PhysicalIsolationLoweredEntryRecipe,
-    PhysicalIsolationResolvedEntryRecipe, PhysicalIsolationRootEpochBasis, RecoveryReadinessBasis,
+    PhysicalIsolationLoweredEntryRecipe, PhysicalIsolationResolvedEntryRecipe,
+    PhysicalIsolationRootEpochBasis, RecoveryReadinessBasis,
 };
 pub use reclaim_reachability::{
     reject_backend_residue_as_reclaim_authority,
@@ -247,9 +242,12 @@ pub use reclaim_reachability::{
 };
 pub use recovery_source_lease::{
     AdmittedPitrSourceCut, AdmittedRollbackSourceCut, BootstrapReachabilityLease,
-    PitrReachabilityLease, RecoveredRecoverySourceLease, RecoverySourceLeaseDenial,
-    RecoverySourceLeaseKind, RecoverySourceLeaseRegistry, RecoverySourceLeaseReleaseReceipt,
-    RecoverySourceLeaseRequest, ResolvedBootstrapSourceCut, RollbackReachabilityLease,
+    BootstrapSourceArtifact, BootstrapSourceArtifactFamily, BootstrapSourceEvidenceBinding,
+    BootstrapSourceFrontier, BootstrapSourceResolutionCounters, BootstrapSourceResolutionDenial,
+    BootstrapSourceResolutionRequest, PhysicalIsolationBootstrapSourceOwner, PitrReachabilityLease,
+    RecoveredRecoverySourceLease, RecoverySourceLeaseDenial, RecoverySourceLeaseKind,
+    RecoverySourceLeaseRegistry, RecoverySourceLeaseReleaseReceipt, RecoverySourceLeaseRequest,
+    ResolvedBootstrapRecoverySourceCut, ResolvedBootstrapSourceCut, RollbackReachabilityLease,
 };
 pub use root_protocol::{
     readmit_current_root_for_read_plan, reject_checkpoint_root_as_current_read_authority,

@@ -3,6 +3,7 @@ use bank_domain::{
     model::{Money, SignedMoney},
 };
 use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
 };
 
@@ -37,14 +38,11 @@ fn journal_and_revision_drift_after_materialization_stales_provider_commit() {
         .runtime
         .application_runtime()
         .compare_and_commit_application(program, idempotency(211));
-    assert!(matches!(
-        outcome,
-        WorthQueryApplicationCommitOutcome::Stale(_)
-    ));
+    assert_product_basis_stale(outcome);
 }
 
 #[test]
-fn unrelated_death_notice_drift_does_not_stale_the_disbursement() {
+fn unrelated_notice_invalidates_the_old_product_basis_and_fresh_disbursement_commits() {
     let fixture = disbursement_world("estate-disbursement-unrelated-currentness");
     let specialist = fixture.authenticate();
     let action = action(250);
@@ -79,10 +77,30 @@ fn unrelated_death_notice_drift_does_not_stale_the_disbursement() {
         .runtime
         .application_runtime()
         .compare_and_commit_application(program, idempotency(221));
+    assert_product_basis_stale(outcome);
+
+    let fresh = fixture
+        .runtime
+        .disburse_estate(&specialist, action, idempotency(221), &request_scope())
+        .expect("fresh admission must preserve progress unrelated to the disbursement");
     assert!(matches!(
-        outcome,
-        WorthQueryApplicationCommitOutcome::Committed(_)
+        fresh,
+        crate::BankMutationCommitOutcome::Committed(_)
     ));
+}
+
+fn assert_product_basis_stale(outcome: WorthQueryApplicationCommitOutcome) {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("an old materialized program must retain its exact product basis: {outcome:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
 }
 
 /// Q8.26-C6: a `Compensation` operation retains no pre-image.

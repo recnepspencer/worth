@@ -16,7 +16,14 @@ use crate::{
 use super::super::governance::EstateGovernanceQuery;
 
 macro_rules! slots {
-    ($($name:ident),+ $(,)?) => { $(pub(in crate::queries::estate) struct $name;)+ };
+    ($($name:ident),+ $(,)?) => {
+        $(
+            pub(in crate::queries::estate) struct $name;
+            impl worth_query_decl::facade::portable_identity::WorthQueryPortableType for $name {
+                const PORTABLE_TYPE_NAME: &'static str = stringify!($name);
+            }
+        )+
+    };
 }
 
 slots!(

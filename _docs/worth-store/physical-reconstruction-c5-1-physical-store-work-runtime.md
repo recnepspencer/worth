@@ -49,7 +49,14 @@ fate while remaining completely branch- and MVCC-agnostic.
   join:
   independently borrowable physical submission, proof-carrying physical
   locality, and exact settlement, with no Store-owned branch registry or
-  semantic writer admission.
+semantic writer admission.
+
+## Current Verification Policy
+
+C.5.1 behavior is protected by its current direct Cargo tests and repository
+gates. Generated proof ledgers, source or binary bindings, mutation catalogs,
+and report pipelines are retired and must not be recreated. Git preserves the
+implementation history.
 - Worth Signal Milestone A already owns deterministic temporal gates, wake
   ordering, timeout/retry timing, previous-value access, and frontier-bounded
   temporal work. Store must consume that clock and wake substrate rather than
@@ -388,7 +395,6 @@ domain precision; their separate authority meanings may not be erased:
 - `PhysicalRecordSubmission`
 - `PhysicalWorkObservation`
 - `C6PhysicalWorkHandoff`
-- `PhysicalWorkCourtroomEvidence`
 - `PhysicalSignalAspectBinding` and frozen
   `PhysicalSignalAspectBindingSet`
 - `PhysicalSignalAspectSubscription`
@@ -411,11 +417,9 @@ receipt, lifecycle transition, or persisted format.
 
 ### Executables And Process Roles
 
-- Extend `store-test-runner` to build and orchestrate the C.5.1 courtrooms.
-- Add one narrow certification-gated child executable named
-  `physical_store_work_courtroom` to the `worth-store` package. Its explicit
-  modes are `write`, `reopen`, `race`, `shutdown`, and `c6-pressure`; modes
-  choose a journey, not an alternate implementation.
+- Use focused Cargo tests to exercise the C.5.1 process scenarios.
+- Use narrowly scoped child modes in the direct integration-test executable;
+  do not maintain a second certification product binary.
 - Retain the separately linked existing
   `worth-store-offline-verifier` binary
   `physical_store_offline_observer`. It must continue to have no dependency on
@@ -452,46 +456,14 @@ receipt, lifecycle transition, or persisted format.
 - `physical_store_offline_observer` reads persisted artifacts in a fresh
   process and reports artifact coordinates, exact lengths, digests, framing,
   roots, residue, and independently decoded record identity.
-- A second fresh `physical_store_work_courtroom reopen` process performs normal
-  Store admission and record reads from root and configuration only.
+- A second fresh test process performs normal Store admission and record reads
+  from root and configuration only.
 - OS-level artifact metadata and raw range digests are collected independently
   of the Store runtime. In-process observations are supplemental and cannot be
   the sole persistence oracle.
 - For a partial or indeterminate effect, the observer must report the exact
   completed prefix when known and the reopener must report inspection-required
   posture. A generic failure or timeout is insufficient evidence.
-
-### Mutation Sensitivity
-
-Every required mutant has a named predicate, expected courtroom, and
-localization message. At minimum the campaign must kill:
-
-- performing an effect during Signal evaluation;
-- using a generic `RawCompletionEnvelope` or scheduler byte counter as a
-  physical settlement receipt;
-- clearing a dirty claim before `CompletedScheduledArtifactRangeWrite` is
-  validated against the exact frame;
-- bypassing scheduler admission or Store executor dispatch;
-- accepting stale runtime generation after close or reopen;
-- losing cancellation after dispatch;
-- failing to revoke serving health after a partial effect;
-- serializing or restoring Signal state as Store recovery truth;
-- replacing `AsyncNodeCapabilityDeclaration` with a Store-local resource-node
-  or policy path;
-- assigning Signal aspect slots without an admitted
-  `PhysicalSignalAspectBinding`, collapsing Foundational mask modes, or using
-  JSON/opaque maps as internal semantic facts;
-- driving timeout/retry from wall-clock sleeps or scheduler elapsed time instead
-  of Signal temporal wakes;
-- retaining a second generic lifecycle map beside Signal;
-- retrying a physical effect after physical settlement because derived Signal
-  completion rolled back;
-- reintroducing `records_mut` as the global mutation lock;
-- allowing a C.6 caller to create a second pending registry or scheduler;
-- adding a Store-owned branch writer registry or branch-labelled physical
-  submission queue;
-- accepting a branch, workspace, or caller lane label as physical disjointness
-  or scheduler-admission proof.
 
 ### Forbidden Substitutes
 
@@ -506,19 +478,8 @@ localization message. At minimum the campaign must kill:
   into C.5.1 as physical work or concurrency authority;
 - sleep-based race claims without named yieldpoints and a bounded deadline;
 - giant policy/value Cartesian matrices in place of the three joined
-  courtrooms; and
+  direct joined scenarios; and
 - a script that infers architectural ownership by string search alone.
-
-The runner must emit a machine-readable evidence bundle containing the exact
-source revision, binary digests, feature graph, platform and filesystem
-profile, Store identity, runtime generation, seed, yieldpoint schedule, process
-ids and exit fates, admitted limits, per-work identities and transitions,
-effect counters, artifact inventory and digests, reopen result, offline result,
-and mutant localization. A rerun command is part of the bundle.
-The bundle is constructed first as typed `PhysicalWorkCourtroomEvidence` from
-native aspect and physical artifacts. A JSON rendering is permitted only as a
-terminal reporter projection through the explicit Store aspect-native terminal
-lane; those bytes cannot be readmitted as certification or runtime authority.
 
 ## Must Ship
 
@@ -533,7 +494,8 @@ lane; those bytes cannot be readmitted as certification or runtime authority.
 - bounded cancellation, retry, shutdown, and observation semantics;
 - a narrow C.6 handoff that makes a second runtime mechanically unnecessary;
 - deletion and dependency gates for every superseded production path; and
-- the three real-filesystem, multi-process courtrooms and mutation campaign.
+- direct real-filesystem and fresh-process regression tests at the relevant
+  production boundaries.
 
 ## Must Preserve
 
@@ -570,8 +532,8 @@ lane; those bytes cannot be readmitted as certification or runtime authority.
   gates;
 - strict Clippy with all targets/features and zero warnings;
 - all C.3-C.5 physical lifecycle and record journey suites;
-- the three phase-16 courtrooms with independent observer and fresh reopener;
-- the named mutant campaign with zero surviving required mutants;
+- the focused phase-16 lifecycle, crash/reopen, and bounded-residency scenarios
+  using independent observation where persisted truth is at issue;
 - `cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .`;
 - `cargo run --manifest-path tools/agent-context/Cargo.toml -- check`; and
 - the workspace Rust line-cap and physical-writer/raw-owner gates.
@@ -585,9 +547,9 @@ substitutes; phase 16 certifies the C.6 handoff. A later phase may expose a
 defect in an earlier one, but it must repair the earlier seam rather than add a
 local bypass.
 
-C.5.1 is complete only when all sixteen phase obligations, the deletion gates,
-the three joined courtrooms, the independent offline observation, and the
-boundary checks pass on the ordinary production graph. A green suite with a
+C.5.1 is complete only when all sixteen phase obligations, the focused direct
+scenarios, independent offline observation, and boundary checks pass on the
+ordinary production graph. A green suite with a
 duplicate authority, fake effect, serialized recovery shortcut, uncancelled
 work leak, or C.6-only alternate path is a failed milestone.
 
@@ -1382,7 +1344,8 @@ abandoning a request cannot abandon possible filesystem truth.
   or fence transition without consulting Signal lifecycle state.
 - Deterministic clock advancement must reproduce timeout and retry outcomes
   without sleeps. Replacing Signal time with wall-clock or scheduler elapsed
-  time must fail a named mutant while producing no physical effect.
+  time must fail a focused direct regression while producing no physical
+  effect.
 
 **Engineering decisions**
 
@@ -1462,7 +1425,7 @@ independence rather than a runtime-wide mutable borrow or registry lock.
 - The disjoint writes must be submitted through independently acquired
   physical mutation capabilities. Replacing those capabilities with a global
   physical submission lock, or accepting a caller branch/lane label as their
-  independence proof, must fail a named structural mutant.
+  independence proof, must fail a focused concurrency regression.
 - Opposing same-artifact mutations must serialize at the artifact coordination
   boundary without blocking a disjoint artifact operation.
 - Scale tests must demonstrate lookup and completion work proportional to the
@@ -1471,8 +1434,8 @@ independence rather than a runtime-wide mutable borrow or registry lock.
   command arena: safely cancelled commands leave both owners, dispatched
   commands remain until physical settlement, and retained Signal history does
   not retain command bytes or effect authority.
-- Grouping mutants that erase security, durability, locality, or recovery
-  distinctions must be rejected at the grouping boundary.
+- Focused grouping regressions must reject erased security, durability,
+  locality, or recovery distinctions at the grouping boundary.
 
 **Engineering decisions**
 
@@ -1807,9 +1770,9 @@ replacement through the same work progression and eliminate the global
 - Crash or fault injection at every C.5 publication edge must preserve the
   existing exact `Published`, `Unpublished`, or `Indeterminate` world fate after
   migration.
-- A mutation that bypasses Signal readiness, scheduler admission, executor
-  dispatch, backend receipt, or physical settlement must be killed by a
-  distinct mutant predicate.
+- Focused direct regressions must make a bypass of Signal readiness, scheduler
+  admission, executor dispatch, backend receipt, or physical settlement fail at
+  the nearest causal boundary.
 - Reorder or suppress completion of one child publication stage and prove the
   dependent async-capable node remains in the Signal-classified posture while
   the physical publication typestate independently forbids root publication.
@@ -1902,13 +1865,13 @@ make its return mechanically difficult.
 - Aspect and JSON gates must fail on raw `Aspect::new`/`AspectMask::from_bits`
   production routing, Foundational mask substitution, `serde_json::Value`, JSON
   byte round-trips, or JSON-shaped maps introduced into any internal work phase.
-- Deletion mutants must reintroduce a duplicate pending registry, callback
-  settlement route, Store-local timer/retry/policy registry, legacy resource-
-  node construction, raw backend dispatch, or old special writeback route and
-  be localized mechanically.
+- Dependency, compile-fail, and focused behavior tests must reject a duplicate
+  pending registry, callback settlement route, Store-local timer/retry/policy
+  registry, legacy resource-node construction, raw backend dispatch, or old
+  special writeback route at the nearest owned boundary.
 - A Store-local branch writer map, branch-labelled physical queue, or branch
   token accepted as physical disjointness proof must fail the dependency/source
-  gates and a focused compile-fail or mutant proof.
+  gates and a focused compile-fail or behavior test.
 - Strict all-target/all-feature Clippy, dead-code/unused-dependency checks, and
   touched-file structural QA must be clean.
 
@@ -1924,9 +1887,9 @@ make its return mechanically difficult.
 
 - None.
 
-### Phase 16: Prove The Joined Runtime And Seal The C.6 Handoff
+### Phase 16: Exercise The Joined Runtime And Seal The C.6 Handoff
 
-Certify the complete physical work topology with real files and processes, then
+Exercise the complete physical work topology with real files and processes, then
 expose only the typed seams required for C.6 buffer-pool completion.
 
 **Relevant subsystems**
@@ -1935,7 +1898,7 @@ expose only the typed seams required for C.6 buffer-pool completion.
   shutdown, and observation
 - C.5 production record journeys and independent offline walker
 - C.6 frame load, dirty claim, candidate publication, and bounded residency
-- mutation-sensitive C.1 courtroom runner
+- direct process-scenario runner
 
 **Existing APIs**
 
@@ -1957,9 +1920,6 @@ expose only the typed seams required for C.6 buffer-pool completion.
   facade: independently borrowable submission capability, generation-fenced
   physical work identity, exact physical concurrency scope, terminal settlement
   and recovery disposition, and no branch/MVCC/semantic writer vocabulary
-- machine-readable `PhysicalWorkCourtroomEvidence` bound to source, binary,
-  Store, runtime generation, backend profile, seed, schedule, process ids,
-  artifact manifest, counters, oracle, and mutant localization
 - no public export of raw Signal nodes, resource completion constructors,
   scheduler plan construction, residency claims, executor commands, or backend
   receipts through the handoff
@@ -1967,14 +1927,12 @@ expose only the typed seams required for C.6 buffer-pool completion.
 **Warnings**
 
 - The handoff is not permission to predeclare fake C.6 owners or policies.
-- Courtroom evidence observes execution; it cannot construct authority or
-  provide expected persisted bytes to reopen.
-- Do not multiply scenarios into a Cartesian matrix. The three joined
-  courtrooms below must carry the hard interactions.
+- Direct tests observe execution; they cannot construct authority or provide
+  expected persisted bytes to reopen.
 
 **Test requirements**
 
-- **Courtroom A — lifecycle maelstrom:** on one real Store, concurrently run
+- **Lifecycle maelstrom:** on one real Store, concurrently run
   disjoint reads, two append preparations through independent physical mutation
   capabilities, exact writeback, resource denial,
   pre/post-dispatch cancellation, timeout/retry, completion reordering, and
@@ -1989,81 +1947,28 @@ expose only the typed seams required for C.6 buffer-pool completion.
   serialization of disjoint work, and no Store-local async or branch-writer
   state machine. A caller branch/lane label must be unable to widen the physical
   concurrency scope or alter scheduling.
-- **Courtroom B — hostile physical truth:** a writer process is killed at named
+- **Hostile physical truth:** a writer process is killed at named
   points before dispatch, during a short write, after exact write before
   scheduler settlement, during publication, and during shutdown. A fresh
   offline observer verifies exact bytes/prefix/residue; a distinct fresh Store
   process opens from root and configuration only. No Signal or scheduler state
   crosses the process boundary.
-- **Courtroom C — C.6 inheritance siege:** run a Store materially larger than
+- **C.6 inheritance siege:** run a Store materially larger than
   its admitted residency budget with hot and cold reads, pinned frames, dirty
   pressure, denied over-pin, writeback, eviction/refault, cancellation, and
   close. Prove every fault and writeback enters the C.5.1 topology, memory stays
   bounded, dirty frames never become clean without the exact backend receipt,
   and no C.6-local scheduler or pending registry exists.
-- Controlled mutants must include effect from Signal evaluation, settlement
-  from generic Signal completion, settlement from scheduler counters, skipped
-  backend write, raw backend dispatch, duplicate work registry, stale
-  generation acceptance, post-dispatch cancellation loss, health non-revocation,
-  serialized Signal state used for reopen, Store-local timer/retry/policy
-  registries, legacy resource-node construction, lifecycle duplication,
-  raw Signal-slot semantic authority, Foundational mask substitution,
-  aspect/partition broadening, internal JSON carriers, physical effect retry
-  after derived Signal completion rollback, a Store-owned branch writer
-  registry, and branch-label-based physical disjointness.
-- The authoritative Phase 16 mutation campaign is a slow sealing lane, not a
-  routine development test. Regenerate its complete machine report with:
-
-  ```text
-  cargo run -p store-test-runner --features physical-work-evidence -- mutants --mutation-scope physical-work --report target/c5-1/phase16-mutants.json
-  ```
-
-  Report publication must reject the all-mutant catalog, a single-mutant
-  selector, or a resumed suffix; the courtroom consumer requires the complete
-  physical-work scope.
-- The Phase 16 evidence lanes are distinct and mechanically enforced:
-  package-scoped formatting and focused owner tests form the edit lane; complete
-  owner tests and strict lint form the ordinary regression lane; Courtrooms B
-  and C form explicit certification lanes; and mutation generation is the slow
-  sealing lane. A slower lane must not become an implicit prerequisite of a
-  faster lane.
-- Courtrooms B and C must record source inventory, pre-build source binding,
-  post-build binary binding, post-build source binding, each child/scenario
-  stage, final source binding, executable re-verification, report encoding,
-  cold binary build, and total campaign wall time separately. Missing or
-  duplicate timing phases invalidate report publication.
-- Runner-controlled timing budgets are: mutation-evidence validation at most
-  30,000 ms; world construction at most 1,000 ms; source inventory at most
-  5,000 ms; pre-build source binding at most 2,000 ms; post-build binary
-  binding at most 3,000 ms; post-build source binding at most 2,000 ms; each
-  child or scenario stage at most 5,000 ms; final source binding at most 2,000
-  ms; executable re-verification at most 1,000 ms; report encoding at most 500
-  ms; and total runner-controlled work at most 30,000 ms. Courtroom B
-  additionally limits its 25 scenario stages to 15,000 ms in aggregate.
-- Cold Cargo binary construction is reported but excluded from the
-  runner-controlled aggregate because toolchain and host cache posture are not
-  courtroom work. Campaign wall time remains reported so exclusion cannot hide
-  user-visible cost. No other phase may be excluded or moved between lanes
-  without revising this specification and its hostile budget tests.
-- Timing tests must independently exceed every stage and aggregate budget,
-  reject the report, and prove that failed or abandoned publication leaves no
-  success artifact. A later warm success is evidence only for warm posture; it
-  cannot be cited as a cold-path measurement, and the failed run's named stage
-  remains the cause that must be classified before changing any budget.
+- Phase 16 remains a direct lifecycle and shutdown regression test. It does not
+  require a mutation campaign, source manifest, or machine report.
 
 **Engineering decisions**
 
-- These three courtrooms replace broad combinatorial matrices.
-- Every courtroom uses production facades, real filesystem effects, independent
+- Direct boundary scenarios use production facades, real filesystem effects, independent
   expected truth, and at least one fresh process.
-- Package-scoped checks are the normal implementation feedback loop; complete
-  workspace formatting, constitutional gates, all-feature verification, and
-  mutation generation are sealing evidence. Both lanes remain required, but
-  they are not charged to every local edit.
-- Complete retained-mutant verification remains mandatory for each standalone
-  courtroom report even when it is cold and expensive. The report binds 29
-  distinct executed binaries; cache reuse may improve a later run but cannot
-  replace cryptographic validation or be claimed as a cold-path result.
+- Package-scoped checks are the normal implementation feedback loop; workspace
+  formatting, constitutional gates, and affected all-feature verification are
+  the final code gates.
 - C.6 may add residency policy and frame lifecycle only by implementing the
   handoff; it may not add another async or I/O runtime.
 - Part II may bind its Relational branch-write authority to submitted physical

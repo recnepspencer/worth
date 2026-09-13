@@ -1,3 +1,5 @@
+mod retained_charge;
+
 use serde::Serialize;
 use worth_proof::TransitionOutcome;
 

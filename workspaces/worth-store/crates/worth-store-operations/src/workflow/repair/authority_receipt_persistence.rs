@@ -1,7 +1,7 @@
+use super::integrity_classification::IntegrityRepairClassificationReceipt;
+use crate::workflow::restore::RecoveredBackupFrontierReceipt;
 use sha2::{Digest, Sha256};
 use worth_store_physical_backend::NonCurrentStagingExecutionReceipt;
-use worth_store_physical_integrity::IntegrityRepairClassificationReceipt;
-use worth_store_recovery_physics::RecoveredBackupFrontierReceipt;
 
 use super::authority_affecting_execution::AuthorityAffectingRepairExecutionDenial;
 use super::journal::RepairExecutionJournal;

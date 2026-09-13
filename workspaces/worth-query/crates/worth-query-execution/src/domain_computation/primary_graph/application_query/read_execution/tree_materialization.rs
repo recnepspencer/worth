@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use worth_query_installation::facade::{
     ApplicationFieldPresence, WorthQueryInstalledGraphProjection,
@@ -25,6 +26,7 @@ use crate::domain_computation::primary_graph::application_query::resource_lifecy
 mod bounded_ordering;
 mod relation_attachment;
 mod relation_distribution;
+mod source_footprint;
 mod work;
 
 use bounded_ordering::order_collection;
@@ -33,6 +35,8 @@ use work::ResultTreeWork;
 
 pub(super) struct MaterializedApplicationResultTree {
     pub(super) rows: WorthQueryApplicationDisclosedProjectionTree,
+    pub(super) source_footprints:
+        Vec<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint>,
     pub(super) projected_records: usize,
     pub(super) projected_fields: usize,
     pub(super) adjacency_lists_read: usize,
@@ -92,6 +96,7 @@ pub(super) fn materialize_result_tree(
         graph,
         contract,
         governance,
+        None,
         "root",
         contract.root_entity(),
         root_ids,
@@ -100,10 +105,20 @@ pub(super) fn materialize_result_tree(
         result_buffer,
     )?;
     order_collection(contract, governance, "root", &mut rows, &mut work)?;
+    let source_footprints = source_footprint::collect_source_footprints(
+        &projection,
+        graph,
+        contract,
+        governance,
+        &rows,
+        &mut work,
+        result_buffer,
+    )?;
     let rows = WorthQueryApplicationWorkingProjectionTree::new(rows)
         .into_disclosed(governance, result_buffer);
     Ok(MaterializedApplicationResultTree {
         rows,
+        source_footprints,
         projected_records: work.projected_records,
         projected_fields: work.projected_fields,
         adjacency_lists_read: work.adjacency_lists_read,
@@ -165,6 +180,7 @@ fn project_nodes(
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
+    source_path: Option<Arc<str>>,
     result_path: &str,
     entity_name: &str,
     entity_ids: &[EntityId],
@@ -174,6 +190,14 @@ fn project_nodes(
 ) -> Result<Vec<WorthQueryApplicationProjectionNode>, WorthQueryApplicationReadExecutionDenial> {
     let fields = direct_projections(contract, governance, result_path);
     let relations = direct_relations(contract, result_path);
+    let source_dependencies_complete = contract
+        .projections()
+        .iter()
+        .filter(|projection| projection.parent_path() == result_path)
+        .all(|projection| governance.is_disclosed(projection.slot_key_identity().as_ref()))
+        && relations
+            .iter()
+            .all(|relation| governance.is_disclosed(relation.slot_key_identity().as_ref()));
     work.charge_projection(entity_ids.len(), fields.len(), result_path)?;
     let mut nodes = allocate_claimed_result_vector::<WorthQueryApplicationProjectionNode>(
         result_buffer,
@@ -204,6 +228,8 @@ fn project_nodes(
         >(result_buffer, relations.len(), result_path)?;
         nodes.push(WorthQueryApplicationProjectionNode::new(
             *entity_id,
+            source_path.clone(),
+            source_dependencies_complete,
             projected_fields,
             projected_relations,
         ));
@@ -304,7 +330,7 @@ fn direct_projections<'a>(
                         )
                         .is_some()
             });
-            parent_path(projection.result_path()) == Some(parent)
+            projection.parent_path() == parent
                 && (disclosed || internal_ordering)
         })
         .collect()
@@ -317,12 +343,8 @@ fn direct_relations<'a>(
     contract
         .relations()
         .iter()
-        .filter(|relation| parent_path(relation.result_path()) == Some(parent))
+        .filter(|relation| relation.parent_path() == parent)
         .collect()
-}
-
-fn parent_path(path: &str) -> Option<&str> {
-    path.rsplit_once('/').map(|(parent, _)| parent)
 }
 
 fn projection_scope(fields: &[&WorthQueryInstalledGraphProjection]) -> ProjectionAspectScope {

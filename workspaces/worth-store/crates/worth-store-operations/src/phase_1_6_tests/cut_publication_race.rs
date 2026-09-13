@@ -3,7 +3,7 @@ use super::support::*;
 #[test]
 fn cuts_on_both_sides_of_root_publication_remain_coherent_and_independently_protected() {
     let (older, newer) = BackupScenario::paired_across_root_publication("root-race");
-    let authority = crate::backup::export::current_authority("s10-root-publication-race");
+    let authority = older.authority();
     let control_directory = tempfile::tempdir().expect("independent control directory");
     let control = OperationalControlStore::open_with_certified_topology(
         OperationalControlLocation::new(

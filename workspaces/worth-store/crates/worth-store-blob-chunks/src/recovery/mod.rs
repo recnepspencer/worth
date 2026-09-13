@@ -1,4 +1,5 @@
 mod records;
+mod replay_source;
 mod resume_session;
 
 #[cfg(test)]
@@ -16,6 +17,11 @@ pub use records::{
     BlobRecoveryOutcome, BlobRecoveryRecordCounterSnapshot, BlobRecoveryRecordDenial,
     BlobRecoveryRecordDenialKind, BlobRecoveryRecordSet, BlobRecoveryReplay,
     BlobResumeSessionCheckpointRecord, BlobRootCandidateRecord,
+};
+pub use replay_source::{
+    BlobReplayAdmissionDenial, BlobReplayAdmissionDenialKind, BlobReplaySourceAdmission,
+    BlobReplaySourceKind, BlobReplaySourceOutcome, BlobReplaySourceOutcomeKind,
+    BlobResumeReplayReadmission,
 };
 pub use resume_session::{
     BlobInterruptedIngestRecovery, BlobPersistedResumeCheckpointSource, BlobResumeCheckpoint,

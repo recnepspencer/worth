@@ -121,6 +121,12 @@ impl WorthQueryTestBackendSchema {
         self.contracts.values()
     }
 
+    pub(crate) fn contract(&self, key: &worth_foundational::facade::AspectKey) -> &AspectContract {
+        self.contracts
+            .get(key)
+            .expect("validated test schemas retain every mapped aspect contract")
+    }
+
     pub(crate) fn memory_aspects(
         &self,
     ) -> Result<Vec<WorthQueryAspect>, WorthQueryTestBackendError> {

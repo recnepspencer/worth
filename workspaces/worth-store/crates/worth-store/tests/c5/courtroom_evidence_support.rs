@@ -1,7 +1,5 @@
 use std::path::Path;
 
-use sha2::{Digest, Sha256};
-
 pub(super) struct OfflineCompletion {
     pub(super) root_generation: u64,
     pub(super) records: usize,
@@ -10,7 +8,6 @@ pub(super) struct OfflineCompletion {
 
 pub(super) struct WriterCompletion {
     pub(super) root_generation: u64,
-    pub(super) publication_identity: u64,
     pub(super) positioned_writes: u64,
     pub(super) file_barriers: u64,
     pub(super) catalog_replacements: u64,
@@ -22,7 +19,6 @@ pub(super) fn writer_completion(stdout: &str) -> WriterCompletion {
     assert_eq!(fields.len(), 6);
     WriterCompletion {
         root_generation: fields[0].parse().unwrap(),
-        publication_identity: fields[1].parse().unwrap(),
         positioned_writes: fields[2].parse().unwrap(),
         file_barriers: fields[3].parse().unwrap(),
         catalog_replacements: fields[4].parse().unwrap(),
@@ -36,9 +32,6 @@ pub(super) struct ReopenerCompletion {
     pub(super) root_generation: u64,
     pub(super) point_digest: String,
     pub(super) scan_digest: String,
-    pub(super) scan_manifest_blocks: u64,
-    pub(super) scan_manifest_comparisons: u64,
-    pub(super) scan_payload_bytes: u64,
 }
 
 pub(super) fn reopener_completion(stdout: &str) -> ReopenerCompletion {
@@ -50,9 +43,6 @@ pub(super) fn reopener_completion(stdout: &str) -> ReopenerCompletion {
         root_generation: fields[2].parse().unwrap(),
         point_digest: fields[3].into(),
         scan_digest: fields[4].into(),
-        scan_manifest_blocks: fields[5].parse().unwrap(),
-        scan_manifest_comparisons: fields[6].parse().unwrap(),
-        scan_payload_bytes: fields[7].parse().unwrap(),
     }
 }
 
@@ -102,15 +92,6 @@ pub(super) fn placement_identities(
         .collect::<Vec<_>>();
     identities.sort();
     identities
-}
-
-pub(super) fn identity_set_digest(identities: &[String]) -> String {
-    let mut digest = Sha256::new();
-    for identity in identities {
-        digest.update((identity.len() as u64).to_le_bytes());
-        digest.update(identity.as_bytes());
-    }
-    hex(&digest.finalize())
 }
 
 #[derive(Clone, Copy)]

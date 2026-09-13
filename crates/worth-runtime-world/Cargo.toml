@@ -1,0 +1,34 @@
+[package]
+name = "worth-runtime-world"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Memory-resident composition authority for exact Relational and Signal runtime worlds."
+repository = "https://github.com/recnepspencer/WORTH"
+keywords = ["runtime", "world", "composition", "publication"]
+categories = ["data-structures", "database-implementations"]
+
+[features]
+default = []
+test-operation-control = [
+    "worth-relational/test-operation-control",
+    "worth-signal/test-operation-control",
+]
+
+[dependencies]
+worth-foundational = { path = "../worth-foundational" }
+worth-proof = { path = "../worth-proof" }
+worth-relational = { path = "../worth-relational" }
+worth-runtime-bridge = { path = "../worth-runtime-bridge" }
+worth-signal = { path = "../worth-signal" }
+
+[dev-dependencies]
+trybuild.workspace = true
+
+[lints]
+workspace = true
+
+[[example]]
+name = "runtime_world_publication"
+test = true
+harness = false

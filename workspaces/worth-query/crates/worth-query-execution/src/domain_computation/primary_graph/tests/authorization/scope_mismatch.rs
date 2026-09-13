@@ -17,15 +17,19 @@ fn explicit_scope_mismatch_preserves_its_exact_explanation_cause() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let principal_scope = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             PrincipalIdentityField::reference(),
             1_u64,
@@ -39,7 +43,7 @@ fn explicit_scope_mismatch_preserves_its_exact_explanation_cause() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
 
-    let Err(denial) = world.application.authorize_operation(
+    let Err(denial) = world.selected_product().authorize_operation(
         &principal,
         &principal_scope,
         &operation,

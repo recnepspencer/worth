@@ -206,18 +206,6 @@ where
                 comparator_resolver,
                 None,
             )?;
-            if graph
-                .get_entry(task.node)?
-                .get_runtime_artifact_state()
-                .is_some()
-            {
-                graph
-                    .get_entry_mut(task.node)?
-                    .set_execution_trace_stamp(Some(crate::data::trace::ExecutionTraceStamp {
-                        execution_record_id: Some(record_id.0),
-                        semantic_segment_id: Some(record_id.0),
-                    }));
-            }
             record_lineage_transition(
                 graph,
                 task.node,

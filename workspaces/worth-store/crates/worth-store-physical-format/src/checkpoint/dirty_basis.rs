@@ -128,6 +128,15 @@ fn decode_artifact(
 }
 
 impl CheckpointDirtyFrameBasis {
+    pub fn decode_record(record: &[u8]) -> Result<Self, CheckpointStreamDecodeDenial> {
+        let payload = super::record::decode_record(
+            record,
+            super::record::DIRTY_BASIS_KIND,
+            DIRTY_BASIS_PAYLOAD_BYTES,
+        )?;
+        decode_dirty_basis(payload)
+    }
+
     pub const fn new(coordinate: RecordFrameCoordinate, dirty_generation: u64) -> Self {
         Self {
             coordinate,

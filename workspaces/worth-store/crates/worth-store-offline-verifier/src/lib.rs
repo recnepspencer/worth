@@ -49,12 +49,20 @@ mod staged_recovery_verification;
 mod truth_composition;
 
 pub use backup_verification::{
-    verify_backup_cut_sources, verify_backup_cut_sources_with_cancellation,
-    verify_materialized_backup, verify_materialized_backup_with_cancellation,
-    BackupArtifactSemanticDefectKind, BackupCutSourceVerificationDenial,
-    BackupCutSourceVerificationReport, BackupStructuralVerificationDenial,
-    BackupVerificationAllocationPhase, BackupVerificationBudget, BackupVerificationDefect,
-    BackupVerificationReadAccounting, BackupVerificationReport, StructurallyVerifiedBackupBundle,
+    checkpoint_backup_frontier_digest, verify_backup_cut_sources,
+    verify_backup_cut_sources_with_cancellation,
+    verify_bounded_checkpoint_backup_artifact_from_reader, verify_materialized_backup,
+    verify_materialized_backup_with_cancellation, BackupArtifactSemanticDefectKind,
+    BackupCutSourceVerificationDenial, BackupCutSourceVerificationReport,
+    BackupStructuralVerificationDenial, BackupVerificationAllocationPhase,
+    BackupVerificationBudget, BackupVerificationDefect, BackupVerificationReadAccounting,
+    BackupVerificationReport, BoundedCheckpointBackupDenial, BoundedCheckpointBackupObservation,
+    BoundedCheckpointBackupVerificationRequest, StructurallyVerifiedBackupBundle,
+};
+pub use backup_verification::{
+    verify_bounded_extent_artifact_from_reader, verify_bounded_page_artifact_from_reader,
+    verify_bounded_root_manifest_artifact_from_reader, BoundedPhysicalArtifactDenial,
+    BoundedPhysicalArtifactObservation, VerifiedRootManifestArtifact,
 };
 pub use blob_corruption_observation::{
     classify_offline_damage_case, OfflineBlobCorruptionClassification,
@@ -108,6 +116,10 @@ pub use hostile_physical_truth::{
     OfflineHostilePhysicalTruthObservation,
 };
 pub use inspection::{
+    classify_offline_artifact_family, observe_bounded_physical_bytes,
+    OfflinePhysicalArtifactFamily, OfflineStructuralObservation,
+};
+pub use inspection::{
     OfflineInspectionBudget, OfflineInspectionCancellation, OfflineInspectionCheckpoint,
     OfflineInspectionCheckpointCodecDenial, OfflineInspectionClock, OfflineInspectionCounters,
     OfflineInspectionDenial, OfflineInspectionProgress, OfflineInspectionScope,
@@ -142,8 +154,14 @@ pub use staged_recovery_verification::{
 };
 pub use truth_composition::{
     compose_operational_truth, CanonicalPhysicalCoverageProof, EvidenceBoundTruthRegion,
-    OfflineAuthorityClass, OfflineFileTruthEvidence, OfflineRecoveryAvailability,
-    OfflineSecurityEvidencePosture, OfflineTruthEvidenceAdmissionDenial,
-    OfflineTruthEvidenceReferences, OfflineTruthEvidenceSet, OperationalTruthCompositionBudget,
-    OperationalTruthCompositionDenial, OperationalTruthRegion, OperationalTruthReport,
+    OfflineAuthorityClass, OfflineFileTruthEvidence, OfflineIntegrityObservation,
+    OfflineIntegrityPosture, OfflineRecoveryAvailability, OfflineSecurityEvidencePosture,
+    OfflineTruthEvidenceAdmissionDenial, OfflineTruthEvidenceReferences, OfflineTruthEvidenceSet,
+    OperationalTruthCompositionBudget, OperationalTruthCompositionDenial, OperationalTruthRegion,
+    OperationalTruthReport,
+};
+pub use truth_composition::{
+    discover_recovery_candidates, ObservedRecoveryFrontier, RecoveryCandidate,
+    RecoveryCandidateConfidence, RecoveryCandidateDiscoveryDenial, RecoveryCandidateObservation,
+    RecoveryCandidateSet,
 };

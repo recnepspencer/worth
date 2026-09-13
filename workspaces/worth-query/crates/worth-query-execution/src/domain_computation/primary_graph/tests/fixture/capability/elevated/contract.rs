@@ -18,8 +18,9 @@ use worth_query_declaration::facade::{
         ApplicationCapabilityValueBinding, ApplicationCapabilityWorkflowDefinition,
     },
     application_schema::{
-        ApplicationAuthorizationPathBuilder, ApplicationOperationDefinition,
-        ApplicationOperationRef, ApplicationSchemaDeclarationBuilder,
+        ApplicationAuthorizationPathBuilder, ApplicationEncodedScalarValue,
+        ApplicationOperationDefinition, ApplicationOperationRef,
+        ApplicationSchemaDeclarationBuilder,
     },
 };
 
@@ -40,12 +41,13 @@ use super::super::super::{
     Account, AccountLabel, AccountStatus, IdentityExecutionSchema, Principal,
 };
 use super::super::declaration::{
-    CapabilityAction, CapabilityActionField, CapabilityAmountField,
+    CapabilityAction, CapabilityActionBinding, CapabilityActionField, CapabilityAmountField,
     CapabilityConflictingBeneficiary, CapabilityCustodian, CapabilityDelegationLimitField,
-    CapabilityDisclosure, CapabilityDisclosureField, CapabilityGrant, CapabilityGrantee,
-    CapabilityGrantor, CapabilityNotAfterField, CapabilityNotBeforeField, CapabilityParent,
-    CapabilityProvenance, CapabilityPurpose, CapabilityPurposeField, CapabilityRequestContext,
-    CapabilityResource, CapabilityStatus, CapabilityStatusField, CapabilityWorkflowField,
+    CapabilityDisclosure, CapabilityDisclosureBinding, CapabilityDisclosureField, CapabilityGrant,
+    CapabilityGrantee, CapabilityGrantor, CapabilityNotAfterField, CapabilityNotBeforeField,
+    CapabilityParent, CapabilityProvenance, CapabilityPurpose, CapabilityPurposeBinding,
+    CapabilityPurposeField, CapabilityRequestContext, CapabilityResource, CapabilityStatus,
+    CapabilityStatusBinding, CapabilityStatusField, CapabilityWorkflowField,
 };
 use super::{
     ApproveCapabilityElevationOperation, CapabilityElevation, CapabilityElevationApprover,
@@ -209,27 +211,40 @@ pub(super) fn target() -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
             CapabilityActionField::reference(),
-            CapabilityAction::Touch,
+            ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(
+                CapabilityAction::Touch,
+            )
+            .expect("fixture capability action must encode"),
         ),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::bound(CapabilityDisclosureField::reference()),
         ApplicationCapabilityValueBinding::new(
             CapabilityPurposeField::reference(),
-            CapabilityPurpose::AccountMaintenance,
+            ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
+                CapabilityPurpose::AccountMaintenance,
+            )
+            .expect("fixture capability purpose must encode"),
         ),
     )
 }
 
 pub(super) fn command_target(action: CapabilityAction) -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(CapabilityActionField::reference(), action),
+        ApplicationCapabilityValueBinding::new(
+            CapabilityActionField::reference(),
+            ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(action)
+                .expect("fixture capability action must encode"),
+        ),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
             CapabilityPurposeField::reference(),
-            CapabilityPurpose::AccountMaintenance,
+            ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
+                CapabilityPurpose::AccountMaintenance,
+            )
+            .expect("fixture capability purpose must encode"),
         ),
     )
 }
@@ -241,7 +256,10 @@ pub(super) fn constraints() -> ApplicationCapabilityConstraintDefinition {
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
                 CapabilityStatusField::reference(),
-                CapabilityStatus::Active,
+                ApplicationEncodedScalarValue::<CapabilityStatusBinding>::try_new(
+                    CapabilityStatus::Active,
+                )
+                .expect("fixture capability status must encode"),
             ),
             ApplicationCapabilityWorkflowDefinition::new(
                 ApplicationCapabilityFieldBinding::from_reference(
@@ -270,7 +288,10 @@ pub(super) fn command_constraints() -> ApplicationCapabilityConstraintDefinition
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
                 CapabilityStatusField::reference(),
-                CapabilityStatus::Active,
+                ApplicationEncodedScalarValue::<CapabilityStatusBinding>::try_new(
+                    CapabilityStatus::Active,
+                )
+                .expect("fixture capability status must encode"),
             ),
             ApplicationCapabilityWorkflowDefinition::new(
                 ApplicationCapabilityFieldBinding::from_reference(
@@ -353,7 +374,12 @@ pub(super) fn propagation() -> ApplicationCapabilityPropagationComposition {
         ApplicationCapabilityDisclosureRule::permit([ApplicationCapabilityScopeGuard::requiring(
             [ApplicationCapabilityAcceptedValues::one_of(
                 CapabilityDisclosureField::reference(),
-                [CapabilityDisclosure::AccountActivity],
+                [
+                    ApplicationEncodedScalarValue::<CapabilityDisclosureBinding>::try_new(
+                        CapabilityDisclosure::AccountActivity,
+                    )
+                    .expect("fixture capability disclosure must encode"),
+                ],
             )],
         )]),
     )

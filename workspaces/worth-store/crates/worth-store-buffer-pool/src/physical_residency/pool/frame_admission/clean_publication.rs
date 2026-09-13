@@ -22,6 +22,7 @@ impl PoolInner {
             ));
         }
         entry.dirty = false;
+        entry.invalidate_integrity_validation();
         let was_candidate = entry.origin.is_candidate();
         if was_candidate {
             entry.origin = FrameOrigin::Fault;

@@ -3,7 +3,8 @@ use super::{
     CheckpointReadInterlockDenial,
 };
 use crate::{CheckpointPublicationRoot, CurrentPhysicalRoot};
-use worth_store_recovery_physics::{CheckpointCutoverReceipt, CheckpointPageLsnFrontier};
+use worth_store_physical_format::{CheckpointWalSourceRange, PhysicalCheckpointSource};
+use worth_store_physical_integrity::VerifiedCheckpointCompactionCutover;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CheckpointRootEpochTransition {
@@ -32,9 +33,7 @@ impl CheckpointRootEpochTransition {
                 },
             );
         }
-        let counters = CheckpointReadInterlockCounters::admitted(
-            readmission.page_lsn_frontier().pages().len() as u64,
-        );
+        let counters = CheckpointReadInterlockCounters::admitted();
         Ok(Self {
             old_current_root,
             readmission,
@@ -54,16 +53,20 @@ impl CheckpointRootEpochTransition {
         self.readmission.published_current_root()
     }
 
-    pub const fn cutover_receipt(&self) -> &CheckpointCutoverReceipt {
-        self.readmission.cutover_receipt()
+    pub const fn checkpoint_source(&self) -> PhysicalCheckpointSource {
+        self.readmission.checkpoint_source()
     }
 
-    pub const fn page_lsn_frontier(&self) -> &CheckpointPageLsnFrontier {
-        self.readmission.page_lsn_frontier()
+    pub const fn compaction_cutover(&self) -> VerifiedCheckpointCompactionCutover {
+        self.readmission.compaction_cutover()
     }
 
-    pub const fn frontier_bound_to_cutover(&self) -> bool {
-        self.readmission.frontier_bound_to_cutover()
+    pub const fn checkpoint_wal_range(&self) -> CheckpointWalSourceRange {
+        self.readmission.checkpoint_wal_range()
+    }
+
+    pub const fn checkpoint_wal_bound_to_cutover(&self) -> bool {
+        self.readmission.checkpoint_wal_bound_to_cutover()
     }
 
     pub const fn counters(&self) -> CheckpointReadInterlockCounters {

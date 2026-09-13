@@ -21,8 +21,8 @@ pub(super) struct WorthQueryAdmittedProjectionPromotion<D, O, F, L: BasisOperati
 }
 
 pub(super) enum WorthQueryProjectionPreflightOutcome<D, O, F, L: BasisOperationLane> {
-    Admitted(WorthQueryAdmittedProjectionPromotion<D, O, F, L>),
-    Stopped(WorthQueryProjectionPromotionOutcome<D, O, F, L>),
+    Admitted(Box<WorthQueryAdmittedProjectionPromotion<D, O, F, L>>),
+    Stopped(Box<WorthQueryProjectionPromotionOutcome<D, O, F, L>>),
 }
 
 pub(in crate::domain_installation::operation_execution) struct WorthQueryProjectionCoreAdmission {
@@ -48,14 +48,16 @@ pub(super) fn admit_projection_promotion<D: 'static, O, F, L: BasisOperationLane
     workspace: &WorthQueryWorkspace,
 ) -> WorthQueryProjectionPreflightOutcome<D, O, F, L> {
     match admit_projection_promotion_core(&current.settled, current.lifecycle_basis(), workspace) {
-        Ok(admitted) => {
-            WorthQueryProjectionPreflightOutcome::Admitted(WorthQueryAdmittedProjectionPromotion {
+        Ok(admitted) => WorthQueryProjectionPreflightOutcome::Admitted(Box::new(
+            WorthQueryAdmittedProjectionPromotion {
                 current,
                 read: admitted.read,
                 counters: admitted.counters,
-            })
+            },
+        )),
+        Err(stop) => {
+            WorthQueryProjectionPreflightOutcome::Stopped(Box::new(map_core_stop(current, stop)))
         }
-        Err(stop) => WorthQueryProjectionPreflightOutcome::Stopped(map_core_stop(current, stop)),
     }
 }
 

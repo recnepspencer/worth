@@ -155,16 +155,16 @@ impl WorthQueryNamedClockFailure {
 /// host calls the runtime observation port from its existing loop, task,
 /// poller, or platform-timer callback; that port obtains the next reading from
 /// this installed source and submits it to Query's Bridge-owned Signal runtime.
-pub trait WorthQueryNamedClockSource<Clock: WorthQueryNamedClock>: Send + 'static {
+/// Shared callers may observe sibling product branches independently. A source
+/// owns any synchronization needed for its reading, never Query operation state.
+pub trait WorthQueryNamedClockSource<Clock: WorthQueryNamedClock>: Send + Sync + 'static {
     const SEMANTIC_IDENTITY: &'static str;
 
     fn source_identity(&self) -> WorthQueryClockSourceIdentity;
 
     fn timeline_identity(&self) -> WorthQueryClockTimelineIdentity;
 
-    fn observe(
-        &mut self,
-    ) -> Result<WorthQueryNamedClockReading<Clock>, WorthQueryNamedClockFailure>;
+    fn observe(&self) -> Result<WorthQueryNamedClockReading<Clock>, WorthQueryNamedClockFailure>;
 }
 
 fn validated_clock_identity(identity: impl Into<String>) -> Result<String, &'static str> {

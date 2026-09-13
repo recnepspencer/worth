@@ -1,13 +1,12 @@
 use super::super::super::super::fixture::{
-    admit_touch_account_capability, governed_live_account_parameters, IdentityExecutionSchema,
+    admit_touch_account_capability, governed_live_account_parameters,
 };
 use super::{
     buffer_limit, capture_lane, one, ContinuationObservation, GovernedObservationContext,
     GraphWorkOccurrences, LaneObservation,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationPreviewSession, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryControls, WorthQueryApplicationQueryResumeControls,
+    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryResumeControls,
 };
 
 pub(super) fn observe_one_shot(
@@ -19,13 +18,13 @@ pub(super) fn observe_one_shot(
     let access = WorthQueryApplicationQueryAccessContext::new(context.principal, context.account);
     let plan = context
         .world
-        .application
+        .selected_product()
         .admit_governed_application_query(
             context.query,
             &access,
             capability,
             governed_live_account_parameters("account-1"),
-            WorthQueryApplicationQueryControls::current_one_shot(
+            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 one(),
                 buffer_limit(),
                 context.request,
@@ -49,13 +48,13 @@ pub(super) fn observe_continuation(
     let access = WorthQueryApplicationQueryAccessContext::new(context.principal, context.account);
     let plan = context
         .world
-        .application
-        .admit_governed_application_query(
+        .selected_product()
+        .admit_governed_application_query_continuation(
             context.query,
             &access,
             capability,
             governed_live_account_parameters("account-1"),
-            WorthQueryApplicationQueryControls::current_continuation_page(
+            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 one(),
                 buffer_limit(),
                 context.request,
@@ -98,81 +97,4 @@ pub(super) fn observe_continuation(
         second: capture_lane(rows, &receipt, occurrences),
         second_has_continuation: continuation.is_some(),
     }
-}
-
-pub(super) fn observe_historical(
-    context: &GovernedObservationContext<'_>,
-    _commit: u64,
-    occurrences: &mut GraphWorkOccurrences,
-) -> LaneObservation {
-    let basis = context
-        .world
-        .application
-        .admit_application_historical_basis(
-            crate::domain_computation::primary_graph::WorthQueryApplicationHistoricalRead::current_for_test(&context.world.application),
-            context.request,
-        )
-        .unwrap();
-    let capability =
-        admit_touch_account_capability(context.world, context.principal, context.request).unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(context.principal, context.account);
-    let plan = context
-        .world
-        .application
-        .admit_governed_application_query(
-            context.query,
-            &access,
-            capability,
-            governed_live_account_parameters("account-1"),
-            WorthQueryApplicationQueryControls::historical(
-                basis,
-                one(),
-                buffer_limit(),
-                context.request,
-            ),
-        )
-        .unwrap();
-    let result = context
-        .world
-        .application
-        .execute_application_query_historical(plan)
-        .unwrap();
-    capture_lane(result.rows().to_vec(), result.receipt(), occurrences)
-}
-
-pub(super) fn observe_preview(
-    context: &GovernedObservationContext<'_>,
-    session: &WorthQueryApplicationPreviewSession<IdentityExecutionSchema>,
-    occurrences: &mut GraphWorkOccurrences,
-) -> LaneObservation {
-    let basis = context
-        .world
-        .application
-        .admit_application_preview_basis(session, context.request)
-        .unwrap();
-    let capability =
-        admit_touch_account_capability(context.world, context.principal, context.request).unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(context.principal, context.account);
-    let plan = context
-        .world
-        .application
-        .admit_governed_application_query(
-            context.query,
-            &access,
-            capability,
-            governed_live_account_parameters("account-1"),
-            WorthQueryApplicationQueryControls::preview(
-                basis,
-                one(),
-                buffer_limit(),
-                context.request,
-            ),
-        )
-        .unwrap();
-    let result = context
-        .world
-        .application
-        .execute_application_query_preview(plan)
-        .unwrap();
-    capture_lane(result.rows().to_vec(), result.receipt(), occurrences)
 }

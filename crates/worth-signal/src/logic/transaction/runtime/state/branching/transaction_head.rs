@@ -27,7 +27,6 @@ impl SignalBranchTransactionHead {
         self.branch_id
     }
 
-    #[cfg(test)]
     pub fn snapshot_id(&self) -> Option<SignalSnapshotId> {
         self.snapshot_id
     }
@@ -36,7 +35,6 @@ impl SignalBranchTransactionHead {
         self.generation
     }
 
-    #[cfg(test)]
     pub fn head_digest(&self) -> &str {
         &self.head_digest
     }

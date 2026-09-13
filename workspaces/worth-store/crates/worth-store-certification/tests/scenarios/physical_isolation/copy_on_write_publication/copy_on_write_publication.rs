@@ -4,15 +4,15 @@ use worth_store_test_support::harness::physical_isolation::epoch_scope as suppor
 use worth_store_test_support::harness::physical_isolation::publication as publication_support;
 
 use publication_support::{
-    execute_publication_recovery_replay, mismatched_release_receipt, publication_inputs,
-    publication_inputs_for_store, publish_copy_on_write, publish_copy_on_write_result,
-    root_publication_validation,
+    admitted_copy_on_write_plan, execute_publication_recovery_replay, mismatched_release_receipt,
+    publication_inputs, publication_inputs_for_store, root_publication_validation,
 };
 use support::current_generation_page_reference;
 use worth_foundational::{
     FoundationalBoundaryEvidenceContinuityAttachmentScope, FoundationalBoundaryEvidenceReceiptKind,
     FoundationalDiagnosticOutcomeKind, FoundationalDiagnosticRowFamily,
 };
+use worth_store_physical_isolation::PublicationCrashStage;
 use worth_store_physical_isolation::{
     AllocatorPublicationFence, CrashStableFreeReusePosture, NewRootPublicationProof,
     PhysicalIdentityReuse, PhysicalOrderingContract, PhysicalOrderingSite,
@@ -20,20 +20,11 @@ use worth_store_physical_isolation::{
     PhysicalPublicationReleasePosture, PublicationCrashRecoveryOutcome, PublicationLatchReadiness,
     PublicationRootCandidate, RootSwapOrderingContract,
 };
-use worth_store_recovery_physics::PublicationCrashStage;
 
 #[test]
 fn copy_on_write_publication_preserves_old_reachability_and_publishes_new_root() {
     let inputs = publication_inputs();
-    let receipt = publish_copy_on_write(
-        PhysicalPublicationIntent::copy_on_write_root_manifest(
-            inputs.old_candidate,
-            inputs.new_candidate,
-            inputs.old_reachability,
-        ),
-        inputs.new_validation,
-        None,
-    );
+    let receipt = admitted_copy_on_write_plan(&inputs).complete();
 
     assert_eq!(
         receipt.epochs().root().old().get(),
@@ -127,26 +118,14 @@ fn copy_on_write_publication_preserves_old_reachability_and_publishes_new_root()
 #[test]
 fn publication_exposes_post_swap_reader_root() {
     let inputs = publication_inputs();
-    let publication = publish_copy_on_write_result(
-        PhysicalPublicationIntent::copy_on_write_root_manifest(
-            inputs.old_candidate,
-            inputs.new_candidate,
-            inputs.old_reachability,
-        ),
-        inputs.new_validation,
-        None,
-    );
+    let publication = admitted_copy_on_write_plan(&inputs).complete();
 
     assert_eq!(
-        publication.root_swap().pre_swap_reader_root().epoch().get(),
+        publication.old_root().epoch().get(),
         inputs.old_root.epoch().get()
     );
     assert_eq!(
-        publication
-            .root_swap()
-            .post_swap_reader_root()
-            .epoch()
-            .get(),
+        publication.new_root().epoch().get(),
         inputs.new_root.epoch().get()
     );
 }
@@ -210,13 +189,9 @@ fn publication_denies_stale_epochs_and_weak_root_swap_ordering() {
         NewRootPublicationProof::from_root_validation(inputs.new_validation),
         PublicationLatchReadiness::declared_publish_latches_released_before_blocking_io(),
     );
-    let publication =
-        worth_store_test_support::harness::physical_isolation::publish_in_temporary_store(
-            lowered.join_readiness(readiness).unwrap(),
-        )
-        .unwrap();
+    let publication = lowered.join_readiness(readiness).unwrap().complete();
     assert_eq!(
-        publication.receipt().ordering().ordering().strength(),
+        publication.ordering().ordering().strength(),
         worth_store_physical_isolation::PhysicalOrderingStrength::SequentiallyConsistent
     );
 }
@@ -261,15 +236,26 @@ fn identity_reuse_requires_allocator_publication_fence() {
         .unwrap();
     let reuse =
         CrashStableFreeReusePosture::admit(fence, old_identity, reused_identity, released).unwrap();
-    let receipt = publish_copy_on_write(
-        PhysicalPublicationIntent::copy_on_write_root_manifest_with_identity_reuse(
-            inputs.old_candidate,
-            inputs.new_candidate,
-            inputs.old_reachability,
-        ),
-        inputs.new_validation,
-        Some(reuse),
-    );
+    let intent = PhysicalPublicationIntent::copy_on_write_root_manifest_with_identity_reuse(
+        inputs.old_candidate,
+        inputs.new_candidate,
+        inputs.old_reachability,
+    )
+    .validate_copy_on_write_inputs()
+    .unwrap();
+    let readiness = PhysicalPublicationReadiness::from_validated_intent(
+        &intent,
+        NewRootPublicationProof::from_root_validation(inputs.new_validation),
+        PublicationLatchReadiness::declared_publish_latches_released_before_blocking_io(),
+    )
+    .with_free_reuse_posture(reuse)
+    .unwrap();
+    let receipt = intent
+        .lower_with_ordering(RootSwapOrderingContract::acquire_release_or_stronger())
+        .unwrap()
+        .join_readiness(readiness)
+        .unwrap()
+        .complete();
     assert_eq!(
         receipt.release_posture(),
         PhysicalPublicationReleasePosture::IdentityReuseProtectedByAllocatorFence

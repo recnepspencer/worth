@@ -172,6 +172,16 @@ mod tests {
         type SemanticContract = ();
 
         fn semantic_contract(&self) -> Self::SemanticContract {}
+
+        fn retained_heap_bytes(
+            &self,
+            _: &Self::SemanticContract,
+        ) -> Result<
+            crate::conditional_execution::BridgeConditionalProviderHeapRetention,
+            crate::conditional_execution::BridgeConditionalProviderRetentionOverflow,
+        > {
+            Ok(crate::conditional_execution::BridgeConditionalProviderHeapRetention::none())
+        }
     }
 
     #[test]

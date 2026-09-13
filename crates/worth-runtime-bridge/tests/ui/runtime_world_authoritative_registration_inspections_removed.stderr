@@ -1,0 +1,5 @@
+error[E0599]: no method named `authoritative_registration_inspections` found for struct `RuntimeWorldCorrespondenceInspectionCounters` in the current scope
+ --> tests/ui/runtime_world_authoritative_registration_inspections_removed.rs:5:22
+  |
+5 |     let _ = counters.authoritative_registration_inspections();
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `RuntimeWorldCorrespondenceInspectionCounters`

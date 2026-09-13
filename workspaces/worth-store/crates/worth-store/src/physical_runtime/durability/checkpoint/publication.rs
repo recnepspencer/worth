@@ -106,6 +106,8 @@ impl CreatedCheckpointCandidate {
             Some(record.into_boxed_slice()),
             0,
         )?;
+        self.work
+            .pause_after(super::yieldpoint::PhysicalCheckpointStep::CandidateAppend);
         self.offset = self
             .offset
             .checked_add(byte_count)
@@ -143,6 +145,9 @@ impl CreatedCheckpointCandidate {
                 failure,
             ));
         }
+        self.work.pause_after(
+            super::yieldpoint::PhysicalCheckpointStep::CandidateBindingCompactionHeader,
+        );
         offset = offset
             .checked_add(byte_count)
             .expect("checkpoint artifact bounds fit u64");
@@ -157,6 +162,8 @@ impl CreatedCheckpointCandidate {
                 Some(record.into_boxed_slice()),
                 0,
             )?;
+            self.work
+                .pause_after(super::yieldpoint::PhysicalCheckpointStep::CandidateBindingRecord);
             offset = offset
                 .checked_add(byte_count)
                 .expect("checkpoint artifact bounds fit u64");
@@ -181,6 +188,8 @@ impl CreatedCheckpointCandidate {
                 failure,
             ));
         }
+        self.work
+            .pause_after(super::yieldpoint::PhysicalCheckpointStep::CandidateFooter);
         Ok(CapturedCheckpointCandidate {
             basis: self.basis,
             footer,

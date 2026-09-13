@@ -19,10 +19,11 @@ use crate::physical_runtime::record_serving::{
 };
 
 impl StoreCandidateFramePublicationSession<'_> {
-    pub(in crate::physical_runtime::record_serving) fn write_frame_via_writeback(
+    pub(in crate::physical_runtime::record_serving) fn write_frame_via_writeback_with_pause(
         &mut self,
         frame: CandidateFrame,
         writeback: &FrameWritebackPort,
+        after_admission_before_effect: &mut dyn FnMut(),
     ) -> Result<
         (
             CandidateFrameWriteCompletion,
@@ -66,6 +67,7 @@ impl StoreCandidateFramePublicationSession<'_> {
             Ok(admitted) => admitted,
             Err(failure) => return discard_transition_failure(Some(identity), failure),
         };
+        after_admission_before_effect();
         let execution = match writeback.execute(admitted) {
             Ok(execution) => execution,
             Err(failure) => return discard_transition_failure(Some(identity), failure),

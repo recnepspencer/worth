@@ -1,10 +1,4 @@
-use worth_store_physical_backend::{
-    BackendTargetProfile, BlobPhysicalManifestObservation, BlobPhysicalManifestValidation,
-};
-use worth_store_recovery_physics::{
-    BlobReplaySourceAdmission, DurabilityReplayIdentity, DurabilityReplayKind,
-};
-
+use super::replay_source::{BlobReplaySourceIdentity, BlobReplaySourceIdentityKind};
 use crate::publication::test_support::{
     durable_wal_publication, publication_inputs, replayable_wal_classification,
 };
@@ -14,8 +8,11 @@ use crate::{
     BlobManifestAgreement, BlobPlacementManifestRow, BlobPublicationWalCommit,
     BlobPublicationWalPayload, BlobPublicationWalRecord, BlobReachabilityManifestRow,
     BlobReachabilityStaging, BlobRecoveryOutcome, BlobRecoveryRecordDenialKind,
-    BlobRecoveryRecordSet, BlobRecoveryReplay, BlobResumeSessionCheckpointRecord,
-    BlobRootCandidateRecord,
+    BlobRecoveryRecordSet, BlobRecoveryReplay, BlobReplaySourceAdmission,
+    BlobResumeSessionCheckpointRecord, BlobRootCandidateRecord,
+};
+use worth_store_physical_backend::{
+    BackendTargetProfile, BlobPhysicalManifestObservation, BlobPhysicalManifestValidation,
 };
 
 #[test]
@@ -260,8 +257,8 @@ fn replay_fixture(case: &str) -> ReplayFixture {
 }
 
 fn checkpoint_source(case: &str) -> BlobReplaySourceAdmission {
-    let identity = DurabilityReplayIdentity::new(
-        DurabilityReplayKind::Checkpoint,
+    let identity = BlobReplaySourceIdentity::new(
+        BlobReplaySourceIdentityKind::Checkpoint,
         BackendTargetProfile::SimulatedStrictDurable,
         format!("{case}.checkpoint"),
         1,
@@ -273,8 +270,8 @@ fn checkpoint_source(case: &str) -> BlobReplaySourceAdmission {
 }
 
 fn manifest_source(case: &str) -> BlobReplaySourceAdmission {
-    let identity = DurabilityReplayIdentity::new(
-        DurabilityReplayKind::Manifest,
+    let identity = BlobReplaySourceIdentity::new(
+        BlobReplaySourceIdentityKind::Manifest,
         BackendTargetProfile::SimulatedStrictDurable,
         format!("{case}.manifest"),
         1,

@@ -2,8 +2,9 @@ use bank_domain::model::{AccountId, InstitutionId};
 use bank_domain::schema::*;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::declaration::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationRef, EqualityPredicate,
-    TypedApplicationValue, TypedMutationPreconditions, WritePosture,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationMarkerIdentity,
+    ApplicationOperationRef, ApplicationStructuredValueBinding, DeclaredApplicationFieldValue,
+    EqualityPredicate, TypedMutationPreconditions, WritePosture,
 };
 use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionMode;
 
@@ -11,6 +12,16 @@ use super::{BankAdmittedOperation, BankOperationAdmissionError};
 use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime};
 
 impl BankIdentityRuntime {
+    pub(crate) fn select_current_product(
+        &self,
+    ) -> Result<
+        worth_query_host::facade::primary_graph::WorthQuerySelectedProductOperation<'_, BankSchema>,
+        worth_query_host::facade::product::WorthQueryProductBranchAdmissionDenial,
+    > {
+        let application = self.application_runtime();
+        application.on_branch(application.current_world()).select()
+    }
+
     pub fn authorize_grant_account_access(
         &self,
         actor: &BankAuthenticatedPrincipal,
@@ -108,12 +119,18 @@ impl BankIdentityRuntime {
         request: &WorthQueryRequestScope,
     ) -> Result<BankAdmittedOperation<Operation, Input, Scope, Value>, BankOperationAdmissionError>
     where
-        Value: TypedApplicationValue + Clone + Copy,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Value: Clone + Copy,
+        Operation: ApplicationOperationMarkerIdentity<BankSchema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        let identity = self
-            .application_runtime()
+        let selected = self
+            .select_current_product()
+            .map_err(BankOperationAdmissionError::ProductSelection)?;
+        let identity = selected
             .resolve_entity(
                 field,
                 value,
@@ -134,8 +151,7 @@ impl BankIdentityRuntime {
                     crate::BankOperationInstallationDenial::from_query(denial.kind()),
                 )
             })?;
-        let query = self
-            .application_runtime()
+        let query = selected
             .authorize_operation(actor.query(), &identity, &operation, preconditions, request)
             .map_err(|denial| {
                 BankOperationAdmissionError::Authorization(

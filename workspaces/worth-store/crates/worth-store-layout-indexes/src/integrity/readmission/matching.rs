@@ -1,4 +1,4 @@
-use worth_store_recovery_physics::{
+use super::authority::{
     RecoveryLayoutReadmissionClass, RecoveryLayoutReadmissionIdentity,
     RecoveryLayoutReadmissionWitness,
 };
@@ -19,7 +19,8 @@ pub(super) fn matches_identity(
                 witness.source_store_authority_identity() == Some(family.authority_identity())
                     && witness.source_security_scope_identity() == Some(family.security_identity())
             }
-            RecoveryLayoutReadmissionClass::NoForegroundAuthority => false,
+            RecoveryLayoutReadmissionClass::RebuildableDerivedObservation
+            | RecoveryLayoutReadmissionClass::NoForegroundAuthority => false,
         }
 }
 

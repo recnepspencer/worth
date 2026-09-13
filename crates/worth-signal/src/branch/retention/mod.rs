@@ -16,15 +16,18 @@ mod lease;
 mod outcome;
 mod registry;
 
-pub(crate) use lease::SignalBranchAdmissionLease;
 pub use lease::SignalBranchRetentionLease;
+pub(crate) use lease::{SignalBranchAdmissionLease, SignalBranchAdmissionReservation};
 pub use outcome::{
     SignalBranchRetentionAcquisitionDenial, SignalBranchRetentionOwnerPosture,
     SignalBranchRetentionReleaseDenial, SignalBranchRetentionReleaseOutcome,
     SignalBranchRetentionReleaseReceipt, SignalBranchRetentionTerminalCounts,
     SignalBranchRetentionTerminalOutcome,
 };
+#[cfg(test)]
+pub(crate) use registry::SignalRetentionLedgerObservation;
 pub(crate) use registry::{
     SignalBranchRetentionBinding, SignalBranchRetentionOwnerRelationship,
-    SignalBranchRetentionRegistry,
+    SignalBranchRetentionRegistry, SignalBranchRetirementRetentionCounts,
+    SignalExternalRetentionAcquisition,
 };

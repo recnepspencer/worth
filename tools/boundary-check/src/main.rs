@@ -181,7 +181,7 @@ fn run(
     let packages = discover_road1_packages(&root, &config.subworkspaces).map_err(|error| {
         vec![Diagnostic::new(
             crate::diagnostics::DiagnosticCode::Bc5002SubworkspaceContractViolation,
-            "cad/workspaces",
+            "configured-subworkspaces",
             error,
         )]
     })?;
@@ -230,15 +230,19 @@ fn run(
     );
 
     diagnostics.extend(
-        validate_seed_crate_contracts(&root, &config.born_crates, &config.seed_skeletons).map_err(
-            |error| {
-                vec![Diagnostic::new(
-                    crate::diagnostics::DiagnosticCode::Bc5003SeedContractViolation,
-                    "seed-contracts",
-                    error,
-                )]
-            },
-        )?,
+        validate_seed_crate_contracts(
+            &root,
+            &config.born_crates,
+            &config.seed_skeletons,
+            &config.subworkspaces,
+        )
+        .map_err(|error| {
+            vec![Diagnostic::new(
+                crate::diagnostics::DiagnosticCode::Bc5003SeedContractViolation,
+                "seed-contracts",
+                error,
+            )]
+        })?,
     );
     let snapshot_session = SnapshotSession::prepare(
         &root,

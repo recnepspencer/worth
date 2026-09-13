@@ -1,7 +1,7 @@
 use crate::{
     LatchAcquisitionDenial, ManifestEpoch, PhysicalReadProtectedFootprintBasis, RootEpoch,
 };
-use worth_store_recovery_physics::CompactionArtifactResidueReason;
+use worth_store_recovery_physics::PhysicalRecoveryResidueKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CompactionReadInterlockDenial {
@@ -14,7 +14,7 @@ pub enum CompactionReadInterlockDenial {
     },
     InPlaceOverwriteOfProtectedStructure,
     MissingOldRootPreservation,
-    BackendResidueCandidateSelection(CompactionArtifactResidueReason),
+    BackendResidueCandidateSelection(PhysicalRecoveryResidueKind),
     EarlyReclaimBeforeReadRelease {
         protected: PhysicalReadProtectedFootprintBasis,
     },

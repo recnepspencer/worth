@@ -90,7 +90,10 @@ where
     pub fn branch_retirement_receipt(
         &self,
         branch_id: SignalBranchId,
-    ) -> Option<&SignalBranchRetirementReceipt> {
-        self.branches.branch_retirement_receipt(branch_id)
+    ) -> Option<SignalBranchRetirementReceipt> {
+        if self.owner_services.is_sealed() {
+            return self.owner_services.legacy_retirement_receipt(branch_id);
+        }
+        self.branches.branch_retirement_receipt(branch_id).cloned()
     }
 }

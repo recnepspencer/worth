@@ -19,7 +19,6 @@ worth-store-lsm-authority = { path = "../worth-store-lsm-authority" }
 worth-store-physical-backend.workspace = true
 worth-store-physical-format = { path = "../worth-store-physical-format" }
 worth-store-physical-isolation = { path = "../worth-store-physical-isolation" }
-worth-store-physical-integrity = { path = "../worth-store-physical-integrity" }
 worth-store-recovery-physics = { path = "../worth-store-recovery-physics" }
 worth-store-security = { path = "../worth-store-security" }
 worth-store-wal = { path = "../worth-store-wal" }

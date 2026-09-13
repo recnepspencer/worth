@@ -1,19 +1,17 @@
 use std::path::PathBuf;
 
+use crate::workflow::point_in_time_recovery::ExactRecoveryFrontier;
+use crate::{
+    OperationalOperationId, OperationalSecurityScope, ProductionRestoreAdmissibleBackupBundle,
+};
 use sha2::{Digest, Sha256};
 use worth_store_authority::StoreRetainedAuthorityEvidence;
 use worth_store_physical_isolation::{
     AdmittedRollbackSourceCut, RecoverySourceLeaseDenial, RecoverySourceLeaseRegistry,
     RecoverySourceLeaseRequest, RollbackReachabilityLease,
 };
-use worth_store_recovery_physics::{
-    ExactRecoveryFrontier, RecoveryPhysicsRollbackOwner, ResolvedRollbackCandidate,
-    RollbackReplayDenial,
-};
 
-use crate::{
-    OperationalOperationId, OperationalSecurityScope, ProductionRestoreAdmissibleBackupBundle,
-};
+use super::{ResolvedRollbackCandidate, RollbackReplayDenial, RollbackReplayOwner};
 
 #[derive(Debug)]
 pub struct RollbackIntent {
@@ -53,7 +51,7 @@ impl RollbackIntent {
 
     pub fn resolve(self) -> Result<ResolvedRollbackOperation, RollbackResolutionDenial> {
         let materialized = self.source.custody().structural().materialized();
-        let candidate = RecoveryPhysicsRollbackOwner::resolve_candidate(
+        let candidate = RollbackReplayOwner::resolve_candidate(
             &self.retained,
             materialized.manifest(),
             materialized.manifest_digest(),

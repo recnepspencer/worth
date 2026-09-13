@@ -1,10 +1,10 @@
-use worth_foundational::facade::{AspectValue, CanonicalF32, ScalarAspectType};
+use worth_foundational::facade::CanonicalF32;
 use worth_query_decl::facade::application_schema::{
-    TypedApplicationReadableValue, TypedApplicationValue,
+    StringApplicationValueBinding, U64ApplicationValueBinding,
 };
 use worth_query_decl::facade::{
     worth_query_application_schema, worth_query_aspect, worth_query_entity, worth_query_field,
-    worth_query_portable_type,
+    worth_query_portable_type, worth_query_value_binding,
 };
 
 worth_query_application_schema! {
@@ -31,40 +31,40 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub WorthUiRecord in WorthUiApplicationSchema);
-worth_query_aspect!(pub IdentityAspect in WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x91611056), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub QueryTextAspect in WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x91611057), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub QueryRevisionAspect in WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x91611058), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub CollectionItemAspect in WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x9161105b), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub MeasurementAspect in WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x91611059), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub SizeAspect in WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x9161105a), revision = AspectContractRevision(1),);
+worth_query_entity!(pub WorthUiRecord for WorthUiApplicationSchema);
+worth_query_aspect!(pub IdentityAspect for WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x91611056), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub QueryTextAspect for WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x91611057), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub QueryRevisionAspect for WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x91611058), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub CollectionItemAspect for WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x9161105b), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub MeasurementAspect for WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x91611059), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub SizeAspect for WorthUiApplicationSchema, WorthUiRecord; identity = AspectIdentity(0x9161105a), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub IdentityIdField in WorthUiApplicationSchema, WorthUiRecord, IdentityAspect:
-    String, read_only, equality
+    pub IdentityIdField for WorthUiApplicationSchema, WorthUiRecord, IdentityAspect:
+    String => StringApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub QueryTextStatusField in WorthUiApplicationSchema, WorthUiRecord, QueryTextAspect:
-    String, read_only, equality
+    pub QueryTextStatusField for WorthUiApplicationSchema, WorthUiRecord, QueryTextAspect:
+    String => StringApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub QueryRevisionValueField in WorthUiApplicationSchema, WorthUiRecord, QueryRevisionAspect:
-    u64, read_only, equality
+    pub QueryRevisionValueField for WorthUiApplicationSchema, WorthUiRecord, QueryRevisionAspect:
+    u64 => U64ApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub CollectionItemStatusField in WorthUiApplicationSchema, WorthUiRecord, CollectionItemAspect:
-    String, read_only, equality
+    pub CollectionItemStatusField for WorthUiApplicationSchema, WorthUiRecord, CollectionItemAspect:
+    String => StringApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub CollectionItemKeyField in WorthUiApplicationSchema, WorthUiRecord, CollectionItemAspect:
-    u64, read_only, equality
+    pub CollectionItemKeyField for WorthUiApplicationSchema, WorthUiRecord, CollectionItemAspect:
+    u64 => U64ApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub MeasurementValueField in WorthUiApplicationSchema, WorthUiRecord, MeasurementAspect:
-    UiMeasurementValue, read_only, equality
+    pub MeasurementValueField for WorthUiApplicationSchema, WorthUiRecord, MeasurementAspect:
+    UiMeasurementValue => UiMeasurementValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub SizeValueField in WorthUiApplicationSchema, WorthUiRecord, SizeAspect:
-    UiSizeValue, read_only, equality
+    pub SizeValueField for WorthUiApplicationSchema, WorthUiRecord, SizeAspect:
+    UiSizeValue => UiSizeValueBinding, read_only, equality
 );
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -95,30 +95,39 @@ macro_rules! float_application_value_api {
 float_application_value_api!(UiMeasurementValue);
 float_application_value_api!(UiSizeValue);
 
-macro_rules! float_application_value {
-    ($type:ty) => {
-        impl TypedApplicationValue for $type {
-            const SCALAR_FAMILY: ScalarAspectType = ScalarAspectType::Float32;
+macro_rules! float_application_binding {
+    ($binding:ident, $value:ident, $identity:literal) => {
+        impl $value {
+            fn encode_scalar(&self) -> CanonicalF32 {
+                self.0
+            }
 
-            fn into_foundational_value(self) -> AspectValue {
-                AspectValue::Float32(self.0)
+            fn decode_scalar(value: CanonicalF32) -> Option<Self> {
+                Some(Self(value))
             }
         }
 
-        impl TypedApplicationReadableValue for $type {
-            fn from_foundational_value(value: &AspectValue) -> Option<Self> {
-                match value {
-                    AspectValue::Float32(value) => Some(Self(*value)),
-                    _ => None,
-                }
+        worth_query_value_binding! {
+            pub $binding for $value {
+                identity: $identity,
+                scalar: Float32,
+                encode: $value::encode_scalar,
+                decode: $value::decode_scalar,
             }
         }
     };
 }
 
-float_application_value!(UiMeasurementValue);
-float_application_value!(UiSizeValue);
-
+float_application_binding!(
+    UiMeasurementValueBinding,
+    UiMeasurementValue,
+    "worth.ui.query-binding.measurement-value.v1"
+);
+float_application_binding!(
+    UiSizeValueBinding,
+    UiSizeValue,
+    "worth.ui.query-binding.size-value.v1"
+);
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum WorthUiProjectionField {
     IdentityId,

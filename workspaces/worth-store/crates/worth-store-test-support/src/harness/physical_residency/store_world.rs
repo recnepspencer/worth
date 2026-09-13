@@ -81,6 +81,17 @@ impl PhysicalResidencyStoreWorld {
         )
     }
 
+    pub fn initialize_for_recovery_with_manifest_capacity(
+        label: &str,
+        manifest_capacity: u16,
+    ) -> Result<Self, PhysicalResidencyStoreWorldConstructionFailure> {
+        Self::initialize_with_configuration(
+            label,
+            super::configuration::compact_recovery_planning_configuration(1, manifest_capacity),
+            NonZeroU64::new(16 * 1024 * 1024).unwrap(),
+        )
+    }
+
     pub fn initialize_for_recovery_with_wal_segment_bytes(
         label: &str,
         wal_segment_bytes: NonZeroU64,
@@ -133,6 +144,10 @@ impl PhysicalResidencyStoreWorld {
         self.serving
             .as_ref()
             .expect("a live fixture retains its serving runtime")
+    }
+
+    pub fn placement(&self) -> AdmittedRecordPlacementPolicy {
+        self.placement
     }
 
     pub fn close(mut self) -> ServingShutdownOutcome<ClosedRuntime> {

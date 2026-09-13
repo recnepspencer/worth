@@ -1,7 +1,7 @@
 use std::time::Duration;
 
+use crate::OfflinePhysicalArtifactFamily;
 use sha2::{Digest, Sha256};
-use worth_store_physical_format::OfflinePhysicalArtifactFamily;
 
 use super::resume_checkpoint::{
     CheckpointFileObservation, CheckpointSourceIdentity, OfflineInspectionCheckpoint,

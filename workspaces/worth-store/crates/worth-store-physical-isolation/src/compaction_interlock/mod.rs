@@ -20,7 +20,9 @@ mod plan_identity;
 mod protected_set;
 mod publication;
 mod reclaim_queue;
+mod recovery_evidence;
 mod scheduler_demand;
+mod source_admission;
 mod stability_proof;
 mod verdict;
 
@@ -41,6 +43,10 @@ pub use plan::{CompactionReadInterlockPlan, CompactionSourceIntegrityEvidence};
 pub use protected_set::CompactionProtectedReferenceSet;
 pub use publication::CompactionRewritePublication;
 pub use reclaim_queue::{CompactionDeferredReclaimQueue, DrainedCompactionReclaim};
+pub use recovery_evidence::CompactionRecoveryEvidence;
 pub use scheduler_demand::compaction_rewrite_scheduler_demand;
+pub use source_admission::{
+    CompactionSourceIntegrityAdmission, CompactionSourceIntegrityAdmissionDenial,
+};
 pub use stability_proof::CompactionCutoverStabilityProof;
 pub use verdict::{execute_read_during_compaction_cutover, ReadDuringCompactionVerdict};

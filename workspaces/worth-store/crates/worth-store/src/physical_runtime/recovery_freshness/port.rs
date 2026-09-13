@@ -1,8 +1,8 @@
+use crate::physical_runtime::IntegrityAdmittedRecoveryWalFrame;
 use worth_store_physical_backend::{
     AdmittedRecoveryFilesystemMedia, QualifiedRecoveryFilesystemMedia,
 };
-use worth_store_physical_format::VerifiedCheckpointStream;
-use worth_store_wal::VerifiedWalFrame;
+use worth_store_physical_integrity::VerifiedCheckpointStream;
 
 use super::{
     binding, PhysicalRecoveryFreshnessAuthority, StoreRecoveryBindingFreshnessSample,
@@ -32,12 +32,13 @@ impl PhysicalRecoveryFreshnessPort {
         coordination: &crate::physical_runtime::PhysicalRecoveryCoordination,
         media: &AdmittedRecoveryFilesystemMedia,
         checkpoint: &VerifiedCheckpointStream,
-        wal_frames: impl IntoIterator<Item = &'frame VerifiedWalFrame>,
+        wal_frames: impl IntoIterator<Item = &'frame IntegrityAdmittedRecoveryWalFrame>,
         maximum_operation_bindings: u64,
         maximum_redo_bytes: u64,
     ) -> Result<StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure> {
         binding::sample_binding(
             coordination.freshness(),
+            coordination.checkpoint_binding_basis(),
             media,
             checkpoint,
             wal_frames,

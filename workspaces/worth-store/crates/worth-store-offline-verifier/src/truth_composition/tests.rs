@@ -1,13 +1,15 @@
+use crate::OfflinePhysicalArtifactFamily;
 use sha2::{Digest, Sha256};
 use worth_store_physical_backend::{OfflineMediaClosureEntry, OfflineMediaConsistencyBasis};
 use worth_store_physical_format::{
-    OfflinePhysicalArtifactFamily, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId,
-    PhysicalSegmentId,
+    PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId, PhysicalSegmentId,
 };
 
+use super::candidate_evaluation::synthetic_observation_for_test;
 use super::{
-    compose_operational_truth, OfflineFileTruthEvidence, OfflineTruthEvidenceAdmissionDenial,
-    OfflineTruthEvidenceSet, OperationalTruthCompositionBudget, OperationalTruthCompositionDenial,
+    compose_operational_truth, compose_operational_truth_with_owner_candidates,
+    OfflineFileTruthEvidence, OfflineTruthEvidenceAdmissionDenial, OfflineTruthEvidenceSet,
+    OperationalTruthCompositionBudget, OperationalTruthCompositionDenial,
 };
 use crate::{OfflineInspectionBudget, OfflineStoreInspection, UntrustedOfflineMediaSet};
 
@@ -58,6 +60,30 @@ fn truth_composition_reports_and_enforces_its_exact_owned_peak() {
             admitted,
             limit,
         } if admitted > limit && limit == exact_peak - 1
+    ));
+}
+
+#[test]
+fn operational_composition_preserves_conflicting_candidate_denial() {
+    let directory = tempfile::tempdir().expect("temp directory");
+    let path = directory.path().join("candidate.page");
+    let bytes = b"candidate-media";
+    std::fs::write(&path, bytes).expect("media");
+    let mut no_interruption = || Ok(());
+    let denial = compose_operational_truth_with_owner_candidates(
+        inspect(&path, bytes),
+        &OfflineTruthEvidenceSet::default(),
+        vec![
+            synthetic_observation_for_test(1),
+            synthetic_observation_for_test(2),
+        ],
+        OperationalTruthCompositionBudget::bounded(64 * 1024).expect("budget"),
+        &mut no_interruption,
+    )
+    .expect_err("conflicting owner frontiers must survive composition");
+    assert!(matches!(
+        denial,
+        OperationalTruthCompositionDenial::ConflictingFrontierEvidence
     ));
 }
 

@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+
+mod retained_charge;
 use std::num::NonZeroU32;
 
 pub(crate) trait SetHandle:

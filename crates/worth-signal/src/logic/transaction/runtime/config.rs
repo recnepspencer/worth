@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use crate::data::comparator::VersionComparatorPolicy;
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
@@ -14,15 +12,30 @@ use crate::data::tier_policy_table::TierPolicyTable;
 
 use super::super::key_registry::{RuntimeKeyRegistry, RuntimeStringId};
 
+#[cfg(test)]
+#[path = "config/replacement_test_observation.rs"]
+mod replacement_test_observation;
+#[cfg(test)]
+pub(crate) use replacement_test_observation::SignalRuntimeConfigReplacementObservation;
+
 #[derive(Debug, Clone)]
 pub struct SignalRuntimeConfig<T: Copy + Ord> {
     node_meta: NodeMetaStore<T>,
     tier_policies: TierPolicyTable<T>,
     fallback_comparator: VersionComparatorPolicy,
     pub(super) key_registry: RuntimeKeyRegistry,
-    computations: BTreeMap<RuntimeStringId, ComputationRegistration<T>>,
-    keyed_nodes: BTreeMap<(RuntimeStringId, RuntimeStringId), NodeId>,
-    memo_cache: BTreeMap<(RuntimeStringId, RuntimeStringId, RuntimeStringId), NodeEvaluationResult>,
+    computations: crate::data::persistent_ord_map::PersistentOrdMap<
+        RuntimeStringId,
+        ComputationRegistration<T>,
+    >,
+    keyed_nodes: crate::data::persistent_ord_map::PersistentOrdMap<
+        (RuntimeStringId, RuntimeStringId),
+        NodeId,
+    >,
+    memo_cache: crate::data::persistent_ord_map::PersistentOrdMap<
+        (RuntimeStringId, RuntimeStringId, RuntimeStringId),
+        NodeEvaluationResult,
+    >,
     resource_runtime_deadline: Option<TemporalDuration>,
 }
 
@@ -40,15 +53,52 @@ impl<T: Copy + Ord> Default for SignalRuntimeConfig<T> {
             tier_policies: TierPolicyTable::default(),
             fallback_comparator: VersionComparatorPolicy::Exact,
             key_registry: RuntimeKeyRegistry::default(),
-            computations: BTreeMap::new(),
-            keyed_nodes: BTreeMap::new(),
-            memo_cache: BTreeMap::new(),
+            computations: Default::default(),
+            keyed_nodes: Default::default(),
+            memo_cache: Default::default(),
             resource_runtime_deadline: None,
         }
     }
 }
 
 impl<T: Copy + Ord> SignalRuntimeConfig<T> {
+    pub(crate) fn fork_persistent(&mut self) -> Self {
+        Self {
+            node_meta: self.node_meta.fork_persistent(),
+            tier_policies: self.tier_policies.fork_persistent(),
+            fallback_comparator: self.fallback_comparator.clone(),
+            key_registry: self.key_registry.fork_persistent(),
+            computations: self.computations.fork_persistent(),
+            keyed_nodes: self.keyed_nodes.fork_persistent(),
+            memo_cache: self.memo_cache.fork_persistent(),
+            resource_runtime_deadline: self.resource_runtime_deadline,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn fork_storage_identity(&self) -> Self {
+        Self {
+            node_meta: self.node_meta.clone(),
+            tier_policies: self.tier_policies.clone(),
+            fallback_comparator: self.fallback_comparator.clone(),
+            key_registry: self.key_registry.fork_storage_identity(),
+            computations: self.computations.fork_storage_identity(),
+            keyed_nodes: self.keyed_nodes.fork_storage_identity(),
+            memo_cache: self.memo_cache.fork_storage_identity(),
+            resource_runtime_deadline: self.resource_runtime_deadline,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn shares_fork_storage_with(&self, other: &Self) -> bool {
+        self.node_meta.shares_storage_with(&other.node_meta)
+            && self.tier_policies.shares_storage_with(&other.tier_policies)
+            && self.key_registry.shares_storage_with(&other.key_registry)
+            && self.computations.ptr_eq(&other.computations)
+            && self.keyed_nodes.ptr_eq(&other.keyed_nodes)
+            && self.memo_cache.ptr_eq(&other.memo_cache)
+    }
+
     pub fn new() -> Self {
         Self::default()
     }

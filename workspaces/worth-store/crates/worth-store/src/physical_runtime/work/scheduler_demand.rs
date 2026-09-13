@@ -18,6 +18,7 @@ use super::{
 
 mod locality;
 mod residency;
+mod scrub;
 
 use locality::physical_locality;
 

@@ -339,11 +339,11 @@ fn failed_later_epoch_keeps_committed_context_and_records_coherent_diagnostics()
     let replay = runtime.graph().replay_events();
     assert_eq!(replay.len(), replay_len_before + 2);
     assert_eq!(
-        replay[replay.len() - 2].kind,
+        replay.iter().rev().nth(1).unwrap().kind,
         ReplayEventKind::TransactionRolledBack
     );
     assert_eq!(
-        replay[replay.len() - 1].kind,
+        replay.back().unwrap().kind,
         ReplayEventKind::FailureRecorded
     );
 }

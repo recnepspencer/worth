@@ -16,7 +16,6 @@ impl<
     >
     WorthQueryApplicationLiveLease<
         '_,
-        '_,
         Schema,
         Query,
         Parameters,
@@ -44,6 +43,7 @@ where
         let crate::domain_computation::managed_run::WorthQueryManagedLowerExecutionBasis {
             bridge,
             relational,
+            product_observation,
         } = basis;
         match bridge.finalize(disposition) {
             Ok(_) => {
@@ -72,6 +72,7 @@ where
                     crate::domain_computation::managed_run::WorthQueryManagedLowerExecutionBasis {
                         bridge: failure.into_basis(),
                         relational,
+                        product_observation,
                     },
                 );
                 false
@@ -92,7 +93,6 @@ impl<
         Binding,
     > Drop
     for WorthQueryApplicationLiveLease<
-        '_,
         '_,
         Schema,
         Query,

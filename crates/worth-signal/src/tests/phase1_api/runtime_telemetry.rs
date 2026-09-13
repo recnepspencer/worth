@@ -8,7 +8,7 @@ use crate::data::telemetry::{
 
 use super::source_corpus::{
     ENTRIES_SOURCE, GRAPH_RUNTIME_SOURCE, PERFORMANCE_BASELINE_SOURCE, PERFORMANCE_SUPPORT_SOURCE,
-    SLOT_SOURCE,
+    PERSISTENT_PAGED_VECTOR_SOURCE, PERSISTENT_VECTOR_SOURCE, SLOT_SOURCE,
 };
 
 #[test]
@@ -166,11 +166,21 @@ fn performance_harness_emits_allocation_and_footprint_metrics() {
 #[test]
 fn node_storage_is_physically_split_into_index_addressed_lanes() {
     assert!(
-        GRAPH_RUNTIME_SOURCE.contains("pub(in crate::data::graph) hot: Vec<Option<NodeHotData>>")
-            && GRAPH_RUNTIME_SOURCE.contains("pub(in crate::data::graph) warm: Vec<NodeWarmData>")
-            && GRAPH_RUNTIME_SOURCE
-                .contains("pub(in crate::data::graph) cold: Vec<Option<Box<NodeColdData>>>"),
-        "node arena should store hot, warm, and cold node lanes explicitly"
+        GRAPH_RUNTIME_SOURCE.contains("pub(in crate::data::graph) hot:")
+            && GRAPH_RUNTIME_SOURCE.contains("PersistentPagedVector<Option<NodeHotData>>")
+            && GRAPH_RUNTIME_SOURCE.contains("pub(in crate::data::graph) warm:")
+            && GRAPH_RUNTIME_SOURCE.contains("PersistentPagedVector<NodeWarmData>")
+            && GRAPH_RUNTIME_SOURCE.contains("pub(in crate::data::graph) cold:")
+            && GRAPH_RUNTIME_SOURCE.contains("PersistentPagedVector<Option<Box<NodeColdData>>>")
+            && PERSISTENT_PAGED_VECTOR_SOURCE.contains("PersistentVector<T, 64>")
+            && PERSISTENT_VECTOR_SOURCE.contains("Exclusive(Vec<T>)")
+            && PERSISTENT_VECTOR_SOURCE.contains("ForkShared {")
+            && PERSISTENT_VECTOR_SOURCE.contains("base: Arc<RetainedStorageBacking<Vec<T>>>")
+            && PERSISTENT_VECTOR_SOURCE.contains("changed_pages: im::OrdMap")
+            && PERSISTENT_VECTOR_SOURCE.contains("install_changed_page::<T, PAGE_LEN>")
+            && PERSISTENT_VECTOR_SOURCE.contains("Arc::make_mut(")
+            && PERSISTENT_VECTOR_SOURCE.contains("pub(crate) fn get_mut"),
+        "node arena should stay flat ordinarily and detach bounded COW pages after exact forks"
     );
     assert!(
         !SLOT_SOURCE.contains("Option<NodeEntry>"),

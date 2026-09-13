@@ -7,7 +7,6 @@ mod authorization_observation;
 mod authorization_work;
 mod authorized_read;
 mod basis;
-mod bounded_lane;
 mod continuation;
 mod control_validation;
 mod controls;
@@ -18,14 +17,14 @@ mod execution_validation;
 #[cfg(test)]
 mod governance_affinity_tests;
 mod graph_read_plan_binding;
-mod historical;
 mod live;
+mod observed_source;
 mod one_shot;
-mod preview;
 mod projection;
 mod read_execution;
 mod readiness;
-pub(super) mod resource_lifecycle;
+pub(crate) mod resource_lifecycle;
+mod retained_read;
 mod runtime_support;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory;
@@ -35,26 +34,21 @@ pub use access_receipt::{
     WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryOmissionPosture,
     WorthQueryApplicationQueryWorkEvidence,
 };
-pub use admitted_result::WorthQueryAdmittedDisclosedApplicationResult;
-pub use authorization_work::WorthQueryApplicationAuthorizationWorkEvidence;
-pub use basis::{
-    WorthQueryApplicationHistoricalBasis, WorthQueryApplicationHistoricalBasisReleaseReceipt,
-    WorthQueryApplicationHistoricalRead, WorthQueryApplicationPinnedBasis,
-    WorthQueryApplicationPinnedBasisDenial, WorthQueryApplicationPinnedBasisDenialKind,
-    WorthQueryApplicationPinnedBasisReleaseReceipt, WorthQueryApplicationPreviewBasis,
-    WorthQueryApplicationPreviewBasisReleaseReceipt, WorthQueryApplicationPreviewSession,
-    WorthQueryApplicationPreviewSessionDenial, WorthQueryApplicationPreviewSessionDenialKind,
-    WorthQueryApplicationPreviewSessionDiscardReceipt, WorthQueryApplicationPreviewSessionIdentity,
+pub use admitted_result::{
+    WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationOutputDemandDisclosure,
 };
-pub use bounded_lane::{WorthQueryBoundedLaneDenial, WorthQueryBoundedLaneDenialKind};
+pub use authorization_work::WorthQueryApplicationAuthorizationWorkEvidence;
+#[cfg(test)]
+pub(crate) use basis::WorthQueryApplicationHistoricalRead;
 pub use continuation::{
     WorthQueryApplicationContinuationDenial, WorthQueryApplicationContinuationDenialKind,
     WorthQueryApplicationContinuationPageResult, WorthQueryApplicationQueryContinuation,
 };
+pub(crate) use controls::WorthQueryApplicationQueryControls;
 pub use controls::{
     WorthQueryAdmittedApplicationQueryControls, WorthQueryApplicationQueryBasisPosture,
-    WorthQueryApplicationQueryConsistency, WorthQueryApplicationQueryControls,
-    WorthQueryApplicationQueryFreshness, WorthQueryApplicationQueryResumeControls,
+    WorthQueryApplicationQueryConsistency, WorthQueryApplicationQueryFreshness,
+    WorthQueryApplicationQueryResumeControls,
 };
 pub use denial::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
@@ -65,7 +59,6 @@ pub use disclosure::{
     WorthQueryApplicationDisclosureReceiptPosture,
 };
 pub use graph_read_plan_binding::WorthQueryAdmittedApplicationQueryPlan;
-pub use historical::WorthQueryApplicationHistoricalResult;
 pub use live::{
     WorthQueryApplicationLiveCauseDenialKind, WorthQueryApplicationLiveCloseOutcome,
     WorthQueryApplicationLiveControlDenial, WorthQueryApplicationLiveControls,
@@ -73,11 +66,14 @@ pub use live::{
     WorthQueryApplicationLiveOpenDenialKind, WorthQueryApplicationLiveOutcome,
     WorthQueryApplicationLiveOverflow, WorthQueryApplicationLiveUpdate,
 };
+pub use observed_source::{
+    WorthQueryObservedSource, WorthQuerySourceExpectationDenial,
+    WorthQuerySourceExpectationDenialKind,
+};
 pub use one_shot::{
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
     WorthQueryApplicationOneShotResult,
 };
-pub use preview::WorthQueryApplicationPreviewResult;
 pub use projection::{
     WorthQueryApplicationDisclosed, WorthQueryApplicationOmission, WorthQueryApplicationProjection,
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
@@ -87,6 +83,7 @@ pub use readiness::WorthQueryPrimaryGraphApplicationReadinessSnapshot;
 pub use resource_lifecycle::{
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisObservation,
     WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseReceipt,
-    WorthQueryApplicationResultBufferEvidence, WorthQueryApplicationResultBufferObservation,
-    WorthQueryApplicationResultBufferObserver,
+    WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationResultBufferEvidence,
+    WorthQueryApplicationResultBufferObservation, WorthQueryApplicationResultBufferObserver,
 };
+pub use retained_read::WorthQueryApplicationReadObservation;

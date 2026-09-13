@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct LayoutCorruptionCounterSnapshot {
     rebuild_classifications_inspected: u64,
-    quarantine_records_inspected: u64,
+    quarantine_observations_inspected: u64,
     recovery_admissions_inspected: u64,
     terminal_imports_inspected: u64,
     outcomes_issued: u64,
@@ -52,9 +52,9 @@ impl LayoutCorruptionCounterSnapshot {
         }
     }
 
-    pub(super) const fn quarantine_record() -> Self {
+    pub(super) const fn quarantine_observation() -> Self {
         Self {
-            quarantine_records_inspected: 1,
+            quarantine_observations_inspected: 1,
             outcomes_issued: 1,
             ..Self::empty()
         }
@@ -68,7 +68,7 @@ impl LayoutCorruptionCounterSnapshot {
         }
     }
 
-    pub(super) const fn with_record_backed_readmission(mut self) -> Self {
+    pub(super) const fn with_observation_bound_readmission(mut self) -> Self {
         self.recovery_admissions_inspected += 1;
         self.outcomes_issued += 1;
         self
@@ -77,7 +77,7 @@ impl LayoutCorruptionCounterSnapshot {
     const fn empty() -> Self {
         Self {
             rebuild_classifications_inspected: 0,
-            quarantine_records_inspected: 0,
+            quarantine_observations_inspected: 0,
             recovery_admissions_inspected: 0,
             terminal_imports_inspected: 0,
             outcomes_issued: 0,
@@ -87,8 +87,8 @@ impl LayoutCorruptionCounterSnapshot {
     pub const fn rebuild_classifications_inspected(self) -> u64 {
         self.rebuild_classifications_inspected
     }
-    pub const fn quarantine_records_inspected(self) -> u64 {
-        self.quarantine_records_inspected
+    pub const fn quarantine_observations_inspected(self) -> u64 {
+        self.quarantine_observations_inspected
     }
     pub const fn recovery_admissions_inspected(self) -> u64 {
         self.recovery_admissions_inspected

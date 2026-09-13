@@ -5,6 +5,9 @@
 #![forbid(unsafe_code)]
 
 pub mod access;
+pub mod integrity_declarations;
+pub mod physical_work_obligation;
+pub mod wal_frame;
 
 mod backup_bundle;
 mod binary_format;
@@ -13,6 +16,8 @@ mod bootstrap;
 mod canonical_basis;
 mod checkpoint;
 mod checksum;
+#[cfg(feature = "certification-test-authority")]
+pub use record_framing::certification_crc32c_invocations;
 mod compile_fail;
 mod denial;
 mod extent_record;
@@ -22,10 +27,11 @@ mod header;
 mod in_memory_physical_format_model;
 mod manifest;
 mod offline_verifier;
-mod offline_walk;
 mod page_record;
 mod payload;
+mod physical_artifact_read_range;
 mod physical_data_frame_identity;
+pub use physical_artifact_read_range::{PhysicalArtifactReadRange, PhysicalArtifactReadTarget};
 mod placement;
 mod record_framing;
 mod record_identity;
@@ -82,17 +88,20 @@ pub use canonical_basis::{
     prepare_physical_page_header_canonical_basis, PhysicalPageHeaderCanonicalBasisOutcome,
 };
 pub use checkpoint::{
-    decode_checkpoint_binding_record, inspect_checkpoint_stream,
-    CheckpointBindingCompactionDecoder, CheckpointBindingCompactionEncoder,
-    CheckpointBindingCompactionHeader, CheckpointBindingRecordFrameLength,
-    CheckpointDirtyFrameBasis, CheckpointRootBasis, CheckpointStreamDecodeDenial,
-    CheckpointStreamDecoder, CheckpointStreamEncoder, CheckpointStreamFooter,
-    CheckpointWalSourceRange, PersistedCompactionCutoverRecord, PersistedCompactionProductRole,
+    checkpoint_stream_encoded_digest, decode_checkpoint_backup_artifact_from_reader,
+    decode_checkpoint_binding_record, CheckpointBackupArtifact,
+    CheckpointBackupArtifactDecodeDenial, CheckpointBackupArtifactDecodeObservation,
+    CheckpointBackupArtifactDecodeRequest, CheckpointBackupArtifactInput,
+    CheckpointBindingCompactionEncoder, CheckpointBindingCompactionHeader,
+    CheckpointBindingRecordFrameLength, CheckpointDirtyFrameBasis, CheckpointRootBasis,
+    CheckpointSelectiveRecordAggregate, CheckpointSelectiveRecordSummary,
+    CheckpointStreamDecodeDenial, CheckpointStreamEncoder, CheckpointStreamFooter,
+    CheckpointWalSourceRange, DecodedCheckpointBackupArtifact, PersistedCompactionProductRole,
     PhysicalCheckpointIdentity, PhysicalCheckpointSecurityBinding, PhysicalCheckpointSource,
-    VerifiedCheckpointStream, CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES,
-    CHECKPOINT_BINDING_RECORD_PREFIX_BYTES, CHECKPOINT_DIRTY_FRAME_RECORD_BYTES,
-    CHECKPOINT_STREAM_FOOTER_RECORD_BYTES, CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
-    MAX_CHECKPOINT_BINDING_RECORD_BYTES, PHYSICAL_MUTATION_BINDING_COMPACTION_RECORD_DOMAIN,
+    CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES,
+    CHECKPOINT_DIRTY_FRAME_RECORD_BYTES, CHECKPOINT_STREAM_FOOTER_RECORD_BYTES,
+    CHECKPOINT_STREAM_HEADER_RECORD_BYTES, MAX_CHECKPOINT_BINDING_RECORD_BYTES,
+    PHYSICAL_MUTATION_BINDING_COMPACTION_RECORD_DOMAIN,
 };
 pub use checksum::{
     physical_format_required_covered_header_fields, ChecksumCompatibilityFieldPosture,
@@ -157,22 +166,24 @@ pub use manifest::{
     maximum_current_root_entries, maximum_segment_manifest_pages, AllocationClassManifestEntry,
     BoundedFreeSpaceMembershipBlockDecodeDenial, BoundedRootRoutingBlockDecodeDenial,
     BoundedSegmentMembershipBlockDecodeDenial, CurrentPhysicalRecordPlacement,
-    DurableExtentManifest, DurableExtentRecordPlacement, DurableFreeSpaceManifestHeader,
-    DurableInlineRecordPlacement, DurablePhysicalRootManifest, DurablePhysicalRootManifestBuilder,
-    DurableSegmentManifest, ExtentManifestEntry, ExtentManifestVocabulary, FreeSpaceBlockReference,
-    FreeSpaceKey, FreeSpaceManifestEntry, FreeSpaceMembershipBlockDecodeLimits,
-    FreeSpaceRoutingDenial, ManifestBlockReference, ManifestDiscoveryAuthority,
-    ManifestDiscoveryCounterSnapshot, ManifestDiscoveryDenial, ManifestDiscoveryDenialKind,
-    ManifestDiscoveryReport, ManifestVocabularyKind, MembershipManifestDenial,
-    PhysicalCurrentReachabilitySource, PhysicalFreeSpaceMembershipBlock,
+    DurableArtifactCrc32c, DurableExtentManifest, DurableExtentRecordPlacement,
+    DurableFreeSpaceManifestHeader, DurableInlineRecordPlacement, DurablePhysicalRootManifest,
+    DurablePhysicalRootManifestBuilder, DurableSegmentManifest, ExtentManifestEntry,
+    ExtentManifestVocabulary, FreeSpaceBlockReference, FreeSpaceHeaderScopeIdentity, FreeSpaceKey,
+    FreeSpaceManifestEntry, FreeSpaceMembershipBlockDecodeLimits,
+    FreeSpaceMembershipBlockScopeIdentity, FreeSpaceRoutingDenial, ManifestBlockReference,
+    ManifestDiscoveryAuthority, ManifestDiscoveryCounterSnapshot, ManifestDiscoveryDenial,
+    ManifestDiscoveryDenialKind, ManifestDiscoveryReport, ManifestVocabularyKind,
+    MembershipManifestDenial, PhysicalCurrentReachabilitySource, PhysicalFreeSpaceMembershipBlock,
     PhysicalManifestUniverseBuilder, PhysicalReclaimRegion, PhysicalReclaimRegionDenial,
     PhysicalRootManifest, PhysicalRootManifestRebuildRow, PhysicalRootManifestRebuildSource,
     PhysicalRootManifestRebuildWitness, PhysicalRootManifestVocabulary, PhysicalRootRoutingBlock,
-    PhysicalSegmentMembershipBlock, ReclaimedByteInterpretation, RecordAllocationClass,
-    RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry, RootManifestDenial,
-    RootRoutingBlockDecodeLimits, RootRoutingBlockDenial, SegmentManifestBlockReference,
-    SegmentManifestEntry, SegmentManifestVocabulary, SegmentMembershipBlockDecodeLimits,
-    SegmentMembershipBlockDenial, SegmentPageKey, SegmentPageManifestEntry,
+    PhysicalSegmentMembershipBlock, PhysicalTreeIdentity, ReclaimedByteInterpretation,
+    RecordAllocationClass, RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
+    RootManifestDenial, RootRoutingBlockDecodeLimits, RootRoutingBlockDenial,
+    RootRoutingBlockScopeIdentity, SegmentManifestBlockReference, SegmentManifestEntry,
+    SegmentManifestVocabulary, SegmentMembershipBlockDecodeLimits, SegmentMembershipBlockDenial,
+    SegmentMembershipBlockScopeIdentity, SegmentPageKey, SegmentPageManifestEntry,
 };
 pub use offline_verifier::{
     InMemoryModelLayoutObservation, InMemoryModelLayoutObservationSource, ManifestTraversalReport,
@@ -181,13 +192,6 @@ pub use offline_verifier::{
     OfflineVerifierLayoutObservation, OfflineVerifierObservationSource, PersistedExtentBytes,
     PersistedPageBytes, PersistedPhysicalLayout, PersistedPhysicalLayoutBuilder,
     PhysicalLayoutReport,
-};
-pub use offline_walk::{
-    classify_offline_artifact_family, observe_bounded_physical_bytes,
-    verify_bounded_extent_artifact_from_reader, verify_bounded_page_artifact_from_reader,
-    verify_bounded_root_manifest_artifact_from_reader, BoundedPhysicalArtifactDenial,
-    BoundedPhysicalArtifactObservation, OfflinePhysicalArtifactFamily,
-    OfflineStructuralObservation, VerifiedRootManifestArtifact,
 };
 pub use page_record::{
     append_inline_records_owned, decode_inline_record, encode_inline_page, inspect_inline_page,
@@ -202,6 +206,7 @@ pub use physical_data_frame_identity::{
     certified_absent_prior_image_digest, write_persisted_physical_data_frame_identity,
     PersistedPhysicalDataFrameSubject,
 };
+pub use physical_work_obligation::PhysicalWorkObligationIdentity;
 pub use placement::{RecordArtifactFile, RecordFrameCoordinate};
 pub use record_framing::{
     decode_data_frame_page_lsn, durable_artifact_checksum, encode_data_frame_page_lsn,
@@ -235,6 +240,7 @@ pub use security_metadata::{
     PhysicalSecurityMetadataEnvelope, PhysicalSecurityMetadataResultExclusion,
     SegmentPageSecurityMetadataEnvelope, SegmentSecurityMetadataEnvelope,
 };
+pub use wal_frame::WalSegmentIdentity;
 
 #[path = "compile_fail/physical_format_compile_fail.rs"]
 #[doc(hidden)]

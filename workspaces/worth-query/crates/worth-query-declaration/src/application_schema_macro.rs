@@ -73,12 +73,35 @@ macro_rules! worth_query_application_schema {
 
 #[macro_export]
 macro_rules! worth_query_entity {
-    ($vis:vis $Entity:ident in $Schema:ty) => {
+    ($vis:vis $Entity:ident for $Schema:ident : $Binding:path) => {
         #[derive(Clone, Copy, Debug, Eq, PartialEq)]
         $vis struct $Entity;
 
-        impl $crate::facade::application_schema::ApplicationEntityMarkerIdentity for $Entity {
-            type Schema = $Schema;
+        impl<$Schema> $crate::facade::application_schema::ApplicationEntityMarkerIdentity<$Schema>
+            for $Entity
+        where
+            $Schema: $Binding,
+        {
+            const IDENTIFIER: &'static str = stringify!($Entity);
+        }
+
+        impl $Entity {
+            pub const fn reference<$Schema>() ->
+                $crate::facade::application_schema::ApplicationEntityRef<$Schema, Self>
+            where
+                $Schema: $Binding,
+            {
+                $crate::facade::application_schema::ApplicationEntityRef::from_schema_identifier(
+                    stringify!($Entity),
+                )
+            }
+        }
+    };
+    ($vis:vis $Entity:ident for $Schema:ty) => {
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        $vis struct $Entity;
+
+        impl $crate::facade::application_schema::ApplicationEntityMarkerIdentity<$Schema> for $Entity {
             const IDENTIFIER: &'static str = stringify!($Entity);
         }
 
@@ -86,185 +109,6 @@ macro_rules! worth_query_entity {
             pub const fn reference() -> $crate::facade::application_schema::ApplicationEntityRef<$Schema, Self> {
                 $crate::facade::application_schema::ApplicationEntityRef::from_schema_identifier(
                     stringify!($Entity),
-                )
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! worth_query_field {
-    (
-        $vis:vis $Field:ident in $Schema:ty, $Entity:ty, $Aspect:ty:
-        optional $Value:ty, unit $Unit:ty, $write:ident, $equality:ident
-    ) => {
-        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-        $vis struct $Field;
-
-        impl $crate::facade::application_schema::DeclaredApplicationFieldValue for $Field {
-            type Value = $Value;
-            const PRESENCE: $crate::facade::application_schema::ApplicationFieldPresence =
-                $crate::facade::application_schema::ApplicationFieldPresence::Optional;
-        }
-
-        impl $crate::facade::application_schema::OptionalApplicationFieldValue for $Field {}
-
-        impl $crate::facade::application_schema::ApplicationFieldMarkerIdentity for $Field {
-            type Schema = $Schema;
-            type Entity = $Entity;
-            type Aspect = $Aspect;
-            const IDENTIFIER: &'static str = stringify!($Field);
-        }
-
-        impl $Field {
-            pub const fn reference() -> $crate::facade::application_schema::ApplicationFieldRef<
-                $Schema,
-                $Entity,
-                $Aspect,
-                Self,
-                $Value,
-                $crate::worth_query_field!(@write $write),
-                $crate::worth_query_field!(@equality $equality),
-                $crate::facade::application_schema::DeclaredApplicationUnit<
-                    $Unit,
-                    <$Value as $crate::facade::application_schema::TypedUnitApplicationValue>::Unit,
-                >,
-            > {
-                $crate::facade::application_schema::ApplicationFieldRef::from_schema_types()
-            }
-        }
-    };
-    (
-        $vis:vis $Field:ident in $Schema:ty, $Entity:ty, $Aspect:ty:
-        optional $Value:ty, $write:ident, $equality:ident
-    ) => {
-        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-        $vis struct $Field;
-
-        impl $crate::facade::application_schema::DeclaredApplicationFieldValue for $Field {
-            type Value = $Value;
-            const PRESENCE: $crate::facade::application_schema::ApplicationFieldPresence =
-                $crate::facade::application_schema::ApplicationFieldPresence::Optional;
-        }
-
-        impl $crate::facade::application_schema::OptionalApplicationFieldValue for $Field {}
-
-        impl $crate::facade::application_schema::ApplicationFieldMarkerIdentity for $Field {
-            type Schema = $Schema;
-            type Entity = $Entity;
-            type Aspect = $Aspect;
-            const IDENTIFIER: &'static str = stringify!($Field);
-        }
-
-        impl $Field {
-            pub const fn reference() -> $crate::facade::application_schema::ApplicationFieldRef<
-                $Schema,
-                $Entity,
-                $Aspect,
-                Self,
-                $Value,
-                $crate::worth_query_field!(@write $write),
-                $crate::worth_query_field!(@equality $equality),
-            > {
-                $crate::facade::application_schema::ApplicationFieldRef::from_schema_types()
-            }
-        }
-    };
-    (
-        $vis:vis $Field:ident in $Schema:ty, $Entity:ty, $Aspect:ty:
-        $Value:ty, unit $Unit:ty, $write:ident, $equality:ident
-    ) => {
-        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-        $vis struct $Field;
-
-        impl $crate::facade::application_schema::DeclaredApplicationFieldValue for $Field {
-            type Value = $Value;
-            const PRESENCE: $crate::facade::application_schema::ApplicationFieldPresence =
-                $crate::facade::application_schema::ApplicationFieldPresence::Required;
-        }
-
-        impl $crate::facade::application_schema::RequiredApplicationFieldValue for $Field {}
-
-        impl $crate::facade::application_schema::ApplicationFieldMarkerIdentity for $Field {
-            type Schema = $Schema;
-            type Entity = $Entity;
-            type Aspect = $Aspect;
-            const IDENTIFIER: &'static str = stringify!($Field);
-        }
-
-        impl $Field {
-            pub const fn reference() -> $crate::facade::application_schema::ApplicationFieldRef<
-                $Schema,
-                $Entity,
-                $Aspect,
-                Self,
-                $Value,
-                $crate::worth_query_field!(@write $write),
-                $crate::worth_query_field!(@equality $equality),
-                $crate::facade::application_schema::DeclaredApplicationUnit<
-                    $Unit,
-                    <$Value as $crate::facade::application_schema::TypedUnitApplicationValue>::Unit,
-                >,
-            > {
-                $crate::facade::application_schema::ApplicationFieldRef::from_schema_types()
-            }
-        }
-    };
-    (
-        $vis:vis $Field:ident in $Schema:ty, $Entity:ty, $Aspect:ty:
-        $Value:ty, $write:ident, $equality:ident
-    ) => {
-        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-        $vis struct $Field;
-
-        impl $crate::facade::application_schema::DeclaredApplicationFieldValue for $Field {
-            type Value = $Value;
-            const PRESENCE: $crate::facade::application_schema::ApplicationFieldPresence =
-                $crate::facade::application_schema::ApplicationFieldPresence::Required;
-        }
-
-        impl $crate::facade::application_schema::RequiredApplicationFieldValue for $Field {}
-
-        impl $crate::facade::application_schema::ApplicationFieldMarkerIdentity for $Field {
-            type Schema = $Schema;
-            type Entity = $Entity;
-            type Aspect = $Aspect;
-            const IDENTIFIER: &'static str = stringify!($Field);
-        }
-
-        impl $Field {
-            pub const fn reference() -> $crate::facade::application_schema::ApplicationFieldRef<
-                $Schema,
-                $Entity,
-                $Aspect,
-                Self,
-                $Value,
-                $crate::worth_query_field!(@write $write),
-                $crate::worth_query_field!(@equality $equality),
-            > {
-                $crate::facade::application_schema::ApplicationFieldRef::from_schema_types()
-            }
-
-        }
-    };
-    (@write read_only) => { $crate::facade::application_schema::ReadOnly };
-    (@write read_write) => { $crate::facade::application_schema::ReadWrite };
-    (@equality no_equality) => { $crate::facade::application_schema::NoEqualityPredicate };
-    (@equality equality) => { $crate::facade::application_schema::EqualityPredicate };
-}
-
-#[macro_export]
-macro_rules! worth_query_relation {
-    ($vis:vis $Relation:ident in $Schema:ty, $From:ty => $To:ty) => {
-        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-        $vis struct $Relation;
-
-        impl $Relation {
-            pub const fn reference() -> $crate::facade::application_schema::ApplicationRelationRef<$Schema, Self, $From, $To> {
-                $crate::facade::application_schema::ApplicationRelationRef::from_schema_identifiers(
-                    stringify!($Relation),
-                    stringify!($From),
-                    stringify!($To),
                 )
             }
         }
@@ -292,6 +136,7 @@ macro_rules! worth_query_principal_binding {
                 $Mapping,
                 $Principal,
                 <$PrincipalIdentityField as $crate::facade::application_schema::DeclaredApplicationFieldValue>::Value,
+                <$PrincipalIdentityField as $crate::facade::application_schema::DeclaredApplicationFieldValue>::Binding,
             > {
                 let identity: $crate::facade::application_schema::ApplicationFieldRef<
                     $Schema,
@@ -335,6 +180,7 @@ macro_rules! worth_query_principal_binding {
                     $Mapping,
                     $Principal,
                     <$PrincipalIdentityField as $crate::facade::application_schema::DeclaredApplicationFieldValue>::Value,
+                    <$PrincipalIdentityField as $crate::facade::application_schema::DeclaredApplicationFieldValue>::Binding,
                 >::from_requirements(
                     stringify!($Binding),
                     $crate::facade::application_schema::ApplicationPrincipalBindingRequirements {

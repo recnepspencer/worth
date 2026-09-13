@@ -12,6 +12,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
     emitted_effect_count: usize,
     basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
     commit_evidence: super::super::super::WorthQueryPrimaryGraphCommitEvidence,
+    committed_product_publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+    product_publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
 }
 
 impl WorthQueryPrimaryGraphCommittedApplication {
@@ -25,7 +27,9 @@ impl WorthQueryPrimaryGraphCommittedApplication {
             outcome_identity,
             basis_descriptor,
             evidence,
+            product_publication,
         } = seal;
+        let committed_product_publication = crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication::from_receipt(product_publication.clone());
         Self {
             application_outcome_identity: Some(outcome_identity),
             runtime_instance_id,
@@ -33,7 +37,27 @@ impl WorthQueryPrimaryGraphCommittedApplication {
             emitted_effect_count,
             basis_descriptor,
             commit_evidence: evidence,
+            committed_product_publication,
+            product_publication,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn product_publication(
+        &self,
+    ) -> &worth_runtime_world::facade::ConsumedCompositePublication {
+        self.product_publication.publication()
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn committed_product_publication(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+        &self.committed_product_publication
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn take_fresh_product_change(
+        &self,
+    ) -> Option<crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange>{
+        self.product_publication.take_fresh_delivery()
     }
 
     pub(in crate::domain_computation::primary_graph) const fn runtime_instance_id(&self) -> u64 {

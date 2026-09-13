@@ -8,8 +8,8 @@ fn duplicate_coordination(
     media: &mut AdmittedRecoveryFilesystemMedia,
     capacity: PhysicalRecoveryCoordinationCapacity,
 ) {
-    let _first = session.admit_coordination(media, capacity);
-    let _second = session.admit_coordination(media, capacity);
+    let _first = session.admit_coordination(media, capacity, None);
+    let _second = session.admit_coordination(media, capacity, None);
 }
 
 fn main() {}

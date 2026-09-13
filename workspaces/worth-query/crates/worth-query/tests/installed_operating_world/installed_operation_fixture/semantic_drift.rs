@@ -39,6 +39,7 @@ pub fn semantic_drift_workspace(
             vec![KindId::new(0xff00_0012)],
             1,
         ),
+        std::num::NonZeroU64::new(4096).unwrap(),
     ))
     .operation(original)
     .operation(drifted);

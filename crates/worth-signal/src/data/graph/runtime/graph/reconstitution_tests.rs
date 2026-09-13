@@ -21,7 +21,12 @@ fn runtime_reconstitution_rebuilds_destroyed_reverse_index_under_fresh_identity(
     };
     graph.destroy_reverse_subscription_index_for_test();
     assert!(graph
-        .query_reverse_subscriptions(producer, &change, ScopePrecision::ExactAspectScopes)
+        .query_reverse_subscriptions(
+            producer,
+            &change,
+            ScopePrecision::ExactAspectScopes,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary
+        )
         .is_err());
 
     let prior_graph = graph.installed_graph_capability().graph_instance_id();
@@ -36,7 +41,12 @@ fn runtime_reconstitution_rebuilds_destroyed_reverse_index_under_fresh_identity(
     assert_eq!(report.checkpoint_reconstruction_count(), 1);
     assert_eq!(
         restored
-            .query_reverse_subscriptions(producer, &change, ScopePrecision::ExactAspectScopes)
+            .query_reverse_subscriptions(
+                producer,
+                &change,
+                ScopePrecision::ExactAspectScopes,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary
+            )
             .unwrap()
             .candidates,
         vec![consumer]

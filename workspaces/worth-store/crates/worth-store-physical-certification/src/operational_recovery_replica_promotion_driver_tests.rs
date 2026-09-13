@@ -8,9 +8,7 @@ use worth_store_authority::{
     PrimaryServeLeaseRequest, PrimaryServingAuthority, PromotionFenceOperationIdentity,
     StoreCurrentAuthorityIdentity,
 };
-use worth_store_formal_models::{
-    check_operational_recovery_mutation_sensitivity, OperationalRecoveryModelFamily,
-};
+use worth_store_formal_models::check_operational_recovery_records;
 use worth_store_offline_verifier::ReplicaTargetVerificationBudget;
 use worth_store_operations::{
     AuthorizationReplayPolicy, AuthorizationRevocationObservation, OperationalOperationId,
@@ -247,19 +245,8 @@ fn promotion_owner_path_drives_every_durable_transition_and_reopens_exactly() {
         else {
             panic!("current physical control prefix must be selected");
         };
-        let (_, mutations) =
-            check_operational_recovery_mutation_sensitivity(selected.durable_records()).unwrap();
-        for family in [
-            OperationalRecoveryModelFamily::Authorization,
-            OperationalRecoveryModelFamily::Promotion,
-            OperationalRecoveryModelFamily::PromotionPublication,
-            OperationalRecoveryModelFamily::OldPrimaryRejoin,
-        ] {
-            assert!(mutations
-                .receipts()
-                .iter()
-                .any(|receipt| receipt.family() == family));
-        }
+        check_operational_recovery_records(selected.durable_records())
+            .expect("the executed promotion history satisfies the recovery model");
     }
     assert_eq!(
         fixture

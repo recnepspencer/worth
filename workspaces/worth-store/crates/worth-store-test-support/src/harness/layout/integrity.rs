@@ -1,13 +1,5 @@
 use worth_proof::TransitionOutcome;
 use worth_store_authority::{require_current_store_authority, StoreCurrentAuthorityWitness};
-use worth_store_physical_format::{
-    PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId, PhysicalReferenceScope,
-    PhysicalSegmentId,
-};
-use worth_store_physical_integrity::{
-    AuthorityDamageBoundary, ExecutedQuarantineFinding, PhysicalQuarantineAuthority,
-    QuarantineRecord, QuarantineSealRequest,
-};
 use worth_store_security::{
     admit_store_security_scope, StoreAdmittedSecurityScope, StoreAuthenticityRequirement,
     StoreCustodyPosture, StoreKeyScope, StoreKeyVersionPosture,
@@ -57,41 +49,4 @@ pub fn layout_integrity_authority(seed: &str) -> LayoutIntegrityAuthorityFixture
         current_authority,
         security_scope,
     }
-}
-
-pub fn authoritative_layout_quarantine_record(seed: &str) -> QuarantineRecord {
-    seal(ExecutedQuarantineFinding::authoritative_quarantine(scope(
-        seed,
-    )))
-}
-
-pub fn unresolved_layout_authority_record(seed: &str) -> QuarantineRecord {
-    seal(ExecutedQuarantineFinding::unresolved_authority(
-        scope(seed),
-        AuthorityDamageBoundary::BackendResidue,
-    ))
-}
-
-fn seal(finding: ExecutedQuarantineFinding) -> QuarantineRecord {
-    PhysicalQuarantineAuthority::seal(QuarantineSealRequest::from_executed_finding(finding))
-        .expect("executed physical finding must seal through quarantine authority")
-}
-
-fn scope(seed: &str) -> PhysicalReferenceScope {
-    let basis = seed_basis(seed);
-    let segment = PhysicalSegmentId::from_raw(basis + 1).expect("fixture segment is nonzero");
-    let page = PhysicalPageId::from_raw(basis + 11).expect("fixture page is nonzero");
-    let generation =
-        PhysicalGeneration::from_raw(basis + 5).expect("fixture generation is nonzero");
-    PhysicalReferenceScope::derived_index(
-        PhysicalGenerationAuthority::for_canonical_physical_format()
-            .page_cell(segment, page)
-            .with_page_generation(generation),
-    )
-}
-
-fn seed_basis(seed: &str) -> u64 {
-    seed.bytes().enumerate().fold(17_u64, |acc, (index, byte)| {
-        acc + ((index as u64 + 1) * byte as u64)
-    })
 }

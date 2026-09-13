@@ -30,10 +30,6 @@ fn same_scenario_replay_preserves_all_io_pressure_topology() {
     );
     assert_eq!(first.fault_events(), second.fault_events());
     assert_eq!(
-        first_evidence.executed_replay_coverage_rows().rows(),
-        second_evidence.executed_replay_coverage_rows().rows()
-    );
-    assert_eq!(
         first_evidence.replay_identity(),
         second_evidence.replay_identity()
     );

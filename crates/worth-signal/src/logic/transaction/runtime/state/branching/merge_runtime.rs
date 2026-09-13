@@ -116,7 +116,7 @@ where
     }
 
     fn preflight_signal_branch_merge(
-        &self,
+        &mut self,
         source: &AdmittedSignalBranchBasis,
         target: &AdmittedSignalBranchBasis,
     ) -> Result<
@@ -137,6 +137,22 @@ where
                     maximum_stored_snapshots,
                 },
             })?;
+        let next_snapshot_id = self
+            .branches
+            .replay_graph(target.id, self.graph.current_branch().id, &self.graph)
+            .expect("validated merge target retains live graph state")
+            .diagnostics_state()
+            .branch_snapshot_allocator_state()
+            .0;
+        self.branches
+            .synchronize_snapshot_identity_high_water(next_snapshot_id);
+        self.branches
+            .snapshot_identity_available()
+            .map_err(
+                |next_snapshot_id| SignalBranchMergeDenial::SnapshotIdentityExhausted {
+                    next_snapshot_id,
+                },
+            )?;
         let retention = self
             .branches
             .acquire_admitted_retention(target.id)

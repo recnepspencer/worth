@@ -1,10 +1,11 @@
 #[cfg(feature = "certification-test-authority")]
 use worth_store_physical_backend::QualifiedFilesystemMedia;
 use worth_store_physical_format::{
-    durable_artifact_checksum, DurablePhysicalRootManifest, PhysicalPageId, PhysicalSegmentId,
-    PhysicalSegmentMembershipBlock, RecordArtifactFile, RecordSegmentPageManifestEntry,
-    SegmentManifestBlockReference, SegmentPageKey,
+    DurablePhysicalRootManifest, PhysicalPageId, PhysicalSegmentId, PhysicalSegmentMembershipBlock,
+    PhysicalTreeIdentity, RecordArtifactFile, RecordSegmentPageManifestEntry,
+    SegmentManifestBlockReference, SegmentMembershipBlockScopeIdentity, SegmentPageKey,
 };
+use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalByteRange};
 
 use super::super::access::manifest_routing::{
     ManifestDiscoveryCounterSnapshot, ManifestLookupFailure,
@@ -23,6 +24,11 @@ pub(in crate::physical_runtime::record_serving) struct SegmentMembershipReader<'
     format: AdmittedPhysicalRecordFormat,
     access: AdmittedRecordAccessPolicy,
     root: DurablePhysicalRootManifest,
+    store: worth_store_physical_format::store_namespace::StableStoreIdentity,
+    admission:
+        crate::physical_runtime::integrity::resident_admission::load::ResidentAdmissionContext<
+            'media,
+        >,
 }
 
 impl<'media> SegmentMembershipReader<'media> {
@@ -33,12 +39,16 @@ impl<'media> SegmentMembershipReader<'media> {
         format: AdmittedPhysicalRecordFormat,
         access: AdmittedRecordAccessPolicy,
         root: &'media DurablePhysicalRootManifest,
+        lifecycle: std::sync::Arc<crate::physical_runtime::lifecycle::LifecycleState>,
+        counters: &'media crate::physical_runtime::ResidentAdmissionCounterCells,
     ) -> Self {
         Self {
             artifacts: RecordFrameReader::bootstrap(media, loader),
             format,
             access,
             root: root.clone(),
+            store: media.store_identity(),
+            admission: crate::physical_runtime::integrity::resident_admission::load::ResidentAdmissionContext::new(lifecycle, counters),
         }
     }
 
@@ -48,11 +58,15 @@ impl<'media> SegmentMembershipReader<'media> {
         access: AdmittedRecordAccessPolicy,
         root: DurablePhysicalRootManifest,
     ) -> SegmentMembershipReader<'static> {
+        let admission = residency.resident_admission_context();
+        let store = residency.store_identity();
         SegmentMembershipReader {
             artifacts: RecordFrameReader::serving(residency),
             format,
             access,
             root,
+            store,
+            admission,
         }
     }
 
@@ -125,24 +139,43 @@ impl<'media> SegmentMembershipReader<'media> {
                 frame_load_failure(failure)
             })?;
         counters.observe_block(bytes.len(), bytes.work_trace());
-        let checksum = durable_artifact_checksum(&bytes);
-        let (block, found_format) =
-            match PhysicalSegmentMembershipBlock::decode(&bytes, self.root.node_capacity()) {
-                Ok(decoded) => decoded,
-                Err(_) => {
-                    bytes.reject_projection_failure();
-                    return Err(ManifestLookupFailure::Damaged);
-                }
-            };
-        if found_format != self.format.declaration()
-            || block.tree_identity() != self.root.tree_identity()
-            || block.level() != reference.level()
-            || block.reference(checksum) != reference
-        {
+        let Some(tree) = PhysicalTreeIdentity::new(self.root.tree_identity()) else {
             bytes.reject_projection_failure();
             return Err(ManifestLookupFailure::Damaged);
+        };
+        let Ok(range) = PhysicalByteRange::new(0, bytes.len() as u64) else {
+            bytes.reject_projection_failure();
+            return Err(ManifestLookupFailure::Damaged);
+        };
+        let scope = PhysicalArtifactScope::segment_membership_block(
+            self.store,
+            self.format.declaration(),
+            SegmentMembershipBlockScopeIdentity::new(tree, reference),
+            range,
+        );
+        let admitted = crate::physical_runtime::integrity::resident_admission::root_tree::admit_resident_segment_membership_block(
+            bytes.lease(),
+            scope,
+            self.admission.clone(),
+        );
+        let decoded = admitted.and_then(|admitted| {
+            admitted.with_owner_decoder(self.admission.clone(), |view| {
+                view.project_block(self.root.node_capacity())
+            })
+        });
+        match decoded {
+            Ok(Ok(block)) => Ok(block),
+            Ok(Err(_)) => {
+                bytes.reject_projection_failure();
+                Err(ManifestLookupFailure::Damaged)
+            }
+            Err(denial) => {
+                if !denial.preserves_resident_bytes() {
+                    bytes.reject_projection_failure();
+                }
+                Err(ManifestLookupFailure::ResidentAdmission(denial))
+            }
         }
-        Ok(block)
     }
 
     fn format_declaration(&self) -> worth_store_physical_format::PhysicalRecordFormatDeclaration {

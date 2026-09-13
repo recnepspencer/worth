@@ -4,25 +4,31 @@ use worth_store_recovery_physics::{
     ImmutablePhysicalRedoPlan, PhysicalSourceSelection, RecoveryPlanCost, RecoveryPlanningCounters,
 };
 
-use crate::entry::{AdmittedPlatformAuthority, PhysicalRecoveryOutcome};
+use crate::entry::{
+    AdmittedPlatformAuthority, PhysicalRecoveryOutcome, PhysicalRecoverySourceDenial,
+};
 use crate::handoff::RecoveryOperationFateSet;
 use crate::orchestration::RecoveryCoordination;
 
-use super::PhysicalRecoveryDiscoveryCounters;
+use super::{PhysicalRecoveryDiscoveryCounters, RecoveryIntegrityEvidence};
 
 pub struct PlannedPhysicalRecovery {
     authority: AdmittedPlatformAuthority,
     coordination: RecoveryCoordination,
     selection: PhysicalSourceSelection,
     discovery_counters: PhysicalRecoveryDiscoveryCounters,
+    root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
+    integrity: RecoveryIntegrityEvidence,
     freshness: StoreRecoveryBindingFreshnessSample,
     fates: RecoveryOperationFateSet,
     redo: ImmutablePhysicalRedoPlan,
     plan_cost: RecoveryPlanCost,
     planning_counters: RecoveryPlanningCounters,
+    root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
     staging: RecoveryStagingLayoutPlan,
     publication: RecoveryPublicationPlan,
     quiescence: RecoveryQuiescencePlan,
+    integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
 mod cancellation;
@@ -34,28 +40,36 @@ impl PlannedPhysicalRecovery {
         coordination: RecoveryCoordination,
         selection: PhysicalSourceSelection,
         discovery_counters: PhysicalRecoveryDiscoveryCounters,
+        root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
+        integrity: RecoveryIntegrityEvidence,
         freshness: StoreRecoveryBindingFreshnessSample,
         fates: RecoveryOperationFateSet,
         redo: ImmutablePhysicalRedoPlan,
         plan_cost: RecoveryPlanCost,
         planning_counters: RecoveryPlanningCounters,
+        root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
         staging: RecoveryStagingLayoutPlan,
         publication: RecoveryPublicationPlan,
         quiescence: RecoveryQuiescencePlan,
+        integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     ) -> Self {
         Self {
             authority,
             coordination,
             selection,
             discovery_counters,
+            root_protocol_denials,
+            integrity,
             freshness,
             fates,
             redo,
             plan_cost,
             planning_counters,
+            root_protocol_counters,
             staging,
             publication,
             quiescence,
+            integrity_trace,
         }
     }
 
@@ -64,6 +78,14 @@ impl PlannedPhysicalRecovery {
     }
     pub const fn discovery_counters(&self) -> PhysicalRecoveryDiscoveryCounters {
         self.discovery_counters
+    }
+    pub fn root_protocol_denials(&self) -> &[PhysicalRecoverySourceDenial] {
+        &self.root_protocol_denials
+    }
+    pub fn wal_integrity_observations(
+        &self,
+    ) -> &[crate::entry::PhysicalRecoveryWalIntegrityObservation] {
+        self.integrity.observations().wal()
     }
     pub const fn freshness_sample(&self) -> &StoreRecoveryBindingFreshnessSample {
         &self.freshness
@@ -80,6 +102,11 @@ impl PlannedPhysicalRecovery {
     pub const fn planning_counters(&self) -> RecoveryPlanningCounters {
         self.planning_counters
     }
+    pub const fn root_protocol_counters(
+        &self,
+    ) -> crate::entry::PhysicalRecoveryRootProtocolCounters {
+        self.root_protocol_counters
+    }
     pub const fn staging_layout(&self) -> &RecoveryStagingLayoutPlan {
         &self.staging
     }
@@ -91,6 +118,13 @@ impl PlannedPhysicalRecovery {
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
         &self.selection
+    }
+    pub const fn integrity_observation_count(&self) -> u64 {
+        self.integrity_trace.counters().attempted
+    }
+
+    pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
+        self.integrity_trace.observations()
     }
 
     pub fn cancellation_after_command(
@@ -118,6 +152,10 @@ impl PlannedPhysicalRecovery {
         let Self {
             authority,
             coordination,
+            integrity,
+            root_protocol_denials,
+            root_protocol_counters,
+            integrity_trace,
             ..
         } = self;
         assert!(coordination.shutdown_is_quiescent());
@@ -125,10 +163,16 @@ impl PlannedPhysicalRecovery {
         let crate::entry::AdmittedPlatformAuthority { media, session, .. } = authority;
         drop(media);
         session.refuse();
-        PhysicalRecoveryOutcome::Refused(crate::entry::PhysicalRecoveryRefusal::new(
-            crate::entry::PhysicalRecoveryRefusalKind::CancelledBeforeExecution,
-            recovery_effects,
-        ))
+        PhysicalRecoveryOutcome::Refused(
+            crate::entry::PhysicalRecoveryRefusal::new(
+                crate::entry::PhysicalRecoveryRefusalKind::CancelledBeforeExecution,
+                recovery_effects,
+            )
+            .with_root_protocol_denials(root_protocol_denials)
+            .with_root_protocol_counters(root_protocol_counters)
+            .with_integrity_trace(integrity_trace)
+            .with_integrity_observations(integrity.into_observations()),
+        )
     }
 
     /// Consumes the immutable Phase 4 basis and materializes one closed,
@@ -169,30 +213,39 @@ impl PlannedPhysicalRecovery {
             redo: _,
             plan_cost: _,
             planning_counters,
+            root_protocol_counters,
             staging,
             publication,
             quiescence,
+            root_protocol_denials,
+            integrity_trace,
+            integrity,
         } = self;
         crate::orchestration::stage_recovery(crate::orchestration::RecoveryStagingInput {
             authority,
             coordination,
             selection,
             discovery_counters,
+            root_protocol_denials,
+            integrity,
             freshness,
             fates,
             planning_counters,
+            root_protocol_counters,
             staging,
             publication,
             quiescence,
             cancellation,
+            integrity_trace,
         })
     }
 }
 mod basis;
 
 pub(crate) use basis::{
-    derive_execution_basis, ExecutionBasisDenial, RecoverySelectedSegmentPage,
-    RecoverySelectedSourceInventory,
+    derive_execution_basis, requires_successor_candidate, CandidateMaterializationCost,
+    ExecutionBasisDenial, RecoveryObservedCandidateArtifact, RecoveryObservedSuccessorCandidate,
+    RecoverySelectedSegmentPage, RecoverySelectedSourceInventory,
 };
 pub use basis::{
     RecoveryBaseImageAction, RecoveryBaseImagePlan, RecoveryPayloadManifestAction,

@@ -1,5 +1,3 @@
-use std::collections::{BTreeMap, BTreeSet};
-
 use crate::data::bitset::DenseBitset;
 use crate::data::graph::compaction::CompactionState;
 use crate::schema::data::SignalSchemaRegistry;
@@ -9,7 +7,7 @@ use super::{EdgeTopology, NodeArena, RuntimeObservation, SignalGraph, TraversalR
 impl Clone for SignalGraph {
     fn clone(&self) -> Self {
         let instance_id = super::next_signal_graph_instance_id();
-        let mut cause_sets = self.cause_sets.clone();
+        let mut cause_sets = self.cause_sets.operational_clone();
         cause_sets.readmit_graph_instance(instance_id);
         let observation_sessions: crate::logic::transaction::SignalObservationSessionState =
             Default::default();
@@ -35,22 +33,27 @@ impl Clone for SignalGraph {
         Self {
             lifecycle_token: Default::default(),
             instance_id,
-            arena: self.arena.clone(),
-            topology: self.topology.clone(),
+            arena: self.arena.operational_clone(),
+            topology: self.topology.operational_clone(),
             cause_sets,
             cause_readmission_required: self.cause_readmission_required,
             traversal: self.traversal.clone(),
-            observation: self.observation.clone(),
-            schema_registry: self.schema_registry.clone(),
+            observation: self.observation.operational_clone(),
+            schema_registry: std::sync::Arc::new((*self.schema_registry).clone()),
             aspect_lowering_owner: None,
-            conditional_dependency_versions: self.conditional_dependency_versions.clone(),
-            authorization_policy_identities: self.authorization_policy_identities.clone(),
+            conditional_dependency_versions: self
+                .conditional_dependency_versions
+                .operational_clone(),
+            conditional_dependency_versions_custody: None,
+            authorization_policy_identities: self
+                .authorization_policy_identities
+                .operational_clone(),
             invalidation_readiness_epoch: 0,
             invalidation_performed_counters,
             invalidation_performed_work,
             observation_sessions,
             observation_capture_cleanup: Some(observation_capture_cleanup),
-            pending_repeated_invalidation_admissions: BTreeMap::new(),
+            pending_repeated_invalidation_admissions: Default::default(),
         }
     }
 }
@@ -91,30 +94,36 @@ impl SignalGraph {
             lifecycle_token: Default::default(),
             instance_id: super::next_signal_graph_instance_id(),
             arena: NodeArena {
-                nodes: Vec::new(),
-                hot: Vec::new(),
-                warm: Vec::new(),
-                cold: Vec::new(),
-                free_list: Vec::new(),
+                definitions: Default::default(),
+                nodes: crate::data::persistent_paged_vector::PersistentPagedVector::new(),
+                hot: crate::data::persistent_paged_vector::PersistentPagedVector::new(),
+                warm: crate::data::persistent_paged_vector::PersistentPagedVector::new(),
+                cold: crate::data::persistent_paged_vector::PersistentPagedVector::new(),
+                free_list: crate::data::persistent_vector::PersistentVector::new(),
                 free_slots: DenseBitset::default(),
                 active_nodes: 0,
                 compaction: CompactionState::default(),
+                retained_node_ledger: None,
+                retained_node_custody: None,
+                retained_seed_custody: None,
             },
             topology: EdgeTopology::default(),
             cause_sets: Default::default(),
             cause_readmission_required: false,
             traversal: TraversalResources::default(),
             observation: RuntimeObservation::default(),
-            schema_registry: SignalSchemaRegistry::default(),
+            schema_registry: std::sync::Arc::new(SignalSchemaRegistry::default()),
             aspect_lowering_owner: None,
-            conditional_dependency_versions: BTreeMap::new(),
-            authorization_policy_identities: BTreeSet::new(),
+            conditional_dependency_versions: Default::default(),
+            conditional_dependency_versions_custody: None,
+            authorization_policy_identities: crate::data::persistent_ord_set::PersistentOrdSet::new(
+            ),
             invalidation_readiness_epoch: 0,
             invalidation_performed_counters,
             invalidation_performed_work,
             observation_sessions,
             observation_capture_cleanup: Some(observation_capture_cleanup),
-            pending_repeated_invalidation_admissions: BTreeMap::new(),
+            pending_repeated_invalidation_admissions: Default::default(),
         }
     }
 
@@ -133,12 +142,12 @@ impl SignalGraph {
     }
 
     pub fn with_schema_registry(mut self, schema_registry: SignalSchemaRegistry) -> Self {
-        self.schema_registry = schema_registry;
+        self.schema_registry = std::sync::Arc::new(schema_registry);
         self
     }
 
     pub fn set_schema_registry(&mut self, schema_registry: SignalSchemaRegistry) {
-        self.schema_registry = schema_registry;
+        self.schema_registry = std::sync::Arc::new(schema_registry);
     }
 
     pub fn schema_registry(&self) -> &SignalSchemaRegistry {

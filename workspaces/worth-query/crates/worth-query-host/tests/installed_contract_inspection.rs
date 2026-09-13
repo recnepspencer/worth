@@ -7,8 +7,8 @@ use worth_query_decl::facade::{
         DeclaredCorrectionMechanism, DeclaredReconciliationProcedure,
     },
     application_schema::{
-        ApplicationEffectPayload, ApplicationExternalEffectPayload,
-        ApplicationExternalEffectProtocol, AspectContractRevision, AspectIdentity,
+        ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
+        ApplicationRetainedEffectBinding, AspectContractRevision, AspectIdentity,
         WorthQueryExternalEffectCorrelationFamily,
     },
     worth_query_application_schema, worth_query_aspect, worth_query_effect, worth_query_entity,
@@ -88,25 +88,27 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub Account in ContractInspectionSchema);
-worth_query_aspect!(pub AccountState in ContractInspectionSchema, Account; identity = AspectIdentity(0x9161_1051), revision = AspectContractRevision(2),);
-worth_query_aspect!(pub AccountAudit in ContractInspectionSchema, Account; identity = AspectIdentity(0x9161_1052), revision = AspectContractRevision(1),);
-worth_query_field!(pub AccountStatus in ContractInspectionSchema, Account, AccountState: u64, read_only, equality);
-worth_query_field!(pub AccountBalance in ContractInspectionSchema, Account, AccountState: u64, read_write, equality);
-worth_query_field!(pub AccountLimit in ContractInspectionSchema, Account, AccountState: u64, read_only, equality);
-worth_query_field!(pub AuditSequence in ContractInspectionSchema, Account, AccountAudit: u64, read_only, equality);
-worth_query_relation!(pub ObservedAccount in ContractInspectionSchema, Account => Account);
-worth_query_relation!(pub ChangedAccount in ContractInspectionSchema, Account => Account);
+worth_query_entity!(pub Account for ContractInspectionSchema);
+worth_query_aspect!(pub AccountState for ContractInspectionSchema, Account; identity = AspectIdentity(0x9161_1051), revision = AspectContractRevision(2),);
+worth_query_aspect!(pub AccountAudit for ContractInspectionSchema, Account; identity = AspectIdentity(0x9161_1052), revision = AspectContractRevision(1),);
+worth_query_field!(pub AccountStatus for ContractInspectionSchema, Account, AccountState: u64, read_only, equality);
+worth_query_field!(pub AccountBalance for ContractInspectionSchema, Account, AccountState: u64, read_write, equality);
+worth_query_field!(pub AccountLimit for ContractInspectionSchema, Account, AccountState: u64, read_only, equality);
+worth_query_field!(pub AuditSequence for ContractInspectionSchema, Account, AccountAudit: u64, read_only, equality);
+worth_query_relation!(pub ObservedAccount in ContractInspectionSchema, Account => Account; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub ChangedAccount in ContractInspectionSchema, Account => Account; integrity = same_context_unbounded_retain_dangling);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UpdateAccountInput;
 worth_query_declaration::worth_query_portable_type!(UpdateAccountInput => "worth.query.test.host.update_account_input.v1");
+worth_query_declaration::worth_query_structured_value_binding!(pub UpdateAccountInputBinding for UpdateAccountInput { identity: "worth.query.test.host.update_account_input.v1" });
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EmitAccountNoticeInput;
 worth_query_declaration::worth_query_portable_type!(EmitAccountNoticeInput => "worth.query.test.host.emit_account_notice_input.v1");
+worth_query_declaration::worth_query_structured_value_binding!(pub EmitAccountNoticeInputBinding for EmitAccountNoticeInput { identity: "worth.query.test.host.emit_account_notice_input.v1" });
 
-worth_query_operation!(pub UpdateAccount(UpdateAccountInput) in ContractInspectionSchema);
+worth_query_operation!(pub UpdateAccount for ContractInspectionSchema, input UpdateAccountInputBinding);
 worth_query_operation_reads!(UpdateAccount => [Account, AccountStatus, AccountLimit, ObservedAccount]);
 worth_query_operation_creates!(UpdateAccount => [Account]);
 worth_query_operation_deletes!(UpdateAccount => [Account]);
@@ -114,31 +116,32 @@ worth_query_operation_writes!(UpdateAccount => [AccountBalance]);
 worth_query_operation_links!(UpdateAccount => [ChangedAccount]);
 worth_query_operation_unlinks!(UpdateAccount => [ChangedAccount]);
 
-worth_query_operation!(pub EmitAccountNotice(EmitAccountNoticeInput) in ContractInspectionSchema);
+worth_query_operation!(pub EmitAccountNotice for ContractInspectionSchema, input EmitAccountNoticeInputBinding);
 
 #[derive(Clone, Copy)]
 pub struct AccountNotice(u64);
 worth_query_declaration::worth_query_portable_type!(AccountNotice => "worth.query.test.host.account_notice.v1");
+worth_query_declaration::worth_query_structured_value_binding!(pub AccountNoticeBinding for AccountNotice { identity: "worth.query.test.host.account_notice.v1" });
 
-impl ApplicationEffectPayload for AccountNotice {
-    fn retained_bytes(&self) -> u64 {
+impl ApplicationRetainedEffectBinding for AccountNoticeBinding {
+    fn retained_bytes(_value: &Self::Value) -> u64 {
         8
     }
 }
 
-impl ApplicationExternalEffectPayload for AccountNotice {
+impl ApplicationExternalEffectBinding for AccountNoticeBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
         BoundaryProtocolIdentity::new("test.contract-inspection"),
         BoundaryProtocolVersion::new(1),
     );
     const MAX_EXTERNAL_BYTES: u64 = 8;
 
-    fn external_effect_bytes(&self) -> Vec<u8> {
-        self.0.to_be_bytes().to_vec()
+    fn external_effect_bytes(value: &Self::Value) -> Vec<u8> {
+        value.0.to_be_bytes().to_vec()
     }
 }
 
-worth_query_effect!(pub AccountNoticeEffect(AccountNotice) in ContractInspectionSchema);
+worth_query_effect!(pub AccountNoticeEffect for ContractInspectionSchema, payload AccountNoticeBinding);
 worth_query_operation_emits!(EmitAccountNotice => [AccountNoticeEffect]);
 
 fn correlation_family() -> WorthQueryExternalEffectCorrelationFamily {

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor};
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
+use crate::history::RelationalCommitIdentity;
 
 pub struct PublishRelationalCommit;
 
@@ -116,6 +117,18 @@ impl PerformedRelationalCommit {
         self.performed.outcome().positioned_commit.envelope()
     }
 
+    /// Derive the immutable commit occurrence from the owner-issued performed
+    /// result. Callers cannot manufacture this identity or select it
+    /// independently from the performed canonical commit.
+    pub fn commit_identity(&self) -> RelationalCommitIdentity {
+        let envelope = self.canonical_commit();
+        RelationalCommitIdentity::new(
+            envelope.commit.commit_id,
+            envelope.commit.version_id,
+            envelope.branch_context.clone(),
+        )
+    }
+
     pub fn patch_position(&self) -> crate::publication::patch::data::PatchStreamPosition {
         self.performed.outcome().positioned_commit.position()
     }
@@ -177,6 +190,10 @@ impl StaleRelationalBranchObservation {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalPublicationDenial {
+    StaleInvariantGeneration {
+        expected_generation: u64,
+        actual_generation: u64,
+    },
     OwnerUnavailable {
         runtime_instance_id: u64,
     },

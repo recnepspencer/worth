@@ -32,6 +32,8 @@ pub enum PhysicalRecoveryCoordinationAdmissionError {
 }
 
 pub struct PhysicalRecoveryCoordination {
+    pub(super) store: worth_store_physical_format::store_namespace::StableStoreIdentity,
+    pub(super) media_generation: worth_store_physical_backend::PhysicalRecoveryMediaGeneration,
     _registered_session: PhysicalRecoveryRegisteredSessionAuthority,
     pub(super) signal: PhysicalWorkSignalOwner,
     pub(super) submission: PhysicalWorkSubmissionOwner,
@@ -42,7 +44,10 @@ pub struct PhysicalRecoveryCoordination {
     pub(super) bases: [crate::physical_runtime::PhysicalWorkSemanticBasis; 4],
     pub(super) construction: crate::physical_runtime::PhysicalRecoveryConstructionAuthority,
     pub(super) cleanup_capacity: PhysicalRecoveryCoordinationCapacity,
+    pub(super) root_protocol_counters: crate::physical_runtime::RootProtocolRouteCounterCells,
+    checkpoint_binding_basis: Option<crate::physical_runtime::StoreRecoveryCheckpointBindingBasis>,
     runtime: RuntimeIdentity,
+    yieldpoint: Option<crate::physical_runtime::PhysicalRecoveryProcessYieldpoint>,
     #[cfg(feature = "certification-test-authority")]
     certification_faults: RecoveryCoordinationCertificationFaults,
 }
@@ -61,6 +66,7 @@ impl PhysicalRecoveryCoordination {
         media: &AdmittedRecoveryFilesystemMedia,
         session: PhysicalRecoveryRegisteredSessionAuthority,
         capacity: PhysicalRecoveryCoordinationCapacity,
+        yieldpoint: Option<crate::physical_runtime::PhysicalRecoveryProcessYieldpoint>,
     ) -> Result<Self, PhysicalRecoveryCoordinationAdmissionError> {
         let freshness = session.freshness();
         if !freshness.matches_media_generation(media.media_generation()) {
@@ -112,6 +118,8 @@ impl PhysicalRecoveryCoordination {
         let admission =
             PhysicalWorkAdmissionAuthority::from_recovery_media(media, runtime, lifecycle);
         Ok(Self {
+            store: media.store_identity(),
+            media_generation: media.media_generation(),
             _registered_session: session,
             signal,
             submission,
@@ -122,7 +130,11 @@ impl PhysicalRecoveryCoordination {
             bases: semantics.bases,
             construction,
             cleanup_capacity,
+            root_protocol_counters: crate::physical_runtime::RootProtocolRouteCounterCells::default(
+            ),
+            checkpoint_binding_basis: None,
             runtime,
+            yieldpoint,
             #[cfg(feature = "certification-test-authority")]
             certification_faults: RecoveryCoordinationCertificationFaults::new(),
         })
@@ -147,6 +159,27 @@ impl PhysicalRecoveryCoordination {
         &self,
     ) -> PhysicalRecoveryCoordinationCapacity {
         self.cleanup_capacity
+    }
+
+    pub fn root_protocol_counters(&self) -> crate::physical_runtime::RootProtocolRouteCounters {
+        self.root_protocol_counters.snapshot()
+    }
+
+    pub fn install_checkpoint_binding_basis(
+        &mut self,
+        basis: crate::physical_runtime::StoreRecoveryCheckpointBindingBasis,
+    ) -> bool {
+        if self.checkpoint_binding_basis.is_some() {
+            return false;
+        }
+        self.checkpoint_binding_basis = Some(basis);
+        true
+    }
+
+    pub(in crate::physical_runtime) fn checkpoint_binding_basis(
+        &self,
+    ) -> Option<&crate::physical_runtime::StoreRecoveryCheckpointBindingBasis> {
+        self.checkpoint_binding_basis.as_ref()
     }
 
     pub fn quiescence_observation(&self) -> PhysicalRecoveryQuiescenceObservation {
@@ -214,6 +247,16 @@ impl PhysicalRecoveryCoordination {
 
     pub(in crate::physical_runtime) const fn runtime_identity(&self) -> RuntimeIdentity {
         self.runtime
+    }
+
+    pub fn pause_at(
+        &self,
+        stage: crate::physical_runtime::PhysicalRecoveryYieldpointStage,
+    ) -> crate::physical_runtime::PhysicalRecoveryYieldpointWaitResult {
+        if let Some(yieldpoint) = &self.yieldpoint {
+            return yieldpoint.pause_after(stage);
+        }
+        crate::physical_runtime::PhysicalRecoveryYieldpointWaitResult::NotArmed
     }
 
     pub(in crate::physical_runtime) const fn construction_authority(
@@ -326,8 +369,9 @@ impl PhysicalRecoveryRegisteredSessionAuthority {
         self,
         media: &AdmittedRecoveryFilesystemMedia,
         capacity: PhysicalRecoveryCoordinationCapacity,
+        yieldpoint: Option<crate::physical_runtime::PhysicalRecoveryProcessYieldpoint>,
     ) -> Result<PhysicalRecoveryCoordination, PhysicalRecoveryCoordinationAdmissionError> {
-        PhysicalRecoveryCoordination::admit(media, self, capacity)
+        PhysicalRecoveryCoordination::admit(media, self, capacity, yieldpoint)
     }
 }
 

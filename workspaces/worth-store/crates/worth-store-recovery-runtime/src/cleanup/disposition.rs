@@ -1,7 +1,6 @@
+use worth_store::physical_runtime::recovery_wal::{WalLsnRange, WalSegmentArtifactIdentity};
 use worth_store_physical_format::{PhysicalCheckpointIdentity, RecordArtifactFile};
-use worth_store_recovery_physics::{
-    PhysicalRecoveryResidueKind, WalLsnRange, WalSegmentArtifactIdentity,
-};
+use worth_store_recovery_physics::PhysicalRecoveryResidueKind;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RecoveryCleanupTarget {

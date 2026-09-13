@@ -1,0 +1,5 @@
+error[E0599]: no method named `advance_exact` found for struct `SignalBranchBasisPort<D, I, T>` in the current scope
+  --> tests/signal_owner_services/ui/basis_port_cannot_mutate.rs:10:35
+   |
+10 |     let _ = services.basis_port().advance_exact(
+   |             ----------------------^^^^^^^^^^^^^ method not found in `SignalBranchBasisPort<(), (), ()>`

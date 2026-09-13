@@ -1,4 +1,3 @@
-use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_bridge::facade::RuntimeBridge;
 
 use crate::runtime::{WorthQueryRuntimeError, WorthQueryRuntimeSupportProfile};
@@ -14,7 +13,8 @@ use super::{
 };
 
 pub(in crate::runtime) struct BridgeBackedRuntimeBootstrap {
-    pub(super) relational_runtime: Option<RelationalRuntime>,
+    pub(super) relational_runtime:
+        Option<super::relational_owner::WorthQueryBackendRelationalOwner>,
     pub(super) runtime_bridge: RuntimeBridge,
     pub(super) schema_adapter: Box<dyn WorthQueryRuntimeSchemaAdapter>,
     pub(super) source_adapter: Box<dyn WorthQueryRuntimeSourceAdapter>,

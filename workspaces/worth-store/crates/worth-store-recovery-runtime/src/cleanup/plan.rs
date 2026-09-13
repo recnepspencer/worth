@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
+use worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity;
 use worth_store_physical_format::{PhysicalCheckpointIdentity, RecordArtifactFile};
-use worth_store_recovery_physics::{PhysicalSourceSelection, WalSegmentArtifactIdentity};
+use worth_store_recovery_physics::PhysicalSourceSelection;
 
 use crate::entry::PhysicalRecoveryLimitDeclaration;
 use crate::handoff::RecoveryOperationFateSet;
@@ -181,6 +182,9 @@ fn retained_record_dispositions(
         records
             .entry(*artifact)
             .or_insert(RecoveryCleanupDispositionKind::Retained);
+    }
+    for artifact in publication.referenced_artifacts() {
+        records.insert(*artifact, RecoveryCleanupDispositionKind::Current);
     }
     for artifact in publication.created_artifacts() {
         if !is_consumed_publication_candidate(*artifact) {

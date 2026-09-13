@@ -206,7 +206,7 @@ fn lineage_gate_relocation_after_construction_probe_stays_before_recording() {
         source,
         "captures_observation_surface(",
         2,
-        "record_lineage_record",
+        "record_evaluation_lineage",
     );
     let lineage_transition_start = source
         .find("pub(crate) fn stamp_trace_summary_and_record_lineage_transition_from_image(")

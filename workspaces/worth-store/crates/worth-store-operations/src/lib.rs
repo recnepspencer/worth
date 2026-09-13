@@ -101,7 +101,6 @@
 mod authorization;
 mod backup;
 mod backup_export_custody_scheduler_demand;
-mod boundary_ledger;
 mod boundary_projection;
 #[cfg(feature = "certification-test-authority")]
 pub mod certification_test_authority;

@@ -1,37 +1,27 @@
-use std::ffi::OsString;
-
+use super::{AdmittedRecoveryFilesystemMedia, RecoveryFilesystemQualificationError};
 use crate::filesystem_media::{
     ArtifactTreeDirectory, ArtifactTreeFailure, ArtifactTreeFailureKind, ArtifactTreeFile,
 };
-use worth_store_physical_format::{store_namespace::NamespaceEntryType, RecordArtifactFile};
-
-use super::{AdmittedRecoveryFilesystemMedia, RecoveryFilesystemQualificationError};
+use worth_store_physical_format::RecordArtifactFile;
 
 mod addressed_payload;
 mod addressed_range;
 mod artifact;
-
+mod observed_artifact;
+mod wal_artifacts;
 pub(crate) use artifact::record_artifact;
 pub use artifact::RecoveryDiscoveryArtifact;
+pub use observed_artifact::ObservedRecoveryArtifact;
+pub use wal_artifacts::{ObservedWalArtifact, RecoveryWalObservationIdentity};
 
 pub struct BoundedRecoveryFilesystemDiscovery {
     parts: crate::filesystem_media::recovery_qualification::AdmittedRecoveryParts,
     remaining_entries: u64,
     remaining_bytes: u64,
     maximum_bytes: u64,
+    discovery_incarnation: u64,
+    wal_observations_issued: u64,
     counters: RecoveryDiscoveryCounters,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ObservedRecoveryArtifact {
-    bytes: Option<Vec<u8>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ObservedWalArtifact {
-    name: OsString,
-    entry_type: NamespaceEntryType,
-    bytes: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -78,6 +68,7 @@ impl BoundedRecoveryFilesystemDiscovery {
 
     pub(crate) fn new(
         parts: crate::filesystem_media::recovery_qualification::AdmittedRecoveryParts,
+        discovery_incarnation: u64,
         maximum_entries: u64,
         maximum_bytes: u64,
     ) -> Result<Self, RecoveryFilesystemQualificationError> {
@@ -89,6 +80,8 @@ impl BoundedRecoveryFilesystemDiscovery {
             remaining_entries: maximum_entries,
             remaining_bytes: maximum_bytes,
             maximum_bytes,
+            discovery_incarnation,
+            wal_observations_issued: 0,
             counters: RecoveryDiscoveryCounters::default(),
         })
     }
@@ -145,105 +138,12 @@ impl BoundedRecoveryFilesystemDiscovery {
         self.read_artifact(artifact, context, byte_limit, false)
     }
 
-    pub fn read_wal_artifacts(
-        &mut self,
-        maximum_segments: u64,
-        byte_limit: u64,
-    ) -> Result<Vec<ObservedWalArtifact>, RecoveryDiscoveryFailure> {
-        let maximum_segments = usize::try_from(maximum_segments).map_err(|_| {
-            RecoveryDiscoveryFailure::EntryLimitExceeded {
-                observed: maximum_segments,
-                admitted: usize::MAX as u64,
-            }
-        })?;
-        if maximum_segments == 0 {
-            return Err(RecoveryDiscoveryFailure::EntryLimitExceeded {
-                observed: maximum_segments as u64,
-                admitted: 0,
-            });
-        }
-        let directory_context = RecoveryDiscoveryArtifact::WalDirectory;
-        let directory = ArtifactTreeDirectory::families()
-            .child("wal")
-            .map_err(|_| RecoveryDiscoveryFailure::invalid(directory_context.clone()))?;
-        if !self
-            .parts
-            .artifact_tree()
-            .directory_exists(&directory)
-            .map_err(|failure| map_media(failure, directory_context.clone()))?
-        {
-            return Ok(Vec::new());
-        }
-        let entries = self
-            .parts
-            .artifact_tree()
-            .list_bounded(&directory, maximum_segments)
-            .map_err(|failure| map_media(failure, directory_context))?;
-        self.counters.directory_entries_observed += entries.len() as u64;
-        let mut observed = Vec::with_capacity(entries.len());
-        let mut remaining_wal_bytes = byte_limit;
-        for entry in entries {
-            let name = entry.name().to_owned();
-            let context = RecoveryDiscoveryArtifact::WalArtifact(name.clone());
-            let bytes = if entry.entry_type() == NamespaceEntryType::RegularFile {
-                let file = directory
-                    .file(
-                        name.to_str()
-                            .ok_or_else(|| RecoveryDiscoveryFailure::invalid(context.clone()))?,
-                    )
-                    .map_err(|_| RecoveryDiscoveryFailure::invalid(context.clone()))?;
-                let bytes = match self.read_artifact(file, context, remaining_wal_bytes, false) {
-                    Ok(artifact) => artifact.bytes,
-                    Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                        observed,
-                        admitted: _,
-                        scope: RecoveryDiscoveryByteLimitScope::Requested,
-                    }) => {
-                        return Err(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                            observed: byte_limit
-                                .saturating_sub(remaining_wal_bytes)
-                                .saturating_add(observed),
-                            admitted: byte_limit,
-                            scope: RecoveryDiscoveryByteLimitScope::Requested,
-                        })
-                    }
-                    Err(failure) => return Err(failure),
-                };
-                remaining_wal_bytes = remaining_wal_bytes
-                    .checked_sub(bytes.as_ref().map_or(0, |bytes| bytes.len() as u64))
-                    .ok_or(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                        observed: byte_limit,
-                        admitted: remaining_wal_bytes,
-                        scope: RecoveryDiscoveryByteLimitScope::Requested,
-                    })?;
-                self.counters.wal_bytes_read = self
-                    .counters
-                    .wal_bytes_read
-                    .checked_add(bytes.as_ref().map_or(0, |bytes| bytes.len() as u64))
-                    .ok_or(RecoveryDiscoveryFailure::ByteLimitExceeded {
-                        observed: u64::MAX,
-                        admitted: byte_limit,
-                        scope: RecoveryDiscoveryByteLimitScope::Requested,
-                    })?;
-                bytes
-            } else {
-                None
-            };
-            observed.push(ObservedWalArtifact {
-                name,
-                entry_type: entry.entry_type(),
-                bytes,
-            });
-        }
-        Ok(observed)
-    }
-
     pub const fn counters(&self) -> RecoveryDiscoveryCounters {
         self.counters
     }
 
     pub fn finish(self) -> AdmittedRecoveryFilesystemMedia {
-        AdmittedRecoveryFilesystemMedia::from_parts(self.parts)
+        AdmittedRecoveryFilesystemMedia::from_discovery(self.parts, self.discovery_incarnation)
     }
 
     fn read_fixed(
@@ -309,11 +209,16 @@ impl BoundedRecoveryFilesystemDiscovery {
                 if !fixed {
                     self.counters.addressed_artifacts_read += 1;
                 }
-                Ok(ObservedRecoveryArtifact { bytes: Some(bytes) })
+                Ok(ObservedRecoveryArtifact::new(
+                    self.parts.store_identity,
+                    context,
+                    0,
+                    Some(bytes),
+                ))
             }
-            Err(failure) if failure.kind() == ArtifactTreeFailureKind::Absent => {
-                Ok(ObservedRecoveryArtifact { bytes: None })
-            }
+            Err(failure) if failure.kind() == ArtifactTreeFailureKind::Absent => Ok(
+                ObservedRecoveryArtifact::new(self.parts.store_identity, context, 0, None),
+            ),
             Err(failure) if failure.kind() == ArtifactTreeFailureKind::AccessLimitExceeded => {
                 let limit = failure.access_limit().unwrap_or(
                     crate::filesystem_media::ArtifactTreeAccessLimit {
@@ -340,30 +245,6 @@ impl BoundedRecoveryFilesystemDiscovery {
                 failure,
             }),
         }
-    }
-}
-
-impl ObservedRecoveryArtifact {
-    pub fn bytes(&self) -> Option<&[u8]> {
-        self.bytes.as_deref()
-    }
-
-    pub fn into_bytes(self) -> Option<Vec<u8>> {
-        self.bytes
-    }
-}
-
-impl ObservedWalArtifact {
-    pub fn name(&self) -> &std::ffi::OsStr {
-        &self.name
-    }
-
-    pub const fn entry_type(&self) -> NamespaceEntryType {
-        self.entry_type
-    }
-
-    pub fn bytes(&self) -> Option<&[u8]> {
-        self.bytes.as_deref()
     }
 }
 

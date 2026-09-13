@@ -50,13 +50,14 @@ impl<'de> Deserialize<'de> for CanonicalCauseSetStore {
             .unwrap_or_default();
         let mut store = Self {
             generation: wire.generation,
-            sets: wire.sets,
+            sets: wire.sets.into_iter().collect(),
             slot_generations,
-            free_indices,
+            free_indices: free_indices.into_iter().collect(),
             next_output_commit_ordinal: wire.next_output_commit_ordinal.max(max_published_ordinal),
-            published_output_commits: wire.published_output_commits,
+            published_output_commits: wire.published_output_commits.into_iter().collect(),
             occupied_set_count: 0,
-            output_commit_reference_counts: BTreeMap::new(),
+            output_commit_reference_counts: Default::default(),
+            retained_custody: None,
             deserialized_quarantine,
             #[cfg(test)]
             published_order_probe: Vec::new(),

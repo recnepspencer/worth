@@ -16,6 +16,8 @@ plumbing.
 - execute reads and mutations through the installed provider session;
 - recover honestly after response loss or an indeterminate commit;
 - bind conditional providers and named clocks without owning Signal scheduling;
+- request bounded produced outputs and consume their exact retained occurrence;
+- perform source-bound edits and current, exact, or live reads through one request;
 - keep transport code descriptive rather than authoritative.
 
 ## Stable Entry Points
@@ -84,6 +86,117 @@ typed declaration
     -> typed terminal outcome
     -> governed publication or legal recovery action
 ```
+
+For a contribution-composed application, install with
+`worth_query_host::facade::application_installation::in_memory` and execute
+through a borrowed typed request:
+
+```rust,ignore
+use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
+
+let request = application.request(&external_principal, &request_scope);
+let result = request.query(query_intent).execute()?;
+let outcome = request.mutate(mutation_intent).idempotency(command_id).execute();
+```
+
+The root lists contributions once. Entries own declarations, producer and
+conditional contracts, handler and provider configuration, and invariant
+factories; installation checks their exact
+membership before publishing the application. The [host guide](../../../worth-query-host/README.md#contribution-composed-applications)
+and [public consumer](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/main.rs)
+show this construction. A borrowed request selects no World and caches no
+permission. Each execution performs selection, resolution, admission, and
+publication through the existing owners.
+
+Installed mutation handlers supply `decide`, `candidate_requirements`, and
+`build_candidate`. Query completes declared decision dependencies, reserves the
+candidate's finite cardinality and representation before allocation, and runs
+installed invariants against the actual candidate plus affected untouched
+neighbors under a separate work bound. Invalid candidates cannot publish.
+
+Handlers use tracked typed field and relation reads through `DecisionReader` and
+build the one reserved effect program through `CandidateWriter`'s create,
+initialize, write, link, unlink, delete, emit, and output-role operations.
+Invariant factories resolve typed field and relation bindings once and evaluate
+the actual proposed overlay and committed before-image inside a declared prepared
+scope and finite work budget.
+
+Committed receipts expose `output_correspondence()` for preserve/create/retire
+roles and `committed_changes()` for immutable structural and lineage
+observations from the same commit. Projecting `entity(role)` requires the exact
+binding, role name, action, and entity marker; substituting the entity marker
+returns `WorthQueryApplicationOutputProjectionDenial::EntityMismatch` even when
+the other three match. These observations carry no new execution authority.
+The [public replacement proof](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/output_correspondence.rs)
+checks projection, readback, rejected-candidate isolation, and idempotent recovery.
+
+`application.discovery()` describes installed mutations, queries, request
+bindings, and fields, including units, scope, effects, and typed failures.
+Installed availability does not grant current permission.
+
+### Produced output and read lifecycles
+
+Contribution contracts declare producer/output-family and conditional inventory;
+configuration supplies only the implementations owned by that contribution.
+Installation rejects missing, duplicate, foreign, mismatched, uncovered, or
+ambiguous bindings before it publishes the application.
+
+`request.demand(demand).controls(controls).start()` selects the exact source and
+one applicable installed producer under finite work and retained-byte limits.
+`advance(&fresh_request)` returns `Pending` or `Settled`. A settlement carries the
+committed receipt, observed source, exact retained observation, and actual
+readiness delivery. The handle exposes owner notifications and `close()` releases
+the interest. Source drift returns `Superseded`; output readiness follows the
+derived publication rather than source success.
+
+Query results expose bounded `observed_sources()`. A source-bound mutation calls
+`.expect_source(...)`; fresh admission and publication compare the declared native
+source footprint. Unrelated sibling progress is allowed, while missing, foreign,
+retired, ABA-changed, or changed source evidence is denied explicitly.
+
+`request.retain_read()` captures an exact application occurrence.
+`request.at(&observation).query(intent).execute()` reads it after fresh identity and
+scope admission. Current live reads use
+`request.query(intent).subscribe(WorthQueryApplicationLiveLimits::bounded(...))`;
+each `next(&fresh_request)` rechecks the application and branch, and `close()`
+releases the lease. Retained requests cannot open live subscriptions.
+
+Host integrations that explicitly own a selected product attempt can use the
+selection and admission surface:
+
+```rust,ignore
+let branch = application.current_world();
+let selected = application.on_branch(branch).select()?;
+let admitted = selected.admit_application_query(
+    &query,
+    &access,
+    ApplicationQueryParameterSet::new(),
+    controls,
+)?;
+let result = application.execute_application_query_one_shot(admitted)?;
+
+let outcome = application
+    .on_branch(branch)
+    .transaction()
+    .apply(admitted_change)
+    .commit()?;
+```
+
+`selected` pins the exact composite occurrence. Query carries its World,
+Relational, Signal, and Bridge affinity through admission and execution; later
+phases do not resolve latest product truth again. The complete executable
+[ordinary product workflow](../../../worth-query-certification/examples/ordinary_product_workflow.rs)
+constructs the real declaration and host runtime, reads the selected branch,
+performs a World publication, delivers the patch, executes its conditional,
+checks a retained read, and closes runtime resources.
+
+Match every commit terminal. `Committed` and `AlreadyCommitted` carry the
+canonical product receipt. `ProductUnpublished`, `Deferred`,
+`SettlementDeferred`, and `Indeterminate` retain owner-specific recovery
+custody. `NoEffect`, `Stale`, `ProductStale`, `Cancelled`, `TimedOut`, `Denied`,
+and `Aborted` are distinct application decisions. `require_committed()` is a
+convenience: its error is the original typed terminal and must be handled rather
+than erased.
 
 Every later governed transition rechecks the current evidence it depends on.
 Continuation, live delivery, approval, recovery, and conditional-operation
@@ -256,6 +369,11 @@ explains a transition; it does not perform the transition.
 
 ## Current Limits
 
+- The synchronous M0 contribution, request, handler, candidate, invariant,
+  producer, conditional, bounded output-demand, exact/live read, correspondence,
+  and discovery foundation is certified. Broader milestone 9.17.4 remains open
+  for its remaining consumer migrations and managed lifecycle. Deferred producer
+  completion belongs to the later producer extension.
 - Historical, preview, continuation, and live lanes are available only for an
   installed query whose declared support and current admission allow that lane.
 - Conditional providers and managed clocks are stable on the primary-graph
@@ -264,6 +382,10 @@ explains a transition; it does not perform the transition.
 - Recovery handles and temporal wake state are runtime-local. Durable restore
   belongs to the Store handoff; temporal wakes reconstruct from surviving
   authoritative domain truth rather than persisted wake handles.
+- Product branches, exact composite history, retained observations, and pending
+  cleanup are memory-resident. Process loss releases those live capabilities;
+  restart durability requires Store-owned descriptive state followed by fresh
+  owner readmission.
 - Linear undo and redo remain provisional experiments. Milestone 9.18 owns any
   accepted public correction-history contract.
 - Certification replay remains certification-only.

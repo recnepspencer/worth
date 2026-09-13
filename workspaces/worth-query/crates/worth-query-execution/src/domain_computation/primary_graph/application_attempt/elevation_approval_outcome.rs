@@ -36,18 +36,6 @@ impl WorthQueryApprovedElevation {
         self.approval_commit.publication_source()
     }
 
-    /// Historical Query authority anchored to the exact approval commit.
-    ///
-    /// This is the purpose-affine public projection. Consumers cannot recover
-    /// or substitute the underlying generic commit receipt.
-    pub fn historical_read(
-        &self,
-    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationHistoricalRead {
-        crate::domain_computation::primary_graph::WorthQueryApplicationHistoricalRead::at_application_commit(
-            &self.approval_commit,
-        )
-    }
-
     pub const fn approval_changed_record_count(&self) -> usize {
         self.approval_commit.changed_record_count()
     }
@@ -56,8 +44,10 @@ impl WorthQueryApprovedElevation {
         self.approval_commit.emitted_effect_count()
     }
 
-    pub const fn approval_commit_id(&self) -> worth_relational::facade::history::CommitId {
-        self.approval_commit.commit_id()
+    pub const fn approval_product_publication(
+        &self,
+    ) -> &super::WorthQueryCommittedProductPublication {
+        self.approval_commit.committed_product_publication()
     }
 
     pub fn approval_retained_preimage(
@@ -218,6 +208,15 @@ impl WorthQueryApprovedElevation {
 
 #[derive(Debug)]
 pub enum WorthQueryElevationApprovalOutcome {
+    ProductStale(
+        crate::domain_computation::WorthQueryProductStaleApplication,
+        WorthQueryRequestedElevation,
+    ),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(
+        super::WorthQueryApplicationNoEffect,
+        WorthQueryRequestedElevation,
+    ),
     Approved(WorthQueryApprovedElevation),
     AlreadyApproved(WorthQueryApprovedElevation),
     Stale(
@@ -250,6 +249,9 @@ pub(in crate::domain_computation::primary_graph) fn approved_outcome(
         WorthQueryApplicationCommitOutcome::Stale(stale) => {
             WorthQueryElevationApprovalOutcome::Stale(stale, binding.into_requested())
         }
+        WorthQueryApplicationCommitOutcome::ProductStale(stale) => {
+            WorthQueryElevationApprovalOutcome::ProductStale(stale, binding.into_requested())
+        }
         WorthQueryApplicationCommitOutcome::Cancelled => {
             WorthQueryElevationApprovalOutcome::Cancelled(binding.into_requested())
         }
@@ -264,6 +266,12 @@ pub(in crate::domain_computation::primary_graph) fn approved_outcome(
         }
         WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
             WorthQueryElevationApprovalOutcome::Deferred(deferred)
+        }
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
+            WorthQueryElevationApprovalOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
+            WorthQueryElevationApprovalOutcome::NoEffect(no_effect, binding.into_requested())
         }
         WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
             WorthQueryElevationApprovalOutcome::SettlementDeferred(deferred)

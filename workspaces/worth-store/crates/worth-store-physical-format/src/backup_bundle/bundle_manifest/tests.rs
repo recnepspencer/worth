@@ -30,6 +30,8 @@ fn output_names_are_unique_across_nonadjacent_families() {
                         checkpoint_identity: "checkpoint".into(),
                         manifest_generation: 1,
                         durable_checkpoint_lsn: 1,
+                        authority_fingerprint: [7; 32],
+                        frontier_digest: [8; 32],
                     }
                 }
                 _ => BackupBundleArtifactCoverage::PhysicalReachability,

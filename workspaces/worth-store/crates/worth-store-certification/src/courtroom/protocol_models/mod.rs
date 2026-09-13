@@ -1,18 +1,12 @@
 #![doc = include_str!("authority_compile_fail_proofs.md")]
 
+#[cfg(test)]
 mod backend_matrix;
-pub mod closeout;
-mod compaction_visibility;
+#[cfg(test)]
 mod durability_recovery;
-mod import_publication;
+#[cfg(test)]
 mod lease_reclaim;
-pub mod mutants;
-mod quarantine_readmission;
+#[cfg(test)]
 mod replication_admission;
-mod runner_workflow;
+#[cfg(test)]
 mod shared_frontiers;
-mod source_precedence;
-
-pub use compaction_visibility::{
-    adjudicate_compaction_visibility_refinement, CompactionVisibilityRefinementEvidence,
-};

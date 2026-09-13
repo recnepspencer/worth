@@ -54,7 +54,7 @@ fn phase6_recorded_cost_lane_is_not_substitutable_for_the_live_lane() {
     let (mut world, expected) = certified_supply_chain_world(SupplyChainScale::court());
     assert_oracle_matches(&world, &expected);
     let main = world.runtime.main_branch_identity();
-    let main_before_fork = observe(&world.runtime, &[main.clone()]);
+    let main_before_fork = observe(&world.runtime, std::slice::from_ref(&main));
 
     fork_from_main(&mut world.runtime, "metric-truth-lane-fork");
     let fork = branch_identity(&world.runtime, "metric-truth-lane-fork");
@@ -118,8 +118,8 @@ fn phase6_coordination_lane_stays_branch_local_under_a_shared_root() {
     fork_from_main(&mut world.runtime, "metric-truth-lane-cell");
     let fork = branch_identity(&world.runtime, "metric-truth-lane-cell");
 
-    let main_only = observe(&world.runtime, &[main.clone()]);
-    let fork_only = observe(&world.runtime, &[fork.clone()]);
+    let main_only = observe(&world.runtime, std::slice::from_ref(&main));
+    let fork_only = observe(&world.runtime, std::slice::from_ref(&fork));
     let both = observe(&world.runtime, &[main, fork]);
 
     // One shared root, two separate coordination cells.

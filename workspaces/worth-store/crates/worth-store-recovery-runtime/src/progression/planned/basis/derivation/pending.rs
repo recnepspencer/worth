@@ -62,3 +62,10 @@ fn pending_projections<'plan>(
     }
     Ok(pending)
 }
+
+pub(super) fn has_pending_projection(
+    fates: &ReconciledOperationFates,
+    redo: &ImmutablePhysicalRedoPlan,
+) -> Result<bool, ExecutionBasisDenial> {
+    pending_projections(fates, redo).map(|pending| !pending.is_empty())
+}

@@ -133,15 +133,15 @@ pub fn deterministic_btree_replay_world() -> DeterministicBTreeReplayWorld {
 
 #[cfg(feature = "certification-world")]
 pub fn deterministic_admitted_btree_replay_physical_source(
-) -> worth_store_recovery_physics::AdmittedBTreeReplayPhysicalSource {
+) -> worth_store_layout_indexes::AdmittedBTreeReplayPhysicalSource {
     let world = deterministic_btree_replay_world();
     let root = world.root_reference();
-    worth_store_recovery_physics::AdmittedBTreeReplayPhysicalSource::admit(
+    worth_store_layout_indexes::AdmittedBTreeReplayPhysicalSource::admit(
         world.readiness().clone(),
         root,
         world.replay_artifact().clone(),
         world.replay_artifact().store_identity().clone(),
-        super::super::recovery::redo_replay::checkpoint_plus_tail_source_for_root(20, 30, root),
+        super::super::recovery::deterministic_checkpoint_plus_tail_source(),
     )
     .expect("deterministic B-tree replay source must admit through recovery physics")
 }

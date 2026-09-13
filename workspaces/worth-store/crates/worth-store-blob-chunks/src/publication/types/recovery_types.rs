@@ -1,9 +1,11 @@
-use worth_store_recovery_physics::PartialPublicationCounterSnapshot;
-
 use crate::{ChunkTreeRoot, LogicalContentDigest};
 
 use super::super::classification::BlobPublicationCrashPoint;
-use super::super::{BlobPublicationDenial, BlobPublicationSessionCloseout};
+use super::super::{
+    BlobPublicationCrashBoundaryReport, BlobPublicationDenial,
+    BlobPublicationReplayCounterSnapshot, BlobPublicationReplayedCrashEdge,
+    BlobPublicationSessionCloseout,
+};
 use super::{
     reachability_staging::BlobReachabilityStaging, root_candidate::BlobRootCandidateForPublication,
 };
@@ -19,7 +21,7 @@ pub struct BlobPublicationPreWalReplayEvidence {
     pub(crate) operation_digest: String,
     pub(crate) classification_digest: String,
     pub(crate) replay_read_identity: String,
-    pub(crate) counters: PartialPublicationCounterSnapshot,
+    pub(crate) counters: BlobPublicationReplayCounterSnapshot,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -90,7 +92,7 @@ impl BlobPublicationRecoveryEvidence {
     }
 
     pub fn publication_record_replayable(
-        report: &worth_store_recovery_physics::CrashBoundaryLayoutReport,
+        report: &BlobPublicationCrashBoundaryReport,
     ) -> Result<Self, BlobPublicationDenial> {
         super::super::transitions::recovery_evidence::publication_record_replayable(report)
     }
@@ -121,35 +123,35 @@ impl BlobPublicationRecoveryEvidence {
 impl BlobPublicationPreWalReplayEvidence {
     pub fn from_chunk_write_replay(
         digest: &LogicalContentDigest,
-        replay: &worth_store_recovery_physics::PartialPublicationReplayedCrashEdge,
+        replay: &BlobPublicationReplayedCrashEdge,
     ) -> Result<Self, BlobPublicationDenial> {
         super::super::transitions::pre_wal_replay::from_chunk_write_replay(digest, replay)
     }
 
     pub fn from_checksum_admitted_replay(
         digest: &LogicalContentDigest,
-        replay: &worth_store_recovery_physics::PartialPublicationReplayedCrashEdge,
+        replay: &BlobPublicationReplayedCrashEdge,
     ) -> Result<Self, BlobPublicationDenial> {
         super::super::transitions::pre_wal_replay::from_checksum_admitted_replay(digest, replay)
     }
 
     pub fn from_chunk_tree_node_durable_replay(
         root: &ChunkTreeRoot,
-        replay: &worth_store_recovery_physics::PartialPublicationReplayedCrashEdge,
+        replay: &BlobPublicationReplayedCrashEdge,
     ) -> Result<Self, BlobPublicationDenial> {
         super::super::transitions::pre_wal_replay::from_chunk_tree_node_durable_replay(root, replay)
     }
 
     pub fn from_root_candidate_replay(
         candidate: &BlobRootCandidateForPublication,
-        replay: &worth_store_recovery_physics::PartialPublicationReplayedCrashEdge,
+        replay: &BlobPublicationReplayedCrashEdge,
     ) -> Result<Self, BlobPublicationDenial> {
         super::super::transitions::pre_wal_replay::from_root_candidate_replay(candidate, replay)
     }
 
     pub fn from_reachability_staged_replay(
         staged: &BlobReachabilityStaging,
-        replay: &worth_store_recovery_physics::PartialPublicationReplayedCrashEdge,
+        replay: &BlobPublicationReplayedCrashEdge,
     ) -> Result<Self, BlobPublicationDenial> {
         super::super::transitions::pre_wal_replay::from_reachability_staged_replay(staged, replay)
     }
@@ -209,7 +211,7 @@ impl BlobPublicationPreWalReplayEvidence {
         &self.replay_read_identity
     }
 
-    pub const fn counters(&self) -> PartialPublicationCounterSnapshot {
+    pub const fn counters(&self) -> BlobPublicationReplayCounterSnapshot {
         self.counters
     }
 }

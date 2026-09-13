@@ -103,6 +103,9 @@ portable_provenance_marker!(
 );
 worth_query_declaration::worth_query_portable_type!(ResourceSlot =>
     "worth.query.installation-test.resource-slot.v1");
+worth_query_declaration::worth_query_structured_value_binding!(
+    pub(super) OperationInputBinding for () { identity: "worth.rust.unit" }
+);
 
 impl ApplicationCapabilityContextEntitySlotMarkerIdentity for ResourceSlot {
     type Schema = Schema;
@@ -111,8 +114,7 @@ impl ApplicationCapabilityContextEntitySlotMarkerIdentity for ResourceSlot {
     const IDENTIFIER: &'static str = "ResourceSlot";
 }
 
-impl ApplicationOperationMarkerIdentity for Operation {
-    type Schema = Schema;
-    type Input = ();
+impl ApplicationOperationMarkerIdentity<Schema> for Operation {
+    type InputBinding = OperationInputBinding;
     const IDENTIFIER: &'static str = "Operation";
 }

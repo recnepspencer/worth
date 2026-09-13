@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `from_motif_terminal_behavior` found for struct `TilingCandidateEquivalenceRequest` in the current scope
- --> tests/ui/tiling_equivalence/boundaries/single_sided_terminal_equivalence_forbidden.rs:4:48
-  |
-4 |     let _ = TilingCandidateEquivalenceRequest::from_motif_terminal_behavior;
-  |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `TilingCandidateEquivalenceRequest`

@@ -102,8 +102,11 @@ fn indeterminate(
             session,
             publication_counters,
             publication_settlement,
+            state.root_protocol_denials,
+            state.root_protocol_counters,
             recovery_effects,
         )
+        .with_integrity_observations(state.integrity.into_observations())
         .with_reopen_failure(failure),
     )
 }

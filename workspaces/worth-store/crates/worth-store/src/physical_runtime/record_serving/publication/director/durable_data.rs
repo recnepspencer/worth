@@ -36,16 +36,17 @@ impl RecordPublicationDirector {
         if let Some(cause) = self.dispatch_admission_failure(&durable) {
             return PhysicalDataDispatchOutcome::NotStarted { durable, cause };
         }
-        let declaration =
-            match candidate_declaration(&durable, self.current_root().generation()) {
-                Some(declaration) => declaration,
-                None => return PhysicalDataDispatchOutcome::NotStarted {
+        let declaration = match candidate_declaration(&durable, self.current_root().generation()) {
+            Some(declaration) => declaration,
+            None => {
+                return PhysicalDataDispatchOutcome::NotStarted {
                     durable,
                     cause: PhysicalDataDispatchFailureCause::CandidateFrameContract(
                         crate::physical_runtime::CandidateFrameContractViolation::UnexpectedFrame,
                     ),
-                },
-            };
+                };
+            }
+        };
         let bytes = NonZeroU64::new(declaration.total_frame_bytes())
             .expect("a WAL-bound data plan has nonempty frames");
         let store_basis = PhysicalRecordPressureBasis::for_store(self.durability.store_identity());

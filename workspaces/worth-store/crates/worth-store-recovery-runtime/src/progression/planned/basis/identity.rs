@@ -110,12 +110,17 @@ pub(super) fn bind_publication_candidates(
     basis: [u8; 32],
     root: &worth_store_physical_format::DurablePhysicalRootManifest,
     format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    referenced_artifacts: &[RecordArtifactFile],
     candidates: &[RecoveryPublicationCandidateArtifact],
 ) -> [u8; 32] {
     let mut digest = Sha256::new();
     digest.update(b"worth.store.recovery.execution-plan.publication.v1");
     digest.update(basis);
     digest.update(root.encode(format));
+    digest.update((referenced_artifacts.len() as u64).to_le_bytes());
+    for artifact in referenced_artifacts {
+        hash_artifact(&mut digest, *artifact);
+    }
     digest.update((candidates.len() as u64).to_le_bytes());
     for candidate in candidates {
         hash_artifact(&mut digest, candidate.artifact());

@@ -1,4 +1,8 @@
 use super::{
+    integrity_validation::{
+        invalidate_clean_frame_validation, CleanFrameIntegrityValidationRecord,
+        PhysicalResidentFrameGeneration,
+    },
     DirtyPhysicalFrame, ForegroundWriteAllocationGrant, MaintenanceAllocationGrant,
     OperationAllocationGrant, PhysicalBoundedFrameAccess, PhysicalBoundedFrameFaultOwner,
     PhysicalBoundedFrameFaultWaiter, PhysicalCandidateBatchAdmission,
@@ -30,6 +34,7 @@ mod eviction;
 mod frame_admission;
 mod frame_table;
 mod identity_transition;
+mod integrity_validation;
 mod operation_accounting;
 mod pin_lifecycle;
 mod public_api;
@@ -173,6 +178,7 @@ struct PoolState {
     evictable_tail: Option<RecordFrameCoordinate>,
     loading_frames: u32,
     next_loading_ordinal: u64,
+    next_resident_generation: PhysicalResidentFrameGeneration,
     active_candidate_publications: u32,
     dirty_generation: PhysicalDirtyGeneration,
     accepting: bool,
@@ -194,6 +200,8 @@ struct FrameEntry {
     loading_identity: Option<PhysicalFrameLoadingIdentity>,
     loading_waiters: u32,
     artifact_posture: FrameArtifactPosture,
+    resident_generation: Option<PhysicalResidentFrameGeneration>,
+    integrity_validation: Option<CleanFrameIntegrityValidationRecord>,
 }
 
 impl FrameEntry {
@@ -201,6 +209,10 @@ impl FrameEntry {
         PhysicalFrameRemoval::new(self.allocation_scope, self.bytes, self.pins)
             .with_dirty(self.dirty)
             .with_candidate(self.origin.is_candidate())
+    }
+
+    fn invalidate_integrity_validation(&mut self) {
+        invalidate_clean_frame_validation(&mut self.integrity_validation);
     }
 }
 

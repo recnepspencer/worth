@@ -1,4 +1,4 @@
-use super::{require_nonzero, Defect, Invariant, OperationalRecoverySemanticState, RejoinBinding};
+use super::{require_nonzero, Invariant, OperationalRecoverySemanticState, RejoinBinding};
 
 impl OperationalRecoverySemanticState {
     pub(super) fn promotion_fence(
@@ -7,9 +7,8 @@ impl OperationalRecoverySemanticState {
         execution_plan: [u8; 32],
         fence: [u8; 32],
         epoch: u64,
-        defect: Option<Defect>,
     ) -> Result<(), Invariant> {
-        self.require_authorization(authorization_plan, execution_plan, defect)?;
+        self.require_authorization(authorization_plan, execution_plan)?;
         require_nonzero(fence)?;
         if epoch == 0 {
             return Err(Invariant::PromotionEpochMonotonic);
@@ -27,9 +26,8 @@ impl OperationalRecoverySemanticState {
         receipt: [u8; 32],
         fence: [u8; 32],
         epoch: u64,
-        defect: Option<Defect>,
     ) -> Result<(), Invariant> {
-        self.require_authorization(authorization_plan, execution_plan, defect)?;
+        self.require_authorization(authorization_plan, execution_plan)?;
         require_nonzero(receipt)?;
         if (
             self.promotion.execution_plan,
@@ -37,13 +35,6 @@ impl OperationalRecoverySemanticState {
             self.promotion.epoch,
         ) != (Some(execution_plan), Some(fence), Some(epoch))
         {
-            if defect == Some(Defect::PromotionWithoutExternalFence) {
-                self.promotion.execution_plan = Some(execution_plan);
-                self.promotion.fence = Some(fence);
-                self.promotion.epoch = Some(epoch);
-                self.promotion.receipt = Some(receipt);
-                return Ok(());
-            }
             return Err(Invariant::PromotionBindingPreserved);
         }
         self.promotion.receipt = Some(receipt);
@@ -57,18 +48,11 @@ impl OperationalRecoverySemanticState {
         verification: [u8; 32],
         target: [u8; 32],
         epoch: u64,
-        defect: Option<Defect>,
     ) -> Result<(), Invariant> {
         for identity in [publication, verification, target] {
             require_nonzero(identity)?;
         }
         if (self.promotion.receipt, self.promotion.epoch) != (Some(receipt), Some(epoch)) {
-            if defect == Some(Defect::PromotionPublicationWithoutPromotion) {
-                self.promotion.receipt = Some(receipt);
-                self.promotion.epoch = Some(epoch);
-                self.promotion.publication = Some(publication);
-                return Ok(());
-            }
             return Err(Invariant::PromotionBindingPreserved);
         }
         self.promotion.publication = Some(publication);
@@ -112,13 +96,9 @@ impl OperationalRecoverySemanticState {
         forensic: [u8; 32],
         target: [u8; 32],
         disposition: u8,
-        defect: Option<Defect>,
     ) -> Result<(), Invariant> {
         require_nonzero(receipt)?;
         let Some(binding) = self.rejoin else {
-            if defect == Some(Defect::RejoinCompletionWithoutPlan) {
-                return Ok(());
-            }
             return Err(Invariant::RejoinBindingPreserved);
         };
         if (binding.plan, binding.disposition) != (plan, disposition) {

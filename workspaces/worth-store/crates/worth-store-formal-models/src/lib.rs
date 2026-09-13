@@ -8,8 +8,10 @@
 //! invokes checked artifacts. Nothing exported here carries runtime authority.
 
 pub mod assumptions;
+#[path = "protocols/import_publication/mod.rs"]
+mod import_publication;
 mod model_contract;
-pub mod protocol_bindings;
+mod protocol_family;
 pub mod protocols;
 pub mod runner;
 
@@ -17,39 +19,23 @@ pub use model_contract::{
     protocol_model_contract, FiniteAbstractionRule, ProtocolLivenessContract, ProtocolModelContract,
 };
 
-pub use protocol_bindings::{
-    classify_owner_observation_omission, current_compaction_visibility_mappings,
-    current_compaction_visibility_owner_cases, current_protocol_binding_manifest,
-    require_compaction_visibility_refinement_coverage, CompactionVisibilityFamilyCoverage,
-    CompactionVisibilityMappedOwnerCase, CompactionVisibilityOwnerCase,
-    CompactionVisibilityOwnerCaseFamily, CompactionVisibilityRefinementCoverageDenial,
-    CompactionVisibilityRefinementCoverageIssue, CompactionVisibilityRefinementCoverageReceipt,
-    ModelActionFamily, OwnerBoundaryBinding, OwnerBoundaryGap, OwnerBoundaryGapKind,
-    OwnerCrashSurvivalPosture, OwnerEvidenceClass, OwnerObservationOmissionCause,
-    OwnerObservationOmissionVerdict, ProtocolBindingManifest, ProtocolFamily,
+pub use import_publication::{
+    ImportPublicationAction, ImportPublicationModel, ImportPublicationModelDenial,
+    ImportPublicationState,
 };
+pub use protocol_family::ProtocolFamily;
 pub use protocols::compaction_visibility::{
-    map_compaction_observation, map_lsm_execution_observation, map_lsm_maintenance_observation,
-    map_lsm_membership_observation, CompactionLifecycleDenial, CompactionLifecycleModel,
-    CompactionLifecycleState, CompactionVisibilityAbstractionFunction, CompactionVisibilityAction,
-    CompactionVisibilityCounterexampleLocalization,
-    CompactionVisibilityCounterexampleLocalizationDenial, LsmExecutionAction, LsmExecutionDenial,
-    LsmMaintenanceAction, LsmMaintenanceDenial, LsmMembershipAction, LsmMembershipDenial,
-    ModeledOutcome,
+    map_compaction_observation, map_lsm_maintenance_observation, map_lsm_membership_observation,
+    CompactionLifecycleDenial, CompactionLifecycleModel, CompactionLifecycleState,
+    CompactionVisibilityAction, LsmExecutionAction, LsmExecutionDenial, LsmMaintenanceAction,
+    LsmMaintenanceDenial, LsmMembershipAction, LsmMembershipDenial, ModeledOutcome,
 };
 pub use protocols::durability_recovery::{
-    map_checkpoint_cutover, map_checkpoint_selection, map_failed_wal_fence,
-    map_recovery_completion, map_redo_execution, map_redo_generation_denial,
-    map_reopened_physical_recovery, CheckpointFrontierState, DirectorySyncFrontierState,
-    DurabilityOwnerMappingDenial, DurabilityRecoveryAction, DurabilityRecoveryDenial,
-    DurabilityRecoveryFrontier, PageFrontierState, RecoveredRootFrontierState, ReplayFrontierState,
-    WalFrontierState,
-};
-pub use protocols::import_publication::{
-    map_import_publication_crash_attempt, map_import_publication_denial,
-    map_import_publication_readiness, map_published_import, ImportPublicationAction,
-    ImportPublicationCrashMappingDenial, ImportPublicationModel, ImportPublicationModelDenial,
-    ImportPublicationReadinessObservation, ImportPublicationState, PublishedImportObservation,
+    map_checkpoint_selection, map_failed_wal_fence, map_recovery_completion, map_redo_execution,
+    map_redo_generation_denial, map_reopened_physical_recovery, CheckpointFrontierState,
+    DirectorySyncFrontierState, DurabilityOwnerMappingDenial, DurabilityRecoveryAction,
+    DurabilityRecoveryDenial, DurabilityRecoveryFrontier, PageFrontierState,
+    RecoveredRootFrontierState, ReplayFrontierState, WalFrontierState,
 };
 pub use protocols::lease_reclaim::{
     map_active_lease, map_expiry, map_identity_reuse_attempt, map_owned_copy,
@@ -57,12 +43,9 @@ pub use protocols::lease_reclaim::{
     LeaseReclaimActionKind, LeaseReclaimDenial,
 };
 pub use protocols::operational_recovery::{
-    check_operational_recovery_mutation_sensitivity, check_operational_recovery_refinement,
-    map_operational_control_record, OperationalRecoveryAction, OperationalRecoveryActionKind,
-    OperationalRecoveryControlledDefect, OperationalRecoveryCounterexample,
-    OperationalRecoveryInvariant, OperationalRecoveryModel, OperationalRecoveryModelFamily,
-    OperationalRecoveryMutationSensitivityDenial, OperationalRecoveryMutationSensitivityReceipt,
-    OperationalRecoveryMutationSensitivitySuite, OperationalRecoveryRefinementReceipt,
+    check_operational_recovery_records, map_operational_control_record, OperationalRecoveryAction,
+    OperationalRecoveryActionKind, OperationalRecoveryCounterexample, OperationalRecoveryInvariant,
+    OperationalRecoveryModel,
 };
 pub use protocols::quarantine_readmission::{
     map_quarantine_readmission_outcome, map_quarantine_record, QuarantineReadmissionDenial,
@@ -82,6 +65,6 @@ pub use protocols::shared_frontiers::{
     SharedReachabilityFrontier, SharedVisibilityFrontier,
 };
 pub use protocols::source_precedence::{
-    map_recovery_source_decision_trace, require_selectable_source, SourceAuthorityPosture,
+    require_selectable_source, ModeledSourceCandidateRole, SourceAuthorityPosture,
     SourcePrecedenceAction, SourcePrecedenceActionKind, SourcePrecedenceDenial,
 };

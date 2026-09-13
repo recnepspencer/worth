@@ -13,7 +13,8 @@ mod successor_scope_pressure;
 
 pub(super) use record_publication::record_publication_configuration;
 pub(super) use recovery_planning::{
-    dense_recovery_planning_configuration, recovery_planning_configuration,
+    compact_recovery_planning_configuration, dense_recovery_planning_configuration,
+    recovery_planning_configuration,
 };
 #[cfg(test)]
 pub(super) use successor_scope_pressure::successor_scope_pressure_configuration;

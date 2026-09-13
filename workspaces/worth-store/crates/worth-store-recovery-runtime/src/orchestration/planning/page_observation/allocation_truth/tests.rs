@@ -1,5 +1,6 @@
 use sha2::{Digest, Sha256};
 use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::recovery_wal::{LogSequenceNumber, WalLsnRange};
 use worth_store::physical_runtime::{
     PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
     PhysicalCheckpointRequest,
@@ -12,14 +13,12 @@ use worth_store_physical_format::{
     PhysicalRecordSlot, PhysicalSegmentId, RecordAllocationClass, RecordArtifactFile,
     RecordFrameCoordinate, RecordFreeSpaceManifestEntry, RecordSegmentPageManifestEntry,
 };
-use worth_store_recovery_physics::{
-    decode_physical_redo_records, LogSequenceNumber, PhysicalRedoTarget, WalLsnRange,
-};
+use worth_store_recovery_physics::{decode_physical_redo_records, PhysicalRedoTarget};
 use worth_store_test_support::harness::physical_residency::{
     canonical_physical_mutation_acknowledgment, PhysicalResidencyStoreWorld,
 };
 
-use super::{admit_absent_targets, reusable_capacity, sequence_starts_at};
+use super::{allocation_sequence_above, reusable_capacity};
 use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimits,
     PhysicalRecoveryOpenRequest, PhysicalRecoveryPlatformAuthority,
@@ -30,11 +29,13 @@ use crate::entry::{
 mod capacity_tests;
 
 #[test]
-fn selected_frontiers_reject_page_segment_and_extent_substitution() {
-    assert!(sequence_starts_at([7, 8, 9], 7));
-    assert!(!sequence_starts_at([7, 9], 7));
-    assert!(!sequence_starts_at([8], 7));
-    assert!(!sequence_starts_at([6], 7));
+fn committed_frontiers_allow_reserved_gaps_but_not_reused_or_unordered_ids() {
+    assert!(allocation_sequence_above([7, 8, 9], 7));
+    assert!(allocation_sequence_above([7, 9], 7));
+    assert!(allocation_sequence_above([8], 7));
+    assert!(!allocation_sequence_above([6], 7));
+    assert!(!allocation_sequence_above([7, 7], 7));
+    assert!(!allocation_sequence_above([9, 8], 7));
 }
 
 #[test]
@@ -48,7 +49,7 @@ fn reusable_capacity_requires_selected_free_space_truth() {
 }
 
 #[test]
-fn production_admission_rejects_bypassing_or_prematurely_spilling_reusable_pages() {
+fn selected_capacity_rejects_bypassing_or_prematurely_spilling_reusable_pages() {
     let lawful = selected_world("allocation-reuse-lawful", 4);
     let first_page = next_page(&lawful.placements);
     let reused = target(1, first_page, 1, 1, 2, 8);
@@ -93,7 +94,7 @@ fn selected_source_inventory_denies_before_crossing_manifest_block_read() {
     let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
         .admit()
         .unwrap();
-    let result = crate::orchestration::planning::selected_source_inventory::observe(
+    let (result, _) = crate::orchestration::planning::selected_source_inventory::observe(
         &mut discovery,
         &root,
         format,
@@ -143,7 +144,7 @@ fn selected_world(name: &str, segment_pages: u32) -> SelectedWorld {
     drop(world);
     let admitted = admitted_recovery(retained.path());
     let selected = admitted.discover().unwrap().select().unwrap();
-    let (authority, coordination, selection, _) = selected.into_parts();
+    let (authority, coordination, selection, _, _, _, _) = selected.into_parts();
     SelectedWorld {
         authority,
         coordination,
@@ -167,6 +168,7 @@ fn admitted_recovery(root: &std::path::Path) -> crate::AdmittedPhysicalRecovery 
         distinct_pages_and_extents: 64,
         operation_bindings: 64,
         staging_bytes: 4 * 1024 * 1024,
+        recovery_memory_bytes: 64 * 1024 * 1024,
         dirty_frames: 64,
         concurrent_commands: 8,
         publication_effects: 4,
@@ -220,23 +222,48 @@ fn assert_result(world: SelectedWorld, targets: Vec<PhysicalRedoTarget>, expecte
     let format = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
         .admit()
         .unwrap();
-    let selected_source = crate::orchestration::planning::selected_source_inventory::observe(
-        &mut discovery,
-        &root,
-        format,
-        64,
-        1024 * 1024,
-    )
-    .unwrap();
-    let result = admit_absent_targets(
+    let (selected_source, integrity_trace) =
+        crate::orchestration::planning::selected_source_inventory::observe(
+            &mut discovery,
+            &root,
+            format,
+            64,
+            1024 * 1024,
+        );
+    let selected_source = selected_source.unwrap();
+    assert_eq!(
+        integrity_trace.observations().len() as u64,
+        integrity_trace.counters().attempted,
+        "every root-tree/free-space ingress attempt must retain its scoped observation"
+    );
+    assert_eq!(integrity_trace.counters().attempted, 3);
+    assert_eq!(integrity_trace.counters().admitted, 3);
+    let families = integrity_trace
+        .observations()
+        .iter()
+        .map(|observation| observation.scope().artifact_family())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        families,
+        vec![
+            worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::FreeSpaceHeader,
+            worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::SegmentMembership,
+            worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::FreeSpaceMembershipBlock,
+        ]
+    );
+    // This row proves selected capacity geometry. Exact admitted WAL membership
+    // is exercised separately at the page-observation entry, not by these descriptors.
+    let refs = targets.iter().collect::<Vec<_>>();
+    let result = super::admit_inline_allocations(
         &root,
         &placements,
-        targets.iter().collect(),
-        &selected_source,
-        [9; 32],
-    );
+        &refs,
+        &selected_source.free_space,
+        &selected_source.free_entries,
+    )
+    .and_then(|()| super::admit_extent_allocations(&refs, &selected_source.free_space));
     if expected {
-        assert_eq!(result.unwrap().observations.len(), targets.len());
+        assert_eq!(result, Ok(()));
     } else {
         assert!(
             matches!(

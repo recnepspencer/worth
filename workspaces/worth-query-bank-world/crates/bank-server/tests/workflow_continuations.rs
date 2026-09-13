@@ -178,7 +178,7 @@ fn cancelled_initiation_cannot_mint_a_continuation() {
         ))
         .execute();
 
-    assert_eq!(outcome.status(), &BankMutationStatus::Cancelled);
+    assert!(matches!(outcome.status(), BankMutationStatus::Cancelled));
     assert_eq!(outcome.continuation(), None);
 }
 

@@ -74,7 +74,7 @@ impl InvalidationSink for TestBridgeSink {
 }
 
 #[derive(Clone, Debug)]
-struct StaticWritebackAuthority;
+pub(in crate::runtime::tests) struct StaticWritebackAuthority;
 
 impl worth_runtime_bridge::facade::TruthWritebackAuthority for StaticWritebackAuthority {
     fn execute_writeback(
@@ -109,25 +109,6 @@ pub(in crate::runtime::tests) fn test_bridge() -> RuntimeBridge {
         ))
         .build()
         .expect("test bridge should build")
-}
-
-pub(crate) fn test_bridge_without_writeback_authority() -> RuntimeBridge {
-    RuntimeBridgeBuilder::new()
-        .with_relational_source(TestBridgeSource)
-        .with_signal_sink(TestBridgeSink)
-        .register_mapping(BridgeMappingRegistration::new(
-            BridgeMappingId::from_stable_name("external-test"),
-            TruthPatchScope::for_entity_field(
-                MappingSelector::any(),
-                aspect_key("aspect"),
-                field_key("field"),
-            ),
-            SnapshotReadContract::scalar(aspect_key("aspect"), ScalarAspectType::String),
-            SignalInvalidationScope::from_stable_name("external-test"),
-            CoarseRoutingMode::Direct,
-        ))
-        .build()
-        .expect("test bridge without writeback authority should build")
 }
 
 pub(crate) fn test_bridge_with_writeback_authority() -> RuntimeBridge {

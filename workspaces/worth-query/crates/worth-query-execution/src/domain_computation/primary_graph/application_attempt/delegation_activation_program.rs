@@ -48,6 +48,11 @@ impl<Schema, Operation, Input, Scope>
             effects,
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling,
+            conditional_definition: None,
+            validator_work_admission:
+                super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
+            output_correspondence: Default::default(),
+            retain_output_demand_observation: false,
         };
         validate_delegation_activation_program(&program)?;
         Ok(WorthQueryDelegationActivationProgram { program })
@@ -101,7 +106,12 @@ fn lower_effect(
 ) -> WorthQueryApplicationRealizedEffect {
     match effect {
         WorthQueryDelegationActivationEffect::CreateEntity { kind, key, fields } => {
-            WorthQueryApplicationRealizedEffect::CreateEntity { kind, key, fields }
+            WorthQueryApplicationRealizedEffect::CreateEntity {
+                kind,
+                key,
+                fields,
+                partition: super::effect_program::WorthQueryApplicationCreationPartition::Issued,
+            }
         }
         WorthQueryDelegationActivationEffect::CreateRelation {
             kind,
@@ -134,13 +144,24 @@ fn effect_is_exact(
 ) -> bool {
     match (actual, expected) {
         (
-            WorthQueryApplicationRealizedEffect::CreateEntity { kind, key, fields },
+            WorthQueryApplicationRealizedEffect::CreateEntity {
+                kind,
+                key,
+                fields,
+                partition,
+            },
             WorthQueryApplicationRealizedEffect::CreateEntity {
                 kind: expected_kind,
                 key: expected_key,
                 fields: expected_fields,
+                partition: expected_partition,
             },
-        ) => kind == expected_kind && key == expected_key && fields == expected_fields,
+        ) => {
+            kind == expected_kind
+                && key == expected_key
+                && fields == expected_fields
+                && partition == expected_partition
+        }
         (
             WorthQueryApplicationRealizedEffect::CreateRelation {
                 kind,

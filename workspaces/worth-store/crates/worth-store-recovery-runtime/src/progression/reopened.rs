@@ -4,7 +4,7 @@ use worth_store_recovery_physics::{PhysicalSourceSelection, RecoveryPlanningCoun
 
 use crate::entry::{
     PhysicalRecoveryPublicationCounters, PhysicalRecoveryPublicationSettlementLedger,
-    PhysicalRecoveryReopenCounters, PhysicalRecoveryStagingCounters,
+    PhysicalRecoveryReopenCounters, PhysicalRecoverySourceDenial, PhysicalRecoveryStagingCounters,
     PhysicalRecoveryStagingSettlementLedger,
 };
 use crate::handoff::RecoveryOperationFateSet;
@@ -73,8 +73,21 @@ impl ReopenedPhysicalRecovery {
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
         &self.state.selection
     }
+    pub fn root_protocol_denials(&self) -> &[PhysicalRecoverySourceDenial] {
+        &self.state.root_protocol_denials
+    }
+    pub fn wal_integrity_observations(
+        &self,
+    ) -> &[crate::entry::PhysicalRecoveryWalIntegrityObservation] {
+        self.state.integrity.observations().wal()
+    }
     pub const fn planning_counters(&self) -> RecoveryPlanningCounters {
         self.state.planning_counters
+    }
+    pub const fn root_protocol_counters(
+        &self,
+    ) -> crate::entry::PhysicalRecoveryRootProtocolCounters {
+        self.state.root_protocol_counters
     }
     pub const fn staging_counters(&self) -> PhysicalRecoveryStagingCounters {
         self.state.staging_counters
@@ -84,6 +97,13 @@ impl ReopenedPhysicalRecovery {
     }
     pub fn is_quiescent(&self) -> bool {
         self.state.coordination.is_ready()
+    }
+    pub const fn integrity_observation_count(&self) -> u64 {
+        self.state.integrity_trace.counters().attempted
+    }
+
+    pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
+        self.state.integrity_trace.observations()
     }
 
     pub(crate) fn take_fresh_reopen(&mut self) -> CompletedPhysicalRecoveryFreshReopen {

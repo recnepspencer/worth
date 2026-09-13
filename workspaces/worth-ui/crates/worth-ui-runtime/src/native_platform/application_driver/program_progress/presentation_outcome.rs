@@ -41,7 +41,12 @@ impl UiNativeApplicationProgramProgress {
                         return Ok(FrameProgress::RetryRequired(readiness));
                     }
                     UiNativeRejectedFrameRequirements::Reconstruct => {
-                        return self.reconstruct_for_owner(shell, source, reconstruction_authority);
+                        return self.reconstruct_for_owner(
+                            shell,
+                            source,
+                            reconstruction_authority,
+                            cancel_after_external_submission,
+                        );
                     }
                     UiNativeRejectedFrameRequirements::Terminal => {}
                 }
@@ -72,6 +77,7 @@ impl UiNativeApplicationProgramProgress {
         shell: &mut WorthUiNativeApplicationShell,
         source: UiNativePresentationSource,
         reconstruction_authority: Option<UiNativeProgramReconstructionAuthority>,
+        cancel_after_external_submission: bool,
     ) -> Result<FrameProgress, ()> {
         self.next_completion_tick = self.next_completion_tick.saturating_add(1);
         let reconstruction = shell
@@ -89,7 +95,7 @@ impl UiNativeApplicationProgramProgress {
                 reconstruction_authority
                     .unwrap_or(UiNativeProgramReconstructionAuthority::HostRequired),
             ),
-            false,
+            cancel_after_external_submission,
         )
     }
 
@@ -289,11 +295,14 @@ fn apply_completion_intent(
         {
             Ok(shell.cancel_mounted_presentation(in_flight))
         }
-        outcome @ crate::mounting::UiMountedFrameOutcome::InFlight(_) => Ok(outcome),
+        // Atlas deferral and other before-effects retries have not reached the
+        // physical submission this intent cancels. Preserve the intent through
+        // the existing retained retry until a PhysicalSurface token is issued.
+        outcome @ (crate::mounting::UiMountedFrameOutcome::InFlight(_)
+        | crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)) => Ok(outcome),
         crate::mounting::UiMountedFrameOutcome::Published(_)
         | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
         | crate::mounting::UiMountedFrameOutcome::Reconciled(_)
-        | crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
         | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
         | crate::mounting::UiMountedFrameOutcome::Superseded(_)
         | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)

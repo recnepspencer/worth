@@ -35,7 +35,7 @@
 //! ```
 //! Copied replay source identity cannot mint blob replay-source admission:
 //! ```compile_fail
-//! use worth_store_recovery_physics::{BlobReplaySourceAdmission, BlobReplaySourceKind};
+//! use worth_store_blob_chunks::{BlobReplaySourceAdmission, BlobReplaySourceKind};
 //!
 //! let _source = BlobReplaySourceAdmission::admit(
 //!     BlobReplaySourceKind::Wal,
@@ -44,13 +44,13 @@
 //! ```
 //! Certification-test checkpoint replay identity cannot mint production blob replay admission:
 //! ```compile_fail
-//! use worth_store_recovery_physics::BlobReplaySourceAdmission;
+//! use worth_store_blob_chunks::BlobReplaySourceAdmission;
 //!
 //! let _source = BlobReplaySourceAdmission::from_checkpoint_replay_identity("copied");
 //! ```
 //! Certification-test manifest replay identity cannot mint production blob replay admission:
 //! ```compile_fail
-//! use worth_store_recovery_physics::BlobReplaySourceAdmission;
+//! use worth_store_blob_chunks::BlobReplaySourceAdmission;
 //!
 //! let _source = BlobReplaySourceAdmission::from_manifest_replay_identity("copied");
 //! ```

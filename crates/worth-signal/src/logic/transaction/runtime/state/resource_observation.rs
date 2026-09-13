@@ -15,6 +15,7 @@ where
     pub fn latest_resource_observation_batch_report(
         &mut self,
     ) -> Option<ResourceObservationBatchReport> {
+        self.assert_construction_state_access();
         let latest = self.observe().latest_observation_summary()?.clone();
         let mut events = Vec::new();
         let mut delivered_width = 0u32;

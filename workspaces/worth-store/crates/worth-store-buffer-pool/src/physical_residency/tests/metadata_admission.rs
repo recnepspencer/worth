@@ -1,5 +1,8 @@
 use super::*;
 
+const CANONICAL_FRAME_METADATA_BYTES: u64 = 3 * 1024 * 1024;
+const MAX_EXPECTED_ALLOCATED_METADATA_BYTES: u64 = 11 * 256 * 1024;
+
 #[test]
 fn canonical_store_metadata_envelope_admits_full_frame_capacity() {
     use PhysicalOperationAllocationScope as Scope;
@@ -8,7 +11,7 @@ fn canonical_store_metadata_envelope_admits_full_frame_capacity() {
     let limits = PhysicalResidencyLimits::builder()
         .total_bytes(nonzero_bytes(384 * 1024 * 1024))
         .resident_bytes(nonzero_bytes(64 * 1024 * 1024))
-        .metadata_bytes(nonzero_bytes(2 * 1024 * 1024))
+        .metadata_bytes(nonzero_bytes(CANONICAL_FRAME_METADATA_BYTES))
         .frame_entries(nonzero_count(4096))
         .pinned_frames(nonzero_count(256))
         .pin_leases(nonzero_count(512))
@@ -29,7 +32,11 @@ fn canonical_store_metadata_envelope_admits_full_frame_capacity() {
         .unwrap();
     let pool = PhysicalResidencyPool::open(store(15), limits)
         .expect("the canonical Store metadata envelope must admit its declared frame capacity");
-    assert!(pool.counters().metadata_bytes() <= 2 * 1024 * 1024);
+    let allocated = pool.counters().metadata_bytes();
+    assert!(
+        allocated <= MAX_EXPECTED_ALLOCATED_METADATA_BYTES,
+        "allocated frame metadata {allocated} exceeds the guarded bound {MAX_EXPECTED_ALLOCATED_METADATA_BYTES}"
+    );
 }
 
 #[test]

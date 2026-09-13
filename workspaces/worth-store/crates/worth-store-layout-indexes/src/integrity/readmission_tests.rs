@@ -1,8 +1,8 @@
 pub(super) use super::readmission_test_support::import_witness;
 use super::readmission_test_support::{
-    authoritative_quarantine_record, current_authority, current_security_scope,
-    current_security_scope_with, quarantine_witness, record_backed_witness,
-    record_backed_witness_for_scope,
+    authoritative_quarantine_observation, current_authority, current_security_scope,
+    current_security_scope_with, observation_bound_witness, observation_bound_witness_for_scope,
+    quarantine_witness,
 };
 use super::tests::{admitted_family, admitted_family_for_store, family, other_family};
 use crate::integrity::{
@@ -16,24 +16,25 @@ mod case_coverage;
 
 #[test]
 fn quarantine_readmission_resumes_foreground_authority_with_family_bound_store_witness() {
-    let quarantine_record = authoritative_quarantine_record("quarantine-success");
-    let classified = layout_corruption().assess_physical_quarantine(
+    let quarantine_observation = authoritative_quarantine_observation("quarantine-success");
+    let classified = layout_corruption().assess_quarantine_observation(
         admitted_family_for_store("store.new.strategy"),
-        quarantine_record.clone(),
+        quarantine_observation.identity().clone(),
+        quarantine_observation.class(),
     );
-    assert_eq!(classified.counters().quarantine_records_inspected(), 1);
+    assert_eq!(classified.counters().quarantine_observations_inspected(), 1);
     let required = layout_corruption()
-        .require_record_backed_recovery_readmission(
+        .require_observation_bound_recovery_readmission(
             classified,
             &current_authority("store.new.strategy", "quarantine-success"),
             current_security_scope("store.new.strategy", "quarantine-success").witnesses(),
         )
-        .expect("record-backed quarantine should derive readmission requirement")
+        .expect("observation-bound quarantine should derive readmission requirement")
         .into_quarantine_readmission_requirement()
-        .expect("record-backed classification must issue quarantine requirement");
+        .expect("observation-bound classification must issue quarantine requirement");
     let outcome = quarantine_readmission().admit(
         required,
-        record_backed_witness(family(), &quarantine_record, "quarantine-success"),
+        observation_bound_witness(family(), &quarantine_observation, "quarantine-success"),
     );
     let counters = outcome.counters();
     assert_eq!(counters.evidence_witnesses_inspected(), 1);
@@ -50,22 +51,28 @@ fn quarantine_readmission_resumes_foreground_authority_with_family_bound_store_w
 
 #[test]
 fn quarantine_readmission_rejects_witness_for_different_family_or_artifact_identity() {
-    let quarantine_record = authoritative_quarantine_record("quarantine-required-a");
+    let quarantine_observation = authoritative_quarantine_observation("quarantine-required-a");
     let required = layout_corruption()
-        .require_record_backed_recovery_readmission(
-            layout_corruption()
-                .assess_physical_quarantine(admitted_family(), quarantine_record.clone()),
+        .require_observation_bound_recovery_readmission(
+            layout_corruption().assess_quarantine_observation(
+                admitted_family(),
+                quarantine_observation.identity().clone(),
+                quarantine_observation.class(),
+            ),
             &current_authority("store.new.strategy", "quarantine-required-a"),
             current_security_scope("store.new.strategy", "quarantine-required-a").witnesses(),
         )
-        .expect("record-backed quarantine should derive readmission requirement")
+        .expect("observation-bound quarantine should derive readmission requirement")
         .into_quarantine_readmission_requirement()
-        .expect("record-backed classification must issue quarantine requirement");
+        .expect("observation-bound classification must issue quarantine requirement");
 
     let wrong_family_required = layout_corruption()
-        .require_record_backed_recovery_readmission(
-            layout_corruption()
-                .assess_physical_quarantine(admitted_family(), quarantine_record.clone()),
+        .require_observation_bound_recovery_readmission(
+            layout_corruption().assess_quarantine_observation(
+                admitted_family(),
+                quarantine_observation.identity().clone(),
+                quarantine_observation.class(),
+            ),
             &current_authority("store.new.strategy", "quarantine-required-a"),
             current_security_scope("store.new.strategy", "quarantine-required-a").witnesses(),
         )
@@ -74,7 +81,11 @@ fn quarantine_readmission_rejects_witness_for_different_family_or_artifact_ident
         .unwrap();
     let wrong_family = quarantine_readmission().admit(
         wrong_family_required,
-        record_backed_witness(other_family(), &quarantine_record, "quarantine-required-a"),
+        observation_bound_witness(
+            other_family(),
+            &quarantine_observation,
+            "quarantine-required-a",
+        ),
     );
 
     let wrong_identity = quarantine_readmission().admit(
@@ -102,7 +113,7 @@ fn quarantine_readmission_rejects_witness_for_different_family_or_artifact_ident
 
 #[test]
 fn quarantine_readmission_rejects_cross_tenant_and_cross_key_scope_substitution() {
-    let record = authoritative_quarantine_record("quarantine-security-scope");
+    let observation = authoritative_quarantine_observation("quarantine-security-scope");
     let authority = current_authority("store.new.strategy", "quarantine-security-scope");
 
     for mismatched_security in [
@@ -119,8 +130,12 @@ fn quarantine_readmission_rejects_cross_tenant_and_cross_key_scope_substitution(
             StoreTenantScope::MultiTenantPhysicalBoundary,
         ),
     ] {
-        let denied = layout_corruption().require_record_backed_recovery_readmission(
-            layout_corruption().assess_physical_quarantine(admitted_family(), record.clone()),
+        let denied = layout_corruption().require_observation_bound_recovery_readmission(
+            layout_corruption().assess_quarantine_observation(
+                admitted_family(),
+                observation.identity().clone(),
+                observation.class(),
+            ),
             &authority,
             mismatched_security.witnesses(),
         );
@@ -131,17 +146,21 @@ fn quarantine_readmission_rejects_cross_tenant_and_cross_key_scope_substitution(
     }
 
     let required = layout_corruption()
-        .require_record_backed_recovery_readmission(
-            layout_corruption().assess_physical_quarantine(admitted_family(), record.clone()),
+        .require_observation_bound_recovery_readmission(
+            layout_corruption().assess_quarantine_observation(
+                admitted_family(),
+                observation.identity().clone(),
+                observation.class(),
+            ),
             &authority,
             current_security_scope("store.new.strategy", "quarantine-security-scope").witnesses(),
         )
         .unwrap()
         .into_quarantine_readmission_requirement()
         .unwrap();
-    let foreign_scope_witness = record_backed_witness_for_scope(
+    let foreign_scope_witness = observation_bound_witness_for_scope(
         family(),
-        &record,
+        &observation,
         "store.new.strategy",
         "quarantine-security-scope",
         StoreKeyScope::TenantEnvelope,

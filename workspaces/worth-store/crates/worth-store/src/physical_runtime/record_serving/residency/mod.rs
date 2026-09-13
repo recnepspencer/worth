@@ -9,6 +9,7 @@ mod failure;
 pub(super) mod frame_load_failure;
 pub(super) mod frame_loading;
 pub(super) mod frame_ports;
+pub(in crate::physical_runtime) use frame_ports::RecordFramePorts;
 mod frame_read_failure;
 pub(super) mod frame_work_trace;
 pub(super) mod initialization_artifacts;

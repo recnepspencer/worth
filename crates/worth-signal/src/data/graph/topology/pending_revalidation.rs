@@ -1,8 +1,17 @@
-use std::collections::{BTreeMap, BTreeSet};
-
 use crate::data::error::SignalError;
 use crate::data::graph::signal_graph::SignalGraph;
 use crate::data::handle::NodeId;
+
+mod index_publication;
+mod publication_work;
+mod retained_publication;
+pub(crate) use index_publication::PreparedPendingRevalidationIndex;
+pub(crate) use retained_publication::PreparedRetainedPendingRevalidationIndex;
+mod resolution_preparation;
+pub(crate) use resolution_preparation::{
+    PendingRevalidationNodeProjection, PendingRevalidationPreparationDenial,
+    PreparedPendingRevalidationResolution,
+};
 
 impl SignalGraph {
     pub(in crate::data::graph) fn replace_pending_revalidation_waiters(
@@ -32,36 +41,49 @@ impl SignalGraph {
         &mut self,
         producer: NodeId,
     ) -> Result<Vec<NodeId>, SignalError> {
-        let candidates = self
-            .topology
-            .pending_revalidation_waiters
-            .get(&producer)
-            .cloned()
-            .unwrap_or_default();
-        let mut current = BTreeSet::new();
-        for consumer in candidates {
+        let Some(candidates) = self.topology.pending_revalidation_waiters.get(&producer) else {
+            return Ok(Vec::new());
+        };
+        let mut current = Vec::new();
+        let mut stale = Vec::new();
+        for &consumer in candidates {
             if !self.is_alive(consumer) {
+                stale.push(consumer);
                 continue;
             }
             if self
                 .pending_dependency_revalidation(consumer)?
                 .is_some_and(|pending| pending.unresolved_producers().contains(&producer))
             {
-                current.insert(consumer);
+                if current.is_empty() {
+                    current.reserve_exact(candidates.len());
+                }
+                current.push(consumer);
+            } else {
+                stale.push(consumer);
             }
         }
-        if current.is_empty() {
-            self.topology.pending_revalidation_waiters.remove(&producer);
-        } else {
-            self.topology
-                .pending_revalidation_waiters
-                .insert(producer, current.clone());
+        if !current.is_empty() && current.len().saturating_mul(2) < current.capacity() {
+            current = current.into_boxed_slice().into_vec();
         }
-        Ok(current.into_iter().collect())
+        if stale.len() == candidates.len() {
+            self.topology.pending_revalidation_waiters.remove(&producer);
+        } else if !stale.is_empty() {
+            let waiters = self
+                .topology
+                .pending_revalidation_waiters
+                .get_mut(&producer)
+                .expect("nonempty current waiter set must remain indexed");
+            for consumer in stale {
+                waiters.remove(&consumer);
+            }
+        }
+        Ok(current)
     }
 
     pub(crate) fn rebuild_pending_revalidation_waiters(&mut self) -> Result<(), SignalError> {
-        let mut rebuilt = BTreeMap::<NodeId, BTreeSet<NodeId>>::new();
+        let mut rebuilt =
+            crate::data::persistent_ord_map::PersistentOrdMap::<NodeId, im::OrdSet<NodeId>>::new();
         for consumer in self.live_node_ids() {
             let Some(pending) = self.pending_dependency_revalidation(consumer)? else {
                 continue;
@@ -74,3 +96,24 @@ impl SignalGraph {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;
+
+impl SignalGraph {
+    /// Installs an already discovered outcome. No waiter traversal occurs here.
+    /// The enclosing packet must reserve storage before its first publication.
+    pub(crate) fn publish_pending_revalidation_resolution(
+        &mut self,
+        prepared: PreparedPendingRevalidationResolution,
+    ) -> Result<(), SignalError> {
+        let (nodes, index) = prepared.split_node_changes();
+        for (node, projected) in nodes {
+            self.publish_node_revalidation_resolution(node, projected)?;
+        }
+        index.publish(self);
+        Ok(())
+    }
+}
+
+pub(crate) mod preparation_work;

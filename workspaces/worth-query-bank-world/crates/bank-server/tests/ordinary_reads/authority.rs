@@ -1,11 +1,10 @@
 use std::time::{Duration, Instant};
 
-use bank_server::{
-    queries, BankApplicationQueryDenial, BankEntityResolutionDenialKind, BankReadControls,
-};
+use bank_server::{queries, BankApplicationQueryDenial, BankReadControls};
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
+use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind;
 
 use super::fixture::{ordinary_read_world, APPROVER, AUDITOR, OWNER, STRANGER, TELLER, VIEWER};
 use crate::support::request_scope;
@@ -157,8 +156,9 @@ fn cancellation_and_deadline_are_typed_before_projection() {
             .as_principal(&owner)
             .controls(cancelled)
             .execute(),
-        Err(BankApplicationQueryDenial::ScopeResolution(denial))
-            if denial.kind() == BankEntityResolutionDenialKind::Cancelled
+        Err(BankApplicationQueryDenial::PrincipalResolution(
+            WorthQueryPrincipalResolutionDenialKind::Cancelled
+        ))
     ));
 
     let deadline_source = WorthQueryCancellationSource::new();
@@ -176,8 +176,9 @@ fn cancellation_and_deadline_are_typed_before_projection() {
             .as_principal(&owner)
             .controls(expired)
             .execute(),
-        Err(BankApplicationQueryDenial::ScopeResolution(denial))
-            if denial.kind() == BankEntityResolutionDenialKind::DeadlineExceeded
+        Err(BankApplicationQueryDenial::PrincipalResolution(
+            WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded
+        ))
     ));
 }
 

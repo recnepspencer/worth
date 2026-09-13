@@ -28,6 +28,10 @@ pub(in crate::physical_runtime::record_serving) struct RuntimeTopologySource<'ru
     pub(in crate::physical_runtime::record_serving) root: &'runtime DurablePhysicalRootManifest,
     pub(in crate::physical_runtime::record_serving) free_space:
         &'runtime DurableFreeSpaceManifestHeader,
+    pub(in crate::physical_runtime::record_serving) lifecycle:
+        std::sync::Arc<crate::physical_runtime::lifecycle::LifecycleState>,
+    pub(in crate::physical_runtime::record_serving) integrity_counters:
+        &'runtime crate::physical_runtime::ResidentAdmissionCounterCells,
 }
 
 pub(in crate::physical_runtime::record_serving) fn observe_runtime_topology(
@@ -41,8 +45,18 @@ pub(in crate::physical_runtime::record_serving) fn observe_runtime_topology(
         access,
         root,
         free_space,
+        lifecycle,
+        integrity_counters,
     } = source;
-    let reader = ManifestReader::with_loader(media, frame_load, format, access, root);
+    let reader = ManifestReader::with_loader(
+        media,
+        frame_load,
+        format,
+        access,
+        root,
+        std::sync::Arc::clone(&lifecycle),
+        integrity_counters,
+    );
     let mut cursor = ManifestRangeCursor::new(reader);
     cursor
         .seek(allocation, root.routing_root(), None)
@@ -54,10 +68,26 @@ pub(in crate::physical_runtime::record_serving) fn observe_runtime_topology(
     {
         placements.push(runtime_placement(placement));
     }
-    let mut segment_pages =
-        runtime_segment_pages(allocation, media, frame_load, format, access, root)?;
-    let mut free_space =
-        runtime_free_space(allocation, media, frame_load, format, access, free_space)?;
+    let mut segment_pages = runtime_segment_pages(
+        allocation,
+        media,
+        frame_load,
+        format,
+        access,
+        root,
+        std::sync::Arc::clone(&lifecycle),
+        integrity_counters,
+    )?;
+    let mut free_space = runtime_free_space(
+        allocation,
+        media,
+        frame_load,
+        format,
+        access,
+        free_space,
+        lifecycle,
+        integrity_counters,
+    )?;
     placements.sort_unstable();
     segment_pages.sort_unstable();
     free_space.sort_unstable();
@@ -81,9 +111,17 @@ fn runtime_segment_pages(
     format: AdmittedPhysicalRecordFormat,
     access: AdmittedRecordAccessPolicy,
     root: &DurablePhysicalRootManifest,
+    lifecycle: std::sync::Arc<crate::physical_runtime::lifecycle::LifecycleState>,
+    integrity_counters: &crate::physical_runtime::ResidentAdmissionCounterCells,
 ) -> Result<Vec<CanonicalSegmentPage>, RecordCanonicalObservationDenial> {
     let reader = super::super::access::segment_membership::SegmentMembershipReader::with_loader(
-        media, loader, format, access, root,
+        media,
+        loader,
+        format,
+        access,
+        root,
+        lifecycle,
+        integrity_counters,
     );
     let mut pending = root.segment_root().into_iter().collect::<Vec<_>>();
     let mut counters = ManifestDiscoveryCounterSnapshot::default();
@@ -122,9 +160,17 @@ fn runtime_free_space(
     format: AdmittedPhysicalRecordFormat,
     access: AdmittedRecordAccessPolicy,
     header: &DurableFreeSpaceManifestHeader,
+    lifecycle: std::sync::Arc<crate::physical_runtime::lifecycle::LifecycleState>,
+    integrity_counters: &crate::physical_runtime::ResidentAdmissionCounterCells,
 ) -> Result<Vec<CanonicalFreeSpace>, RecordCanonicalObservationDenial> {
     let reader = super::super::planning::free_space_routing::FreeSpaceReader::with_loader(
-        media, loader, format, access, header,
+        media,
+        loader,
+        format,
+        access,
+        header,
+        lifecycle,
+        integrity_counters,
     );
     let mut pending = header.root().into_iter().collect::<Vec<_>>();
     let mut counters = ManifestDiscoveryCounterSnapshot::default();

@@ -50,7 +50,7 @@ function Test-GovernedSurfacePath($CandidatePath) {
     $path = [string]$CandidatePath
     $path = $path.Replace('\', '/') -replace '^\./', ''
     return (
-        $path -match '(^|/)cad/workspaces/' -or
+        $path -match '(^|/)workspaces/worth-contracts/' -or
         $path -match '(^|/)workspaces/worth-query/' -or
         $path -eq 'Cargo.toml' -or
         $path -match '(^|/)crates/worth-proof/' -or

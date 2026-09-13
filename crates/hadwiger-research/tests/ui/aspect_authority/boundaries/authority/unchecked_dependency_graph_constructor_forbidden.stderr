@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `unchecked_from_edges` found for struct `AspectDependencyGraph` in the current scope
- --> tests/ui/aspect_authority/boundaries/authority/unchecked_dependency_graph_constructor_forbidden.rs:4:36
-  |
-4 |     let _ = AspectDependencyGraph::unchecked_from_edges();
-  |                                    ^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `AspectDependencyGraph`

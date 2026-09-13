@@ -12,6 +12,7 @@ where
     T: Copy + Ord,
 {
     pub fn graph(&self) -> GraphObserver<'a> {
+        self.runtime.assert_construction_graph_access();
         self.runtime.graph.observe()
     }
 
@@ -32,30 +33,22 @@ where
     }
 
     pub fn current_branch(&self) -> SignalBranchHandle {
-        self.graph().current_branch()
+        self.runtime.current_branch()
     }
 
     pub fn known_branches(&self) -> Vec<SignalBranchHandle> {
-        self.graph().known_branches()
+        self.runtime.known_branches()
     }
 
     pub fn branch_handle(&self, branch_id: SignalBranchId) -> Option<SignalBranchHandle> {
-        self.graph()
-            .branch_handle(branch_id)
-            .or_else(|| self.runtime.branches.branch_handle(branch_id))
+        self.runtime.branch_handle(branch_id)
     }
 
     pub fn branch_ancestry(&self, branch_id: SignalBranchId) -> Vec<SignalBranchHandle> {
-        if self.graph().branch_handle(branch_id).is_some() {
-            self.graph().branch_ancestry(branch_id)
-        } else {
-            self.runtime.branches.branch_ancestry(branch_id)
-        }
+        self.runtime.branch_ancestry(branch_id)
     }
 
     pub fn branch_head_snapshot_id(&self, branch_id: SignalBranchId) -> Option<SignalSnapshotId> {
-        self.graph()
-            .branch_head_snapshot_id(branch_id)
-            .or_else(|| self.runtime.branches.branch_head_snapshot_id(branch_id))
+        self.runtime.branch_head_snapshot_id(branch_id)
     }
 }

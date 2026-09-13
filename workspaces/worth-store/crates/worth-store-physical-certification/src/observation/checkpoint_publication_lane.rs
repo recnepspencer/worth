@@ -1,7 +1,6 @@
 use crate::{
     CheckpointInterlockObservation, ObservationDenial, PhysicalInterleavingSchedule,
-    PhysicalIsolationCheckpointPublicationShortcutDenialLaneOutput, PhysicalScenarioActorRole,
-    PhysicalSimulationPlan, RecoveryOutcomeObservation, ShortcutRejectionObservation,
+    PhysicalScenarioActorRole, PhysicalSimulationPlan, RecoveryOutcomeObservation,
 };
 use worth_store_physical_isolation::{
     CheckpointInterlockEvidenceOrigin, CheckpointInterlockFoundationalEvidence,
@@ -43,15 +42,6 @@ pub struct PhysicalIsolationCheckpointPublicationCrashLaneOutput {
     observation: CheckpointCrashReplayObservation,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PhysicalIsolationCheckpointPublicationShortcutRejectionOutput {
-    plan_identity: [u8; 32],
-    schedule_identity: [u8; 32],
-    checkpoint_actor_step_index: usize,
-    shortcut_actor_step_index: usize,
-    observation: ShortcutRejectionObservation,
-}
-
 impl PhysicalIsolationCheckpointPublicationLaneBinding {
     pub fn from_plan_and_schedule(
         plan: &PhysicalSimulationPlan,
@@ -67,14 +57,6 @@ impl PhysicalIsolationCheckpointPublicationLaneBinding {
 
     pub const fn checkpoint_actor_step_index(&self) -> usize {
         self.checkpoint_actor_step_index
-    }
-
-    pub(crate) const fn plan_identity_digest(&self) -> &[u8; 32] {
-        &self.plan_identity
-    }
-
-    pub(crate) const fn schedule_identity_digest(&self) -> &[u8; 32] {
-        &self.schedule_identity
     }
 }
 
@@ -211,53 +193,6 @@ impl PhysicalIsolationCheckpointPublicationCrashLaneOutput {
 
     pub fn observation(&self) -> CheckpointCrashReplayObservation {
         self.observation.clone()
-    }
-}
-
-impl PhysicalIsolationCheckpointPublicationShortcutRejectionOutput {
-    pub fn from_scheduled_same_run_denial(
-        binding: &PhysicalIsolationCheckpointPublicationLaneBinding,
-        schedule: &PhysicalInterleavingSchedule,
-        checkpoint_actor_step_index: usize,
-        expected_origin: &CheckpointInterlockEvidenceOrigin,
-        evidence: CheckpointInterlockFoundationalEvidence,
-        receipt: PhysicalIsolationCheckpointPublicationShortcutDenialLaneOutput,
-    ) -> Result<Self, ObservationDenial> {
-        require_schedule_step_matches_binding(binding, schedule, checkpoint_actor_step_index)?;
-        require_evidence_origin_matches(expected_origin, evidence.origin())?;
-        if receipt.plan_identity() != &binding.plan_identity
-            || receipt.schedule_identity() != &binding.schedule_identity
-            || receipt.checkpoint_origin() != expected_origin
-        {
-            return Err(ObservationDenial::CheckpointPublicationShortcutLaneScheduleMismatch);
-        }
-        Ok(Self {
-            plan_identity: binding.plan_identity,
-            schedule_identity: binding.schedule_identity,
-            checkpoint_actor_step_index,
-            shortcut_actor_step_index: receipt.shortcut_actor_step_index(),
-            observation: receipt.observation(),
-        })
-    }
-
-    pub const fn plan_identity(&self) -> &[u8; 32] {
-        &self.plan_identity
-    }
-
-    pub const fn schedule_identity(&self) -> &[u8; 32] {
-        &self.schedule_identity
-    }
-
-    pub const fn checkpoint_actor_step_index(&self) -> usize {
-        self.checkpoint_actor_step_index
-    }
-
-    pub const fn shortcut_actor_step_index(&self) -> usize {
-        self.shortcut_actor_step_index
-    }
-
-    pub const fn observation(&self) -> ShortcutRejectionObservation {
-        self.observation
     }
 }
 

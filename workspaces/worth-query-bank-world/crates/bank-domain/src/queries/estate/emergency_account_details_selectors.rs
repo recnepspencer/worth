@@ -17,9 +17,13 @@ use crate::{
 use super::emergency_account_details::EstateEmergencyAccountDetailsQuery;
 
 pub(super) struct AccountRelationSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountRelationSlot => "AccountRelationSlot");
 pub(super) struct AccountIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountIdentitySlot => "AccountIdentitySlot");
 pub(super) struct AccountNameSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountNameSlot => "AccountNameSlot");
 pub(super) struct AccountStatusSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountStatusSlot => "AccountStatusSlot");
 
 pub(super) fn estate_account() -> ApplicationQueryResultRelationRef<
     EstateEmergencyAccountDetailsQuery,

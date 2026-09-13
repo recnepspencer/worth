@@ -40,7 +40,8 @@ history, test fixtures, or runtime plumbing, the documentation set has failed.
 ## Governing Constraints
 
 - `worth-relational` owns truth semantics
-- `worth-signal` owns reactive evaluation and scheduling
+- `worth-signal` owns reactive evaluation, scheduling, and Signal component
+  branch basis, lifecycle, and owner execution services
 - `worth-query` owns typed query expression, lowering, live query semantics,
   result shaping, and the stabilized runtime facade
 - documentation must preserve the same authority boundaries as the code

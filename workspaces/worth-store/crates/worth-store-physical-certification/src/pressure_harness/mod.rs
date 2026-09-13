@@ -1,4 +1,3 @@
-mod coverage;
 mod execution;
 mod replay;
 mod scenario;
@@ -7,7 +6,6 @@ mod vocabulary;
 #[cfg(any(test, feature = "certification-test-support"))]
 pub(crate) mod fixtures;
 
-pub use coverage::ExecutedIoPressureCoverageRows;
 pub use execution::IoPressureExecutionCounters;
 pub use replay::IoPressureHarnessEvidenceDenial;
 pub use scenario::{

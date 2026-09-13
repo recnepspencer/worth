@@ -12,6 +12,7 @@ use super::super::transaction_types::{
 };
 use crate::diagnostics::ExecutionFailurePhase;
 use crate::logic::transaction::runtime::transaction::ObservationBoundaryOutcome;
+use worth_foundational::FoundationalBranchReferenceGeneration;
 
 impl<'a, D, I, E, Ctx, T> SignalTransaction<'a, D, I, E, Ctx, T>
 where
@@ -57,27 +58,27 @@ where
             );
         }
 
-        let generation_branch_id = self.graph.current_branch().id;
-        let next_branch_generation = match self
-            .branches
-            .next_branch_head_generation(generation_branch_id)
-        {
-            Ok(generation) => generation,
-            Err(denial) => {
-                let error = SignalError::internal(format!(
-                    "Signal branch reference generation cannot advance: {denial:?}"
-                ));
-                return self.fail_and_rollback(
-                    "branch reference generation exhausted",
-                    Some(error.clone()),
-                    None,
-                    ExecutionFailurePhase::CommitPromotion,
-                    false,
-                    Err(error),
-                    commit_start,
-                );
-            }
-        };
+        let next_branch_generation =
+            match FoundationalBranchReferenceGeneration::new(*self.branch_head_generation)
+                .checked_advance()
+                .map(FoundationalBranchReferenceGeneration::get)
+            {
+                Ok(generation) => generation,
+                Err(denial) => {
+                    let error = SignalError::internal(format!(
+                        "Signal branch reference generation cannot advance: {denial:?}"
+                    ));
+                    return self.fail_and_rollback(
+                        "branch reference generation exhausted",
+                        Some(error.clone()),
+                        None,
+                        ExecutionFailurePhase::CommitPromotion,
+                        false,
+                        Err(error),
+                        commit_start,
+                    );
+                }
+            };
 
         if matches!(self.commit_posture, TransactionCommitPosture::Visible) {
             if let Err(err) = self
@@ -274,12 +275,10 @@ where
                 .store_memoized_result(&family, &key, &memo_key, result);
         }
         self.scratch.graph_patches.commit_and_clear();
-        let current_branch = self.graph.current_branch();
-        self.branches
-            .branch_mutation_ledger_mut(current_branch.id, current_branch.head_snapshot_id)
+        self.branch_mutation_ledger
             .absorb_records(self.graph.pending_branch_mutation_records());
-        self.branches
-            .commit_branch_head_generation(current_branch.id, next_branch_generation);
+        *self.branch_head_generation = next_branch_generation;
+        *self.branch_restore_snapshot_id = None;
         self.graph.clear_branch_mutation_nodes();
         let staged_patch_count = self.scratch.staged_patch_count;
         self.with_telemetry(|telemetry| {

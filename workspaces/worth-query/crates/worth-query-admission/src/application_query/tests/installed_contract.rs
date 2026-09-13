@@ -10,7 +10,9 @@ fn installed_application_graph_uses_canonical_requirement_derivation() {
     let query = installed_query();
     let parameters = admit_application_query_parameters(
         &query,
-        ApplicationQueryParameterSet::new().bind(account_parameter(), 7_u64),
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 7_u64)
+            .unwrap(),
     )
     .unwrap();
     let requirements = admitted_requirements(
@@ -22,8 +24,6 @@ fn installed_application_graph_uses_canonical_requirement_derivation() {
 
     for kind in [
         WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
-        WorthQueryGraphReadAccessRequirementKind::TraversalWorkset,
-        WorthQueryGraphReadAccessRequirementKind::VisitedSet,
         WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
         WorthQueryGraphReadAccessRequirementKind::OrderingSupport,
         WorthQueryGraphReadAccessRequirementKind::ProofSupport,
@@ -32,6 +32,10 @@ fn installed_application_graph_uses_canonical_requirement_derivation() {
     ] {
         assert!(requirements.contains_kind(&kind), "missing {kind:?}");
     }
+    assert!(
+        !requirements.contains_kind(&WorthQueryGraphReadAccessRequirementKind::TraversalWorkset)
+    );
+    assert!(!requirements.contains_kind(&WorthQueryGraphReadAccessRequirementKind::VisitedSet));
     assert!(!requirements
         .contains_kind(&WorthQueryGraphReadAccessRequirementKind::LiveMaintenanceSupport));
     assert!(requirements

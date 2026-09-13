@@ -2,12 +2,13 @@
 
 use super::canonical_basis::ApplicationSchemaCanonicalBasisBudgetDenial;
 use super::canonical_identity::{canonical_identity_with_limits, ApplicationSchemaCanonicalHeader};
+use super::contribution::validate_canonical_contributions;
 use super::identifier_validation::{validate_member_identifiers, validate_schema_header};
 use super::member_closure::validate_member_closure;
 use super::operation_contract_cardinality::validate_operation_contract_cardinality;
 use super::{
-    ApplicationSchemaDeclarationDenial as Denial, ApplicationSchemaMember,
-    ErasedApplicationSchemaDeclaration,
+    ApplicationSchemaContributionProvenance, ApplicationSchemaDeclarationDenial as Denial,
+    ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -17,6 +18,7 @@ pub struct WorthQueryPortableApplicationSchemaRecord {
     major: u32,
     minor: u32,
     members: Vec<ApplicationSchemaMember>,
+    contributions: Vec<ApplicationSchemaContributionProvenance>,
 }
 
 impl WorthQueryPortableApplicationSchemaRecord {
@@ -27,6 +29,7 @@ impl WorthQueryPortableApplicationSchemaRecord {
             major: parts.major,
             minor: parts.minor,
             members: parts.members.into_iter().map(without_live_recipe).collect(),
+            contributions: parts.contributions,
         }
     }
 
@@ -42,6 +45,7 @@ impl WorthQueryPortableApplicationSchemaRecord {
                 .cloned()
                 .map(without_live_recipe)
                 .collect(),
+            contributions: source.contributions().to_vec(),
         }
     }
 
@@ -65,6 +69,10 @@ impl WorthQueryPortableApplicationSchemaRecord {
         &self.members
     }
 
+    pub fn contributions(&self) -> &[ApplicationSchemaContributionProvenance] {
+        &self.contributions
+    }
+
     pub fn into_parts(self) -> WorthQueryPortableApplicationSchemaParts {
         WorthQueryPortableApplicationSchemaParts {
             owner: self.owner,
@@ -72,6 +80,7 @@ impl WorthQueryPortableApplicationSchemaRecord {
             major: self.major,
             minor: self.minor,
             members: self.members,
+            contributions: self.contributions,
         }
     }
 }
@@ -95,6 +104,7 @@ pub struct WorthQueryPortableApplicationSchemaParts {
     pub major: u32,
     pub minor: u32,
     pub members: Vec<ApplicationSchemaMember>,
+    pub contributions: Vec<ApplicationSchemaContributionProvenance>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -145,6 +155,7 @@ pub fn validate_portable_application_schema_freshly_with_work(
             minor: record.minor,
         },
         &record.members,
+        &record.contributions,
         maximum_source_bytes,
         maximum_canonical_entries,
     )
@@ -157,6 +168,7 @@ pub fn validate_portable_application_schema_freshly_with_work(
     if !record.members.windows(2).all(|pair| pair[0] < pair[1]) {
         return Err(Denial::InvalidCanonicalOrdering);
     }
+    validate_canonical_contributions(&record.contributions, record.members.len())?;
     validate_member_closure(&record.members)?;
     Ok((
         ErasedApplicationSchemaDeclaration::from_fresh_parts(
@@ -166,6 +178,7 @@ pub fn validate_portable_application_schema_freshly_with_work(
             record.minor,
             identity,
             record.members,
+            record.contributions,
         ),
         WorthQueryPortableApplicationSchemaReadmissionWork {
             source_bytes: work.source_bytes,
@@ -202,6 +215,7 @@ pub fn observe_portable_application_schema_reconstruction_work(
             minor: record.minor,
         },
         &record.members,
+        &record.contributions,
         maximum_source_bytes,
         maximum_canonical_entries,
     )

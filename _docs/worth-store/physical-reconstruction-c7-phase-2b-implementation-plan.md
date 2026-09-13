@@ -129,5 +129,5 @@ Phase 2B closes only when:
 - preparation produces zero backend/WAL/data/root effects;
 - boundary, agent-context, line-cap, and focused workspace checks are green;
   and
-- the C.7 closure ledger names current source identities and remaining
-  transitional debt honestly.
+- the reviewed Git diff names the changed source boundary and any remaining
+  transitional debt is called out directly in the phase handoff.

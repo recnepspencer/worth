@@ -33,6 +33,21 @@ pub(super) fn record_completed(
                 .bytes_verified
                 .saturating_add(physical.byte_count());
         }
+        RecoveryStagingWriteDisposition::CompletedFromExactPrefix => {
+            counters.artifacts_completed_from_prefix =
+                counters.artifacts_completed_from_prefix.saturating_add(1);
+            counters.bytes_verified = counters.bytes_verified.saturating_add(
+                physical
+                    .prefix_verified()
+                    .map_or(0, |prefix| prefix.completed_bytes()),
+            );
+            counters.bytes_written = counters.bytes_written.saturating_add(
+                physical
+                    .appended()
+                    .map_or(0, |append| append.range().byte_count()),
+            );
+            counters.performed_effects = counters.performed_effects.saturating_add(1);
+        }
     }
 }
 
@@ -84,6 +99,12 @@ pub(super) fn record_indeterminate(
             materialization,
             synchronization,
             ..
+        }
+        | PhysicalRecoveryStagingCommandIndeterminate::Yieldpoint {
+            stage,
+            materialization,
+            synchronization,
+            ..
         } => {
             let materialization_was_recorded = materialization.is_some();
             if let Some(materialization) = materialization {
@@ -120,15 +141,33 @@ fn record_materialization(
 ) {
     record_one_settled_stage(counters);
     let physical = materialization.physical();
-    if physical.disposition() == RecoveryStagingWriteDisposition::Created {
-        counters.artifacts_created = counters.artifacts_created.saturating_add(1);
-        counters.bytes_written = counters.bytes_written.saturating_add(physical.byte_count());
-        counters.performed_effects = counters.performed_effects.saturating_add(1);
-    } else {
-        counters.artifacts_converged = counters.artifacts_converged.saturating_add(1);
-        counters.bytes_verified = counters
-            .bytes_verified
-            .saturating_add(physical.byte_count());
+    match physical.disposition() {
+        RecoveryStagingWriteDisposition::Created => {
+            counters.artifacts_created = counters.artifacts_created.saturating_add(1);
+            counters.bytes_written = counters.bytes_written.saturating_add(physical.byte_count());
+            counters.performed_effects = counters.performed_effects.saturating_add(1);
+        }
+        RecoveryStagingWriteDisposition::AlreadyMaterialized => {
+            counters.artifacts_converged = counters.artifacts_converged.saturating_add(1);
+            counters.bytes_verified = counters
+                .bytes_verified
+                .saturating_add(physical.byte_count());
+        }
+        RecoveryStagingWriteDisposition::CompletedFromExactPrefix => {
+            counters.artifacts_completed_from_prefix =
+                counters.artifacts_completed_from_prefix.saturating_add(1);
+            counters.bytes_verified = counters.bytes_verified.saturating_add(
+                physical
+                    .prefix_verified()
+                    .map_or(0, |prefix| prefix.completed_bytes()),
+            );
+            counters.bytes_written = counters.bytes_written.saturating_add(
+                physical
+                    .appended()
+                    .map_or(0, |append| append.range().byte_count()),
+            );
+            counters.performed_effects = counters.performed_effects.saturating_add(1);
+        }
     }
 }
 
@@ -138,16 +177,36 @@ fn record_materialization_evidence(
 ) {
     record_one_settled_stage(counters);
     let physical = materialization.physical();
-    if physical.disposition() == RecoveryStagingWriteDisposition::Created {
-        counters.artifacts_created = counters.artifacts_created.saturating_add(1);
-        counters.bytes_written = counters.bytes_written.saturating_add(physical.byte_count());
-        if materialization.is_performed() {
-            counters.performed_effects = counters.performed_effects.saturating_add(1);
+    match physical.disposition() {
+        RecoveryStagingWriteDisposition::Created => {
+            counters.artifacts_created = counters.artifacts_created.saturating_add(1);
+            counters.bytes_written = counters.bytes_written.saturating_add(physical.byte_count());
+            if materialization.is_performed() {
+                counters.performed_effects = counters.performed_effects.saturating_add(1);
+            }
         }
-    } else {
-        counters.artifacts_converged = counters.artifacts_converged.saturating_add(1);
-        counters.bytes_verified = counters
-            .bytes_verified
-            .saturating_add(physical.byte_count());
+        RecoveryStagingWriteDisposition::AlreadyMaterialized => {
+            counters.artifacts_converged = counters.artifacts_converged.saturating_add(1);
+            counters.bytes_verified = counters
+                .bytes_verified
+                .saturating_add(physical.byte_count());
+        }
+        RecoveryStagingWriteDisposition::CompletedFromExactPrefix => {
+            counters.artifacts_completed_from_prefix =
+                counters.artifacts_completed_from_prefix.saturating_add(1);
+            counters.bytes_verified = counters.bytes_verified.saturating_add(
+                physical
+                    .prefix_verified()
+                    .map_or(0, |prefix| prefix.completed_bytes()),
+            );
+            counters.bytes_written = counters.bytes_written.saturating_add(
+                physical
+                    .appended()
+                    .map_or(0, |append| append.range().byte_count()),
+            );
+            if materialization.is_performed() {
+                counters.performed_effects = counters.performed_effects.saturating_add(1);
+            }
+        }
     }
 }

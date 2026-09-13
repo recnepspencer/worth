@@ -4,7 +4,24 @@ use worth_store_physical_backend::{
     ClosedStagingArtifactVerificationRequest, NonCurrentStagingPlanBinding,
 };
 use worth_store_physical_format::BackupBundleArtifactFamily;
-use worth_store_physical_integrity::{IntegrityRepairArtifactFamily, IntegrityRepairRegion};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BlobRepairRegionObservation {
+    identity: [u8; 32],
+    quarantine_required: bool,
+}
+
+impl BlobRepairRegionObservation {
+    pub fn new(identity: [u8; 32], quarantine_required: bool) -> Option<Self> {
+        if identity == [0; 32] {
+            return None;
+        }
+        Some(Self {
+            identity,
+            quarantine_required,
+        })
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlobRepairConsequencePlan {
@@ -41,31 +58,20 @@ pub struct BlobRepairConsequenceOwner;
 
 impl BlobRepairConsequenceOwner {
     pub fn lower(
-        regions: &[IntegrityRepairRegion],
+        regions: &[BlobRepairRegionObservation],
         staging: &NonCurrentStagingPlanBinding,
     ) -> Result<Option<BlobRepairConsequencePlan>, BlobRepairConsequenceDenial> {
         let mut identities = Vec::new();
         identities
             .try_reserve(regions.len())
             .map_err(|_| BlobRepairConsequenceDenial::AllocationFailed)?;
-        identities.extend(
-            regions
-                .iter()
-                .filter(|region| {
-                    region.owner_binding().family() == IntegrityRepairArtifactFamily::BlobChunk
-                })
-                .map(|region| region.identity()),
-        );
+        identities.extend(regions.iter().map(|region| region.identity));
         if identities.is_empty() {
             return Ok(None);
         }
         identities.sort();
         identities.dedup();
-        let consequence = if regions.iter().any(|region| {
-            region.owner_binding().family() == IntegrityRepairArtifactFamily::BlobChunk
-                && region.class()
-                    == worth_store_physical_integrity::IntegrityRepairRegionClass::QuarantineRequired
-        }) {
+        let consequence = if regions.iter().any(|region| region.quarantine_required) {
             BlobRepairConsequence::ReplaceQuarantinedArtifact
         } else {
             BlobRepairConsequence::RestoreDamagedArtifact

@@ -22,14 +22,6 @@ impl C7DurabilityCrashSeam {
         Self::AfterPhysicalDurabilityBeforeAcknowledgment,
     ];
 
-    pub const fn for_ci_lane(lane: usize) -> Option<Self> {
-        if lane < super::CI_SCHEDULE_PERTURBATION_SEED_COUNT {
-            Some(Self::ALL[lane % Self::ALL.len()])
-        } else {
-            None
-        }
-    }
-
     pub const fn label(self) -> &'static str {
         match self {
             Self::BeforeWalAppend => "before-wal-append",

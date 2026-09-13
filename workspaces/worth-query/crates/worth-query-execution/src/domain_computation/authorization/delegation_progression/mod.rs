@@ -68,7 +68,9 @@ where
     >
     where
         Operation:
-            worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity,
+            worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            >,
         Input: ApplicationCapabilityRequest<Schema, CommandCapability>
             + ApplicationCapabilityDelegationRequest<Schema, TargetCapability>,
     {

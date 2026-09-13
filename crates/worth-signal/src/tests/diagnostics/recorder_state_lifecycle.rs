@@ -134,7 +134,12 @@ fn restore_snapshot_payload_preserving_history_keeps_latest_observation_in_sync_
         explanation_facts: Default::default(),
         provenance_facts: Default::default(),
         lineage_records: Default::default(),
-        branch_catalog: graph.diagnostics_state().branch_catalog().clone(),
+        branch_catalog: graph
+            .diagnostics_state()
+            .branch_catalog()
+            .iter()
+            .map(|(id, handle)| (*id, handle.clone()))
+            .collect(),
         active_branch: graph.diagnostics_state().active_branch().id,
         next_replay_cursor: 0,
         next_snapshot_id: 0,
@@ -160,7 +165,7 @@ fn restore_snapshot_payload_preserving_history_keeps_latest_observation_in_sync_
         graph
             .diagnostics_state()
             .latest_flow()
-            .and_then(|flow| flow.observation.as_ref()),
+            .and_then(|flow| flow.observation),
         Some(&current_observation)
     );
 }

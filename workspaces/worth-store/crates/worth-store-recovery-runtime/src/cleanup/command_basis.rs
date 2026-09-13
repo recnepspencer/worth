@@ -43,6 +43,11 @@ impl RecoveryCleanupCommandBasis {
             .checkpoint()
             .map(|checkpoint| checkpoint.share_checkpoint());
         let fresh_reopen = reopened.take_fresh_reopen();
+        let admitted_wal = reopened
+            .state
+            .integrity
+            .admitted_wal()
+            .cleanup_segments(candidates.iter().map(RecoveryCleanupEligibility::artifact));
         let coordination = reopened.state.coordination.owner();
         let state = match (checkpoint, candidates.is_empty()) {
             (_, true) => RecoveryCleanupCommandState::Deferred(coordination.defer_cleanup(
@@ -55,9 +60,7 @@ impl RecoveryCleanupCommandBasis {
                 fresh_reopen,
                 checkpoint,
                 descriptive_plan_identity,
-                candidates
-                    .iter()
-                    .map(RecoveryCleanupEligibility::verified_artifact),
+                admitted_wal,
             ) {
                 Ok(plan) => RecoveryCleanupCommandState::Active(RefCell::new(plan)),
                 Err(failure) => {
@@ -114,7 +117,7 @@ impl RecoveryCleanupCommandBasis {
         &self,
         coordination: &worth_store::physical_runtime::PhysicalRecoveryCoordination,
         media: &worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia,
-        artifact: worth_store_recovery_physics::WalSegmentArtifactIdentity,
+        artifact: worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity,
     ) -> StoreCleanupCommandExecution {
         match &self.state {
             RecoveryCleanupCommandState::Active(plan) => StoreCleanupCommandExecution::Attempt(

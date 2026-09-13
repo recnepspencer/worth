@@ -33,15 +33,9 @@ fn clean_close_constructs_the_only_c8_handoff_from_exact_terminal_facts() {
     assert_eq!(handoff.operation_fates().counts().unresolved(), 0);
     assert_eq!(handoff.operation_fates().counts().completed(), 0);
     assert!(handoff.operation_fates().facts().is_empty());
-    let source_profile = handoff.source_profile_identity();
-    assert_ne!(source_profile.source().bytes(), [0; 32]);
     assert_eq!(
-        source_profile.admission_identity(),
-        handoff.backend_evidence().admission_identity()
-    );
-    assert_eq!(
-        source_profile.policy_identity(),
-        handoff.durability_policy().identity()
+        handoff.backend_evidence().admission_identity(),
+        handoff.durability_policy().admission_basis_identity()
     );
     assert_eq!(handoff.recovery_allocation().store_identity(), store);
     assert!(!handoff.residue().requires_inspection());

@@ -4,7 +4,24 @@ use worth_store_physical_backend::{
     ClosedStagingArtifactVerificationRequest, NonCurrentStagingPlanBinding,
 };
 use worth_store_physical_format::BackupBundleArtifactFamily;
-use worth_store_physical_integrity::{IntegrityRepairArtifactFamily, IntegrityRepairRegion};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LayoutRepairRegionObservation {
+    identity: [u8; 32],
+    quarantine_required: bool,
+}
+
+impl LayoutRepairRegionObservation {
+    pub fn new(identity: [u8; 32], quarantine_required: bool) -> Option<Self> {
+        if identity == [0; 32] {
+            return None;
+        }
+        Some(Self {
+            identity,
+            quarantine_required,
+        })
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LayoutRepairConsequencePlan {
@@ -41,31 +58,20 @@ pub struct LayoutRepairConsequenceOwner;
 
 impl LayoutRepairConsequenceOwner {
     pub fn lower(
-        regions: &[IntegrityRepairRegion],
+        regions: &[LayoutRepairRegionObservation],
         staging: &NonCurrentStagingPlanBinding,
     ) -> Result<Option<LayoutRepairConsequencePlan>, LayoutRepairConsequenceDenial> {
         let mut identities = Vec::new();
         identities
             .try_reserve(regions.len())
             .map_err(|_| LayoutRepairConsequenceDenial::AllocationFailed)?;
-        identities.extend(
-            regions
-                .iter()
-                .filter(|region| {
-                    region.owner_binding().family() == IntegrityRepairArtifactFamily::LayoutIndex
-                })
-                .map(|region| region.identity()),
-        );
+        identities.extend(regions.iter().map(|region| region.identity));
         if identities.is_empty() {
             return Ok(None);
         }
         identities.sort();
         identities.dedup();
-        let consequence = if regions.iter().any(|region| {
-            region.owner_binding().family() == IntegrityRepairArtifactFamily::LayoutIndex
-                && region.class()
-                    == worth_store_physical_integrity::IntegrityRepairRegionClass::QuarantineRequired
-        }) {
+        let consequence = if regions.iter().any(|region| region.quarantine_required) {
             LayoutRepairConsequence::ReplaceQuarantinedArtifact
         } else {
             LayoutRepairConsequence::RestoreDamagedArtifact

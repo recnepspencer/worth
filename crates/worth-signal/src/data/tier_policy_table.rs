@@ -3,14 +3,20 @@ use crate::data::tier::TierPolicy;
 /// Deterministic compact tier policy table for small cardinalities.
 #[derive(Debug, Clone)]
 pub struct TierPolicyTable<T: Copy + Ord> {
-    entries: Vec<(T, TierPolicy<T>)>,
+    entries: crate::data::persistent_vector::PersistentVector<(T, TierPolicy<T>)>,
 }
 
 impl<T: Copy + Ord> TierPolicyTable<T> {
+    pub(crate) fn fork_persistent(&mut self) -> Self {
+        Self {
+            entries: self.entries.fork_persistent(),
+        }
+    }
+
     /// Create an empty table.
     pub fn new() -> Self {
         Self {
-            entries: Vec::new(),
+            entries: crate::data::persistent_vector::PersistentVector::new(),
         }
     }
 
@@ -36,6 +42,11 @@ impl<T: Copy + Ord> TierPolicyTable<T> {
     /// Deterministic iteration over all policies.
     pub fn iter(&self) -> impl Iterator<Item = &TierPolicy<T>> {
         self.entries.iter().map(|(_, policy)| policy)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn shares_storage_with(&self, other: &Self) -> bool {
+        self.entries.shares_storage_with(&other.entries)
     }
 }
 

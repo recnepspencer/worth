@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `admitted_unchecked` found for struct `hadwiger_research::facade::RetainedBackgroundTheorem` in the current scope
- --> tests/ui/proof_claim_admission/boundaries/background_theorem_unchecked_forbidden.rs:4:40
-  |
-4 |     let _ = RetainedBackgroundTheorem::admitted_unchecked();
-  |                                        ^^^^^^^^^^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::RetainedBackgroundTheorem`

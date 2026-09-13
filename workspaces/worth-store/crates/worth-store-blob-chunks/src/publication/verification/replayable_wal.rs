@@ -1,9 +1,10 @@
-use worth_store_recovery_physics::CrashBoundaryLayoutReport;
-
-use super::super::{BlobPublicationCounterSnapshot, BlobPublicationDenial};
+use super::super::{
+    BlobPublicationCounterSnapshot, BlobPublicationCrashBoundaryReport, BlobPublicationDenial,
+    BlobPublicationDurableWal,
+};
 
 pub(crate) fn verify_replayable_report(
-    report: &CrashBoundaryLayoutReport,
+    report: &BlobPublicationCrashBoundaryReport,
 ) -> Result<(), BlobPublicationDenial> {
     if report.replayable_durable_wal().is_some() {
         Ok(())
@@ -15,7 +16,7 @@ pub(crate) fn verify_replayable_report(
 }
 
 pub(crate) fn replayable_durable_wal(
-    report: &CrashBoundaryLayoutReport,
-) -> Option<&worth_store_recovery_physics::UnacknowledgedDurableWal> {
+    report: &BlobPublicationCrashBoundaryReport,
+) -> Option<&BlobPublicationDurableWal> {
     report.replayable_durable_wal()
 }

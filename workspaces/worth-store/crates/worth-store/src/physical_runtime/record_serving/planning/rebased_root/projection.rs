@@ -125,9 +125,9 @@ fn project_free_space(
             current: context.current_free_space,
             successor_generation: generation,
             successor_capacity: context.placement.manifest_capacity().get(),
-            frontier: context.frontier,
         },
         &prepared.inline_allocations,
+        &prepared.placements,
     )
 }
 

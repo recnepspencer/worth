@@ -115,10 +115,9 @@ impl OnlineBackupIntent {
             current_authority,
             control,
             leases,
-            move |manifest, root_generation| {
+            move |manifest| {
                 worth_store_offline_verifier::verify_backup_cut_sources_with_cancellation(
                     manifest,
-                    root_generation,
                     budget,
                     cancellation,
                 )
@@ -133,7 +132,6 @@ impl OnlineBackupIntent {
         leases: &BackupReachabilityLeaseRegistry,
         verify: impl FnOnce(
             &BackupCutManifest,
-            u64,
         ) -> Result<
             worth_store_offline_verifier::BackupCutSourceVerificationReport,
             worth_store_offline_verifier::BackupCutSourceVerificationDenial,
@@ -178,10 +176,9 @@ impl UnpersistedBackupReachabilityLease {
         budget: worth_store_offline_verifier::OfflineInspectionBudget,
         cancellation: worth_store_offline_verifier::OfflineInspectionCancellation,
     ) -> Result<AdmittedOnlineBackup, OnlineBackupAdmissionDenial> {
-        self.persist_with_source_verification(control, leases, move |manifest, root_generation| {
+        self.persist_with_source_verification(control, leases, move |manifest| {
             worth_store_offline_verifier::verify_backup_cut_sources_with_cancellation(
                 manifest,
-                root_generation,
                 budget,
                 cancellation,
             )
@@ -194,7 +191,6 @@ impl UnpersistedBackupReachabilityLease {
         leases: &BackupReachabilityLeaseRegistry,
         verify: impl FnOnce(
             &BackupCutManifest,
-            u64,
         ) -> Result<
             worth_store_offline_verifier::BackupCutSourceVerificationReport,
             worth_store_offline_verifier::BackupCutSourceVerificationDenial,
@@ -235,10 +231,7 @@ impl UnpersistedBackupReachabilityLease {
                 ))
             }
         };
-        let source_verification = match verify(
-            self.cut.manifest(),
-            self.cut.coordinates().root_generation(),
-        ) {
+        let source_verification = match verify(self.cut.manifest()) {
             Ok(report) => report,
             Err(source) => {
                 drop(lease_reservation);

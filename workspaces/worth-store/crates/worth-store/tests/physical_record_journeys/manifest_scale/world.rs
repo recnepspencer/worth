@@ -9,7 +9,6 @@ use worth_store::physical_runtime::{
 };
 use worth_store_offline_verifier::OfflineDurableManifestWalk;
 use worth_store_physical_backend::{MediaCounterSnapshot, MediaOperationRole};
-use worth_store_physical_format::RecordArtifactFile;
 
 use super::super::scenario_evidence::ScenarioProcessEvidence;
 use super::evidence::ScaleCourtroomEvidence;
@@ -22,14 +21,12 @@ struct SeededScaleWorld {
     placement: AdmittedRecordPlacementPolicy,
     last: PhysicalRecordId,
     locator: ExternalPhysicalRecordLocator,
-    publication_identity: u64,
 }
 
 struct RuntimeScaleWorld {
     observation: ScaleObservation,
     walk: OfflineDurableManifestWalk,
     process: ScenarioProcessEvidence,
-    root_generation: u64,
 }
 
 struct LiveScaleMeasurements {
@@ -129,15 +126,11 @@ pub(super) fn observe_scale_world(record_count: u16) -> ScaleObservation {
     );
     let processes = [runtime.process, allocation_process];
     super::evidence::emit(ScaleCourtroomEvidence {
-        root: &seeded.root,
         record_count,
         last: seeded.last,
         locator: seeded.locator,
         walk: &runtime.walk,
-        placement: seeded.placement,
-        publication_identity: seeded.publication_identity,
         processes: &processes,
-        runtime_root_generation: runtime.root_generation,
         observation: runtime.observation,
         invalid: &invalid,
     });
@@ -172,14 +165,6 @@ fn seed_scale_world(record_count: u16) -> SeededScaleWorld {
         .record_id(usize::from(record_count - 1))
         .unwrap();
     let locator = ExternalPhysicalRecordLocator::new(serving.store_identity(), last);
-    let publication_identity = published
-        .current_artifacts()
-        .iter()
-        .find_map(|artifact| match artifact {
-            RecordArtifactFile::CatalogCandidate { publication } => Some(*publication),
-            _ => None,
-        })
-        .expect("a completed root owns its exact catalog candidate");
     serving.close();
     SeededScaleWorld {
         _parent: parent,
@@ -188,7 +173,6 @@ fn seed_scale_world(record_count: u16) -> SeededScaleWorld {
         placement,
         last,
         locator,
-        publication_identity,
     }
 }
 
@@ -216,17 +200,11 @@ fn observe_runtime_world(
     .unwrap();
     super::super::scale_support::assert_canonical_parity(&serving, &walk);
     let process = ScenarioProcessEvidence::current_runtime("scale-reopener", &serving);
-    let root_generation = serving
-        .observer()
-        .acquisition_snapshot()
-        .unwrap()
-        .root_generation();
     serving.close();
     RuntimeScaleWorld {
         observation: measurements.into_observation(&walk),
         walk,
         process,
-        root_generation,
     }
 }
 

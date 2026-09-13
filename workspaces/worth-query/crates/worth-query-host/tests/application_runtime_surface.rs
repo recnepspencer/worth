@@ -45,27 +45,26 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub ExternalMapping in HostIdentitySchema);
-worth_query_entity!(pub Principal in HostIdentitySchema);
-worth_query_entity!(pub Account in HostIdentitySchema);
-worth_query_aspect!(pub ExternalIdentity in HostIdentitySchema, ExternalMapping; identity = AspectIdentity(0x9161103e), revision = AspectContractRevision(1),);
+worth_query_entity!(pub ExternalMapping for HostIdentitySchema);
+worth_query_entity!(pub Principal for HostIdentitySchema);
+worth_query_entity!(pub Account for HostIdentitySchema);
+worth_query_aspect!(pub ExternalIdentity for HostIdentitySchema, ExternalMapping; identity = AspectIdentity(0x9161103e), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub ExternalIdentityField in HostIdentitySchema, ExternalMapping, ExternalIdentity:
+    pub ExternalIdentityField for HostIdentitySchema, ExternalMapping, ExternalIdentity:
     WorthQueryExternalPrincipalIdentity, read_only, equality
 );
-worth_query_aspect!(pub PrincipalIdentity in HostIdentitySchema, Principal; identity = AspectIdentity(0x9161103f), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub PrincipalIdentity for HostIdentitySchema, Principal; identity = AspectIdentity(0x9161103f), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub PrincipalIdentityField in HostIdentitySchema, Principal, PrincipalIdentity:
+    pub PrincipalIdentityField for HostIdentitySchema, Principal, PrincipalIdentity:
     u64, read_only, equality
 );
 worth_query_field!(
-    pub MappingStatusField in HostIdentitySchema, ExternalMapping, ExternalIdentity:
+    pub MappingStatusField for HostIdentitySchema, ExternalMapping, ExternalIdentity:
     WorthQueryPrincipalMappingStatus, read_write, equality
 );
 worth_query_relation!(
     pub MappingTarget in HostIdentitySchema,
-    ExternalMapping => Principal
-);
+    ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
 worth_query_principal_binding!(
     pub IdentityBinding in HostIdentitySchema,
     mapping ExternalMapping {
@@ -75,9 +74,9 @@ worth_query_principal_binding!(
         principal_identity: PrincipalIdentityField
     }
 );
-worth_query_aspect!(pub AccountIdentity in HostIdentitySchema, Account; identity = AspectIdentity(0x91611040), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub AccountIdentity for HostIdentitySchema, Account; identity = AspectIdentity(0x91611040), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub AccountNumber in HostIdentitySchema, Account, AccountIdentity:
+    pub AccountNumber for HostIdentitySchema, Account, AccountIdentity:
     String, read_only, equality
 );
 
@@ -106,7 +105,13 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
     let binding = schema
         .principal_binding(IdentityBinding::reference())
         .unwrap();
-    let mut graph = authority.prepare_primary_graph(&runtime, &schema).unwrap();
+    let mut graph = authority
+        .prepare_primary_graph(
+            &runtime,
+            &schema,
+            worth_query_execution::facade::integration::product_world_resources_for_test(1_024),
+        )
+        .unwrap();
     graph
         .bind_principal(
             &binding,
@@ -127,7 +132,13 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
         .unwrap();
 
     let application = graph
-        .publish_application_runtime(runtime, authority, schema)
+        .publish_application_runtime(
+            runtime,
+            authority,
+            schema,
+            worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(
+            ),
+        )
         .unwrap();
 
     assert_eq!(application.publication().principal_binding_count(), 1);
@@ -146,6 +157,9 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
         cancellation.token(),
     );
     let account = application
+        .on_branch(application.current_world())
+        .select()
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountNumber::reference(),
             "account-001".to_string(),

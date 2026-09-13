@@ -1,5 +1,6 @@
+use worth_store_physical_format::CheckpointWalSourceRange;
 use worth_store_physical_format::PhysicalEpoch;
-use worth_store_recovery_physics::{CheckpointCoveredLsnRange, LogSequenceNumber};
+use worth_store_wal::LogSequenceNumber;
 
 use super::{
     CoverageGapWitness, LayoutCoverageWitness, LayoutMaterializationSourceIdentity,
@@ -60,7 +61,7 @@ impl MaterializationObservationFixtures {
     pub(crate) fn exact_checkpoint_coverage(
         self,
         state: LayoutMaterializationState,
-        range: CheckpointCoveredLsnRange,
+        range: CheckpointWalSourceRange,
     ) -> Result<LayoutCoverageWitness, MaterializationDenial> {
         LayoutCoverageWitness::observed_exact_through(
             state,
@@ -99,7 +100,7 @@ impl MaterializationObservationFixtures {
         declaration: &'static PhysicalArtifactFamilyDeclaration,
         lower_bound: LogSequenceNumber,
         upper_bound: LogSequenceNumber,
-        gap: CheckpointCoveredLsnRange,
+        gap: CheckpointWalSourceRange,
     ) -> Result<LayoutCoverageWitness, MaterializationDenial> {
         self.gapped_wal_lsn_coverage(declaration, lower_bound, upper_bound, gap, false)
     }
@@ -109,7 +110,7 @@ impl MaterializationObservationFixtures {
         declaration: &'static PhysicalArtifactFamilyDeclaration,
         lower_bound: LogSequenceNumber,
         upper_bound: LogSequenceNumber,
-        gap: CheckpointCoveredLsnRange,
+        gap: CheckpointWalSourceRange,
     ) -> Result<LayoutCoverageWitness, MaterializationDenial> {
         self.gapped_wal_lsn_coverage(declaration, lower_bound, upper_bound, gap, true)
     }
@@ -119,14 +120,14 @@ impl MaterializationObservationFixtures {
         declaration: &'static PhysicalArtifactFamilyDeclaration,
         lower_bound: LogSequenceNumber,
         upper_bound: LogSequenceNumber,
-        gap: CheckpointCoveredLsnRange,
+        gap: CheckpointWalSourceRange,
         quarantined: bool,
     ) -> Result<LayoutCoverageWitness, MaterializationDenial> {
         let witness = CoverageGapWitness::physical_range(
             declaration.family(),
             PhysicalCoverageBasis::checkpoint_frontier(gap).basis_kind(),
-            gap.range().start().get(),
-            gap.range().end_exclusive().get(),
+            gap.admitted_begin_lsn(),
+            gap.covered_end_lsn_exclusive(),
         );
         let state = if quarantined {
             LayoutMaterializationState::quarantined(declaration.family())
@@ -171,7 +172,7 @@ impl crate::planning::AccessPlanningFacade {
     pub(crate) fn exact_checkpoint_coverage(
         &self,
         state: LayoutMaterializationState,
-        range: CheckpointCoveredLsnRange,
+        range: CheckpointWalSourceRange,
     ) -> Result<LayoutCoverageWitness, MaterializationDenial> {
         materialization_observations().exact_checkpoint_coverage(state, range)
     }
@@ -202,7 +203,7 @@ impl crate::planning::AccessPlanningFacade {
         declaration: &'static PhysicalArtifactFamilyDeclaration,
         lower_bound: LogSequenceNumber,
         upper_bound: LogSequenceNumber,
-        gap: CheckpointCoveredLsnRange,
+        gap: CheckpointWalSourceRange,
     ) -> Result<LayoutCoverageWitness, MaterializationDenial> {
         materialization_observations().partial_wal_lsn_coverage(
             declaration,
@@ -217,7 +218,7 @@ impl crate::planning::AccessPlanningFacade {
         declaration: &'static PhysicalArtifactFamilyDeclaration,
         lower_bound: LogSequenceNumber,
         upper_bound: LogSequenceNumber,
-        gap: CheckpointCoveredLsnRange,
+        gap: CheckpointWalSourceRange,
     ) -> Result<LayoutCoverageWitness, MaterializationDenial> {
         materialization_observations().quarantined_wal_lsn_coverage(
             declaration,

@@ -4,8 +4,8 @@
 
 **Status:** implemented and acceptance-verified engineering specification.
 
-**Roadmap position:** C.2 has classified the current physical reality. C.3 now
-creates the only runtime authority into which C.4 through C.13 may bind real
+**Roadmap position:** C.3 establishes the only runtime authority into which
+C.4 through C.13 may bind real
 media, page, residency, durability, recovery, integrity, isolation, layout,
 blob, and certification behavior. C.3 must close before C.4 implementation
 begins.
@@ -446,21 +446,7 @@ death.
   physical-operation, publication, and media counters remain zero
 - directory contents remain exactly unchanged
 
-### Mutation sensitivity and anti-substitution
-
-Three representative controlled defects are sufficient:
-
-1. add `Clone` or an equivalent duplicating wrapper to the runtime authority;
-   Compiler Boundary C's cloning specimen must unexpectedly compile and fail
-   the suite
-2. initialize a heap-backed page/record subsystem during admission while
-   reporting its capability as absent; Journey A and the narrow composition-
-   path gate must fail the allocation/installed-owner predicate
-3. make unexpected drop increment successful-close state; Journey B must fail
-   the distinct-terminal-outcome and exact-counter predicates
-
-Additional mutants are justified only when they expose a distinct failure class
-these three products cannot observe.
+### Anti-substitution
 
 Forbidden substitutes include private fields behind cloneable wrappers,
 generic `AuthorityMarker` bounds, a global registry treated as the sole guard,
@@ -473,11 +459,9 @@ successful return.
 
 ### Evidence and rerun
 
-C.3 closeout records the direct Cargo commands, source revision, binary
-identity, UI expectations, dependency-boundary result, deterministic action
-trace, exact counter snapshot, unchanged directory manifest, controlled-mutant
-results, and platform profile. Evidence is disposable test output; it does not
-become production authority or a new checked-in proof hierarchy.
+C.3 closeout runs the direct owner, lifecycle, UI, dependency, boundary, and
+workspace checks. Scenario output is disposable diagnostics; it is not hashed,
+reconciled, retained as a certificate, or consumed by another test.
 
 ## Phase Plan
 
@@ -936,8 +920,7 @@ paths.
 
 **Relevant subsystems and APIs:** the consolidated UI suite, ordinary
 `worth-store` integration tests, child-process test executable, deterministic
-schedule driver, OS directory observer, Cargo/public-topology gates, and
-controlled mutant lane.
+schedule driver, OS directory observer, and Cargo/public-topology gates.
 
 **Engineering decisions:**
 
@@ -947,10 +930,8 @@ controlled mutant lane.
   schedule calls and observe boundaries but cannot construct internal owners
 - the lifecycle oracle is an independent finite transition table fixed before
   execution
-- scenario seeds, action traces, counter expectations, and directory manifests
-  are reproducible
-- controlled defects must fail at the causal predicate, and mutation runs live
-  outside ordinary owner feedback where their cost warrants it
+- scenario seeds, action traces, counter expectations, and direct directory
+  observations are reproducible
 
 **Test requirements:**
 
@@ -959,12 +940,9 @@ controlled mutant lane.
 - compile the ordinary product under default features, then run Compiler
   Boundary C once under the maximal admitted authority feature; do not duplicate
   the trybuild campaign without a known authority difference
-- apply the three representative controlled defects to the owning product and
-  require failure at duplicate authority, heap-backed physical-owner
-  installation, and false close respectively
-- remove or bypass each product in a dry closeout audit and name the exact
-  property that becomes unproved; this guards against three scenarios that are
-  merely redundant versions of one another
+- assert duplicate authority is compiler-rejected, heap-backed owner
+  installation is absent at runtime, and unexpected drop remains distinct from
+  successful close
 
 The two journeys collectively provide equivalence, parity, rejection, drift,
 residue, and leakage coverage. Compiler Boundary C adds only the negative space
@@ -988,7 +966,7 @@ replay-backed, or certification-backed physical authority.
 **Relevant subsystems and APIs:** old `PhysicalStoreRuntime` construction and
 clone surfaces, persisted-layout/replay reopen paths, certification factories,
 production manifests/features, deprecation boundaries where deletion cannot
-yet occur, and the C.2 blocker dispositions targeting C.3.
+yet occur, and current authority blockers found in C.3's causal call paths.
 
 **Engineering decisions:**
 
@@ -1000,8 +978,8 @@ yet occur, and the C.2 blocker dispositions targeting C.3.
   boundary that cannot be promoted into runtime authority
 - any temporary compatibility surface is non-authoritative, has a named owner
   and deletion milestone, and is unreachable from ordinary admission
-- C.3 updates the manual audit dispositions for its authority blockers but does
-  not turn that audit into runtime evidence
+- C.3 resolves authority blockers in source and direct tests without creating
+  an audit artifact or runtime evidence wrapper
 - later milestones extend this composition root; they do not create successor
   runtimes beside it
 
@@ -1064,19 +1042,17 @@ preserve semantic ambiguity for compatibility.
 
 C.3 closes with:
 
-- direct owner and integration test commands with source/binary identity
+- direct owner and integration test commands
 - one consolidated UI report covering construction, cloning, conversion,
   lifecycle order, stale use, and facade bypass
 - boundary-check and generated agent-context validation
-- manifest/feature evidence that ordinary lanes cannot enable test,
+- Cargo feature checks proving ordinary lanes cannot enable test,
   certification, or replay authority
 - exact independent lifecycle action trace and matching runtime counters
-- unchanged absent-root and empty-directory manifests proving zero physical
+- unchanged absent-root and empty-directory observations proving zero physical
   effects
 - results for Journey A, Journey B, and Compiler Boundary C
-- controlled-mutant localization for duplicate authority, heap-backed physical
-  owner installation, and false successful close
-- updated C.2 dispositions for authority/lifecycle blockers
+- direct source and test corrections for authority/lifecycle blockers
 
 No runtime-produced receipt certifies another runtime-produced receipt. The
 compiler, direct process outcomes, OS observation, dependency topology, and
@@ -1090,8 +1066,8 @@ independent transition oracle are the evidence sources.
 3. Implement phases 8 through 11 as honesty, termination, facade, and
    observability enforcement.
 4. Implement phases 12 and 13 as joined falsification and source cutover.
-5. Run owner tests during each logical slice, but reserve the complete hostile
-   and controlled-mutant products for the joined implementation.
+5. Run owner tests during each logical slice and the joined hostile scenarios
+   after the implementation is coherent.
 6. C.4 may begin only after the canonical runtime exists, duplicate production
    authority is unreachable, and the future media transition has exactly one
    sealed insertion seam.

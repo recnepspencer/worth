@@ -11,6 +11,9 @@ use super::reference::{RelationalBranchCellDenial, RelationalBranchReferenceObse
 use super::RelationalBranchVersion;
 use super::RelationalForkPort;
 
+#[path = "fork_target_installation.rs"]
+mod target_installation;
+
 /// Typed denials for the Phase-4 fork transition.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalForkDenial {
@@ -129,7 +132,59 @@ impl RelationalForkPort {
         target_branch: BranchId,
         source: AdmittedRelationalForkSourceBasis,
     ) -> Result<RelationalForkOutcome, RelationalForkDenial> {
-        self.fork_branch_with_pause(target_branch, source, || {})
+        let reservation = self.reserve_fork_target(target_branch)?;
+        self.fork_reserved(reservation, source)
+    }
+
+    /// Reserve one exact destination without installing or moving a branch.
+    /// The returned custody is consumed by [`Self::fork_reserved`] or releases
+    /// the reservation exactly once when dropped.
+    pub fn reserve_fork_target(
+        &self,
+        target_branch: BranchId,
+    ) -> Result<super::RelationalForkTargetReservation, RelationalForkDenial> {
+        let _operation = self
+            .lifecycle
+            .admit()
+            .ok_or(RelationalForkDenial::OwnerUnavailable)?;
+        self.owner
+            .reserve_target(target_branch)
+            .map_err(|denial| match denial {
+                super::RelationalForkTargetReservationDenial::Duplicate => {
+                    RelationalForkDenial::DuplicateTarget
+                }
+                super::RelationalForkTargetReservationDenial::Retired => {
+                    RelationalForkDenial::RetiredTarget
+                }
+            })
+    }
+
+    /// Consume owner-issued destination custody and source evidence through
+    /// the canonical fork authority path.
+    pub fn fork_reserved(
+        &self,
+        reservation: super::RelationalForkTargetReservation,
+        source: AdmittedRelationalForkSourceBasis,
+    ) -> Result<RelationalForkOutcome, RelationalForkDenial> {
+        self.fork_reserved_with_hooks(reservation, source, || {}, || {}, false)
+            .map(|(outcome, _)| outcome)
+    }
+
+    /// Consume owner-issued fork custody and return the authentic admitted
+    /// basis of the installed destination in the same owner operation.
+    pub fn fork_reserved_with_basis(
+        &self,
+        reservation: super::RelationalForkTargetReservation,
+        source: AdmittedRelationalForkSourceBasis,
+    ) -> Result<(RelationalForkOutcome, super::AdmittedRelationalBranchBasis), RelationalForkDenial>
+    {
+        self.fork_reserved_with_hooks(reservation, source, || {}, || {}, true)
+            .map(|(outcome, basis)| {
+                (
+                    outcome,
+                    basis.expect("basis-enabled fork installation returns its basis"),
+                )
+            })
     }
 
     #[cfg(test)]
@@ -140,38 +195,77 @@ impl RelationalForkPort {
         reached: &std::sync::Barrier,
         release: &std::sync::Barrier,
     ) -> Result<RelationalForkOutcome, RelationalForkDenial> {
-        self.fork_branch_with_pause(target_branch, source, || {
-            reached.wait();
-            release.wait();
-        })
+        let reservation = self.reserve_fork_target(target_branch)?;
+        self.fork_reserved_with_hooks(
+            reservation,
+            source,
+            || {
+                reached.wait();
+                release.wait();
+            },
+            || {},
+            false,
+        )
+        .map(|(outcome, _)| outcome)
     }
 
-    fn fork_branch_with_pause(
+    #[cfg(test)]
+    pub(crate) fn fork_branch_with_post_install_test_pause(
         &self,
         target_branch: BranchId,
         source: AdmittedRelationalForkSourceBasis,
-        pause: impl FnOnce(),
-    ) -> Result<RelationalForkOutcome, RelationalForkDenial> {
+        reached: &std::sync::Barrier,
+        release: &std::sync::Barrier,
+    ) -> Result<(RelationalForkOutcome, super::AdmittedRelationalBranchBasis), RelationalForkDenial>
+    {
+        let reservation = self.reserve_fork_target(target_branch)?;
+        self.fork_reserved_with_hooks(
+            reservation,
+            source,
+            || {},
+            || {
+                reached.wait();
+                release.wait();
+            },
+            true,
+        )
+        .map(|(outcome, basis)| {
+            (
+                outcome,
+                basis.expect("basis-enabled fork installation returns its basis"),
+            )
+        })
+    }
+
+    fn fork_reserved_with_hooks(
+        &self,
+        reservation: super::RelationalForkTargetReservation,
+        source: AdmittedRelationalForkSourceBasis,
+        pause_before_install: impl FnOnce(),
+        pause_after_install: impl FnOnce(),
+        return_basis: bool,
+    ) -> Result<
+        (
+            RelationalForkOutcome,
+            Option<super::AdmittedRelationalBranchBasis>,
+        ),
+        RelationalForkDenial,
+    > {
+        if !self.owner.owns_reservation(&reservation) {
+            return Err(RelationalForkDenial::ForeignRuntime);
+        }
         let _operation = self
             .lifecycle
             .admit()
             .ok_or(RelationalForkDenial::OwnerUnavailable)?;
+        let target_branch = reservation.branch_id().clone();
         let (descriptor, _authority) = source.into_parts();
-        let reservation = self
-            .owner
-            .reserve_target(target_branch.clone())
-            .map_err(|denial| match denial {
-                super::RelationalForkTargetReservationDenial::Duplicate => {
-                    RelationalForkDenial::DuplicateTarget
-                }
-                super::RelationalForkTargetReservationDenial::Retired => {
-                    RelationalForkDenial::RetiredTarget
-                }
-            })?;
         let validated = self.validate_fork_source(descriptor)?;
-        pause();
+        pause_before_install();
         let prepared = self.prepare_fork_target(target_branch, reservation, &validated)?;
-        self.install_fork_target(validated, prepared)
+        let installed = self.install_fork_target(validated, prepared, return_basis)?;
+        pause_after_install();
+        Ok(installed)
     }
 
     fn validate_fork_source(
@@ -262,67 +356,6 @@ impl RelationalForkPort {
             shared_commit_id,
             source_head_version,
             reservation,
-        })
-    }
-
-    fn install_fork_target(
-        &self,
-        source: ValidatedForkSource,
-        target: PreparedForkTarget,
-    ) -> Result<RelationalForkOutcome, RelationalForkDenial> {
-        let fork_materialized_authoritative_bytes = target
-            .target_cell
-            .root()
-            .filter(|target_root| !Arc::ptr_eq(target_root, &target.source_root))
-            .map(|target_root| target_root.logical_partition_payload_bytes())
-            .unwrap_or(0);
-        let copied_commit_envelopes = target
-            .target_cell
-            .root()
-            .filter(|target_root| !target_root.shares_canonical_envelope_with(&target.source_root))
-            .map_or(0, |_| 1);
-        let materialization_cost = crate::runtime::RelationalForkMaterializationCost {
-            entity_count: 0,
-            relation_count: 0,
-            authoritative_bytes: fork_materialized_authoritative_bytes,
-            copied_commit_envelopes,
-        };
-        let target_root = target
-            .target_cell
-            .root()
-            .expect("prepared fork target retains its selected root");
-        self.owner
-            .install_head(&target.target_cell, &target_root)
-            .map_err(|denial| match denial {
-                crate::history::retention::RelationalRetentionAcquisitionDenial::CapacityExhausted => {
-                    RelationalForkDenial::RetentionCapacityExhausted
-                }
-                crate::history::retention::RelationalRetentionAcquisitionDenial::OwnerUnavailable => {
-                    RelationalForkDenial::RetentionOwnerUnavailable
-                }
-                crate::history::retention::RelationalRetentionAcquisitionDenial::IdentityExhausted => {
-                    RelationalForkDenial::RetentionIdentityExhausted
-                }
-                crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge => {
-                    RelationalForkDenial::RetentionInvariantViolation
-                }
-            })?;
-        self.owner.record_install(
-            &target.target_cell,
-            materialization_cost,
-            target.source_head_version,
-        );
-        let target_identity = target.target_cell.identity().clone();
-        self.owner
-            .install_target(target.reservation, target.target_cell);
-        Ok(RelationalForkOutcome {
-            target_identity,
-            source_observation: source.source_observation,
-            target_observation: target.target_observation,
-            fork_provenance: target.fork_provenance,
-            source_truth_version: source.source_truth_version,
-            target_truth_version: target.target_truth_version,
-            shared_commit_id: target.shared_commit_id,
         })
     }
 }

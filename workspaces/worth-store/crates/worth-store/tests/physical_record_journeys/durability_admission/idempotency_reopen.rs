@@ -9,6 +9,8 @@ use worth_store::physical_runtime::{
     RecordAppendDenial,
 };
 
+#[path = "idempotency_reopen/selective_integrity.rs"]
+mod selective_integrity;
 #[path = "idempotency_reopen/support.rs"]
 mod support;
 
@@ -76,6 +78,10 @@ fn fresh_process_rebuild_joins_checkpoint_compaction_with_the_retained_wal_suffi
     assert_eq!(
         reopen.binding_records_read(),
         expected_checkpoint.binding_records
+    );
+    assert_eq!(
+        reopen.checkpoint_integrity_admissions(),
+        expected_checkpoint.binding_records + 3
     );
     assert_eq!(reopen.wal_members_read(), 1);
 

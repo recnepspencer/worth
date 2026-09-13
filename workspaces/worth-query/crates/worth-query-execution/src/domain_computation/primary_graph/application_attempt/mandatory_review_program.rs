@@ -65,6 +65,11 @@ impl<Schema, Operation, Input, Scope>
             effects,
             emission_retained_bytes,
             emission_retained_bytes_ceiling,
+            conditional_definition: None,
+            validator_work_admission:
+                super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
+            output_correspondence: Default::default(),
+            retain_output_demand_observation: false,
         };
         validate_mandatory_review_program(&program)?;
         Ok(WorthQueryMandatoryReviewProgram { program })

@@ -1,9 +1,9 @@
 use crate::data::error::SignalError;
 use crate::data::graph::signal_graph::SignalGraph;
 use crate::state::{
-    SignalCheckpointImage, SignalSnapshotMeta, SignalSnapshotV1, SnapshotArtifactRetentionPolicy,
-    SnapshotDependencyRestoreMode, SnapshotRestoreCoarseReason, SnapshotRestoreIntent,
-    SnapshotRestorePlan,
+    SignalCheckpointImage, SignalSnapshotId, SignalSnapshotMeta, SignalSnapshotV1,
+    SnapshotArtifactRetentionPolicy, SnapshotDependencyRestoreMode, SnapshotRestoreCoarseReason,
+    SnapshotRestoreIntent, SnapshotRestorePlan,
 };
 
 impl SignalGraph {
@@ -83,6 +83,33 @@ impl SignalGraph {
         let meta = self
             .diagnostics_state_mut()
             .allocate_snapshot_meta(request_metadata, artifact_retention);
+        self.capture_snapshot_with_meta(meta, artifact_retention)
+    }
+
+    pub(crate) fn capture_snapshot_with_reserved_id(
+        &mut self,
+        snapshot_id: SignalSnapshotId,
+    ) -> SignalSnapshotV1 {
+        self.interrupt_observation_at_boundary();
+        let installed = self.installed_runtime_policy();
+        let request_metadata = installed.requested_policy();
+        let artifact_retention =
+            SnapshotArtifactRetentionPolicy::from_retention_budget(installed.retention_budget());
+        let meta = self
+            .diagnostics_state_mut()
+            .allocate_snapshot_meta_with_reserved_id(
+                snapshot_id,
+                request_metadata,
+                artifact_retention,
+            );
+        self.capture_snapshot_with_meta(meta, artifact_retention)
+    }
+
+    fn capture_snapshot_with_meta(
+        &mut self,
+        meta: SignalSnapshotMeta,
+        artifact_retention: SnapshotArtifactRetentionPolicy,
+    ) -> SignalSnapshotV1 {
         crate::diagnostics::recorder::record_snapshot_event(
             self,
             crate::diagnostics::replay::ReplayEventKind::SnapshotCaptured,
@@ -170,7 +197,6 @@ impl SignalGraph {
         Ok(())
     }
 
-    #[cfg(test)]
     pub(crate) fn restore_snapshot(
         &mut self,
         snapshot: &SignalSnapshotV1,

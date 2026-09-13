@@ -51,12 +51,15 @@ fn validate_root_manifest(
         ));
         return;
     };
-    if !exclude.iter().any(|entry| entry == "cad/workspaces/*") {
-        diagnostics.push(Diagnostic::new(
-            DiagnosticCode::Bc5002SubworkspaceContractViolation,
-            path.display().to_string(),
-            "root workspace must exclude cad/workspaces/*",
-        ));
+    for forbidden_prefix in &config.forbidden_root_prefixes {
+        let expected_exclusion = format!("{}/*", forbidden_prefix.trim_end_matches('/'));
+        if !exclude.iter().any(|entry| entry == &expected_exclusion) {
+            diagnostics.push(Diagnostic::new(
+                DiagnosticCode::Bc5002SubworkspaceContractViolation,
+                path.display().to_string(),
+                format!("root workspace must exclude {expected_exclusion}"),
+            ));
+        }
     }
 
     let worth_topology = workspace

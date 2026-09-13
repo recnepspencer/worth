@@ -16,23 +16,20 @@ use worth_relational::facade::indexes::DerivedIndexId;
 
 use super::{
     denial::{denial, graph_work_denial},
-    governed_access::governance_denial,
     work_limit::{application_query_graph_read_budget, validate_work_limit},
 };
-use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
 use crate::domain_computation::primary_graph::application_query::{
     admission_preparation::validate_admission_request,
     basis::admit_application_query_basis,
     disclosure::{
-        admit_application_query_governance, compile_disclosure_contract,
-        WorthQueryAdmittedApplicationDisclosureContract, WorthQueryApplicationGovernanceBinding,
-        WorthQueryApplicationQueryGovernance, WorthQueryPendingApplicationQueryGovernance,
+        compile_disclosure_contract, WorthQueryAdmittedApplicationDisclosureContract,
+        WorthQueryPendingApplicationQueryGovernance,
     },
     execution_shape::validate_one_shot_shape,
     runtime_support::primary_graph_support_inventory,
-    WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationAuthorizationWorkEvidence,
-    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryAdmissionDenial,
-    WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryControls,
+    WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
+    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
+    WorthQueryApplicationQueryControls,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraph, WorthQueryPrimaryGraphApplicationRuntime,
@@ -52,12 +49,6 @@ struct PreparedApplicationQueryGraphWork {
 struct ReviewedApplicationQueryGraphWork {
     work: WorthQueryReviewedApplicationQueryGraphWork,
     obligation_identity: WorthQueryInstalledGraphObligationSetIdentity,
-}
-
-struct AdmittedApplicationQueryAuthorities {
-    authorization: WorthQueryRetainedAuthorizationDecisionFacts,
-    authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
-    governance: WorthQueryApplicationQueryGovernance,
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -113,7 +104,7 @@ where
         let prepared =
             self.prepare_application_query_graph_work(query, &parameters, &controls, graph)?;
         validate_admission_request(controls.request_scope(), query.name())?;
-        let (basis_selection, controls) = controls.into_admission_parts();
+        let (basis_selection, security_product, controls) = controls.into_admission_parts();
         let basis = admit_application_query_basis(self, basis_selection)?;
         validate_admission_request(controls.request_scope(), query.name())?;
         let mut graph_work = self.start_application_query_graph_work(
@@ -122,11 +113,13 @@ where
             query,
             access,
             pending_governance.as_ref(),
-            basis.identity(),
+            &basis,
+            &security_product,
             graph,
         )?;
         let authorities = self.admit_application_query_authorities(
             &mut graph_work,
+            &security_product,
             query,
             access,
             &parameters,
@@ -149,6 +142,7 @@ where
             continuation_index_id: prepared.continuation_index_id,
             continuation_state: None,
             basis,
+            security_product,
             graph_work,
             authorization: authorities.authorization,
             authorization_work: authorities.authorization_work,
@@ -184,7 +178,7 @@ where
         }
         let plan =
             admit_application_query_graph_work(reviewed.work, &self.graph_work_resource_support())
-                .map_err(|_| graph_work_denial(query.name()))?;
+                .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         validate_one_shot_shape(query)?;
         let disclosure = compile_disclosure_contract(query, &graph.layout).map_err(|denial| {
             WorthQueryApplicationQueryAdmissionDenial::new(
@@ -234,7 +228,7 @@ where
             obligations,
             WorthQueryGraphWorkIntent::application_query_read(),
         )
-        .map_err(|_| graph_work_denial(query.name()))?;
+        .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         let work = review_application_query_graph_work(
             selected,
             requirements,
@@ -244,7 +238,7 @@ where
                 controls,
             ),
         )
-        .map_err(|_| graph_work_denial(query.name()))?;
+        .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         Ok(ReviewedApplicationQueryGraphWork {
             work,
             obligation_identity,
@@ -272,7 +266,8 @@ where
             Scope,
         >,
         pending_governance: Option<&WorthQueryPendingApplicationQueryGovernance>,
-        basis_identity: &super::super::WorthQueryApplicationBasisIdentity,
+        basis: &super::super::basis::WorthQueryApplicationQueryBasisCustody,
+        security_product: &crate::basis::WorthQueryProductObservationLease,
         graph: &WorthQueryPrimaryGraph,
     ) -> Result<WorthQueryManagedGraphWorkSession, WorthQueryApplicationQueryAdmissionDenial> {
         let capability_identity = pending_governance
@@ -294,77 +289,13 @@ where
             query.authority_identity(),
             access.principal().principal_entity_id(),
             affinity,
-            basis_identity,
+            basis.identity(),
+            basis.retained_product(),
+            security_product,
             self.graph_work_provider_identity(),
             graph.query_session_port(),
         )
-        .map_err(|_| graph_work_denial(query.name()))
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn admit_application_query_authorities<
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-    >(
-        &self,
-        graph_work: &mut WorthQueryManagedGraphWorkSession,
-        query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
-        access: &WorthQueryApplicationQueryAccessContext<
-            '_,
-            Schema,
-            Principal,
-            PrincipalIdentity,
-            Scope,
-        >,
-        parameters: &WorthQueryAdmittedApplicationQueryParameters,
-        mut pending_governance: Option<WorthQueryPendingApplicationQueryGovernance>,
-        disclosure: WorthQueryAdmittedApplicationDisclosureContract,
-    ) -> Result<AdmittedApplicationQueryAuthorities, WorthQueryApplicationQueryAdmissionDenial>
-    {
-        if let Some(pending) = pending_governance.as_mut() {
-            self.refresh_capability_authorization_for_graph_work(
-                pending.authorization_mut(),
-                graph_work,
-            )
-            .map_err(WorthQueryApplicationQueryAdmissionDenial::from_authorization)?;
-        }
-        let governance = admit_application_query_governance(
-            disclosure,
-            pending_governance,
-            WorthQueryApplicationGovernanceBinding::from_session(
-                graph_work,
-                query.identity().clone(),
-                *parameters.identity(),
-                access.principal().principal_entity_id(),
-                access.scope().entity_id(),
-            ),
-        )
-        .map_err(|kind| governance_denial(kind, query.name()))?;
-        let (authorization, authorization_work) =
-            self.observe_application_query_access(graph_work, query, access)?;
-        let authorization_work = authorization_work.with_capability_authorization(
-            governance.authorization(),
-            governance.authorization_canonical_work(),
-        );
-        if !authorization.belongs_to_session(graph_work.identity())
-            || !governance.authorization_belongs_to_session(graph_work.identity())
-        {
-            return Err(graph_work_denial(query.name()));
-        }
-        let retained_fact_count = authorization.exact_fact_count()
-            + governance
-                .authorization()
-                .map_or(0, |capability| capability.exact_fact_count());
-        graph_work.set_retained_decision_facts(retained_fact_count);
-        Ok(AdmittedApplicationQueryAuthorities {
-            authorization,
-            authorization_work,
-            governance,
-        })
+        .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))
     }
 }
 

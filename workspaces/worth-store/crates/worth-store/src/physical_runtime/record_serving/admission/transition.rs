@@ -94,6 +94,10 @@ pub(in crate::physical_runtime) fn initialize(
         frame_ports.loader(),
         &bootstrap_allocation,
         bootstrap,
+        runtime.lifecycle_state(),
+        crate::physical_runtime::PhysicalRootProtocolRoute::Initialization,
+        runtime.root_protocol_counter_cells(),
+        frame_ports.resident_integrity_counter_cells(),
     ) {
         Ok(state) => initialize_serving(runtime, state, residency, work_profile, durability),
         Err(BootstrapTransitionFailure::Denied(reason)) => initialization_failed(
@@ -162,6 +166,8 @@ pub(in crate::physical_runtime) fn open(
         &bootstrap_allocation,
         format,
         access,
+        runtime.lifecycle_state(),
+        frame_ports.resident_integrity_counter_cells(),
     ) {
         Ok(bootstrap) => bootstrap,
         Err(failure) => return open_failure(runtime, failure),
@@ -171,6 +177,10 @@ pub(in crate::physical_runtime) fn open(
         frame_ports.loader(),
         &bootstrap_allocation,
         bootstrap,
+        runtime.lifecycle_state(),
+        crate::physical_runtime::PhysicalRootProtocolRoute::OrdinaryOpen,
+        runtime.root_protocol_counter_cells(),
+        frame_ports.resident_integrity_counter_cells(),
     ) {
         Ok(state) => open_serving(runtime, state, residency, work_profile, durability),
         Err(failure) => open_failure(runtime, failure),
@@ -201,6 +211,9 @@ fn initialize_serving(
     let frontier = RecordAllocationFrontier::new(&state.free_space);
     let (termination, media, core) = runtime.into_record_serving_parts();
     core.progress_to_record_serving();
+    residency
+        .ports()
+        .invalidate_integrity_validation_for_runtime_transition();
     match ServingPhysicalRuntime::from_admission(PhysicalStoreInstanceFoundation {
         termination,
         media,
@@ -226,6 +239,9 @@ fn open_serving(
     let frontier = RecordAllocationFrontier::new(&state.free_space);
     let (termination, media, core) = runtime.into_record_serving_parts();
     core.progress_to_record_serving();
+    residency
+        .ports()
+        .invalidate_integrity_validation_for_runtime_transition();
     match ServingPhysicalRuntime::from_admission(PhysicalStoreInstanceFoundation {
         termination,
         media,

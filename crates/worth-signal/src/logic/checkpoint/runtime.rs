@@ -9,6 +9,12 @@ use crate::data::error::SignalError;
 use crate::data::evaluator::CheckpointEvaluator;
 use crate::data::telemetry::RuntimeTelemetry;
 
+#[cfg(test)]
+#[path = "runtime/replacement_test_observation.rs"]
+mod replacement_test_observation;
+#[cfg(test)]
+pub(crate) use replacement_test_observation::CheckpointReplacementObservation;
+
 /// Runtime state for batched Tier-0 signal scheduling.
 #[derive(Debug, Clone)]
 pub struct CheckpointRuntime<D: Copy + Ord, I: Copy + Ord> {
@@ -18,6 +24,29 @@ pub struct CheckpointRuntime<D: Copy + Ord, I: Copy + Ord> {
 }
 
 impl<D: Copy + Ord, I: Copy + Ord> CheckpointRuntime<D, I> {
+    pub(crate) fn fork_persistent(&mut self) -> Self {
+        Self {
+            dirty: self.dirty.fork_persistent(),
+            policy: self.policy.fork_persistent(),
+            telemetry: self.telemetry,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn fork_storage_identity(&self) -> Self {
+        Self {
+            dirty: self.dirty.fork_storage_identity(),
+            policy: self.policy.fork_storage_identity(),
+            telemetry: self.telemetry,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn shares_storage_with(&self, other: &Self) -> bool {
+        self.dirty.shares_storage_with(&other.dirty)
+            && self.policy.shares_storage_with(&other.policy)
+    }
+
     /// Create a new runtime with a per-domain checkpoint policy.
     pub fn new(policy: CheckpointPolicy<D>) -> Self {
         Self {

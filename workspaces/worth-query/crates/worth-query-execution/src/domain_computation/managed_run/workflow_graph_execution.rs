@@ -177,6 +177,11 @@ impl WorthQueryActiveWorkflowGraphExecution {
     ) -> WorthQueryWorkflowGraphStepOutcome {
         let width = u64::try_from(material.rows().len()).unwrap_or(u64::MAX);
         let retained_bytes = material.owned_allocation_capacity_bytes();
+        if !self.execution.projection_chunk_fits_ceiling() {
+            drop(material);
+            let _ = self.release_pending_chunk(retained_bytes);
+            return self.interrupted_terminal(WorthQueryManagedRunTerminalKind::Exhausted);
+        }
         let admission = match self.running.enqueue_provider_output(width) {
             Ok(admission) => admission,
             Err(failure) => {
@@ -193,7 +198,6 @@ impl WorthQueryActiveWorkflowGraphExecution {
         };
         let (mutation, occupancy) = admission.into_parts();
         self.running.record_queue_mutation(mutation.counters());
-        self.execution.admit_projection_chunk(&material);
         let queue = WorthQueryPendingWorkflowGraphQueueState::new(
             occupancy,
             mutation.queue_depth(),
@@ -212,10 +216,19 @@ impl WorthQueryActiveWorkflowGraphExecution {
         mut self,
         report: &WorthQueryGraphProviderStepReport,
     ) -> WorthQueryWorkflowGraphStepOutcome {
-        let receipt = match self.execution.seal_completion(report) {
-            Ok(receipt) => receipt,
+        let (receipt, output_retained_bytes, envelope_bytes) = match self
+            .execution
+            .seal_completion(report)
+        {
+            Ok(completion) => completion,
             Err(()) => return self.abandoned_terminal(WorthQueryManagedRunTerminalKind::Failed),
         };
+        if !self
+            .running
+            .transfer_output_to_receipt(envelope_bytes, output_retained_bytes)
+        {
+            return self.settled_terminal(WorthQueryManagedRunTerminalKind::Failed);
+        }
         self.running.complete_provider_step_call();
         let after = match self.observe_safe_point() {
             Ok(observation) => observation,
@@ -286,6 +299,16 @@ impl WorthQueryActiveWorkflowGraphExecution {
             && self.running.release_projection_bytes(retained_bytes)
     }
 
+    pub(super) fn retain_pending_chunk(&mut self, material: WorthQueryGraphReadMaterial) -> bool {
+        let Some((projection_bytes, additional_bytes)) =
+            self.execution.retain_projection_chunk(material)
+        else {
+            return false;
+        };
+        self.running
+            .transfer_projection_to_output(projection_bytes, additional_bytes)
+    }
+
     fn release_unpublished_projection(
         &mut self,
         report: &mut WorthQueryGraphProviderStepReport,
@@ -325,6 +348,8 @@ impl WorthQueryActiveWorkflowGraphExecution {
         mut self,
         kind: WorthQueryManagedRunTerminalKind,
     ) -> WorthQueryWorkflowGraphStepOutcome {
+        let output_retained_bytes = self.execution.output_retained_bytes();
+        let _ = self.running.release_output_bytes(output_retained_bytes);
         let release = self.execution.release_provider_execution();
         let (release_evidence, memory) = release.into_parts();
         self.running

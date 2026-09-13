@@ -13,9 +13,7 @@ fn every_component_chunk_and_artifact_sync_boundary_resumes_the_full_owner_bundl
 
     for cut in 0..=boundary_count {
         let scenario = BackupScenario::new("materialization-boundary");
-        let authority = crate::backup::export::current_authority(&format!(
-            "s10-materialization-boundary-{cut}"
-        ));
+        let authority = scenario.authority();
         let control = scenario.control_store();
         let operation =
             OperationalOperationId::new(format!("backup-boundary-{cut}")).expect("operation");

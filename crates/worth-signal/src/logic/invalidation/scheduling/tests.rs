@@ -186,6 +186,48 @@ fn same_shaped_rewire_invalidates_ready_work_before_execution() {
 }
 
 #[test]
+fn component_access_preserves_source_and_dependency_invalidation_authority() {
+    let (mut graph, old_source, new_source, consumer) = dependency_graph();
+    mark_dirty(&mut graph, new_source, ASPECT_A).unwrap();
+    let source_revision = graph.dependency_revision(new_source).unwrap();
+    let source_input = graph.node_invalidation_input(new_source).unwrap();
+    let crate::data::proof::invalidation::revalidation::NodeInvalidationInput::Resolved(
+        source_causes,
+    ) = source_input
+    else {
+        panic!("a direct dirty source must resolve from its source basis");
+    };
+    assert!(source_causes.is_source_recompute());
+    assert!(source_causes.is_bound_to_revision(source_revision));
+    assert_eq!(
+        source_causes.dirty_aspects(),
+        graph.node_dirty_aspects(new_source).unwrap()
+    );
+    let _source_ready = current_ready(&mut graph, new_source);
+
+    let consumer_revision = graph.dependency_revision(consumer).unwrap();
+    publish_source_change(&mut graph, old_source, consumer);
+    let pending = graph.pending_causes(consumer).unwrap();
+    assert_eq!(pending.len(), 1);
+    assert_eq!(pending[0].key.consumer, consumer);
+    assert_eq!(pending[0].key.producer, old_source);
+    assert_eq!(pending[0].key.aspect, ASPECT_A);
+    assert_eq!(pending[0].key.dependency_revision, consumer_revision);
+    let input = graph.node_invalidation_input(consumer).unwrap();
+    let crate::data::proof::invalidation::revalidation::NodeInvalidationInput::Resolved(causes) =
+        input
+    else {
+        panic!("a published dependency change must resolve from its retained cause");
+    };
+    assert!(causes.is_bound_to_revision(consumer_revision));
+    assert_eq!(
+        causes.dirty_aspects(),
+        graph.node_dirty_aspects(consumer).unwrap()
+    );
+    let _consumer_ready = current_ready(&mut graph, consumer);
+}
+
+#[test]
 fn checkpoint_restore_rejects_old_ready_and_rebuilds_from_current_causes() {
     let (mut graph, old_source, _new_source, consumer) = dependency_graph();
     publish_source_change(&mut graph, old_source, consumer);

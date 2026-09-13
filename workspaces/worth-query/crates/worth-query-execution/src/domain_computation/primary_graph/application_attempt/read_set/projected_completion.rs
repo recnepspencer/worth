@@ -290,49 +290,12 @@ impl<Schema, Operation, Input, Scope>
                 relation.name(),
             ));
         }
-        let matching_relations = self
-            .facts
-            .iter()
-            .find_map(|fact| match fact {
-                WorthQueryApplicationObservedFact::Relation {
-                    relation_kind,
-                    from: observed_from,
-                    to: observed_to,
-                    matching_relations,
-                    ..
-                } if *relation_kind == layout.kind
-                    && *observed_from == from.entity_id()
-                    && *observed_to == to.entity_id() =>
-                {
-                    Some(matching_relations.clone())
-                }
-                WorthQueryApplicationObservedFact::Adjacency {
-                    relation_kind,
-                    relations,
-                    ..
-                } if *relation_kind == layout.kind => {
-                    let matches = relations
-                        .iter()
-                        .filter(|observed| {
-                            observed.from == from.entity_id() && observed.to == to.entity_id()
-                        })
-                        .map(|observed| observed.relation_id)
-                        .collect::<Vec<_>>();
-                    (!matches.is_empty()).then_some(matches)
-                }
-                _ => None,
-            })
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
-                    relation.name(),
-                )
-            })?;
-        Ok(super::WorthQueryObservedApplicationRelation {
-            count: matching_relations.len(),
-            matching_relations,
-            _marker: std::marker::PhantomData,
-        })
+        self.relation_observation(
+            relation.name(),
+            layout.kind,
+            from.entity_id(),
+            to.entity_id(),
+        )
     }
 }
 

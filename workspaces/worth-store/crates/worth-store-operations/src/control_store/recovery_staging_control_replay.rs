@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use super::{
     IndeterminateRecoveryStagingHandle, OperationalControlHistoryViolationKind,
-    OperationalOperationId, OperationalWorkflowKind, RecoveryStagingOperationKind,
+    OperationalOperationId, OperationalOwnerReceiptKind, OperationalWorkflowKind,
+    RecoveryStagingOperationKind,
 };
 
 pub(super) struct ReplayedRecoveryStaging {
@@ -61,7 +62,7 @@ pub(super) fn observe_owner_receipt(
     workflow: OperationalWorkflowKind,
     plan_fingerprint: [u8; 32],
     receipt_fingerprint: [u8; 32],
-    owner_tag: u8,
+    owner_kind: OperationalOwnerReceiptKind,
 ) -> Result<(), OperationalControlHistoryViolationKind> {
     let stage = stages
         .get_mut(operation)
@@ -75,12 +76,9 @@ pub(super) fn observe_owner_receipt(
     if stage.completed_media_identity.is_some() {
         return Err(OperationalControlHistoryViolationKind::RecoveryStagingBindingMismatch);
     }
-    let slot = match owner_tag {
-        1 => &mut stage.backend_owner_receipt,
-        2 => &mut stage.recovery_owner_receipt,
-        _ => {
-            return Err(OperationalControlHistoryViolationKind::RecoveryOwnerReceiptBindingMismatch)
-        }
+    let slot = match owner_kind {
+        OperationalOwnerReceiptKind::Backend => &mut stage.backend_owner_receipt,
+        OperationalOwnerReceiptKind::Recovery => &mut stage.recovery_owner_receipt,
     };
     match slot {
         None => {
@@ -181,7 +179,7 @@ mod tests {
                 OperationalWorkflowKind::Restore,
                 [3; 32],
                 receipt,
-                1,
+                OperationalOwnerReceiptKind::Recovery,
             )
             .expect("an exact durable retry is idempotent");
         }
@@ -192,7 +190,7 @@ mod tests {
                 OperationalWorkflowKind::Restore,
                 [3; 32],
                 [9; 32],
-                1,
+                OperationalOwnerReceiptKind::Recovery,
             ),
             Err(OperationalControlHistoryViolationKind::DuplicateRecoveryOwnerReceipt)
         );
@@ -208,7 +206,7 @@ mod tests {
                 OperationalWorkflowKind::Rollback,
                 [3; 32],
                 [8; 32],
-                1,
+                OperationalOwnerReceiptKind::Recovery,
             ),
             Err(OperationalControlHistoryViolationKind::RecoveryOwnerReceiptWorkflowMismatch)
         );

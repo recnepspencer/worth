@@ -25,6 +25,11 @@ where
         expected: AdmittedSignalBranchBasis,
         reason: SignalBranchRetirementReason,
     ) -> TransitionOutcome<PlannedSignalBranchRetirement, SignalBranchRetirementDenial> {
+        if self.owner_services.is_sealed() {
+            return self
+                .owner_services
+                .plan_legacy_retirement(branch, expected, reason);
+        }
         let branch_id = branch.id;
         let Some(branch) = self.branches.branch_handle(branch_id) else {
             return TransitionOutcome::denied(SignalBranchRetirementDenial::UnknownBranch {
@@ -84,6 +89,16 @@ where
         releasing_snapshots: &[&AdmittedSignalBranchSnapshot],
         reason: SignalBranchRetirementReason,
     ) -> TransitionOutcome<PlannedSignalBranchRetirement, SignalBranchRetirementDenial> {
+        if self.owner_services.is_sealed() {
+            return self
+                .owner_services
+                .plan_legacy_retirement_releasing_snapshots(
+                    branch,
+                    expected,
+                    releasing_snapshots,
+                    reason,
+                );
+        }
         let branch_id = branch.id;
         let allowance = match self.retirement_snapshot_allowance(branch_id, releasing_snapshots) {
             Ok(allowance) => allowance,
@@ -131,6 +146,10 @@ where
         &mut self,
         plan: PlannedSignalBranchRetirement,
     ) -> TransitionOutcome<SignalBranchRetirementReceipt, SignalBranchRetirementDenial> {
+        if let Some((_, _, lifecycle)) = self.sealed_owner_port_slots() {
+            let cancellation = crate::branch::SignalOwnerCancellationSource::new();
+            return lifecycle.retire_exact(plan, &cancellation.token());
+        }
         self.retire_branch(plan)
     }
 

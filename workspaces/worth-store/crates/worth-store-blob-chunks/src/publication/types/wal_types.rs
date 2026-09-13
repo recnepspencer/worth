@@ -1,9 +1,11 @@
-use worth_store_recovery_physics::PartialPublicationCounterSnapshot;
 use worth_store_wal::PublicationDeclaration;
 
 use crate::BlobChunkSecurityMetadataWitness;
 
-use super::super::{BlobPublicationCounterSnapshot, BlobPublicationDenial, BlobPublicationIntent};
+use super::super::{
+    BlobPublicationCounterSnapshot, BlobPublicationCrashBoundaryReport, BlobPublicationDenial,
+    BlobPublicationIntent, BlobPublicationReplayCounterSnapshot,
+};
 use super::reachability_staging::{BlobReachabilityStaging, BlobReachabilityStagingIdentity};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,7 +25,7 @@ pub struct BlobPublicationWalCommit {
     pub(crate) intent: BlobPublicationIntent,
     pub(crate) publication_declaration: PublicationDeclaration,
     pub(crate) replay_classification_digest: String,
-    pub(crate) replay_counters: PartialPublicationCounterSnapshot,
+    pub(crate) replay_counters: BlobPublicationReplayCounterSnapshot,
     pub(crate) staging_identity: BlobReachabilityStagingIdentity,
     pub(crate) security_metadata: BlobChunkSecurityMetadataWitness,
 }
@@ -73,7 +75,7 @@ impl BlobPublicationWalCommit {
         staged: BlobReachabilityStaging,
         payload: BlobPublicationWalPayload,
         publication_declaration: PublicationDeclaration,
-        replay_report: &worth_store_recovery_physics::CrashBoundaryLayoutReport,
+        replay_report: &BlobPublicationCrashBoundaryReport,
     ) -> Result<Self, BlobPublicationDenial> {
         super::super::transitions::wal_commit::from_replayable_wal_record(
             staged,
@@ -95,7 +97,7 @@ impl BlobPublicationWalCommit {
         &self.replay_classification_digest
     }
 
-    pub const fn replay_counters(&self) -> PartialPublicationCounterSnapshot {
+    pub const fn replay_counters(&self) -> BlobPublicationReplayCounterSnapshot {
         self.replay_counters
     }
 

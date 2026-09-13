@@ -3,12 +3,11 @@ pub(super) use crate::{
     admit_backup_for_production_restore, inspect_control_store_copies, qualify_backup_custody,
     record_independent_backup_verification, recover_online_backups, BackupMaterializationDenial,
     ConfiguredFailureDomainId, ControlStoreAvailabilityDenial, ControlStoreTrustPosture,
-    CurrentRecoverySurfaceGapReport, OnlineBackupAdmissionDenial, OnlineBackupIntent,
-    OnlineBackupReadmissionFailure, OperationalControlAppendDenial, OperationalControlLocation,
-    OperationalControlRecord, OperationalControlReplayBudget, OperationalControlReplayResource,
-    OperationalControlStore, OperationalControlStoreOpenDenial, OperationalControlStorePort,
-    OperationalOperationId, OperationalRecoveryBoundaryLedger, OperationalTransitionId,
-    OperationalWorkflowKind, ProtectedOperationalMediaLocation,
+    OnlineBackupAdmissionDenial, OnlineBackupIntent, OnlineBackupReadmissionFailure,
+    OperationalControlAppendDenial, OperationalControlLocation, OperationalControlRecord,
+    OperationalControlReplayBudget, OperationalControlReplayResource, OperationalControlStore,
+    OperationalControlStoreOpenDenial, OperationalControlStorePort, OperationalOperationId,
+    OperationalTransitionId, OperationalWorkflowKind, ProtectedOperationalMediaLocation,
 };
 pub(super) use worth_store_authority::{
     BackupRestoreAdmissionPolicy, ControlStoreFencingAuthority, ControlStoreGeneration,
@@ -23,6 +22,7 @@ pub(super) use worth_store_physical_format::{
     BackupBundleArtifactFormat, BackupBundleFormatAuthority, BackupBundleManifest,
     PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId,
     PhysicalRecordSlot, PhysicalReferenceAuthority, PhysicalRootReference, PhysicalSegmentId,
+    PhysicalStoreIdentity,
 };
 pub(super) use worth_store_physical_isolation::{
     BackupArtifactCoverage, BackupArtifactFamily, BackupArtifactReference,
@@ -40,6 +40,7 @@ pub(crate) struct BackupScenario {
     pub(super) control: std::path::PathBuf,
     pub(super) references: Vec<BackupArtifactReference>,
     pub(crate) leases: BackupReachabilityLeaseRegistry,
+    authority: worth_store_authority::StoreCurrentAuthorityWitness,
     checkpoint_identity: String,
     root_generation: u64,
 }
@@ -56,11 +57,15 @@ impl BackupScenario {
         let control = directory.path().join("control").join("operations.log");
         std::fs::create_dir_all(&source).expect("source directory");
         std::fs::create_dir_all(&target).expect("target directory");
+        let authority = crate::backup::export::current_authority("store.physical.default_instance");
+        let store_identity =
+            PhysicalStoreIdentity::from_aspect_identity(authority.identity().clone());
         let artifacts =
             crate::certification_scenario::backup_artifacts::canonical_backup_artifacts_at_root_generation(
                 case,
                 &source,
                 root_generation,
+                store_identity,
             );
         Self::from_artifacts(
             directory,
@@ -69,6 +74,7 @@ impl BackupScenario {
             control,
             artifacts,
             root_generation,
+            authority,
         )
     }
 
@@ -79,11 +85,15 @@ impl BackupScenario {
         let newer_source = newer_directory.path().join("source");
         std::fs::create_dir_all(&older_source).expect("older source directory");
         std::fs::create_dir_all(&newer_source).expect("newer source directory");
+        let authority = crate::backup::export::current_authority("store.physical.default_instance");
+        let store_identity =
+            PhysicalStoreIdentity::from_aspect_identity(authority.identity().clone());
         let (older_artifacts, newer_artifacts) =
             crate::certification_scenario::backup_artifacts::canonical_backup_artifacts_across_one_root_publication(
                 case,
                 &older_source,
                 &newer_source,
+                store_identity,
             );
         let older = Self::from_artifacts(
             older_directory,
@@ -92,6 +102,7 @@ impl BackupScenario {
             std::path::PathBuf::from("control/operations.log"),
             older_artifacts,
             1,
+            authority.clone(),
         );
         let newer = Self::from_artifacts(
             newer_directory,
@@ -100,6 +111,7 @@ impl BackupScenario {
             std::path::PathBuf::from("control/operations.log"),
             newer_artifacts,
             2,
+            authority,
         );
         (older, newer)
     }
@@ -111,6 +123,7 @@ impl BackupScenario {
         control: std::path::PathBuf,
         artifacts: crate::certification_scenario::backup_artifacts::CanonicalBackupArtifacts,
         root_generation: u64,
+        authority: worth_store_authority::StoreCurrentAuthorityWitness,
     ) -> Self {
         let target = if target.is_absolute() {
             target
@@ -130,6 +143,7 @@ impl BackupScenario {
             control,
             references: artifacts.references,
             leases: BackupReachabilityLeaseRegistry::for_store_runtime(),
+            authority,
             checkpoint_identity: artifacts.checkpoint_identity,
             root_generation,
         }
@@ -152,6 +166,9 @@ impl BackupScenario {
     }
     pub(crate) fn source_root(&self) -> &std::path::Path {
         &self.source
+    }
+    pub(crate) fn authority(&self) -> worth_store_authority::StoreCurrentAuthorityWitness {
+        self.authority.clone()
     }
     pub(crate) fn cut_manifest(&self) -> BackupCutManifest {
         BackupCutManifest::canonical(self.references.clone()).expect("complete canonical cut")
@@ -208,7 +225,7 @@ pub(super) fn artifact_coverage(family: BackupArtifactFamily) -> BackupArtifactC
             BackupArtifactCoverage::root_manifest(1).expect("root coverage")
         }
         BackupArtifactFamily::CheckpointManifest => {
-            BackupArtifactCoverage::checkpoint_manifest("checkpoint-a", 1, 10)
+            BackupArtifactCoverage::checkpoint_manifest("checkpoint-a", 1, 10, [1; 32], [2; 32])
                 .expect("checkpoint coverage")
         }
         BackupArtifactFamily::WalSegment => {
@@ -290,106 +307,5 @@ pub(super) fn failure_domain(value: &str) -> ConfiguredFailureDomainId {
     ConfiguredFailureDomainId::new(value).expect("failure domain")
 }
 
-pub(super) struct FailingControlStore;
-
-impl OperationalControlStorePort for FailingControlStore {
-    fn publish_recovery_object(
-        &self,
-        content: &[u8],
-    ) -> Result<
-        worth_store_physical_backend::ControlRecoveryObjectHandle,
-        OperationalControlAppendDenial,
-    > {
-        Ok(worth_store_physical_backend::ControlRecoveryObjectHandle::for_content(content))
-    }
-
-    fn append(
-        &self,
-        _record: &OperationalControlRecord,
-    ) -> Result<
-        worth_store_physical_backend::PhysicalControlAppendReceipt,
-        OperationalControlAppendDenial,
-    > {
-        Err(OperationalControlAppendDenial::Media(
-            worth_store_physical_backend::ControlMediaFault::Io(std::io::Error::other(
-                "injected receipt-media failure",
-            )),
-        ))
-    }
-
-    fn compare_exchange_authorization_consumption(
-        &self,
-        _expected: Option<worth_store_authority::ControlStoreGeneration>,
-        record: &OperationalControlRecord,
-    ) -> Result<
-        worth_store_physical_backend::PhysicalControlAppendReceipt,
-        OperationalControlAppendDenial,
-    > {
-        self.append(record)
-    }
-}
-
-pub(super) struct ObserveReservedLeaseThenFail<'a> {
-    pub(super) delegate: &'a OperationalControlStore,
-    pub(super) leases: &'a BackupReachabilityLeaseRegistry,
-    pub(super) calls: std::cell::Cell<usize>,
-}
-
-impl OperationalControlStorePort for ObserveReservedLeaseThenFail<'_> {
-    fn publish_recovery_object(
-        &self,
-        content: &[u8],
-    ) -> Result<
-        worth_store_physical_backend::ControlRecoveryObjectHandle,
-        OperationalControlAppendDenial,
-    > {
-        self.delegate.publish_recovery_object(content)
-    }
-
-    fn append(
-        &self,
-        record: &OperationalControlRecord,
-    ) -> Result<
-        worth_store_physical_backend::PhysicalControlAppendReceipt,
-        OperationalControlAppendDenial,
-    > {
-        let call = self.calls.get();
-        self.calls.set(call + 1);
-        if call == 0 {
-            let protected = reclaim_reference(BackupArtifactFamily::Page, 4);
-            let evidence = ExecutedReachabilityEvidence::for_certification_reference(protected);
-            let hazards = HazardLeaseTable::with_capacity(
-                HazardLeaseTableCapacity::bounded_slots(1).expect("capacity"),
-            )
-            .live_index_snapshot();
-            let proof = ReclaimEligibilityProof::admit(
-                evidence,
-                hazards,
-                self.leases
-                    .live_index_snapshot()
-                    .expect("reserved lease remains readable"),
-            )
-            .expect("reclaim proof");
-            assert!(matches!(
-                proof.try_reclaim(),
-                Err(ReclaimDenial::BlockedByBackupCut { .. })
-            ));
-            return FailingControlStore.append(record);
-        }
-        self.delegate.append(record)
-    }
-
-    fn compare_exchange_authorization_consumption(
-        &self,
-        expected: Option<worth_store_authority::ControlStoreGeneration>,
-        record: &OperationalControlRecord,
-    ) -> Result<
-        worth_store_physical_backend::PhysicalControlAppendReceipt,
-        OperationalControlAppendDenial,
-    > {
-        self.delegate
-            .compare_exchange_authorization_consumption(expected, record)
-    }
-}
-
 pub(crate) use super::backup_custody_fixture::backup_custody;
+pub(super) use super::control_fault_fixture::{FailingControlStore, ObserveReservedLeaseThenFail};

@@ -1,4 +1,4 @@
-use crate::protocol_bindings::ProtocolFamily;
+use crate::ProtocolFamily;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProtocolCounterexampleState {

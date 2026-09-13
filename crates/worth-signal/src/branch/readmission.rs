@@ -4,11 +4,34 @@ use worth_foundational::FoundationalBranchReferenceMismatchAxis;
 use crate::data::error::SignalError;
 use crate::state::{SignalBranchId, SignalSnapshotId};
 
-use super::SignalBranchRetentionAcquisitionDenial;
+use super::{SignalBranchRetentionAcquisitionDenial, SignalOwnerUnavailable};
 
 #[derive(Debug)]
 pub enum SignalBranchBasisObservationDenial {
+    OwnerUnavailable(SignalOwnerUnavailable),
+    OperationCapacityExhausted {
+        maximum_in_flight_operations: usize,
+    },
+    OwnerReentry,
+    ManagedReferenceDenied {
+        denial: super::ManagedSignalBranchReferenceAdmissionDenial,
+    },
     UnknownBranch {
+        branch_id: SignalBranchId,
+    },
+    RetirementInProgress {
+        branch_id: SignalBranchId,
+    },
+    RetiredBranch {
+        branch_id: SignalBranchId,
+    },
+    QuarantinedBranch {
+        branch_id: SignalBranchId,
+    },
+    OwnerCellMisuse {
+        branch_id: SignalBranchId,
+    },
+    OwnerInvariantViolation {
         branch_id: SignalBranchId,
     },
     InvalidOwnerObservation {
@@ -21,6 +44,14 @@ pub enum SignalBranchBasisObservationDenial {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SignalBranchBasisReadmissionDenial {
+    OwnerUnavailable(SignalOwnerUnavailable),
+    OperationCapacityExhausted {
+        maximum_in_flight_operations: usize,
+    },
+    OwnerReentry,
+    ManagedReferenceDenied {
+        denial: super::ManagedSignalBranchReferenceAdmissionDenial,
+    },
     UnsupportedDescriptorVersion {
         observed: u16,
         supported: u16,
@@ -37,7 +68,19 @@ pub enum SignalBranchBasisReadmissionDenial {
     UnknownBranch {
         branch_id: SignalBranchId,
     },
+    RetirementInProgress {
+        branch_id: SignalBranchId,
+    },
     RetiredBranch {
+        branch_id: SignalBranchId,
+    },
+    QuarantinedBranch {
+        branch_id: SignalBranchId,
+    },
+    OwnerCellMisuse {
+        branch_id: SignalBranchId,
+    },
+    OwnerInvariantViolation {
         branch_id: SignalBranchId,
     },
     UnavailableSnapshot {
@@ -60,6 +103,11 @@ pub enum SignalBranchBasisReadmissionDenial {
 /// is legitimate long after the branch has moved on.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SignalBranchRetainedReadmissionDenial {
+    OwnerUnavailable(SignalOwnerUnavailable),
+    OperationCapacityExhausted {
+        maximum_in_flight_operations: usize,
+    },
+    OwnerReentry,
     /// The obligation was issued by a different live Signal owner.
     ForeignRetention,
     /// The obligation no longer retains anything, or its owner is gone.
@@ -81,6 +129,7 @@ pub enum SignalBranchRetainedReadmissionDenial {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SignalBranchBasisCompatibilityDenial {
+    OwnerUnavailable(SignalOwnerUnavailable),
     OwnerMismatch,
     DefinitionMismatch,
     SnapshotMismatch,

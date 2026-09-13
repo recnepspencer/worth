@@ -3,9 +3,7 @@ use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::{Deposit, GrantAccountAuthorization, RevokeAccountAuthorization};
 use bank_server::{mutations, queries, BankMutationControls, BankMutationStatus, BankReadControls};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationLiveControls, WorthQueryApplicationQueryControls,
-};
+use worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControls;
 
 use crate::fixture::{self, VIEWER};
 use crate::support::request_scope;
@@ -72,17 +70,12 @@ pub(crate) fn activity_count(
     fixture: &fixture::OrdinaryReadFixture,
     owner: &bank_server::BankAuthenticatedPrincipal,
 ) -> usize {
-    let request = request_scope();
     fixture
         .world
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(owner)
-        .execute(WorthQueryApplicationQueryControls::current_one_shot(
-            std::num::NonZeroUsize::new(64).unwrap(),
-            std::num::NonZeroUsize::new(8_192).unwrap(),
-            &request,
-        ))
+        .execute(BankReadControls::current(request_scope(), 64, 8_192).unwrap())
         .expect("owner should read installed account activity")
         .rows()[0]
         .entries()

@@ -3,10 +3,6 @@ use worth_store::physical_runtime::{
     PhysicalRecoveryCleanupRemovalDenialKind, RecoveryCleanupArtifactRevalidationDenial,
     RecoveryCleanupRemovalDenialCause,
 };
-use worth_store_physical_format::{
-    inspect_checkpoint_stream, CheckpointBindingCompactionHeader, CheckpointDirtyFrameBasis,
-    CheckpointStreamEncoder, RecordArtifactFile, RecordFrameCoordinate,
-};
 use worth_store_recovery_runtime::{
     PhysicalRecoveryOutcome, RecoveryCleanupDeferralEvidence, RecoveryCleanupPosture,
 };
@@ -15,6 +11,8 @@ use super::world::{
     cleanup_fault, cleanup_world, empty_fault_schedule, recover_with_schedule, reopen_with_schedule,
 };
 
+#[path = "revalidation/checkpoint_replacement.rs"]
+mod checkpoint_replacement;
 #[path = "revalidation/denial_matrix.rs"]
 mod denial_matrix;
 
@@ -193,7 +191,10 @@ fn cleanup_rejects_a_distinct_valid_persisted_checkpoint_before_wal_revalidation
     let world = cleanup_world("cleanup-checkpoint-substitution");
     let candidate = world.oldest_wal();
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
-    let checkpoint_bytes = replace_with_distinct_valid_checkpoint(&world.root);
+    let checkpoint_bytes = checkpoint_replacement::replace_with_distinct_valid_checkpoint(
+        &world.root,
+        reopened.store_identity(),
+    );
 
     let PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
         panic!("checkpoint substitution remains deferred cleanup debt")
@@ -265,38 +266,4 @@ fn current_checkpoint_bytes(root: &std::path::Path) -> u64 {
     std::fs::metadata(root.join("families").join("checkpoint.current"))
         .unwrap()
         .len()
-}
-
-fn replace_with_distinct_valid_checkpoint(root: &std::path::Path) -> u64 {
-    let path = root.join("families").join("checkpoint.current");
-    let original_bytes = std::fs::read(&path).unwrap();
-    let original = inspect_checkpoint_stream(&original_bytes, u64::MAX, u64::MAX).unwrap();
-    let (mut encoder, header) = CheckpointStreamEncoder::begin(original.source());
-    let mut replacement = header;
-    for ordinal in 0..original.footer().dirty_record_count() {
-        let coordinate =
-            RecordFrameCoordinate::new(RecordArtifactFile::BootstrapCatalog, ordinal, 1).unwrap();
-        replacement.extend_from_slice(&encoder.encode_dirty_basis(CheckpointDirtyFrameBasis::new(
-            coordinate,
-            ordinal.saturating_add(17),
-        )));
-    }
-    let cutover = original.compaction_cutover();
-    let header = CheckpointBindingCompactionHeader::new(
-        cutover.product_generation().saturating_add(1),
-        cutover.wal_cutoff_lsn_exclusive(),
-    )
-    .unwrap();
-    let (mut compaction, header_record) = encoder.begin_binding_compaction(header);
-    replacement.extend_from_slice(&header_record);
-    for binding in original.binding_records() {
-        replacement.extend_from_slice(&compaction.encode_binding_record(binding).unwrap());
-    }
-    let (_, footer) = compaction.finish();
-    replacement.extend_from_slice(&footer);
-    let decoded = inspect_checkpoint_stream(&replacement, u64::MAX, u64::MAX).unwrap();
-    assert_ne!(decoded, original);
-    assert_eq!(replacement.len(), original_bytes.len());
-    std::fs::write(path, &replacement).unwrap();
-    replacement.len() as u64
 }

@@ -5,8 +5,7 @@ use worth_store_physical_backend::QualifiedFilesystemMedia;
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 
 use crate::physical_runtime::durability::checkpoint::{
-    PhysicalBindingCompactionRecordStreamFailure, PhysicalBindingCompactionReopenFailure,
-    ReopenedPhysicalBindingCompaction,
+    PhysicalBindingCompactionReopenFailure, ReopenedPhysicalBindingCompaction,
 };
 use crate::physical_runtime::durability::{
     grouping::reopened_membership_digest, wal::inventory::ReopenedPhysicalWalMember,
@@ -26,6 +25,7 @@ use super::registry::{
 use super::runtime_owner::PhysicalMutationIdempotencyRuntimeOwner;
 use super::PhysicalNamespaceDurableCheckpointGeneration;
 
+mod checkpoint_compaction;
 #[cfg(test)]
 #[path = "bootstrap/tests.rs"]
 mod tests;
@@ -84,16 +84,14 @@ pub(in crate::physical_runtime) fn rebuild_idempotency(
         context,
         checkpoint.wal_cutoff_lsn_exclusive(),
     );
-    let checkpoint_counters = match checkpoint {
-        ReopenedPhysicalBindingCompaction::GenerationZero => Default::default(),
-        ReopenedPhysicalBindingCompaction::NamespaceDurable(reopened) => reopened
-            .stream_records(media, |record| builder.consume_compaction_record(record))
-            .map_err(|failure| match failure {
-                PhysicalBindingCompactionRecordStreamFailure::Reopen(failure) => {
-                    PhysicalIdempotencyReopenFailure::Checkpoint(failure)
-                }
-                PhysicalBindingCompactionRecordStreamFailure::Consumer(failure) => failure,
-            })?,
+    let (checkpoint_counters, checkpoint_admission) = match checkpoint {
+        ReopenedPhysicalBindingCompaction::GenerationZero => (
+            Default::default(),
+            checkpoint_compaction::admit_generation_zero(),
+        ),
+        ReopenedPhysicalBindingCompaction::NamespaceDurable(reopened) => {
+            checkpoint_compaction::rebuild(reopened, media, &mut builder)?
+        }
     };
     let wal_members_read = u64::try_from(wal_members.len())
         .map_err(|_| PhysicalIdempotencyReopenFailure::CounterOverflow)?;
@@ -101,7 +99,7 @@ pub(in crate::physical_runtime) fn rebuild_idempotency(
         builder.consume_wal_member(member)?;
     }
     builder.validate_groups()?;
-    let registry = builder.finish();
+    let registry = builder.finish(checkpoint_admission);
     Ok(RebuiltPhysicalMutationIdempotency {
         owner: PhysicalMutationIdempotencyRuntimeOwner::from_rebuilt_registry(registry),
         checkpoint: checkpoint_counters,
@@ -298,7 +296,10 @@ impl PhysicalIdempotencyRegistryRebuilder {
         Ok(())
     }
 
-    fn finish(self) -> PhysicalMutationIdempotencyRegistry {
+    fn finish(
+        self,
+        _checkpoint_admission: checkpoint_compaction::CheckpointAggregateAdmission,
+    ) -> PhysicalMutationIdempotencyRegistry {
         self.registry
     }
 }

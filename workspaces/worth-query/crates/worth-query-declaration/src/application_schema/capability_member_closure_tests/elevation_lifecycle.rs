@@ -219,7 +219,10 @@ fn elevation_definition_with_lifecycle(
                 "Review",
             ),
             review_binding::<ReviewIdentity>("ReviewIdentity"),
-            ApplicationCapabilityValueBinding::new(review_field::<ReviewKind>("ReviewKind"), 1_u64),
+            ApplicationCapabilityValueBinding::new(
+                review_field::<ReviewKind>("ReviewKind"),
+                encoded(1_u64),
+            ),
             relation::<ReviewScope, Review, Resource>("ReviewScope", "Review", "Resource"),
             relation::<Reviewer, Principal, Review>("Reviewer", "Principal", "Review"),
             review_binding::<ReviewStatus>("ReviewStatus"),
@@ -363,4 +366,12 @@ fn elevation_members(
         },
     ]);
     result
+}
+
+fn encoded(
+    value: u64,
+) -> crate::application_schema::ApplicationEncodedScalarValue<
+    crate::application_schema::U64ApplicationValueBinding,
+> {
+    crate::application_schema::ApplicationEncodedScalarValue::try_new(value).unwrap()
 }

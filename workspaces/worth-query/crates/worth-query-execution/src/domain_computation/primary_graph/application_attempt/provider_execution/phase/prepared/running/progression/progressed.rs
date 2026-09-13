@@ -32,11 +32,26 @@ where
     let completion = match cleanup.finish(running, terminal, snapshot_released) {
         Ok(completion) => completion,
         Err(()) => {
-            return WorthQueryApplicationCommitOutcome::Indeterminate(
-                unknown_commit_recovery_evidence(
-                    "managed mutation run failed to finish after provider progression",
+            return match outcome {
+                WorthQueryProviderProgressionOutcome::ProductUnpublished(unpublished) => {
+                    WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished)
+                }
+                WorthQueryProviderProgressionOutcome::ProductStale(stale) => {
+                    WorthQueryApplicationCommitOutcome::ProductStale(stale)
+                }
+                WorthQueryProviderProgressionOutcome::NoEffect(no_effect) => {
+                    WorthQueryApplicationCommitOutcome::NoEffect(
+                        crate::domain_computation::primary_graph::WorthQueryApplicationNoEffect::from_world(
+                            no_effect,
+                        ),
+                    )
+                }
+                _ => WorthQueryApplicationCommitOutcome::Indeterminate(
+                    unknown_commit_recovery_evidence(
+                        "managed mutation run failed to finish after provider progression",
+                    ),
                 ),
-            )
+            }
         }
     };
     let committed = outcome.finish(completion).unwrap_or_else(|| {
@@ -63,6 +78,8 @@ const fn terminal_for(
         WorthQueryProviderProgressionOutcome::Committed(_)
         | WorthQueryProviderProgressionOutcome::AlreadyCommitted(_)
         | WorthQueryProviderProgressionOutcome::Stale(_)
+        | WorthQueryProviderProgressionOutcome::ProductStale(_)
+        | WorthQueryProviderProgressionOutcome::NoEffect(_)
         | WorthQueryProviderProgressionOutcome::SettlementDeferred(_) => {
             WorthQueryManagedRunTerminalKind::Completed
         }
@@ -71,6 +88,7 @@ const fn terminal_for(
         }
         WorthQueryProviderProgressionOutcome::TimedOut => WorthQueryManagedRunTerminalKind::Failed,
         WorthQueryProviderProgressionOutcome::Denied(_)
+        | WorthQueryProviderProgressionOutcome::ProductUnpublished(_)
         | WorthQueryProviderProgressionOutcome::Deferred(_)
         | WorthQueryProviderProgressionOutcome::Aborted
         | WorthQueryProviderProgressionOutcome::Indeterminate(_) => {

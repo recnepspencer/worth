@@ -22,10 +22,14 @@ struct Input;
 worth_query_declaration::worth_query_portable_type!(
     Input => "worth.query.archive.conditional-input"
 );
+worth_query_declaration::worth_query_structured_value_binding!(
+    InputBinding for Input {
+        identity: "worth.query.archive.conditional-input"
+    }
+);
 
-impl ApplicationOperationMarkerIdentity for Operation {
-    type Schema = Schema;
-    type Input = Input;
+impl ApplicationOperationMarkerIdentity<Schema> for Operation {
+    type InputBinding = InputBinding;
     const IDENTIFIER: &'static str = "ConditionalArchiveOperation";
 }
 

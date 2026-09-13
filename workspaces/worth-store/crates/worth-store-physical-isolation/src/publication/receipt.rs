@@ -1,6 +1,7 @@
 use super::{
-    CrashStableFreeReusePosture, OldReachabilityPreservation,
-    PhysicalPublicationFoundationalEvidence, PublicationEpochPair, ReleasedOldReachability,
+    AtomicPhysicalRootSwap, CopyOnWritePublicationBinding, CrashStableFreeReusePosture,
+    OldReachabilityPreservation, PhysicalPublicationFoundationalEvidence,
+    PhysicalPublicationReadiness, PublicationEpochPair, ReleasedOldReachability,
     RootSwapOrderingContract,
 };
 use crate::{CurrentPhysicalRoot, PhysicalReadPlanReleaseReceipt};
@@ -60,6 +61,22 @@ impl PhysicalPublicationCounterSnapshot {
         }
     }
 
+    pub(crate) const fn for_completed_publication() -> Self {
+        Self {
+            intent_validations: 1,
+            old_reachability_checks: 1,
+            epoch_checks: 1,
+            ordering_checks: 1,
+            readiness_joins: 1,
+            root_swaps: 1,
+            denied_in_place_overwrites: 0,
+            denied_stale_epochs: 0,
+            denied_weak_orderings: 0,
+            denied_identity_reuse: 0,
+            mixed_tree_denials: 0,
+        }
+    }
+
     pub const fn intent_validations(self) -> u64 {
         self.intent_validations
     }
@@ -102,6 +119,33 @@ impl PhysicalPublicationCounterSnapshot {
 
     pub const fn mixed_tree_denials(self) -> u64 {
         self.mixed_tree_denials
+    }
+}
+
+impl PhysicalPublicationReceipt {
+    pub(crate) fn from_completed_plan(
+        binding: CopyOnWritePublicationBinding,
+        readiness: PhysicalPublicationReadiness,
+        atomic_swap: AtomicPhysicalRootSwap,
+    ) -> Self {
+        let release_posture = if readiness.free_reuse().is_some() {
+            PhysicalPublicationReleasePosture::IdentityReuseProtectedByAllocatorFence
+        } else {
+            PhysicalPublicationReleasePosture::OldReachabilityRetainedUntilReadRelease
+        };
+        Self {
+            old_root: binding.old_root(),
+            new_root: binding.new_root(),
+            old_root_validation: binding.old_root_validation(),
+            new_root_validation: binding.new_root_validation(),
+            epochs: readiness.epochs().epochs(),
+            old_reachability: readiness.old_reachability(),
+            ordering: atomic_swap.ordering(),
+            release_posture,
+            free_reuse: readiness.free_reuse(),
+            counters: PhysicalPublicationCounterSnapshot::for_completed_publication(),
+            storage_boundary_execution: None,
+        }
     }
 }
 

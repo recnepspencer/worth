@@ -1,6 +1,8 @@
 mod backup_custody_fixture;
+mod checkpoint_encoder_verification;
 mod closure_verification;
 mod control_append_fault;
+mod control_fault_fixture;
 mod control_history_semantics;
 mod control_media_boundaries;
 mod control_plane;
@@ -13,6 +15,7 @@ mod cut_lifecycle;
 mod cut_physical_owner_binding;
 mod cut_publication_race;
 mod cut_wal_coverage;
+mod fresh_process_verification;
 mod independent_verification;
 mod materialization_control_recovery;
 mod materialization_interruption;

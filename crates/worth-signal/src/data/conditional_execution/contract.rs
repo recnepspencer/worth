@@ -1,5 +1,8 @@
+mod installation;
 mod lowering;
-
+mod retained_charge;
+static NEXT_CONDITIONAL_CONTRACT_OCCURRENCE: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(1);
 use crate::data::aspect::{AspectMask, InstalledSignalNodeCapability, SignalAspectLoweringOwner};
 use crate::data::comparator::{
     InstalledSignalComparatorIdentity, InstalledSignalComparatorRole, VersionComparatorPolicy,
@@ -131,6 +134,8 @@ pub enum SignalConditionalContractDenial {
     ForeignGraph,
     ForeignLoweringOwner,
     StaleNode,
+    GenerationExhausted,
+    OccurrenceExhausted,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -144,12 +149,37 @@ pub(super) struct InstalledSignalConditionalAuthority {
     _owner_seal: (),
 }
 
+pub(crate) struct PreparedSignalConditionalContract {
+    node: NodeId,
+    predecessor_generation: u64,
+    predecessor_occurrence: u64,
+    config: crate::data::node::NodeEvaluationConfig,
+    contract: InstalledSignalConditionalContract,
+}
+
+impl PreparedSignalConditionalContract {
+    pub(crate) const fn predecessor_generation(&self) -> u64 {
+        self.predecessor_generation
+    }
+
+    pub(crate) const fn predecessor_occurrence(&self) -> u64 {
+        self.predecessor_occurrence
+    }
+
+    pub(crate) fn contract(&self) -> &InstalledSignalConditionalContract {
+        &self.contract
+    }
+}
+
 /// Opaque installed contract. Construction requires both the exact graph-local
 /// node capability and the graph's admitted lowering owner.
+#[derive(Clone)]
 pub struct InstalledSignalConditionalContract {
     pub(super) authority: std::sync::Arc<InstalledSignalConditionalAuthority>,
     graph_instance_id: u64,
     node: NodeId,
+    generation: u64,
+    occurrence: u64,
     condition: EvaluationCondition,
     semantic_condition: SignalConditionalCondition,
     dependency_aspects: AspectMask,
@@ -158,15 +188,39 @@ pub struct InstalledSignalConditionalContract {
     output_comparator: VersionComparatorPolicy,
     output_equivalence: OutputEquivalencePolicy,
     artifact_reuse: SignalConditionalArtifactReusePolicy,
+    // Projection only: prepared once by installation, never admission authority.
+    projection_contract: String,
+    service_retained_bytes: usize,
+}
+
+#[derive(Clone)]
+pub(crate) struct SignalConditionalServiceContractBinding {
+    authority: std::sync::Arc<InstalledSignalConditionalAuthority>,
+    graph_instance_id: u64,
+    node: NodeId,
+    generation: u64,
+    occurrence: u64,
 }
 
 impl InstalledSignalConditionalContract {
+    pub(super) fn projection_contract(&self) -> &str {
+        &self.projection_contract
+    }
+
     pub const fn graph_instance_id(&self) -> u64 {
         self.graph_instance_id
     }
 
     pub const fn node(&self) -> NodeId {
         self.node
+    }
+
+    pub const fn generation(&self) -> u64 {
+        self.generation
+    }
+
+    pub(crate) const fn occurrence(&self) -> u64 {
+        self.occurrence
     }
 
     pub fn condition(&self) -> &EvaluationCondition {
@@ -236,71 +290,40 @@ impl InstalledSignalConditionalContract {
     pub fn retains_decision(&self, evidence: &super::SignalConditionalDecisionEvidence) -> bool {
         std::sync::Arc::ptr_eq(&self.authority, &evidence.contract_authority)
     }
+
+    pub(crate) fn bind_for_conditional_service(
+        &self,
+        graph: &SignalGraph,
+    ) -> Option<SignalConditionalServiceContractBinding> {
+        (self.graph_instance_id == graph.runtime_instance_id()
+            && graph.get_entry(self.node).is_ok_and(|entry| {
+                entry.conditional_contract_generation() == self.generation
+                    && entry.conditional_contract_occurrence() == self.occurrence
+            }))
+        .then(|| SignalConditionalServiceContractBinding {
+            authority: std::sync::Arc::clone(&self.authority),
+            graph_instance_id: self.graph_instance_id,
+            node: self.node,
+            generation: self.generation,
+            occurrence: self.occurrence,
+        })
+    }
 }
 
-impl SignalGraph {
-    pub fn install_conditional_contract(
-        &mut self,
-        owner: &SignalAspectLoweringOwner,
-        node: InstalledSignalNodeCapability,
-        definition: SignalConditionalContractDefinition,
-    ) -> Result<InstalledSignalConditionalContract, SignalConditionalContractDenial> {
-        if node.graph_instance_id() != self.runtime_instance_id() {
-            return Err(SignalConditionalContractDenial::ForeignGraph);
-        }
-        if !self
-            .aspect_lowering_owner
-            .as_ref()
-            .is_some_and(|installed| installed.is_same_owner(owner))
-        {
-            return Err(SignalConditionalContractDenial::ForeignLoweringOwner);
-        }
-        self.get_contract(node.node())
-            .map_err(|_| SignalConditionalContractDenial::StaleNode)?;
-        let semantic_condition = definition.condition;
-        let condition =
-            lower_condition(self.runtime_instance_id(), node.node(), &semantic_condition);
-        let dependency_comparator = lower_comparator(
-            self.runtime_instance_id(),
-            node.node(),
-            InstalledSignalComparatorRole::DependencyVersion,
-            definition.dependency_comparator,
-        );
-        let output_comparator = lower_comparator(
-            self.runtime_instance_id(),
-            node.node(),
-            InstalledSignalComparatorRole::OutputEquivalence,
-            definition.output_comparator,
-        );
-        let output_equivalence =
-            OutputEquivalencePolicy::from_installed_comparator(output_comparator.clone())
-                .expect("output comparator lowering must retain the output-equivalence role");
-        let artifact_reuse = lower_artifact_reuse(
-            self.runtime_instance_id(),
-            node.node(),
-            definition.artifact_reuse,
-        );
-        let mut config = self
-            .node_eval_config(node.node())
-            .map_err(|_| SignalConditionalContractDenial::StaleNode)?
-            .clone();
-        config.condition = condition.clone();
-        config.comparator = Some(dependency_comparator.clone());
-        config.output_equivalence = output_equivalence.clone();
-        config.contract = config.contract.with_output_equivalence(&output_equivalence);
-        install_node_evaluation_config(self, node.node(), config)?;
-        Ok(InstalledSignalConditionalContract {
-            authority: std::sync::Arc::new(InstalledSignalConditionalAuthority { _owner_seal: () }),
-            graph_instance_id: self.runtime_instance_id(),
-            node: node.node(),
-            condition,
-            semantic_condition,
-            dependency_aspects: definition.dependency_aspects,
-            trigger_aspects: definition.trigger_aspects,
-            dependency_comparator,
-            output_comparator,
-            output_equivalence,
-            artifact_reuse,
-        })
+impl SignalConditionalServiceContractBinding {
+    pub(crate) fn is_current_for(&self, graph: &SignalGraph) -> bool {
+        self.graph_instance_id == graph.runtime_instance_id()
+            && graph.get_entry(self.node).is_ok_and(|entry| {
+                entry.conditional_contract_generation() == self.generation
+                    && entry.conditional_contract_occurrence() == self.occurrence
+            })
+    }
+
+    pub(crate) fn matches(&self, contract: &InstalledSignalConditionalContract) -> bool {
+        self.graph_instance_id == contract.graph_instance_id
+            && self.node == contract.node
+            && self.generation == contract.generation
+            && self.occurrence == contract.occurrence
+            && std::sync::Arc::ptr_eq(&self.authority, &contract.authority)
     }
 }

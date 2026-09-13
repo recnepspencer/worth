@@ -1,10 +1,9 @@
 use std::path::Path;
 
-use worth_store_physical_format::BackupBundleManifest;
-use worth_store_recovery_physics::RecoveryCandidateObservation;
-
 use crate::backup_verification::verification_owned_memory::allocation_bytes;
 use crate::inspection::OwnerDecodedArtifactBinding;
+use crate::truth_composition::RecoveryCandidateObservation;
+use worth_store_physical_format::BackupBundleManifest;
 
 pub(super) fn maximum_requested_owned_allocation_bytes(
     root: &Path,

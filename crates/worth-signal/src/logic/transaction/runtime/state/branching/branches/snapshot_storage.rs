@@ -16,6 +16,37 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    pub(crate) fn synchronize_snapshot_identity_high_water(&mut self, next_snapshot_id: u64) {
+        self.next_snapshot_id = self.next_snapshot_id.max(next_snapshot_id);
+    }
+
+    pub(crate) fn snapshot_identity_available(&self) -> Result<(), SignalSnapshotId> {
+        self.next_snapshot_id
+            .checked_add(1)
+            .map(|_| ())
+            .ok_or(SignalSnapshotId(self.next_snapshot_id))
+    }
+
+    pub(crate) fn reserve_snapshot_identity(
+        &mut self,
+    ) -> Result<SignalSnapshotId, SignalSnapshotId> {
+        let snapshot_id = SignalSnapshotId(self.next_snapshot_id);
+        let next_snapshot_id = self.next_snapshot_id.checked_add(1).ok_or(snapshot_id)?;
+        self.next_snapshot_id = next_snapshot_id;
+        Ok(snapshot_id)
+    }
+
+    pub(crate) fn snapshot_reconstruction_runtime_is_pristine(
+        &self,
+        branch_id: SignalBranchId,
+    ) -> bool {
+        self.live_branch_catalog.len() == 1
+            && self.live_branch_catalog.contains_key(&branch_id)
+            && self.branches.is_empty()
+            && self.snapshots.is_empty()
+            && self.next_snapshot_id == 0
+    }
+
     pub fn insert_snapshot(&mut self, packet: SnapshotStatePacket<D, I, T>) {
         debug_assert!(self.snapshots.len() < self.maximum_stored_snapshots);
         let (branch_id, snapshot_id, state) = packet.into_parts();

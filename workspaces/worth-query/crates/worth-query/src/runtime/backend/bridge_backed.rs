@@ -1,4 +1,3 @@
-use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_bridge::facade::RuntimeBridge;
 
 use crate::declarative_live::DeclarativeLiveQueryRequest;
@@ -23,12 +22,11 @@ use crate::runtime::{
 
 use super::bootstrap::BridgeBackedRuntimeBootstrap;
 
-mod primary_graph_execution;
+mod relational_execution;
 mod settlement_recovery;
 
 pub struct WorthQueryBridgeBackedRuntimeBackend {
-    relational_runtime: Option<RelationalRuntime>,
-    primary_graph_runtime: Option<super::WorthQueryPrimaryGraphBackendHandle>,
+    relational_runtime: Option<super::relational_owner::WorthQueryBackendRelationalOwner>,
     runtime_bridge: RuntimeBridge,
     schema_adapter: Box<dyn super::WorthQueryRuntimeSchemaAdapter>,
     source_adapter: Box<dyn super::WorthQueryRuntimeSourceAdapter>,
@@ -61,7 +59,6 @@ impl WorthQueryBridgeBackedRuntimeBackend {
     ) -> Self {
         Self {
             relational_runtime: bootstrap.relational_runtime,
-            primary_graph_runtime: None,
             runtime_bridge: bootstrap.runtime_bridge,
             schema_adapter: bootstrap.schema_adapter,
             source_adapter: bootstrap.source_adapter,
@@ -89,6 +86,17 @@ impl super::WorthQueryMergeSnapshotOwner for WorthQueryBridgeBackedRuntimeBacken
 }
 
 impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
+    fn prepare_product_source(
+        &self,
+    ) -> Result<
+        worth_query_execution::facade::integration::WorthQueryProductRelationalInstallation,
+        super::WorthQueryProductSourceDenial,
+    > {
+        self.relational_runtime
+            .as_ref()
+            .ok_or(super::WorthQueryProductSourceDenial::SourceNotInstalled)?
+            .prepare_product_source()
+    }
     fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {
         self.support_profile.clone()
     }

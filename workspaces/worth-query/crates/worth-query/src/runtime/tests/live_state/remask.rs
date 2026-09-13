@@ -7,8 +7,7 @@ use crate::subscription::QuerySubscriptionDeliveryCauseKind;
 use worth_runtime_bridge::facade::{BridgeAsyncCompletionClass, BridgeAsyncCompletionState};
 
 fn remasked_runtime(projection: WorthQueryRuntimeRemaskProjection) -> WorthQueryRuntime {
-    WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

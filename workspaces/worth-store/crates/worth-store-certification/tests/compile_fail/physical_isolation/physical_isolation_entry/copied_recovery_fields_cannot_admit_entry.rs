@@ -1,4 +1,4 @@
-use worth_store_physical_isolation::admit_physical_isolation_entry;
+use worth_store_physical_certification::admit_physical_isolation_entry;
 
 struct CopiedS4RecoveryFields {
     recovered_root: String,

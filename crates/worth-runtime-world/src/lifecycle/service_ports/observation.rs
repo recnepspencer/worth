@@ -1,0 +1,93 @@
+use super::super::ports::RuntimeWorldObservationService;
+use super::super::RuntimeWorldOwnerUnavailable;
+use std::sync::{Arc, Weak};
+
+/// Weak access to the owning World's observation service.
+#[derive(Clone)]
+pub struct RuntimeWorldObservationPort {
+    owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
+}
+impl RuntimeWorldObservationPort {
+    pub(in crate::lifecycle) fn new(
+        owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
+    ) -> Self {
+        Self { owner }
+    }
+    fn service(
+        &self,
+    ) -> Result<Arc<dyn RuntimeWorldObservationService + Send + Sync>, RuntimeWorldOwnerUnavailable>
+    {
+        let service = self
+            .owner
+            .upgrade()
+            .ok_or_else(RuntimeWorldOwnerUnavailable::new)?;
+        if !service.is_available() {
+            return Err(RuntimeWorldOwnerUnavailable::new());
+        }
+        Ok(service)
+    }
+    pub fn observe_product_branch(
+        &self,
+        branch: &crate::identity::ProductBranchIdentity,
+    ) -> Result<
+        crate::branch::ProductBranchObservation,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .observe_product_branch(branch)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
+    /// Resolves one owner-issued live occurrence without exposing or
+    /// reconstructing its name-keyed product identity.
+    pub fn observe_product_branch_occurrence(
+        &self,
+        occurrence: crate::identity::ProductBranchIncarnation,
+    ) -> Result<
+        crate::branch::ProductBranchObservation,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .observe_product_branch_occurrence(occurrence)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
+    pub fn trace_product_branch_ancestry(
+        &self,
+        occurrence: crate::identity::ProductBranchIncarnation,
+        maximum: std::num::NonZeroUsize,
+    ) -> Result<
+        crate::branch::ProductBranchHistoryTraversal,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .trace_product_branch_ancestry(occurrence, maximum)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
+    pub fn continue_product_branch_ancestry(
+        &self,
+        previous: &crate::branch::ProductBranchHistoryTraversal,
+        maximum: std::num::NonZeroUsize,
+    ) -> Result<
+        crate::branch::ProductBranchHistoryTraversal,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .continue_product_branch_ancestry(previous, maximum)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
+    pub fn observe_product_branch_history_entry(
+        &self,
+        history: &crate::branch::ProductBranchHistoryTraversal,
+        index: usize,
+    ) -> Result<
+        crate::branch::ProductBranchObservation,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+    > {
+        self.service()?
+            .observe_product_branch_history_entry(history, index)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+}

@@ -1,0 +1,17 @@
+error[E0423]: expected value, found struct `worth_runtime_world::identity::RuntimeWorldOwnerIdentity`
+ --> tests/ui/private_world_module.rs:2:13
+  |
+2 |     let _ = worth_runtime_world::identity::RuntimeWorldOwnerIdentity;
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ constructor is not visible here due to private fields
+
+error[E0603]: module `identity` is private
+ --> tests/ui/private_world_module.rs:2:34
+  |
+2 |     let _ = worth_runtime_world::identity::RuntimeWorldOwnerIdentity;
+  |                                  ^^^^^^^^ private module
+  |
+note: the module `identity` is defined here
+ --> src/lib.rs
+  |
+  | mod identity;
+  | ^^^^^^^^^^^^

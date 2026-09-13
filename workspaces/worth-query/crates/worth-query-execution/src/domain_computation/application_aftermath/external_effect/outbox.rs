@@ -163,12 +163,18 @@ pub(crate) fn dispatch_outbox_create_intent(
     layout: Option<&WorthQueryDispatchOutboxLayout>,
     record: Option<&WorthQueryDispatchOutboxRecord>,
 ) -> Option<MutationIntent> {
-    bind_dispatch_outbox_create_intent(layout, record).map(|(intent, _)| intent)
+    bind_dispatch_outbox_create_intent(
+        layout,
+        record,
+        worth_relational::facade::identity::PartitionId::main(),
+    )
+    .map(|(intent, _)| intent)
 }
 
 pub(crate) fn bind_dispatch_outbox_create_intent(
     layout: Option<&WorthQueryDispatchOutboxLayout>,
     record: Option<&WorthQueryDispatchOutboxRecord>,
+    mutation_partition: worth_relational::facade::identity::PartitionId,
 ) -> Option<(MutationIntent, WorthQueryPendingDispatchOutbox)> {
     let (layout, record) = match (layout, record) {
         (Some(layout), Some(record)) => (layout, record),
@@ -214,7 +220,7 @@ pub(crate) fn bind_dispatch_outbox_create_intent(
         ),
     ]);
     let created_entity = CreatedEntityRef {
-        partition_id: worth_relational::facade::identity::PartitionId::main(),
+        partition_id: mutation_partition,
         kind_id: layout.entity_kind,
         client_key: worth_relational::facade::symbols::ClientKey::raw(format!(
             "worth-query-dispatch-outbox:{correlation_hex}"

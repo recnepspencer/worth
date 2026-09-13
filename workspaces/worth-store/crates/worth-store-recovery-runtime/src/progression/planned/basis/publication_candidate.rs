@@ -7,19 +7,44 @@ use worth_store_physical_format::{
 };
 
 use super::{
-    RecoveryBaseImagePlan, RecoveryPublicationCandidateArtifact, RecoverySelectedSourceInventory,
+    RecoveryBaseImagePlan, RecoveryObservedSuccessorCandidate,
+    RecoveryPublicationCandidateArtifact, RecoverySelectedSourceInventory,
 };
+use crate::entry::PhysicalRecoverySuccessorCandidateDenial;
 
+mod adoption;
+mod frontier;
+mod incremental_expectation;
 mod inventory;
 mod tree;
 
 pub(super) struct RecoveryCandidateBasis {
     pub(super) root: DurablePhysicalRootManifest,
+    pub(super) referenced_artifacts: Box<[RecordArtifactFile]>,
     pub(super) artifacts: Box<[RecoveryPublicationCandidateArtifact]>,
+    pub(super) materialization_cost: CandidateMaterializationCost,
+    pub(super) staged_current_selector: DurableRootSelector,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct CandidateMaterializationCost {
+    comparison_scratch_bytes: u64,
+    publication_bytes: u64,
+}
+
+impl CandidateMaterializationCost {
+    pub(crate) const fn comparison_scratch_bytes(self) -> u64 {
+        self.comparison_scratch_bytes
+    }
+
+    pub(crate) const fn publication_bytes(self) -> u64 {
+        self.publication_bytes
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum CandidateBuildDenial {
+    SuccessorCandidate(PhysicalRecoverySuccessorCandidateDenial),
     Invalid,
 }
 
@@ -27,6 +52,7 @@ pub(super) fn build(
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
     base: &RecoveryBaseImagePlan,
     source: &RecoverySelectedSourceInventory,
+    observed_successor: Option<RecoveryObservedSuccessorCandidate>,
     format: PhysicalRecordFormatDeclaration,
     publication: u64,
 ) -> Result<RecoveryCandidateBasis, CandidateBuildDenial> {
@@ -39,6 +65,126 @@ pub(super) fn build(
         base.root_states(),
         selected.node_capacity(),
     )?;
+    let mut comparison_scratch_bytes = 0;
+    let (root, mut build, referenced_artifacts) = match observed_successor {
+        Some(observed) => {
+            adoption::admit_observed(base, source, &final_inventory, &observed)?;
+            let (expected_root, scratch_bytes) =
+                incremental_expectation::derive(base, source, &final_inventory, format, &observed)?;
+            debug_assert_eq!(expected_root, observed.root);
+            comparison_scratch_bytes = scratch_bytes;
+            observed_build(format, observed)?
+        }
+        None => {
+            let (root, build) = build_new(base, source, &final_inventory, format)?;
+            let referenced_artifacts = topology_artifacts(&build.artifacts);
+            (root, build, referenced_artifacts)
+        }
+    };
+    let staged_current_selector = push_protocol_candidates(
+        &mut build,
+        store,
+        format,
+        base.selected_selector(),
+        generation,
+        publication,
+    )?;
+    build.artifacts.sort_by_key(|artifact| artifact.artifact);
+    let publication_bytes =
+        candidate_materialization_bytes(&root, &referenced_artifacts, &build.artifacts)?;
+    Ok(RecoveryCandidateBasis {
+        root,
+        referenced_artifacts,
+        artifacts: build.artifacts.into_boxed_slice(),
+        materialization_cost: CandidateMaterializationCost {
+            comparison_scratch_bytes,
+            publication_bytes,
+        },
+        staged_current_selector,
+    })
+}
+
+fn candidate_materialization_bytes(
+    _root: &DurablePhysicalRootManifest,
+    referenced_artifacts: &[RecordArtifactFile],
+    artifacts: &[RecoveryPublicationCandidateArtifact],
+) -> Result<u64, CandidateBuildDenial> {
+    let root_bytes = std::mem::size_of::<DurablePhysicalRootManifest>() as u64;
+    let reference_bytes = (referenced_artifacts.len() as u64)
+        .checked_mul(std::mem::size_of::<RecordArtifactFile>() as u64)
+        .ok_or(CandidateBuildDenial::Invalid)?;
+    let descriptor_bytes = (artifacts.len() as u64)
+        .checked_mul(std::mem::size_of::<RecoveryPublicationCandidateArtifact>() as u64)
+        .ok_or(CandidateBuildDenial::Invalid)?;
+    artifacts.iter().try_fold(
+        root_bytes
+            .checked_add(reference_bytes)
+            .and_then(|bytes| bytes.checked_add(descriptor_bytes))
+            .ok_or(CandidateBuildDenial::Invalid)?,
+        |bytes, artifact| {
+            bytes
+                .checked_add(artifact.bytes.len() as u64)
+                .ok_or(CandidateBuildDenial::Invalid)
+        },
+    )
+}
+
+fn observed_build(
+    format: PhysicalRecordFormatDeclaration,
+    observed: RecoveryObservedSuccessorCandidate,
+) -> Result<
+    (
+        DurablePhysicalRootManifest,
+        CandidateBuild,
+        Box<[RecordArtifactFile]>,
+    ),
+    CandidateBuildDenial,
+> {
+    let mut build = CandidateBuild {
+        format,
+        artifacts: Vec::with_capacity(observed.artifacts.len() + 3),
+    };
+    let RecoveryObservedSuccessorCandidate {
+        root,
+        referenced_artifacts,
+        artifacts,
+        ..
+    } = observed;
+    for artifact in artifacts.into_vec() {
+        build.push_owned(artifact.artifact, artifact.bytes)?;
+    }
+    Ok((root, build, referenced_artifacts))
+}
+
+fn topology_artifacts(
+    artifacts: &[RecoveryPublicationCandidateArtifact],
+) -> Box<[RecordArtifactFile]> {
+    let mut topology = artifacts
+        .iter()
+        .map(RecoveryPublicationCandidateArtifact::artifact)
+        .filter(|artifact| {
+            matches!(
+                artifact,
+                RecordArtifactFile::RootManifest { .. }
+                    | RecordArtifactFile::RootRoutingBlock { .. }
+                    | RecordArtifactFile::SegmentMembershipBlock { .. }
+                    | RecordArtifactFile::FreeSpaceManifest { .. }
+                    | RecordArtifactFile::FreeSpaceMembershipBlock { .. }
+            )
+        })
+        .collect::<Vec<_>>();
+    topology.sort_unstable();
+    topology.into_boxed_slice()
+}
+
+fn build_new(
+    base: &RecoveryBaseImagePlan,
+    source: &RecoverySelectedSourceInventory,
+    final_inventory: &inventory::FinalInventory,
+    format: PhysicalRecordFormatDeclaration,
+) -> Result<(DurablePhysicalRootManifest, CandidateBuild), CandidateBuildDenial> {
+    let generation = base.destination_generation();
+    let selected = base.selected_root();
     let mut build = CandidateBuild {
         format,
         artifacts: Vec::new(),
@@ -113,19 +259,7 @@ pub(super) fn build(
         RecordArtifactFile::RootManifest { generation },
         root.encode(format),
     )?;
-    push_protocol_candidates(
-        &mut build,
-        store,
-        format,
-        base.selected_selector(),
-        generation,
-        publication,
-    )?;
-    build.artifacts.sort_by_key(|artifact| artifact.artifact);
-    Ok(RecoveryCandidateBasis {
-        root,
-        artifacts: build.artifacts.into_boxed_slice(),
-    })
+    Ok((root, build))
 }
 
 fn push_protocol_candidates(
@@ -135,7 +269,7 @@ fn push_protocol_candidates(
     selected: DurableRootSelector,
     generation: u64,
     publication: u64,
-) -> Result<(), CandidateBuildDenial> {
+) -> Result<DurableRootSelector, CandidateBuildDenial> {
     let previous_identity = selected.identity();
     let current_identity =
         RootSelectorIdentity::new(generation).ok_or(CandidateBuildDenial::Invalid)?;
@@ -183,7 +317,8 @@ fn push_protocol_candidates(
     build.push(
         RecordArtifactFile::CatalogCandidate { publication },
         catalog.encode().to_vec(),
-    )
+    )?;
+    Ok(current)
 }
 
 pub(super) struct CandidateBuild {
@@ -205,10 +340,26 @@ impl CandidateBuild {
         {
             return Err(CandidateBuildDenial::Invalid);
         }
-        let payload_digest = Sha256::digest(&bytes).into();
+        self.push_owned(artifact, bytes.into_boxed_slice())
+    }
+
+    fn push_owned(
+        &mut self,
+        artifact: RecordArtifactFile,
+        bytes: Box<[u8]>,
+    ) -> Result<(), CandidateBuildDenial> {
+        if bytes.is_empty()
+            || self
+                .artifacts
+                .iter()
+                .any(|candidate| candidate.artifact == artifact)
+        {
+            return Err(CandidateBuildDenial::Invalid);
+        }
+        let payload_digest = Sha256::digest(bytes.as_ref()).into();
         self.artifacts.push(RecoveryPublicationCandidateArtifact {
             artifact,
-            bytes: bytes.into_boxed_slice(),
+            bytes,
             payload_digest,
         });
         Ok(())

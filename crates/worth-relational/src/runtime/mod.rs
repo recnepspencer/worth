@@ -26,16 +26,18 @@ pub use crate::snapshots::guard::SnapshotGuard;
 pub use crate::validation::engine::HarnessAuditMode;
 pub use crate::validation::InvariantAccess;
 pub use crate::visibility::materialization::read_records::{
-    EntityProjectionRecord, EntityRecordProjection, RelationProjectionRecord,
-    RelationRecordProjection, VisibilityProjectionView, VisibilityReadContext,
+    AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, EntityProjectionRecord,
+    EntityRecordProjection, RelationProjectionRecord, RelationRecordProjection,
+    RelationalAdjacencyDirection, VisibilityProjectionView, VisibilityReadContext,
 };
 pub use crate::visibility::retention::VisibilityRetentionAuthority;
 pub use initial_schema_installation::{
-    RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
-    RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
+    custom_invariant_inventory_digest, RelationalInitialSchemaInstallation,
+    RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
+    RelationalInitialSchemaInstallationReceipt,
 };
 pub use interruption_counters::RelationalInterruptionCostCounters;
-#[cfg(test)]
+#[cfg(any(test, feature = "test-operation-control"))]
 pub use operation_control::RelationalPatchPositionReservationGate;
 pub use operation_control::{
     RelationalCancellationSource, RelationalCancellationToken, RelationalInterruptionBoundary,

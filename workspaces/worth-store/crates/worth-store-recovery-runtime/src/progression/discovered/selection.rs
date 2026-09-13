@@ -1,23 +1,31 @@
-use worth_store_physical_format::RootSelectorRole;
 use worth_store_recovery_physics::{
-    admit_physical_page_facts, admit_physical_wal_tail, select_current_previous_root,
-    select_physical_recovery_sources, PhysicalCheckpointBase, PhysicalRecoveryResidue,
-    PhysicalRootSlotObservation, PhysicalSourceSelection, SelectedCompactionProduct,
-    SelectedPhysicalPageFacts, SelectedPhysicalRoot, SelectedPhysicalRootRole,
-    SelectedPhysicalWalTail,
+    admit_physical_page_facts, admit_physical_wal_tail, select_physical_recovery_sources,
+    PhysicalCheckpointBase, PhysicalRecoveryResidue, PhysicalRootSlotObservation,
+    PhysicalSourceSelection, SelectedCompactionProduct, SelectedPhysicalPageFacts,
+    SelectedPhysicalRoot, SelectedPhysicalRootRole, SelectedPhysicalWalTail,
 };
 
 use crate::entry::{
-    PhysicalRecoveryBlockEvidence, PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension,
-    PhysicalRecoveryLimitFailure, PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
+    PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
 };
 use crate::orchestration::{
-    BootstrapDiscovery, CheckpointDiscovery, ManifestFactsDiscovery, WalDiscovery,
+    AdmittedWalInventory, BootstrapDiscovery, CheckpointDiscovery, ManifestFactsDiscovery,
+    ManifestFactsState, WalDiscovery,
 };
+use worth_store::physical_runtime::StoreRecoveryCheckpointBindingBasis;
 
 use super::PhysicalRecoveryDiscoveryCounters;
 
+mod checkpoint;
+mod failure;
+mod root;
+
+use checkpoint::select_checkpoint;
+use failure::SelectionFailure;
+
 pub(super) struct SelectionInput {
+    pub(super) integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
     pub(super) current: PhysicalRootSlotObservation,
     pub(super) previous: PhysicalRootSlotObservation,
     pub(super) bootstrap: BootstrapDiscovery,
@@ -26,22 +34,24 @@ pub(super) struct SelectionInput {
     pub(super) checkpoint: CheckpointDiscovery,
     pub(super) wal: WalDiscovery,
     pub(super) residue: Vec<PhysicalRecoveryResidue>,
+    pub(super) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
     pub(super) counters: PhysicalRecoveryDiscoveryCounters,
 }
 
 pub(super) struct SelectionOutput {
     pub(super) selection: PhysicalSourceSelection,
+    pub(super) admitted_wal: AdmittedWalInventory,
+    pub(super) wal_integrity_observations:
+        Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
+    pub(super) checkpoint_binding_basis: Option<StoreRecoveryCheckpointBindingBasis>,
     pub(super) counters: PhysicalRecoveryDiscoveryCounters,
-}
-
-pub(super) struct SelectionFailure {
-    pub(super) kind: PhysicalRecoveryBlockKind,
-    pub(super) evidence: PhysicalRecoveryBlockEvidence,
+    pub(super) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
+    pub(super) integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
 struct ManifestSelectionInput {
-    current: ManifestFactsDiscovery,
-    previous: ManifestFactsDiscovery,
+    current: ManifestFactsState,
+    previous: ManifestFactsState,
     limits: PhysicalRecoveryLimits,
 }
 
@@ -56,27 +66,64 @@ struct FinalSelectionInput {
     counters: PhysicalRecoveryDiscoveryCounters,
     frontier: u64,
 }
-
 pub(super) fn select_sources(
     input: SelectionInput,
     limits: PhysicalRecoveryLimits,
 ) -> Result<SelectionOutput, SelectionFailure> {
     let mut counters = input.counters;
-    let root = select_root(input.current, input.previous, input.bootstrap, counters)?;
+    let mut integrity_trace = input.integrity_trace;
+    let (current_manifest_facts, current_integrity_trace) =
+        input.current_manifest_facts.into_parts();
+    integrity_trace.append(current_integrity_trace);
+    let (previous_manifest_facts, previous_integrity_trace) =
+        input.previous_manifest_facts.into_parts();
+    integrity_trace.append(previous_integrity_trace);
+    let wal_integrity_observations = input.wal.integrity_observations();
+    let (root, root_protocol_denials) = root::select(
+        input.current,
+        input.previous,
+        input.bootstrap,
+        input.root_protocol_denials,
+        counters,
+    )
+    .map_err(|failure| {
+        failure
+            .with_integrity_trace(integrity_trace.clone())
+            .with_integrity_observations(wal_integrity_observations.clone())
+    })?;
     let (page_facts, retained_previous_page_facts) = select_manifest_facts(
         &root,
         ManifestSelectionInput {
-            current: input.current_manifest_facts,
-            previous: input.previous_manifest_facts,
+            current: current_manifest_facts,
+            previous: previous_manifest_facts,
             limits,
         },
         &mut counters,
-    )?;
-    let checkpoint = select_checkpoint(&root, input.checkpoint, counters)?;
+    )
+    .map_err(|failure| {
+        failure
+            .with_root_protocol_denials(&root_protocol_denials)
+            .with_integrity_trace(integrity_trace.clone())
+            .with_integrity_observations(wal_integrity_observations.clone())
+    })?;
+    let (checkpoint, checkpoint_binding_basis) =
+        select_checkpoint(&root, input.checkpoint, counters, &mut integrity_trace).map_err(
+            |failure| {
+                failure
+                    .with_root_protocol_denials(&root_protocol_denials)
+                    .with_integrity_trace(integrity_trace.clone())
+                    .with_integrity_observations(wal_integrity_observations.clone())
+            },
+        )?;
     let frontier = checkpoint
         .as_ref()
         .map_or(0, |checkpoint| checkpoint.wal_tail_begin_lsn());
-    let wal_tail = select_wal(&root, input.wal, frontier, &mut counters)?;
+    let (wal_tail, admitted_wal, wal_integrity_observations) =
+        select_wal(&root, input.wal, frontier, &mut counters).map_err(|failure| {
+            failure
+                .with_root_protocol_denials(&root_protocol_denials)
+                .with_integrity_trace(integrity_trace.clone())
+        })?;
     let compaction = checkpoint.as_ref().map(SelectedCompactionProduct::admit);
     let selection = select_final_cut(FinalSelectionInput {
         root,
@@ -88,36 +135,21 @@ pub(super) fn select_sources(
         residue: input.residue,
         counters,
         frontier,
+    })
+    .map_err(|failure| {
+        failure
+            .with_root_protocol_denials(&root_protocol_denials)
+            .with_integrity_trace(integrity_trace.clone())
+            .with_integrity_observations(wal_integrity_observations.clone())
     })?;
     Ok(SelectionOutput {
         selection,
+        admitted_wal,
+        wal_integrity_observations,
+        checkpoint_binding_basis,
         counters,
-    })
-}
-
-fn select_root(
-    current: PhysicalRootSlotObservation,
-    previous: PhysicalRootSlotObservation,
-    bootstrap: BootstrapDiscovery,
-    counters: PhysicalRecoveryDiscoveryCounters,
-) -> Result<SelectedPhysicalRoot, SelectionFailure> {
-    let mut source_denials = root_slot_denials(&current, &previous);
-    let (anchor, bootstrap_denial) = match bootstrap {
-        BootstrapDiscovery::Admitted(catalog) => (Some(catalog), None),
-        BootstrapDiscovery::Rejected(denial) => (None, Some(denial)),
-        BootstrapDiscovery::NotRequired | BootstrapDiscovery::Absent => (None, None),
-    };
-    select_current_previous_root(current, previous, anchor).map_err(|denial| {
-        if let Some(denial) = bootstrap_denial {
-            source_denials.push(PhysicalRecoverySourceDenial::BootstrapCatalog(denial));
-        }
-        source_denials.push(PhysicalRecoverySourceDenial::RootSelection(denial));
-        SelectionFailure::new(
-            PhysicalRecoveryBlockKind::RootProtocol,
-            counters,
-            "records/root selectors",
-        )
-        .with_source_denials(source_denials)
+        root_protocol_denials,
+        integrity_trace,
     })
 }
 
@@ -132,8 +164,8 @@ fn select_manifest_facts(
     };
     let generation = root.selected().selector().root_generation();
     let blocks = match selected {
-        ManifestFactsDiscovery::Observed { blocks, .. } => blocks,
-        ManifestFactsDiscovery::Rejected(denial) => {
+        ManifestFactsState::Observed { blocks } => blocks,
+        ManifestFactsState::Rejected(denial) => {
             return Err(SelectionFailure::new(
                 PhysicalRecoveryBlockKind::SourceSelection,
                 *counters,
@@ -144,7 +176,7 @@ fn select_manifest_facts(
                 PhysicalRecoverySourceDenial::ManifestObservation(denial),
             ]));
         }
-        ManifestFactsDiscovery::Unavailable => {
+        ManifestFactsState::Unavailable => {
             return Err(SelectionFailure::new(
                 PhysicalRecoveryBlockKind::SourceSelection,
                 *counters,
@@ -164,7 +196,7 @@ fn select_manifest_facts(
     counters.selected_page_facts = page_facts.placements().len() as u64;
     counters.distinct_pages_and_extents = page_facts.distinct_pages_and_extents();
     let retained_previous_page_facts = match (root.retained_previous(), retained_previous) {
-        (Some(previous), Some(ManifestFactsDiscovery::Observed { blocks })) => Some(
+        (Some(previous), Some(ManifestFactsState::Observed { blocks })) => Some(
             admit_physical_page_facts(
                 previous,
                 blocks,
@@ -180,7 +212,7 @@ fn select_manifest_facts(
                 )
             })?,
         ),
-        (Some(previous), Some(ManifestFactsDiscovery::Rejected(denial))) => {
+        (Some(previous), Some(ManifestFactsState::Rejected(denial))) => {
             return Err(SelectionFailure::new(
                 PhysicalRecoveryBlockKind::SourceSelection,
                 *counters,
@@ -191,7 +223,7 @@ fn select_manifest_facts(
                 PhysicalRecoverySourceDenial::ManifestObservation(denial),
             ]));
         }
-        (Some(previous), Some(ManifestFactsDiscovery::Unavailable)) => {
+        (Some(previous), Some(ManifestFactsState::Unavailable)) => {
             return Err(SelectionFailure::new(
                 PhysicalRecoveryBlockKind::SourceSelection,
                 *counters,
@@ -204,51 +236,25 @@ fn select_manifest_facts(
     Ok((page_facts, retained_previous_page_facts))
 }
 
-fn select_checkpoint(
-    root: &SelectedPhysicalRoot,
-    checkpoint: CheckpointDiscovery,
-    counters: PhysicalRecoveryDiscoveryCounters,
-) -> Result<Option<PhysicalCheckpointBase>, SelectionFailure> {
-    let generation = root.selected().selector().root_generation();
-    match checkpoint {
-        CheckpointDiscovery::Absent => Ok(None),
-        CheckpointDiscovery::Rejected(denial) => Err(SelectionFailure::new(
-            PhysicalRecoveryBlockKind::Checkpoint,
-            counters,
-            "families/checkpoint.current",
-        )
-        .with_generation(generation)
-        .with_source_denials(vec![PhysicalRecoverySourceDenial::CheckpointFormat(denial)])),
-        CheckpointDiscovery::Admitted(checkpoint) => {
-            PhysicalCheckpointBase::admit(root, checkpoint)
-                .map(Some)
-                .map_err(|denial| {
-                    SelectionFailure::new(
-                        PhysicalRecoveryBlockKind::Checkpoint,
-                        counters,
-                        "families/checkpoint.current",
-                    )
-                    .with_generation(generation)
-                    .with_source_denials(vec![
-                        PhysicalRecoverySourceDenial::CheckpointBinding(denial),
-                    ])
-                })
-        }
-    }
-}
-
 fn select_wal(
     root: &SelectedPhysicalRoot,
     wal: WalDiscovery,
     frontier: u64,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
-) -> Result<SelectedPhysicalWalTail, SelectionFailure> {
+) -> Result<
+    (
+        SelectedPhysicalWalTail,
+        AdmittedWalInventory,
+        Vec<crate::entry::PhysicalRecoveryWalIntegrityObservation>,
+    ),
+    SelectionFailure,
+> {
     let generation = root.selected().selector().root_generation();
-    let (candidates, rejected, corruptions) = wal.into_selection_parts();
+    let (candidates, rejected, corruptions, admitted, observations) = wal.into_selection_parts();
     if rejected {
         let denials = corruptions
             .into_iter()
-            .map(PhysicalRecoverySourceDenial::WalArtifact)
+            .map(PhysicalRecoverySourceDenial::WalIntegrity)
             .collect();
         return Err(SelectionFailure::new(
             PhysicalRecoveryBlockKind::WalInventory,
@@ -257,19 +263,24 @@ fn select_wal(
         )
         .with_generation(generation)
         .with_lsn(frontier)
+        .with_integrity_observations(observations)
         .with_source_denials(denials));
     }
-    admit_physical_wal_tail(frontier, candidates).map_err(|denial| {
-        counters.wal_missing_range_denials += 1;
-        SelectionFailure::new(
-            PhysicalRecoveryBlockKind::WalInventory,
-            *counters,
-            "families/wal",
-        )
-        .with_generation(generation)
-        .with_lsn(frontier)
-        .with_source_denials(vec![PhysicalRecoverySourceDenial::WalTail(denial)])
-    })
+    match admit_physical_wal_tail(frontier, candidates) {
+        Ok(selected) => Ok((selected, admitted, observations)),
+        Err(denial) => {
+            counters.wal_missing_range_denials += 1;
+            Err(SelectionFailure::new(
+                PhysicalRecoveryBlockKind::WalInventory,
+                *counters,
+                "families/wal",
+            )
+            .with_generation(generation)
+            .with_lsn(frontier)
+            .with_integrity_observations(observations)
+            .with_source_denials(vec![PhysicalRecoverySourceDenial::WalTail(denial)]))
+        }
+    }
 }
 
 fn select_final_cut(
@@ -295,29 +306,6 @@ fn select_final_cut(
         .with_lsn(input.frontier)
         .with_source_denials(vec![PhysicalRecoverySourceDenial::FinalSelection(denial)])
     })
-}
-
-fn root_slot_denials(
-    current: &PhysicalRootSlotObservation,
-    previous: &PhysicalRootSlotObservation,
-) -> Vec<PhysicalRecoverySourceDenial> {
-    [
-        (RootSelectorRole::Current, current),
-        (RootSelectorRole::Previous, previous),
-    ]
-    .into_iter()
-    .filter_map(|(slot, observation)| {
-        observation.rejection().map(
-            |(denial, selector)| PhysicalRecoverySourceDenial::RootSlot {
-                slot,
-                denial,
-                observed_store: selector.map(|value| value.store_identity()),
-                observed_role: selector.map(|value| value.role()),
-                observed_generation: selector.map(|value| value.root_generation()),
-            },
-        )
-    })
-    .collect()
 }
 
 fn manifest_failure(
@@ -353,36 +341,4 @@ fn manifest_failure(
         _ => {}
     }
     failure
-}
-
-impl SelectionFailure {
-    fn new(
-        kind: PhysicalRecoveryBlockKind,
-        counters: PhysicalRecoveryDiscoveryCounters,
-        artifact: &str,
-    ) -> Self {
-        Self {
-            kind,
-            evidence: PhysicalRecoveryBlockEvidence {
-                counters,
-                artifact: Some(artifact.to_owned()),
-                ..PhysicalRecoveryBlockEvidence::default()
-            },
-        }
-    }
-
-    fn with_generation(mut self, generation: u64) -> Self {
-        self.evidence.source_generation = Some(generation);
-        self
-    }
-
-    fn with_lsn(mut self, lsn: u64) -> Self {
-        self.evidence.lsn = Some(lsn);
-        self
-    }
-
-    fn with_source_denials(mut self, denials: Vec<PhysicalRecoverySourceDenial>) -> Self {
-        self.evidence.source_denials = denials;
-        self
-    }
 }

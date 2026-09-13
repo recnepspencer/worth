@@ -21,12 +21,8 @@ impl BankReadyQuery<'_, '_, EstateGovernanceRequest> {
         WorthQueryPublishedApplicationResult<EstateGovernanceQuery, EstateGovernanceContext>,
         BankApplicationQueryDenial,
     > {
-        let result = execute_estate_governance(
-            self.runtime,
-            self.principal,
-            self.query,
-            self.controls.application_query_controls(),
-        )?;
+        let result =
+            execute_estate_governance(self.runtime, self.principal, self.query, &self.controls)?;
         Ok(publish_application_result(result.into_admitted_disclosed()))
     }
 }
@@ -45,7 +41,7 @@ impl BankReadyQuery<'_, '_, EstateLegalComplianceRequest> {
             self.runtime,
             self.principal,
             self.query,
-            self.controls.application_query_controls(),
+            &self.controls,
         )?;
         Ok(publish_application_result(result.into_admitted_disclosed()))
     }
@@ -65,7 +61,7 @@ impl BankReadyQuery<'_, '_, EstateMandatoryReviewRequest> {
             self.runtime,
             self.principal,
             self.query,
-            self.controls.application_query_controls(),
+            &self.controls,
         )?;
         Ok(publish_application_result(result.into_admitted_disclosed()))
     }

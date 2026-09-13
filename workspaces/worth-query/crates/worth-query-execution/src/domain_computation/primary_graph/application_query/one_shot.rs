@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
@@ -63,8 +61,9 @@ pub struct WorthQueryApplicationOneShotDenial {
 
 pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
     rows: Vec<QueryResult>,
+    observed_sources: Vec<super::WorthQueryObservedSource<Query>>,
+    request_affinity: super::admitted_result::WorthQueryApplicationQueryRequestAffinity,
     receipt: WorthQueryApplicationQueryAccessReceipt,
-    _query: PhantomData<fn() -> Query>,
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -149,7 +148,7 @@ fn map_authorized_read_denial(
             subject.to_string(),
         ),
         WorthQueryAuthorizedApplicationReadDenial::StaleScope
-        | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope(_) => (
+        | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope => (
             WorthQueryApplicationOneShotDenialKind::StaleScope,
             subject.to_string(),
         ),
@@ -360,6 +359,10 @@ impl<Query, QueryResult> WorthQueryApplicationOneShotResult<Query, QueryResult> 
         &self.receipt
     }
 
+    pub fn observed_sources(&self) -> &[super::WorthQueryObservedSource<Query>] {
+        &self.observed_sources
+    }
+
     pub fn into_rows(self) -> Vec<QueryResult> {
         self.rows
     }
@@ -367,7 +370,12 @@ impl<Query, QueryResult> WorthQueryApplicationOneShotResult<Query, QueryResult> 
     pub fn into_admitted_disclosed(
         self,
     ) -> super::WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult> {
-        super::WorthQueryAdmittedDisclosedApplicationResult::new(self.rows, self.receipt)
+        super::WorthQueryAdmittedDisclosedApplicationResult::new_with_sources(
+            self.rows,
+            self.observed_sources,
+            self.request_affinity,
+            self.receipt,
+        )
     }
 }
 

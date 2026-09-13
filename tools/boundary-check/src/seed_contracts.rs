@@ -1,5 +1,5 @@
 use crate::cargo_graph::{normalize_path, normalize_str, package_name_from_manifest};
-use crate::config::{BornCrateConfig, SeedSkeletonConfig};
+use crate::config::{BornCrateConfig, SeedSkeletonConfig, SubworkspaceConfig};
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
 use std::collections::BTreeSet;
 use std::fs;
@@ -10,12 +10,13 @@ pub(crate) fn validate_seed_crate_contracts(
     root: &Path,
     born_crates: &[BornCrateConfig],
     seed_skeletons: &[SeedSkeletonConfig],
+    subworkspaces: &[SubworkspaceConfig],
 ) -> Result<Vec<Diagnostic>, String> {
     let expected_paths: BTreeSet<_> = born_crates
         .iter()
         .map(|born| normalize_str(&born.path))
         .collect();
-    let actual_paths = discover_born_crates(root)?;
+    let actual_paths = discover_born_crates(root, subworkspaces)?;
     let mut diagnostics = Vec::new();
 
     if actual_paths != expected_paths {
@@ -54,18 +55,14 @@ pub(crate) fn validate_seed_crate_contracts(
     Ok(diagnostics)
 }
 
-fn discover_born_crates(root: &Path) -> Result<BTreeSet<String>, String> {
-    let workspaces_root = root.join("cad/workspaces");
+fn discover_born_crates(
+    root: &Path,
+    subworkspaces: &[SubworkspaceConfig],
+) -> Result<BTreeSet<String>, String> {
     let mut born_crates = BTreeSet::new();
 
-    for workspace in fs::read_dir(&workspaces_root)
-        .map_err(|e| format!("read Road 1 workspaces {}: {e}", workspaces_root.display()))?
-    {
-        let workspace = workspace.map_err(|e| format!("read Road 1 workspace entry: {e}"))?;
-        let crates_path = workspace.path().join("crates");
-        if !crates_path.is_dir() {
-            continue;
-        }
+    for workspace in subworkspaces {
+        let crates_path = root.join(&workspace.path).join("crates");
 
         for crate_dir in fs::read_dir(&crates_path)
             .map_err(|e| format!("read crates lane {}: {e}", crates_path.display()))?

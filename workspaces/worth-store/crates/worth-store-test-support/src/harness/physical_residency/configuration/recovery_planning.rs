@@ -20,12 +20,19 @@ pub(in crate::harness::physical_residency) fn recovery_planning_configuration(
 pub(in crate::harness::physical_residency) fn dense_recovery_planning_configuration(
     segment_pages: u32,
 ) -> PhysicalResidencyStoreConfiguration {
+    compact_recovery_planning_configuration(segment_pages, 128)
+}
+
+pub(in crate::harness::physical_residency) fn compact_recovery_planning_configuration(
+    segment_pages: u32,
+    manifest_capacity: u16,
+) -> PhysicalResidencyStoreConfiguration {
     let base = admitted_store_base();
     let placement = PhysicalRecordPlacementPolicy::builder()
         .segment_pages(SegmentPageCount::new(segment_pages).unwrap())
         .extent_threshold(RecordByteLimit::new(8_000).unwrap())
         .page_fill(PageFillPercent::new(50).unwrap())
-        .manifest_capacity(ManifestEntryCapacity::new(128).unwrap())
+        .manifest_capacity(ManifestEntryCapacity::new(manifest_capacity).unwrap())
         .admit(base.format())
         .unwrap();
     configuration(base.with_placement(placement))

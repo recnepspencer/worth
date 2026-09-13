@@ -10,7 +10,6 @@ pub struct WorthUiPresentationAsyncCloseReceipt {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthUiPresentationAsyncCloseDenial {
     ActiveAdmissions,
-    SemanticRetirement,
     QueryClose,
 }
 
@@ -42,21 +41,10 @@ impl WorthUiPresentationAsyncOwner {
         }
         self.stage_terminal_resources();
         while let Some(key) = self.terminal_closing.keys().next().copied() {
-            let mut closing = self
+            let closing = self
                 .terminal_closing
                 .remove(&key)
                 .expect("selected terminal resource remains retained");
-            if !closing.semantic_retired {
-                if self
-                    .registry
-                    .retire(&mut self.workspace, &closing.admission)
-                    .is_err()
-                {
-                    self.terminal_closing.insert(key, closing);
-                    return Err(WorthUiPresentationAsyncCloseDenial::SemanticRetirement);
-                }
-                closing.semantic_retired = true;
-            }
             if closing
                 .admission
                 .close_query_live_view(&mut self.workspace)
@@ -79,20 +67,14 @@ impl WorthUiPresentationAsyncOwner {
 
     fn stage_terminal_resources(&mut self) {
         for (_, (key, _, admission)) in self.current.drain() {
-            self.terminal_closing.insert(
-                key,
-                PendingTerminalClose {
-                    admission,
-                    semantic_retired: false,
-                },
-            );
+            self.terminal_closing
+                .insert(key, PendingTerminalClose { admission });
         }
         for (key, unresolved) in self.unresolved.drain() {
             self.terminal_closing.insert(
                 key,
                 PendingTerminalClose {
                     admission: unresolved.admission,
-                    semantic_retired: false,
                 },
             );
         }

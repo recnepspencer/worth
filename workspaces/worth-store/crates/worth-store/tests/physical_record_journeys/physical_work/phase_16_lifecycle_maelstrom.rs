@@ -1,11 +1,7 @@
-mod evidence;
 mod fixture;
 pub(super) mod fresh_process;
 mod joined_execution;
-mod mutant_report;
 mod shutdown_trace;
-mod terminal_labels;
-mod terminal_projection;
 mod workflows;
 mod world;
 

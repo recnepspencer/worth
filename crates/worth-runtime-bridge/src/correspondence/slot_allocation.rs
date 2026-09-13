@@ -78,24 +78,6 @@ impl CorrespondenceAllocationRegistry {
             .is_some_and(|owners| owners.iter().eq(target.allocation_sources.iter()))
     }
 
-    pub(crate) fn rebind_to_graph(&self, signal_graph_instance_id: u64) -> Self {
-        let authoritative_records = self
-            .authoritative_records
-            .iter()
-            .map(|record| AuthoritativeAllocationRecord {
-                key: AllocationKey {
-                    signal_graph_instance_id,
-                    partition: record.key.partition.clone(),
-                    node: record.key.node,
-                    aspect: record.key.aspect,
-                },
-                owner: record.owner.clone(),
-                target_identity: record.target_identity.clone(),
-            })
-            .collect();
-        Self::from_authoritative_records(authoritative_records)
-    }
-
     pub(super) fn commit(&mut self, record: AuthoritativeAllocationRecord) {
         self.owners
             .entry(record.key.clone())

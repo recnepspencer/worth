@@ -1,4 +1,5 @@
 mod capture;
+mod restore_selection;
 mod validation;
 
 use crate::data::error::SignalError;
@@ -19,7 +20,6 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    #[cfg(test)]
     pub(crate) fn restore_snapshot(
         &mut self,
         snapshot: &SignalSnapshotV1,
@@ -42,7 +42,7 @@ where
                 ))
             })?;
         let reconstructability_proof = snapshot.reconstructability_proof()?;
-        let restore_plan = self.graph.plan_snapshot_restore(snapshot, intent)?;
+        let restore_plan = self.plan_snapshot_restore_for_target(snapshot, intent)?;
         self.graph.validate_snapshot_compatibility(snapshot)?;
         if matches!(
             intent.dependency_state,
@@ -52,23 +52,23 @@ where
                 "snapshot restore intent `SeedRecomputationFromSnapshot` is not implemented yet",
             ));
         }
-        let snapshot_state = self
-            .branches
-            .snapshot_state(snapshot.meta.branch_id, snapshot.meta.snapshot_id)
-            .cloned();
+        let snapshot_state =
+            self.load_snapshot_branch_state(snapshot.meta.branch_id, snapshot.meta.snapshot_id)?;
         Self::ensure_managed_queue_branch_transfer_allowed(&self.resource)?;
         if let Some(snapshot_state) = snapshot_state.as_ref() {
             Self::ensure_managed_queue_branch_transfer_allowed(snapshot_state.resource())?;
         }
         if let Some(snapshot_state) = snapshot_state {
-            let current_diagnostics = self.graph.diagnostics_state().clone();
-            self.restore_stored_snapshot_branch(
+            let (current_diagnostics, target_policy) =
+                self.snapshot_restore_target_context(restored_branch_id)?;
+            self.restore_snapshot_branch_state(
                 snapshot,
                 intent,
                 &reconstructability_proof,
                 &restore_plan,
                 snapshot_state,
                 &current_diagnostics,
+                target_policy,
             )?;
             self.branches.commit_branch_restore_generation(
                 restored_branch_id,
@@ -116,14 +116,14 @@ where
         intent: SnapshotRestoreIntent,
     ) -> Result<(), SignalError> {
         let reconstructability_proof = snapshot.reconstructability_proof()?;
-        let restore_plan = self.graph.plan_snapshot_restore(snapshot, intent)?;
-        self.graph.validate_snapshot_compatibility(snapshot)?;
         if snapshot.meta.branch_id != branch.id {
             return Err(SignalError::incompatible_snapshot(format!(
                 "snapshot `{}` from branch `{}` cannot be restored into branch `{}`",
                 snapshot.meta.snapshot_id.0, snapshot.meta.branch_name, branch.name
             )));
         }
+        let restore_plan = self.plan_snapshot_restore_for_target(snapshot, intent)?;
+        self.graph.validate_snapshot_compatibility(snapshot)?;
         if branch.id == self.graph.current_branch().id {
             return self.restore_snapshot_with_intent(snapshot, intent);
         }
@@ -204,7 +204,7 @@ where
         ))
     }
 
-    fn restore_stored_snapshot_branch(
+    fn restore_snapshot_branch_state(
         &mut self,
         snapshot: &SignalSnapshotV1,
         intent: SnapshotRestoreIntent,
@@ -212,6 +212,7 @@ where
         restore_plan: &crate::state::SnapshotRestorePlan,
         snapshot_state: SnapshotBranchState<D, I, T>,
         current_diagnostics: &crate::diagnostics::state::DiagnosticsState,
+        target_policy: crate::runtime_policy::InstalledSignalRuntimePolicy,
     ) -> Result<(), SignalError> {
         let graph = self.restore_snapshot_graph(
             snapshot,
@@ -219,7 +220,7 @@ where
             restore_plan,
             current_diagnostics,
             intent,
-            self.graph.installed_runtime_policy(),
+            target_policy,
         )?;
         self.branches
             .set_branch_head_snapshot(snapshot.meta.branch_id, snapshot.meta.snapshot_id);
@@ -228,14 +229,7 @@ where
             .project_catalog(snapshot.meta.branch_id, state.graph_mut());
         let preserved_transaction = self.telemetry_snapshot().transaction;
         let interrupted_observation = self.graph.interrupt_observation_at_boundary();
-        self.apply_branch_lifecycle_transfer(
-            crate::logic::transaction::runtime::state::runtime_state::BranchLifecycleTransfer::Restore(
-                crate::logic::transaction::runtime::state::runtime_state::RestoreTransferPacket::new(
-                    snapshot.meta.branch_id,
-                    state,
-                ),
-            ),
-        )?;
+        self.install_snapshot_restore_selection(snapshot.meta.branch_id, state)?;
         self.with_telemetry(|telemetry| {
             Self::merge_global_transaction_telemetry(
                 preserved_transaction,

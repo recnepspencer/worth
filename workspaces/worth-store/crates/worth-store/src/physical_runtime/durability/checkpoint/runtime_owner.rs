@@ -21,6 +21,7 @@ pub(in crate::physical_runtime) struct PhysicalCheckpointRuntimeOwner {
     capture: PhysicalCheckpointCaptureOwner,
     work_runtime: Weak<crate::physical_runtime::instance::PhysicalStoreWorkRuntime>,
     lifecycle: Mutex<PhysicalCheckpointLifecycleState>,
+    yieldpoints: Arc<super::PhysicalCheckpointYieldpointOwner>,
 }
 
 #[derive(Clone)]
@@ -65,6 +66,7 @@ impl PhysicalCheckpointRuntimeOwner {
         foundation: PhysicalCheckpointCaptureFoundation,
         work_runtime: &Arc<crate::physical_runtime::instance::PhysicalStoreWorkRuntime>,
     ) -> Arc<Self> {
+        let yieldpoints = foundation.work.yieldpoints();
         Arc::new(Self {
             capture: PhysicalCheckpointCaptureOwner::new(foundation),
             work_runtime: Arc::downgrade(work_runtime),
@@ -82,7 +84,15 @@ impl PhysicalCheckpointRuntimeOwner {
                 encoded_bytes: 0,
                 dirty_records: 0,
             }),
+            yieldpoints,
         })
+    }
+
+    pub(in crate::physical_runtime) fn pause_at(
+        &self,
+        step: super::PhysicalCheckpointStep,
+    ) -> super::PhysicalCheckpointPauseGate {
+        self.yieldpoints.install(step)
     }
 
     pub(in crate::physical_runtime) fn submission(

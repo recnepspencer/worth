@@ -34,12 +34,15 @@ fn readmission_families_declare_exactly_the_cases_ordinary_operations_emit() {
             .case_id(),
     ];
 
-    let quarantine_record = authoritative_quarantine_record("quarantine-case-matrix");
+    let quarantine_observation = authoritative_quarantine_observation("quarantine-case-matrix");
     let quarantine_required = || {
         layout_corruption()
-            .require_record_backed_recovery_readmission(
-                layout_corruption()
-                    .assess_physical_quarantine(admitted_family(), quarantine_record.clone()),
+            .require_observation_bound_recovery_readmission(
+                layout_corruption().assess_quarantine_observation(
+                    admitted_family(),
+                    quarantine_observation.identity().clone(),
+                    quarantine_observation.class(),
+                ),
                 &current_authority("store.new.strategy", "quarantine-case-matrix"),
                 current_security_scope("store.new.strategy", "quarantine-case-matrix").witnesses(),
             )
@@ -51,7 +54,11 @@ fn readmission_families_declare_exactly_the_cases_ordinary_operations_emit() {
         quarantine_readmission()
             .admit(
                 quarantine_required(),
-                record_backed_witness(family(), &quarantine_record, "quarantine-case-matrix"),
+                observation_bound_witness(
+                    family(),
+                    &quarantine_observation,
+                    "quarantine-case-matrix",
+                ),
             )
             .case_id(),
         quarantine_readmission()

@@ -10,10 +10,8 @@ description = "Roadmap 2 S.7 native content-addressed blob and object chunk stor
 certification-test-authority = [
     "worth-store-io-scheduler/certification-test-authority",
     "worth-store-physical-backend/certification-test-authority",
-    "worth-store-physical-integrity/test-support",
     "worth-store-physical-isolation/certification-authority",
     "worth-store-reclaim-policy/certification-test-authority",
-    "worth-store-recovery-physics/certification-test-authority",
     "worth-store-tiering/certification-test-authority",
     "worth-store-test-support/physical-compaction-fixtures",
 ]
@@ -29,10 +27,8 @@ worth-store-authority.workspace = true
 worth-store-io-scheduler.workspace = true
 worth-store-physical-backend.workspace = true
 worth-store-physical-format.workspace = true
-worth-store-physical-integrity.workspace = true
 worth-store-physical-isolation.workspace = true
 worth-store-reclaim-policy.workspace = true
-worth-store-recovery-physics.workspace = true
 worth-store-retention.workspace = true
 worth-store-security.workspace = true
 worth-store-tiering.workspace = true
@@ -41,14 +37,12 @@ worth-store.workspace = true
 
 [dev-dependencies]
 tempfile = "3"
-worth-store-physical-integrity = { workspace = true, features = ["test-support"] }
 worth-store-aspect-native.workspace = true
 worth-store-offline-verifier.workspace = true
 worth-store-physical-backend = { workspace = true, features = ["certification-test-authority"] }
 worth-store-io-scheduler = { workspace = true, features = ["certification-test-authority"] }
 worth-store-physical-isolation = { workspace = true, features = ["certification-authority"] }
 worth-store-reclaim-policy = { workspace = true, features = ["certification-test-authority"] }
-worth-store-recovery-physics = { workspace = true, features = ["certification-test-authority"] }
 worth-store-tiering = { workspace = true, features = ["certification-test-authority"] }
 worth-store-test-support = { workspace = true, default-features = false, features = ["physical-isolation-fixtures"] }
 

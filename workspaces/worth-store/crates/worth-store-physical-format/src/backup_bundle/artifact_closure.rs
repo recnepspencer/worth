@@ -204,11 +204,15 @@ fn update_coverage_digest(digest: &mut Sha256, coverage: &BackupBundleArtifactCo
             checkpoint_identity,
             manifest_generation,
             durable_checkpoint_lsn,
+            authority_fingerprint,
+            frontier_digest,
         } => {
             digest.update([2]);
             digest.update(checkpoint_identity.as_bytes());
             digest.update(manifest_generation.to_le_bytes());
             digest.update(durable_checkpoint_lsn.to_le_bytes());
+            digest.update(authority_fingerprint);
+            digest.update(frontier_digest);
         }
         BackupBundleArtifactCoverage::WalSegment {
             start_lsn,

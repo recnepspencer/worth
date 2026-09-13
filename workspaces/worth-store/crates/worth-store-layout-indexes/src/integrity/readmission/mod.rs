@@ -1,3 +1,4 @@
+mod authority;
 mod identity;
 mod import;
 mod matching;
@@ -7,6 +8,12 @@ mod requirements;
 mod source;
 mod witness;
 
+pub use authority::{
+    layout_readmission, ImportLayoutReadmissionOutcome, LayoutReadmissionAuthority,
+    QuarantineLayoutReadmissionOutcome, RecoveryLayoutReadmissionAdmissionDenial,
+    RecoveryLayoutReadmissionClass, RecoveryLayoutReadmissionIdentity,
+    RecoveryLayoutReadmissionOutcomeView, RecoveryLayoutReadmissionWitness,
+};
 pub use identity::LayoutReadmissionIdentity;
 pub use import::{import_readmission, ImportReadmission};
 pub use outcome::{

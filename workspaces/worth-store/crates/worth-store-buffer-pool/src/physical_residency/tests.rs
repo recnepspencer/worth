@@ -8,6 +8,8 @@ use worth_store_physical_format::{
     RecordArtifactFile, RecordFrameCoordinate,
 };
 
+const TEST_FRAME_METADATA_BYTES: u64 = 8192;
+
 #[path = "tests/allocation_events/mod.rs"]
 mod allocation_events;
 #[path = "tests/candidate_artifact_alias.rs"]
@@ -30,6 +32,8 @@ mod eviction_siege;
 mod frame_access;
 #[path = "tests/identity_transition.rs"]
 mod identity_transition;
+#[path = "tests/integrity_validation.rs"]
+mod integrity_validation;
 #[path = "tests/metadata_admission.rs"]
 mod metadata_admission;
 #[path = "tests/operation_allocation.rs"]
@@ -82,12 +86,12 @@ fn limits(
     let total_bytes = resident_bytes
         .checked_mul(2)
         .and_then(|bytes| bytes.checked_add(operation_bytes))
-        .and_then(|bytes| bytes.checked_add(4096))
+        .and_then(|bytes| bytes.checked_add(TEST_FRAME_METADATA_BYTES))
         .unwrap();
     PhysicalResidencyLimits::builder()
         .total_bytes(nonzero_bytes(total_bytes))
         .resident_bytes(nonzero_bytes(resident_bytes))
-        .metadata_bytes(nonzero_bytes(4096))
+        .metadata_bytes(nonzero_bytes(TEST_FRAME_METADATA_BYTES))
         .frame_entries(nonzero_count(frame_entries))
         .pinned_frames(nonzero_count(pinned_frames))
         .pin_leases(nonzero_count(pinned_frames))

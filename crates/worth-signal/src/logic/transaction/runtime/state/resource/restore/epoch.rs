@@ -48,26 +48,51 @@ impl ResourceRuntimeState {
     fn rekey_resource_state(&mut self, branch_id: SignalBranchId) -> RekeyedResourceRestoreState {
         self.restore_epoch = self.restore_epoch.saturating_add(1);
         let branch_epoch = ResourceBranchEpoch::new(branch_id, self.restore_epoch);
-        for in_flight in self.in_flight_by_request.values_mut() {
-            in_flight.refresh_branch_epoch(branch_epoch);
-        }
-        for retained in self.retained_in_flight_history_by_request.values_mut() {
-            retained.refresh_branch_epoch(branch_epoch);
-        }
-        for pruned in self.pruned_in_flight_history_by_request.values_mut() {
-            *pruned = pruned.clone().with_branch_epoch(branch_epoch);
-        }
-        for scheduled in self.pending_retry_by_request.values_mut() {
-            *scheduled = scheduled
-                .clone()
-                .with_previous(scheduled.previous().with_branch_epoch(branch_epoch));
-        }
-        for retained in self.retained_retry_lineage_by_ordinal.values_mut() {
-            *retained = retained.clone().with_branch_epoch(branch_epoch);
-        }
-        for pruned in self.pruned_retry_lineage_by_ordinal.values_mut() {
-            *pruned = pruned.clone().with_branch_epoch(branch_epoch);
-        }
+        self.in_flight_by_request = self
+            .in_flight_by_request
+            .iter()
+            .map(|(request, in_flight)| {
+                let mut in_flight = in_flight.clone();
+                in_flight.refresh_branch_epoch(branch_epoch);
+                (*request, in_flight)
+            })
+            .collect();
+        self.retained_in_flight_history_by_request = self
+            .retained_in_flight_history_by_request
+            .iter()
+            .map(|(request, retained)| {
+                let mut retained = retained.clone();
+                retained.refresh_branch_epoch(branch_epoch);
+                (*request, retained)
+            })
+            .collect();
+        self.pruned_in_flight_history_by_request = self
+            .pruned_in_flight_history_by_request
+            .iter()
+            .map(|(request, pruned)| (*request, pruned.clone().with_branch_epoch(branch_epoch)))
+            .collect();
+        self.pending_retry_by_request = self
+            .pending_retry_by_request
+            .iter()
+            .map(|(request, scheduled)| {
+                (
+                    *request,
+                    scheduled
+                        .clone()
+                        .with_previous(scheduled.previous().with_branch_epoch(branch_epoch)),
+                )
+            })
+            .collect();
+        self.retained_retry_lineage_by_ordinal = self
+            .retained_retry_lineage_by_ordinal
+            .iter()
+            .map(|(ordinal, retained)| (*ordinal, retained.clone().with_branch_epoch(branch_epoch)))
+            .collect();
+        self.pruned_retry_lineage_by_ordinal = self
+            .pruned_retry_lineage_by_ordinal
+            .iter()
+            .map(|(ordinal, pruned)| (*ordinal, pruned.clone().with_branch_epoch(branch_epoch)))
+            .collect();
         self.rebuild_pending_retry_by_node_index();
         RekeyedResourceRestoreState {
             restored_in_flight_width: self.in_flight_by_request.len() as u32,

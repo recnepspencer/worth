@@ -1,5 +1,3 @@
-use worth_store_recovery_physics::CrashBoundaryLayoutReport;
-
 use crate::{ChunkTreeRoot, LogicalContentDigest};
 
 use super::super::classification::BlobPublicationCrashPoint;
@@ -14,7 +12,7 @@ use super::super::types::{
     session_closeout::BlobPublicationSessionCloseout,
 };
 use super::super::verification::replayable_wal;
-use super::super::BlobPublicationDenial;
+use super::super::{BlobPublicationCrashBoundaryReport, BlobPublicationDenial};
 
 fn build_pre_wal_evidence(
     crash_point: BlobPublicationCrashPoint,
@@ -112,7 +110,7 @@ pub(crate) fn reachability_staged(
 }
 
 pub(crate) fn publication_record_replayable(
-    report: &CrashBoundaryLayoutReport,
+    report: &BlobPublicationCrashBoundaryReport,
 ) -> Result<BlobPublicationRecoveryEvidence, BlobPublicationDenial> {
     replayable_wal::verify_replayable_report(report)?;
     Ok(BlobPublicationRecoveryEvidence::new(

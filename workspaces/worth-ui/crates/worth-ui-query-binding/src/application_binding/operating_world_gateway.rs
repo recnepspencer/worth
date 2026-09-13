@@ -46,9 +46,11 @@ impl WorthUiInstalledQueryBindingReference {
             return Err(WorthUiQueryOperationAttemptDenial::InstalledDomainAuthorityMismatch);
         }
         Ok(WorthUiQueryOperatingWorldGateway {
-            world: workspace.observe_operating_world().map_err(|denial| {
-                WorthUiQueryOperationAttemptDenial::OperatingWorld(Box::new(denial))
-            })?,
+            world: workspace
+                .observe_operating_world(workspace.current_world())
+                .map_err(|denial| {
+                    WorthUiQueryOperationAttemptDenial::OperatingWorld(Box::new(denial))
+                })?,
             reference: self.clone(),
             operation,
         })

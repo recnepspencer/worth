@@ -1,12 +1,3 @@
-use worth_store_authority::StoreCurrentAuthorityWitness;
-use worth_store_physical_backend::{
-    NonCurrentStagingExecutionDenial, NonCurrentStagingExecutionReceipt,
-    NonCurrentStagingOwnerExecutionDenial, PhysicalRecoveryStagingOwner,
-};
-use worth_store_recovery_physics::{
-    PointInTimeRecoveryReceipt, PointInTimeReplayDenial, RecoveryPhysicsPointInTimeOwner,
-};
-
 use crate::authorization::{
     consume_authorization_through, record_recovery_staging_completion,
     recover_authorization_consumption, StagingAuthorizationContinuation,
@@ -16,8 +7,16 @@ use crate::{
     AuthorizationConsumptionDenial, AuthorizationConsumptionReceipt,
     AuthorizationRevocationObservation, OperationalControlStore, OperationalTransitionId,
 };
+use worth_store_authority::StoreCurrentAuthorityWitness;
+use worth_store_physical_backend::{
+    NonCurrentStagingExecutionDenial, NonCurrentStagingExecutionReceipt,
+    NonCurrentStagingOwnerExecutionDenial, PhysicalRecoveryStagingOwner,
+};
 
-use super::{AuthorizedPointInTimeRecoveryPlan, LoweredPointInTimeRecoveryPlan};
+use super::{
+    AuthorizedPointInTimeRecoveryPlan, LoweredPointInTimeRecoveryPlan, PointInTimeRecoveryReceipt,
+    PointInTimeReplayDenial, PointInTimeReplayOwner, PointInTimeReplayPlan,
+};
 
 #[derive(Debug)]
 pub enum PitrReadinessDenial {
@@ -32,7 +31,7 @@ pub struct ExecutionReadyPointInTimeRecovery<'a> {
     staging_authority: worth_store_authority::StoreCurrentAuthorityIdentity,
     security_scope: crate::OperationalSecurityScope,
     backend: worth_store_physical_backend::LoweredNonCurrentStagingPlan,
-    recovery: worth_store_recovery_physics::PointInTimeReplayPlan,
+    recovery: PointInTimeReplayPlan,
     lease: worth_store_physical_isolation::PitrReachabilityLease,
     owner_verification: worth_store_offline_verifier::StagedRecoveryOwnerVerificationSet,
     _target_admission: crate::control_store::NonCurrentRecoveryTargetAdmission,
@@ -125,7 +124,7 @@ impl AuthorizedPointInTimeRecoveryPlan {
         )
     }
 
-    #[cfg(feature = "certification-test-authority")]
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub fn ready_with_certification_control_store<'a>(
         self,
         control: &'a OperationalControlStore,
@@ -247,7 +246,7 @@ impl LoweredPointInTimeRecoveryPlan {
     }
 }
 
-#[cfg(feature = "certification-test-authority")]
+#[cfg(any(test, feature = "certification-test-authority"))]
 impl<'a> ExecutionReadyPointInTimeRecovery<'a> {
     pub fn with_certification_control_store(
         mut self,
@@ -264,8 +263,8 @@ impl ExecutionReadyPointInTimeRecovery<'_> {
         ports: &Ports,
     ) -> Result<ExecutedPointInTimeRecovery, PitrExecutionDenial>
     where
-        Ports: crate::StagingAuthorizationContinuationPort
-            + worth_store_recovery_physics::StagedWalApplicationPort,
+        Ports:
+            crate::StagingAuthorizationContinuationPort + crate::workflow::StagedWalApplicationPort,
     {
         let staging_authority = self.staging_authority;
         let security_scope = self.security_scope;
@@ -273,7 +272,7 @@ impl ExecutionReadyPointInTimeRecovery<'_> {
         let staged = PhysicalRecoveryStagingOwner::execute_lowered_guarded_with_owner_effect(
             self.backend,
             |boundary| continuation.admit(boundary),
-            |staging| RecoveryPhysicsPointInTimeOwner::execute(self.recovery, staging, ports),
+            |staging| PointInTimeReplayOwner::execute(self.recovery, staging, ports),
         );
         let (backend, recovery) = match staged {
             Ok(receipts) => receipts,
@@ -300,7 +299,7 @@ impl ExecutionReadyPointInTimeRecovery<'_> {
             self.authorization,
             crate::OperationalWorkflowKind::PointInTimeRecovery,
             &backend,
-            crate::workflow::recovery_owner_receipt::pitr_owner_receipt_identity(recovery),
+            crate::workflow::point_in_time_recovery::pitr_owner_receipt_identity(recovery),
         )
         .map_err(PitrExecutionDenial::Control)?;
         record_recovery_staging_completion(

@@ -138,6 +138,15 @@ impl FrameTable {
         })
     }
 
+    pub(super) fn values_mut(&mut self) -> impl Iterator<Item = &mut FrameEntry> {
+        self.slots
+            .iter_mut()
+            .filter_map(|slot| match slot.as_mut()? {
+                FrameSlot::Exact { frame, .. } => Some(frame),
+                FrameSlot::Bounded { entry, .. } => entry.resident_frame_mut(),
+            })
+    }
+
     pub(super) fn slot_count(&self) -> usize {
         self.slots.len()
     }

@@ -12,12 +12,14 @@ worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-store = { workspace = true, features = ["recovery-runtime-owner"] }
 worth-store-physical-format.workspace = true
+worth-store-physical-integrity.workspace = true
 worth-store-recovery-physics.workspace = true
 
 [dev-dependencies]
 tempfile = "3"
 trybuild = "1.0"
 syn = { version = "2", features = ["full"] }
+serde_json = "1"
 worth-store = { workspace = true, features = ["certification-test-authority"] }
 worth-store-authority.workspace = true
 worth-store-offline-verifier.workspace = true

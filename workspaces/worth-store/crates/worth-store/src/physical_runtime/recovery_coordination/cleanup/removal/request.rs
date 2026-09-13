@@ -16,7 +16,7 @@ pub(super) fn from_command(
             command.artifact.generation().get()
         ))
         .ok()?;
-    let inspection = command.verified_wal.inspection();
+    let inspection = command.admitted_wal.inspection();
     let checkpoint = worth_store_physical_backend::BackendRecoveryArtifactExpectation::new(
         checkpoint,
         command.checkpoint_stream.encoded_bytes(),

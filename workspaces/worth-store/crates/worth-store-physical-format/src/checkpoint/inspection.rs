@@ -1,15 +1,17 @@
+#[cfg(test)]
 use sha2::{Digest, Sha256};
 
+#[cfg(test)]
 use super::{
     CheckpointBindingRecordFrameLength, CheckpointStreamDecodeDenial, CheckpointStreamDecoder,
-    CheckpointStreamFooter, PersistedCompactionCutoverRecord, PhysicalCheckpointSource,
     CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES,
     CHECKPOINT_DIRTY_FRAME_RECORD_BYTES, CHECKPOINT_STREAM_FOOTER_RECORD_BYTES,
     CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
 };
+use super::{CheckpointStreamFooter, PersistedCompactionCutoverRecord, PhysicalCheckpointSource};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct VerifiedCheckpointStream {
+pub(crate) struct VerifiedCheckpointStream {
     source: PhysicalCheckpointSource,
     footer: CheckpointStreamFooter,
     encoded_bytes: u64,
@@ -19,6 +21,35 @@ pub struct VerifiedCheckpointStream {
 }
 
 impl VerifiedCheckpointStream {
+    /// Assembles recovery-owner meaning after the caller has source-bound every
+    /// checkpoint record through the C.9 family admissions.
+    fn assemble_from_admitted_records(
+        source: PhysicalCheckpointSource,
+        footer: CheckpointStreamFooter,
+        encoded_bytes: u64,
+        encoded_digest: [u8; 32],
+        compaction_generation: u64,
+        wal_cutoff_lsn_exclusive: u64,
+        binding_records: Box<[Box<[u8]>]>,
+    ) -> Self {
+        let compaction_cutover =
+            PersistedCompactionCutoverRecord::admitted_from_verified_checkpoint(
+                source.identity(),
+                source.root(),
+                source.wal(),
+                compaction_generation,
+                wal_cutoff_lsn_exclusive,
+            );
+        Self {
+            source,
+            footer,
+            encoded_bytes,
+            encoded_digest,
+            compaction_cutover,
+            binding_records,
+        }
+    }
+
     pub const fn source(&self) -> PhysicalCheckpointSource {
         self.source
     }
@@ -52,7 +83,8 @@ impl VerifiedCheckpointStream {
     }
 }
 
-pub fn inspect_checkpoint_stream(
+#[cfg(test)]
+pub(crate) fn inspect_checkpoint_stream(
     bytes: &[u8],
     maximum_dirty_records: u64,
     maximum_binding_records: u64,
@@ -115,19 +147,13 @@ pub fn inspect_checkpoint_stream(
         return Err(CheckpointStreamDecodeDenial::RecordByteCountMismatch);
     }
     let verified_footer = binding_decoder.finish(&bytes[footer_offset..])?;
-    let compaction_cutover = PersistedCompactionCutoverRecord::admitted_from_verified_checkpoint(
-        source.identity(),
-        source.root(),
-        source.wal(),
+    Ok(VerifiedCheckpointStream::assemble_from_admitted_records(
+        source,
+        verified_footer,
+        bytes.len() as u64,
+        Sha256::digest(bytes).into(),
         verified_footer.binding_compaction_generation(),
         verified_footer.binding_wal_cutoff_lsn_exclusive(),
-    );
-    Ok(VerifiedCheckpointStream {
-        source,
-        footer: verified_footer,
-        encoded_bytes: bytes.len() as u64,
-        encoded_digest: Sha256::digest(bytes).into(),
-        compaction_cutover,
-        binding_records: binding_records.into_boxed_slice(),
-    })
+        binding_records.into_boxed_slice(),
+    ))
 }

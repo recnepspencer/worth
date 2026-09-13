@@ -21,6 +21,7 @@ pub struct SignalInvalidationExecutionReceipt {
     graph_instance: u64,
     executed_targets: Vec<crate::data::handle::NodeId>,
     request: SignalObservationRequest,
+    _storage_custody: Option<crate::data::retained_storage::SignalConditionalRetentionReservation>,
 }
 
 /// Backwards-compatible name for the managed Signal observation session.
@@ -32,6 +33,9 @@ impl SignalInvalidationExecutionReceipt {
         counters: SignalInvalidationRealizedCounters,
         executed_targets: Vec<crate::data::handle::NodeId>,
         request: SignalObservationRequest,
+        storage_custody: Option<
+            crate::data::retained_storage::SignalConditionalRetentionReservation,
+        >,
     ) -> Self {
         Self {
             performed: Performed::record(
@@ -41,6 +45,7 @@ impl SignalInvalidationExecutionReceipt {
             graph_instance,
             executed_targets,
             request,
+            _storage_custody: storage_custody,
         }
     }
 

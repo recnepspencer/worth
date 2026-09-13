@@ -27,12 +27,16 @@ pub(super) enum ApplicationSchemaCanonicalBasisBudgetDenial {
 }
 
 impl ApplicationSchemaCanonicalBasis {
-    pub(super) fn with_member_capacity_and_limits(
+    pub(super) fn with_capacity_and_limits(
         member_count: usize,
+        contribution_entries: usize,
         maximum_source_bytes: u64,
         maximum_entries: u64,
     ) -> Self {
-        let requested_capacity = member_count.saturating_mul(4).saturating_add(6);
+        let requested_capacity = member_count
+            .saturating_mul(4)
+            .saturating_add(contribution_entries)
+            .saturating_add(6);
         let maximum_capacity = usize::try_from(maximum_entries).unwrap_or(usize::MAX);
         Self {
             entries: Vec::with_capacity(requested_capacity.min(maximum_capacity)),

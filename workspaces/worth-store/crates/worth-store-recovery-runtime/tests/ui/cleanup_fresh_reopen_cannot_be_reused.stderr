@@ -1,41 +1,11 @@
-error[E0308]: mismatched types
-  --> tests/ui/cleanup_fresh_reopen_cannot_be_reused.rs:19:9
+error[E0382]: use of moved value: `reopened`
+  --> tests/ui/cleanup_fresh_reopen_cannot_be_reused.rs:23:9
    |
-16 |     let _first = coordination.admit_cleanup_plan(
-   |                               ------------------ arguments to this method are incorrect
+11 |     reopened: CompletedPhysicalRecoveryFreshReopen,
+   |     -------- move occurs because `reopened` has type `CompletedPhysicalRecoveryFreshReopen`, which does not implement the `Copy` trait
 ...
-19 |         checkpoint.clone(),
-   |         ^^^^^^^^^^^^^^^^^^ expected `Arc<VerifiedCheckpointStream>`, found `VerifiedCheckpointStream`
-   |
-   = note: expected struct `Arc<VerifiedCheckpointStream>`
-              found struct `VerifiedCheckpointStream`
-note: method defined here
-  --> $WORKSPACE/crates/worth-store/src/physical_runtime/recovery_coordination/cleanup/mod.rs
-   |
-   |     pub fn admit_cleanup_plan<'e>(
-   |            ^^^^^^^^^^^^^^^^^^
-help: call `Into::into` on this expression to convert `VerifiedCheckpointStream` into `Arc<VerifiedCheckpointStream>`
-   |
-19 |         checkpoint.clone().into(),
-   |                           +++++++
-
-error[E0308]: mismatched types
-  --> tests/ui/cleanup_fresh_reopen_cannot_be_reused.rs:26:9
-   |
-23 |     let _second = coordination.admit_cleanup_plan(
-   |                                ------------------ arguments to this method are incorrect
+16 |         reopened,
+   |         -------- value moved here
 ...
-26 |         checkpoint,
-   |         ^^^^^^^^^^ expected `Arc<VerifiedCheckpointStream>`, found `VerifiedCheckpointStream`
-   |
-   = note: expected struct `Arc<VerifiedCheckpointStream>`
-              found struct `VerifiedCheckpointStream`
-note: method defined here
-  --> $WORKSPACE/crates/worth-store/src/physical_runtime/recovery_coordination/cleanup/mod.rs
-   |
-   |     pub fn admit_cleanup_plan<'e>(
-   |            ^^^^^^^^^^^^^^^^^^
-help: call `Into::into` on this expression to convert `VerifiedCheckpointStream` into `Arc<VerifiedCheckpointStream>`
-   |
-26 |         checkpoint.into(),
-   |                   +++++++
+23 |         reopened,
+   |         ^^^^^^^^ value used here after move

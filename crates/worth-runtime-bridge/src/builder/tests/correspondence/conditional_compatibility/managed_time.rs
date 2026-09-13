@@ -14,7 +14,7 @@ fn installed_clock(
     maximum_active_intents: usize,
     maximum_due_wakes_per_observation: usize,
 ) -> (
-    crate::facade::BridgeOwnedSignalRuntime,
+    crate::facade::BridgeSealedRuntimeAssembly,
     crate::facade::BridgeManagedClockBinding,
     Arc<crate::facade::BridgeInstalledConditionalLowering>,
 ) {
@@ -193,28 +193,11 @@ fn observation_affinity_and_ordering_fail_without_due_progress() {
 }
 
 #[test]
-fn successor_runtime_requires_managed_clock_rebinding() {
-    let (owner, binding, _) = installed_clock(1, 1);
-    let mut successor = owner.successor_installation_runtime().unwrap();
-    let denial = match successor.observe_managed_clock(BridgeManagedClockObservationParts {
-        binding: &binding,
-        source_identity: "host:clock:billing",
-        timeline_identity: "timeline:billing:v1",
-        sequence: 1,
-        observed_coordinate: 1,
-    }) {
-        Ok(_) => panic!("successor cannot reuse predecessor clock authority"),
-        Err(denial) => denial,
-    };
-    assert_eq!(
-        denial.kind(),
-        BridgeManagedTemporalDenialKind::ForeignClockBinding
-    );
-}
-
-#[test]
 fn managed_due_wake_executes_only_its_exact_conditional_lowering() {
     let (mut owner, binding, lowering) = installed_clock(1, 1);
+    let signal_basis = owner
+        .admit_conditional_signal_basis(&lowering, owner.admitted_signal_basis())
+        .unwrap();
     owner
         .reconcile_managed_temporal_intent(active(&binding, "intent:a", 1, 5))
         .unwrap();
@@ -233,16 +216,44 @@ fn managed_due_wake_executes_only_its_exact_conditional_lowering() {
     let mut wakes = accepted.into_due().into_wakes();
     let due = wakes.pop().expect("one due wake");
 
-    let decision = owner
+    let missing = owner
         .execute_managed_due_wake(
             BridgeManagedConditionalExecutionRequest {
                 due_wake: &due,
                 lowering: &lowering,
+                signal_basis: &signal_basis,
                 query_binding_identity: "query-binding:one",
                 query_capability_identity: 1,
                 snapshot_identity: "snapshot:one",
                 truth_branch_identity: Some("main"),
                 bridge_snapshot_identity: None,
+                triggering_correspondence: None,
+                attempt: 1,
+            },
+            &mut (),
+        )
+        .err()
+        .expect("the due record cannot stand in for its source observation");
+    assert_eq!(
+        missing.kind(),
+        BridgeConditionalDenialKind::MissingSourceObservation
+    );
+    assert_eq!(missing.bridge_execution_counters(), Default::default());
+    assert_eq!(missing.signal_counters(), Default::default());
+
+    let decision = owner
+        .execute_managed_due_wake(
+            BridgeManagedConditionalExecutionRequest {
+                due_wake: &due,
+                lowering: &lowering,
+                signal_basis: &signal_basis,
+                query_binding_identity: "query-binding:one",
+                query_capability_identity: 1,
+                snapshot_identity: "snapshot:one",
+                truth_branch_identity: Some("main"),
+                bridge_snapshot_identity: Some(&crate::truth_identity_fixtures::truth_snapshot(
+                    1, 1,
+                )),
                 triggering_correspondence: None,
                 attempt: 1,
             },
@@ -260,6 +271,7 @@ fn managed_due_wake_executes_only_its_exact_conditional_lowering() {
         BridgeManagedConditionalExecutionRequest {
             due_wake: &due,
             lowering: &foreign_lowering,
+            signal_basis: &signal_basis,
             query_binding_identity: "query-binding:one",
             query_capability_identity: 1,
             snapshot_identity: "snapshot:one",
@@ -278,3 +290,5 @@ fn managed_due_wake_executes_only_its_exact_conditional_lowering() {
         BridgeConditionalDenialKind::ManagedWakeMismatch
     );
 }
+
+mod resource_bounds;

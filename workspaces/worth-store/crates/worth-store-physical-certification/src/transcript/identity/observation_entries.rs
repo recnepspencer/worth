@@ -115,7 +115,7 @@ fn checkpoint_interlock_entries(
         ),
         bool_entry(
             "transcript.trace.checkpoint_interlock.frontier_bound_to_cutover",
-            observation.page_lsn_frontier_bound_to_cutover(),
+            observation.checkpoint_wal_bound_to_cutover(),
         ),
         count_entry(
             "transcript.trace.checkpoint_interlock.root_epoch_checks",
@@ -127,7 +127,7 @@ fn checkpoint_interlock_entries(
         ),
         count_entry(
             "transcript.trace.checkpoint_interlock.frontier_checks",
-            observation.page_lsn_frontier_checks(),
+            observation.checkpoint_wal_range_checks(),
         ),
         count_entry(
             "transcript.trace.checkpoint_interlock.readmission_checks",

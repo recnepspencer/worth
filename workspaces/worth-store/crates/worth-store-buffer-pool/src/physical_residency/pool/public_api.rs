@@ -42,6 +42,7 @@ impl PhysicalResidencyPool {
                     evictable_tail: None,
                     loading_frames: 0,
                     next_loading_ordinal: 1,
+                    next_resident_generation: PhysicalResidentFrameGeneration::FIRST,
                     active_candidate_publications: 0,
                     dirty_generation: PhysicalDirtyGeneration::GENESIS,
                     accepting: true,
@@ -64,6 +65,12 @@ impl PhysicalResidencyPool {
 
     pub fn allocation_events(&self) -> PhysicalResidencyAllocationEventObserver {
         self.inner.allocation_events.clone()
+    }
+
+    /// Invalidates clean validation when the owning Store lifecycle generation changes.
+    pub fn invalidate_integrity_validation_for_runtime_transition(&self) {
+        let mut state = self.inner.lock();
+        state.invalidate_all_integrity_validation();
     }
 
     /// Verifies that `allocation` is live authority from this exact pool
@@ -222,6 +229,7 @@ impl PhysicalResidencyPool {
             return PhysicalResidencyShutdown::new(state.accounting.snapshot());
         }
         state.accepting = false;
+        state.invalidate_all_integrity_validation();
         self.inner.changed.notify_all();
         state.drain_all_legal_clean_frames();
         state.closed = true;

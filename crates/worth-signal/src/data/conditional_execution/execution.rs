@@ -6,9 +6,12 @@ use worth_proof::{ExecuteReadyRecipeTransition, Transition};
 
 mod application;
 mod preparation;
+mod unwind;
+pub(crate) mod work;
+pub(crate) use unwind::SignalConditionalAttemptOutcome;
 
 use super::artifact_reuse::{resolve_artifact_reuse, SignalConditionalArtifactReuseObservation};
-use super::dependency_versions::{record_dependency_versions, SignalConditionalDependencyVersion};
+use super::dependency_versions::{record_dependency_versions, SignalConditionalDependencyVersions};
 use super::execution_proof::SignalConditionalExecutedRecipe;
 use super::{
     InstalledSignalConditionResolver, InstalledSignalConditionalContract,
@@ -62,6 +65,10 @@ impl<'a> SignalConditionalExecutionRequest<'a> {
         self.force_on_demand = true;
         self
     }
+
+    pub(crate) fn contract(&self) -> &InstalledSignalConditionalContract {
+        self.contract
+    }
 }
 
 impl SignalGraph {
@@ -72,14 +79,43 @@ impl SignalGraph {
         comparator_resolver: &mut impl ComparatorPolicyResolver,
         compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
     ) -> Result<SignalConditionalDecisionEvidence, SignalConditionalExecutionFailure> {
+        let mut work = crate::data::retained_storage::RetainedStoragePreparation::new(
+            self.installed_runtime_policy()
+                .conditional_evaluation_budget()
+                .maximum_attempt_visits,
+        );
+        self.execute_installed_conditional_attempt(
+            request,
+            condition_resolver,
+            comparator_resolver,
+            compute,
+            &mut work,
+        )
+        .resume()
+    }
+
+    pub(crate) fn execute_installed_conditional_attempt(
+        &mut self,
+        request: SignalConditionalExecutionRequest<'_>,
+        condition_resolver: &mut impl InstalledSignalConditionResolver,
+        comparator_resolver: &mut impl ComparatorPolicyResolver,
+        compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+        work: &mut crate::data::retained_storage::RetainedStoragePreparation,
+    ) -> SignalConditionalAttemptOutcome {
         let mut counters = SignalConditionalDecisionCounters::default();
         let providers = ConditionalExecutionProviders {
             condition: condition_resolver,
             comparator: comparator_resolver,
             compute: Some(compute),
         };
-        let result = execute_conditional_attempt(self, request, providers, &mut counters);
-        result.map_err(|error| SignalConditionalExecutionFailure { error, counters })
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            execute_conditional_attempt(self, request, providers, &mut counters, work)
+        })) {
+            Ok(result) => SignalConditionalAttemptOutcome::Completed(
+                result.map_err(|error| SignalConditionalExecutionFailure { error, counters }),
+            ),
+            Err(payload) => SignalConditionalAttemptOutcome::Unwound { payload, counters },
+        }
     }
 }
 
@@ -90,7 +126,7 @@ struct ConditionalExecutionProviders<'a, Condition, Comparator, Compute> {
 }
 
 struct ConditionalExecutionCompletion {
-    dependency_versions: Vec<SignalConditionalDependencyVersion>,
+    dependency_versions: SignalConditionalDependencyVersions,
     ready: super::execution_proof::SignalConditionalReadyRecipe,
     node: crate::data::handle::NodeId,
     output_aspect: crate::data::aspect::Aspect,
@@ -109,27 +145,28 @@ fn execute_conditional_attempt<Condition, Comparator, Compute>(
     request: SignalConditionalExecutionRequest<'_>,
     mut providers: ConditionalExecutionProviders<'_, Condition, Comparator, Compute>,
     counters: &mut SignalConditionalDecisionCounters,
+    work: &mut crate::data::retained_storage::RetainedStoragePreparation,
 ) -> Result<SignalConditionalDecisionEvidence, SignalError>
 where
     Condition: InstalledSignalConditionResolver,
     Comparator: ComparatorPolicyResolver,
     Compute: FnOnce() -> Result<NodeEvaluationResult, SignalError>,
 {
-    let prepared = prepare_conditional_attempt(graph, &request, providers.comparator, counters)?;
+    let prepared =
+        prepare_conditional_attempt(graph, &request, providers.comparator, counters, work)?;
     let PreparedConditionalAttempt {
         dependency_versions,
         ready,
         node,
         output_aspect,
         output_version_before,
-        dependencies,
         dependency_changed,
         passive_dependency_hit,
         ready_invalidation,
     } = prepared;
     let class = if passive_dependency_hit {
         counters.application_contacts += 1;
-        apply_passive(graph, node, dependencies, providers.comparator)?;
+        apply_passive(graph, node, providers.comparator, work)?;
         SignalConditionalDecisionClass::DependencyUnchanged
     } else {
         counters.condition_checks += 1;
@@ -137,9 +174,9 @@ where
             graph,
             request: &request,
             providers: &mut providers,
-            dependencies,
             ready_invalidation,
             counters,
+            work,
         }
         .resolve()?
     };
@@ -159,6 +196,7 @@ where
         },
         providers.comparator,
         counters,
+        work,
     )
 }
 
@@ -167,7 +205,9 @@ fn finalize_conditional_attempt(
     finalization: ConditionalFinalization<'_>,
     comparator: &mut impl ComparatorPolicyResolver,
     counters: &mut SignalConditionalDecisionCounters,
+    work: &mut crate::data::retained_storage::RetainedStoragePreparation,
 ) -> Result<SignalConditionalDecisionEvidence, SignalError> {
+    work::reserve(work, Some(1))?;
     let ConditionalFinalization {
         request,
         completion,
@@ -175,8 +215,12 @@ fn finalize_conditional_attempt(
     } = finalization;
     retain_outcome_counter(class, counters);
     counters.output_version_reads += 1;
-    let output_version_after =
-        graph.node_version_for_scope(completion.node, completion.output_aspect, None)?;
+    let output_version_after = graph.conditional_node_version_for_scope(
+        completion.node,
+        completion.output_aspect,
+        None,
+        work,
+    )?;
     let artifact_reuse_admitted = resolve_artifact_reuse(
         SignalConditionalArtifactReuseObservation {
             policy: request.contract.artifact_reuse(),
@@ -195,13 +239,12 @@ fn finalize_conditional_attempt(
             | SignalConditionalDecisionClass::DeferredTemporal
             | SignalConditionalDecisionClass::DeferredOnDemand
     ) {
-        record_dependency_versions(graph, request.contract)?;
+        record_dependency_versions(graph, request.contract, work)?;
     }
     let executed = ExecuteReadyRecipeTransition
         .transition(completion.ready)
         .into_value();
-    counters.decisions_delivered += 1;
-    Ok(mint_evidence(
+    let mut evidence = mint_evidence(
         request,
         ConditionalDecisionOutcome {
             class,
@@ -210,8 +253,13 @@ fn finalize_conditional_attempt(
             dependency_versions: completion.dependency_versions,
             executed,
             output_aspect: completion.output_aspect,
+            output_version: output_version_after,
         },
-    ))
+        work,
+    )?;
+    counters.decisions_delivered += 1;
+    evidence.counters = *counters;
+    Ok(evidence)
 }
 
 fn retain_outcome_counter(
@@ -241,15 +289,17 @@ struct ConditionalDecisionOutcome {
     class: SignalConditionalDecisionClass,
     counters: SignalConditionalDecisionCounters,
     artifact_reuse_admitted: bool,
-    dependency_versions: Vec<SignalConditionalDependencyVersion>,
+    dependency_versions: SignalConditionalDependencyVersions,
     executed: SignalConditionalExecutedRecipe,
     output_aspect: crate::data::aspect::Aspect,
+    output_version: u64,
 }
 
 fn mint_evidence(
     request: SignalConditionalExecutionRequest<'_>,
     outcome: ConditionalDecisionOutcome,
-) -> SignalConditionalDecisionEvidence {
+    work: &mut crate::data::retained_storage::RetainedStoragePreparation,
+) -> Result<SignalConditionalDecisionEvidence, SignalError> {
     let projection_basis = super::identity::decision_projection_basis(
         request.contract,
         request.snapshot_identity,
@@ -257,10 +307,11 @@ fn mint_evidence(
         request.attempt,
         outcome.class,
         &outcome.dependency_versions,
-    );
+        work,
+    )?;
     let (authority, projection) =
         super::identity::mint_signal_conditional_decision_identity(projection_basis);
-    SignalConditionalDecisionEvidence {
+    Ok(SignalConditionalDecisionEvidence {
         _authority: authority,
         projection,
         contract_authority: std::sync::Arc::clone(&request.contract.authority),
@@ -269,7 +320,8 @@ fn mint_evidence(
         counters: outcome.counters,
         artifact_reuse_admitted: outcome.artifact_reuse_admitted,
         output_aspect: outcome.output_aspect,
+        output_version: outcome.output_version,
         _dependency_versions: outcome.dependency_versions,
         _execution: outcome.executed,
-    }
+    })
 }

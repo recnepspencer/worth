@@ -42,8 +42,14 @@ impl<'director, 'media> DurableFrameDispatch<'director, 'media> {
     ) -> PhysicalDataDispatchOutcome {
         let artifacts = PublicationRecordArtifacts::new(&self.director.mutation);
         let mut effects = Vec::with_capacity(durable.data_frames().len());
+        let mut completed_writebacks = 0_u64;
         for frame in durable.data_frames() {
-            let effect = match self.dispatch_frame(&artifacts, &mut residency, frame) {
+            let effect = match self.dispatch_frame(
+                &artifacts,
+                &mut residency,
+                frame,
+                &mut completed_writebacks,
+            ) {
                 Ok(effect) => effect,
                 Err(failure) => {
                     drop(residency);
@@ -77,6 +83,7 @@ impl<'director, 'media> DurableFrameDispatch<'director, 'media> {
         artifacts: &PublicationRecordArtifacts<'_>,
         residency: &mut StoreCandidateFramePublicationSession<'_>,
         frame: &crate::physical_runtime::durability::WalBoundPhysicalDataFrame,
+        completed_writebacks: &mut u64,
     ) -> Result<PhysicalDataEffectSettlement, DispatchFailure> {
         let basis = frame.basis().clone();
         let target = basis.target();
@@ -92,8 +99,31 @@ impl<'director, 'media> DurableFrameDispatch<'director, 'media> {
             coordinate.length(),
         )
         .unwrap_or(self.store_basis);
-        let completion =
-            self.write_candidate(artifacts, residency, candidate, coordinate, pressure_basis)?;
+        let existing_artifact = coordinate.offset() != 0;
+        let completion = {
+            let mut after_admission_before_effect = || {
+                // The first existing-artifact writeback is the backend gate's
+                // target. Pause the next admitted claim so the backend gate
+                // can be released before the competing mutation is admitted.
+                if existing_artifact && *completed_writebacks != 0 {
+                    self.director.mutations.reach_checkpoint(
+                        crate::physical_runtime::durability::PhysicalMutationCheckpoint::
+                            AfterWritebackAdmissionBeforeEffect,
+                    );
+                }
+            };
+            self.write_candidate(
+                artifacts,
+                residency,
+                candidate,
+                coordinate,
+                pressure_basis,
+                &mut after_admission_before_effect,
+            )?
+        };
+        if existing_artifact {
+            *completed_writebacks = completed_writebacks.saturating_add(1);
+        }
         let effect = completion.effect().ok_or({
             DispatchFailure::Uncertain(PhysicalDataDispatchFailureCause::MissingEffectSettlement)
         })?;
@@ -107,6 +137,7 @@ impl<'director, 'media> DurableFrameDispatch<'director, 'media> {
         candidate: CandidateFrame,
         coordinate: worth_store_physical_format::RecordFrameCoordinate,
         pressure_basis: PhysicalRecordPressureBasis,
+        after_admission_before_effect: &mut dyn FnMut(),
     ) -> Result<CandidateFrameWriteCompletion, DispatchFailure> {
         if coordinate.offset() == 0 {
             artifacts
@@ -121,10 +152,11 @@ impl<'director, 'media> DurableFrameDispatch<'director, 'media> {
                 })
         } else {
             artifacts
-                .write_existing_artifact_candidate(
+                .write_existing_artifact_candidate_with_pause(
                     residency,
                     candidate,
                     self.director.residency.writeback(),
+                    after_admission_before_effect,
                 )
                 .map_err(|failure| {
                     map_writeback_failure(failure, self.director.generation, pressure_basis)

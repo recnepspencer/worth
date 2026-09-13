@@ -6,6 +6,7 @@ pub(super) fn test_principal_binding<Schema>() -> ApplicationPrincipalBindingRef
     FixtureEntity<Schema>,
     FixtureEntity<Schema>,
     u64,
+    worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
 >
 where
     Schema: ApplicationSchema,
@@ -33,7 +34,9 @@ where
         MappingTarget,
         FixtureEntity<Schema>,
         FixtureEntity<Schema>,
-    >::from_schema_identifiers("MappingTarget", "TestEntity", "TestEntity");
+    >::from_schema_identifiers("MappingTarget", "TestEntity", "TestEntity",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            );
     let principal_identity = ApplicationFieldRef::<
         Schema,
         FixtureEntity<Schema>,

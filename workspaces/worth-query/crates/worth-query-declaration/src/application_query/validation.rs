@@ -80,10 +80,15 @@ fn validate_portable_identities(
         || !portable_identity_is_valid(definition.parameter_type())
         || !portable_identity_is_valid(definition.result_type())
         || !portable_identity_is_valid(definition.scope_type())
-        || definition
-            .parameters()
-            .iter()
-            .any(|parameter| !portable_identity_is_valid(parameter.value_type()))
+        || definition.parameters().iter().any(|parameter| {
+            !portable_identity_is_valid(parameter.value_type())
+                || parameter
+                    .unit()
+                    .is_some_and(|unit| !portable_identity_is_valid(unit))
+                || parameter
+                    .frame()
+                    .is_some_and(|frame| !portable_identity_is_valid(frame))
+        })
         || definition
             .root_paths()
             .iter()
@@ -256,9 +261,6 @@ fn validate_live_cause(
     if !definition.lanes().live_enabled() {
         return Err(ApplicationQueryDefinitionDenial::LiveCauseContractWithoutLane);
     }
-    let Some(continuation) = definition.continuation() else {
-        return Err(ApplicationQueryDefinitionDenial::LiveCauseRequiresContinuation);
-    };
     let scope_matches = definition.result_shape().fields().iter().any(|field| {
         field.slot_type() == live.scope_slot_type()
             && (field.entity(), field.aspect(), field.field()) == live.scope_field()
@@ -268,17 +270,32 @@ fn validate_live_cause(
     if !scope_matches {
         return Err(ApplicationQueryDefinitionDenial::LiveCauseScopeSelectorMismatch);
     }
-    let target_matches =
-        shape_relation_by_slot(definition.result_shape(), continuation.slot_type()).is_some_and(
-            |relation| {
-                relation.nested_shape().fields().iter().any(|field| {
-                    field.slot_type() == live.target_slot_type()
-                        && (field.entity(), field.aspect(), field.field()) == live.target_field()
-                        && field.value_type() == live.target_value_type()
-                        && field.entity() == continuation.child_entity()
-                })
-            },
-        );
+    let target_matches = match live.target_mode() {
+        super::ApplicationQueryLiveTargetMode::Root => {
+            definition.result_shape().fields().iter().any(|field| {
+                field.slot_type() == live.target_slot_type()
+                    && (field.entity(), field.aspect(), field.field()) == live.target_field()
+                    && field.value_type() == live.target_value_type()
+                    && field.entity() == definition.root_entity()
+            })
+        }
+        super::ApplicationQueryLiveTargetMode::Collection => {
+            let Some(continuation) = definition.continuation() else {
+                return Err(ApplicationQueryDefinitionDenial::LiveCauseRequiresContinuation);
+            };
+            shape_relation_by_slot(definition.result_shape(), continuation.slot_type()).is_some_and(
+                |relation| {
+                    relation.nested_shape().fields().iter().any(|field| {
+                        field.slot_type() == live.target_slot_type()
+                            && (field.entity(), field.aspect(), field.field())
+                                == live.target_field()
+                            && field.value_type() == live.target_value_type()
+                            && field.entity() == continuation.child_entity()
+                    })
+                },
+            )
+        }
+    };
     if !target_matches {
         return Err(ApplicationQueryDefinitionDenial::LiveCauseTargetSelectorMismatch);
     }

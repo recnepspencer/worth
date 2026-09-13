@@ -143,3 +143,41 @@ fn cancelling_after_a_view_reports_unread_bytes_and_releases_the_held_frame() {
     assert_eq!(residency.active_operation_bytes(), 0);
     fixture::assert_clean_close(serving);
 }
+
+#[test]
+fn abort_during_extent_read_reports_runtime_release_without_accusing_bytes() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("aborted-view");
+    let (serving, placement) = fixture::initialize(&root);
+    let expected = fixture::payload(3 * fixture::CHUNK_PAYLOAD_BYTES + 19);
+    let publication = publish_single(
+        &serving,
+        placement,
+        PhysicalMutationIdempotencyMaterial::new([174; 32]),
+        RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
+    );
+    let record = publication.settled_members()[0].record_id(0).unwrap();
+    let mut session = serving
+        .records()
+        .open(
+            record,
+            RecordReadLimits::new(RecordByteLimit::new(expected.len() as u32).unwrap()),
+        )
+        .unwrap();
+
+    let first = session.next_chunk().unwrap().unwrap();
+    assert_eq!(first.bytes(), &expected[..fixture::CHUNK_PAYLOAD_BYTES]);
+    drop(first);
+
+    let _shutdown = serving.abort();
+    let failure = match session.next_chunk() {
+        Err(failure) => failure,
+        Ok(_) => panic!("an aborted runtime must stop the next extent read"),
+    };
+
+    assert_eq!(failure.kind(), RecordStreamFailureKind::RuntimeReleased);
+    assert_eq!(
+        failure.completed_range(),
+        0..fixture::CHUNK_PAYLOAD_BYTES as u64
+    );
+}

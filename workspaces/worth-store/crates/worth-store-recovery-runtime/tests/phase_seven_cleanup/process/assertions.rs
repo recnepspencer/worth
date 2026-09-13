@@ -1,4 +1,4 @@
-use worth_store_recovery_physics::WalSegmentArtifactIdentity;
+use worth_store::physical_runtime::recovery_wal::WalSegmentArtifactIdentity;
 use worth_store_recovery_runtime::{
     RecoveryCleanupDeferralReason, RecoveryCleanupDisposition, RecoveryCleanupDispositionKind,
     RecoveryCleanupPosture,

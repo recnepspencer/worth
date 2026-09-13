@@ -55,6 +55,7 @@ pub struct WorthQuerySessionReadAuthority<'session> {
 pub struct WorthQuerySessionEffectAuthority<'session> {
     binding: &'session WorthQuerySessionBinding,
     plan: &'session WorthQueryProviderExecutionPlanContract,
+    terminal_binding: super::super::super::WorthQueryProviderSessionTerminalBinding,
     _invariant: PhantomData<fn(&'session mut ()) -> &'session mut ()>,
 }
 
@@ -73,6 +74,7 @@ impl WorthQuerySessionBoundReadsAndEffects<'_> {
         WorthQuerySessionEffectAuthority {
             binding: self.affinity.binding(),
             plan: self.affinity.plan(),
+            terminal_binding: self.affinity.terminal_binding(),
             _invariant: PhantomData,
         }
     }
@@ -202,5 +204,10 @@ impl WorthQuerySessionEffectAuthority<'_> {
     }
     pub(crate) fn plan(&self) -> &WorthQueryProviderExecutionPlanContract {
         self.plan
+    }
+    pub(in crate::domain_computation) fn terminal_binding(
+        &self,
+    ) -> &super::super::super::WorthQueryProviderSessionTerminalBinding {
+        &self.terminal_binding
     }
 }

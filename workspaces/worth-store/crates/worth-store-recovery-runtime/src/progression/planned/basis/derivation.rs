@@ -5,6 +5,7 @@ mod closeout;
 mod layout;
 mod materialization;
 mod pending;
+mod selector_closeout;
 
 pub(crate) fn derive_execution_basis(
     store: StableStoreIdentity,
@@ -13,6 +14,7 @@ pub(crate) fn derive_execution_basis(
     fates: &ReconciledOperationFates,
     redo: &ImmutablePhysicalRedoPlan,
     selected_source: &RecoverySelectedSourceInventory,
+    successor_candidate: Option<RecoveryObservedSuccessorCandidate>,
     maximum_staging_bytes: u64,
     maximum_dirty_frames: u64,
 ) -> Result<
@@ -20,6 +22,8 @@ pub(crate) fn derive_execution_basis(
         RecoveryStagingLayoutPlan,
         RecoveryPublicationPlan,
         RecoveryQuiescencePlan,
+        CandidateMaterializationCost,
+        crate::entry::PhysicalRecoveryRootProtocolCounters,
     ),
     ExecutionBasisDenial,
 > {
@@ -46,7 +50,15 @@ pub(crate) fn derive_execution_basis(
         fates,
         redo,
         selected_source,
+        successor_candidate,
         pending,
         staging,
     )
+}
+
+pub(crate) fn requires_successor_candidate(
+    fates: &ReconciledOperationFates,
+    redo: &ImmutablePhysicalRedoPlan,
+) -> Result<bool, ExecutionBasisDenial> {
+    pending::has_pending_projection(fates, redo)
 }

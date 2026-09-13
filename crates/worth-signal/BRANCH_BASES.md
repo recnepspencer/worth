@@ -64,6 +64,12 @@ data through the distinct `reconstruct_signal_branch_snapshot` construction
 lane, which validates its empty live basis and issues a new owner-bound
 snapshot.
 
+An otherwise eligible branch cannot import into a runtime with other live
+branches, stored snapshots, or prior snapshot identity use: that is
+`NonPristineRuntime`, before movement. Successful import preserves the portable
+snapshot identity and advances the receiving allocator so later captures cannot
+reuse it.
+
 An admitted snapshot carries its own bounded branch-retention obligation.
 Snapshot clones share that one obligation, and branch retirement remains
 denied until the final admitted snapshot holder is dropped. Consuming the
@@ -513,10 +519,18 @@ Do not infer liveness from graph diagnostic output; ask the runtime owner.
 
 ## Owner Component Port
 
-An integrating owner may consume only the public admitted basis, descriptor,
+The public methods described earlier in this guide are current
+`SignalRuntime` compatibility methods. Phase 3 also exports the
+`ManagedSignalBranchReference` vocabulary, but the concrete basis, mutation,
+and lifecycle port methods are not public yet. Their frozen later contract is
+[`OWNER_SERVICES.md`](./OWNER_SERVICES.md); that contract is not an availability
+claim.
+
+When those services stabilize, an integrating owner may consume only the
+owner-issued managed reference, public admitted basis, descriptor,
 fork outcome, readmission/compatibility denials, retention lease outcomes,
 linear retirement plan, and the admitted basis returned by capture, restore,
-advance, or merge. Fork, capture, restore, and advance return typed mismatch,
+or advance. Fork, capture, restore, and advance return typed mismatch,
 retention, and no-movement outcomes rather than flattened owner strings;
 owner preflight acquires the retention needed to issue the successor basis, so
 basis construction after a performed canonical operation is an internal
@@ -524,29 +538,36 @@ invariant rather than a caller-visible fallible phase. It should treat a typed
 no-movement outcome as leaving the old reference current; once Signal returns
 the new basis, that basis is the post-operation reference. Retention transfers
 through the explicit external lease object and never through a descriptor or
-raw branch ID. The runtime's stable owner identity and BranchManager catalog
-survive graph-state switches and snapshot restoration.
+raw branch ID. The managed reference identifies one owner and one branch-cell
+incarnation across branch-state movement; it does not carry exact-state or
+retention authority.
 
-This port does not expose Signal graph mutation, legacy head tuples, private
-snapshot storage, or authority minting. It is the component boundary available
-to the later composite-owner work; it does not itself provide cross-owner
-atomicity.
+The later ports do not expose Signal graph internals, legacy head tuples,
+private snapshot storage, or authority minting. They become the component
+boundary for composite-owner work only after facade stabilization; they do not
+provide cross-owner atomicity.
 
-Milestone 9.17.2 may carry a `SignalBranchBasisDescriptor`, ask the Signal
-owner to readmit it, retain the resulting `AdmittedSignalBranchBasis`, compare
+Milestone 9.17.2 may carry a `SignalBranchBasisDescriptor` as descriptive
+comparison data alongside either a `ManagedSignalBranchReference` for current
+readmission or the exact `SignalBranchRetentionLease` that already preserves a
+historical target. It asks the Signal owner to validate the applicable pair,
+retain the resulting `AdmittedSignalBranchBasis`, compare
 two admitted bases through `validate_signal_basis_compatibility`, and consume
-the typed owner outcome from fork, capture, restore, advance, merge, retention,
-or retirement. It may not construct a basis, infer one from a snapshot ID or
+the typed owner outcome from fork, capture, restore, advance, retention, or
+retirement. Merge remains an inherited `SignalRuntime` compatibility operation
+outside the three future owner ports; preserving it does not add a mutation-port
+method or a second owner-state lane. The integrating owner may not construct a
+basis, infer one from a snapshot ID or
 digest, call the private graph/branch manager, or publish a product reference
 as though Signal issued it.
 
-Signal's canonical branch operations are synchronous and do not expose a
-generic external cancellation token. A coordinating owner may honor
-cancellation before invoking Signal. Once the call returns a successor admitted
-basis, the Signal movement is performed and cannot be relabeled as cancelled;
-a typed denial that says no movement preserves the predecessor. Milestone
-9.17.2 must use this boundary in its own no-half-publication protocol rather
-than attempting raw Signal rollback.
+Signal's current compatibility methods are synchronous and do not expose a
+generic external cancellation token. The later owner ports accept the concrete
+`SignalOwnerCancellationToken` at their pre-movement cutoff. Once a call
+returns a successor admitted basis, Signal movement is performed and cannot be
+relabeled as cancelled; a typed denial that says no movement preserves the
+predecessor. Milestone 9.17.2 must use this boundary in its own
+no-half-publication protocol rather than attempting raw Signal rollback.
 
 The integrating owner must acquire `retain_signal_component_basis` before it
 promises component residency, and it must acquire while it still holds an
@@ -555,7 +576,10 @@ branch reference has already moved past the target, and it never claims that
 reference is current. While the obligation is live, the owner may ask for the
 exact retained basis back through `readmit_retained_signal_branch_basis`;
 ordinary `readmit_signal_branch_basis` answers the currentness question and
-will refuse.
+will refuse. The later current readmission route requires the managed reference;
+retained-exact readmission instead relies on the concrete owner-bound lease and
+does not add a currentness or managed-reference prerequisite. A descriptor by
+itself remains descriptive and opens neither route.
 
 The obligation ends exactly once, through any of three surfaces, and an
 integrating owner is therefore not required to build leak defenses around it.

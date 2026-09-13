@@ -12,6 +12,7 @@ pub(super) fn run(root: &Path) -> String {
         binary.display()
     );
     let output = std::process::Command::new(&binary)
+        .arg("c5-current-manifest")
         .arg(root)
         .output()
         .unwrap();

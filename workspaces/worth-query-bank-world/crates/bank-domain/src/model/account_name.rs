@@ -4,6 +4,8 @@ const MAX_ACCOUNT_NAME_BYTES: usize = 120;
 pub struct AccountName(String);
 
 impl AccountName {
+    pub const MAX_BYTES: usize = MAX_ACCOUNT_NAME_BYTES;
+
     pub fn new(value: impl Into<String>) -> Result<Self, AccountNameDenial> {
         let value = value.into();
         let invalid = value.is_empty()

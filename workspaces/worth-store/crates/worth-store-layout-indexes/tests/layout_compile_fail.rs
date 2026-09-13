@@ -3,8 +3,6 @@ mod compile_fail_support;
 
 #[path = "compile_fail/layout/bootstrap_runner.rs"]
 mod bootstrap;
-#[path = "compile_fail/layout/btree_runner.rs"]
-mod btree;
 #[path = "compile_fail/layout/foundations_runner.rs"]
 mod foundations;
 #[path = "compile_fail/layout/recovery_readmission_runner.rs"]

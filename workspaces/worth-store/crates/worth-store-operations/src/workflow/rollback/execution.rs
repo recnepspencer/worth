@@ -1,12 +1,3 @@
-use worth_store_authority::StoreCurrentAuthorityWitness;
-use worth_store_physical_backend::{
-    NonCurrentStagingExecutionDenial, NonCurrentStagingExecutionReceipt,
-    NonCurrentStagingOwnerExecutionDenial, PhysicalRecoveryStagingOwner,
-};
-use worth_store_recovery_physics::{
-    RecoveryPhysicsRollbackOwner, RollbackExecutionReceipt, RollbackReplayDenial,
-};
-
 use crate::authorization::{
     consume_authorization_through, record_recovery_staging_completion,
     recover_authorization_consumption, StagingAuthorizationContinuation,
@@ -16,8 +7,16 @@ use crate::{
     AuthorizationConsumptionDenial, AuthorizationConsumptionReceipt,
     AuthorizationRevocationObservation, OperationalControlStore, OperationalTransitionId,
 };
+use worth_store_authority::StoreCurrentAuthorityWitness;
+use worth_store_physical_backend::{
+    NonCurrentStagingExecutionDenial, NonCurrentStagingExecutionReceipt,
+    NonCurrentStagingOwnerExecutionDenial, PhysicalRecoveryStagingOwner,
+};
 
-use super::{AuthorizedRollbackPlan, LoweredRollbackPlanDag};
+use super::{
+    AuthorizedRollbackPlan, LoweredRollbackPlanDag, RollbackExecutionReceipt, RollbackReplayDenial,
+    RollbackReplayOwner, RollbackReplayPlan,
+};
 
 #[derive(Debug)]
 pub enum RollbackReadinessDenial {
@@ -32,7 +31,7 @@ pub struct ExecutionReadyRollback<'a> {
     staging_authority: worth_store_authority::StoreCurrentAuthorityIdentity,
     security_scope: crate::OperationalSecurityScope,
     backend: worth_store_physical_backend::LoweredNonCurrentStagingPlan,
-    recovery: worth_store_recovery_physics::RollbackReplayPlan,
+    recovery: RollbackReplayPlan,
     lease: worth_store_physical_isolation::RollbackReachabilityLease,
     owner_verification: worth_store_offline_verifier::StagedRecoveryOwnerVerificationSet,
     _target_admission: crate::control_store::NonCurrentRecoveryTargetAdmission,
@@ -125,7 +124,7 @@ impl AuthorizedRollbackPlan {
         )
     }
 
-    #[cfg(feature = "certification-test-authority")]
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub fn ready_with_certification_control_store<'a>(
         self,
         control: &'a OperationalControlStore,
@@ -239,7 +238,7 @@ impl LoweredRollbackPlanDag {
     }
 }
 
-#[cfg(feature = "certification-test-authority")]
+#[cfg(any(test, feature = "certification-test-authority"))]
 impl<'a> ExecutionReadyRollback<'a> {
     pub fn with_certification_control_store(
         mut self,
@@ -253,8 +252,8 @@ impl<'a> ExecutionReadyRollback<'a> {
 impl ExecutionReadyRollback<'_> {
     pub fn execute<Ports>(self, ports: &Ports) -> Result<ExecutedRollback, RollbackExecutionDenial>
     where
-        Ports: crate::StagingAuthorizationContinuationPort
-            + worth_store_recovery_physics::StagedWalApplicationPort,
+        Ports:
+            crate::StagingAuthorizationContinuationPort + crate::workflow::StagedWalApplicationPort,
     {
         let staging_authority = self.staging_authority;
         let security_scope = self.security_scope;
@@ -262,7 +261,7 @@ impl ExecutionReadyRollback<'_> {
         let staged = PhysicalRecoveryStagingOwner::execute_lowered_guarded_with_owner_effect(
             self.backend,
             |boundary| continuation.admit(boundary),
-            |staging| RecoveryPhysicsRollbackOwner::execute(self.recovery, staging, ports),
+            |staging| RollbackReplayOwner::execute(self.recovery, staging, ports),
         );
         let (backend, recovery) = match staged {
             Ok(receipts) => receipts,
@@ -289,7 +288,7 @@ impl ExecutionReadyRollback<'_> {
             self.authorization,
             crate::OperationalWorkflowKind::Rollback,
             &backend,
-            crate::workflow::recovery_owner_receipt::rollback_owner_receipt_identity(recovery),
+            crate::workflow::rollback::rollback_owner_receipt_identity(recovery),
         )
         .map_err(RollbackExecutionDenial::Control)?;
         record_recovery_staging_completion(

@@ -1,6 +1,5 @@
 use crate::branch::{
-    admit_runtime_signal_branch_observation, AdmittedSignalBranchBasis,
-    SignalBranchBasisDescriptor, SignalBranchBasisLifecyclePosture,
+    AdmittedSignalBranchBasis, SignalBranchBasisDescriptor, SignalBranchBasisLifecyclePosture,
     SignalBranchRetainedReadmissionDenial, SignalBranchRetentionAcquisitionDenial,
     SignalBranchRetentionLease, SignalBranchRetentionOwnerRelationship,
     SignalBranchRetentionReleaseDenial, SignalBranchRetentionReleaseOutcome,
@@ -29,9 +28,12 @@ where
         &self,
         basis: &AdmittedSignalBranchBasis,
     ) -> Result<SignalBranchRetentionLease, SignalBranchRetentionAcquisitionDenial> {
+        if let Some((basis_port, _, _)) = self.sealed_owner_port_slots() {
+            return basis_port.retain_exact(basis);
+        }
         let descriptor = basis.descriptor();
         self.validate_exact_retention_target(descriptor)?;
-        self.branches.acquire_retention(descriptor.clone())
+        self.branches.acquire_retention(basis)
     }
 
     /// Consume one external obligation issued by this runtime.
@@ -42,6 +44,9 @@ where
         &self,
         lease: SignalBranchRetentionLease,
     ) -> SignalBranchRetentionReleaseOutcome {
+        if let Some((basis_port, _, _)) = self.sealed_owner_port_slots() {
+            return basis_port.release_exact(lease);
+        }
         let binding = self.branches.retention_binding();
         match lease.owner_relationship(&binding) {
             SignalBranchRetentionOwnerRelationship::DifferentOwner => {
@@ -68,6 +73,9 @@ where
         descriptor: SignalBranchBasisDescriptor,
         lease: &SignalBranchRetentionLease,
     ) -> Result<AdmittedSignalBranchBasis, SignalBranchRetainedReadmissionDenial> {
+        if let Some((basis_port, _, _)) = self.sealed_owner_port_slots() {
+            return basis_port.readmit_retained_exact(&descriptor, lease);
+        }
         match lease.owner_relationship(&self.branches.retention_binding()) {
             SignalBranchRetentionOwnerRelationship::DifferentOwner => {
                 return Err(SignalBranchRetainedReadmissionDenial::ForeignRetention)
@@ -97,22 +105,33 @@ where
         self.validate_exact_retention_target(&descriptor)
             .map_err(SignalBranchRetainedReadmissionDenial::UnavailableExactTarget)?;
         let branch_id = descriptor.branch_id();
-        let retention = self
-            .branches
-            .acquire_admitted_retention(branch_id)
-            .map_err(|denial| match denial {
-                SignalBranchRetentionAcquisitionDenial::CapacityExhausted {
-                    maximum_active_leases,
-                } => SignalBranchRetainedReadmissionDenial::UnavailableRetention {
-                    maximum_active_leases,
-                },
-                _ => SignalBranchRetainedReadmissionDenial::RetentionIdentityExhausted,
-            })?;
-        Ok(admit_runtime_signal_branch_observation(
+        self.admit_unsealed_canonical_basis_with_retention(
             descriptor.observation().clone(),
             branch_id,
-            retention,
-        ))
+            || self.branches.acquire_admitted_retention(branch_id),
+        )
+        .map_err(|denial| match denial {
+            SignalBranchRetentionAcquisitionDenial::OwnerUnavailable(unavailable) => {
+                SignalBranchRetainedReadmissionDenial::OwnerUnavailable(unavailable)
+            }
+            SignalBranchRetentionAcquisitionDenial::OperationCapacityExhausted {
+                maximum_in_flight_operations,
+            } => SignalBranchRetainedReadmissionDenial::OperationCapacityExhausted {
+                maximum_in_flight_operations,
+            },
+            SignalBranchRetentionAcquisitionDenial::OwnerReentry => {
+                SignalBranchRetainedReadmissionDenial::OwnerReentry
+            }
+            SignalBranchRetentionAcquisitionDenial::CapacityExhausted {
+                maximum_active_leases,
+            } => SignalBranchRetainedReadmissionDenial::UnavailableRetention {
+                maximum_active_leases,
+            },
+            SignalBranchRetentionAcquisitionDenial::IdentityExhausted => {
+                SignalBranchRetainedReadmissionDenial::RetentionIdentityExhausted
+            }
+            denial => SignalBranchRetainedReadmissionDenial::UnavailableExactTarget(denial),
+        })
     }
 
     /// Terminality this runtime's narrow retention owner has recorded for
@@ -120,6 +139,9 @@ where
     pub fn signal_component_retention_terminal_counts(
         &self,
     ) -> SignalBranchRetentionTerminalCounts {
+        if self.owner_services.is_sealed() {
+            return self.owner_services.legacy_retention_terminal_counts();
+        }
         self.branches.retention_terminal_counts()
     }
 

@@ -1,18 +1,22 @@
-use std::collections::BTreeMap;
-
 use super::impact::DomainImpact;
 
 /// Batched dirty map from domain -> impact.
 #[derive(Debug, Clone)]
 pub struct BatchedDirtySet<D: Copy + Ord, I: Copy + Ord> {
-    by_domain: BTreeMap<D, DomainImpact<I>>,
+    by_domain: crate::data::persistent_ord_map::PersistentOrdMap<D, DomainImpact<I>>,
 }
 
 impl<D: Copy + Ord, I: Copy + Ord> BatchedDirtySet<D, I> {
+    pub(crate) fn fork_persistent(&mut self) -> Self {
+        Self {
+            by_domain: self.by_domain.fork_persistent(),
+        }
+    }
+
     /// Create an empty dirty set.
     pub fn new() -> Self {
         Self {
-            by_domain: BTreeMap::new(),
+            by_domain: crate::data::persistent_ord_map::PersistentOrdMap::new(),
         }
     }
 
@@ -94,6 +98,18 @@ impl<D: Copy + Ord, I: Copy + Ord> BatchedDirtySet<D, I> {
     /// Clear all dirty impacts.
     pub fn clear(&mut self) {
         self.by_domain.clear();
+    }
+
+    #[cfg(test)]
+    pub(crate) fn fork_storage_identity(&self) -> Self {
+        Self {
+            by_domain: self.by_domain.fork_storage_identity(),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn shares_storage_with(&self, other: &Self) -> bool {
+        self.by_domain.ptr_eq(&other.by_domain)
     }
 }
 

@@ -123,7 +123,6 @@ fn canonical_plan_entries(parts: &PhysicalSimulationPlanParts) -> Vec<CanonicalB
             evidence_policy_token(parts.evidence_policy),
         ),
     ];
-    entries.extend(physical_isolation_compaction_mutation_origin_entries(parts));
     entries.extend(blob_harness_metadata_entries(parts));
     entries.extend(
         parts
@@ -277,39 +276,6 @@ fn blob_harness_metadata_entries(parts: &PhysicalSimulationPlanParts) -> Vec<Can
             blob_harness_actor_mix_token(metadata.actor_mix()),
         ),
     ]
-}
-
-fn physical_isolation_compaction_mutation_origin_entries(
-    parts: &PhysicalSimulationPlanParts,
-) -> Vec<CanonicalBasisEntry> {
-    match &parts.physical_isolation_compaction_mutation_origin {
-        Some(origin) => vec![
-            text_entry(
-                "plan.physical_isolation_compaction_mutation_origin.present",
-                "true",
-            ),
-            text_entry(
-                "plan.physical_isolation_compaction_mutation_origin.source_epoch",
-                origin.source_epoch().get().to_string(),
-            ),
-            text_entry(
-                "plan.physical_isolation_compaction_mutation_origin.target_epoch",
-                origin.target_epoch().get().to_string(),
-            ),
-            text_entry(
-                "plan.physical_isolation_compaction_mutation_origin.protected",
-                format!("{:?}", origin.protected()),
-            ),
-            text_entry(
-                "plan.physical_isolation_compaction_mutation_origin.candidates",
-                format!("{:?}", origin.candidates()),
-            ),
-        ],
-        None => vec![text_entry(
-            "plan.physical_isolation_compaction_mutation_origin.present",
-            "false",
-        )],
-    }
 }
 
 fn text_entry(

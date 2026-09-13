@@ -5,8 +5,7 @@ use super::plan::PhysicalSimulationPlanParts;
 use super::proof_progression::admit_simulation_plan;
 use super::requirements::RequiredSimulationPlanShape;
 use super::{
-    ForbiddenShortcutSet, OracleFamilyKind, PhysicalSimulationPlan, SimulationPlanDenial,
-    SimulationPlanningContext,
+    ForbiddenShortcutSet, PhysicalSimulationPlan, SimulationPlanDenial, SimulationPlanningContext,
 };
 use crate::{AdmittedDriverContractSet, YieldpointScheduleBinding};
 
@@ -28,7 +27,6 @@ pub fn lower_physical_simulation_plan(
         .forbidden_shortcuts()
         .ok_or(SimulationPlanDenial::AbsentForbiddenShortcutSet)?;
     require_certification_forbidden_shortcuts(forbidden_shortcuts)?;
-    require_physical_isolation_lane_registration(&context, &required_shape)?;
     let plan = PhysicalSimulationPlan::from_parts(PhysicalSimulationPlanParts {
         scenario_identity: scenario.identity().clone(),
         scenario_family: scenario.definition().family(),
@@ -45,27 +43,10 @@ pub fn lower_physical_simulation_plan(
         fixture_classes: required_shape.fixture_classes,
         evidence_policy,
         forbidden_shortcuts: forbidden_shortcuts.clone(),
-        physical_isolation_compaction_mutation_origin: context
-            .physical_isolation_compaction_mutation_origin()
-            .cloned(),
         blob_harness_metadata: scenario.definition().expectation().blob_harness_metadata(),
         blob_harness_topology: scenario.definition().expectation().blob_harness_topology(),
     })?;
     admit_simulation_plan(plan)
-}
-
-fn require_physical_isolation_lane_registration(
-    context: &SimulationPlanningContext,
-    required_shape: &RequiredSimulationPlanShape,
-) -> Result<(), SimulationPlanDenial> {
-    if required_shape
-        .oracle_families
-        .contains(OracleFamilyKind::PhysicalIsolationInterleaving)
-        && context.physical_isolation_lane_registration().is_none()
-    {
-        return Err(SimulationPlanDenial::MissingPhysicalIsolationLaneRegistration);
-    }
-    Ok(())
 }
 
 fn require_resource_envelope_profile(

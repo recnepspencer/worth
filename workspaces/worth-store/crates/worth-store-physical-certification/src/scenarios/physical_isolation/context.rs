@@ -1,21 +1,14 @@
 use crate::{
-    ForbiddenShortcutSet, PhysicalIsolationCertificationLaneRegistration,
-    PhysicalSimulationCapabilitySet, PhysicalSimulationProfile, PhysicalSimulationProfileSet,
-    SimulationEvidencePolicy, SimulationPlanningContext, SupportedObserverSet,
-    SupportedOracleFamilySet, SupportedPhysicalDriverSet,
+    ForbiddenShortcutSet, PhysicalSimulationCapabilitySet, PhysicalSimulationProfile,
+    PhysicalSimulationProfileSet, SimulationEvidencePolicy, SimulationPlanningContext,
+    SupportedObserverSet, SupportedOracleFamilySet, SupportedPhysicalDriverSet,
 };
-pub fn physical_isolation_planning_context(
-    registration: PhysicalIsolationCertificationLaneRegistration,
-) -> SimulationPlanningContext {
+pub fn physical_isolation_planning_context() -> SimulationPlanningContext {
     physical_isolation_context_without_lane_registration()
-        .with_physical_isolation_lane_registration(registration)
 }
 
-pub fn physical_isolation_ci_certification_planning_context(
-    registration: PhysicalIsolationCertificationLaneRegistration,
-) -> SimulationPlanningContext {
+pub fn physical_isolation_ci_certification_planning_context() -> SimulationPlanningContext {
     physical_isolation_ci_certification_context_without_lane_registration()
-        .with_physical_isolation_lane_registration(registration)
 }
 
 pub fn physical_isolation_context_without_lane_registration() -> SimulationPlanningContext {

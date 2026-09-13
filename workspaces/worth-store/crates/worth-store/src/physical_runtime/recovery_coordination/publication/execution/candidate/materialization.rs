@@ -19,6 +19,7 @@ use crate::physical_runtime::work::{
     PhysicalRetryPayload,
 };
 use crate::physical_runtime::{PhysicalWorkSchedulerPosture, PhysicalWorkScope};
+use outcome::{attach_completed, denied};
 
 use super::super::super::{
     PhysicalRecoveryPublicationCommand, PhysicalRecoveryPublicationCommandDenial,
@@ -26,6 +27,8 @@ use super::super::super::{
     PhysicalRecoveryPublicationCommandOutcome, PhysicalRecoveryPublicationCommandStage,
     PhysicalRecoveryPublicationSettlementFailure,
 };
+
+mod outcome;
 
 pub(super) struct MaterializedCandidate {
     pub(super) completed: Vec<CompletedPhysicalRecoveryPublicationCandidate>,
@@ -108,9 +111,25 @@ pub(super) fn execute(
                     },
                 ));
             }
+            let wait = coordination.pause_at(
+                crate::physical_runtime::PhysicalRecoveryYieldpointStage::CandidateMaterialization,
+            );
+            if wait.is_interrupted() {
+                return Err(PhysicalRecoveryPublicationCommandOutcome::Indeterminate(
+                    PhysicalRecoveryPublicationCommandIndeterminate::CandidateMaterializationYieldpoint {
+                        artifact: candidate.artifact(),
+                        physical,
+                        completed: completed.into_boxed_slice(),
+                        wait,
+                    },
+                ));
+            }
             let materialization = match physical.disposition() {
-                RecoveryStagingWriteDisposition::Created => {
-                    PhysicalRecoveryPublicationCandidateMaterialization::Created(
+                RecoveryStagingWriteDisposition::Created
+                | RecoveryStagingWriteDisposition::CompletedFromExactPrefix => {
+                    let completed_from_prefix = physical.disposition()
+                        == RecoveryStagingWriteDisposition::CompletedFromExactPrefix;
+                    let performed =
                         PerformedRecoveryPhysicalEffect::record_candidate_materialization(
                             RecoveryPublicationCandidateMaterializationOccurrence::new(
                                 super::occurrence(
@@ -124,8 +143,14 @@ pub(super) fn execute(
                                 ),
                                 physical,
                             ),
-                        ),
-                    )
+                        );
+                    if completed_from_prefix {
+                        PhysicalRecoveryPublicationCandidateMaterialization::CompletedFromExactPrefix(
+                            performed,
+                        )
+                    } else {
+                        PhysicalRecoveryPublicationCandidateMaterialization::Created(performed)
+                    }
                 }
                 RecoveryStagingWriteDisposition::AlreadyMaterialized => {
                     PhysicalRecoveryPublicationCandidateMaterialization::AlreadyMaterialized(
@@ -188,44 +213,6 @@ pub(super) fn execute(
                 },
             ))
         }
-    }
-}
-
-fn denied(
-    stage: PhysicalRecoveryPublicationCommandStage,
-    completed: Vec<CompletedPhysicalRecoveryPublicationCandidate>,
-    scheduler: Option<PhysicalWorkSchedulerPosture>,
-) -> PhysicalRecoveryPublicationCommandOutcome {
-    PhysicalRecoveryPublicationCommandOutcome::DeniedBeforeEffect(
-        PhysicalRecoveryPublicationCommandDenial::new(
-            stage,
-            PhysicalRecoveryPublicationCommandDenialKind::Submission,
-            completed.into_boxed_slice(),
-            None,
-            None,
-            scheduler,
-        ),
-    )
-}
-
-fn attach_completed(
-    outcome: PhysicalRecoveryPublicationCommandOutcome,
-    completed: Vec<CompletedPhysicalRecoveryPublicationCandidate>,
-) -> PhysicalRecoveryPublicationCommandOutcome {
-    match outcome {
-        PhysicalRecoveryPublicationCommandOutcome::DeniedBeforeEffect(denial) => {
-            PhysicalRecoveryPublicationCommandOutcome::DeniedBeforeEffect(
-                PhysicalRecoveryPublicationCommandDenial::new(
-                    denial.stage(),
-                    denial.denial(),
-                    completed.into_boxed_slice(),
-                    None,
-                    None,
-                    denial.scheduler_posture(),
-                ),
-            )
-        }
-        other => other,
     }
 }
 

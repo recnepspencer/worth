@@ -39,7 +39,7 @@ error: cannot construct `StagedPhysicalRecovery` with struct literal syntax due 
 16 |         staging_counters: todo!(),
    |         ------------------------- private field
    |
-   = note: ...and other private field `staging_settlements` that was not provided
+   = note: ...and other private fields `root_protocol_denials`, `integrity`, `root_protocol_counters`, `staging_settlements` and `integrity_trace` that were not provided
 help: you might have meant to use the `new` associated function
    |
  4 -     let _forged = StagedPhysicalRecovery {
@@ -56,5 +56,5 @@ help: you might have meant to use the `new` associated function
 15 -         closed: todo!(),
 16 -         staging_counters: todo!(),
 17 -     };
- 4 +     let _forged = StagedPhysicalRecovery::new(_, _, _, _, _, _, _, _, _, _, _, _, _);
+ 4 +     let _forged = StagedPhysicalRecovery::new(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _);
    |

@@ -29,6 +29,7 @@ impl WorthQueryExecutionRuntime {
         installation_authority: &WorthQueryExecutionInstallationAuthority,
         operation: &WorthQueryInstalledDomainOperationAuthority,
         basis: &AdmittedBasisCapability<L>,
+        product: &crate::basis::WorthQueryProductBranchLease,
         graph_authorities: &[&WorthQueryInstalledGraphParticipationAuthority],
         required_domains: &[(&str, &WorthQueryInstalledPackageAuthority)],
         commit_posture: WorthQueryExecutionCommitPosture,
@@ -59,6 +60,53 @@ impl WorthQueryExecutionRuntime {
             runtime: self,
             operation,
             basis,
+            product: Some(product.observation()),
+            graph_authorities,
+            required_domains,
+            commit_posture,
+            installed_support,
+            workflow_artifact_contracts,
+        }
+        .bind())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn bind_standalone_test_domain_operation<L: BasisOperationLane>(
+        &self,
+        installation_authority: &WorthQueryExecutionInstallationAuthority,
+        operation: &WorthQueryInstalledDomainOperationAuthority,
+        basis: &AdmittedBasisCapability<L>,
+        graph_authorities: &[&WorthQueryInstalledGraphParticipationAuthority],
+        required_domains: &[(&str, &WorthQueryInstalledPackageAuthority)],
+        commit_posture: WorthQueryExecutionCommitPosture,
+        installed_support: WorthQueryInstalledOperationExecutionSupport,
+    ) -> Result<WorthQueryExecutionBoundOperationAuthority, WorthQueryExecutionOperationBindingDenial>
+    {
+        let workflow_artifact_contracts = match &operation.definition().semantics().workflow {
+            WorthQueryOperationWorkflowContract::Declared(workflow) => {
+                compile_workflow_artifact_contracts(
+                    operation.owner(),
+                    workflow.stages(),
+                    self.installed_packages(),
+                )
+            }
+            WorthQueryOperationWorkflowContract::NotRequired => BTreeMap::new(),
+        };
+        validate_operation_and_dependencies(
+            self,
+            installation_authority,
+            operation,
+            graph_authorities,
+            required_domains,
+            commit_posture,
+            &installed_support,
+            &workflow_artifact_contracts,
+        )?;
+        Ok(ValidatedOperationBinding {
+            runtime: self,
+            operation,
+            basis,
+            product: None,
             graph_authorities,
             required_domains,
             commit_posture,
@@ -73,6 +121,7 @@ struct ValidatedOperationBinding<'a, L: BasisOperationLane> {
     runtime: &'a WorthQueryExecutionRuntime,
     operation: &'a WorthQueryInstalledDomainOperationAuthority,
     basis: &'a AdmittedBasisCapability<L>,
+    product: Option<&'a worth_runtime_world::facade::ProductBranchObservation>,
     graph_authorities: &'a [&'a WorthQueryInstalledGraphParticipationAuthority],
     required_domains: &'a [(&'a str, &'a WorthQueryInstalledPackageAuthority)],
     commit_posture: WorthQueryExecutionCommitPosture,
@@ -139,6 +188,7 @@ impl<L: BasisOperationLane> ValidatedOperationBinding<'_, L> {
             application_operation_slot: None,
             application_schema_binding: None,
             application_snapshot: None,
+            application_product_observation: self.product.cloned(),
         }
     }
 }

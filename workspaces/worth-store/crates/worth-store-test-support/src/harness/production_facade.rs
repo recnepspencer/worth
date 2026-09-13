@@ -30,5 +30,3 @@ pub use super::physical_simulation::{
 pub use super::pressure::*;
 #[cfg(feature = "physical-isolation-fixtures")]
 pub use super::recovery::*;
-#[cfg(feature = "certification-world")]
-pub use super::security_scope::*;

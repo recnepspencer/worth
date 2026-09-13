@@ -4,15 +4,15 @@ use worth_store_recovery_physics::{PhysicalSourceSelection, RecoveryPlanningCoun
 
 use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryPublicationCounters,
-    PhysicalRecoveryPublicationSettlementLedger, PhysicalRecoveryStagingCounters,
-    PhysicalRecoveryStagingSettlementLedger,
+    PhysicalRecoveryPublicationSettlementLedger, PhysicalRecoverySourceDenial,
+    PhysicalRecoveryStagingCounters, PhysicalRecoveryStagingSettlementLedger,
 };
 use crate::handoff::RecoveryOperationFateSet;
 use crate::orchestration::RecoveryCoordination;
 
 use super::{
     ClosedRecoveryStagingGeneration, PhysicalRecoveryDiscoveryCounters, RecoveryBaseImagePlan,
-    RecoveryPublicationExpectation, RecoveryQuiescencePlan,
+    RecoveryIntegrityEvidence, RecoveryPublicationExpectation, RecoveryQuiescencePlan,
 };
 
 pub struct NamespaceDurablePhysicalRecovery {
@@ -27,14 +27,18 @@ pub(crate) struct NamespaceDurableState {
     pub(crate) coordination: RecoveryCoordination,
     pub(crate) selection: PhysicalSourceSelection,
     pub(crate) discovery_counters: PhysicalRecoveryDiscoveryCounters,
+    pub(crate) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
+    pub(crate) integrity: RecoveryIntegrityEvidence,
     pub(crate) freshness: StoreRecoveryBindingFreshnessSample,
     pub(crate) fates: RecoveryOperationFateSet,
     pub(crate) planning_counters: RecoveryPlanningCounters,
+    pub(crate) root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
     pub(crate) base: RecoveryBaseImagePlan,
     pub(crate) quiescence: RecoveryQuiescencePlan,
     pub(crate) closed: ClosedRecoveryStagingGeneration,
     pub(crate) staging_counters: PhysicalRecoveryStagingCounters,
     pub(crate) staging_settlements: PhysicalRecoveryStagingSettlementLedger,
+    pub(crate) integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
 impl NamespaceDurablePhysicalRecovery {
@@ -76,11 +80,24 @@ impl NamespaceDurablePhysicalRecovery {
     pub const fn discovery_counters(&self) -> PhysicalRecoveryDiscoveryCounters {
         self.state.discovery_counters
     }
+    pub fn root_protocol_denials(&self) -> &[PhysicalRecoverySourceDenial] {
+        &self.state.root_protocol_denials
+    }
+    pub fn wal_integrity_observations(
+        &self,
+    ) -> &[crate::entry::PhysicalRecoveryWalIntegrityObservation] {
+        self.state.integrity.observations().wal()
+    }
     pub const fn freshness_sample(&self) -> &StoreRecoveryBindingFreshnessSample {
         &self.state.freshness
     }
     pub const fn planning_counters(&self) -> RecoveryPlanningCounters {
         self.state.planning_counters
+    }
+    pub const fn root_protocol_counters(
+        &self,
+    ) -> crate::entry::PhysicalRecoveryRootProtocolCounters {
+        self.state.root_protocol_counters
     }
     pub const fn base_image(&self) -> &RecoveryBaseImagePlan {
         &self.state.base
@@ -96,6 +113,13 @@ impl NamespaceDurablePhysicalRecovery {
     }
     pub fn is_quiescent(&self) -> bool {
         self.state.coordination.is_ready()
+    }
+    pub const fn integrity_observation_count(&self) -> u64 {
+        self.state.integrity_trace.counters().attempted
+    }
+
+    pub fn integrity_observations(&self) -> &[crate::PhysicalRecoveryIntegrityObservation] {
+        self.state.integrity_trace.observations()
     }
 
     /// Reopens the namespace-durable selector and root through scheduled C4

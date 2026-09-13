@@ -13,7 +13,6 @@ worth-proof = { path = "../../../../crates/worth-proof" }
 worth-store-authority.workspace = true
 worth-store-physical-backend.workspace = true
 worth-store-physical-isolation.workspace = true
-worth-store-recovery-physics.workspace = true
 worth-store-security.workspace = true
 
 [features]
@@ -22,7 +21,6 @@ certification-test-authority = []
 
 [dev-dependencies]
 tempfile = "3"
-worth-store-recovery-physics = { workspace = true, features = ["certification-test-authority"] }
 worth-store-security = { workspace = true, features = ["certification-test-authority"] }
 worth-store-wal.workspace = true
 

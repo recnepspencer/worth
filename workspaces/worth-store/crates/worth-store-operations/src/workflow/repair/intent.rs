@@ -1,21 +1,23 @@
+use super::integrity_classification::{
+    IntegrityRepairArtifactFamily, IntegrityRepairOwnerBinding, IntegrityRepairRegion,
+    IntegrityRepairRegionClass,
+};
 use sha2::{Digest, Sha256};
 use worth_store_authority::StoreCurrentAuthorityIdentity;
 use worth_store_layout_indexes::DerivedIndexRepairRequest;
-use worth_store_offline_verifier::{OperationalTruthRegion, OperationalTruthReport};
-use worth_store_physical_integrity::{
-    IntegrityRepairArtifactFamily, IntegrityRepairOwnerBinding, IntegrityRepairRegion,
-    IntegrityRepairRegionClass, OfflineIntegrityPosture,
+use worth_store_offline_verifier::{
+    OfflineIntegrityPosture, OperationalTruthRegion, OperationalTruthReport,
 };
 
 use crate::{
     OperationalOperationId, OperationalSecurityScope, ProductionRestoreAdmissibleBackupBundle,
 };
 
-#[cfg(feature = "certification-test-authority")]
+#[cfg(any(test, feature = "certification-test-authority"))]
 mod certification_fixtures;
 mod physical_target;
 mod region_class;
-#[cfg(feature = "certification-test-authority")]
+#[cfg(any(test, feature = "certification-test-authority"))]
 pub(crate) use certification_fixtures::{
     certification_authority_repair_candidates_from_backup_observation,
     certification_authority_repair_from_backup_observation,
@@ -119,28 +121,28 @@ impl RepairIntent {
 }
 
 const fn repair_family(
-    family: worth_store_physical_format::OfflinePhysicalArtifactFamily,
+    family: worth_store_offline_verifier::OfflinePhysicalArtifactFamily,
 ) -> IntegrityRepairArtifactFamily {
     match family {
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::Manifest => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::Manifest => {
             IntegrityRepairArtifactFamily::Manifest
         }
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::Page => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::Page => {
             IntegrityRepairArtifactFamily::Page
         }
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::Extent => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::Extent => {
             IntegrityRepairArtifactFamily::Extent
         }
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::Wal => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::Wal => {
             IntegrityRepairArtifactFamily::Wal
         }
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::Index => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::Index => {
             IntegrityRepairArtifactFamily::LayoutIndex
         }
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::BlobChunk => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::BlobChunk => {
             IntegrityRepairArtifactFamily::BlobChunk
         }
-        worth_store_physical_format::OfflinePhysicalArtifactFamily::Unknown => {
+        worth_store_offline_verifier::OfflinePhysicalArtifactFamily::Unknown => {
             IntegrityRepairArtifactFamily::Unknown
         }
     }

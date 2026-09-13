@@ -1,12 +1,13 @@
 use crate::{
-    CheckpointInterlockObservation, CoverageGapDenial, IndependentVerifierObservation,
-    ObservedPhysicalTrace, PhysicalInterleavingSchedule, PhysicalSimulationBoundaryObservation,
-    PhysicalSimulationObserver, PhysicalSimulationPlan, PhysicalSimulationScenarioFamily,
-    ShortcutRejectionObservation,
+    CheckpointInterlockObservation, CompactionInterlockObservation, IndependentVerifierObservation,
+    ObservationDenial, ObservedPhysicalTrace, PhysicalInterleavingSchedule,
+    PhysicalSimulationBoundaryObservation, PhysicalSimulationObserver, PhysicalSimulationPlan,
+    PhysicalSimulationScenarioFamily, ShortcutRejectionObservation,
 };
 
 pub struct PhysicalIsolationTraceFixtures {
     checkpoint_interlock: Option<CheckpointInterlockObservation>,
+    compaction_interlock: Option<CompactionInterlockObservation>,
     independent_verifier: Option<IndependentVerifierObservation>,
 }
 
@@ -17,6 +18,7 @@ impl PhysicalIsolationTraceFixtures {
     ) -> Self {
         Self {
             checkpoint_interlock: Some(checkpoint_interlock),
+            compaction_interlock: None,
             independent_verifier: Some(independent_verifier),
         }
     }
@@ -33,6 +35,14 @@ impl PhysicalIsolationTraceFixtures {
         self
     }
 
+    pub fn with_compaction_interlock_observation(
+        mut self,
+        observation: CompactionInterlockObservation,
+    ) -> Self {
+        self.compaction_interlock = Some(observation);
+        self
+    }
+
     pub fn without_independent_verifier(mut self) -> Self {
         self.independent_verifier = None;
         self
@@ -43,9 +53,9 @@ pub fn observe_physical_isolation_trace(
     plan: &PhysicalSimulationPlan,
     schedule: &PhysicalInterleavingSchedule,
     fixtures: PhysicalIsolationTraceFixtures,
-) -> Result<ObservedPhysicalTrace, CoverageGapDenial> {
+) -> Result<ObservedPhysicalTrace, ObservationDenial> {
     if !schedule.replay_identity_matches_plan(plan) {
-        return Err(CoverageGapDenial::PlanScheduleIdentityMismatch);
+        return Err(ObservationDenial::ScheduleExecutionMismatch);
     }
     let execution =
         PhysicalSimulationBoundaryObservation::from_declared_driver_shape_probe(plan).unwrap();
@@ -55,6 +65,11 @@ pub fn observe_physical_isolation_trace(
         .with_shortcut_rejection_observation(
             ShortcutRejectionObservation::private_mutation_denied(),
         );
+    let builder = if let Some(observation) = fixtures.compaction_interlock {
+        builder.with_compaction_interlock_observation(observation)
+    } else {
+        builder
+    };
     let trace = match plan.scenario_family() {
         PhysicalSimulationScenarioFamily::PhysicalIsolationCheckpointPublicationInterlock
         | PhysicalSimulationScenarioFamily::PhysicalIsolationRestartDuringCutover => {

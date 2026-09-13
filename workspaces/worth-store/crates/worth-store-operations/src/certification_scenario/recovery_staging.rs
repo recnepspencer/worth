@@ -1,21 +1,17 @@
 use std::path::Path;
 
-use worth_store_authority::{
-    report_retained_store_authority_evidence, StoreCurrentAuthorityWitness,
-};
-use worth_store_physical_isolation::RecoverySourceLeaseRegistry;
-use worth_store_recovery_physics::{
-    PitrCandidatePosture, PitrRoundingPolicy, RecoveryPhysicsRollbackOwner,
-    RecoveryPhysicsTimelineAuthority,
-};
-
 use crate::{
     AuthorizationReplayPolicy, AuthorizationRevocationObservation, BackupRestoreIntent,
     ExecutedBackupRestore, ExecutedPointInTimeRecovery, ExecutedRollback, OperationalControlStore,
     OperationalControlStorePort, OperationalOperationId, OperationalSecurityScope,
-    OperationalTransitionId, PointInTimeRecoveryIntent, ProductionRestoreAdmissibleBackupBundle,
-    RollbackIntent,
+    OperationalTransitionId, PitrCandidatePosture, PitrRoundingPolicy, PointInTimeRecoveryIntent,
+    ProductionRestoreAdmissibleBackupBundle, RecoveryTimelineAdmission, RecoveryTimelineOwner,
+    RollbackIntent, RollbackReplayOwner,
 };
+use worth_store_authority::{
+    report_retained_store_authority_evidence, StoreCurrentAuthorityWitness,
+};
+use worth_store_physical_isolation::RecoverySourceLeaseRegistry;
 
 use super::{
     certification_operator_assertion, CurrentScenarioStagingPort, ExactScenarioAuthorizationPort,
@@ -79,22 +75,22 @@ pub fn execute_scenario_pitr_staging(
     let materialized = source.custody().structural().materialized();
     let manifest = materialized.manifest();
     let wal_end = manifest.wal_half_open_interval().1;
-    let observation = RecoveryPhysicsTimelineAuthority::admit_observation(
-        100,
-        0,
-        0,
-        manifest.durable_checkpoint_lsn(),
-        wal_end,
-        wal_end,
-        manifest.acknowledged_frontier(),
-        manifest.acknowledged_frontier(),
-        source.admission().admitting_authority(),
-        [0x91; 32],
-        materialized.manifest_digest(),
-        PitrCandidatePosture::Available,
-    )
+    let observation = RecoveryTimelineOwner::admit_observation(RecoveryTimelineAdmission {
+        observed_time: 100,
+        uncertainty_before: 0,
+        uncertainty_after: 0,
+        checkpoint_durability: manifest.durable_checkpoint_lsn(),
+        wal_structural: wal_end,
+        local_durable_commit: wal_end,
+        client_acknowledged: manifest.acknowledged_frontier(),
+        replication_acknowledged: manifest.acknowledged_frontier(),
+        authority_identity: source.admission().admitting_authority(),
+        source_lineage: [0x91; 32],
+        source_identity: materialized.manifest_digest(),
+        posture: PitrCandidatePosture::Available,
+    })
     .expect("exact PITR observation");
-    let candidates = RecoveryPhysicsTimelineAuthority::resolve_candidates(
+    let candidates = RecoveryTimelineOwner::resolve_candidates(
         100,
         PitrRoundingPolicy::ExactOnly,
         vec![observation],
@@ -156,23 +152,23 @@ pub fn execute_scenario_rollback_staging(
     let materialized = source.custody().structural().materialized();
     let manifest = materialized.manifest();
     let wal_end = manifest.wal_half_open_interval().1;
-    let lineage = RecoveryPhysicsRollbackOwner::source_lineage(&retained, manifest);
-    let observation = RecoveryPhysicsTimelineAuthority::admit_observation(
-        100,
-        0,
-        0,
-        manifest.durable_checkpoint_lsn(),
-        wal_end,
-        wal_end,
-        manifest.acknowledged_frontier(),
-        manifest.acknowledged_frontier(),
-        source.admission().admitting_authority(),
-        lineage,
-        materialized.manifest_digest(),
-        PitrCandidatePosture::Available,
-    )
+    let lineage = RollbackReplayOwner::source_lineage(&retained, manifest);
+    let observation = RecoveryTimelineOwner::admit_observation(RecoveryTimelineAdmission {
+        observed_time: 100,
+        uncertainty_before: 0,
+        uncertainty_after: 0,
+        checkpoint_durability: manifest.durable_checkpoint_lsn(),
+        wal_structural: wal_end,
+        local_durable_commit: wal_end,
+        client_acknowledged: manifest.acknowledged_frontier(),
+        replication_acknowledged: manifest.acknowledged_frontier(),
+        authority_identity: source.admission().admitting_authority(),
+        source_lineage: lineage,
+        source_identity: materialized.manifest_digest(),
+        posture: PitrCandidatePosture::Available,
+    })
     .expect("rollback source observation");
-    let frontier = RecoveryPhysicsTimelineAuthority::resolve_candidates(
+    let frontier = RecoveryTimelineOwner::resolve_candidates(
         100,
         PitrRoundingPolicy::ExactOnly,
         vec![observation],

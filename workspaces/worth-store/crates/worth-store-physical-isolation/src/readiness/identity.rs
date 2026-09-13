@@ -24,7 +24,8 @@ pub struct PhysicalIsolationRootEpochBasis {
 }
 
 impl PhysicalIsolationEntryIdentity {
-    pub(crate) fn new(
+    #[cfg(feature = "certification-authority")]
+    pub fn from_certification_boundary(
         recovered_root: &str,
         admitted_page_lsn_frontier: Option<PageLsn>,
         source_decision_digest: &str,
@@ -77,6 +78,7 @@ impl PhysicalIsolationEntryIdentity {
         }
     }
 
+    #[cfg(feature = "certification-authority")]
     pub(crate) fn boundary_artifact_id(&self) -> u64 {
         stable_identity_hash(self)
     }

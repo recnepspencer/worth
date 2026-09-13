@@ -319,13 +319,13 @@ impl crate::StagingAuthorizationContinuationPort for RevokeAtAllocation {
     }
 }
 
-impl worth_store_recovery_physics::StagedWalApplicationPort for RevokeAtAllocation {
+impl crate::workflow::StagedWalApplicationPort for RevokeAtAllocation {
     fn apply_staged_wal(
         &self,
-        request: worth_store_recovery_physics::StagedWalApplicationRequest<'_>,
+        request: crate::workflow::StagedWalApplicationRequest<'_>,
     ) -> Result<
-        worth_store_recovery_physics::StagedWalApplicationProviderReceipt,
-        worth_store_recovery_physics::StagedWalApplicationDenial,
+        crate::workflow::StagedWalApplicationProviderReceipt,
+        crate::workflow::StagedWalApplicationDenial,
     > {
         CurrentScenarioStagingPort.apply_staged_wal(request)
     }

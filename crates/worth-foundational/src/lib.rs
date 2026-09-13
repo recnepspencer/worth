@@ -21,6 +21,8 @@
 //! - `docs/diagnostics-and-explanation-ontology/README.md`
 //! - `docs/lineage-provenance-receipts-and-support-truth/README.md`
 //! - `docs/performance/README.md`
+//! - [`physical_integrity_observation`]: portable physical facts without media,
+//!   decoder, recovery, or repair authority.
 
 #![forbid(unsafe_code)]
 
@@ -40,6 +42,7 @@ mod identities;
 mod locators;
 mod performance;
 pub mod performance_api;
+pub mod physical_integrity_observation;
 mod profiles;
 pub mod profiles_api;
 mod responsibilities;
@@ -47,3 +50,4 @@ mod transitions;
 mod values;
 
 pub use facade::*;
+pub use physical_integrity_observation::*;

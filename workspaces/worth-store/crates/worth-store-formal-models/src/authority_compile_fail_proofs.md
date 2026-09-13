@@ -10,16 +10,6 @@ let action = CompactionVisibilityAction::LowerRewrite;
 let _ = CompactionCutoverDelta::lower(action, panic!("root is irrelevant to this type proof"));
 ```
 
-The cold binding manifest cannot satisfy the same boundary:
-
-```compile_fail
-use worth_store_formal_models::current_protocol_binding_manifest;
-use worth_store_physical_isolation::CompactionCutoverDelta;
-
-let manifest = current_protocol_binding_manifest();
-let _ = CompactionCutoverDelta::lower(manifest, panic!("root is irrelevant to this type proof"));
-```
-
 An owner case id cannot be copied into an owner-issued observation:
 
 ```compile_fail

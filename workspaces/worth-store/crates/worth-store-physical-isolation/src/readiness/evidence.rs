@@ -1,6 +1,8 @@
+#[cfg(feature = "certification-authority")]
+use super::PhysicalIsolationEntryIdentity;
 use super::{
     foundational_lowering::PhysicalIsolationEntryFoundationalEvidence,
-    proof_progression::PhysicalIsolationEntryProofProgression, PhysicalIsolationEntryIdentity,
+    proof_progression::PhysicalIsolationEntryProofProgression,
 };
 
 #[derive(Debug, Clone)]
@@ -10,7 +12,8 @@ pub struct PhysicalIsolationEntryEvidence {
 }
 
 impl PhysicalIsolationEntryEvidence {
-    pub(crate) fn from_entry_identity(
+    #[cfg(feature = "certification-authority")]
+    pub fn from_entry_identity(
         identity: &PhysicalIsolationEntryIdentity,
     ) -> Result<Self, worth_foundational::FoundationalBoundaryEvidenceProvenanceConstructionDenial>
     {

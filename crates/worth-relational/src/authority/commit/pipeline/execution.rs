@@ -124,6 +124,7 @@ pub(crate) fn prepare_authoritative_commit(
     prepared.release_transaction_retention();
     let candidate = crate::mvcc::PreparedRelationalCommitCandidate::new(
         runtime_instance_id,
+        runtime.schema_contract_runtime.custom_invariant_generation,
         publication_binding,
         transaction_id,
         branch_id,

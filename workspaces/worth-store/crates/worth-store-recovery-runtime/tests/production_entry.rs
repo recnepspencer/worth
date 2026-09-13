@@ -80,6 +80,33 @@ fn production_entry_refuses_absent_incomplete_and_contended_roots() {
     drop(owner);
 }
 
+#[test]
+fn production_entry_rejects_a_report_path_inside_the_store_root() {
+    let world = initialized_recovery_world("production-report-safety");
+    let retained_root = world.retained_root();
+    let root = retained_root.path().to_path_buf();
+    let before = std::fs::read_dir(&root)
+        .expect("read store before report rejection")
+        .map(|entry| entry.expect("store entry").file_name())
+        .collect::<Vec<_>>();
+    drop(world);
+
+    let report = root.join("report-inside-store.bin");
+    let output = Command::new(env!("CARGO_BIN_EXE_physical_store_recover"))
+        .arg(&root)
+        .arg("--bounded-profile=c8-phase2-admission-v1")
+        .arg(format!("--report={}", report.display()))
+        .output()
+        .expect("run report safety entry");
+    assert!(!output.status.success());
+    assert!(!report.exists());
+    let after = std::fs::read_dir(&root)
+        .expect("read store after report rejection")
+        .map(|entry| entry.expect("store entry").file_name())
+        .collect::<Vec<_>>();
+    assert_eq!(after, before);
+}
+
 fn run_entry(root: &Path) -> std::process::Output {
     Command::new(env!("CARGO_BIN_EXE_physical_store_recover"))
         .arg(root)
@@ -131,6 +158,7 @@ fn test_limits() -> worth_store_recovery_runtime::PhysicalRecoveryLimitDeclarati
         distinct_pages_and_extents: 1,
         operation_bindings: 1,
         staging_bytes: 1,
+        recovery_memory_bytes: 1,
         dirty_frames: 1,
         concurrent_commands: 1,
         publication_effects: 1,

@@ -10,10 +10,6 @@ use worth_store_physical_format::{
     BackupBundleManifestIdentity, BackupBundleRecoveryCoordinates,
 };
 use worth_store_physical_isolation::PitrReachabilityLease;
-use worth_store_recovery_physics::{
-    PointInTimeReplayDenial, PointInTimeReplayPlan, PointInTimeReplayRequest,
-    RecoveryPhysicsPointInTimeOwner,
-};
 use worth_store_wal::artifact_store::{
     inspect_wal_exact_frontier_prefix, WalExactFrontierPrefixDenial, WalExactFrontierPrefixRequest,
 };
@@ -29,7 +25,11 @@ use crate::{
 };
 
 use super::intent::operation_identity;
-use super::{EvidenceBoundPointInTimeRecoveryPlan, PointInTimeRecoveryOperation};
+use super::{
+    EvidenceBoundPointInTimeRecoveryPlan, ExactRecoveryFrontier, PointInTimeRecoveryOperation,
+    PointInTimeReplayDenial, PointInTimeReplayOwner, PointInTimeReplayPlan,
+    PointInTimeReplayRequest, PointInTimeReplaySourceCoordinates,
+};
 
 #[derive(Debug)]
 pub enum PitrLoweringDenial {
@@ -92,11 +92,11 @@ impl EvidenceBoundPointInTimeRecoveryPlan {
         ))
         .map_err(PitrLoweringDenial::Backend)?;
         let frontier = resolved.candidate.exact_frontier();
-        let recovery = RecoveryPhysicsPointInTimeOwner::lower(PointInTimeReplayRequest::new(
+        let recovery = PointInTimeReplayOwner::lower(PointInTimeReplayRequest::new(
             frontier,
             self.lease.source_identity(),
             backend.binding(),
-            worth_store_recovery_physics::PointInTimeReplaySourceCoordinates {
+            PointInTimeReplaySourceCoordinates {
                 staged_manifest_digest: exact_manifest_digest,
                 staged_wal_start: exact_manifest.wal_half_open_interval().0,
                 source_checkpoint_lsn: exact_manifest.durable_checkpoint_lsn(),
@@ -181,7 +181,7 @@ impl LoweredPointInTimeRecoveryPlan {
 fn exact_frontier_artifacts(
     manifest: &BackupBundleManifest,
     root: &std::path::Path,
-    frontier: worth_store_recovery_physics::ExactRecoveryFrontier,
+    frontier: ExactRecoveryFrontier,
 ) -> Result<
     (
         Vec<NonCurrentStagingArtifact>,

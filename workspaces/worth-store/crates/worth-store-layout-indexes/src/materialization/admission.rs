@@ -4,6 +4,7 @@ use super::{
     PhysicalCoverageBasis,
 };
 use crate::{AdmittedPhysicalArtifactFamily, BootstrapCatalogReadAdmission};
+use worth_store_wal::LogSequenceNumber;
 
 #[macro_use]
 mod outcome;
@@ -134,7 +135,7 @@ impl AdmittedLayoutMaterialization {
     fn admit_btree_replay_exact(
         family: AdmittedPhysicalArtifactFamily,
         catalog: &BootstrapCatalogReadAdmission,
-        source: &worth_store_recovery_physics::AdmittedBTreeReplayPhysicalSource,
+        source: &crate::AdmittedBTreeReplayPhysicalSource,
     ) -> Result<Self, MaterializationDenial> {
         let identity =
             LayoutMaterializationSourceIdentity::from_btree_replay_source(catalog, source);
@@ -189,9 +190,7 @@ impl AdmittedLayoutMaterialization {
             family,
             catalog,
             source,
-            PhysicalCoverageBasis::wal_lsn(worth_store_recovery_physics::LogSequenceNumber::new(
-                replacement.sequence(),
-            )),
+            PhysicalCoverageBasis::wal_lsn(LogSequenceNumber::new(replacement.sequence())),
         )
     }
 
@@ -208,9 +207,7 @@ impl AdmittedLayoutMaterialization {
             family,
             catalog,
             identity,
-            PhysicalCoverageBasis::wal_lsn(worth_store_recovery_physics::LogSequenceNumber::new(
-                covered_lsn,
-            )),
+            PhysicalCoverageBasis::wal_lsn(LogSequenceNumber::new(covered_lsn)),
         )
     }
 

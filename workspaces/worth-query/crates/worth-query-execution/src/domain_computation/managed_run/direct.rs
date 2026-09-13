@@ -73,6 +73,40 @@ pub struct WorthQueryRunningDirectRun {
 }
 
 impl WorthQueryRunningDirectRun {
+    pub fn resources(
+        &self,
+    ) -> &worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan
+    {
+        self.affinity.provider_plan_resources().0
+    }
+
+    pub fn provider_session_identity(&self) -> &str {
+        self.affinity.provider_session_description()
+    }
+
+    pub fn bind_commit_call(
+        &self,
+        graph_authorities: &[&worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority],
+        request: crate::domain_computation::WorthQueryGraphCommitCallRequest,
+    ) -> Result<
+        crate::domain_computation::WorthQueryGraphCommitCall,
+        crate::domain_computation::WorthQueryGraphCallBindingDenial,
+    > {
+        let (resources, evidence) = self.affinity.provider_plan_resources();
+        self.affinity
+            .provider_plan_session()
+            .bind_graph_commit_call(
+                graph_authorities,
+                request,
+                evidence,
+                resources.shared_envelope(),
+            )
+    }
+
+    pub fn abandon(self) -> WorthQueryDirectRunTerminal {
+        self.terminal(WorthQueryManagedRunTerminalKind::Failed)
+    }
+
     pub(crate) fn graph_work_affinity(
         &self,
     ) -> Option<crate::domain_computation::operation_binding::WorthQueryApplicationGraphWorkAffinity>
@@ -128,7 +162,7 @@ impl WorthQueryRunningDirectRun {
     > {
         let request =
             WorthQueryGraphProviderCallRequest::direct(request.kind(), request.scope_identity())
-                .bind_execution_snapshot(self.execution_snapshot_reference());
+                .with_managed_execution_snapshot(self.execution_snapshot_reference());
         self.affinity
             .bind_graph_provider_call(graph_authority, request)
     }
@@ -185,10 +219,6 @@ impl WorthQueryRunningDirectRun {
 
     pub(super) fn bridge_basis_mut(&mut self) -> &mut BridgeBoundExecutionBasis {
         &mut self.bridge_basis
-    }
-
-    pub(super) fn provider_session_identity(&self) -> &str {
-        self.affinity.provider_session_description()
     }
 
     pub(super) fn retained_capacity_reservation_count(&self) -> usize {

@@ -262,7 +262,7 @@ fn diagnostics_tiers_change_sidecar_policy_but_not_operational_rows() {
                 .graph()
                 .observe()
                 .recent_execution_history_diagnostics()
-                .back()
+                .last()
                 .cloned()
                 .expect("performed locality execution emits a history sidecar"),
             compiled.committed_locality_financial_values().unwrap(),

@@ -20,13 +20,11 @@ impl PageRedoCounterSnapshot {
         }
     }
 
-    #[cfg(feature = "certification-test-authority")]
     pub(super) const fn with_stale_page_redo_required(mut self) -> Self {
         self.stale_page_redo_required_count += 1;
         self
     }
 
-    #[cfg(feature = "certification-test-authority")]
     pub(super) const fn with_current_page_redo_skip(mut self) -> Self {
         self.current_page_redo_skip_count += 1;
         self

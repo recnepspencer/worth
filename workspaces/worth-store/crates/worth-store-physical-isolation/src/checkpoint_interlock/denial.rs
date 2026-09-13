@@ -1,5 +1,5 @@
 use crate::{CurrentPhysicalRoot, ManifestEpoch, RootEpoch};
-use worth_store_recovery_physics::{CheckpointCoveredLsnRange, PageLsn};
+use worth_store_physical_format::CheckpointWalSourceRange;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CheckpointReadInterlockDenial {
@@ -16,13 +16,14 @@ pub enum CheckpointReadInterlockDenial {
         old_manifest: ManifestEpoch,
         published_manifest: ManifestEpoch,
     },
-    CheckpointCutoverReceiptMismatch,
-    CheckpointCutoverRangeMismatch {
-        validation_range: CheckpointCoveredLsnRange,
-        receipt_range: CheckpointCoveredLsnRange,
+    CheckpointPublicationCompactionProductMismatch,
+    CheckpointPublicationWalRangeMismatch {
+        checkpoint_range: CheckpointWalSourceRange,
+        product_range: CheckpointWalSourceRange,
     },
-    PageLsnFrontierOutsideCutoverRange {
-        page_lsn: PageLsn,
+    CompactionCutoffOutsideCheckpointWalRange {
+        cutoff_lsn: u64,
+        checkpoint_range: CheckpointWalSourceRange,
     },
     PrePublicationReadReceiptMismatch {
         expected: CurrentPhysicalRoot,

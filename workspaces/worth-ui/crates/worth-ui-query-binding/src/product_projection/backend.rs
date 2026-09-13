@@ -14,11 +14,20 @@ pub(crate) use state::{shared_source_state, SharedSourceState};
 
 pub(crate) fn configure_product_projection_backend(
     builder: runtime::WorthQueryRuntimeBuilder,
-    bridge: worth_runtime_bridge::facade::RuntimeBridge,
+    bridge_completion: std::sync::Arc<
+        std::sync::OnceLock<worth_runtime_bridge::facade::RuntimeBridge>,
+    >,
     source: SharedSourceState,
 ) -> runtime::WorthQueryRuntimeBuilder {
     builder
-        .runtime_bridge(bridge)
+        .relational_product_bridge("worth-ui-product", move |source| {
+            let bridge = super::bridge::platform_pulse_bridge(source)?;
+            assert!(
+                bridge_completion.set(bridge.clone()).is_ok(),
+                "Query installs the product Bridge exactly once"
+            );
+            Ok(bridge)
+        })
         .schema_adapter(schema::WorthUiScalarProjectionSchema)
         .source_adapter(source::WorthUiScalarProjectionSource::new(source.clone()))
         .write_authority(mutation_authority::WorthUiScalarProjectionMutationAuthority)

@@ -8,7 +8,7 @@ use super::references::{
 };
 use super::{
     ApplicationOperationProgramTarget, ApplicationSchemaDeclarationBuilder,
-    ApplicationSchemaMember, TypedApplicationValue,
+    ApplicationSchemaMember, DeclaredApplicationFieldValue,
 };
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
@@ -51,7 +51,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     ) -> Self
     where
         Field: OperationWrites<Operation>,
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
         self.program(

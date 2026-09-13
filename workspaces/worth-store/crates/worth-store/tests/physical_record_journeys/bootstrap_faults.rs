@@ -1,13 +1,36 @@
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     FilesystemMediaAdmission, PhysicalRecordInitialization, PhysicalRecordOpen,
-    PhysicalRuntimeAdmission, PhysicalStore,
+    PhysicalRuntimeAdmission, PhysicalStore, RecordBootstrapDenial,
 };
 use worth_store_physical_backend::{
     FilesystemAccessPosture, MediaFaultDirective, MediaOperationRole,
 };
 
-use super::{configuration, media, success};
+use super::{configuration, media, serving_from_initialization, success};
+
+#[test]
+fn zero_store_identity_remains_catalog_damage_not_rebind_authority() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("zero-store");
+    serving_from_initialization(&root).close();
+    let catalog = root.join("families/records/bootstrap.catalog");
+    let mut bytes = std::fs::read(&catalog).unwrap();
+    bytes[48..64].fill(0);
+    super::durable_frame_oracle::reseal(&mut bytes);
+    std::fs::write(catalog, bytes).unwrap();
+
+    let (format, _, access) = configuration();
+    let outcome = open_record_store!(media(&root), |durability| PhysicalRecordOpen::new(
+        format, access, durability
+    ))
+    .into_raw();
+    let TransitionOutcome::Denied(denial) = outcome else {
+        panic!("a structurally invalid Store identity must be denied as catalog damage")
+    };
+    assert_eq!(denial.reason(), RecordBootstrapDenial::CatalogDamaged);
+    denial.into_runtime().close();
+}
 
 #[test]
 fn incomplete_bootstrap_publication_never_returns_reusable_authority() {

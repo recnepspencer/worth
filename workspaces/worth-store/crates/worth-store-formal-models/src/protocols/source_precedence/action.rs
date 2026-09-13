@@ -1,10 +1,8 @@
-use worth_store_recovery_physics::RecoverySourceApplicationRole;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SourcePrecedenceAction {
     CandidateDiscovered {
         discovery_order: u64,
-        role: RecoverySourceApplicationRole,
+        role: ModeledSourceCandidateRole,
     },
     CandidateAdmitted {
         discovery_order: u64,
@@ -19,6 +17,22 @@ pub enum SourcePrecedenceAction {
     SourceSelected,
     SourceQuarantined,
     SourceDenied,
+}
+
+/// Candidate classes used only by the finite source-precedence model.
+///
+/// The production physics facade intentionally does not expose its former
+/// candidate-decision role type. Keeping this classification here preserves
+/// the model's independent transition oracle without reconstructing or
+/// promoting production authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ModeledSourceCandidateRole {
+    CheckpointBase,
+    WalTailRedo,
+    PageSkipApply,
+    CompactionVisibility,
+    ResidueDiscoveryOnly,
+    RecoveryBlocked,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

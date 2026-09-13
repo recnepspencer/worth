@@ -2,7 +2,7 @@
 mod append_planner;
 mod artifact_observation;
 mod exact_frontier_prefix;
-mod frame_codec;
+mod integrity_scope_adapter;
 mod inventory;
 mod offline_segment_verification;
 mod prefix_scan;
@@ -26,6 +26,7 @@ pub use exact_frontier_prefix::{
     inspect_wal_exact_frontier_prefix, WalExactFrontierPrefix, WalExactFrontierPrefixDenial,
     WalExactFrontierPrefixRequest,
 };
+pub use integrity_scope_adapter::wal_frame_integrity_scope_identity;
 pub use inventory::{
     WalArtifactInventory, WalArtifactInventoryIdentity, WalArtifactInventoryScan,
     WalArtifactObservation, WalArtifactObservationRead, WalArtifactScanCounters,
@@ -72,14 +73,15 @@ pub fn prepare_wal_frame_append(
     declared_digest: &str,
     payload: &[u8],
 ) -> Result<WalFrameAppendPlan, WalArtifactStoreDenial> {
-    frame_codec::prepare_append(
-        root,
+    let prefix = prefix_scan::scan_segment_path(root, segment_id, generation)?;
+    encode_append(
         segment_id,
         generation,
         lsn_start,
         lsn_end,
         declared_digest,
         payload,
+        prefix,
     )
 }
 
@@ -93,7 +95,7 @@ pub(crate) fn encode_wal_frame_at_frontier(
     valid_prefix_bytes: u64,
     last_lsn_end: Option<u64>,
 ) -> Result<WalFrameAppendPlan, WalArtifactStoreDenial> {
-    frame_codec::encode_append(
+    encode_append(
         segment_id,
         generation,
         lsn_start,
@@ -107,6 +109,54 @@ pub(crate) fn encode_wal_frame_at_frontier(
             bytes_scanned: 0,
         },
     )
+}
+
+fn encode_append(
+    segment_id: u64,
+    generation: u64,
+    lsn_start: u64,
+    lsn_end: u64,
+    declared_digest: &str,
+    payload: &[u8],
+    prefix: prefix_scan::WalPrefixScan,
+) -> Result<WalFrameAppendPlan, WalArtifactStoreDenial> {
+    if prefix.last_lsn_end.is_some_and(|last| last != lsn_start) {
+        return Err(WalArtifactStoreDenial::NonContiguousLsn);
+    }
+    let request = worth_store_physical_format::wal_frame::WalFrameV1EncodeRequest::new(
+        segment_id,
+        generation,
+        lsn_start,
+        lsn_end,
+        declared_digest.as_bytes(),
+        payload,
+    )
+    .map_err(map_wal_frame_denial)?;
+    Ok(WalFrameAppendPlan {
+        relative_path: segment_inventory::wal_segment_relative_path(segment_id, generation)?,
+        encoded_frame: worth_store_physical_format::wal_frame::encode_wal_frame_v1(request),
+        valid_prefix_bytes: prefix.valid_prefix_bytes,
+        observed_file_bytes: prefix.observed_file_bytes,
+        prefix_bytes_scanned: prefix.bytes_scanned,
+    })
+}
+
+fn map_wal_frame_denial(
+    denial: worth_store_physical_format::wal_frame::WalFrameV1Denial,
+) -> WalArtifactStoreDenial {
+    use worth_store_physical_format::wal_frame::WalFrameV1Denial;
+
+    match denial {
+        WalFrameV1Denial::ChecksumMismatch => WalArtifactStoreDenial::DigestMismatch,
+        WalFrameV1Denial::WrongMagic
+        | WalFrameV1Denial::UnsupportedVersion(_)
+        | WalFrameV1Denial::HeaderLengthMismatch(_)
+        | WalFrameV1Denial::InvalidSegmentIdentity
+        | WalFrameV1Denial::InvalidGeneration
+        | WalFrameV1Denial::InvalidLsnRange
+        | WalFrameV1Denial::EmptyPayload
+        | WalFrameV1Denial::PayloadLengthMismatch => WalArtifactStoreDenial::InvalidFrame,
+    }
 }
 
 impl WalFrameAppendPlan {

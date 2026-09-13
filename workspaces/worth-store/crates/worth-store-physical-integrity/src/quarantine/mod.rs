@@ -1,9 +1,5 @@
-pub(crate) mod quarantine_authority;
-pub(crate) mod quarantine_denial;
-pub(crate) mod quarantine_finding;
-pub(crate) mod quarantine_locality;
-pub(crate) mod quarantine_outcome;
-pub(crate) mod quarantine_posture;
-pub(crate) mod quarantine_receipt;
-pub(crate) mod quarantine_record;
-pub(crate) mod quarantine_request;
+mod observation;
+mod posture;
+
+pub use observation::PhysicalQuarantineObservation;
+pub use posture::PhysicalQuarantinePosture;

@@ -3,8 +3,9 @@ use worth_store::physical_runtime::{
     AdmittedPhysicalRecordFormat, ManifestEntryCapacity, PhysicalManifestCapacityTransition,
     PhysicalMutationIdempotencyMaterial, PhysicalPageSizeClass, PhysicalRecordAccessPolicy,
     PhysicalRecordFormatDeclaration, PhysicalRecordInitialization, PhysicalRecordOpen,
-    PhysicalRecordPlacementPolicy, RecordAppendBatch, RecordBootstrapDenial, RecordByteLimit,
-    RecordServingRebindReason, RecordStoreInitializationOutcome, RecordStoreOpenOutcome,
+    PhysicalRecordPlacementPolicy, PhysicalRootProtocolRoute, RecordAppendBatch,
+    RecordBootstrapDenial, RecordByteLimit, RecordServingRebindReason,
+    RecordStoreInitializationOutcome, RecordStoreOpenOutcome,
 };
 use worth_store_physical_backend::MediaOperationRole;
 
@@ -43,6 +44,17 @@ fn empty_bootstrap_create_and_reopen_converge() {
     let root = parent.path().join("store");
     let serving = serving_from_initialization(&root);
     let store = serving.store_identity();
+    let initialization = serving.root_protocol_counters();
+    assert_eq!(
+        initialization.root_entries(PhysicalRootProtocolRoute::Initialization),
+        1,
+        "initialization must enter its root only after resident admission",
+    );
+    assert_eq!(
+        initialization.selector_entries(PhysicalRootProtocolRoute::Initialization),
+        0,
+        "initialization publishes its selector without reading it",
+    );
     assert!(root.join("families/records/bootstrap.catalog").is_file());
     assert!(root
         .join("families/records/roots/root-0000000000000001.manifest")
@@ -65,6 +77,20 @@ fn empty_bootstrap_create_and_reopen_converge() {
     }));
     let after = reopened.media_counters();
     assert_eq!(reopened.store_identity(), store);
+    assert_eq!(
+        reopened
+            .root_protocol_counters()
+            .root_entries(PhysicalRootProtocolRoute::OrdinaryOpen),
+        1,
+        "ordinary open must enter root interpretation exactly once after admission",
+    );
+    assert_eq!(
+        reopened
+            .root_protocol_counters()
+            .selector_entries(PhysicalRootProtocolRoute::OrdinaryOpen),
+        0,
+        "ordinary open has no Store-private selector decode route",
+    );
     assert!(!reopened.observed_staging_residue());
     assert_eq!(
         after.attempts_for(MediaOperationRole::PositionedRead)

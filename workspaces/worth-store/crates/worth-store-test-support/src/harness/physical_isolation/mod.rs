@@ -1,9 +1,4 @@
 mod boundary_fact;
-#[cfg(any(
-    feature = "certification-world",
-    feature = "physical-compaction-fixtures"
-))]
-pub mod compaction;
 pub mod epoch_scope;
 #[cfg(feature = "certification-world")]
 pub mod interleaving_resources;

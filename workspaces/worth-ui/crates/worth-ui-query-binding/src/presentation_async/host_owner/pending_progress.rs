@@ -39,16 +39,6 @@ impl WorthUiPresentationAsyncOwner {
         mut pending: PendingPresentationAdmission,
         observation: WorthUiPresentationAsyncObservation,
     ) -> Result<WorthUiPresentationPendingReceipt, WorthUiPresentationPendingAdmissionDenial> {
-        if let Err(stop) = self.advance_pending_publications(&mut pending) {
-            return Err(self.retain_admission_progress(key, pending, stop));
-        }
-        if pending.pending_performed.is_none() {
-            return Err(self.retain_admission_progress(
-                key,
-                pending,
-                WorthUiPresentationAdmissionStop::MissingPerformedFrontier,
-            ));
-        }
         if !pending.predecessor_supersession_complete {
             if !pending.reconstructing_unresolved_predecessor {
                 if let Err(stop) =
@@ -70,34 +60,6 @@ impl WorthUiPresentationAsyncOwner {
         Ok(receipt)
     }
 
-    fn advance_pending_publications(
-        &mut self,
-        pending: &mut PendingPresentationAdmission,
-    ) -> Result<(), WorthUiPresentationAdmissionStop> {
-        while let Some(publication) = pending
-            .transition
-            .pending_publications()
-            .get(pending.pending_publication_index)
-        {
-            let semantic = self
-                .registry
-                .publish_and_execute_publication(
-                    &mut self.workspace,
-                    &pending.admission,
-                    publication,
-                )
-                .map_err(|_| WorthUiPresentationAdmissionStop::SemanticExecution)?;
-            let frontier =
-                settlement::semantic_frontier_observation(publication.change(), &semantic);
-            if publication.change() == WorthUiPresentationSemanticChange::Currentness {
-                pending.pending_performed = frontier.performed().first().copied();
-            }
-            pending.pending_frontiers.push(frontier);
-            pending.pending_publication_index += 1;
-        }
-        Ok(())
-    }
-
     fn retain_admission_progress(
         &mut self,
         key: PresentationAdmissionKey,
@@ -107,7 +69,7 @@ impl WorthUiPresentationAsyncOwner {
         let receipt = admission_recovery(&self.correspondence_authority, key, &pending);
         self.active_keys.insert(key);
         self.pending.insert(key, pending);
-        WorthUiPresentationPendingAdmissionDenial::SemanticProgress(Box::new(receipt), stop)
+        WorthUiPresentationPendingAdmissionDenial::AdmissionProgress(Box::new(receipt), stop)
     }
 
     pub(super) fn supersede_pending_lineage(
@@ -130,9 +92,11 @@ impl WorthUiPresentationAsyncOwner {
             }
             result?;
         }
-        if let Some(key) = self.superseded_pending.iter().find_map(|(key, pending)| {
-            (pending.lineage == lineage && !pending.supersession_semantic_retired).then_some(*key)
-        }) {
+        if let Some(key) = self
+            .superseded_pending
+            .iter()
+            .find_map(|(key, pending)| (pending.lineage == lineage).then_some(*key))
+        {
             let mut pending = self
                 .superseded_pending
                 .remove(&key)
@@ -183,20 +147,12 @@ impl WorthUiPresentationAsyncOwner {
             }
             pending.supersession_posture_observed = true;
         }
-        if !pending.supersession_semantic_retired {
-            self.registry
-                .retire(&mut self.workspace, &pending.admission)
-                .map_err(|_| WorthUiPresentationAdmissionStop::SemanticRetirement)?;
-            pending.supersession_semantic_retired = true;
-        }
         Ok(())
     }
 }
 
 pub(super) fn pending_admission_complete(pending: &PendingPresentationAdmission) -> bool {
-    pending.pending_publication_index == pending.transition.pending_publications().len()
-        && pending.pending_performed.is_some()
-        && pending.predecessor_supersession_complete
+    pending.predecessor_supersession_complete
 }
 
 fn pending_receipt(
@@ -210,7 +166,6 @@ fn pending_receipt(
         attempt: key.attempt,
         binding: key.binding,
         observation,
-        frontiers: pending.pending_frontiers.clone().into_boxed_slice(),
         nonce: pending.nonce,
     }
 }

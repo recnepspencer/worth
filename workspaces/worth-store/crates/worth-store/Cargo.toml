@@ -23,26 +23,25 @@ worth-store-contracts.workspace = true
 worth-store-io-scheduler.workspace = true
 worth-store-physical-backend = { workspace = true, features = ["store-runtime-owner"] }
 worth-store-physical-format.workspace = true
+worth-store-physical-integrity.workspace = true
 worth-store-security.workspace = true
 worth-store-wal.workspace = true
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-signal = { path = "../../../../crates/worth-signal" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 sha2 = "0.10"
+serde_json = "1"
 getrandom = "0.4"
 tracking-allocator = { version = "0.4", default-features = false }
 
-[build-dependencies]
-sha2 = "0.10"
-
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 stats_alloc = "0.1"
 tempfile = "3"
 trybuild = "1.0"
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-store-offline-verifier.workspace = true
+worth-store-physical-format = { workspace = true, features = ["certification-test-authority"] }
 
 [lints]
 workspace = true
@@ -54,9 +53,8 @@ test = false
 doctest = false
 
 [[bin]]
-name = "physical_store_work_courtroom"
-path = "src/bin/physical_store_work_courtroom.rs"
-required-features = ["certification-test-authority"]
+name = "physical_store_c8_writer"
+path = "src/bin/physical_store_c8_writer.rs"
 test = false
 doctest = false
 

@@ -45,7 +45,9 @@ mod session_observation;
 mod trust_posture;
 
 pub use control_record::OperationalControlRecord;
-pub use control_record_kind::{OperationalControlRecordKind, OperationalWorkflowKind};
+pub use control_record_kind::{
+    OperationalControlRecordKind, OperationalOwnerReceiptKind, OperationalWorkflowKind,
+};
 pub use control_store_port::{
     NonCurrentRecoveryTargetDenial, OperationalControlAppendDenial, OperationalControlStore,
     OperationalControlStoreOpenDenial, OperationalControlStorePort,
