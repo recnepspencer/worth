@@ -73,13 +73,28 @@ where
     pub fn mutation_target<Entity>(
         &self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-    ) -> Result<WorthQueryInvariantMutationTarget<Schema, Entity>, &'static str> {
+    ) -> Result<
+        WorthQueryInvariantMutationTarget<Schema, Entity>,
+        WorthQueryInvariantProjectionTraversalDenial,
+    > {
+        let admission_identity = self.admission_identity.ok_or_else(|| {
+            WorthQueryInvariantProjectionTraversalDenial::mutation_target_unavailable(
+                identity.entity_name(),
+            )
+        })?;
         if identity.authority_identity != self.reader.authority_identity {
-            return Err("foreign-invariant-mutation-target");
+            return Err(
+                WorthQueryInvariantProjectionTraversalDenial::foreign_identity(
+                    identity.entity_name(),
+                ),
+            );
         }
         Ok(WorthQueryInvariantMutationTarget {
             entity_id: identity.entity_id,
             entity: Arc::clone(&identity.entity),
+            runtime_authority: self.runtime_authority,
+            binding_identity: self.binding_identity.clone(),
+            admission_identity,
             _marker: PhantomData,
         })
     }

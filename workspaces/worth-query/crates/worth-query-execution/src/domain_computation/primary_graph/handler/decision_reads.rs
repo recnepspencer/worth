@@ -6,7 +6,7 @@ use worth_query_installation::facade::{
 };
 
 use super::super::{
-    HandlerExecutionDenial, WorthQueryInvariantEntityIdentity,
+    HandlerExecutionDenial, WorthQueryInvariantEntityIdentity, WorthQueryInvariantMutationTarget,
     WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantRelation,
 };
 use super::invariant::DecisionReader;
@@ -113,5 +113,16 @@ where
                 Err(WorthQueryInvariantProjectionTraversalDenial::multiple_targets(relation.name()))
             }
         }
+    }
+
+    /// Admit an observed entity as a target for the candidate phase of this
+    /// exact operation attempt.
+    pub fn mutation_target<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+    ) -> Result<WorthQueryInvariantMutationTarget<Schema, Entity>, HandlerExecutionDenial> {
+        self.reader()
+            .mutation_target(identity)
+            .map_err(HandlerExecutionDenial::new)
     }
 }

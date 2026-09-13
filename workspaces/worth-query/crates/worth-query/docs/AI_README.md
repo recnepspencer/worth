@@ -160,6 +160,15 @@ An installed mutation handler has three bounded roles:
    handles belong to the same program. The writer binds effects and output
    roles without selecting a new runtime basis.
 
+When an existing target has no scalar identity field, `decide` calls
+`DecisionReader::mutation_target` on an entity it observed through typed field or
+relation reads and carries that target in its decision. `build_candidate` calls
+`CandidateWriter::projected_entity` to recover the program-affine effect handle.
+The installed projection authority mints the target with its runtime, schema
+binding, and exact operation admission. A candidate from another runtime, schema
+binding, or admission, and an entity absent from this attempt's completed read
+set, is rejected.
+
 Candidate cardinality, retained representation bytes, and validator work are
 separate finite bounds. Runtime-cardinality construction can allocate a cyclic
 entity/relation group, but declaration-owned relation integrity and installed

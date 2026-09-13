@@ -100,7 +100,11 @@ impl<Schema, Operation, Input, Scope>
             .facts
             .iter()
             .any(|fact| fact.touches_entity(target.entity_id));
-        if !observed {
+        if target.runtime_authority != self.read_set.admission.runtime_authority()
+            || &target.binding_identity != self.read_set.admission.binding_identity()
+            || target.admission_identity != self.read_set.admission.admission_identity()
+            || !observed
+        {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
                 target.entity.as_ref(),

@@ -100,3 +100,106 @@ impl CourtroomWorld {
         );
     }
 }
+
+pub(crate) fn projection_target_is_bound_to_exact_admission() {
+    macro_rules! admit_revocation {
+        ($world:expr) => {{
+            let schema = $world.application.installed_schema();
+            let binding = schema
+                .principal_binding(TemporalPrincipalBinding::reference())
+                .unwrap();
+            let request = request_scope();
+            let external =
+                block_on(admit_identity_adapter(schema).authenticate((), &request)).unwrap();
+            let principal = $world
+                .application
+                .on_branch($world.application.current_world())
+                .select()
+                .unwrap()
+                .resolve_authenticated_principal(
+                    &binding,
+                    &external,
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let mapping = $world
+                .application
+                .on_branch($world.application.current_world())
+                .select()
+                .unwrap()
+                .resolve_entity(
+                    ExternalIdentityField::reference(),
+                    declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
+                        "https://issuer.example",
+                        "temporal-host",
+                    )
+                    .unwrap(),
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let operation = schema
+                .installed_operation(RevokeTemporalPrincipal::reference())
+                .unwrap();
+            $world
+                .application
+                .on_branch($world.application.current_world())
+                .select()
+                .unwrap()
+                .authorize_operation(
+                    &principal,
+                    &mapping,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap()
+        }};
+    }
+
+    let world = CourtroomWorld::publish("ready");
+    let prior_admission = admit_revocation!(world);
+    let (prior_target, prior_projection, _) = world
+        .invariant
+        .project_admitted_operation(&prior_admission, |reader, mapping| {
+            reader
+                .decision_field(mapping, MappingStatusField::reference())
+                .unwrap();
+            reader.mutation_target(mapping).unwrap()
+        })
+        .unwrap()
+        .into_parts();
+    drop(prior_projection);
+
+    let current_admission = admit_revocation!(world);
+    let (current_target, current_projection, _) = world
+        .invariant
+        .project_admitted_operation(&current_admission, |reader, mapping| {
+            reader
+                .decision_field(mapping, MappingStatusField::reference())
+                .unwrap();
+            reader.mutation_target(mapping).unwrap()
+        })
+        .unwrap()
+        .into_parts();
+    let reads = world
+        .application
+        .begin_projected_application_read_attempt(current_admission, current_projection)
+        .unwrap();
+    let effects = reads
+        .complete_projected_dependencies()
+        .unwrap()
+        .begin_effect_program();
+    effects
+        .projected_entity(&current_target)
+        .expect("the target minted by this exact admission must remain usable");
+    let denial = match effects.projected_entity(&prior_target) {
+        Ok(_) => panic!("a target from another admission must not open an effect handle"),
+        Err(denial) => denial,
+    };
+    assert_eq!(
+        denial.kind(),
+        primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget
+    );
+}

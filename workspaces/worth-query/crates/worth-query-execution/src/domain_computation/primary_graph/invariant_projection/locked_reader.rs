@@ -20,6 +20,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+#[path = "locked_reader/traversal_denial.rs"]
+mod traversal_denial;
+pub use traversal_denial::{
+    WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
+};
+
 pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) runtime: &'runtime mut worth_relational::facade::runtime::RelationalRuntime,
     pub(super) layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
@@ -38,24 +44,6 @@ pub struct WorthQueryCompletedInvariantProjection<Schema, Output> {
     output: Output,
     snapshot: WorthQueryApplicationInvariantProjectionSnapshot<Schema>,
     work: WorthQueryInvariantProjectionWork,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryInvariantProjectionTraversalDenialKind {
-    RelationNotInstalled,
-    UndeclaredDecisionTarget,
-    ForeignIdentity,
-    EndpointUnavailable,
-    CardinalityContractMismatch,
-    MissingTarget,
-    MultipleTargets,
-    WorkBudgetExceeded,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryInvariantProjectionTraversalDenial {
-    kind: WorthQueryInvariantProjectionTraversalDenialKind,
-    relation: String,
 }
 
 impl<Schema> WorthQueryApplicationInvariantProjectionAuthority<Schema>
@@ -328,62 +316,3 @@ where
         identity.authority_identity == self.authority_identity && identity.entity.as_ref() == entity
     }
 }
-
-impl WorthQueryInvariantProjectionTraversalDenial {
-    pub const fn kind(&self) -> WorthQueryInvariantProjectionTraversalDenialKind {
-        self.kind
-    }
-
-    pub fn relation(&self) -> &str {
-        &self.relation
-    }
-
-    pub(super) fn new(
-        kind: WorthQueryInvariantProjectionTraversalDenialKind,
-        relation: impl Into<String>,
-    ) -> Self {
-        Self {
-            kind,
-            relation: relation.into(),
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn cardinality_contract_mismatch(
-        relation: impl Into<String>,
-    ) -> Self {
-        Self::new(
-            WorthQueryInvariantProjectionTraversalDenialKind::CardinalityContractMismatch,
-            relation,
-        )
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn missing_target(
-        relation: impl Into<String>,
-    ) -> Self {
-        Self::new(
-            WorthQueryInvariantProjectionTraversalDenialKind::MissingTarget,
-            relation,
-        )
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn multiple_targets(
-        relation: impl Into<String>,
-    ) -> Self {
-        Self::new(
-            WorthQueryInvariantProjectionTraversalDenialKind::MultipleTargets,
-            relation,
-        )
-    }
-}
-
-impl std::fmt::Display for WorthQueryInvariantProjectionTraversalDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "invariant projection traversal denied: {:?} ({})",
-            self.kind, self.relation
-        )
-    }
-}
-
-impl std::error::Error for WorthQueryInvariantProjectionTraversalDenial {}

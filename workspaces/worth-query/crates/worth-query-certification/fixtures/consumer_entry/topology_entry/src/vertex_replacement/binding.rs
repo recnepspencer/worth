@@ -17,7 +17,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type ResultBinding = VertexReplacementResultBinding;
     type IdempotencyKey = u64;
     type Operation = ReplacePlanarVertex;
-    type Decision = ();
+    type Decision = super::handler::decision::ReplacementDecision<Schema>;
     type Denial = PlanarReplacementDenial;
     type DenialBinding = VertexReplacementDenialBinding;
     type Output = VertexReplacementOutputs;

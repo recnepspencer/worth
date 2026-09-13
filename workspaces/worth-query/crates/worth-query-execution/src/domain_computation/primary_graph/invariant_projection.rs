@@ -95,6 +95,12 @@ pub struct WorthQueryInvariantEntityIdentity<Schema, Entity> {
 pub struct WorthQueryInvariantMutationTarget<Schema, Entity> {
     pub(in crate::domain_computation::primary_graph) entity_id: EntityId,
     pub(in crate::domain_computation::primary_graph) entity: Arc<str>,
+    pub(in crate::domain_computation::primary_graph) runtime_authority:
+        WorthQueryRuntimeAuthorityIdentity,
+    pub(in crate::domain_computation::primary_graph) binding_identity:
+        ApplicationSchemaBindingIdentity,
+    pub(in crate::domain_computation::primary_graph) admission_identity:
+        crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 

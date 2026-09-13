@@ -147,7 +147,7 @@ impl
         reader.mutation_target(scope).map_err(|detail| {
             primary_graph::WorthQueryTemporalInvocationFailure::new(
                 primary_graph::WorthQueryTemporalInvocationFailureKind::ProjectionRejected,
-                detail,
+                detail.to_string(),
             )
         })
     }

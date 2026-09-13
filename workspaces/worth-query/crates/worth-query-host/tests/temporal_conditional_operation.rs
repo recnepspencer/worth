@@ -172,6 +172,11 @@ fn host_installs_and_executes_a_due_temporal_application_operation() {
 }
 
 #[test]
+fn projected_mutation_target_cannot_cross_operation_admissions() {
+    world::projection_target_is_bound_to_exact_admission();
+}
+
+#[test]
 fn contribution_installation_publishes_delivers_and_executes_the_temporal_route() {
     contribution_installation::publishes_delivers_and_executes();
 }

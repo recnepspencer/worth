@@ -7,17 +7,19 @@ use worth_query_host::facade::primary_graph::{
 
 pub(super) fn replace_vertex<Schema: TopologySchemaBinding>(
     input: &VertexReplacement,
+    decision: super::decision::ReplacementDecision<Schema>,
     writer: &mut CandidateWriter<'_, Schema, VertexReplacementBinding<Schema>>,
 ) -> Result<PlanarVertexReplacementResult, HandlerExecutionDenial> {
     let change = &input.replacement;
+    let [anchor, retired, next] = decision.vertices;
     let anchor = writer
-        .resolve_entity(BodyKey::reference(), input.scope_key.clone())
+        .projected_entity(&anchor)
         .map_err(HandlerExecutionDenial::new)?;
     let retired = writer
-        .resolve_entity(BodyKey::reference(), change.retired_key.clone())
+        .projected_entity(&retired)
         .map_err(HandlerExecutionDenial::new)?;
     let next = writer
-        .resolve_entity(BodyKey::reference(), change.next_key.clone())
+        .projected_entity(&next)
         .map_err(HandlerExecutionDenial::new)?;
     let replacement = allocate_replacement(&change.replacement, writer)?;
     bind_correspondence(writer, &anchor, &replacement, &retired)?;

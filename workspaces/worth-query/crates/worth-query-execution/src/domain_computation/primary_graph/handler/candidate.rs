@@ -10,8 +10,8 @@ use worth_query_installation::facade::{
 
 use super::super::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryPreserveOutput,
-    WorthQueryRetireOutput,
+    WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryInvariantMutationTarget,
+    WorthQueryPreserveOutput, WorthQueryRetireOutput,
 };
 use super::invariant::HandlerInterruption;
 
@@ -77,6 +77,18 @@ where
         Unit: ApplicationFieldUnit,
     {
         self.candidate.resolve_observed_entity(field, value)
+    }
+
+    /// Recover an effect target admitted from this attempt's completed typed
+    /// decision read set without requiring a duplicate scalar identity field.
+    pub fn projected_entity<Entity>(
+        &self,
+        target: &WorthQueryInvariantMutationTarget<Schema, Entity>,
+    ) -> Result<
+        WorthQueryApplicationEffectEntity<Schema, Entity>,
+        super::super::WorthQueryApplicationAttemptDenial,
+    > {
+        self.candidate.projected_entity(target)
     }
 
     /// Removes the observed edge set between two targets using this attempt's

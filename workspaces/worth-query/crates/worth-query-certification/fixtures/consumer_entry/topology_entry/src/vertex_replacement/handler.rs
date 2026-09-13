@@ -5,7 +5,7 @@ use worth_query_host::facade::primary_graph::{
 };
 
 mod candidate;
-mod decision;
+pub(super) mod decision;
 
 pub struct VertexReplacementHandler;
 impl<Schema: TopologySchemaBinding> OperationHandler<Schema, VertexReplacementBinding<Schema>>
@@ -15,14 +15,14 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, VertexReplacementBi
         &self,
         input: &VertexReplacement,
         reader: &mut DecisionReader<'_, '_, '_, Schema, VertexReplacementBinding<Schema>>,
-    ) -> HandlerResult<(), PlanarReplacementDenial> {
+    ) -> HandlerResult<decision::ReplacementDecision<Schema>, PlanarReplacementDenial> {
         decision::observe_replacement(input, reader)
     }
 
     fn candidate_requirements(
         &self,
         _: &VertexReplacement,
-        _: &(),
+        _: &decision::ReplacementDecision<Schema>,
     ) -> ApplicationCandidateRequirements {
         super::binding::replacement_requirements()
     }
@@ -30,10 +30,10 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, VertexReplacementBi
     fn build_candidate(
         &self,
         input: &VertexReplacement,
-        _: (),
+        decision: decision::ReplacementDecision<Schema>,
         writer: &mut CandidateWriter<'_, Schema, VertexReplacementBinding<Schema>>,
     ) -> HandlerResult<PlanarVertexReplacementResult, PlanarReplacementDenial> {
-        match candidate::replace_vertex(input, writer) {
+        match candidate::replace_vertex(input, decision, writer) {
             Ok(result) => HandlerResult::Completed(result),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }

@@ -38,6 +38,10 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
 > {
     reader: &'reader mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
     admitted_graph_reads: Option<&'reader WorthQueryOperationGraphReadContract>,
+    runtime_authority:
+        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+    binding_identity: &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
     decision_facts: &'reader mut BTreeSet<WorthQueryApplicationFactKey>,
     _operation: PhantomData<fn() -> Operation>,
 }
@@ -102,6 +106,9 @@ where
             let mut operation_reader = WorthQueryApplicationOperationInvariantProjectionReader {
                 reader,
                 admitted_graph_reads: None,
+                runtime_authority: self.runtime_authority,
+                binding_identity: &self.binding_identity,
+                admission_identity: None,
                 decision_facts: &mut decision_facts,
                 _operation: PhantomData,
             };
@@ -137,6 +144,9 @@ where
                     WorthQueryApplicationOperationInvariantProjectionReader {
                         reader,
                         admitted_graph_reads: None,
+                        runtime_authority: self.runtime_authority,
+                        binding_identity: &self.binding_identity,
+                        admission_identity: None,
                         decision_facts: &mut decision_facts,
                         _operation: PhantomData,
                     };
@@ -182,6 +192,9 @@ where
                             admitted_graph_reads: Some(
                                 admission.allowed_graph_contract().graph_reads(),
                             ),
+                            runtime_authority: self.runtime_authority,
+                            binding_identity: &self.binding_identity,
+                            admission_identity: Some(admission.admission_identity()),
                             decision_facts: &mut decision_facts,
                             _operation: PhantomData,
                         };

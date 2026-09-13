@@ -241,3 +241,10 @@ admission, and currentness checks.
 - [Typed Stops And Remediation Guidance](../worth-query/docs/domain-capabilities/typed-stops-and-remediation-guidance.md)
 - [Installed Operation Lineage And Promotion](../worth-query/docs/domain-capabilities/installed-operation-lineage-and-promotion.md)
 - [Application Aftermath, External Effects, And Recovery](../worth-query/docs/execution/application-aftermath-and-recovery.md)
+Installed mutation handlers use `DecisionReader` for tracked typed reads and
+`CandidateWriter` for the reserved effect program. Existing entities without a
+domain identity field cross that phase boundary through
+`DecisionReader::mutation_target` and `CandidateWriter::projected_entity`; Query
+checks the installed projection authority and completed attempt read set before
+returning an effect handle. The target is bound to its runtime, schema binding,
+and exact operation admission.

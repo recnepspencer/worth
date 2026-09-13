@@ -25,6 +25,7 @@ pub(super) use resources::product_world_resources;
 mod scaled_amendment;
 #[path = "world/security.rs"]
 mod security;
+pub(super) use security::projection_target_is_bound_to_exact_admission;
 #[path = "world/seed.rs"]
 mod seed;
 pub(super) use seed::seed_graph;

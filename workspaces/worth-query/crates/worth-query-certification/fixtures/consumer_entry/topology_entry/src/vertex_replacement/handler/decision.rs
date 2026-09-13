@@ -1,12 +1,16 @@
 use super::*;
 use worth_query_host::facade::primary_graph::{
-    HandlerExecutionDenial, WorthQueryInvariantEntityIdentity,
+    HandlerExecutionDenial, WorthQueryInvariantEntityIdentity, WorthQueryInvariantMutationTarget,
 };
+
+pub struct ReplacementDecision<Schema: TopologySchemaBinding> {
+    pub(super) vertices: [WorthQueryInvariantMutationTarget<Schema, Body>; 3],
+}
 
 pub(super) fn observe_replacement<Schema: TopologySchemaBinding>(
     input: &VertexReplacement,
     reader: &mut DecisionReader<'_, '_, '_, Schema, VertexReplacementBinding<Schema>>,
-) -> HandlerResult<(), PlanarReplacementDenial> {
+) -> HandlerResult<ReplacementDecision<Schema>, PlanarReplacementDenial> {
     let replacement = &input.replacement;
     let keys = [
         &input.scope_key,
@@ -43,7 +47,26 @@ pub(super) fn observe_replacement<Schema: TopologySchemaBinding>(
             }
         }
     }
-    observe_incident_edges(&vertices, reader)
+    match observe_incident_edges(&vertices, reader) {
+        HandlerResult::Completed(()) => {}
+        HandlerResult::DomainDenied(denial) => return HandlerResult::DomainDenied(denial),
+        HandlerResult::ExecutionDenied(denial) => return HandlerResult::ExecutionDenied(denial),
+        HandlerResult::Cancelled => return HandlerResult::Cancelled,
+        HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
+    }
+    let targets = [
+        reader.mutation_target(&vertices[0]),
+        reader.mutation_target(&vertices[1]),
+        reader.mutation_target(&vertices[2]),
+    ];
+    match targets {
+        [Ok(anchor), Ok(retired), Ok(next)] => HandlerResult::Completed(ReplacementDecision {
+            vertices: [anchor, retired, next],
+        }),
+        [Err(error), _, _] | [_, Err(error), _] | [_, _, Err(error)] => {
+            HandlerResult::ExecutionDenied(error)
+        }
+    }
 }
 
 fn resolve_vertices<Schema: TopologySchemaBinding>(

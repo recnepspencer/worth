@@ -805,7 +805,15 @@ value ABA yields `SourceChanged`; an unrelated sibling-only edit does not.
 
 **Candidate writer.** Expose `create_entity`, `initialize_field`, `write_field`,
 `link`, `delete_entity` and `emit` directly on the existing `CandidateWriter`,
-alongside existing tracked-target resolution, unlink and output-role methods.
+alongside unlink and output-role methods. `DecisionReader::mutation_target`
+mints a typed candidate-phase target from an entity identity owned by the retained
+projection authority for that installation and binds it to the exact admitted
+operation attempt. `CandidateWriter::projected_entity` accepts that target only
+when the completed decision read set belongs to the same runtime, schema binding,
+and operation admission and observed the entity. This is the direct path for
+preserving generated entities that correctly have no duplicate scalar identity
+field. A foreign attempt or unobserved entity yields the existing typed execution
+denial rather than an effect handle.
 Delegate to the single reserved effect-program owner. Preserve operation permission
 traits, program-affine handles, complete output roles, allocation/byte bounds and
 checkpoints. Query retains finish/publication control. The CAD consumer must not
