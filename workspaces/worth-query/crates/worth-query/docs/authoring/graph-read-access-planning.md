@@ -28,6 +28,8 @@ Application authors use:
 - typed application-query declarations from `worth_query_declaration`;
 - installed-query inspection through `worth_query_host::facade::domain`;
 - ordinary host query preparation and execution; and
+- mutation-handler `DecisionReader` field and relation methods for declared,
+  dependency-tracked decision reads; and
 - terminal/publication inspection for actual work counters.
 
 The admission facade exposes read-only requirement, cost, budget, inventory,
@@ -69,6 +71,16 @@ generation, query, branch, basis, or session cannot substitute.
 
 Every application-query lane enters at step 1. A live or historical lane does
 not have its own planner.
+
+Installed mutation handlers use the same owner-tracked graph truth through
+`DecisionReader`. `field`, `relations_from`, and `related_one` enforce the
+operation's declared read permissions, runtime and basis affinity, endpoint
+availability, relation cardinality, and finite traversal work. Empty adjacency
+is still a dependency. `related_one` reports missing or multiple targets instead
+of turning either condition into an empty result, and exhausted traversal never
+returns a successful prefix. `mutation_target` can carry an entity observed by
+that completed decision read set into the candidate phase without adding a
+duplicate scalar identity field.
 
 ## Small Example
 

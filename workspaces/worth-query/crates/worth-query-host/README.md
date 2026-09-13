@@ -20,8 +20,9 @@ Entry-local bindings associate those values with stable portable identities,
 codecs, and declared units or frames; established wire identities stay stable.
 
 Entry packages implement `ApplicationSchemaContribution<Schema>` to declare
-members and `WorthQueryApplicationContribution<Schema>` to configure their
-handlers and invariant factories. Each entry owns its `Configuration` type.
+members and `WorthQueryApplicationContribution<Schema>` to declare required
+producer and conditional contracts and configure their handlers, invariant
+factories, providers, and conditionals. Each entry owns its `Configuration` type.
 The root lists its contributions once; the macro carries that same list into
 `ApplicationSchemaComposition::Contributions` and the host configuration tuple.
 
@@ -60,12 +61,18 @@ let outcome = request.mutate(planar_mutation).idempotency(command_id).execute();
 let published = request.query(planar_read).execute()?;
 ```
 
-`WorthQueryApplicationContributionSetup` resolves installed bindings internally.
-An entry calls `setup.handler::<Binding, _>(handler)` and
-`setup.invariant(reference, execution_point, factory)` for members it owns.
+`WorthQueryApplicationContributionContracts` and
+`WorthQueryApplicationContributionSetup` resolve installed bindings internally.
+An entry declares `contracts.producer::<Binding>()` and
+`contracts.conditional::<Binding>()`, then configures its owned members with
+`setup.handler::<Binding, _>(handler)`,
+`setup.invariant(reference, execution_point, factory)`,
+`setup.producer::<Binding>(provider)`, and
+`setup.conditional::<Binding>(configuration)`.
 The sealed tuple traversal checks the complete installed contribution inventory
 before invoking configuration. Missing handlers fail before `initial_state`;
-invariant factories are validated and installed before it runs. The initializer
+producer applicability and required invariant closure, conditional dependencies,
+and invariant factories are validated and installed before it runs. The initializer
 borrows the unpublished typed graph and its installed schema, seeds initial
 state, and returns a typed graph installation result. Successful construction
 returns `WorthQueryPrimaryGraphApplicationRuntime<Schema>`.
@@ -108,7 +115,58 @@ The executable configuration and resource setup live in
 [consumer installation](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/installation.rs),
 with contribution inventory, ownership, and handler-completeness denials in
 [contribution denials](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/contribution_denials.rs).
-The broader application API hardening milestone, 9.17.4, remains open.
+The synchronous M0 application foundation is complete; broader 9.17.4 consumer
+migration and managed-lifecycle work remains open.
+
+## Output Demand, Exact Observation, And Live Reads
+
+An installed producer binding associates one declared output family with an
+operation, output role, applicability table, required invariants, and resource and
+reuse policies. Its provider supplies typed operation input, idempotency, and finite
+work and retained-byte demand. Conditional contribution bindings can attach actual
+output-readiness delivery to the producer's performed publication, so source
+success alone does not imply output readiness.
+
+Application code starts bounded synchronous work with
+`request.demand(demand).controls(controls).start()`. Calling
+`advance(&fresh_request)` yields `Pending` or `Settled`; settlement exposes its
+receipt, observed source, exact read observation, and readiness delivery. The
+handle exposes owner notifications and must be closed when its interest ends.
+Source drift returns `Superseded`, and installed applicability must select exactly
+one producer.
+
+Current reads use `request.query(intent).execute()`. Exact reads use
+`request.retain_read()` followed by
+`request.at(&observation).query(intent).execute()`, with fresh principal and scope
+admission against the retained occurrence. A live-capable query opens with
+`request.query(intent).subscribe(WorthQueryApplicationLiveLimits::bounded(...))`;
+each `next(&fresh_request)` rechecks the application and branch before delivery,
+and `close()` releases the lease. Retained requests cannot open live subscriptions.
+
+Published rows expose `observed_sources()`. Mutations whose bindings require exact
+source evidence call `.expect_source(observed_source)` before idempotent execution.
+The source-local comparison rejects missing, foreign, retired, ABA-changed, or
+changed sources without rejecting unrelated sibling progress.
+
+## Typed Handler And Invariant Access
+
+Installed mutation handlers use `DecisionReader` for tracked typed field and
+relation reads and `CandidateWriter` for the one reserved effect program. The
+writer exposes create, initialize, write, link, unlink, delete, emit, and output
+role operations. Existing entities without a domain identity field cross the
+phase boundary through `DecisionReader::mutation_target` and
+`CandidateWriter::projected_entity`; Query checks the installed projection
+authority and completed attempt read set before returning a program-affine target.
+
+Invariant factories resolve installed typed field and relation bindings. Their
+proposed and committed views expose decoded fields and complete bounded relation
+traversals while enforcing binding, prepared scope, entity kind, declared access,
+and work budgets. Invalid values, missing required fields, and truncated traversal
+are typed denials rather than empty successful observations.
+
+Certification cost observations are intentionally exposed by
+`worth-query-replay`, not this host facade. Ordinary host code cannot turn those
+diagnostics into execution authority.
 
 ## Ordinary Typed Query Entry
 
@@ -241,10 +299,3 @@ admission, and currentness checks.
 - [Typed Stops And Remediation Guidance](../worth-query/docs/domain-capabilities/typed-stops-and-remediation-guidance.md)
 - [Installed Operation Lineage And Promotion](../worth-query/docs/domain-capabilities/installed-operation-lineage-and-promotion.md)
 - [Application Aftermath, External Effects, And Recovery](../worth-query/docs/execution/application-aftermath-and-recovery.md)
-Installed mutation handlers use `DecisionReader` for tracked typed reads and
-`CandidateWriter` for the reserved effect program. Existing entities without a
-domain identity field cross that phase boundary through
-`DecisionReader::mutation_target` and `CandidateWriter::projected_entity`; Query
-checks the installed projection authority and completed attempt read set before
-returning an effect handle. The target is bound to its runtime, schema binding,
-and exact operation admission.

@@ -1,747 +1,793 @@
-# Milestone 9.17.4.1: Unified Application Authoring Model
+# Milestone 9.17.4.1: Unified Semantic Application Authoring
 
-> **Status:** Planned priority milestone. Begin from the certified 9.17.4
-> Phase 1 and Pre-M0 application foundation before expanding the CAD operation
-> inventory or resuming the remaining 9.17.4 consumer migrations.
+> **Status:** Planned post-M0 milestone. Begin after the CAD M0 demo closes,
+> using certified 9.17.4 Phase 1, the Pre-M0 application foundation, and M0's
+> real geometry consumer evidence before resuming the remaining 9.17.4
+> migrations.
 >
-> **Product posture:** Application authors declare each semantic fact once.
-> Query derives the existing typed contracts, installation, and runtime
-> obligations from that declaration.
+> **Product posture:** Authors declare domain truth, actions, lifecycle,
+> authority, derived truth, and guarantees. Query compiles those semantics into
+> explicit contracts consumed by its existing governed runtime.
 
 ## Goal And Roadmap Placement
 
-Replace hand-maintained application contract graphs with one typed semantic
-authoring model. The generated result remains the strongly typed, explicit,
-bounded, deterministic, fail-closed Query runtime completed by 9.17.4's
-certified foundation.
-
-The central rule is:
+Give Worth one high-level language for application meaning and one core
+application IR for facts that cannot be derived. Both compile into the same
+validated, inspectable, bounded runtime contracts.
 
 > Authors declare semantics. Query derives obligations.
 
-This milestone is the corrective authoring slice inside
-[Milestone 9.17.4](./milestone-9.17.4.md). It begins before further proprietary
-CAD M0 operation families are added because the first extrusion proved that
-manual contract repetition is already the dominant consumer cost and a source
-of contradictory facts. It does not reopen 9.17.3's runtime certification.
-The remaining 9.17.4 phases resume through the authoring surface delivered
-here; [Milestone 9.18](./milestone-9.18.md) then consumes the same installed
-operation and recovery contracts.
+This is a planned authoring correction inside
+[Milestone 9.17.4](./milestone-9.17.4.md). It follows the proprietary CAD M0
+demo. M0 uses the certified focused Query foundation and implements only
+additional Query surfaces demanded by its real cube/extrusion journey. It does
+not wait for this semantic language. The completed M0 consumer then supplies
+the concrete geometry code and measured repetition this milestone will replace.
+The first extrusion and the existing Bank world already show the same defect:
+operation authority, admission reads, schema installation, lifecycle rules,
+dependency paths, producers, invalidation, and publication consequences are
+repeated across independent surfaces.
 
-This is a full public Query milestone, not a CAD-only macro cleanup. CAD is the
-first demanding consumer and decisive adoption proof. Query owns the generic
-operation, output-protocol, derivation, invariant-dependency, module-membership,
-lowering, and inspection contracts. CAD owns BREP meaning, topology grammar,
-geometry algorithms, semantic topology roles, tolerance rules, and geometric
-invariants.
+This milestone does not reopen the certified 9.17.3 runtime, 9.17.4 Phase 1
+publication foundation, Pre-M0 certification, or M0 product proof. Remaining
+9.17.4 migration work resumes through this model.
+[Milestone 9.18](./milestone-9.18.md) consumes the same installed operation and
+recovery contracts.
+
+Query's declaration, installation, and execution crates own the semantic
+language, canonical application program, core IR, validation, lowering,
+installation, explanation, and semantic revision adoption. Audience facades
+only re-export the surfaces appropriate to their callers. Query-agnostic
+application crates own domain vocabulary and algorithms; entry crates own the
+bindings from that meaning into Query. CAD owns BREP meaning, topology grammar,
+geometry, roles, tolerance, and geometric predicates. Bank owns account,
+payment, posting, approval, and financial meaning.
 
 ## Current Boundary And Demonstrated Defect
 
-The certified runtime has the correct owners, but its application contracts are
-still the authoring interface. In the current CAD consumer:
+The runtime owners are correct. Their contracts are still the ordinary
+authoring interface.
 
-- `RealizeRectangleOperation` declares read, write, create, link, and emission
-  authority through operation traits, while `declare_realization` repeats the
-  same inventory into the application schema;
-- `RealizeRectangleBinding` separately declares input/result/denial bindings,
-  scope, source query, identities, handler expectations, and candidate limits;
-- rectangle and triangle independently enumerate 85 and 67 output roles, while
-  candidate ceilings, creation code, prior-output lookup, and preservation code
-  repeat consequences of those inventories;
-- initial/preserve and rectangle/triangle produce parallel producer and
-  readiness families;
-- invariant target strings, typed fields and relations, affected-scope walks,
-  and installation repeat related dependency facts;
-- contribution `contracts()` and `configure()` paths repeat overlapping module
-  membership.
+In CAD:
 
-The existing `AuthoredQueryBundleRequest -> CanonicalQueryBundle` pipeline
-proves that authored meaning can lower into a canonical contract without
-weakening execution. The application operation path lacks that same boundary.
+- operation traits and schema installation repeat read, write, create, link,
+  and emission authority;
+- bindings repeat input, result, denial, scope, source, handler, identities,
+  and candidate limits;
+- each profile repeats a large output-role inventory and its consequences in
+  creation, correspondence, candidate ceilings, and preservation;
+- create and preserve repeat producer and readiness families; and
+- invariant targets, dependency reads, affected-scope walks, and installation
+  repeat related facts.
 
-The output problem is broader than fixed extrusion inventories. A boolean,
-fillet, offset, intersection, split, or trim may produce cardinality that is
-unknown until geometry runs. Query cannot require a compile-time list of every
-output, and CAD may not replace governance with an unrestricted `Vec<Entity>`.
-Query needs a protocol describing what a proposed output may contain, how each
-member explains its existence, and which bounds and invariants it must satisfy.
+Bank demonstrates the broader application problem:
 
-## Adversarial Constraint And Decisive Proof
+- `InitiateBusinessPayment`, `ApprovePayment`, and `RejectPayment` are semantic
+  actions, yet markers, effects, reads, preconditions, capabilities, programs,
+  and membership are authored separately;
+- `PaymentStatus::ApprovalRequired -> Committed | Rejected` is a real domain
+  lifecycle whose transitions and admission are distributed across proposal
+  and installation code;
+- `ApproveBusinessFunds`, distinct-approver policy, balanced postings,
+  idempotency, activity, and retained readback form one contract spread across
+  owners; and
+- derived account and payment projections lack one owner for dependency and
+  freshness semantics.
 
-The plausible false implementation shortens syntax while retaining multiple
-authoritative inventories. It can generate a happy-path rectangle, yet permit a
-schema registration to disagree with trait authority, allow a runtime-generated
-manifest to exceed its operation envelope, accept positional topology identity,
-or keep the old manual installation path beside the generated path.
+Query already has `AuthoredQueryBundleRequest -> CanonicalQueryBundle` and typed
+query predicates, paths, projections, and aggregates. The missing boundary is a
+semantic application program that reuses that machinery and lowers into the
+existing application runtime.
 
-The decisive court uses the real public application entry and existing primary
-candidate/publication owners with two consumers:
+Fixed inventories are insufficient for boolean, fillet, offset, intersection,
+split, and trim results whose cardinality is known only after governed
+computation. Query cannot demand a static output list, and CAD cannot replace
+governance with an unrestricted vector.
 
-1. A fixed extruded-profile family declares profile topology algebraically.
-   Triangle, rectangle, and pentagon variants lower from the same family. Exact
-   role manifests, create counts, correspondence, candidate requirements,
-   producer/readiness bindings, and installation membership are derived. Adding
-   the pentagon changes the profile declaration and family membership only.
-2. A runtime-generated split family receives an input with bounded variable
-   cardinality. Its handler proposes typed output roles and lineage through a
-   protocol-bound writer. The input-dependent estimate is admitted before
-   construction; the resulting manifest is validated against the installed
-   authority and resource envelopes, applied to an isolated candidate, checked
-   by required structural and domain invariants, and published atomically.
+## Adversarial Constraint And Decisive Court
 
-The hostile sequence must include:
+The plausible false implementation adds attractive macros while retaining
+several authoritative inventories. It can pass a happy path while handler code
+widens effects, schema registration disagrees with intent, a dependency or
+invalidation is forgotten, an illegal transition is admitted, or direct and
+generated definitions coexist for one identity.
 
-- declaration order permutations that must canonicalize to the same identity;
-- duplicate semantic identities and duplicate fixed roles;
-- a schema registration, trait projection, or installed binding omitted from
-  the authored operation;
-- a generated manifest containing one unauthorized entity kind, relation, or
-  write;
-- an estimator that understates actual items, retained bytes, or work;
-- a role whose canonical text matches another role but whose typed meaning or
-  entity kind differs;
-- a preserved or split output with absent, ambiguous, or stale source lineage;
-- a dependency path missing one required hop and a path whose lawful fan-out
-  exceeds its admitted work;
-- invariant failure after private candidate construction;
-- a competing operation on a sibling branch while the hostile candidate is
-  denied;
-- cleanup after every denial and successful publication.
+The decisive court has three real consumers:
 
-Required observations are independent: installed contract inspection, actual
-candidate effects, committed World occurrence, retained readback, sibling
-progress, resource counters, and managed-resource inventory. An unauthorized or
-over-budget proposal produces a typed denial before publication, contributes no
-partial authoritative graph, emits no publication event, and leaks no
-reservation. A structurally valid but invariant-invalid proposal reaches the
-private candidate and still publishes nothing. The sibling remains able to
-progress.
+1. **Fixed CAD topology.** Triangle, rectangle, and pentagon extrusions lower
+   from one feature family. Typed roles, counts, correspondence, candidate
+   requirements, materialization routes, invariants, and membership derive
+   from it. Adding pentagon changes the semantic profile family only.
+2. **Generated CAD topology.** A split or boolean-like feature proposes bounded
+   variable output through a protocol-bound writer. Roles, lineage, effects,
+   retained bytes, and work remain inside installed envelopes before atomic
+   World publication.
+3. **Bank business payment.** The existing Bank entry executes initiation,
+   approval, rejection, and committed readback from one semantic feature.
+   `ApprovalRequired -> Committed | Rejected`, `ApproveBusinessFunds`, distinct
+   approver, balanced posting, idempotency, account activity, history, and
+   external-effect posture compile into the same core IR and runtime.
 
-The court must turn red if generated trait authority, schema lowering, protocol
-validation, lineage validation, resource charging, invariant execution, or old-
-path deletion is bypassed. A source snapshot of generated text is supporting
-evidence only.
+The hostile sequence proves:
+
+- order permutations canonicalize identically;
+- duplicate features, actions, states, roles, and core identities reject;
+- a handler cannot add an undeclared read, write, create, link, emission, or
+  capability;
+- declarative expressions derive exact dependencies, and removing an edge
+  changes the canonical program and turns proof red;
+- a custom geometry predicate with a missing, ambiguous, stale, or unbounded
+  dependency rejects;
+- illegal payment transitions and self-approval deny before publication;
+- generated CAD output with an unauthorized kind, relation, write, role, or
+  lineage rejects;
+- underestimated effects, bytes, or work deny and release their reservation;
+- invariant failure after private candidate construction publishes nothing;
+- a sibling branch progresses during hostile denial;
+- retained readback sees lawful Bank and CAD publications; and
+- cleanup leaves no reservation, candidate, continuation, or resource leak.
+
+The court observes installed contracts, actual effects, World occurrences,
+retained reads, sibling progress, resource counters, history, and managed
+resources independently. Macro snapshots are supporting evidence only.
 
 ## Product Decision Lock
 
-### One authored fact, one owner
+### Two compilation layers, one canonical program
 
-The authoring model has five semantic definitions:
-
-| Definition | Authoritative facts | Derived consequences |
-| --- | --- | --- |
-| `ApplicationOperationSpec` | Operation identity, input/result/denial, scope, source expectation, decision reads, non-output effects, handler binding, resource policy, output protocol reference | Operation marker traits, schema registrations, binding metadata, complete installed authority envelope |
-| `ApplicationOutputProtocol` | Output create/preserve/retire roles, output writes/links/unlinks, allowed output language, semantic role type, lineage rules, structural rules, fixed or generated cardinality posture | Output authority projection, fixed manifests, actual-manifest validation, correspondence, candidate requirements, structural checks |
-| `ApplicationDerivationSpec` | Producer trigger/source product, applicability variants, lifecycle modes, exact producing operation for each expanded route, required invariants, publication meaning | Operation source expectation and output protocol through the operation reference, producer contracts, readiness contracts, conditional bindings, lifecycle-specific routes |
-| `ApplicationInvariantSpec` | Identity, execution point, typed dependency paths, affected scope, predicate binding, resource policy | Portable targets, installed invariant reads, impact closure, execution registration |
-| `ApplicationModuleSpec` | Explicit membership and ordering constraints | Schema contract collection, contribution configuration, installation catalog, inspection inventory |
-
-No derived consequence remains a separately editable ordinary declaration. If
-a value needs independent policy rather than mechanical derivation, its owner is
-named explicitly in the semantic definition.
-
-Output effects are not restated in the operation. The installed operation
-envelope combines the operation's decision reads and explicit non-output
-effects with the output protocol's derived effect envelope. Invariant reads
-derive from invariant dependency paths and are not copied into the operation.
-`ApplicationFeatureSpec` is optional typed grouping syntax over these
-definitions; it owns no additional copy of their facts. `ApplicationModuleSpec`
-remains the sole owner of application membership.
-
-### Authoring and lowering form
-
-The first implementation uses ordinary Rust types plus exported declarative
-macros in the existing Query declaration crates. It does not add a proc-macro
-package, build script, filesystem scan, package manifest language, generated
-source tree, or new package manager.
-
-Macros exist only where Rust must emit implementations or associated types.
-The semantic definitions themselves remain typed values that can be
-canonicalized, validated, inspected, and tested. Syntax compression without
-fact ownership does not satisfy this milestone.
-
-The pipeline is:
+Ordinary authors use:
 
 ```text
-Authored application definitions
-    -> canonical semantic program
-    -> validated application program
-    -> installed runtime contracts
-    -> existing Query execution owners
+ApplicationFeatureSpec
+  -> truth, actions, lifecycle, authority, derived truth, guarantees,
+     lineage, history, materialization, publication, evolution
+  -> CanonicalApplicationFeature
+  -> semantic expansion
 ```
 
-Canonicalization normalizes order, resolves explicit typed references, and
-computes stable identities. Validation rejects missing membership, duplicate or
-conflicting facts, impossible lifecycle combinations, invalid dependency paths,
-and mismatched output/resource contracts. Installation lowers the validated
-program once. Execution consumes installed contracts and does not re-canonicalize
-or rediscover authored meaning.
+Semantic expansion produces the public advanced core IR:
 
-### Output protocols
+```text
+ApplicationOperationSpec
+ApplicationOutputProtocol
+ApplicationMaterializationSpec
+ApplicationInvariantSpec
+ApplicationModuleSpec
+  -> ValidatedApplicationProgram
+  -> installed runtime contracts
+  -> existing Query execution owners
+```
 
-`ApplicationOutputProtocol` describes a structural language, not necessarily a
-static list. It has two postures under one public contract:
+The core IR is an advanced escape hatch for semantics that cannot be derived,
+including numerical geometry predicates and generated output protocols. It is
+not a second runtime or competing ordinary API.
 
-- `FixedOutputProtocol` expands a domain-owned typed generator into an exact
-  manifest. Exact cardinality, output roles, correspondence, and the structural
-  part of candidate requirements are consequences of that manifest.
+Every direct or generated definition enters one identity space and validator.
+A module cannot contain a generated and direct definition for the same
+identity. Generated facts cannot be overridden at the core layer. Direct core
+definitions must be complete. Installation does not branch on authoring route.
+
+| Core definition | Authoritative facts |
+| --- | --- |
+| `ApplicationOperationSpec` | Identity, input/result/denial, scope, source, decision reads, non-output effects, handler, idempotency, resources, output protocol |
+| `ApplicationOutputProtocol` | Fixed or generated output language, roles, create/preserve/replace/retire effects, lineage, structural rules, manifest validation, resource envelope |
+| `ApplicationMaterializationSpec` | Trigger or source, variants, posture, exact operation, readiness, guarantees, publication |
+| `ApplicationInvariantSpec` | Identity, execution point, canonical predicate or custom binding, bounded dependencies, affected scope, resources |
+| `ApplicationModuleSpec` | Explicit membership, ordering constraints, active semantic revision |
+
+### Feature and action ownership
+
+`ApplicationFeatureSpec` is the primary high-level owner. It owns scope,
+authoritative truth, actions, domain lifecycle, application capabilities,
+derived truth, guarantees, lineage, history, materialization, publication, and
+semantic revision.
+
+`ApplicationActionSpec` bridges intent to `ApplicationOperationSpec`. It owns
+action identity, typed input, scope, precondition, semantic capability, state
+transition or effect intent, optional custom computation, idempotency, output,
+and publication meaning.
+
+Query derives mechanically implied input/result/denial posture, reads, writes,
+creates, links, affected derived facts and guarantees, publication obligations,
+and admission dependencies. Facts that cannot be derived remain explicit on
+the action or referenced core definition. Arbitrary Rust handler behavior is
+never inferred.
+
+Implementation receives capability-narrow, protocol-bound inputs. It cannot add
+authority, effects, states, dependencies, or publication meaning absent from
+the installed feature.
+
+### One typed semantic expression language
+
+Authority predicates, preconditions, derived truth, and declarative guarantees
+share one typed expression IR. It extends Query's existing authored and
+canonical expressions, predicates, paths, projections, aggregates, identities,
+planner, and bounded read-access analysis.
+
+This milestone adds no competing evaluator, planner, string expression
+language, reflection system, or captured-closure authority lane.
+
+Expressions use typed entity, field, relation, state, principal, capability,
+value, unit, and aggregate references. Deterministic canonicalization and
+static analysis derive bounded dependency paths, affected scopes, admission
+reads, invalidation edges, and resource requirements.
+
+Declarative guarantees and derived facts do not repeat dependency lists.
+Custom predicates use a typed binding plus explicit bounded dependencies
+because arbitrary code cannot be analyzed honestly.
+
+### Lifecycle and materialization
+
+`ApplicationLifecycleSpec` means domain state progression:
+
+```text
+PaymentIntent: ApprovalRequired -> Committed | Rejected
+Revision: Draft -> Review -> Released -> Obsolete
+```
+
+It derives or constrains transition actions, illegal-transition denials,
+state-dependent authority and immutability, affected derived truth, and
+publication.
+
+The old `Initial`/`Preserve` lifecycle terminology ends. Core routes use
+`MaterializationPosture::{Create, Preserve, Replace, Retire}`. The cutover
+renames the concept at its owners without aliases or parallel vocabulary.
+
+### Semantic authority
+
+`ApplicationAuthoritySpec` and typed `ApplicationCapability` references express
+domain permission in terms of application truth. They do not mint platform
+authority or replace `worth-proof`.
+
+Expansion compiles capabilities and predicates to required reads, purpose and
+disclosure posture, installed ability requirements, and admission rules.
+Runtime evaluates them with fresh concrete principal and platform authority. A
+role name alone opens no door.
+
+For Bank, `ApproveBusinessFunds` remains an installed ability scoped to the
+payment. The semantic predicate also requires an approval-eligible payment and
+a principal distinct from the initiator. Handler code cannot bypass either.
+
+### Derived truth and invalidation
+
+`ApplicationDerivedFactSpec` distinguishes authoritative from reproducible
+truth. It declares:
+
+- a typed expression or custom producer;
+- dependency and affected-scope semantics;
+- on-demand, synchronous-correctness, or asynchronous managed materialization;
+- freshness, staleness, and read posture;
+- resource bounds; and
+- lineage and history posture.
+
+The compiler derives producer inputs, dependencies, readiness, and invalidation.
+Application code has no imperative invalidation call. Existing Signal,
+producer, candidate, publication, retention, and resource owners govern
+materialized facts. Derived state never becomes independent authority.
+
+### Guarantees
+
+`ApplicationGuaranteeSpec` owns a business or domain law. Declarative
+guarantees compile expressions into canonical invariant predicates,
+dependencies, affected scopes, and read authority. Custom guarantees bind code
+only through a core invariant with explicit bounded dependencies and work.
+
+Protocol structural checks, application guarantees, candidate invariants, and
+external-effect posture remain distinct stages.
+
+### Output protocols and one proposed delta
+
+`ApplicationOutputProtocol` has two postures:
+
+- `FixedOutputProtocol` expands a typed generator into an exact role manifest
+  and exact structural quantities.
 - `GeneratedOutputProtocol` declares a typed authority envelope, structural
-  grammar, semantic role and lineage contracts, and a bounded resource policy.
-  Each execution produces a deterministic realization manifest whose exact
-  cardinality is known only after governed computation.
+  grammar, role and lineage contracts, and bounded resources. Execution
+  produces a deterministic realization manifest.
 
-Fixed and generated protocols share canonical role identity, manifest
-validation, correspondence, candidate admission, invariant progression, and
-publication. They are not separate mutation APIs.
+Both share role identity, manifest validation, correspondence, admission,
+invariant progression, and publication. A domain validator sees only proposed
+effects and manifest, declared source and prior-output projections, and
+installed policy. It cannot perform ambient reads.
 
-Query's generic structural validation covers envelope containment, declared
-entity/relation kinds, internal-reference closure, role uniqueness and entity
-affinity, cardinality, and lineage presence. A domain-specific protocol may
-bind an additional structural validator, but CAD remains the owner of BREP,
-orientation, trim, tolerance, and manifold meaning. Query schedules that
-validator under installed authority and work bounds; it does not interpret a
-CAD grammar itself.
-
-A domain protocol validator receives only the proposed effect/manifest view,
-its declared source and prior-output projections, and installed policy values.
-Every prerequisite field or relation must already be named by the producing
-operation or an invariant dependency path. The validator cannot perform ambient
-graph reads, discover dependencies, or widen its candidate scope.
-
-`ApplicationSemanticRole` is a domain-owned typed value. Its canonical
-serialization is stable descriptive identity; the string never substitutes for
-the typed role or its entity affinity. CAD may define values such as preserved,
-split, intersection, and blend roles with typed source identities and stable
-component keys. Query treats their domain payload opaquely while validating
-canonical uniqueness, entity affinity, and declared lineage requirements.
-
-### One proposed delta
-
-The realization manifest is not a second graph delta. A protocol-bound candidate
-writer appends each existing Query application effect and its role/lineage
-metadata as one operation. The finished proposal owns the existing effect
-program and exposes its manifest as an immutable projection. It is impossible
-to edit the effects and manifest independently.
-
-The governed progression is:
+The manifest is an immutable projection of the existing application effect
+program. A protocol-bound writer appends effects with role and lineage metadata
+as one operation. Effects and manifest cannot diverge.
 
 ```text
 installed operation + admitted request
-    -> reserved candidate resources
-    -> proposed application graph delta
-    -> protocol-validated delta
-    -> isolated owner candidate
-    -> invariant-validated candidate
-    -> coordinated World publication
+  -> reserved resources
+  -> proposed application delta
+  -> protocol-validated delta
+  -> isolated owner candidate
+  -> invariant-validated candidate
+  -> coordinated World publication
 ```
 
-The manifest grants no authority. Installation supplies the maximum authority
-envelope; request admission and candidate reservation narrow it. The writer can
-propose only effects within the compile-time operation authority, and
-finalization verifies the actual proposal is contained by the installed and
-admitted envelopes before owner candidate application.
+The manifest grants no authority. Installation supplies the maximum envelope;
+admission narrows it. Actual effects, bytes, and work are charged during
+construction. An overrun denies and releases resources.
 
-The new typestate names may wrap or refine existing effect-program and candidate
-types. Implementation must reuse those owners rather than introduce a parallel
-transaction, publication, graph, or candidate engine.
+### Materialization compilation
 
-### Resources and cardinality
-
-Fixed protocols derive exact structural quantities. Policy quantities such as
-retained bytes, invariant work, deadlines, and numerical work remain explicit.
-
-Generated protocols declare a hard installed `ApplicationResourceEnvelope` and
-may provide an input-dependent estimator that requests a tighter reservation.
-The estimator cannot widen the installed envelope. Failure to estimate within a
-bounded contract denies before construction. Actual effects, bytes, and work are
-charged while the proposal is built; any overrun denies and releases the
-reservation. Background work cannot hide unbounded proposal state.
-
-### Derivation, readiness, and lifecycle
-
-An `ApplicationDerivationSpec` owns the Cartesian relationship currently
-repeated across producer and readiness types:
+`ApplicationMaterializationSpec` owns:
 
 ```text
-producer trigger/source product x applicability variant x lifecycle mode
-    -> exact producing ApplicationOperationSpec
-    -> that operation's source expectation
-    -> that operation's output protocol
+trigger or source product x variant x materialization posture
+  -> exact ApplicationOperationSpec
+  -> source expectation and output protocol
+  -> required guarantees and publication
 ```
 
-Producer identity, readiness identity, conditional identity, applicability,
-required invariants, reuse posture, and publication meaning derive from that
-relationship unless the semantic definition supplies an explicit policy.
-The producer trigger/source product is derivation meaning; the selected-query or
-occurrence expectation used by execution remains operation meaning. Every
-expanded route contains one typed producing-operation reference, so the latter
-is derived rather than restated.
-Installation rejects a missing operation, an operation outside the enclosing
-module, a source/protocol mismatch, or two operations claiming the same route.
-Initial and preserve lifecycles remain different typed modes. Generation may
-remove repeated wiring; it may not erase their different source, lineage,
-correspondence, denial, or resource semantics.
+Producer, readiness, conditional, applicability, and route identities derive
+from it. Installation rejects missing or out-of-module operations, duplicate
+routes, source/protocol mismatch, and unsatisfied lineage.
 
-### Invariant dependencies
+### Semantic revision and adoption
 
-`ApplicationInvariantSpec` declares dependencies as bounded typed paths. A path
-names each entity, field or relation hop, direction, relevant cardinality, and
-the scope it contributes. Query derives portable descriptive targets and
-installed candidate reads from those typed paths.
+Changing the declaration is governed. This milestone ships:
 
-The impact graph is compiled at installation. Candidate execution starts from
-the actual touched set and traverses only the installed bounded paths needed by
-the affected invariants. A path that cannot state an honest fan-out or work
-bound is rejected or requires an explicitly broader resource policy. Query does
-not infer dependencies from handler code and does not perform schema-wide
-searches to compensate for an incomplete declaration.
+- `ApplicationSemanticRevision`, the identity of a canonical program;
+- `ApplicationSemanticDiff`, a deterministic explanation of change;
+- `ApplicationAdoptionImpact`, classifying unchanged, additive, restricting,
+  meaning-changing, and state-migration-required changes; and
+- `ApplicationMigrationRequirement`, the proof or rewrite required before
+  installation.
 
-### Module membership and inspection
+One revision and one owner-issued application-program generation are active per
+installed module. An installation is explicitly branch-scoped or it governs an
+owner-issued inventory of product branches. Adoption identifies the exact
+current revision, proposed revision, application module, owner generation, and
+every governed branch with its current World head. Validation runs the new
+program against that exact coverage. The installation owner then compares and
+advances the program generation together with World-owned semantic-adoption
+occurrences. Branch creation, branch-head movement, coverage change, or program
+movement returns a typed stale-adoption denial.
 
-`ApplicationModuleSpec` is the one explicit membership list. It derives the
-contract collection and contribution configuration used by installation.
-Registration remains explicit Rust composition; no filesystem or Cargo package
-discovery is introduced.
+Every admitted operation, candidate, continuation, page/live reader, and
+publication attempt carries the generation under which it was admitted. Once a
+new generation activates, old admitted mutations and candidates cannot publish,
+and old continuations and live/page readers close with a typed
+semantic-revision-changed outcome that requires fresh admission. Adoption
+either drains bounded in-flight custody before activation or advances the
+generation and makes every remaining old handle fail its next owner check. It
+cannot silently leave captured authority usable.
 
-Validated and installed programs expose a semantic explanation API showing the
-authored fact, canonical identity, derived contracts, authority envelope,
-output posture, resource posture, dependencies, producer/readiness routes, and
-module membership. Explanation is a cold or diagnostic projection and adds no
-per-request reconstruction, logging, or allocation.
+Already-performed occurrences and their recovery obligations are different
+from callable application APIs. Adoption inventories them and requires a typed
+disposition: satisfied, explicitly carried by the new revision, or retained as
+an exact occurrence-bound recovery contract. The latter is usable only through
+current recovery/correction authority for that performed occurrence; it does
+not reinstall or expose the old application operation. Adoption blocks if any
+obligation has no lawful disposition.
 
-This milestone exposes the library-level explanation model and one executable
-example. It does not require a new general-purpose CLI framework before the
-authoring cutover can ship.
+A revision cannot replace the current revision when retained state may violate
+new semantics until migration and validation proof succeeds. Historical
+revisions are descriptive evidence only. They are not ordinarily callable,
+authoritative, co-installed, or exposed through parallel APIs.
+
+This phase does not build an automatic migration engine. It builds the diff,
+exact-basis adoption gate, generation transition, outstanding-custody and
+recovery disposition, typed requirement, and proof seam.
+
+### Membership and explanation
+
+`ApplicationModuleSpec` is the explicit membership root. Features derive their
+core definitions; direct advanced definitions are named once beside them.
+Registration remains explicit Rust composition. No filesystem, Cargo package,
+or source discovery is introduced.
+
+Validated and installed programs explain semantic facts, identities, derived
+core definitions, authority, dependencies, lifecycle, materialization, output
+and resource posture, membership, revision, and adoption impact.
+
+The library explanation model is required. A thin `worth explain` view may use
+an existing suitable tool host. This milestone does not justify a general CLI
+framework. If no host exists during planning, an executable example proves the
+model and command presentation remains a later choice.
 
 ## Required Public DX
 
-Exact syntax may change during implementation planning, but the semantic
-ownership and amount of authored information are fixed. A fixed family must be
-expressible at approximately this level:
+Exact syntax may change in phase planning. Semantic ownership and authored
+information may not.
+
+Ordinary CAD authoring must be approximately:
 
 ```rust
-worth_query_application_feature! {
-    pub ExtrusionRealization<Schema: CadSchemaBinding> {
-        operations: [
-            RealizeExtrusion {
-                input: RealizeExtrusionInputBinding,
-                result: RealizeExtrusionResultBinding,
-                denial: RealizeExtrusionDenialBinding,
-                scope: ExtrusionFeature by ExtrusionFeatureKey,
-                source: ExtrusionReadQuery,
-                reads: extrusion_source_reads(),
-                output: ExtrudedProfileProtocol,
-                emits: [BodySetPublished],
-                handler: RealizeExtrusionHandler,
-                resources: ExtrusionResourcePolicy,
+worth_feature! {
+    ExtrusionRealization {
+        scope: ExtrusionFeature,
+        truth: [ExtrusionProfile, ExtrusionExtent],
+        action: RealizeExtrusion {
+            source: ExtrusionRead,
+            compute: RealizeExtrusionHandler,
+            produces: CadBodySet {
+                protocol: BrepTopology,
+                lineage: Required,
             },
-            PreserveExtrusion {
-                input: PreserveExtrusionInputBinding,
-                result: PreserveExtrusionResultBinding,
-                denial: PreserveExtrusionDenialBinding,
-                scope: ExtrusionFeature by ExtrusionFeatureKey,
-                source: PriorExtrusionReadQuery,
-                reads: preserved_extrusion_source_reads(),
-                output: ExtrudedProfileProtocol,
-                emits: [BodySetPublished],
-                handler: PreserveExtrusionHandler,
-                resources: ExtrusionPreservationResourcePolicy,
-            },
-        ],
-        derivation: {
-            variants: [Triangle, Rectangle, Pentagon],
-            routes: [
-                Initial => RealizeExtrusion,
-                Preserve => PreserveExtrusion,
-            ],
-            invariants: [
-                LoopCycleIntegrity,
-                AnalyticBindingIntegrity,
-                PlanarTrimIntegrity,
-                ShellManifoldIntegrity,
-            ],
         },
-    }
-}
-```
-
-The CAD-owned protocol describes topology algebraically and returns typed roles;
-it does not author 67, 85, or 103-entry string arrays. Adding `Pentagon` must not
-require a new Query binding, manual schema authority inventory, producer,
-readiness route, or hand-counted candidate ceiling.
-
-Membership remains explicit once:
-
-```rust
-worth_query_application_module! {
-    pub CadContribution {
-        features: [ExtrusionRealization],
-        invariants: [
-            LoopCycleIntegrity,
-            AnalyticBindingIntegrity,
-            PlanarTrimIntegrity,
-            ShellManifoldIntegrity,
+        variants: [Triangle, Rectangle, Pentagon],
+        materialization: [Create, Preserve],
+        guarantees: [
+            ValidTopology,
+            ManifoldSolid,
+            ValidTrims,
+            GeometryConsistent,
         ],
+        publication: BodySetPublished,
     }
 }
 ```
 
-A generated protocol must be expressible without listing future instances:
+Ordinary Bank authoring must be approximately:
 
 ```rust
-impl GeneratedOutputProtocol<CadSchema> for BooleanResultProtocol {
-    type Role = BooleanTopologyRole;
-    type Lineage = BooleanTopologyLineage;
-
-    fn authority_envelope() -> CadTopologyAuthorityEnvelope { /* typed kinds */ }
-    fn structure() -> CadStructuralValidatorBinding { /* domain-owned */ }
-    fn resources() -> BooleanResourcePolicy { /* hard bounds + estimator */ }
+worth_feature! {
+    BusinessPayment {
+        scope: PaymentIntent,
+        truth: [PaymentAmount, PaymentSource, PaymentDestination, PaymentStatus],
+        lifecycle: {
+            PaymentIntent: ApprovalRequired -> Committed | Rejected,
+        },
+        actions: [
+            InitiateBusinessPayment,
+            ApprovePayment {
+                when: payment.status == ApprovalRequired,
+                requires: ApproveBusinessFunds(payment),
+                guarantee: approver != payment.initiator,
+                transition: payment.status -> Committed,
+            },
+            RejectPayment {
+                when: payment.status == ApprovalRequired,
+                requires: ApproveBusinessFunds(payment),
+                guarantee: rejecting_principal != payment.initiator,
+                transition: payment.status -> Rejected,
+            },
+        ],
+        derived: [AccountBalance, PaymentSummary],
+        guarantees: [BalancedPosting, ExactlyOncePayment],
+        history: Complete,
+        publication: AccountActivity,
+    }
 }
 ```
 
-The handler receives a protocol-bound writer and proposes actual topology with
-typed roles and lineage. It never receives generic graph authority.
+These examples express ownership. Bank money proposals and CAD geometry remain
+custom computations behind narrow bindings.
 
-Invalid authoring errors name the semantic definition, conflicting fact,
-derived obligation, and correction. Runtime denials distinguish authority,
-structure, lineage, resource, and invariant failure without exposing internal
-registry mechanics.
+The advanced/core API remains approximately:
+
+```rust
+worth_application_operation! {
+    RealizeExtrusion {
+        input: RealizeExtrusionInputBinding,
+        result: RealizeExtrusionResultBinding,
+        denial: RealizeExtrusionDenialBinding,
+        scope: ExtrusionFeature by ExtrusionFeatureKey,
+        source: ExtrusionReadQuery,
+        reads: extrusion_source_reads(),
+        output: ExtrudedProfileProtocol,
+        emits: [BodySetPublished],
+        handler: RealizeExtrusionHandler,
+        resources: ExtrusionResourcePolicy,
+    }
+}
+```
+
+The public flow is:
+
+```text
+feature declaration
+  -> canonicalize
+  -> validate
+  -> explain or diff
+  -> install
+  -> execute through existing entry
+```
+
+Semantic adoption must be similarly direct:
+
+```rust
+let proposed = BusinessPaymentFeature::canonicalize()?;
+let diff = installed.diff(&proposed)?;
+let requirement = installed.adoption_requirement(&diff, current_world)?;
+let prepared = application.prepare_adoption(
+    installed.revision(),
+    proposed,
+    current_world.governed_branch_coverage(),
+    current_authority,
+    requirement.satisfied_by(migration_proof)?,
+)?;
+let adopted = world.publish_semantic_adoption(prepared)?;
+```
+
+The exact API may change, but the caller names the proposed program and current
+authority while owner-issued values carry the exact source revision, program
+generation, governed branch coverage, World heads, migration proof, and
+recovery dispositions. The returned adoption identifies the single newly
+active generation.
+
+Errors identify the feature, semantic clause, generated core definition,
+violated rule, and repair boundary. Authors can inspect why an action reads or
+writes a fact, an invariant runs, derived truth invalidates, or adoption blocks.
 
 ## Authority And Truth Ownership
 
-| Product | Constructor and truth owner | What it proves | What it cannot authorize |
-| --- | --- | --- | --- |
-| Authored application definition | Domain entry crate | Claimed semantic intent and explicit membership | Installation validity or execution |
-| Canonical application program | Query declaration canonicalizer | Stable normalized meaning and identity | Runtime authority or current policy |
-| Validated application program | Query declaration/installation validation | Internal semantic closure and deterministic lowering | Principal or World authority |
-| Installed operation envelope | Query installation under actual schema | Maximum permitted operation effects, protocol, handlers, dependencies, and resources | A particular request or candidate |
-| Candidate reservation | Existing Query/owner resource admission | Bounded capacity for one admitted attempt | Effects beyond its narrowed envelope |
-| Proposed application graph delta | Protocol-bound writer | One immutable effect program with role/lineage projection | Structural validity, commit, or publication |
-| Protocol-validated delta | Query protocol validator | Actual proposal fits authority, structure, lineage, and resource contracts | Domain invariant truth |
-| Invariant-validated candidate | Existing Relational/Query candidate owners | Required candidate predicates passed under concrete authority | World publication or future reuse |
-| Published occurrence | Existing Runtime World owner | Coordinated authoritative graph occurrence | New admission or inferred currentness |
-| Explanation | Derived from canonical/installed contracts | Why obligations exist and how they lowered | Disclosure or execution authority |
+- `worth-query-declaration` owns semantic and core declaration vocabulary,
+  canonicalization, semantic expansion, validation contracts, and descriptive
+  explanations.
+- `worth-query-installation` owns validated-to-installed lowering, semantic
+  adoption, compiled dependency impact, and installed explanations.
+- `worth-query-execution` and the existing narrower runtime owners retain
+  admission, candidate progression, resource accounting, graph mutation,
+  publication, retained readback, Signal, and managed-resource behavior.
+- `worth-query-decl` and `worth-query-host` are audience facades. They re-export
+  the declaration and installed/runtime surfaces their audience is allowed to
+  consume; they do not implement or own those semantics.
+- `worth-proof` concrete authority remains mandatory.
+- Query-agnostic schema/domain crates own domain types, states, units, and pure
+  laws. Entry-band crates own Query feature, action, capability, guarantee,
+  protocol, and handler bindings. Domain algorithms remain in their semantic
+  owners and are called through those bindings.
+- cert crates own reconstruction and replay proof.
 
-Concrete platform authority remains proof-carrying. Portable authoring records,
-canonical identities, manifests, roles, lineage descriptions, and explanation
-records are descriptive and mint no capability.
+Canonical and installed programs are immutable. Execution does not
+re-canonicalize meaning. Markers, strings, roles, historical revisions,
+explanations, and diffs grant no authority.
 
 ## Replacement And Cutover Contract
 
-This milestone provides no compatibility API and leaves no manual/generated
-ordinary pair. Each phase may use the frozen current contract as a temporary
-test oracle inside the implementation branch. Before that phase is certified,
-the migrated scope must:
+This milestone is a cutover. Each phase names a real consumer slice. After its
+new declaration produces the installed contract and its court passes, the
+superseded traits, schema calls, bindings, producer/readiness wiring,
+dependencies, invalidation code, and registration for that slice are deleted in
+the same phase.
 
-1. lower exclusively from the new semantic definition;
-2. delete the superseded manual trait, schema, binding, output, producer,
-   readiness, invariant-target, or module-registration declaration;
-3. remove its exports, documentation, fixtures, and feature switches;
-4. prove no ordinary call site can select the old route.
-
-Equivalence evidence compares normalized behavior and installed meaning at the
-cutover boundary. It is not a promise to preserve an old public API. Tests must
-describe certified behavior rather than naming a permanent old/new pairing.
-
-Existing runtime contracts remain because they are the lowered execution
-representation. They cease to be application-authored inputs where this
-milestone assigns their fact to a semantic definition.
+No adapter preserves old authoring paths. No old and new declaration for one
+identity coexist. No historical revision remains callable. Tests may use a
+pre-cutover contract as a temporary oracle during a phase; certification
+deletes it and proves runtime observations.
 
 ## Destination Directory And Module Skeleton
 
-Paths are under `workspaces/worth-query/crates/` unless another root is shown.
-`E` means existing, `N` new, `R` refactored or replaced, `D` removed, and `S`
-marks a committed successor destination that is not created empty.
-
 ```text
-worth-query-declaration/src/
-  application_program/                         N: semantic authoring owner
-    authored/
-      operation.rs                             N: ApplicationOperationSpec
-      output_protocol/{definition,fixed,generated}.rs N
-      derivation.rs                            N: source/variant/lifecycle meaning
-      invariant/{definition,dependency_path}.rs N
-      module.rs                                N: explicit membership
-    canonical/
-      program.rs                               N: normalized program root
-      operation.rs                             N
-      output_protocol/{definition,manifest}.rs N
-      derivation.rs                            N
-      invariant.rs                             N
-      module.rs                                N
-    validation/
-      identity.rs                              N: collisions and stable identity
-      semantic_closure.rs                      N: reference/membership closure
-      lifecycle.rs                             N: derivation compatibility
-      output_protocol.rs                       N: static protocol consistency
-      dependency_path.rs                       N: typed path validity/bounds
-    explanation.rs                            N: derived cold inspection model
-  application_operation_spec_macro.rs          N: emits required Rust types/impls
-  application_feature_spec_macro.rs            N: family/module composition syntax
-  application_operation/                       E/R: lowered contract vocabulary
-  application_schema/                          E/R: consumes derived registration
-  application_query/                           E: existing query authoring pipeline
+workspaces/worth-query/crates/worth-query-declaration/src/application_program/
+  feature/{authored,canonical,validation,explanation}.rs
+  action/{authored,canonical,expansion}.rs
+  lifecycle/{authored,transition,expansion}.rs
+  authority/{capability,predicate,expansion}.rs
+  derived_fact/{authored,truth_posture,expansion}.rs
+  guarantee/{declarative,custom,expansion}.rs
+  expression/{authored,canonical,dependency_extraction,validation}.rs
+  evolution/{revision,semantic_diff,adoption_impact,migration_requirement}.rs
+  core/{operation,output_protocol,materialization,invariant,module}.rs
+  program/{canonical,validation,explanation}.rs
+  semantic_expansion/{operation,lifecycle,authority,derived_fact,guarantee,module}.rs
 
-worth-query-installation/src/
-  application_program/
-    compilation.rs                             N: validated program -> installed contracts
-    operation.rs                               N: authority/binding lowering
-    output_protocol/{fixed,generated}.rs        N
-    derivation/{producer,readiness}.rs          N
-    invariant/{dependencies,impact_graph}.rs    N
-    module.rs                                  N: one membership lowering
-    explanation.rs                            N: installed projection
-  application_operation/                       E/R: receives compiled contracts
-  application_schema/                          E/R: receives derived membership
+workspaces/worth-query/crates/worth-query-installation/src/application_program/
+  installation/{validated_program,installed_program,semantic_adoption}.rs
+  inspection/{program,semantic_diff}.rs
 
-worth-query-execution/src/domain_computation/primary_graph/
-  application_attempt/
-    effect_program/                            E/R: sole proposed-effect owner
-    output_protocol/
-      proposal/{writer,manifest,role,lineage}.rs N
-      validation/{authority,structure,lineage,resources}.rs N
-      denial.rs                                N: exact protocol failures
-    provider_binding/                          E/R: consumes protocol-validated delta
-  application_invariant/                       E/R: compiled dependency execution
-  application_contribution/                    E/R: derived producers/readiness
-  application_installation/                    E/R: one compiled module root
-  provider/                                    E/R: existing candidate/resource owner
+workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/
+  application_attempt/output_protocol/{writer,manifest,validation,denial}.rs
+  application_installation/{operation_view,materialization_route,invariant_impact}.rs
 
-worth-query-decl/src/facade.rs                 R: semantic authoring exports
-worth-query-host/src/facade.rs                 R: installed/runtime audience only
-worth-query-certification/
-  fixtures/consumer_entry/topology_entry/src/
-    application_program.rs                     N/R: fixed + generated reference consumers
-    output_protocol/{extruded_profile,split_family}.rs N
-    invariants.rs                              R: typed dependency declarations
-  tests/application_authoring.rs               N: one integration target/family
+workspaces/worth-query/crates/worth-query-decl/src/facade.rs
+  re-export declaration authoring only
+workspaces/worth-query/crates/worth-query-host/src/facade.rs
+  re-export installed and execution audience only
 
-C:/forge_workspace/worth-proprietary/crates/worth-cad-entry/src/
-  families/extrusion/realization/
-    application_program.rs                     N: extrusion feature definition
-    output_protocol/
-      extruded_profile.rs                      N: algebraic fixed-profile topology
-      role.rs                                  N: typed semantic topology roles
-    derivation.rs                              N: variant/lifecycle declaration
-    handler/                                   E/R: domain decision and output population
-    declaration.rs                             D: repeated operation/schema inventory
-    binding.rs                                 D/R: retain domain intent only where needed
-    output_roles/{rectangle,triangle}.rs        D
-    [parallel producer/readiness declarations] D
-  invariants/
-    application_program.rs                     N/R: typed dependencies + predicates
-  contribution.rs                              R: one ApplicationModuleSpec membership
+workspaces/worth-query-bank-world/crates/bank-server/src/application_definition/
+  business_payment_feature.rs
+  business_payment_actions.rs
+  business_payment_lifecycle.rs
+  business_payment_guarantees.rs
+  business_payment_derived_truth.rs
+
+worth-proprietary/crates/worth-cad-entry/src/application/
+  extrusion_feature.rs
+  extrusion_actions.rs
+  extrusion_output_protocol.rs
+  extrusion_materialization.rs
+  extrusion_guarantees.rs
+  split_feature.rs
+  split_output_protocol.rs
 ```
 
-Declaration meaning, installation lowering, runtime proposal custody, and
-domain topology are the dominant axes. Canonical and installed forms are
-derived truth downstream of authored meaning. Runtime proposal state is live
-custody and remains in execution. CAD's topology grammar cannot move into Query;
-Query's authority, resource, and publication progression cannot move into CAD.
-
-No `common`, `helpers`, `utils`, generic `compiler`, generated-source, package-
-discovery, or cross-owner manager bucket is permitted. If implementation shows
-that an existing file already owns a listed responsibility under a precise
-name, extend or refine that owner instead of creating a duplicate module.
+The Bank and CAD entry destinations contain Query bindings over domain-owned
+types and algorithms; they do not absorb pure banking, BREP, geometry, or
+material meaning. No catch-all module, generic compiler bag, proc-macro crate,
+build script, generated source tree, package scanner, or package-management
+framework is permitted by this milestone.
 
 ## Ordered Phase Plan
 
-Each phase begins with `plan-implementation`, including the real owner boundary,
-public DX, compile-cost posture, and exact directory population. Use
-`implementation-batch` for coherent vertical slices. Certify and commit each
-phase before the next. Reuse compiled binaries and accepted evidence; rerun only
-checks invalidated by later changes.
+M0 closure is the entry condition for Phase 1. Each phase begins with
+plan-implementation, includes DX and directory
+placement, implements one consumer-backed batch, receives substantial review,
+and closes only after certification. Reuse compiled binaries and cleared
+findings until changed code invalidates them.
 
-### Phase 1: Operation Definition, Minimal Fixed Protocol, And Single Lowering
+### Phase 1: Core Program, Operation Spec, And Minimal Fixed Protocol
 
-Establish the authored/canonical/validated/installed program pipeline and
-`ApplicationOperationSpec` together with the smallest fixed output-protocol
-contract needed to own rectangle output effects. Cut the public topology fixture
-and CAD rectangle initial operation completely to them. The operation's declared
-reads/non-output effects plus the protocol's output effects must emit the
-required trait projections, schema registration, binding metadata, exact fixed
-manifest/cardinality, and installed envelope. Delete the migrated manual
-declarations.
+- freeze the completed M0 cube/extrusion journey as the real before-cutover
+  behavior and compile-cost baseline;
+- establish the canonical core program and one lowering path;
+- ship `ApplicationOperationSpec` and the minimum fixed protocol for a real
+  create operation;
+- cut one CAD rectangle operation and one public fixture to the core IR;
+- prove authority, installation, binding, admission, World publication,
+  retained readback, sibling progress, and cleanup; and
+- delete migrated manual declarations.
 
-This phase closes only when changing an authored read/non-output effect or a
-protocol-owned output effect changes every derived projection, conflicting or
-missing facts fail before installation, the existing real rectangle journey
-passes, and no migrated call site can reach the old authoring route.
+### Phase 2: Feature, Action, And Typed Expression IR
 
-### Phase 2: Fixed Output Protocol And Typed Roles
+- ship feature, action, truth references, and canonical feature;
+- extend existing Query expression and canonical query machinery;
+- lower one real Bank payment action into the same operation contract;
+- prove handler code cannot widen reads or effects; and
+- delete migrated Bank repetition after runtime equivalence.
 
-Complete fixed `ApplicationOutputProtocol` expansion, typed semantic
-roles, derived exact cardinality, output correspondence, and protocol-bound
-writing. Express extrusion as an algebraic profile family; cut rectangle and
-triangle initial/preserve output inventories to it. Prove a pentagon fixed
-manifest in the protocol's focused tests without yet installing a pentagon
-producer route. Delete hand-written 85/67 role arrays and independent structural
-counts in the migrated family.
+### Phase 3: Lifecycle, Semantic Authority, And Declarative Guarantees
 
-This phase closes when fixed create and preserve manifests are deterministic,
-wrong entity affinity is denied, counts and correspondence cannot diverge, and
-the pentagon protocol expansion requires no copied output inventory or count.
+- ship lifecycle, capabilities, authority predicates, and declarative
+  guarantees with required core invariant support;
+- cut Bank payment initiation, approval, and rejection;
+- derive state preconditions, `ApproveBusinessFunds`, distinct-approver denial,
+  effects, affected guarantees, and publication; and
+- prove illegal transition, stale permission, and self-approval denials through
+  the real Bank entry.
 
-### Phase 3: Generated Output Protocol And Governed Manifest
+### Phase 4: Derived Truth And Invalidation
 
-Add generated protocols, resource envelopes and estimators, semantic lineage,
-the protocol-bound proposed-delta typestate, and structural validation integrated
-with the existing candidate pipeline. Prove it with the variable-cardinality
-split family through real publication, retained read, denial, cleanup, and
-sibling progress.
+- ship derived facts, truth posture, freshness, resources, and automatic
+  dependency/invalidation;
+- ship the minimal `ApplicationMaterializationSpec` lowering required for
+  on-demand, synchronous-correctness, and asynchronous managed derived facts;
+- cut real Bank balance and payment-summary projections;
+- prove stale derived truth is unobservable under its declared posture,
+  including retained history and restart/rebuild evidence;
+- reuse Signal and producer owners; and
+- delete migrated invalidation wiring.
 
-This phase closes when unauthorized, structurally invalid, ambiguous-lineage,
-underestimated, and over-budget proposals cannot reach publication; valid
-variable output publishes atomically without a second delta or candidate owner.
+### Phase 5: Complete Fixed And Generated Output Protocols
 
-### Phase 4: Derivation Families And Runtime Wiring
+- complete fixed roles and triangle/rectangle extrusion correspondence,
+  lineage, structural resources, and preservation;
+- prove pentagon's exact manifest, counts, and correspondence at the protocol
+  boundary without installing its producer/materialization route;
+- ship generated grammar, resource envelope, estimator, protocol-bound writer,
+  and manifest validation;
+- cut one real split or boolean-like CAD operation; and
+- prove hostile role, lineage, effect, estimate, work, and invariant denials.
 
-Add `ApplicationDerivationSpec` and lower variant/lifecycle relationships into
-producer, readiness, conditional, and publication contracts. Cut the extrusion
-rectangle/triangle initial/preserve Cartesian product and the matching public
-fixture. Install pentagon as the anti-copy acceptance case. Preserve lifecycle-
-specific semantics while deleting parallel wiring.
+### Phase 6: Materialization And Custom Invariant Compilation
 
-This phase closes when each expanded route resolves one exact typed producing
-operation, producer and readiness identities are deterministic, source/
-operation/protocol/applicability/invariant mismatches fail installation, and
-adding a fixed profile variant changes only domain profile semantics and family
-membership.
+- complete `ApplicationMaterializationSpec` for CAD variant/posture route
+  expansion and rename old lifecycle modes without compatibility vocabulary;
+- derive CAD producer, readiness, conditional, and applicability routes;
+- install pentagon through the completed materialization compiler;
+- complete custom invariant bindings and bounded geometry dependencies;
+- prove impact, bounded fan-out, candidate invariants, publication, readback,
+  sibling progress, and cleanup; and
+- delete migrated Cartesian wiring and dependency inventories.
 
-### Phase 5: Invariant Dependencies And Impact Compilation
+### Phase 7: Semantic Evolution And Explanation
 
-Add `ApplicationInvariantSpec`, bounded typed dependency paths, installation-
-compiled impact graphs, and derived portable targets/access. Cut one local
-invariant and one transitive CAD topology invariant, then migrate the remaining
-Pre-M0 CAD invariants in coherent semantic families. Delete their independent
-string target and traversal declarations.
+- ship revision identity, diff, adoption impact, migration requirement, and
+  proof seam;
+- preserve authored-fact provenance through expansion and installation;
+- prove one lawful additive adoption succeeds on an exact current basis;
+- prove a tightened Bank guarantee cannot adopt over incompatible retained
+  state without migration proof, concurrent movement makes adoption stale, an
+  old admission cannot publish, old readers require fresh admission, and every
+  performed recovery obligation has a lawful disposition;
+- prove one incompatible governed sibling branch blocks adoption, while
+  compatible sibling heads retain their exact state and can progress after a
+  lawful adoption;
+- prove only one revision is active and old APIs are absent; and
+- provide library explanation plus the narrow executable presentation selected
+  during phase planning.
 
-This phase closes when touched-scope validation reaches the exact required
-neighborhood, misses no affected entity, performs no schema-wide fallback, and
-rejects absent hops, wrong directions, and unbounded lawful fan-out honestly.
+### Phase 8: Module Closure And Full Cutover
 
-### Phase 6: Module Membership, Explanation, And Closure
-
-Add `ApplicationModuleSpec`, derive contract/configuration membership, expose
-canonical and installed explanation, and cut all scoped public fixture and CAD
-registration to the one module definition. Remove superseded exports, docs,
-macros, fixtures, flags, and ordinary paths.
-
-Run the complete fixed/generated courts, existing Pre-M0 public journey,
-affected Bank regression, and actual proprietary CAD extrusion journey. Measure
-cold and warm builds at declaration, entry, and consumer touch boundaries.
-Update the roadmap and durable developer documentation to teach only the new
-authoring model once it is real.
+- make the module the one membership root;
+- finish Bank payment, fixed CAD, and generated CAD consumers;
+- remove every superseded route in migrated scope;
+- run the three-consumer court, examples, compile-fail authority proofs,
+  residue checks, compile-cost audit, boundary checks, and line-cap guard; and
+- update roadmap, consumer, and `AI_README.md` references to describe current
+  ordinary and advanced APIs directly.
 
 ## Documentation Deliverables
 
-| Audience | Authoritative document | Required change |
-| --- | --- | --- |
-| Query application authors | `workspaces/worth-query/docs/capabilities/declarative-query-experience.md` | Show operation, output protocol, derivation, invariant, module, denial, and explanation workflows from the real facade |
-| Query architecture maintainers | `AI_README.md` and this specification | Explain authored, canonical, installed, and live runtime ownership using normal reference language and real paths |
-| CAD contributors | `C:/forge_workspace/worth-proprietary/AI_README.md` and M0 plan | Show the extrusion program, fixed/generated protocol choice, typed roles, lineage, and handler boundary |
-| Successor implementers | `WORTH_query_roadmap.md`, 9.17.4, and 9.18 | State the authoring prerequisite and contracts successors may consume |
-
-Public snippets compile against the actual facade. Do not document proposed
-types as shipped before their phase lands. Do not put migration history or
-statements about removed APIs into either `AI_README.md`; those files remain
-normal current-reference documents.
+Update the Query API guide, Bank payment journey, CAD fixed/generated authoring
+guide, roadmap handoffs, and operator inventory where operators actually ship.
+Update `AI_README.md` as a normal current reference for where meaning,
+algorithms, core IR, installation, and proofs belong. Documentation does not
+narrate removed surfaces, migration history, or abandoned architecture.
 
 ## Acceptance, QA, And Cost Discipline
 
-Architecture review must confirm one owner per semantic fact, no authority from
-descriptive manifests, no second delta/candidate/publication lane, and complete
-deletion of each migrated manual route. DX review must confirm that fixed and
-generated cases expose real semantic choices while keeping authority, resources,
-lineage, lifecycle, and failures visible.
+The milestone closes only when:
 
-Focused canonicalization tests cover determinism, identity collision, semantic
-closure, and invalid lifecycle composition. Compile-pass/fail cases are grouped
-into the existing fixture targets and used only for valuable public type
-boundaries. Runtime integration uses one public application-authoring target,
-not one crate or binary per negative case. Existing candidate, invariant,
-publication, retained-read, sibling-progress, and cleanup tests remain the
-primary runtime evidence where their boundary is unchanged.
+- a nontrivial feature is authored mainly as truth, actions, lifecycle,
+  authority, derived truth, and guarantees without manual operation authority,
+  dependency paths, producer/readiness wiring, membership, or invalidation
+  where derivable;
+- implementation-only changes cannot widen installed application meaning;
+- direct core IR and feature expansion converge on one canonical program;
+- declarative expressions reuse Query and derive bounded dependencies;
+- custom predicates declare honest bounded dependencies and work;
+- fixed and generated CAD reach World publication and retained readback with
+  sibling progress and cleanup;
+- real Bank initiation, approval or rejection, balanced/idempotent
+  consequences, history, and denials pass through its entry;
+- derived truth is never observed stale outside its declared posture and
+  remains reconstructible;
+- semantic adoption blocks incompatible state until migration proof;
+- lawful adoption advances one owner generation on an exact World basis, stale
+  admissions cannot publish, and performed recovery obligations remain
+  reachable only through current occurrence-bound recovery authority;
+- module-wide adoption validates exact current coverage of every governed
+  branch, and an incompatible sibling blocks the change;
+- one active revision and one membership root remain;
+- no superseded route remains in migrated scope; and
+- public examples compile against the real facade.
 
-The fixed court must prove exact derived topology and the pentagon edit radius.
-The generated court must prove variable cardinality, envelope containment,
-typed role/entity affinity, lineage, estimator underflow, runtime overrun,
-structural denial, invariant denial, atomic publication, and cleanup. The
-private CAD journey proves the abstraction reduces real consumer work; public
-certification never fabricates proprietary geometry authority.
+Use focused owner tests, affected integration proofs, and the smallest decisive
+cross-crate court. Compile and test times are primary costs. Reuse compiled
+binaries, do not repeat unaffected lanes, and do not add tests that mirror
+implementation.
 
-Measure:
+Measure cold compilation of changed declaration/installation/execution owners,
+warm rebuild after touching one feature declaration, warm rebuild after
+touching one domain protocol, and the affected Bank or CAD consumer rebuild.
+Runtime counters cover proposed effects, bytes, dependency hops, invariant
+work, candidates, and publications. Canonicalization, semantic expansion,
+diffing, explanation, and whole-program validation remain cold installation
+work rather than ordinary request work.
 
-- cold compilation of affected Query declaration/installation/execution and
-  the shared certification consumer;
-- warm rebuild after touching only a semantic application declaration;
-- warm rebuild after touching one domain output protocol;
-- runtime work by proposed items, relations, retained bytes, dependency hops,
-  invariant work, candidate applications, and publications.
+Before each boundary-relevant phase closes, run:
 
-Canonicalization, lowering, explanation, and full program validation are cold
-installation work. The ordinary request path performs direct installed lookup,
-resource admission, actual proposal charging, required candidate validation,
-and publication only. It gains no schema-wide scan, source generation, dynamic
-reflection, diagnostic construction, or repeated canonicalization.
+```text
+cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .
+cargo run --manifest-path tools/agent-context/Cargo.toml -- check
+scripts/ci/check_workspace_rust_line_caps.sh dirty
+```
 
-For boundary-relevant implementation, run the repository's boundary and agent-
-context checks, affected formatting and owner/integration tests, and the dirty
-Rust line-cap guard. Preserve the requested quick line-check CI posture; this
-milestone does not reinstate the old CI pipeline. Reuse compiled artifacts and
-rerun expensive courts only when their boundary changes or final certification
-requires them.
+The historical broad CI workflow is not reinstated. The current quick line
+check remains unless separately changed.
 
-Review substantial batches. Separate certification blockers from optional
-suggestions, preserve cleared findings and valid evidence, and reopen them only
-when changed code or new evidence warrants it. A repeated failure at the same
-boundary requires replanning the boundary and completing the replacement design
-rather than adding another adapter.
+Certification blockers are specification violations, authority widening,
+dishonest fixtures, absent runtime observations, resource leaks, stale derived
+truth, revision bypass, competing authorities, and failed required checks.
+Optional ergonomics and unrelated debt remain separate.
+
+Repeated failure at one boundary triggers a fresh boundary plan stating root
+cause, replacement design, DX, and directory placement. Complete the cutover
+and reopen only evidence invalidated by changed code.
 
 ## Must Ship And Must Preserve
 
-The milestone ships:
+Ship the high-level language, advanced core IR, one canonical program, typed
+semantic expressions through Query, lifecycle and authority compilation,
+derived truth, guarantees, fixed/generated output protocols, materialization,
+semantic revision adoption, explanation, and decisive Bank/CAD consumers.
 
-- one typed authored-to-installed application program pipeline;
-- single-source operation authority and binding;
-- fixed and generated output protocols;
-- typed semantic roles and lineage;
-- one immutable proposed effect program with a manifest projection;
-- fixed exact and generated bounded resource admission;
-- derivation-generated producer/readiness wiring;
-- typed invariant dependency paths and compiled affected-scope plans;
-- explicit module membership and derived installation;
-- cold explanation and provenance from each derived contract to its authored
-  fact;
-- complete cutover and deletion for the scoped public and CAD consumers.
-
-It preserves:
-
-- the certified 9.17.3 World/Signal/Relational/Bridge authority model;
-- 9.17.4's concrete proof-carrying application request and candidate pipeline;
-- typed runtime contracts, exact denials, idempotency, recovery, retained reads,
-  output correspondence, and atomic coordinated publication;
-- Query-free domain values and explicit entry composition;
-- owner-local invariant truth and CAD-owned BREP/geometry semantics;
-- bounded ordinary work and independent sibling progress;
-- certification-only replay and existing lower-owner reconstruction boundaries.
+Preserve concrete `worth-proof` authority, entry-only Query consumption,
+cert-only replay, existing World/occurrence/candidate/Signal/publication/
+retention/recovery/resource owners, bounded ordinary work, typed roles and
+lineage, stable identity and currentness, domain-owned algorithms, and the
+pause on Worth UI work until its separately planned update is available.
 
 ## Successor Handoff
 
-After 9.17.4.1, new application operations enter through
-`ApplicationOperationSpec`; output-producing operations choose a fixed or
-generated `ApplicationOutputProtocol`; producer/readiness families enter through
-`ApplicationDerivationSpec`; invariants enter through typed dependency paths;
-and application membership enters once through `ApplicationModuleSpec`.
+Remaining [Milestone 9.17.4](./milestone-9.17.4.md) phases migrate Bank, server,
+and other consumers through this facade. Missing Query surfaces are implemented
+when a real feature needs and can test them.
 
-The remaining 9.17.4 consumer migration uses these definitions rather than
-adding more manual contracts. CAD M0 and later NURBS/BREP operators may add
-domain protocols, roles, lineage, estimators, and predicates without changing
-Query's authority or publication model. 9.18 adds correction semantics over the
-same installed operations and published lineage. Later Query access and
-correlated-execution milestones extend canonical operation meaning without
-introducing another ordinary authoring language.
-
-This milestone closes only when semantic complexity remains explicit, every
-derived obligation has one authored cause, variable topology remains bounded
-and explainable, and the old authoring path is absent from every migrated scope.
+[Milestone 9.18](./milestone-9.18.md) receives one active revision, one
+canonical installed program, explicit migration requirements, and unchanged
+correction/recovery authority. It may not create a parallel authoring, history,
+authority, or application runtime lane.

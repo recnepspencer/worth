@@ -14,11 +14,12 @@
 > **Product posture:** One typed application experience over the certified
 > in-memory Query/Relational/Bridge/Signal/World runtime.
 
-> **Priority authoring correction:**
-> [Milestone 9.17.4.1](./milestone-9.17.4.1.md) begins from the certified Phase 1
-> and Pre-M0 foundation before further CAD operation families or the remaining
-> consumer migrations. It makes semantic application definitions the authored
-> truth and lowers them into the runtime contracts specified here.
+> **Planned post-M0 authoring correction:**
+> [Milestone 9.17.4.1](./milestone-9.17.4.1.md) begins after the proprietary CAD
+> M0 demo closes, using the certified Phase 1 and Pre-M0 foundation plus M0's
+> real geometry evidence. It ships a high-level semantic language for truth,
+> actions, lifecycle, authority, derived truth, and guarantees above one public
+> core application IR. Both lower into the runtime contracts specified here.
 
 The Pre-M0 public consumer uses a Query-free value package, two independently
 compiled contribution packages, and one application root. It exercises bounded
@@ -70,10 +71,13 @@ path. Shorter names and forwarding wrappers alone do not close the milestone.
 The Pre-M0 CAD adoption exposed a second form of application-owned plumbing:
 authors must currently repeat operation authority, schema registration,
 bindings, output roles and counts, producer/readiness wiring, invariant
-dependencies, and module installation. 9.17.4.1 corrects that authoring
-boundary before this milestone resumes broader consumer migration. Runtime
-contracts remain explicit; they become derived installed consequences instead
-of parallel authored inputs.
+dependencies, and module installation. The Bank world repeats the same semantic
+payment contract across operations, preconditions, abilities, proposal logic,
+derived projections, and contribution installation. 9.17.4.1 corrects both
+boundaries with a semantic feature language and one advanced core IR after M0
+has shipped its first real CAD demo and before this milestone resumes broader
+consumer migration. Runtime contracts remain explicit as installed
+consequences.
 
 ### Scope decision
 
@@ -87,9 +91,9 @@ Those are necessary cross-crate foundations, not application prechecks.
 
 Do not build the proprietary geometry kernel, engineering methods, renderer,
 or AI agent here. Ship bounded Query-managed demand for the small synchronous
-output group required by house M0. House M3 extends that same contract to
-transitive regeneration and deferred numerical completion; native project
-Save/Open remains the house M7E Query/Store handoff. Unsupported producer
+output group required by house M0. House M2.5 extends that same contract to
+transitive synchronous bridge assessment; M3 adds deferred numerical completion.
+Native project Save/Open remains the house M7E Query/Store handoff. Unsupported producer
 strategies deny explicitly; no placeholder completion methods ship. Advanced
 access/footprints and correlated execution remain 9.19/9.20.
 
@@ -779,9 +783,9 @@ An unrelated sibling edit must not fail the source-local expectation merely beca
 the World head moved. Ordinary authorization and candidate validation still apply.
 
 **Source stamp contents and outcomes.** Add
-`WorthQueryObservedSource<Schema, Source>` as a non-authoritative, bounded observation
-value returned by the installed source projection; `Source` identifies that
-binding's declared source footprint. It carries:
+`WorthQueryObservedSource<Query>` as a non-authoritative, bounded observation
+value returned by the installed source projection; `Query` identifies the
+installed source binding whose declaration owns the footprint. It carries:
 
 - application instance/installation generation and schema/source-contract identity;
 - model-root and source-entity native identities, including allocation generations;
@@ -819,15 +823,7 @@ value ABA yields `SourceChanged`; an unrelated sibling-only edit does not.
 
 **Candidate writer.** Expose `create_entity`, `initialize_field`, `write_field`,
 `link`, `delete_entity` and `emit` directly on the existing `CandidateWriter`,
-alongside unlink and output-role methods. `DecisionReader::mutation_target`
-mints a typed candidate-phase target from an entity identity owned by the retained
-projection authority for that installation and binds it to the exact admitted
-operation attempt. `CandidateWriter::projected_entity` accepts that target only
-when the completed decision read set belongs to the same runtime, schema binding,
-and operation admission and observed the entity. This is the direct path for
-preserving generated entities that correctly have no duplicate scalar identity
-field. A foreign attempt or unobserved entity yields the existing typed execution
-denial rather than an effect handle.
+alongside existing tracked-target resolution, unlink and output-role methods.
 Delegate to the single reserved effect-program owner. Preserve operation permission
 traits, program-affine handles, complete output roles, allocation/byte bounds and
 checkpoints. Query retains finish/publication control. The CAD consumer must not
@@ -874,8 +870,8 @@ retains its existing custody. External dispatch continues through its separately
 declared outbox/effect route; ordinary `emit` cannot claim external completion.
 
 **Typed invariant access.** Provide installed typed field/relation handles through
-`WorthQueryApplicationInvariantSchemaResolver::typed_field` and `typed_relation`
-(proposed methods). The Query-owned planner/context exposes typed `field` and
+`WorthQueryApplicationInvariantSchemaResolver::typed_field` and `typed_relation`.
+The Query-owned planner/context exposes typed `field` and
 `relations_from`/`relations_to` access using those handles and existing value-binding
 decoders. It checks owner affinity, declared access, native entity/relation kinds,
 work budgets and the selected proposed/committed view. Replace the public bare
@@ -967,17 +963,17 @@ domain unsupported outcome. Source drift after selection follows demand's
 conditional omission, another installation path or a substitute local scheduler.
 
 **Exact observation and cleanup.** Finish the bounded demand contract below together
-with opt-in mutation publication retention and request-bound exact retained/live
-reads. Use the existing destination DX: mutation
-`.retain_publication(retention_limits)`, `request.read_after(&retained_publication)`,
-`request.at(&observation).query(intent)` and `request.query(intent).subscribe(controls)`.
-These proposed entry APIs reuse existing selection, disclosure, retention and live
-owners; they do not introduce competing `query.at` or `query.live` variants.
-Reserve requested retention before effects. A fresh source edit may instead start
-from an explicitly current request; choosing current must never silently replace
-an exact selection. The demand terminal carries a usable owner-retained selectable
-output occurrence for its fixed authored source; the read-only `request.at` context
-consumes that exact basis and fresh authorization. Display values remain non-authoritative.
+with request-bound exact retained/live reads. The shipped entry APIs are
+`request.retain_read()`, `request.at(&observation).query(intent)`, and
+`request.query(intent).subscribe(controls)`. They reuse existing selection,
+disclosure, retention, and live owners; they do not introduce competing `query.at`
+or `query.live` variants. A fresh source edit may instead start from an explicitly
+current request; choosing current must never silently replace an exact selection.
+The demand terminal carries a usable owner-retained selectable output occurrence
+for its fixed authored source; the read-only `request.at` context consumes that
+exact basis and fresh authorization. General mutation-result retention remains a
+later 9.17.4 lifecycle concern and must reuse this owner. Display values remain
+non-authoritative.
 
 Return typed retention/resource denial, pending, superseded, overflow, cancellation
 and post-publication recovery states. Use the existing managed handle close outcomes
@@ -1070,8 +1066,10 @@ synchronous producers from complete tracked authored inputs. It reuses real
 Signal eligibility, patch delivery, managed-run capacity, and World publication.
 All required members must have owner-validated completion evidence for the fixed
 source. An unsupported dependency strategy denies; excluding an applicable
-ancestor to fit this scope is forbidden. M3 extends these same handles/terminals
-to sketch/profile/body transitive regeneration and deferred workers.
+ancestor to fit this scope is forbidden. House M2.5 first extends these handles/
+terminals to synchronous component/physical/response/check closure; M3 adds sketch
+regeneration and deferred workers. Any earlier real consumer pulls its prerequisite
+forward; CAD uses the intended facade rather than temporary lower-level plumbing.
 
 `Settled` carries one retained, selectable output occurrence and required-closure
 evidence. It is a descendant publication for those inputs, not a mutation of
@@ -1275,7 +1273,8 @@ worth-query-execution/src/domain_computation/primary_graph/
     lifecycle/{close,inventory}.rs             R: delegate to existing owners
     inspection/{catalog,support}.rs            N/R: governed derived discovery
     demand/{request,closure,settlement,interest}.rs N: M0 bounded synchronous group
-    demand/{transitive_closure,deferred_progress}.rs S: house M3 extensions
+    demand/transitive_closure.rs              S: house M2.5 bridge
+    demand/deferred_progress.rs               S: house M3 workers
   application_contribution/{setup,producer,conditional}.rs E/R/N M0: complete registration
   application_installation/                   E/R M0: conditional-capable composed root
   application_attempt/source_expectation.rs   N M0: native source compare/admission
@@ -1310,7 +1309,7 @@ worth-query-decl/src/facade.rs                 R: declaration reexports
 worth-query-host/src/facade.rs                 R: semantic audience reexports
   [ordinary phase-constructor and provisional exports] D
 worth-query-replay/                           E/R: certification-only audience
-  src/application_cost.rs                    N M0: only otherwise-unavailable owner observations
+  src/application_cost.rs                    N M0: read-only scoped owner observations
 worth-query-certification/
   examples/{ordinary_application,retained_application,application_recovery}.rs N
   examples/ordinary_product_workflow.rs        R: migrated public experience
@@ -1565,7 +1564,7 @@ Documentation ships with each public capability, not only during final cleanup.
 | Bank product/transport authors | `workspaces/worth-query-bank-world/docs/public-consumer-contract.md`, `banking-product-contract.md`, `process-transport.md` | Real current APIs, all operation families, continuation/live/recovery wire behavior, honest process evidence |
 | UI adapter authors | `workspaces/worth-ui/docs/query-binding.md`, `application-lifecycle.md`, and `workspaces/worth-ui/AI_README.md` | Current root/request ownership, projection isolation and live disposal, checked with real UI binding tests; AI reference stays free of migration narrative |
 | Server adapter authors | `crates/worth-server/docs/read-data.md`, `write-data.md`, `stream-results.md`, and `connect-another-backend.md` | Current typed product registration and transport adaptation, checked with affected direct/HTTP integration targets |
-| House platform consumers | Private `docs/house/query-platform.md`, `milestones.md`, `rust-ui-architecture.md` | Required M0 operation/source/writer/invariant, producer/conditional, exact observation/demand/cleanup and cost APIs; later transitive/deferred handoffs retain their owning milestones; distinguish shipped pin from proposed methods |
+| House platform consumers | Private `docs/house/query-platform.md`, `milestones.md`, `rust-ui-architecture.md` | Required M0 operation/source/writer/invariant, producer/conditional, exact observation/demand/cleanup and cost APIs; M2.5 transitive settlement; M3 deferred extension; distinguish shipped pin from proposed methods |
 | Milestone implementers | This specification and `WORTH_query_roadmap.md`; 9.18 handoff | Replacement obligations and ordering; no claim that proposed APIs are already implemented |
 
 Guide snippets are included from or compiled alongside owning examples/tests.
@@ -1657,17 +1656,17 @@ capability ships in 9.17.4.
 | Invariants, relation integrity, atomic output groups, cardinality | Actual primary candidate validation and reservation | Private kernel supplies geometry/body-class predicates; no manifold-only platform default |
 | World occurrence, publication, branches, retained reads, ancestry, cleanup | Query request/resources over the existing owners | Semantic multi-parent merge remains a later cross-runtime contract |
 | Idempotency, external effects, outbox, recovery, aftermath | Exact terminals and custody through ordinary execution | 9.18 tree correction; house M3B source correction consumes accepted semantics |
-| Signal dependencies, producers, conditional/temporal/workflow work | Installed bindings, causal delivery and bounded synchronous group demand; existing scheduling owner | House M3 extends transitive settlement and deferred-compute integration |
-| Output freshness, demand, off-thread numeric work | M0 fixed-source bounded group handle, exact settled occurrence, Superseded and independent shared-interest custody | M3 extends required-output closure and value-only workers with owner-thread revalidation/publication; no placeholder deferred strategy |
+| Signal dependencies, producers, conditional/temporal/workflow work | Installed bindings, causal delivery and bounded synchronous group demand; existing scheduling owner | House M2.5 extends synchronous transitive settlement; M3 adds deferred-compute integration |
+| Output freshness, demand, off-thread numeric work | M0 fixed-source bounded group handle, exact settled occurrence, Superseded and independent shared-interest custody | M2.5 extends required-output closure for bridge assessment; M3 adds value-only workers with owner-thread revalidation/publication; no placeholder deferred strategy |
 | UI, AI, regions, inspection, explanation, consumer kits, lineage | Governed typed discovery/results/resources; one entry experience | House UI/AI consumes the facade; durable identity lineage remains platform truth |
 | Native Save/Open, durable restart, replay | Accepted package APIs remain definition-only; replay cert-only | House M7E Query/Store snapshot/restore with fresh authority; broader durability M10 |
 
-The M3 handoff extends M0's distinction between immutable selected source and a
-settled descendant output occurrence. It must preserve required inventory/applicability,
-method versions, complete dependencies, freshness, cancellation, and consumer
+The M2.5 bridge handoff extends M0's distinction between immutable selected source
+and a settled descendant output occurrence; M3 carries this into deferred work.
+It must preserve required inventory/applicability, method versions, complete dependencies, freshness, cancellation, and consumer
 release without introducing another scheduler. Settled does not mean passing.
-It extends `application_entry/demand` and `handler/compute`; it cannot move
-ordinary declarations into solvers or replace the application entry again.
+M2.5 extends `application_entry/demand`; M3 also extends `handler/compute`. Neither
+may move ordinary declarations into solvers or replace the application entry again.
 
 9.18 consumes typed intents, exact retained source selection, installed
 operation/aftermath bindings, and fresh mutation/recovery entry. An accepted

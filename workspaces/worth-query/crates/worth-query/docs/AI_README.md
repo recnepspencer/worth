@@ -139,9 +139,15 @@ initial_state)`. See the [host API guide](../../worth-query-host/README.md#contr
 for the call shape and the [public consumer](../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/main.rs)
 for executable definitions.
 
-Installation validates the exact contribution inventory before callbacks and
-restricts each setup to its installed members. Handler completeness and invariant
-installation precede the initial-state callback. That callback borrows the
+Each contribution first declares its required producer and conditional inventory
+through `WorthQueryApplicationContribution::contracts`, then supplies handlers,
+invariant factories, producer providers, and conditional configuration through
+`configure`. Installation validates the exact contribution inventory before
+callbacks and restricts each setup to its installed members. Missing, duplicate,
+foreign, mismatched, uncovered, or ambiguous members deny installation before the
+runtime or initial state becomes visible. Handler completeness, producer and
+conditional binding, and invariant installation precede the initial-state callback.
+That callback borrows the
 unpublished typed graph and installed schema to seed initial state; successful
 construction returns `WorthQueryPrimaryGraphApplicationRuntime<Schema>`. The
 completed application owns handler configuration. Numerical and domain values
@@ -184,6 +190,15 @@ neighbors before atomic publication. Domain prechecks or handler success cannot
 substitute for those invariant receipts. Checkpoints preserve cancellation and
 deadline outcomes; denied, cancelled, or invalid candidates do not publish.
 
+`DecisionReader` exposes tracked typed field and relation reads, including exact
+single-related-target checks. `CandidateWriter` exposes the declared create,
+initialize, write, link, unlink, delete, emit, and output-role verbs directly over
+the one reserved effect program. Installed invariant factories resolve typed field
+and relation bindings once; their proposed and committed views enforce binding,
+view, declared-access, prepared-scope, entity-kind, value, and finite-work rules.
+Application code never decodes native aspect payloads or constructs lower-runtime
+effect programs to use these paths.
+
 ### Output correspondence and committed observations
 
 `WorthQueryApplicationOutputRole<Binding, Entity, Action>` names one declared
@@ -213,6 +228,34 @@ an entity-to-lineage association. Receipt clones and `AlreadyCommitted`
 recovery retain these observations. The receipt's performed product-change
 capability remains single-use and is not recreated by inspection or retry.
 
+### Produced outputs, exact reads, and live reads
+
+An output family declares its source query, supported profile and lifecycle
+postures, while each producer binding declares its operation, output role,
+required invariants, resource policy, and reuse policy. A provider supplies the
+typed operation input, idempotency key, and finite work and retained-byte demand.
+`request.demand(demand).controls(controls).start()` admits one exact source and
+selects one applicable installed producer. `advance(&fresh_request)` returns
+`Pending` or `Settled`; settlement carries the commit receipt, observed source,
+exact retained observation, and readiness delivery. `notifications()` exposes
+owner progress, and `close()` releases that interest. Source drift returns
+`Superseded`; a closed handle or request from another application is rejected.
+
+Ordinary query results expose bounded `observed_sources()`. A source-bound edit
+passes one of those observations through `.expect_source(...)`; Query compares its
+declared source footprint during fresh admission and publication. Unrelated sibling
+progress remains legal, while missing, foreign, retired, ABA-changed, or otherwise
+changed source evidence returns a typed source-expectation denial.
+
+`request.retain_read()` captures an exact selectable application occurrence, and
+`request.at(&observation).query(intent).execute()` reads that occurrence with fresh
+principal and scope admission. Current live reads use
+`request.query(intent).subscribe(WorthQueryApplicationLiveLimits::bounded(...))`;
+each `next(&fresh_request)` rechecks application, branch, principal, and scope, and
+`close()` releases the lease. A retained request cannot open a live subscription.
+These observations identify state but grant no mutation, retention, or publication
+authority.
+
 ### Discovery and support posture
 
 `application.discovery()` exposes `mutations()`, `queries()`,
@@ -221,13 +264,20 @@ input/result bindings, units and frames, scope and effects, typed denial
 identities, and installed request-binding availability. Discovery grants no
 execution authority or promise of current authorization.
 
-The [public replacement journey](../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/output_correspondence.rs)
-demonstrates preserve/create/retire roles, exact entity-affinity denial,
-committed changes and same-commit lineage, readback, rejected-candidate
-isolation, and idempotent receipt recovery. This is the certified Pre-M0
-application foundation. Milestone 9.17.4 remains open for its wider application
-API, managed lifecycle, and consumer obligations; bounded output-group demand
-and deferred producer completion are not supplied by this foundation cut.
+The [public application proof](../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof.rs)
+demonstrates source-bound edits, direct candidate construction, typed invariant
+access, producer demand, readiness delivery, exact and live reads, sibling
+progress, cleanup, output correspondence, and idempotent recovery. The bounded
+synchronous M0 foundation is implemented. Milestone 9.17.4 remains open for its
+remaining consumer migrations and broader managed lifecycle; deferred producer
+completion belongs to the later producer extension.
+
+Certification-only resource evidence enters through `worth-query-replay` with
+`WorthQueryCertificationCostRuntimeExt` and a bounded
+`WorthQueryCertificationCostScope`. It reports actual owner observations for
+application work, producer attempts, World history and retention, and reserved
+entry writes. Those observations are diagnostics and cannot authorize ordinary
+host execution.
 
 ## Core Laws
 
