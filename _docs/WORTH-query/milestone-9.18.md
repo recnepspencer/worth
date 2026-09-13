@@ -6,7 +6,8 @@ Replace Milestone 9.16's provisional linear current-head undo/redo experiment
 with an accepted tree-based correction product over the composite runtime-world
 history governed by [Milestone 9.17](./milestone-9.17.md) and completed through
 [Milestone 9.17.3](./milestone-9.17.3.md), using the application contract hardened
-by [Milestone 9.17.4](./milestone-9.17.4.md). Undo and redo
+by [Milestone 9.17.4](./milestone-9.17.4.md) and its unified authoring correction
+in [Milestone 9.17.4.1](./milestone-9.17.4.1.md). Undo and redo
 select exact committed occurrences and publish newly admitted composite commits
 on an exact product branch. They never erase history, move a hidden stack
 cursor, replay old authority, reinterpret a receipt as permission, or assume

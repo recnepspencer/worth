@@ -14,6 +14,12 @@
 > **Product posture:** One typed application experience over the certified
 > in-memory Query/Relational/Bridge/Signal/World runtime.
 
+> **Priority authoring correction:**
+> [Milestone 9.17.4.1](./milestone-9.17.4.1.md) begins from the certified Phase 1
+> and Pre-M0 foundation before further CAD operation families or the remaining
+> consumer migrations. It makes semantic application definitions the authored
+> truth and lowers them into the runtime contracts specified here.
+
 The Pre-M0 public consumer uses a Query-free value package, two independently
 compiled contribution packages, and one application root. It exercises bounded
 cyclic allocation, actual candidate and untouched-neighbor validation, atomic
@@ -60,6 +66,14 @@ application-owned select/resolve/admit/execute/publish pipeline; a pure value
 crate must import Query; a convenient call loses occurrence, security, cost,
 or recovery semantics; or Bank passes only through a parallel compatibility
 path. Shorter names and forwarding wrappers alone do not close the milestone.
+
+The Pre-M0 CAD adoption exposed a second form of application-owned plumbing:
+authors must currently repeat operation authority, schema registration,
+bindings, output roles and counts, producer/readiness wiring, invariant
+dependencies, and module installation. 9.17.4.1 corrects that authoring
+boundary before this milestone resumes broader consumer migration. Runtime
+contracts remain explicit; they become derived installed consequences instead
+of parallel authored inputs.
 
 ### Scope decision
 
