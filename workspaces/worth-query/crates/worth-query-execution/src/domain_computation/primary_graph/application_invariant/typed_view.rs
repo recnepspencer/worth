@@ -133,7 +133,7 @@ impl<'borrow, 'runtime, Schema>
         WorthQueryApplicationInvariantReadView {
             aspects: self.lower.aspect_states(),
             relations: self.lower.relations(),
-            touched_entities: self.lower.touched().visible_entity_ids().to_vec(),
+            touched_entities: self.lower.touched().direct_visible_entity_ids().to_vec(),
             proposal_affinity: self.lower.proposal_affinity(),
             binding_identity: self.binding_identity.clone(),
             admission: self.admission.clone(),
@@ -146,7 +146,7 @@ impl<'borrow, 'runtime, Schema>
         WorthQueryApplicationInvariantReadView {
             aspects: self.lower.committed_aspect_states(),
             relations: self.lower.committed_relations(),
-            touched_entities: self.lower.touched().visible_entity_ids().to_vec(),
+            touched_entities: self.lower.touched().direct_visible_entity_ids().to_vec(),
             proposal_affinity: self.lower.proposal_affinity(),
             binding_identity: self.binding_identity.clone(),
             admission: self.admission.clone(),
@@ -174,7 +174,7 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
         WorthQueryApplicationInvariantReadView {
             aspects: self.lower.aspect_states(),
             relations: self.lower.relations(),
-            touched_entities: self.lower.touched().visible_entity_ids().to_vec(),
+            touched_entities: self.lower.touched().direct_visible_entity_ids().to_vec(),
             proposal_affinity: self.lower.proposal_affinity(),
             binding_identity: self.binding_identity.clone(),
             admission: self.admission.clone(),
@@ -187,7 +187,7 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
         WorthQueryApplicationInvariantReadView {
             aspects: self.lower.committed_aspect_states(),
             relations: self.lower.committed_relations(),
-            touched_entities: self.lower.touched().visible_entity_ids().to_vec(),
+            touched_entities: self.lower.touched().direct_visible_entity_ids().to_vec(),
             proposal_affinity: self.lower.proposal_affinity(),
             binding_identity: self.binding_identity.clone(),
             admission: self.admission.clone(),
@@ -198,7 +198,8 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
 }
 
 impl<'runtime, Schema> WorthQueryApplicationInvariantReadView<'runtime, Schema> {
-    /// Returns visible touched entities of the bound kind within the admitted scope.
+    /// Returns directly mutated visible entities of the bound kind, including
+    /// old and new relation endpoints but excluding traversal-only neighbors.
     pub fn touched_entities_of<Entity>(
         &self,
         entity: &WorthQueryApplicationInvariantEntityBinding<Schema, Entity>,
@@ -225,6 +226,9 @@ impl<'runtime, Schema> WorthQueryApplicationInvariantReadView<'runtime, Schema> 
         Ok(entities)
     }
 
+    /// Returns directly mutated visible entities carrying the bound field.
+    /// Relation before- and after-image endpoints are included; adjacency-only
+    /// traversal neighbors are excluded.
     pub fn touched_entities<Entity, Value>(
         &self,
         field: &WorthQueryApplicationInvariantFieldBinding<Schema, Entity, Value>,

@@ -13,6 +13,7 @@ use crate::validation::data::{
 
 pub(crate) fn collect_touched_structural_set(
     state_view: &InvariantStateView<'_>,
+    before_image_view: Option<&InvariantStateView<'_>>,
     merged_plan: Option<&MergedCommitPlan>,
     access: &crate::validation::data::CustomInvariantAccessContract,
     work: &super::CustomInvariantWorkMeter,
@@ -35,20 +36,6 @@ pub(crate) fn collect_touched_structural_set(
         state_view.touched_visible_relation_ids_with_budget(|units| work.try_charge(units))
     {
         visible_relations.extend(ids);
-    }
-
-    // A sparse relation overlay can materialize a touched relation without
-    // materializing either endpoint's partition.  Seed the structural scope
-    // from the relation metadata before walking adjacency so custom rules see
-    // the complete selected relation boundary without enumerating the root.
-    let touched_relation_ids = visible_relations.iter().copied().collect::<Vec<_>>();
-    for relation_id in touched_relation_ids {
-        if !work.try_charge(1) {
-            break;
-        }
-        if let Some(metadata) = state_view.relation_metadata(relation_id) {
-            include_relation_metadata(&mut visible_entities, &mut touched_partitions, metadata);
-        }
     }
 
     if let Some(plan) = merged_plan {
@@ -147,39 +134,41 @@ pub(crate) fn collect_touched_structural_set(
                         spec.source.clone(),
                         spec.target.clone(),
                     ));
-                    if let Some(metadata) = state_view.relation_metadata(spec.relation_id) {
-                        include_relation_metadata(
-                            &mut visible_entities,
-                            &mut touched_partitions,
-                            metadata,
-                        );
-                    }
                 }
                 MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(spec)) => {
                     visible_relations.insert(spec.relation_id);
-                    if let Some(metadata) = state_view.relation_metadata(spec.relation_id) {
-                        include_relation_metadata(
-                            &mut visible_entities,
-                            &mut touched_partitions,
-                            metadata,
-                        );
-                    }
                 }
                 MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
                     visible_relations.insert(spec.relation_id);
                     planned_relation_deletes.push(spec.relation_id);
-                    if let Some(metadata) = state_view.relation_metadata(spec.relation_id) {
-                        include_relation_metadata(
-                            &mut visible_entities,
-                            &mut touched_partitions,
-                            metadata,
-                        );
-                    }
                 }
             }
         }
     }
 
+    // Sparse relation overlays can omit endpoints from their touched entity
+    // slots. Retarget and delete overlays can also replace or hide the old
+    // endpoints. Seed both sides of the mutation boundary before adjacency
+    // expansion, without enumerating either state root.
+    let touched_relation_ids = visible_relations.iter().copied().collect::<Vec<_>>();
+    for relation_id in touched_relation_ids {
+        if !work.try_charge(1) {
+            break;
+        }
+        if let Some(metadata) = state_view.relation_metadata(relation_id) {
+            include_relation_metadata(&mut visible_entities, &mut touched_partitions, metadata);
+        }
+        if let Some(before_image) = before_image_view {
+            if !work.try_charge(1) {
+                break;
+            }
+            if let Some(metadata) = before_image.relation_metadata(relation_id) {
+                include_relation_metadata(&mut visible_entities, &mut touched_partitions, metadata);
+            }
+        }
+    }
+
+    let direct_visible_entities = visible_entities.clone();
     let seed_entities = visible_entities.iter().copied().collect::<Vec<_>>();
     for entity_id in seed_entities {
         if !work.try_charge(1) {
@@ -206,6 +195,10 @@ pub(crate) fn collect_touched_structural_set(
     }
 
     TouchedStructuralSet::new(
+        direct_visible_entities
+            .into_iter()
+            .collect::<Vec<_>>()
+            .into(),
         visible_entities.into_iter().collect::<Vec<_>>().into(),
         visible_relations.into_iter().collect::<Vec<_>>().into(),
         touched_partitions.into_iter().collect::<Vec<_>>().into(),

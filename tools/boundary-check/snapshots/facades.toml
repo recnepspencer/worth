@@ -255,6 +255,7 @@ exports = [
     "WorthQueryApplicationQueryResumeControls",
     "WorthQueryApplicationQueryWorkEvidence",
     "WorthQueryApplicationReadAttempt",
+    "WorthQueryApplicationReadObservation",
     "WorthQueryApplicationRelationSeed",
     "WorthQueryApplicationResultBufferEvidence",
     "WorthQueryApplicationResultBufferObservation",

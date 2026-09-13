@@ -27,9 +27,13 @@ impl PreparedCustomInvariantScope {
             observation.enforcement_partition_access(),
             observation.enforcement_version_id(version_id),
         );
+        let before_image_view = observation.before_image_partition_access().map(|state| {
+            InvariantStateView::new(state, observation.before_image_version_id(version_id))
+        });
         Self {
             touched: Arc::new(collect_touched_structural_set(
                 &state_view,
+                before_image_view.as_ref(),
                 merged_plan,
                 access,
                 work,
@@ -45,6 +49,7 @@ impl PreparedCustomInvariantScope {
         work: &super::CustomInvariantWorkMeter,
     ) -> Arc<TouchedStructuralSet> {
         let count = [
+            self.touched.direct_visible_entity_ids().len(),
             self.touched.visible_entity_ids().len(),
             self.touched.visible_relation_ids().len(),
             self.touched.touched_partitions().len(),
@@ -66,9 +71,26 @@ impl PreparedCustomInvariantScope {
                 Arc::from([]),
                 Arc::from([]),
                 Arc::from([]),
+                Arc::from([]),
             ));
         }
         Arc::new(TouchedStructuralSet::new(
+            self.touched
+                .direct_visible_entity_ids()
+                .iter()
+                .copied()
+                .filter(|id| {
+                    state
+                        .entity_metadata(*id)
+                        .or_else(|| {
+                            work.try_charge(1)
+                                .then(|| committed.entity_metadata(*id))
+                                .flatten()
+                        })
+                        .is_some_and(|metadata| access.affects_entity(metadata.kind_id))
+                })
+                .collect::<Vec<_>>()
+                .into(),
             self.touched
                 .visible_entity_ids()
                 .iter()

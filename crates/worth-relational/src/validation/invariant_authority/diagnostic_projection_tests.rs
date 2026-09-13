@@ -305,6 +305,7 @@ fn custom_provenance_with_visible_records(
 ) -> CustomInvariantProvenance {
     let touched_scope = TouchedStructuralSet::new(
         vec![visible_entity_id].into(),
+        vec![visible_entity_id].into(),
         vec![visible_relation_id].into(),
         vec![PartitionId::new(7), PartitionId::new(9)].into(),
         Vec::new().into(),
