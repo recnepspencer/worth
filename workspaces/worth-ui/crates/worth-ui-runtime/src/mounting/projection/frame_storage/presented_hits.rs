@@ -47,9 +47,9 @@ impl UiMountedProjectionFrame {
             match self.portal_child_presentation(instance, surface.surface, surface.binding)? {
                 UiMountedPortalChildPresentation::Ordinary => (row, None),
                 UiMountedPortalChildPresentation::Suppressed => return Ok(None),
-                UiMountedPortalChildPresentation::Presented(portal) => {
+                UiMountedPortalChildPresentation::Presented(portal, source_anchor) => {
                     let Some(row) = row
-                        .presented_within_portal(portal)
+                        .presented_within_portal(portal, source_anchor)
                         .map_err(UiMountedProjectionDenial::HitTestCompletion)?
                     else {
                         return Ok(None);

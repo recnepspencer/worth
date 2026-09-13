@@ -25,7 +25,7 @@ pub(crate) struct UiValidatedSpatialIndexes {
 struct UiHostRowKey([u64; 14]);
 
 enum UiExpectedPaintRow {
-    Supported(worth_ui_host_contract::UiMountedFilledRectMechanic),
+    Appearance(crate::mounting::UiMountedAppearancePaintBasis),
     Unsupported(crate::mounting::UiMountedUnsupportedPaintBasis),
 }
 
@@ -35,22 +35,23 @@ pub(crate) fn validate_and_index(
     observed: &[worth_ui_host_contract::UiHostRealizedRegion],
     transform: worth_ui_host_contract::UiHostCoordinateTransform,
 ) -> Result<UiValidatedSpatialIndexes, UiSpatialValidationDenial> {
-    let expected_paint_rows = expected.paint();
-    let expected_unsupported_paint_rows = expected.unsupported_paint();
+    let expected_appearance_rows = expected.appearance_paint();
+    let expected_unsupported_rows = expected.unsupported_paint();
     let expected_hit_rows = expected.hit_test();
-    if expected_paint_rows.len() + expected_unsupported_paint_rows.len() + expected_hit_rows.len()
+    if expected_appearance_rows.len() + expected_unsupported_rows.len() + expected_hit_rows.len()
         != observed.len()
     {
         return Err(UiSpatialValidationDenial::ProtocolMismatch);
     }
     let mut expected_paint =
-        paint_rows_by_key(&expected_paint_rows, &expected_unsupported_paint_rows);
+        paint_rows_by_key(&expected_appearance_rows, &expected_unsupported_rows);
     let expected_hit_mechanics = expected_hit_rows
         .iter()
         .map(crate::mounting::UiMountedHitTestPresentation::mechanic)
         .collect::<Vec<_>>();
     let mut expected_hit = hit_rows_by_key(&expected_hit_mechanics);
-    let mut visible = Vec::with_capacity(expected_paint_rows.len());
+    let mut visible =
+        Vec::with_capacity(expected_appearance_rows.len() + expected_unsupported_rows.len());
     let mut hit_test = Vec::with_capacity(expected_hit_rows.len());
     for region in observed {
         match region.participation() {
@@ -61,8 +62,8 @@ pub(crate) fn validate_and_index(
                         .map_err(|_| UiSpatialValidationDenial::InvalidGeometry)?
                 {
                     visible.push(match mechanic {
-                        UiExpectedPaintRow::Supported(mechanic) => {
-                            UiVisibleRegionRecord::validated(mechanic, region.clip(), projected)
+                        UiExpectedPaintRow::Appearance(mechanic) => {
+                            UiVisibleRegionRecord::appearance(mechanic, region.clip(), projected)
                         }
                         UiExpectedPaintRow::Unsupported(mechanic) => {
                             UiVisibleRegionRecord::unsupported(mechanic, region.clip(), projected)
@@ -90,19 +91,19 @@ pub(crate) fn validate_and_index(
 }
 
 fn paint_rows_by_key(
-    expected: &[worth_ui_host_contract::UiMountedFilledRectMechanic],
+    appearance: &[crate::mounting::UiMountedAppearancePaintBasis],
     unsupported: &[crate::mounting::UiMountedUnsupportedPaintBasis],
 ) -> BTreeMap<UiHostRowKey, Vec<UiExpectedPaintRow>> {
     let mut rows = BTreeMap::<_, Vec<_>>::new();
-    for row in expected {
+    for row in appearance {
         rows.entry(row_key(
             row.node_receipt(),
             row.bounds(),
-            row.clip_bounds(),
-            row.layer_semantic_order(),
+            row.clip(),
+            row.semantic_order(),
         ))
         .or_default()
-        .push(UiExpectedPaintRow::Supported(*row));
+        .push(UiExpectedPaintRow::Appearance(*row));
     }
     for row in unsupported {
         rows.entry(row_key(

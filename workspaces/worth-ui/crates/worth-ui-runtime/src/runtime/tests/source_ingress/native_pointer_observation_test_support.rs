@@ -50,7 +50,7 @@ fn hover_component_builder(
             crate::capability::ThemeTokenFamily::surface(),
             crate::capability::ThemeTokenSource::application(),
             crate::capability::ThemeTokenValue::color(
-                crate::capability::ThemeColorValue::hex("#224466").unwrap(),
+                crate::capability::UiThemeColor::parse("#224466").unwrap(),
             ),
         ))
         .register_mosaic_region_kind(source_backed_package_region())

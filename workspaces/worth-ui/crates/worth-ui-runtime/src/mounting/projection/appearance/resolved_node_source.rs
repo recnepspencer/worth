@@ -7,6 +7,7 @@ pub(crate) struct UiResolvedAppearanceNodeSource<'source> {
     pub(crate) allocation: worth_ui_host_contract::UiMountedAllocationProjection,
     pub(crate) clip: super::UiMountedAppearanceClip,
     pub(crate) surface_paint_order: Option<u32>,
+    pub(crate) portal_group: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
     pub(crate) geometry_input: Option<super::UiMountedAppearanceGeometryInput>,
     pub(crate) text_foreground_spans: &'source [super::UiMountedAppearanceTextSpanInput],
     pub(crate) projection: &'source crate::runtime::appearance::UiAppearanceProjection,

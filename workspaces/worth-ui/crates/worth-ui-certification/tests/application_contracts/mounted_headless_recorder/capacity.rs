@@ -164,28 +164,26 @@ fn retained_capacity_recovers_after_drain() {
         .launch()
         .unwrap();
     let surface = session.create_semantic_surface().unwrap();
-    let binding = session
+    session
         .register_host_surface(
             surface,
             UiHostSurfacePresentationMode::RecordOnly,
             profile(1),
         )
-        .unwrap()
-        .binding_generation();
+        .unwrap();
     let node = first_node(&session);
-    session.mount_instance(node, surface).unwrap();
+    let graph_node = node.graph_node_identity();
+    let mounted = session.mount_instance(node, surface).unwrap();
     let first = prepare(&mut session);
     assert!(matches!(
         session.present_prepared_mounted_frame(first, UiPresentationDeadline::at_tick(10), 0,),
         UiMountedFrameOutcome::Published(_)
     ));
-    session
-        .rebind_host_surface(
-            binding,
-            UiHostSurfacePresentationMode::RecordOnly,
-            profile(2),
-        )
-        .expect("a successor binding forces record-bearing presentation work");
+    session.unmount_instance(mounted).unwrap();
+    let current_node = session
+        .mounted_graph_node(graph_node)
+        .expect("the remounted occurrence retains its graph node");
+    session.mount_instance(current_node, surface).unwrap();
     let blocked = prepare(&mut session);
     assert_rejected(
         "retained transcript capacity",

@@ -2,7 +2,6 @@
 pub(crate) enum UiAppearanceSupportPosture {
     Supported,
     Unsupported,
-    Inapplicable,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -81,9 +80,5 @@ impl UiResolvedAppearanceAspect {
     }
     pub(crate) const fn theme_slots_compared(&self) -> u32 {
         self.theme_slots_compared
-    }
-
-    pub(crate) fn exactly_equivalent(&self, other: &Self) -> bool {
-        self == other
     }
 }

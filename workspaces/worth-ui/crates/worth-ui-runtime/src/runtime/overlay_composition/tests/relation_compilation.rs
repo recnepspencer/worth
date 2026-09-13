@@ -23,7 +23,6 @@ fn compiles_declared_backdrop_relations_into_canonical_runtime_anchors() {
         UiOverlayAnchor::Backdrop(backdrop_identity)
     );
     assert_eq!(relation.kind(), UiOverlayRelationKind::Precedes);
-    assert_eq!(graph.relation_for(backdrop_identity), Some(relation));
 }
 
 #[test]

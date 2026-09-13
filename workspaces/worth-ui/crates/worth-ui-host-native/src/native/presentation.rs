@@ -111,8 +111,7 @@ pub(crate) enum UiNativePresentationFailure {
 }
 
 pub(crate) struct UiNativePresentedFrame {
-    observation: UiNativePresentationObservation,
-    cost: UiHostPresentationCostReport,
+    observation: super::UiNativeRetainedFrameObservation,
     retained: UiNativeRetainedDrawList,
 }
 
@@ -120,11 +119,10 @@ impl UiNativePresentedFrame {
     pub(crate) fn into_parts(
         self,
     ) -> (
-        UiNativePresentationObservation,
-        UiHostPresentationCostReport,
+        super::UiNativeRetainedFrameObservation,
         UiNativeRetainedDrawList,
     ) {
-        (self.observation, self.cost, self.retained)
+        (self.observation, self.retained)
     }
 }
 
@@ -162,7 +160,8 @@ pub(crate) fn present_initial<Port: UiNativePresentationPort>(
                 )
             })?;
     }
-    let initial = validate_initial(view).map_err(UiNativePresentationFailure::BeforeEffects)?;
+    let initial =
+        validate_initial(view, &retained).map_err(UiNativePresentationFailure::BeforeEffects)?;
     let mut operations = initial_operations(&retained, graphics, atlas, &initial)?;
     retained
         .initialize_physical_coverage(
@@ -222,7 +221,7 @@ fn build_presented_frame(
     retained: UiNativeRetainedDrawList,
 ) -> UiNativePresentedFrame {
     let (pixels, cost, port_crossings) = external.into_parts();
-    let observation = observation_for_retained(
+    let (observation, intrinsic, alpha) = observation_for_retained(
         view,
         graphics,
         atlas,
@@ -230,11 +229,20 @@ fn build_presented_frame(
         pixels,
         cost,
         port_crossings,
-    )
-    .expect("validated initial presentation retains observable paint attribution");
+    );
     UiNativePresentedFrame {
-        observation,
-        cost,
+        observation: super::UiNativeRetainedFrameObservation::observed(
+            view.frame().diagnostic_value(),
+            super::physical_work_signal::UiNativePhysicalPresentationBasis::from_view(view),
+            super::UiNativePresentationWorkKind::Initial,
+            None,
+            pixels,
+            cost,
+            port_crossings,
+            observation,
+            intrinsic,
+            alpha,
+        ),
         retained,
     }
 }
@@ -247,19 +255,29 @@ pub(crate) fn observation_for_retained(
     pixels: [[u8; 4]; 2],
     cost: UiHostPresentationCostReport,
     port_crossings: u8,
-) -> Option<UiNativePresentationObservation> {
-    let (ordinal, attribution) = retained.top_paint_attribution()?;
-    Some(observation_for_attribution(
-        view,
-        graphics,
-        attribution,
-        ordinal,
-        pixels,
-        cost,
-        port_crossings,
-        glyph_observation::intrinsic(retained, atlas, graphics.extent()),
-        glyph_observation::alpha(retained, atlas, graphics.extent()),
-    ))
+) -> (
+    Option<UiNativePresentationObservation>,
+    Box<[super::UiNativeGlyphObservation]>,
+    Box<[super::UiNativeGlyphObservation]>,
+) {
+    let intrinsic = glyph_observation::intrinsic(retained, atlas, graphics.extent());
+    let alpha = glyph_observation::alpha(retained, atlas, graphics.extent());
+    let observation = retained
+        .top_paint_attribution()
+        .map(|(ordinal, attribution)| {
+            observation_for_attribution(
+                view,
+                graphics,
+                attribution,
+                ordinal,
+                pixels,
+                cost,
+                port_crossings,
+                intrinsic.clone(),
+                alpha.clone(),
+            )
+        });
+    (observation, intrinsic, alpha)
 }
 
 fn observation_for_attribution(

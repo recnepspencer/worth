@@ -3,6 +3,10 @@ use worth_ui_host_contract::*;
 
 #[path = "pointer_confirmation_fixture.rs"]
 mod fixture;
+#[path = "pointer_confirmation_inspection.rs"]
+mod inspection;
+#[path = "pointer_confirmation_managed.rs"]
+mod managed;
 
 #[test]
 fn stationary_confirmation_expiry_reaches_mounted_pointer_without_activation_or_consumption() {
@@ -36,6 +40,13 @@ fn native_pointer_refresh_retains_rejected_work_until_readiness() {
 }
 
 #[test]
+fn native_parked_program_retry_resolves_expiry_before_first_acceptance() {
+    confirmation_expiry(ExpiryObservation::Driver(
+        crate::native_platform::PointerExpiryPresentation::RejectedProgram,
+    ));
+}
+
+#[test]
 fn native_expiry_survives_an_older_program_presentation() {
     confirmation_expiry(ExpiryObservation::Driver(
         crate::native_platform::PointerExpiryPresentation::PendingProgram,
@@ -47,7 +58,13 @@ fn native_expiry_uses_the_custom_application_owner_and_preserves_its_close_direc
     confirmation_expiry(ExpiryObservation::Custom);
 }
 
+#[test]
+fn native_timer_preserves_prepared_owner_during_managed_content_cutover() {
+    confirmation_expiry(ExpiryObservation::ManagedContent);
+}
+
 enum ExpiryObservation {
+    ManagedContent,
     Manual,
     Custom,
     Native,
@@ -56,20 +73,20 @@ enum ExpiryObservation {
 
 fn confirmation_expiry(observation: ExpiryObservation) {
     let (mut shell, host) = fixture::shell();
-    let mut session = shell.session.as_mut();
+    let session = shell.session.as_mut();
     let surface =
         session.inspect_mounted_identity().surface_bindings()[0].semantic_surface_identity();
     session.advance_mounted_identity_frame().unwrap();
-    let frame = super::prepare(&mut session);
-    super::publish(&mut session, &host, frame, 1);
-    let product = target_position(&session, surface, TargetRoute::Product);
+    let frame = super::prepare(session);
+    super::publish(session, &host, frame, 1);
+    let product = target_position(session, surface, TargetRoute::Product);
     let mut activation = None;
     for (sequence, transition, pressed) in [
         (1, UiHostPointerButtonTransition::Pressed, true),
         (2, UiHostPointerButtonTransition::Released, false),
     ] {
         let receipt = ingress(
-            &mut session,
+            session,
             surface,
             sequence,
             product,
@@ -105,10 +122,10 @@ fn confirmation_expiry(observation: ExpiryObservation) {
     else {
         panic!("one real pending challenge");
     };
-    let frame = super::prepare(&mut session);
-    super::publish(&mut session, &host, frame, 2);
-    let confirmation = target_position(&session, surface, TargetRoute::Confirmation);
-    let receipt = ingress(&mut session, surface, 3, confirmation, None, false);
+    let frame = super::prepare(session);
+    super::publish(session, &host, frame, 2);
+    let confirmation = target_position(session, surface, TargetRoute::Confirmation);
+    let receipt = ingress(session, surface, 3, confirmation, None, false);
     assert!(
         receipt.transitions().is_empty(),
         "hover must produce no activation"
@@ -129,13 +146,19 @@ fn confirmation_expiry(observation: ExpiryObservation) {
             .confirmation_deadline(),
         pending.expires_at_millis().checked_add(1)
     );
-    let frame = super::prepare(&mut session);
+    inspection::assert_confirmation(session, surface, Some(pending.expires_at_millis() + 1));
+    let frame = super::prepare(session);
     assert_pointer(&frame, UiPointerAffordanceFamily::Activation);
-    super::publish(&mut session, &host, frame, 3);
+    super::publish(session, &host, frame, 3);
     assert!(matches!(
         session.begin_observation_turn().unwrap().seal(),
         Err(crate::facade::observation::UiObservationAdmissionDenial::EmptyTurn)
     ));
+
+    if matches!(observation, ExpiryObservation::ManagedContent) {
+        managed::journey(shell, host, pending.expires_at_millis());
+        return;
+    }
 
     if matches!(observation, ExpiryObservation::Custom) {
         crate::native_platform::exercise_custom_pointer_expiry(
@@ -161,7 +184,6 @@ fn confirmation_expiry(observation: ExpiryObservation) {
             shell,
             host,
             pending.expires_at_millis(),
-            super::super::support::LEGACY_STATIC_PAINT_TOKEN,
             presentation,
         );
         let pointer = shell
@@ -211,11 +233,12 @@ fn confirmation_expiry(observation: ExpiryObservation) {
         return;
     }
 
-    timed_close(&mut session, pending.expires_at_millis());
-    let frame = super::prepare(&mut session);
+    timed_close(session, pending.expires_at_millis());
+    let frame = super::prepare(session);
     frame.assert_no_unpublished_appearance_for_test();
     drop(frame);
-    timed_close(&mut session, pending.expires_at_millis() + 1);
+    timed_close(session, pending.expires_at_millis() + 1);
+    inspection::assert_confirmation(session, surface, None);
     assert_eq!(
         session
             .pointer_affordance_snapshot
@@ -224,11 +247,11 @@ fn confirmation_expiry(observation: ExpiryObservation) {
             .confirmation_deadline(),
         None
     );
-    let frame = super::prepare(&mut session);
+    let frame = super::prepare(session);
     assert_pointer(&frame, UiPointerAffordanceFamily::Default);
-    super::publish(&mut session, &host, frame, 4);
-    timed_close(&mut session, pending.expires_at_millis() + 2);
-    let frame = super::prepare(&mut session);
+    super::publish(session, &host, frame, 4);
+    timed_close(session, pending.expires_at_millis() + 2);
+    let frame = super::prepare(session);
     frame.assert_no_unpublished_appearance_for_test();
     drop(frame);
     assert_eq!(session.intent_confirmation_metrics(), baseline);

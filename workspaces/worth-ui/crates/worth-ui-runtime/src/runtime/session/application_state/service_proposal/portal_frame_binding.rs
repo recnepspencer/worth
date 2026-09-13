@@ -15,9 +15,10 @@ impl WorthUiApplicationSessionState {
         surface_incarnation: crate::runtime::scroll::UiScrollOwnerIncarnation,
         motion_state: &mut crate::runtime::motion::UiMotionRuntimeState,
     ) -> Result<UiStagedPortalProposalTransaction, UiPortalProposalPreparationDenial> {
-        if let Err(denial) =
-            focus.stage_portal_proposal(&preparation.focus, frame.focus_participation_snapshot())
-        {
+        if let Err(denial) = focus.stage_portal_proposal(
+            &preparation.focus,
+            mounted.candidate_focus_participation_snapshot(frame),
+        ) {
             self.cancel_portal_staging(
                 preparation.staging,
                 &preparation.portal,

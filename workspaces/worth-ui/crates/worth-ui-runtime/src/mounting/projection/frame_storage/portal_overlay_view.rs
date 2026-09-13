@@ -13,12 +13,15 @@ impl UiMountedProjectionFrame {
     ) -> Result<UiMountedPortalOverlayViewRows, UiMountedProjectionDenial> {
         let mut rows = Vec::new();
         for input in self.portal_overlays.iter().copied() {
+            if input.surface() != surface.surface {
+                continue;
+            }
             let owner = self
                 .semantic
                 .node(input.owner())
                 .ok_or(UiMountedProjectionDenial::PortalOverlayOwnerMissing)?;
             if owner.receipt.semantic_surface() != surface.surface {
-                continue;
+                return Err(UiMountedProjectionDenial::PortalOverlayOwnerMissing);
             }
             let receipt = self
                 .receipt_basis
@@ -26,7 +29,7 @@ impl UiMountedProjectionFrame {
                 .ok_or(UiMountedProjectionDenial::PortalOverlayOwnerMissing)?;
             rows.push(
                 input
-                    .mechanic_for(self.frame, surface.surface, surface.binding, receipt)
+                    .mechanic_for(self.frame, surface.binding, receipt)
                     .map_err(UiMountedProjectionDenial::PortalOverlayCompletion)?,
             );
         }

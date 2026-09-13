@@ -20,7 +20,7 @@ class WorthUiContractGateTests(unittest.TestCase):
             source.parent.mkdir(parents=True)
             source.write_text(self.removal_source(extra_static_paint=True), encoding="utf-8")
             manifest = self.write_removal_manifest(root)
-            with self.assertRaisesRegex(ValueError, "observed 51"):
+            with self.assertRaisesRegex(ValueError, "static-paint authority: observed 1"):
                 removal_gate.validate(root, manifest)
 
     def test_removal_inventory_counts_tracked_and_untracked_rust_and_excludes_deleted_files(self) -> None:
@@ -29,15 +29,15 @@ class WorthUiContractGateTests(unittest.TestCase):
             tracked = root / "workspaces/worth-ui/tracked.rs"
             untracked = root / "workspaces/worth-ui/untracked.rs"
             tracked.parent.mkdir(parents=True)
-            tracked.write_text(self.removal_source(theme_color_adjustment=-1), encoding="utf-8")
+            tracked.write_text("ThemeColorValue", encoding="utf-8")
             untracked.write_text("ThemeColorValue", encoding="utf-8")
             manifest = self.write_removal_manifest(root, tracked_paths=[tracked])
 
-            removal_gate.validate(root, manifest)
-
             tracked.unlink()
-            with self.assertRaisesRegex(ValueError, "static-paint authority: observed 0"):
+            with self.assertRaisesRegex(ValueError, "string-backed ThemeColorValue: observed 1"):
                 removal_gate.validate(root, manifest)
+            untracked.unlink()
+            removal_gate.validate(root, manifest)
 
     def test_removal_inventory_does_not_allow_source_and_manifest_to_self_authorize_drift(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -103,7 +103,7 @@ class WorthUiContractGateTests(unittest.TestCase):
             (
                 "wrong stage",
                 lambda contract: contract.update(current_stage="gate_3"),
-                "current stage must remain gate_4",
+                "current stage must be gate_5_cutover",
             ),
             (
                 "target drift",
@@ -127,14 +127,13 @@ class WorthUiContractGateTests(unittest.TestCase):
 
     @staticmethod
     def removal_source(
-        *, extra_static_paint: bool = False, theme_color_adjustment: int = 0,
+        *, extra_static_paint: bool = False,
     ) -> str:
         lines = []
         for literal, _, _, _, current_remaining, _ in removal_gate.REQUIRED_FAMILIES.values():
             count = current_remaining + int(
                 extra_static_paint and literal == "ComponentStaticPaintContract"
             )
-            count += theme_color_adjustment if literal == "ThemeColorValue" else 0
             lines.extend(literal for _ in range(count))
         return "\n".join(lines)
 
@@ -184,30 +183,7 @@ class WorthUiContractGateTests(unittest.TestCase):
             protocol = root / "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_frame/protocol.rs"
             protocol.parent.mkdir(parents=True)
             protocol.write_text("""
-                COMPATIBLE_FLOOR: u16 = 6; CURRENT: u16 = 9;
-                CURRENT_FRAME_SCHEMA: u16 = 5; CURRENT_PRESENTATION_SCHEMA: u16 = 5;
-                CURRENT_OBSERVATION_SCHEMA: u16 = 7; CURRENT_MEASUREMENT_SCHEMA: u16 = 5;
-                CURRENT_SOLICITED_EFFECT_SCHEMA: u16 = 1;
-            """, encoding="utf-8")
-            text = root / "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_projection/semantic_text.rs"
-            text.parent.mkdir(parents=True)
-            text.write_text("pub const fn current() -> Self { Self(3) }", encoding="utf-8")
-            profile = root / "workspaces/worth-ui/crates/worth-ui-host-native/profiles/worth-ui-windows-dx12-v1.toml"
-            profile.parent.mkdir(parents=True)
-            profile.write_text("identity='v1'", encoding="utf-8")
-            manifest = root / "protocol.json"
-            manifest.write_text(json.dumps({"live": protocol_gate.EXPECTED_LIVE,
-                "intended_next": protocol_gate.EXPECTED_NEXT}), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "protocol_current drifted"):
-                protocol_gate.validate(root, manifest)
-
-    def test_protocol_manifest_rejects_joint_source_and_manifest_advancement(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            protocol = root / "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_frame/protocol.rs"
-            protocol.parent.mkdir(parents=True)
-            protocol.write_text("""
-                COMPATIBLE_FLOOR: u16 = 7; CURRENT: u16 = 7;
+                COMPATIBLE_FLOOR: u16 = 7; CURRENT: u16 = 9;
                 CURRENT_FRAME_SCHEMA: u16 = 6; CURRENT_PRESENTATION_SCHEMA: u16 = 6;
                 CURRENT_OBSERVATION_SCHEMA: u16 = 7; CURRENT_MEASUREMENT_SCHEMA: u16 = 5;
                 CURRENT_SOLICITED_EFFECT_SCHEMA: u16 = 1;
@@ -217,12 +193,44 @@ class WorthUiContractGateTests(unittest.TestCase):
             text.write_text("pub const fn current() -> Self { Self(4) }", encoding="utf-8")
             profile = root / "workspaces/worth-ui/crates/worth-ui-host-native/profiles/worth-ui-windows-dx12-v2.toml"
             profile.parent.mkdir(parents=True)
-            profile.write_text("identity='v2'", encoding="utf-8")
+            profile.write_text(
+                "identity='worth-ui-windows-dx12-v2'\n"
+                "profile_stage='current'\n"
+                "live_emission='enabled'\n",
+                encoding="utf-8",
+            )
             manifest = root / "protocol.json"
-            advanced = dict(protocol_gate.EXPECTED_NEXT)
-            manifest.write_text(json.dumps({"live": advanced,
-                "intended_next": protocol_gate.EXPECTED_NEXT}), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "live manifest must remain exact"):
+            manifest.write_text(json.dumps({"live": protocol_gate.EXPECTED_LIVE}), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "protocol_current drifted"):
+                protocol_gate.validate(root, manifest)
+
+    def test_protocol_manifest_rejects_joint_source_and_manifest_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            protocol = root / "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_frame/protocol.rs"
+            protocol.parent.mkdir(parents=True)
+            protocol.write_text("""
+                COMPATIBLE_FLOOR: u16 = 7; CURRENT: u16 = 8;
+                CURRENT_FRAME_SCHEMA: u16 = 6; CURRENT_PRESENTATION_SCHEMA: u16 = 6;
+                CURRENT_OBSERVATION_SCHEMA: u16 = 7; CURRENT_MEASUREMENT_SCHEMA: u16 = 5;
+                CURRENT_SOLICITED_EFFECT_SCHEMA: u16 = 1;
+            """, encoding="utf-8")
+            text = root / "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_projection/semantic_text.rs"
+            text.parent.mkdir(parents=True)
+            text.write_text("pub const fn current() -> Self { Self(4) }", encoding="utf-8")
+            profile = root / "workspaces/worth-ui/crates/worth-ui-host-native/profiles/worth-ui-windows-dx12-v2.toml"
+            profile.parent.mkdir(parents=True)
+            profile.write_text(
+                "identity='worth-ui-windows-dx12-v2'\n"
+                "profile_stage='current'\n"
+                "live_emission='enabled'\n",
+                encoding="utf-8",
+            )
+            manifest = root / "protocol.json"
+            advanced = dict(protocol_gate.EXPECTED_LIVE)
+            advanced["protocol_current"] = 8
+            manifest.write_text(json.dumps({"live": advanced}), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "live manifest must be exact"):
                 protocol_gate.validate(root, manifest)
 
     def test_document_gate_rejects_manifest_omission(self) -> None:
@@ -246,29 +254,67 @@ class WorthUiContractGateTests(unittest.TestCase):
                 docs_gate.validate(root)
 
     def test_native_matrix_rejects_prefix_and_comment_symbol_forgeries(self) -> None:
-        source = """
-            // pub struct UiMountedPointerAffordanceMechanic;
-            /* pub enum UiMountedBackdropMechanic {} */
-            pub struct UiMountedPointerAffordanceMechanicSuffix;
-        """
-        self.assertEqual(
-            matrix_gate.missing_declared_contract_symbols(
-                source, ["UiMountedPointerAffordanceMechanic", "UiMountedBackdropMechanic"]
-            ),
-            ["UiMountedPointerAffordanceMechanic", "UiMountedBackdropMechanic"],
-        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = self.write_native_matrix_fixture(root)
+            contract = root / "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_projection/appearance/mechanics.rs"
+            valid = [
+                symbol for symbol in matrix_gate.EXPECTED_SYMBOLS
+                if symbol not in {"UiMountedPointerAffordanceMechanic", "UiMountedBackdropMechanic"}
+            ]
+            contract.write_text(
+                "\n".join(f"pub struct {symbol};" for symbol in valid)
+                + "\n// pub struct UiMountedPointerAffordanceMechanic;"
+                + "\n/* pub enum UiMountedBackdropMechanic {} */"
+                + "\npub struct UiMountedPointerAffordanceMechanicSuffix;",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "host contract symbols missing"):
+                matrix_gate.validate(root, manifest)
 
-    def test_native_matrix_rejects_every_contract_symbol_in_live_publishers(self) -> None:
-        source = """
-            // UiOverlayStackSnapshot in a comment is inert.
-            let family = UiHostAppearanceMechanicFamily::SurfaceFill;
-            let damage = UiAppearanceDamageRegion::default();
-            let clip_suffix = UiAppearanceClipSuffix;
-        """
-        self.assertEqual(
-            matrix_gate.leaked_contract_symbols(source, matrix_gate.EXPECTED_SYMBOLS),
-            ["UiAppearanceDamageRegion", "UiHostAppearanceMechanicFamily"],
+    def test_native_matrix_rejects_empty_live_owner(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = self.write_native_matrix_fixture(root)
+            owner = root / matrix_gate.EXPECTED_OWNERS["runtime_appearance_lowering"]
+            owner.write_text("// pub(super) fn lower() {}", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "live runtime_appearance_lowering owner declaration is missing"):
+                matrix_gate.validate(root, manifest)
+
+    @staticmethod
+    def write_native_matrix_fixture(root: Path) -> Path:
+        manifest = root / "native-appearance.json"
+        manifest.write_text(json.dumps({
+            "live_profile": "worth-ui-windows-dx12-v2",
+            "mechanics": matrix_gate.EXPECTED_MECHANICS,
+            "required_host_contract_symbols": matrix_gate.EXPECTED_SYMBOLS,
+            "live_owners": matrix_gate.EXPECTED_OWNERS,
+        }), encoding="utf-8")
+        profile = root / "workspaces/worth-ui/crates/worth-ui-host-native/profiles/worth-ui-windows-dx12-v2.toml"
+        profile.parent.mkdir(parents=True)
+        profile.write_text(
+            "identity='worth-ui-windows-dx12-v2'\nprofile_stage='current'\nlive_emission='enabled'\n",
+            encoding="utf-8",
         )
+        contract = root / "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_projection/appearance/mechanics.rs"
+        contract.parent.mkdir(parents=True)
+        contract.write_text(
+            "\n".join(f"pub struct {symbol};" for symbol in matrix_gate.EXPECTED_SYMBOLS),
+            encoding="utf-8",
+        )
+        declarations = {
+            "consumed_fact_index": "pub struct UiGraphConsumedFactIndex;",
+            "mounted_preview": "pub enum UiMountedPreviewProjection {}",
+            "appearance_presentation_work": "pub struct UiMountedAppearancePresentationWork;",
+            "runtime_appearance_lowering": "pub(super) fn lower() {}",
+            "native_appearance_translation": "pub(crate) enum UiNativeAppearanceCommand {}",
+            "headless_appearance_translation": "pub(crate) fn translate() {}",
+        }
+        for owner, relative in matrix_gate.EXPECTED_OWNERS.items():
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(declarations[owner], encoding="utf-8")
+        return manifest
 
 
 if __name__ == "__main__":

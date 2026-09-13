@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{LazyLock, Mutex};
 
 use worth_ui::facade::app::{
     UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
@@ -16,31 +15,8 @@ use worth_ui_test_support::{
 };
 
 static NEXT_LAYOUT_REVISION: AtomicU64 = AtomicU64::new(1);
-static INSTALLED_TOPOLOGY: LazyLock<Mutex<BTreeMap<u64, String>>> =
-    LazyLock::new(|| Mutex::new(BTreeMap::new()));
-
 pub(crate) fn install_current_occurrence_geometry(session: &mut WorthUiActiveApplicationSession) {
     let identity = session.inspect_mounted_identity();
-    let bound_surfaces = identity
-        .surface_bindings()
-        .iter()
-        .map(|binding| {
-            (
-                binding.semantic_surface_identity(),
-                binding.host_surface_identity(),
-            )
-        })
-        .collect::<Vec<_>>();
-    let topology = format!("{:?}|{bound_surfaces:?}", identity.mounted_instances());
-    let session_identity = session.session_identity().as_u64();
-    if INSTALLED_TOPOLOGY
-        .lock()
-        .expect("certification geometry topology cache remains available")
-        .get(&session_identity)
-        == Some(&topology)
-    {
-        return;
-    }
     let mut surfaces = identity
         .mounted_instances()
         .iter()
@@ -48,7 +24,19 @@ pub(crate) fn install_current_occurrence_geometry(session: &mut WorthUiActiveApp
         .collect::<Vec<_>>();
     surfaces.sort_unstable();
     surfaces.dedup();
-
+    let occurrence_counts =
+        identity
+            .mounted_instances()
+            .iter()
+            .fold(BTreeMap::new(), |mut counts, instance| {
+                *counts
+                    .entry((
+                        instance.basis().semantic_surface_identity(),
+                        instance.graph_node_identity(),
+                    ))
+                    .or_insert(0usize) += 1;
+                counts
+            });
     for surface in surfaces {
         let mut instances = identity
             .mounted_instances()
@@ -67,11 +55,15 @@ pub(crate) fn install_current_occurrence_geometry(session: &mut WorthUiActiveApp
                     .find(|candidate| candidate.identity() == instance)
                     .expect("current occurrence remains in the identity view")
                     .graph_node_identity();
-                let bounds = match session.inspect_mounted_allocation_projection(graph_node) {
-                    Ok(Some(UiMountedAllocationProjection::Known { bounds, .. })) => {
-                        canonical_box([bounds.x(), bounds.y(), bounds.width(), bounds.height()])
+                let bounds = if occurrence_counts[&(surface, graph_node)] > 1 {
+                    repeated_occurrence_bounds(index)
+                } else {
+                    match session.inspect_mounted_allocation_projection(graph_node) {
+                        Ok(Some(UiMountedAllocationProjection::Known { bounds, .. })) => {
+                            canonical_box([bounds.x(), bounds.y(), bounds.width(), bounds.height()])
+                        }
+                        _ => occurrence_bounds(index),
                     }
-                    _ => occurrence_bounds(index),
                 };
                 UiMountedOccurrenceGeometry::surface(instance, bounds)
             })
@@ -91,17 +83,14 @@ pub(crate) fn install_current_occurrence_geometry(session: &mut WorthUiActiveApp
             ))
             .expect("certification layout covers every mounted occurrence");
     }
-    INSTALLED_TOPOLOGY
-        .lock()
-        .expect("certification geometry topology cache remains available")
-        .insert(session_identity, topology);
 }
 
 pub(crate) fn install_native_occurrence_geometry(
     shell: &mut worth_ui::facade::app::WorthUiNativeApplicationShell,
 ) {
     let inputs = shell.native_component_layout_inputs();
-    let viewport = viewport_bounds();
+    // Scripted native allocation observations and input drains use 800 by 600.
+    let viewport = canonical_box([0.0, 0.0, 800.0, 600.0]);
     let mut surface_bounds = BTreeMap::new();
     for (index, input) in inputs.iter().enumerate() {
         let coordinate_space = if input.portal_parent().is_some() {
@@ -226,19 +215,24 @@ fn occurrence_bounds(index: usize) -> UiMountedCanonicalBox {
     ])
 }
 
+fn repeated_occurrence_bounds(index: usize) -> UiMountedCanonicalBox {
+    canonical_box([
+        (index % 64) as f32 * 20.0,
+        (index / 64) as f32 * 11.0,
+        18.0,
+        9.0,
+    ])
+}
+
 fn viewport_bounds() -> UiMountedCanonicalBox {
     canonical_box([0.0, 0.0, 1_280.0, 720.0])
 }
 
 fn local_box([x, y, width, height]: [f32; 4]) -> UiMountedCanonicalBox {
-    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-        x,
-        y,
-        width,
-        height,
-        coordinate_space: UiMountedCoordinateSpace::GraphNodeLocal,
-    })
-    .expect("certification geometry is finite graph-local geometry")
+    box_in_space(
+        [x, y, width, height],
+        UiMountedCoordinateSpace::GraphNodeLocal,
+    )
 }
 
 fn canonical_box([x, y, width, height]: [f32; 4]) -> UiMountedCanonicalBox {

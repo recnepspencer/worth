@@ -13,13 +13,40 @@ pub(crate) struct UiPresentedPointerPosition {
 }
 
 impl UiPresentedPointerPosition {
+    /// Event-time evidence admits the coordinates; Hover is resolved against
+    /// the currently presented geometry on the same live physical binding.
+    /// Gesture targeting continues to consume the original event presentation.
+    pub(crate) fn resolve_observation(
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        observed: UiHostObservationPresentationBasis,
+        position: UiHostSurfacePosition,
+        work: &mut crate::mounting::UiHitTestSpatialWork,
+    ) -> Result<Self, UiInteractionTargetingDenial> {
+        mounted
+            .classify_interaction_presentation(observed)
+            .map_err(super::presented_frame::map_presentation_denial)?;
+        let surface = mounted
+            .current_surface_for_binding(observed.binding())
+            .ok_or(UiInteractionTargetingDenial::BindingNoLongerCurrent)?;
+        let current = mounted
+            .current_presentation_for_surface(surface)
+            .ok_or(UiInteractionTargetingDenial::PresentationTruthUnavailable)?;
+        if current.binding() != observed.binding()
+            || current.host_surface() != observed.host_surface()
+        {
+            return Err(UiInteractionTargetingDenial::MountedSurfaceAffinityChanged);
+        }
+        Self::resolve(mounted, current, position, work)
+    }
+
     pub(crate) fn resolve(
         mounted: &crate::mounting::WorthUiMountedSessionState,
         presentation: UiHostObservationPresentationBasis,
         position: UiHostSurfacePosition,
+        work: &mut crate::mounting::UiHitTestSpatialWork,
     ) -> Result<Self, UiInteractionTargetingDenial> {
         let surface = current_pointer_surface(mounted, presentation)?;
-        let target = match resolve_presented_target(mounted, presentation, position) {
+        let target = match resolve_presented_target(mounted, presentation, position, work) {
             Ok(target) => Some(target),
             Err(UiInteractionTargetingDenial::NoTarget { .. }) => None,
             Err(denial) => return Err(denial),

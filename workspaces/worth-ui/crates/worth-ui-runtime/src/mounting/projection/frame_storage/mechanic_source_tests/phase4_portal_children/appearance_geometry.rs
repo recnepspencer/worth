@@ -52,6 +52,40 @@ fn portal_appearance_geometry_removes_restores_and_preserves_other_surface() {
         panic!("resolved foreground-independent surface must cross the mounted producer");
     };
     assert_eq!(surface.bounds().x(), 8_000);
+    assert_eq!(surface.portal_group(), Some(world.owners[0]));
+    let target = crate::runtime::appearance::UiAppearanceTarget::new(
+        session.session_identity(),
+        first.semantic_surface,
+        first.graph_node,
+        first.mounted_instance,
+        first.incarnation,
+        first.node_receipt,
+    )
+    .unwrap();
+    let fresh = crate::runtime::appearance::UiAppearanceAttemptContext::new(
+        target,
+        first.clone(),
+        session.active_generation_identity(),
+        1,
+        0,
+    );
+    let fresh_input = fresh
+        .lower_resolved(
+            &projection,
+            worth_ui_host_contract::UiMountedPresentationAttemptIdentity::mint_unbound().unwrap(),
+            Ok(worth_ui_host_contract::UiAppearanceLogicalLength::new(1_000).unwrap()),
+        )
+        .unwrap();
+    let fresh_work = UiMountedAppearanceSidecar::default()
+        .mount(fresh_input)
+        .unwrap();
+    let [UiMountedAppearanceMechanic::Surface(fresh_surface)] = fresh_work.successor().mechanics()
+    else {
+        panic!("fresh resolution must emit the mounted Portal child's surface");
+    };
+    assert_eq!(fresh_surface.portal_group(), Some(world.owners[0]));
+    assert_eq!(fresh_surface.bounds().x(), 8_000);
+    assert_eq!(fresh_surface.bounds().y(), 52_000);
     assert_eq!(
         surface.clip(),
         UiAppearanceClip::new(20_000, 60_000, 280_000, 320_000).unwrap()
@@ -59,7 +93,7 @@ fn portal_appearance_geometry_removes_restores_and_preserves_other_surface() {
 
     let closed = world.frame(&[1], Some(&initial));
     assert_eq!(
-        context(&closed, world.children[0]).appearance_clip(),
+        context(&closed, world.children[0]).appearance_clip,
         Clip::Suppressed
     );
     assert_eq!(
@@ -91,7 +125,7 @@ fn portal_appearance_geometry_removes_restores_and_preserves_other_surface() {
     let mut reconstructing = closed.clone();
     reconstructing.portal_overlays = initial.portal_overlays.clone();
     let suppressed = context(&reconstructing, world.children[0]);
-    assert_eq!(suppressed.appearance_clip(), Clip::Suppressed);
+    assert_eq!(suppressed.appearance_clip, Clip::Suppressed);
     let rebuilt = sidecar
         .reconstruct(lower(&suppressed, &projection))
         .unwrap();
@@ -114,7 +148,7 @@ fn portal_appearance_geometry_removes_restores_and_preserves_other_surface() {
         [20_000, 60_000, 280_000, 320_000],
     );
     assert_eq!(
-        context(&closed, world.children[0]).appearance_clip(),
+        context(&closed, world.children[0]).appearance_clip,
         Clip::Suppressed
     );
     let _ = session.shutdown();
@@ -131,7 +165,7 @@ fn portal_completion_preserves_independent_ancestry_and_translates_resolved_clip
         world.set_clip(child, Clip::Unresolved(denial));
         let frame = world.frame(&[0, 1], None);
         assert_eq!(
-            context(&frame, child).appearance_clip(),
+            context(&frame, child).appearance_clip,
             Clip::Unresolved(denial)
         );
     }
@@ -152,9 +186,9 @@ fn portal_completion_preserves_independent_ancestry_and_translates_resolved_clip
         Clip::Ancestor(UiAppearanceClip::new(500_000, 0, 10_000, 10_000).unwrap()),
     );
     let empty = world.frame(&[0, 1], None);
-    assert_eq!(context(&empty, child).appearance_clip(), Clip::Suppressed);
+    assert_eq!(context(&empty, child).appearance_clip, Clip::Suppressed);
     assert_eq!(
-        context(&frame, child).appearance_clip(),
+        context(&frame, child).appearance_clip,
         Clip::Ancestor(UiAppearanceClip::new(20_000, 60_000, 80_000, 40_000).unwrap())
     );
 }
@@ -183,6 +217,7 @@ fn foreground_candidates_use_retained_portal_geometry_and_ancestor_clip() {
         assert_eq!(row.origin_x(), 8.0);
         assert!(row.origin_y() >= 52.0);
         assert_eq!(row.performed_layout_cost(), None);
+        assert_eq!(row.portal_group(), Some(world.owners[0]));
     }
 }
 
@@ -191,7 +226,7 @@ fn lower(
     projection: &crate::runtime::appearance::UiAppearanceProjection,
 ) -> crate::mounting::UiMountedAppearanceLoweringInput {
     context
-        .lower_retained_projection(
+        .lower_resolved_projection(
             projection,
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity::mint_unbound().unwrap(),
             Ok(worth_ui_host_contract::UiAppearanceLogicalLength::new(1_000).unwrap()),
@@ -216,7 +251,7 @@ fn assert_geometry(
     expected: [f32; 4],
     clip: [i32; 4],
 ) {
-    let UiMountedAllocationProjection::Known { bounds, .. } = context.allocation() else {
+    let UiMountedAllocationProjection::Known { bounds, .. } = context.allocation else {
         panic!("known allocation required");
     };
     assert_eq!(
@@ -229,7 +264,7 @@ fn assert_geometry(
         "Portal completion preserves the occurrence geometry's surface authority"
     );
     assert_eq!(
-        context.appearance_clip(),
+        context.appearance_clip,
         Clip::Ancestor(
             UiAppearanceClip::new(clip[0], clip[1], clip[2] as u32, clip[3] as u32,).unwrap()
         )
@@ -258,6 +293,8 @@ impl GeometryWorld {
                 portal_semantic_projection(owners[i], children[i], surfaces[i], bindings[i]);
             records.extend(semantic.nodes_in_order().cloned());
             mounted_surfaces.push(UiMountedProjectionSurface {
+                coordinate_posture:
+                    crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
                 surface: surfaces[i],
                 binding: bindings[i],
                 audience: UiMountedProjectionAudience::full(),

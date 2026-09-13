@@ -7,6 +7,21 @@ impl PlatformPulseApplicationRuntime {
     pub(super) fn shutdown_product(
         &mut self,
     ) -> Option<worth_ui::facade::app::WorthUiNativeApplicationShutdownReceipt> {
+        self.pending_native_publications.clear();
+        let theme_watch_released = if let Some(watch) = self.theme_watch.take() {
+            match watch.shutdown() {
+                Ok(()) => true,
+                Err(denial) => {
+                    self.fail(
+                        super::PlatformPulseTerminalError::ThemePreference(denial),
+                        self.publisher.appearance_preparation_failure(),
+                    );
+                    false
+                }
+            }
+        } else {
+            false
+        };
         let visual_shutdown = self
             .shell
             .as_mut()
@@ -52,10 +67,14 @@ impl PlatformPulseApplicationRuntime {
                 Some(Ok(query)),
                 Some(Ok(query_watcher)),
                 Some(Ok(intent_watcher)),
-            ) => {
-                self.publisher
-                    .shutdown(&watcher, query, query_watcher, intent_watcher, application)
-            }
+            ) => self.publisher.shutdown(
+                &watcher,
+                query,
+                query_watcher,
+                intent_watcher,
+                theme_watch_released,
+                application,
+            ),
             (Some(Err(PlatformPulseSourceWatchShutdownDenial::Watcher(denial))), _, _, _, _) => {
                 self.publisher.filesystem_watcher_failure(&denial)
             }

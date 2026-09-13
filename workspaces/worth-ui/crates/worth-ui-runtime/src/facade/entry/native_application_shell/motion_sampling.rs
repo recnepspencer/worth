@@ -56,7 +56,9 @@ impl WorthUiNativeApplicationShell {
             || self.session.portal_exit_terminal_work_pending()
     }
 
-    pub(crate) fn native_motion_sample_presentation_pending(&self) -> bool {
+    /// Whether Motion or retained Portal-exit work currently owns native
+    /// physical presentation completion.
+    pub fn native_motion_sample_presentation_pending(&self) -> bool {
         self.session.mounted.motion_sample_presentation_pending()
             || self.session.portal_exit_terminal_awaits_physical()
     }

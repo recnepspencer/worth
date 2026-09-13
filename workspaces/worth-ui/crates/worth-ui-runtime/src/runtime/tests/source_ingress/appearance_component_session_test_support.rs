@@ -20,12 +20,12 @@ use fixture_support::appearance_fixture_without_attachment;
 const ACTIVE_COMPONENT: &str = "workspace.component.active_session_current";
 const CANDIDATE_COMPONENT: &str = "workspace.component.active_session_candidate";
 pub(crate) const APPEARANCE_TOKEN: &str = "theme.appearance_consumer";
-pub(crate) const LEGACY_STATIC_PAINT_TOKEN: &str = "theme.legacy_static_paint";
+pub(crate) const APPEARANCE_BASE_TOKEN: &str = "theme.appearance_base";
 
 pub(crate) const APPEARANCE_NODE_A: &str = ACTIVE_COMPONENT;
 pub(crate) const APPEARANCE_NODE_B: &str = CANDIDATE_COMPONENT;
 
-pub(crate) fn source_backed_static_paint_consumer_session(
+pub(crate) fn source_backed_appearance_consumer_session(
 ) -> crate::facade::WorthUiActiveApplicationSession {
     let role = validation_background_role(APPEARANCE_TOKEN);
     appearance_component_builder(&role)
@@ -39,7 +39,7 @@ pub(crate) fn source_backed_static_paint_consumer_session(
         .expect("appearance consumer source application should launch")
 }
 
-pub(crate) fn source_backed_static_paint_role_capable_session(
+pub(crate) fn source_backed_appearance_role_capable_session(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
 ) -> crate::facade::WorthUiActiveApplicationSession {
     appearance_component_builder(role)
@@ -195,27 +195,27 @@ fn appearance_semantic_declaration(
 pub(crate) fn appearance_component_builder(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
 ) -> crate::facade::entry::WorthUiApplicationBuilder {
-    appearance_component_builder_with_contract_and_static_token(
+    appearance_component_builder_with_contract_and_token(
         role,
         component_appearance_contract(),
         APPEARANCE_TOKEN,
     )
 }
 
-pub(crate) fn legacy_static_paint_appearance_component_builder(
+pub(crate) fn alternate_token_appearance_component_builder(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
 ) -> crate::facade::entry::WorthUiApplicationBuilder {
-    appearance_component_builder_with_contract_and_static_token(
+    appearance_component_builder_with_contract_and_token(
         role,
         component_appearance_contract(),
-        LEGACY_STATIC_PAINT_TOKEN,
+        APPEARANCE_BASE_TOKEN,
     )
 }
 
 pub(crate) fn six_axis_appearance_component_builder(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
 ) -> crate::facade::entry::WorthUiApplicationBuilder {
-    appearance_component_builder_with_contract_and_static_token(
+    appearance_component_builder_with_contract_and_token(
         role,
         six_axis_component_appearance_contract(),
         APPEARANCE_TOKEN,
@@ -228,17 +228,17 @@ pub(crate) fn single_aspect_appearance_component_builder(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
     aspect: worth_ui_dsl::UiAppearanceAspect,
 ) -> crate::facade::entry::WorthUiApplicationBuilder {
-    appearance_component_builder_with_contract_and_static_token(
+    appearance_component_builder_with_contract_and_token(
         role,
         worth_ui_dsl::UiAppearanceAspectContract::component([aspect], []).unwrap(),
         APPEARANCE_TOKEN,
     )
 }
 
-pub(crate) fn radius_appearance_component_builder_with_legacy_static_paint(
+pub(crate) fn radius_appearance_component_builder(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
 ) -> crate::facade::entry::WorthUiApplicationBuilder {
-    appearance_component_builder_with_contract_and_static_token(
+    appearance_component_builder_with_contract_and_token(
         role,
         worth_ui_dsl::UiAppearanceAspectContract::component(
             [
@@ -248,7 +248,7 @@ pub(crate) fn radius_appearance_component_builder_with_legacy_static_paint(
             [],
         )
         .unwrap(),
-        LEGACY_STATIC_PAINT_TOKEN,
+        APPEARANCE_BASE_TOKEN,
     )
     .register_theme_token(appearance_theme_token_with_color(
         crate::capability::ThemeTokenId::new("theme.appearance_radius.background").unwrap(),
@@ -256,32 +256,32 @@ pub(crate) fn radius_appearance_component_builder_with_legacy_static_paint(
     ))
 }
 
-fn appearance_component_builder_with_contract_and_static_token(
+fn appearance_component_builder_with_contract_and_token(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
     appearance_contract: worth_ui_dsl::UiAppearanceAspectContract,
-    static_paint_token: &str,
+    base_token: &str,
 ) -> crate::facade::entry::WorthUiApplicationBuilder {
     let (_, _, world_profile) =
         crate::evidence::measurement::projection::fact_test_support::display_field_projection_context(
             "appearance-consumer-active-session",
         );
     let appearance_token = crate::capability::ThemeTokenId::new(APPEARANCE_TOKEN).unwrap();
-    let static_paint_token = crate::capability::ThemeTokenId::new(static_paint_token).unwrap();
+    let base_token = crate::capability::ThemeTokenId::new(base_token).unwrap();
     let builder = crate::facade::WorthUi::app()
         .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
         .with_graph_world_profile(world_profile)
         .register_component(
-            static_paint_component_with_contract(
+            appearance_component_with_contract(
                 ACTIVE_COMPONENT,
-                static_paint_token.clone(),
+                base_token.clone(),
                 appearance_contract.clone(),
             )
             .unwrap(),
         )
         .register_component(
-            static_paint_component_with_contract(
+            appearance_component_with_contract(
                 CANDIDATE_COMPONENT,
-                static_paint_token.clone(),
+                base_token.clone(),
                 appearance_contract,
             )
             .unwrap()
@@ -292,8 +292,8 @@ fn appearance_component_builder_with_contract_and_static_token(
         .register_theme_token(appearance_theme_token(appearance_token))
         .register_mosaic_region_kind(source_backed_package_region())
         .register_mosaic_sizing_contract(source_backed_package_sizing());
-    if static_paint_token.as_str() != APPEARANCE_TOKEN {
-        builder.register_theme_token(appearance_theme_token(static_paint_token))
+    if base_token.as_str() != APPEARANCE_TOKEN {
+        builder.register_theme_token(appearance_theme_token(base_token))
     } else {
         builder
     }
@@ -341,50 +341,43 @@ pub(crate) fn appearance_theme_token_with_color(
 }
 
 pub(crate) fn appearance_theme_value(hex: &str) -> crate::capability::ThemeTokenValue {
-    crate::capability::ThemeTokenValue::color(crate::capability::ThemeColorValue::hex(hex).unwrap())
+    crate::capability::ThemeTokenValue::color(crate::capability::UiThemeColor::parse(hex).unwrap())
 }
 
-type InitialAppearanceThemeChange = crate::facade::entry::UiNativeThemeTokenValueChange;
-
-pub(crate) fn initial_appearance_theme_change(
-    token: crate::capability::ThemeTokenId,
-    value: crate::capability::ThemeTokenValue,
-) -> InitialAppearanceThemeChange {
-    InitialAppearanceThemeChange::new(token, value).unwrap()
+pub(crate) fn replace_appearance_theme_definition_for_test(
+    session: &mut crate::facade::WorthUiActiveApplicationSession,
+    definition: &str,
+    changed_token: &crate::capability::ThemeTokenId,
+) {
+    session.replace_appearance_theme_definition_for_test(definition, changed_token);
 }
 
-pub(crate) fn static_paint_component(
+pub(crate) fn appearance_component(
     identity: &str,
     token: crate::capability::ThemeTokenId,
 ) -> crate::capability::ComponentDescriptor {
-    static_paint_component_with_contract(identity, token, component_appearance_contract()).unwrap()
+    appearance_component_with_contract(identity, token, component_appearance_contract()).unwrap()
 }
 
-pub(crate) fn static_paint_component_with_allocation(
+pub(crate) fn appearance_component_with_allocation(
     identity: &str,
-    token: crate::capability::ThemeTokenId,
+    _theme_token: crate::capability::ThemeTokenId,
     allocation: crate::capability::ComponentAllocationMeasurementContract,
 ) -> crate::capability::ComponentDescriptor {
-    source_backed_package_component(identity).with_static_paint(
-        crate::capability::ComponentStaticPaintContract::opaque_fill(
-            token,
-            crate::capability::ComponentStaticPaintOrder::back_to_front(0),
-        ),
-        allocation,
-    )
+    source_backed_package_component(identity).with_allocation_measurement_contract(allocation)
 }
 
-fn static_paint_component_with_contract(
+fn appearance_component_with_contract(
     identity: &str,
-    token: crate::capability::ThemeTokenId,
+    theme_token: crate::capability::ThemeTokenId,
     appearance_contract: worth_ui_dsl::UiAppearanceAspectContract,
 ) -> Result<
     crate::capability::ComponentDescriptor,
     crate::capability::ComponentAppearanceAspectContractDenial,
 > {
-    static_paint_component_with_allocation(
+    appearance_component_with_allocation(
         identity,
-        token,
+        theme_token,
         crate::capability::ComponentAllocationMeasurementContract::fill_viewport(),
     )
     .with_surface_paint_order(65_536)

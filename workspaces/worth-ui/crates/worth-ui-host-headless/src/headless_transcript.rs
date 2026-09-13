@@ -8,19 +8,15 @@ use worth_ui_host_contract::{
     UiSurfaceBindingGeneration,
 };
 
-#[cfg(feature = "certification-support")]
 pub mod appearance;
 mod delta;
 mod mechanic_accessors;
 mod semantic_text;
-mod static_paint;
 mod text_accessibility;
 mod text_measurement;
 
 pub use self::semantic_text::UiHeadlessSemanticTextMechanic;
 pub(crate) use self::semantic_text::UiHeadlessSemanticTextMechanicInput;
-pub use self::static_paint::UiHeadlessFilledRectMechanic;
-pub(crate) use self::static_paint::UiHeadlessFilledRectMechanicInput;
 pub use self::text_accessibility::UiHeadlessTextAccessibilityGeometry;
 pub use self::text_measurement::UiHeadlessTextMeasurement;
 
@@ -72,7 +68,6 @@ pub struct UiHeadlessPaintBatchMechanic {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiHeadlessNodePaintMechanic {
     CountOnlyBatch(u16),
-    FilledRect(u16),
     Omitted(UiMountedOmissionReason),
 }
 
@@ -106,7 +101,7 @@ pub(crate) struct UiHeadlessNodeMechanicInput {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiHeadlessUnperformedEffect {
     NativePaint {
-        filled_rect_count: u32,
+        appearance_mechanic_count: u32,
         portal_overlay_count: u32,
         semantic_text_count: u32,
         preview_node_count: u32,
@@ -140,7 +135,7 @@ pub struct UiHeadlessMountedFrameTranscript {
     mode: UiHostSurfacePresentationMode,
     nodes: Box<[UiHeadlessNodeMechanic]>,
     clips: Box<[UiHeadlessClipMechanic]>,
-    filled_rects: Box<[UiHeadlessFilledRectMechanic]>,
+    appearance_work: Option<appearance::UiHeadlessAppearancePresentationTranscript>,
     portal_overlays: Box<[worth_ui_host_contract::UiMountedPortalOverlayMechanic]>,
     semantic_text: Box<[UiHeadlessSemanticTextMechanic]>,
     paint_batches: Box<[UiHeadlessPaintBatchMechanic]>,
@@ -157,7 +152,7 @@ pub(crate) struct UiHeadlessMountedFrameTranscriptInput {
     pub binding: UiSurfaceBindingGeneration,
     pub nodes: Vec<UiHeadlessNodeMechanic>,
     pub clips: Vec<UiHeadlessClipMechanic>,
-    pub filled_rects: Vec<UiHeadlessFilledRectMechanic>,
+    pub appearance_work: Option<appearance::UiHeadlessAppearancePresentationTranscript>,
     pub portal_overlays: Vec<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
     pub semantic_text: Vec<UiHeadlessSemanticTextMechanic>,
     pub paint_batches: Vec<UiHeadlessPaintBatchMechanic>,
@@ -186,7 +181,7 @@ impl UiHeadlessMountedFrameTranscript {
             mode: UiHostSurfacePresentationMode::RecordOnly,
             nodes: input.nodes.into_boxed_slice(),
             clips: input.clips.into_boxed_slice(),
-            filled_rects: input.filled_rects.into_boxed_slice(),
+            appearance_work: input.appearance_work,
             portal_overlays: input.portal_overlays.into_boxed_slice(),
             semantic_text: input.semantic_text.into_boxed_slice(),
             paint_batches: input.paint_batches.into_boxed_slice(),
@@ -228,8 +223,29 @@ impl UiHeadlessMountedFrameTranscript {
         &self.clips
     }
 
-    pub fn filled_rects(&self) -> &[UiHeadlessFilledRectMechanic] {
-        &self.filled_rects
+    pub fn appearance_work(
+        &self,
+    ) -> Option<&appearance::UiHeadlessAppearancePresentationTranscript> {
+        self.appearance_work.as_ref()
+    }
+
+    pub(crate) fn replace_appearance_work(
+        &mut self,
+        work: appearance::UiHeadlessAppearancePresentationTranscript,
+    ) -> Result<(), worth_ui_host_contract::UiHostSurfacePresentationDenial> {
+        let count = work.mechanic_count()?;
+        if let Some(UiHeadlessUnperformedEffect::NativePaint {
+            appearance_mechanic_count,
+            ..
+        }) = self
+            .unperformed_effects
+            .iter_mut()
+            .find(|effect| matches!(effect, UiHeadlessUnperformedEffect::NativePaint { .. }))
+        {
+            *appearance_mechanic_count = count;
+        }
+        self.appearance_work = Some(work);
+        Ok(())
     }
 
     pub fn portal_overlays(&self) -> &[worth_ui_host_contract::UiMountedPortalOverlayMechanic] {

@@ -8,7 +8,10 @@ use super::{UiMountedProjectionDenial, UiMountedProjectionFrame};
 pub(super) enum UiMountedPortalChildPresentation {
     Ordinary,
     Suppressed,
-    Presented(UiMountedPortalOverlayMechanic),
+    Presented(
+        UiMountedPortalOverlayMechanic,
+        worth_ui_host_contract::UiMountedCanonicalBox,
+    ),
 }
 
 impl UiMountedProjectionFrame {
@@ -20,6 +23,9 @@ impl UiMountedProjectionFrame {
         let owner_component = child.portal_child_owner.as_ref()?;
         let mut matched = None;
         for input in self.portal_overlays.iter().copied() {
+            if input.surface() != child.receipt.semantic_surface() {
+                continue;
+            }
             let owner = self.semantic.node(input.owner())?;
             if owner.receipt.semantic_surface() != child.receipt.semantic_surface()
                 || owner.component_id.as_ref() != Some(owner_component)
@@ -45,6 +51,9 @@ impl UiMountedProjectionFrame {
             return true;
         };
         self.portal_overlays.iter().copied().any(|input| {
+            if input.surface() != node.receipt.semantic_surface() {
+                return false;
+            }
             if !matches!(
                 input.lifecycle(),
                 crate::runtime::portal::UiPortalLifecyclePosture::Open
@@ -85,6 +94,9 @@ impl UiMountedProjectionFrame {
         };
         let mut matched = None;
         for input in self.portal_overlays.iter().copied() {
+            if input.surface() != surface {
+                continue;
+            }
             let (owner, work) = self.semantic.nodes.get_with_probes(&input.owner());
             probes = probes
                 .checked_add(work)
@@ -102,16 +114,49 @@ impl UiMountedProjectionFrame {
                 .receipt_basis
                 .receipt_for(input.owner())
                 .ok_or(UiMountedProjectionDenial::PortalOverlayOwnerMissing)?;
-            matched = Some(
+            // Child occurrences share the owner's unpresented coordinate basis.
+            // A nested Portal's observed anchor has already moved with its parent.
+            let (source_surface, surface_work) = self.semantic.surface_for_with_probes(surface);
+            probes = probes
+                .checked_add(surface_work)
+                .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
+            let source_surface = source_surface
+                .filter(|surface| surface.binding == binding)
+                .ok_or(UiMountedProjectionDenial::PortalOverlayOwnerMissing)?;
+            let source_anchor = match super::surface_coordinates::viewport_allocation(
+                owner.occurrence_allocation, source_surface.coordinate_posture,
+            )? {
+                worth_ui_host_contract::UiMountedAllocationProjection::Known { bounds, .. }
+                | worth_ui_host_contract::UiMountedAllocationProjection::PortalAnchorObservation { bounds, .. } => bounds,
+                worth_ui_host_contract::UiMountedAllocationProjection::Omitted(_) => {
+                    return Err(UiMountedProjectionDenial::PortalOverlayOwnerMissing);
+                }
+            };
+            if source_anchor.posture() != worth_ui_host_contract::UiMountedGeometryPosture::Area {
+                return Err(UiMountedProjectionDenial::PortalOverlayCompletion(
+                    worth_ui_host_contract::UiMountedPortalOverlayCompletionDenial::NonAreaGeometry,
+                ));
+            }
+            if source_anchor.coordinate_space()
+                != worth_ui_host_contract::UiMountedCoordinateSpace::Viewport
+            {
+                return Err(UiMountedProjectionDenial::PortalOverlayCompletion(
+                    worth_ui_host_contract::UiMountedPortalOverlayCompletionDenial::CoordinateSpaceMismatch,
+                ));
+            }
+            matched = Some((
                 input
-                    .mechanic_for(self.frame, surface, binding, receipt)
+                    .mechanic_for(self.frame, binding, receipt)
                     .map_err(UiMountedProjectionDenial::PortalOverlayCompletion)?,
-            );
+                source_anchor,
+            ));
         }
         Ok((
             matched.map_or(
                 UiMountedPortalChildPresentation::Suppressed,
-                UiMountedPortalChildPresentation::Presented,
+                |(portal, source_anchor)| {
+                    UiMountedPortalChildPresentation::Presented(portal, source_anchor)
+                },
             ),
             probes,
             self.portal_overlays.len(),

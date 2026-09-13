@@ -27,7 +27,7 @@ pub(super) fn session_with_declarations(
         crate::evidence::measurement::projection::fact_test_support::display_field_projection_context(
             "appearance-pointer-mounting",
         );
-    let token = crate::capability::ThemeTokenId::new(support::LEGACY_STATIC_PAINT_TOKEN).unwrap();
+    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_BASE_TOKEN).unwrap();
     let component = |name| {
         let allocation = crate::capability::ComponentAllocationMeasurementContract::viewport_region(
             crate::capability::ComponentViewportRegion::new(
@@ -44,7 +44,7 @@ pub(super) fn session_with_declarations(
                     .unwrap(),
             ),
         );
-        support::static_paint_component_with_allocation(name, token.clone(), allocation)
+        support::appearance_component_with_allocation(name, token.clone(), allocation)
             .with_surface_paint_order(65_536)
             .with_appearance_aspect_contract(role.aspect_contract().clone())
             .unwrap()
@@ -66,6 +66,8 @@ pub(super) fn session_with_declarations(
         .register_mosaic_region_kind(source_backed_package_region())
         .register_mosaic_sizing_contract(source_backed_package_sizing())
         .register_appearance_role(role.clone())
+        .unwrap()
+        .register_appearance_role(successor_role(role))
         .unwrap()
         .register_appearance_theme_bundle(test_support::theme_bundle())
         .unwrap()
@@ -139,6 +141,17 @@ pub(super) fn role() -> UiAppearanceRoleDeclaration {
             UiAppearanceAspect::Background,
             table.compile(UiAppearanceAspect::Background).unwrap(),
         )],
+    )
+    .unwrap()
+}
+
+pub(super) fn successor_role(role: &UiAppearanceRoleDeclaration) -> UiAppearanceRoleDeclaration {
+    UiAppearanceRoleDeclaration::admit(
+        UiAppearanceRoleIdentity::new("test.pointer-successor-background").unwrap(),
+        role.revision(),
+        role.applicability().clone(),
+        role.aspect_contract(),
+        role.partitions().iter().cloned(),
     )
     .unwrap()
 }

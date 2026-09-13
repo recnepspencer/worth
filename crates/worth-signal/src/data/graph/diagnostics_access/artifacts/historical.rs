@@ -170,6 +170,7 @@ impl SignalGraph {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(crate) fn restore_snapshot(
         &mut self,
         snapshot: &SignalSnapshotV1,

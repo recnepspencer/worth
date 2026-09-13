@@ -30,10 +30,9 @@ impl UiMountedProjectionFrameOwner {
             .iter()
             .map(|attempt| {
                 UiAppearanceProjectionAttempt::resolved(
-                    attempt
-                        .context()
-                        .clone()
-                        .with_clip_for_test(crate::mounting::UiMountedAppearanceClip::Suppressed),
+                    attempt.context().clone().with_clip_for_test(
+                        crate::mounting::projection::UiMountedAppearanceClip::Suppressed,
+                    ),
                     attempt.projection().unwrap().clone(),
                 )
             })
@@ -86,8 +85,7 @@ impl UiMountedProjectionFrameOwner {
                 .map(|attempt| attempt.context().mounted_instance())
                 .collect()
         );
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(removal)
-            .unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(removal).unwrap();
         assert_eq!(
             owner.appearance.membership_counts(),
             membership,
@@ -139,7 +137,7 @@ impl UiMountedProjectionFrameOwner {
             predecessors
         );
         assert_eq!(owner.appearance.membership_counts(), membership);
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(restored)
+        worth_ui_host_headless::translate_appearance_projection_for_certification(restored)
             .unwrap();
     }
 }

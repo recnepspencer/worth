@@ -7,6 +7,8 @@ use worth_ui_platform_pulse::product_world::{
     PlatformPulseCommandStory, PlatformPulseProductComponent, PlatformPulseQueryDenialStory,
 };
 
+mod intent_feedback;
+
 #[derive(Default)]
 pub(super) struct PlatformPulseProductStory {
     source: StoryCopy,
@@ -15,6 +17,11 @@ pub(super) struct PlatformPulseProductStory {
     query_denial: StoryCopy,
     service: StoryCopy,
     status: StoryCopy,
+    action: StoryCopy,
+    confirmation: StoryCopy,
+    portal: StoryCopy,
+    portal_cancel: StoryCopy,
+    portal_primary: StoryCopy,
 }
 
 #[derive(Clone)]

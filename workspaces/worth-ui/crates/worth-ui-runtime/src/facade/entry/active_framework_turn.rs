@@ -29,6 +29,7 @@ pub struct WorthUiActiveFrameworkTurnCompletion<'session> {
     pub(super) host_session: &'session crate::facade::WorthUiHostSessionAuthority,
     pub(super) host_exchange: &'session mut crate::host_exchange::WorthUiHostExchangeSessionState,
     pub(super) focus: Option<&'session mut crate::runtime::focus::UiFocusRuntimeState>,
+    pub(super) selection: Option<&'session mut crate::runtime::selection::UiSelectionRuntimeState>,
     pub(super) portal: Option<&'session mut crate::runtime::portal::UiPortalRuntimeState>,
     pub(super) overlay_composition_owners:
         &'session mut super::active_application_session::UiActiveOverlayCompositionOwners,
@@ -36,7 +37,11 @@ pub struct WorthUiActiveFrameworkTurnCompletion<'session> {
     pub(super) presentation:
         &'session mut crate::runtime::presentation_state::UiApplicationPresentationState,
     pub(super) appearance_owner_snapshot:
-        &'session Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+        &'session mut Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+    pub(super) intent_admission: &'session mut crate::runtime::intent::UiIntentAdmissionState,
+    pub(super) intent_application_facts:
+        &'session mut crate::runtime::intent::UiIntentApplicationFactState,
+    pub(super) mounted_owner_receipt_successions: &'session mut super::mounted_owner_receipt_succession::UiMountedOwnerReceiptSuccessionCoordinator,
     pub(super) pointer_affordance_snapshot:
         &'session Option<crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
     pub(super) appearance_inspection:
@@ -63,6 +68,7 @@ pub struct WorthUiActiveFrameworkTurnExecution<'session> {
     pub(super) host_session: &'session crate::facade::WorthUiHostSessionAuthority,
     pub(super) host_exchange: &'session mut crate::host_exchange::WorthUiHostExchangeSessionState,
     pub(super) focus: Option<&'session mut crate::runtime::focus::UiFocusRuntimeState>,
+    pub(super) selection: Option<&'session mut crate::runtime::selection::UiSelectionRuntimeState>,
     pub(super) portal: Option<&'session mut crate::runtime::portal::UiPortalRuntimeState>,
     pub(super) overlay_composition_owners:
         &'session mut super::active_application_session::UiActiveOverlayCompositionOwners,
@@ -70,7 +76,11 @@ pub struct WorthUiActiveFrameworkTurnExecution<'session> {
     pub(super) presentation:
         &'session mut crate::runtime::presentation_state::UiApplicationPresentationState,
     pub(super) appearance_owner_snapshot:
-        &'session Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+        &'session mut Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+    pub(super) intent_admission: &'session mut crate::runtime::intent::UiIntentAdmissionState,
+    pub(super) intent_application_facts:
+        &'session mut crate::runtime::intent::UiIntentApplicationFactState,
+    pub(super) mounted_owner_receipt_successions: &'session mut super::mounted_owner_receipt_succession::UiMountedOwnerReceiptSuccessionCoordinator,
     pub(super) pointer_affordance_snapshot:
         &'session Option<crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
     pub(super) appearance_inspection:
@@ -112,11 +122,15 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             host_session,
             host_exchange,
             focus,
+            selection,
             portal,
             overlay_composition_owners,
             interaction,
             presentation,
             appearance_owner_snapshot,
+            intent_admission,
+            intent_application_facts,
+            mounted_owner_receipt_successions,
             pointer_affordance_snapshot,
             appearance_inspection,
             overlay_appearance,
@@ -140,11 +154,15 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 host_session,
                 host_exchange,
                 focus,
+                selection,
                 portal,
                 overlay_composition_owners,
                 interaction,
                 presentation,
                 appearance_owner_snapshot,
+                intent_admission,
+                intent_application_facts,
+                mounted_owner_receipt_successions,
                 pointer_affordance_snapshot,
                 appearance_inspection,
                 overlay_appearance,
@@ -169,11 +187,15 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 host_session,
                 host_exchange,
                 focus,
+                selection,
                 portal,
                 overlay_composition_owners,
                 interaction,
                 presentation,
                 appearance_owner_snapshot,
+                intent_admission,
+                intent_application_facts,
+                mounted_owner_receipt_successions,
                 pointer_affordance_snapshot,
                 appearance_inspection,
                 overlay_appearance,

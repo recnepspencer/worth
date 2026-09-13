@@ -1,4 +1,12 @@
 impl super::WorthUiActiveApplicationSession {
+    /// Completed sampling and hit-index work for the last accepted Motion tick.
+    /// Rejection and pending physical work preserve the prior accepted report.
+    pub fn last_motion_sampling_cost(
+        &self,
+    ) -> Option<crate::facade::mounted::UiPresentationMotionSamplingCost> {
+        self.mounted.last_motion_sampling_cost()
+    }
+
     pub(in crate::facade::entry) fn install_portal_exit_retention(
         &mut self,
         retention: Option<(
@@ -126,12 +134,23 @@ impl super::WorthUiActiveApplicationSession {
         if let crate::mounting::UiMountedMotionSampleSettlement::Committed(mut sampling) =
             settlement
         {
+            if let (Some(presented), Some(portal)) =
+                (sampling.presented_surface(), self.portal.as_mut())
+            {
+                portal.rebind_presented_motion_presentation(
+                    presented.semantic_surface(),
+                    presented.presentation(),
+                );
+            }
             if let Some(transition) = sampling.take_hit_transition() {
                 self.interaction
                     .observe_presented_hit_transition(&transition, &self.mounted);
             }
             for terminal in sampling.terminals().iter().copied() {
                 self.settle_motion_terminal_request(terminal);
+            }
+            if sampling.presented_surface().is_some() {
+                self.refresh_motion_appearance_owner_receipt_sources();
             }
         }
     }

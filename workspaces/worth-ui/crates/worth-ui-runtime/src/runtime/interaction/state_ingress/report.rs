@@ -9,6 +9,7 @@ use super::super::UiInteractionRuntimeState;
 use super::{draft_phase, emission, gesture_phase, pointer_admission, presence_phase};
 
 pub(super) struct UiInteractionReportOutcome {
+    pub(super) targeting_work: crate::mounting::UiHitTestSpatialWork,
     transitions: Vec<UiInteractionTransition>,
     ignored: bool,
     pointer_presence_transition: Option<UiPointerPresenceTargetTransition>,
@@ -40,6 +41,7 @@ pub(super) fn process(
     mounted: &crate::mounting::WorthUiMountedSessionState,
     generation: &WorthUiActiveApplicationGenerationIdentity,
 ) -> UiInteractionReportOutcome {
+    let mut targeting_work = Default::default();
     let mut admission = pointer_admission::UiPointerAdmission::from_report(report);
     let pointer_presence_transition = if admission.denied() {
         None
@@ -51,6 +53,7 @@ pub(super) fn process(
             report,
             mounted,
             generation,
+            &mut targeting_work,
         ) {
             Ok(transition) => transition,
             Err(denial) => {
@@ -66,6 +69,7 @@ pub(super) fn process(
         report,
         admission.kind(),
         mounted,
+        &mut targeting_work,
     );
     let draft = draft_phase::process(
         &mut state.draft,
@@ -82,6 +86,7 @@ pub(super) fn process(
     let mut transitions = emission::emit_pointer(state, pointer, core, generation);
     transitions.extend(emission::emit_draft(state, draft));
     UiInteractionReportOutcome {
+        targeting_work,
         transitions,
         ignored,
         pointer_presence_transition,

@@ -21,8 +21,18 @@ impl FilesystemApplicationLifecycleScenario {
 
     pub(super) fn platform_pulse_source_text_with_color(color_token: &str) -> String {
         format!(
-            "component {PLATFORM_PULSE_BACKGROUND_COMPONENT} {{}}\n\
-             component {PLATFORM_PULSE_IDENTITY_TARGET_COMPONENT} {{}}\n\
+            "appearance role cert.platform_pulse.background applies_to {PLATFORM_PULSE_BACKGROUND_COMPONENT} {{\n\
+               background use token({PLATFORM_PULSE_FILL_TOKEN})\n\
+             }}\n\
+             appearance role cert.platform_pulse.identity_target applies_to {PLATFORM_PULSE_IDENTITY_TARGET_COMPONENT} {{\n\
+               background use token({PLATFORM_PULSE_IDENTITY_TARGET_FILL_TOKEN})\n\
+             }}\n\
+             component {PLATFORM_PULSE_BACKGROUND_COMPONENT} {{\n\
+               appearance {{ role cert.platform_pulse.background }}\n\
+             }}\n\
+             component {PLATFORM_PULSE_IDENTITY_TARGET_COMPONENT} {{\n\
+               appearance {{ role cert.platform_pulse.identity_target }}\n\
+             }}\n\
              surface {PLATFORM_PULSE_SURFACE} {{}}\n\
              token {PLATFORM_PULSE_FILL_TOKEN} = \"{color_token}\";\n\
              token {PLATFORM_PULSE_IDENTITY_TARGET_FILL_TOKEN} = \"{PLATFORM_PULSE_YELLOW_TOKEN}\";\n"

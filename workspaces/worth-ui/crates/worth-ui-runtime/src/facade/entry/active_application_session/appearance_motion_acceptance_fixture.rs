@@ -8,15 +8,27 @@ pub(super) fn mounted() -> (
     UiSemanticSurfaceIdentity,
     UiMountedPaintCommandIdentity,
 ) {
-    let role = appearance::role();
+    let role = appearance::foreground_role();
     let (mut session, host) = appearance::session_with_motion(&role);
     let (surface, _) = super::super::super::mounting_fixture::mount(&mut session, 1_000);
-    appearance::close_source_with_motion(&mut session, &role, "motion-acceptance-initial");
+    session
+        .admit_application_semantic_text(&[
+            crate::native_platform::UiNativeComponentSemanticTextChange::new(
+                format!(
+                    "component:{}",
+                    crate::runtime::tests::appearance_component_session_test_support::
+                        APPEARANCE_NODE_A
+                ),
+                "AB",
+            )
+            .unwrap(),
+        ])
+        .unwrap();
+    appearance::close_source(&mut session, &role, "motion-acceptance-initial");
     crate::facade::entry::mounted_occurrence_geometry_test_support::refresh_nonoverlapping_surface_geometry(
         &mut session,
         surface,
     );
-    session.advance_mounted_identity_frame().unwrap();
     let frame = session
         .prepare_mounted_frame_with_application_presentation(
             crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),

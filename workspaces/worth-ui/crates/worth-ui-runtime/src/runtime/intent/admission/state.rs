@@ -1,3 +1,6 @@
+mod application_rebind;
+pub(crate) use application_rebind::UiPreparedIntentAdmissionRebind;
+
 use super::standing_owner::UiIntentOperabilityStandingOwner;
 use super::{
     UiAdmittedIntent, UiCurrentIntentAdmissionCandidate, UiIntentAdmissionCancellationReason,
@@ -21,6 +24,36 @@ struct UiIntentAdmissionCounters {
 }
 
 impl UiIntentAdmissionState {
+    pub(crate) fn prepare_operability_receipt_succession(
+        &self,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        successor: &crate::mounting::UiMountedNodeReceiptBasis,
+    ) -> super::UiPreparedIntentOperabilityReceiptSuccession {
+        let successor = match self.standing_owner.as_ref() {
+            Some(owner) => Some(owner.prepare_receipt_succession(mounted, successor)),
+            None => None,
+        };
+        super::UiPreparedIntentOperabilityReceiptSuccession {
+            predecessor: self.operability_standing_snapshot(),
+            successor,
+        }
+    }
+
+    pub(crate) fn admits_operability_receipt_succession(
+        &self,
+        prepared: &super::UiPreparedIntentOperabilityReceiptSuccession,
+    ) -> bool {
+        self.operability_standing_snapshot() == prepared.predecessor
+    }
+
+    pub(crate) fn commit_operability_receipt_succession(
+        &mut self,
+        prepared: super::UiPreparedIntentOperabilityReceiptSuccession,
+    ) {
+        assert!(self.admits_operability_receipt_succession(&prepared));
+        self.standing_owner = prepared.successor;
+    }
+
     pub(crate) fn new(operability_appearance_enabled: bool) -> Self {
         Self {
             lineage: super::super::attempt_lineage::UiIntentAttemptLineageState::new(),
@@ -126,6 +159,18 @@ impl UiIntentAdmissionState {
             owner.retire_binding(binding);
         }
         self.record_lifecycle_cancellation(execution.cancel_binding(binding))
+    }
+
+    pub(crate) fn rebind_surface(
+        &mut self,
+        execution: &mut crate::runtime::intent_execution::UiIntentExecutionState,
+        predecessor: worth_ui_host_contract::UiSurfaceBindingGeneration,
+        successor: worth_ui_host_contract::UiSurfaceBindingGeneration,
+    ) -> usize {
+        if let Some(owner) = self.standing_owner.as_mut() {
+            owner.rebind_surface(predecessor, successor);
+        }
+        self.record_lifecycle_cancellation(execution.cancel_binding(predecessor))
     }
 
     pub(crate) fn cancel_instance(

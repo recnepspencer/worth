@@ -40,7 +40,6 @@ pub(crate) enum UiMountedHostMeasurementSettlementStop {
     PublicationLease(crate::mounting::UiMountedPublicationLeaseDenial),
     Evidence(Box<crate::facade::host::UiHostMeasurementEvidenceDenial>),
     Transition(Box<UiMountedHostMeasurementTransitionDenial>),
-    OccurrenceGeometry(crate::mounting::UiMountedOccurrenceGeometryDenial),
 }
 
 impl<'session> From<UiMountedHostMeasurementSettlementStop>
@@ -56,9 +55,6 @@ impl<'session> From<UiMountedHostMeasurementSettlementStop>
             }
             UiMountedHostMeasurementSettlementStop::Transition(denial) => {
                 Self::HostMeasurementTransition(denial)
-            }
-            UiMountedHostMeasurementSettlementStop::OccurrenceGeometry(denial) => {
-                Self::OccurrenceGeometry(denial)
             }
         }
     }
@@ -114,29 +110,31 @@ impl WorthUiActiveApplicationSession {
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
         })?;
-        let mut frame = execution
+        let frame = execution
             .prepare_mounted_frame_with_content_internal(
                 request,
-                projection.content(),
-                projection.theme_values(),
+                crate::mounting::UiMountedSemanticContentInput::empty(),
+                projection,
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
-        frame.set_application_text_publication(projection.text_publication(), execution.mounted);
+        let owner_receipts = execution.prepare_mounted_owner_receipts(&frame);
         let transition = execution.present_prepared_frame_with_appearance(frame, deadline, now);
-        Ok(finish_mounted_transition(
-            execution.mounted,
-            execution.focus,
-            execution.portal,
-            execution.interaction,
+        let outcome = finish_mounted_transition(
+            &mut *execution.mounted,
+            execution.focus.as_deref_mut(),
+            execution.portal.as_deref_mut(),
+            &mut *execution.interaction,
             execution.host_session,
             execution.application_session_identity,
             &execution.generation_identity,
-            execution.host_exchange,
+            &mut *execution.host_exchange,
             transition,
-            Some(execution.appearance_inspection),
-            Some(execution.presentation),
-            Some(execution.overlay_composition_owners),
-        ))
+            Some(&mut *execution.appearance_inspection),
+            Some(&mut *execution.presentation),
+            Some(&mut *execution.overlay_composition_owners),
+        );
+        execution.settle_new_mounted_owner_receipts(owner_receipts, &outcome);
+        Ok(outcome)
     }
 
     pub(crate) fn execute_mounted_rebound_frame_with_application_presentation(
@@ -158,30 +156,32 @@ impl WorthUiActiveApplicationSession {
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
         })?;
-        let mut frame = execution
+        let frame = execution
             .prepare_mounted_reconciliation_frame_with_content_internal(
                 request,
-                projection.content(),
-                projection.theme_values(),
+                crate::mounting::UiMountedSemanticContentInput::empty(),
+                projection,
                 replacements,
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
-        frame.set_application_text_publication(projection.text_publication(), execution.mounted);
+        let owner_receipts = execution.prepare_mounted_owner_receipts(&frame);
         let transition = execution.present_prepared_frame_with_appearance(frame, deadline, now);
-        Ok(finish_mounted_transition(
-            execution.mounted,
-            execution.focus,
-            execution.portal,
-            execution.interaction,
+        let outcome = finish_mounted_transition(
+            &mut *execution.mounted,
+            execution.focus.as_deref_mut(),
+            execution.portal.as_deref_mut(),
+            &mut *execution.interaction,
             execution.host_session,
             execution.application_session_identity,
             &execution.generation_identity,
-            execution.host_exchange,
+            &mut *execution.host_exchange,
             transition,
-            Some(execution.appearance_inspection),
-            Some(execution.presentation),
-            Some(execution.overlay_composition_owners),
-        ))
+            Some(&mut *execution.appearance_inspection),
+            Some(&mut *execution.presentation),
+            Some(&mut *execution.overlay_composition_owners),
+        );
+        execution.settle_new_mounted_owner_receipts(owner_receipts, &outcome);
+        Ok(outcome)
     }
 }
 

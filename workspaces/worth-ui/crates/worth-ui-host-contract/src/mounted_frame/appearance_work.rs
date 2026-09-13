@@ -84,6 +84,19 @@ impl UiMountedAppearancePresentationWork {
         &self.fragments
     }
 
+    /// Only the surface overlay fragment carries the issued stack update.
+    /// Its absence preserves retained order on incremental presentation; an
+    /// explicit empty update removes that order.
+    pub fn overlay_order_update(&self) -> Option<&crate::UiMountedOverlayOrderMechanic> {
+        self.fragments.iter().find_map(|fragment| {
+            matches!(
+                fragment.identity(),
+                crate::UiUnpublishedAppearanceFragmentIdentity::SurfaceOverlay(_)
+            )
+            .then(|| fragment.work().successor().overlay_order())
+        })
+    }
+
     pub fn sample_overrides(&self) -> &[crate::UiMountedPresentationSampleChange] {
         &self.sample_overrides
     }

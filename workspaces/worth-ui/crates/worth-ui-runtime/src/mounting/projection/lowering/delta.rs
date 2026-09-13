@@ -42,7 +42,7 @@ pub(super) fn build(
     application.apply_retired(&scope)?;
     application.apply_changed(&input, &scope)?;
     let changed_binding_count = application.apply_surface_changes(&input, &scope)?;
-    let replaced_order_rows = application.replace_order_if_needed(&input);
+    let replaced_order_rows = application.replace_order_if_needed(&input)?;
     application
         .finish(&input, &scope, changed_binding_count, replaced_order_rows)
         .map(Some)
@@ -54,7 +54,9 @@ impl UiMountedDeltaScope {
     ) -> Result<Self, UiMountedProjectionDenial> {
         let allocation_affected = input
             .state
-            .try_projection_instances_for_graph_nodes(input.allocation_delta.changed_graph_nodes())
+            .try_projection_instances_for_graph_nodes(
+                input.allocation_delta.changed_projection_graph_keys(),
+            )
             .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
         let content_graph_nodes = input
             .lowering
@@ -65,14 +67,9 @@ impl UiMountedDeltaScope {
             .state
             .try_projection_instances_for_graph_nodes(&content_graph_nodes)
             .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
-        let theme_changed = input.lowering.theme_values.has_theme_changes()
-            && !input.appearance_selection.selected_instances().is_empty();
         let mut changed = input.changes.changed_instances().collect::<Vec<_>>();
         changed.extend_from_slice(allocation_affected.instances());
         changed.extend_from_slice(content_affected.instances());
-        if theme_changed {
-            changed.extend_from_slice(input.appearance_selection.selected_instances());
-        }
         changed.sort();
         changed.dedup();
         let initial_index_entries = input
@@ -90,10 +87,12 @@ impl UiMountedDeltaScope {
             declared_semantic_changed: input.changes.changed_instances().next().is_some()
                 || input.changes.retired_instances().next().is_some()
                 || input.changes.order_changed()
-                || !input.lowering.semantic_content.is_empty()
-                || theme_changed,
+                || !input.lowering.semantic_content.is_empty(),
             allocation_delta_observed: input.allocation_delta.journal_entries_touched() > 0
-                || !input.allocation_delta.changed_graph_nodes().is_empty(),
+                || !input
+                    .allocation_delta
+                    .changed_projection_graph_keys()
+                    .is_empty(),
             initial_index_entries,
         })
     }
@@ -150,12 +149,24 @@ impl UiMountedDeltaApplication {
         scope: &UiMountedDeltaScope,
     ) -> Result<(), UiMountedProjectionDenial> {
         for instance in &scope.changed {
-            match input.state.projection_instance(*instance).filter(|view| {
-                input
-                    .requested_surfaces
-                    .contains(&view.basis().semantic_surface_identity())
-            }) {
-                Some(view) => self.replace_changed_node(input, scope, &view)?,
+            match input.state.projection_instance(*instance) {
+                Some(view)
+                    if input
+                        .requested_surfaces
+                        .contains(&view.basis().semantic_surface_identity()) =>
+                {
+                    self.replace_changed_node(input, scope, &view)?;
+                }
+                Some(view) => {
+                    // Graph-wide inputs may advance while this surface stays
+                    // physically unchanged. Preserve its predecessor rows, but
+                    // do not reuse their derived coverage after that advance.
+                    self.index_entries = add_mutation_work(
+                        self.index_entries,
+                        self.semantic
+                            .invalidate_surface_coverage(view.basis().semantic_surface_identity()),
+                    )?;
+                }
                 None => {
                     self.index_entries = add_mutation_work(
                         self.index_entries,
@@ -181,6 +192,7 @@ impl UiMountedDeltaApplication {
             .index_entries
             .checked_add(2)
             .and_then(|count| count.checked_add(draft.clip_ancestry_entries))
+            .and_then(|count| count.checked_add(draft.text_source_lookups))
             .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
         let node = draft.materialize();
         self.index_entries =
@@ -230,6 +242,7 @@ impl UiMountedDeltaApplication {
         self.index_entries = add_mutation_work(
             self.index_entries,
             self.semantic.replace_surface(UiMountedProjectionSurface {
+                coordinate_posture: binding.profile().coordinate_posture(),
                 surface,
                 binding: binding.binding_generation(),
                 audience,
@@ -241,9 +254,9 @@ impl UiMountedDeltaApplication {
     fn replace_order_if_needed(
         &mut self,
         input: &UiMountedDeltaProjectionInput<'_, '_, '_>,
-    ) -> usize {
+    ) -> Result<usize, UiMountedProjectionDenial> {
         if !input.changes.order_changed() {
-            return 0;
+            return Ok(0);
         }
         if let Some(order) = input
             .state
@@ -251,12 +264,15 @@ impl UiMountedDeltaApplication {
         {
             let declared_rows = usize::from(input.changes.order_changed()) * order.len();
             self.semantic.replace_order_snapshot(order);
-            return declared_rows;
+            return Ok(declared_rows);
         }
         let order = input.state.projection_order(input.requested_surfaces);
         let copied_rows = order.len();
-        self.semantic.replace_order(order);
-        copied_rows
+        self.index_entries = add_mutation_work(
+            self.index_entries,
+            self.semantic.replace_surface_order(order),
+        )?;
+        Ok(copied_rows)
     }
 
     fn finish(

@@ -13,6 +13,8 @@ mod query;
 mod query_projection;
 mod schema_transition;
 mod terminal_projection;
+mod theme;
+pub use theme::{PlatformPulseThemeSettlementPosture, PlatformPulseThemeSwitchSettled};
 mod visual;
 mod visual_projection;
 #[cfg(test)]

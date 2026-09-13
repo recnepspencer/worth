@@ -33,7 +33,21 @@ pub(crate) fn adjudicate_default_wrapping_text(
 pub(crate) fn adjudicate_resized_wrapping_text(
     capture: &NativeClientPixelCapture,
 ) -> Result<(), PlatformPulseWrappingTextFailure> {
-    adjudicate_wrapping_text(capture, RESIZED_LOGICAL_EXTENT, contracts(864))
+    adjudicate_open_wrapping_text(capture, RESIZED_LOGICAL_EXTENT, contracts(864))
+}
+
+fn adjudicate_open_wrapping_text(
+    capture: &NativeClientPixelCapture,
+    logical_extent: [u32; 2],
+    mut expected: [WrappingTextContract; 3],
+) -> Result<(), PlatformPulseWrappingTextFailure> {
+    // This checkpoint has one authored black, alpha-128 modal Backdrop.
+    // Expected sRGB backgrounds after linear-light compositing; text guards
+    // remain unchanged and must still distinguish ink from the dimmed surface.
+    expected[0].background = [9, 13, 17];
+    expected[1].background = [9, 13, 17];
+    expected[2].background = [14, 18, 24];
+    adjudicate_wrapping_text(capture, logical_extent, expected)
 }
 
 fn adjudicate_wrapping_text(

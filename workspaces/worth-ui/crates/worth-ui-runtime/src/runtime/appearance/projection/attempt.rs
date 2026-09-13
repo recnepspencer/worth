@@ -1,14 +1,7 @@
 #[derive(Clone)]
 pub(crate) struct UiAppearanceAttemptContext {
     target: super::super::state::UiAppearanceTarget,
-    frame: worth_ui_host_contract::UiMountedFrameIdentity,
-    issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
-    plan_digest: u64,
-    allocation: worth_ui_host_contract::UiMountedAllocationProjection,
-    appearance_clip: crate::mounting::UiMountedAppearanceClip,
-    surface_paint_order: Option<u32>,
-    geometry_input: Option<crate::mounting::UiMountedAppearanceGeometryInput>,
-    text_foreground_spans: Box<[crate::mounting::UiMountedAppearanceTextSpanInput]>,
+    mounted: crate::mounting::UiMountedAppearanceNodeInputContext,
     generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     role: Option<worth_ui_dsl::UiAppearanceRoleDeclaration>,
     theme_identity: Option<Box<str>>,
@@ -29,34 +22,20 @@ impl UiAppearanceAttemptContext {
         mut self,
         clip: crate::mounting::UiMountedAppearanceClip,
     ) -> Self {
-        self.appearance_clip = clip;
+        self.mounted = self.mounted.with_clip_for_test(clip);
         self
     }
 
     pub(crate) fn new(
         target: super::super::state::UiAppearanceTarget,
-        frame: worth_ui_host_contract::UiMountedFrameIdentity,
-        issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
-        plan_digest: u64,
-        allocation: worth_ui_host_contract::UiMountedAllocationProjection,
-        appearance_clip: crate::mounting::UiMountedAppearanceClip,
-        surface_paint_order: Option<u32>,
-        geometry_input: Option<crate::mounting::UiMountedAppearanceGeometryInput>,
-        text_foreground_spans: Box<[crate::mounting::UiMountedAppearanceTextSpanInput]>,
+        mounted: crate::mounting::UiMountedAppearanceNodeInputContext,
         generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
         consumers_selected: u32,
         owner_evidence: u64,
     ) -> Self {
         Self {
             target,
-            frame,
-            issuer,
-            plan_digest,
-            allocation,
-            appearance_clip,
-            surface_paint_order,
-            geometry_input,
-            text_foreground_spans,
+            mounted,
             generation,
             role: None,
             theme_identity: None,
@@ -119,7 +98,7 @@ impl UiAppearanceAttemptContext {
     }
 
     pub(crate) const fn frame(&self) -> worth_ui_host_contract::UiMountedFrameIdentity {
-        self.frame
+        self.mounted.frame
     }
 
     pub(crate) const fn semantic_surface(
@@ -149,7 +128,7 @@ impl UiAppearanceAttemptContext {
     }
 
     pub(crate) const fn issuer(&self) -> worth_ui_host_contract::UiMountedNodeReceiptIssuer {
-        self.issuer
+        self.mounted.issuer()
     }
 
     pub(crate) fn lower_resolved(
@@ -164,28 +143,8 @@ impl UiAppearanceAttemptContext {
         crate::mounting::UiMountedAppearanceLoweringInput,
         crate::mounting::UiMountedAppearanceLoweringDenial,
     > {
-        let input = crate::mounting::UiMountedAppearanceNodeInput::from_resolved_projection(
-            crate::mounting::UiResolvedAppearanceNodeSource {
-                issuer: self.issuer,
-                semantic_surface: self.semantic_surface(),
-                node_receipt: self.node_receipt(),
-                graph_node: self.graph_node(),
-                plan_digest: self.plan_digest,
-                allocation: self.allocation,
-                clip: self.appearance_clip,
-                surface_paint_order: self.surface_paint_order,
-                geometry_input: self.geometry_input.clone(),
-                text_foreground_spans: &self.text_foreground_spans,
-                projection,
-                outline_fringe,
-            },
-        )?;
-        Ok(crate::mounting::UiMountedAppearanceLoweringInput::for_node(
-            self.frame,
-            self.semantic_surface(),
-            presentation,
-            input,
-        ))
+        self.mounted
+            .lower_resolved_projection(projection, presentation, outline_fringe)
     }
 
     pub(crate) const fn generation(
@@ -204,10 +163,6 @@ impl UiAppearanceAttemptContext {
 
     pub(crate) const fn theme_revision(&self) -> u64 {
         self.theme_revision
-    }
-
-    pub(crate) const fn catalog_revision(&self) -> u64 {
-        self.catalog_revision
     }
 
     pub(crate) const fn state(&self) -> Option<&super::super::state::UiAppearanceStateVector> {
@@ -232,12 +187,6 @@ impl UiAppearanceAttemptContext {
 
     pub(crate) const fn owner_evidence(&self) -> u64 {
         self.owner_evidence
-    }
-
-    pub(crate) fn invalidation_batch(
-        &self,
-    ) -> Option<&super::super::invalidation::UiAppearanceInvalidationBatch> {
-        self.invalidation_batch.as_ref()
     }
 }
 

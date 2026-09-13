@@ -133,7 +133,7 @@ impl UiAllocationCatalogLedgerTransition {
         }
         candidate_graph_nodes.sort();
         candidate_graph_nodes.dedup();
-        let changed_graph_nodes = candidate_graph_nodes
+        let changed_projection_graph_keys = candidate_graph_nodes
             .into_iter()
             .filter(|graph_node| {
                 projection.projection_changed_since(
@@ -147,7 +147,7 @@ impl UiAllocationCatalogLedgerTransition {
         self.successor.mounted_projection_journal.record(
             self.predecessor.truth_revision.revision(),
             self.successor.truth_revision.revision(),
-            changed_graph_nodes,
+            changed_projection_graph_keys,
         );
     }
 }

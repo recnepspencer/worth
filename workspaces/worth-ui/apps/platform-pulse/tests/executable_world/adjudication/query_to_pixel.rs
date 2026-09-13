@@ -25,7 +25,7 @@ pub(crate) struct ExecutableQueryCurrentEvidence {
 
 #[derive(Debug)]
 pub(crate) enum ExecutableQueryCurrentFailure {
-    MissingIssue,
+    UnexpectedIssue(String),
     MissingPublication,
     WrongValue,
     WrongOwnerOrder {
@@ -43,7 +43,7 @@ pub(crate) enum ExecutableQueryCurrentFailure {
 impl fmt::Display for ExecutableQueryCurrentFailure {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::MissingIssue => formatter.write_str("missing Query current issue"),
+            Self::UnexpectedIssue(observed) => write!(formatter, "expected Query current issue, observed {observed}"),
             Self::MissingPublication => formatter.write_str("missing mounted Query publication"),
             Self::WrongValue => formatter.write_str("Query current differs from frozen world input"),
             Self::WrongOwnerOrder {
@@ -76,7 +76,11 @@ pub(crate) fn adjudicate_query_current(
     let published_sequence = published.sequence().value();
     let issued = match issued.outcome() {
         PlatformPulseLifecycleObservation::QueryProjectionIssued(evidence) => evidence.clone(),
-        _ => return Err(ExecutableQueryCurrentFailure::MissingIssue),
+        observed => {
+            return Err(ExecutableQueryCurrentFailure::UnexpectedIssue(format!(
+                "{observed:?}"
+            )))
+        }
     };
     let published = match published.outcome() {
         PlatformPulseLifecycleObservation::QueryProjectionPublished(evidence) => evidence.clone(),

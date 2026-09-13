@@ -83,6 +83,7 @@ fn node_input_for(
             UiAppearanceClip::new(0, 0, 90, 70).unwrap(),
         ),
         surface_paint_order: Some(0),
+        portal_group: None,
         radii,
         surface_border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
         surface_border_omissions: Box::new([]),
@@ -323,7 +324,10 @@ fn paint_change_is_mechanical_and_semantic_change_can_still_suppress_output() {
     assert_eq!(semantic_summary.semantic_facts_changed(), 2);
     assert!(!semantic_summary.mechanics_changed());
     assert!(semantic_summary.output_suppressed());
-    assert_eq!(ids.surface, second_surface(&sidecar));
+    assert_eq!(
+        ids.surface,
+        sidecar.current().unwrap().frame().semantic_surface()
+    );
 }
 
 #[test]
@@ -375,10 +379,6 @@ fn reconstruction_rebuilds_from_current_receipt_without_semantic_replay() {
             .node_receipt(),
         Some(successor_ids.receipt)
     );
-}
-
-fn second_surface(sidecar: &UiMountedAppearanceSidecar) -> UiSemanticSurfaceIdentity {
-    sidecar.current().unwrap().frame().semantic_surface()
 }
 
 fn assert_structural_appearance_work(

@@ -63,14 +63,19 @@ impl CompiledOwnerRegions {
 }
 
 pub(super) fn compiled_owner_regions<'index>(
-    application: &crate::runtime::session::WorthUiApplicationSessionState,
+    plan: &crate::runtime::WorthUiActiveExecutionPlan,
+    graph: crate::graph::UiGraphAuthority<'_>,
+    material: &crate::runtime::WorthUiAuthoredOverlayMaterial,
     index: &'index mut CompiledOwnerIndex,
     surface: worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity,
     owner: crate::graph::UiGraphNodeIdentity,
     plan_rows_visited: &mut usize,
 ) -> &'index CompiledOwnerRegions {
     index.entry(owner).or_insert_with(|| {
-        let (bindings, visited) = application.mounted_region_declarations(surface, owner);
+        let (bindings, visited) =
+            crate::runtime::session::WorthUiApplicationSessionState::region_declarations_from_plan(
+                plan, graph, material, surface, owner,
+            );
         *plan_rows_visited += visited;
         CompiledOwnerRegions::new(bindings)
     })

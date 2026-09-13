@@ -59,12 +59,6 @@ impl UiGraphConsumedFactIndex {
             authored_declarations,
             &mut authored_by_declaration,
         );
-        add_static_paint_token_consumers(
-            snapshot,
-            capabilities,
-            authored_declarations,
-            &mut authored_by_declaration,
-        );
         appearance_slot_relation::add_role_slot_consumers(
             snapshot,
             capabilities,
@@ -103,20 +97,6 @@ impl UiGraphConsumedFactIndex {
         self.appearance_consumers.has_consumers()
     }
 
-    pub(crate) fn appearance_state_consumer_nodes(
-        &self,
-        axis: worth_ui_dsl::UiAppearanceStateAxis,
-    ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
-        self.appearance_consumers.state_consumer_nodes(axis).into()
-    }
-
-    pub(crate) fn appearance_role_consumer_nodes(
-        &self,
-        role: &worth_ui_dsl::UiAppearanceRoleIdentity,
-    ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
-        self.appearance_consumers.role_consumers(role).into()
-    }
-
     pub(crate) fn appearance_attached_consumer_nodes(
         &self,
     ) -> Box<[crate::graph::UiGraphNodeIdentity]> {
@@ -135,6 +115,22 @@ impl UiGraphConsumedFactIndex {
 
     pub(crate) const fn basis(&self) -> UiGraphFactIndexBasis {
         self.basis
+    }
+
+    pub(crate) fn unique_authored_graph_node(
+        &self,
+        authored_identity: &str,
+    ) -> Option<crate::graph::UiGraphNodeIdentity> {
+        let mut nodes = self
+            .authored_by_declaration
+            .get(authored_identity)?
+            .iter()
+            .filter_map(|entry| match entry.consumer() {
+                UiGraphFactConsumerIdentity::GraphNode(node) => Some(node),
+                UiGraphFactConsumerIdentity::MountEligibilitySlot(_) => None,
+            });
+        let node = nodes.next()?;
+        nodes.all(|candidate| candidate == node).then_some(node)
     }
 
     pub(crate) fn lookup_retained(
@@ -225,44 +221,7 @@ fn query_projection_consumers(
         .collect()
 }
 
-fn add_static_paint_token_consumers(
-    snapshot: &UiGraphSnapshot,
-    capabilities: &CapabilitySnapshot,
-    authored_declarations: &UiAuthoredDeclarationLookup,
-    by_declaration: &mut BTreeMap<Box<str>, Vec<UiGraphFactIndexEntry>>,
-) {
-    for node in snapshot.nodes() {
-        let Some(component) =
-            component_capability_for_node(node, capabilities, authored_declarations)
-        else {
-            continue;
-        };
-        let Some(static_paint) = component.static_paint_contract() else {
-            continue;
-        };
-        let token_capability_identity = static_paint.theme_token().as_str();
-        let token_identity: Box<str> = authored_declarations
-            .theme_token_declaration_identity(token_capability_identity)
-            .unwrap_or(token_capability_identity)
-            .into();
-        let contract = UiConsumedFactContract::authored(token_identity.clone());
-        let affected_aspect =
-            UiAspectName::from_semantic_slice(UiAspectSemanticSlice::AppearanceBackground);
-        let entries = by_declaration.entry(token_identity).or_default();
-        push_component_consumer(
-            entries,
-            snapshot,
-            node,
-            contract,
-            UiGraphFactConsumptionRelation::static_paint(
-                token_capability_identity,
-                affected_aspect,
-            ),
-        );
-    }
-}
-
-pub(super) fn component_capability_for_node<'capability>(
+pub(crate) fn component_capability_for_node<'capability>(
     node: &crate::graph::UiGraphNode,
     capabilities: &'capability CapabilitySnapshot,
     authored_declarations: &UiAuthoredDeclarationLookup,

@@ -2,6 +2,60 @@ use super::*;
 use crate::UiMountedSemanticTextMechanic;
 
 #[test]
+fn nested_children_use_occurrence_origin_without_relabeling_the_observed_anchor() {
+    let mut input = crate::mounted_projection::semantic_text::tests::fixture();
+    let viewport = UiMountedCoordinateSpace::Viewport;
+    input.bounds = rectangle([576.0, 600.0, 160.0, 96.0], viewport);
+    input.clip_bounds = input.bounds;
+    input.origin_x = 576.0;
+    input.origin_y = 608.0;
+    let source_anchor = rectangle([552.0, 576.0, 232.0, 40.0], viewport);
+    let actual_anchor = rectangle([552.0, 248.0, 232.0, 40.0], viewport);
+    let mut placement = portal_input(
+        input.frame,
+        input.surface,
+        input.binding,
+        rectangle([552.0, 296.0, 280.0, 296.0], viewport),
+        rectangle([0.0, 0.0, 960.0, 600.0], viewport),
+    );
+    placement.anchor_bounds = actual_anchor;
+    let portal = UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(placement).unwrap();
+    let hit =
+        UiMountedHitTestMechanic::complete_from_runtime_mounting(UiMountedHitTestCompletionInput {
+            frame: input.frame,
+            surface: input.surface,
+            binding: input.binding,
+            mounted_instance: input.mounted_instance,
+            node_receipt: input.node_receipt,
+            bounds: input.bounds,
+            clip_bounds: input.clip_bounds,
+            order: UiMountedHitTestOrder::from_runtime_plan(9),
+        })
+        .unwrap();
+    let text = UiMountedSemanticTextMechanic::complete_from_runtime_mounting(input).unwrap();
+    let hit = hit
+        .presented_within_portal(portal, source_anchor)
+        .unwrap()
+        .unwrap();
+    let text = text
+        .presented_within_portal(portal, source_anchor)
+        .unwrap()
+        .unwrap();
+    let expected = rectangle([576.0, 320.0, 160.0, 96.0], viewport);
+    assert_eq!(
+        [
+            hit.bounds(),
+            text.bounds(),
+            hit.clip_bounds(),
+            text.clip_bounds()
+        ],
+        [expected; 4]
+    );
+    assert_eq!((text.origin_x(), text.origin_y()), (576.0, 328.0));
+    assert_eq!(portal.anchor_bounds(), actual_anchor);
+}
+
+#[test]
 fn portal_child_families_preserve_child_and_portal_clip_intersections() {
     // Literal expected rectangles are independent of the projection algorithm.
     // Text uses an inert qualified contract fixture: this proves preservation,
@@ -75,21 +129,6 @@ fn portal_child_families_preserve_child_and_portal_clip_intersections() {
             rectangle(portal_bounds, UiMountedCoordinateSpace::Viewport),
             rectangle(portal_clip, UiMountedCoordinateSpace::Viewport),
         );
-        let paint = UiMountedFilledRectMechanic::complete_from_runtime_mounting(
-            UiMountedFilledRectCompletionInput {
-                frame: input.frame,
-                surface: input.surface,
-                binding: input.binding,
-                mounted_instance: input.mounted_instance,
-                node_receipt: input.node_receipt,
-                allocation_basis: input.allocation_basis,
-                bounds: input.bounds,
-                clip_bounds: input.clip_bounds,
-                color: UiMountedRgba8::new(30, 40, 50, 255),
-                layer_semantic_order: input.layer_semantic_order,
-            },
-        )
-        .unwrap();
         let hit = UiMountedHitTestMechanic::complete_from_runtime_mounting(
             UiMountedHitTestCompletionInput {
                 frame: input.frame,
@@ -104,33 +143,23 @@ fn portal_child_families_preserve_child_and_portal_clip_intersections() {
         )
         .unwrap();
         let text = UiMountedSemanticTextMechanic::complete_from_runtime_mounting(input).unwrap();
-        let painted = paint.presented_within_portal(portal).unwrap();
-        let targeted = hit.presented_within_portal(portal).unwrap();
-        let written = text.presented_within_portal(portal).unwrap();
-        assert_eq!(painted.is_some(), expected.is_some());
+        let targeted = hit
+            .presented_within_portal(portal, portal.anchor_bounds())
+            .unwrap();
+        let written = text
+            .presented_within_portal(portal, portal.anchor_bounds())
+            .unwrap();
         assert_eq!(targeted.is_some(), expected.is_some());
         assert_eq!(written.is_some(), expected.is_some());
         if let Some(expected) = expected {
-            let (painted, targeted, written) =
-                (painted.unwrap(), targeted.unwrap(), written.unwrap());
+            let (targeted, written) = (targeted.unwrap(), written.unwrap());
             let bounds = rectangle(
                 [132.0, 232.0, 160.0, 96.0],
                 UiMountedCoordinateSpace::Viewport,
             );
             let clip = rectangle(expected, UiMountedCoordinateSpace::Viewport);
-            assert_eq!(
-                [painted.bounds(), targeted.bounds(), written.bounds()],
-                [bounds; 3]
-            );
-            assert_eq!(
-                [
-                    painted.clip_bounds(),
-                    targeted.clip_bounds(),
-                    written.clip_bounds()
-                ],
-                [clip; 3]
-            );
-            assert_eq!(painted.layer_semantic_order(), 2_008);
+            assert_eq!([targeted.bounds(), written.bounds()], [bounds; 2]);
+            assert_eq!([targeted.clip_bounds(), written.clip_bounds()], [clip; 2]);
             assert_eq!(targeted.order().rank(), 9);
             assert_text_preserved(&text, &written);
         }

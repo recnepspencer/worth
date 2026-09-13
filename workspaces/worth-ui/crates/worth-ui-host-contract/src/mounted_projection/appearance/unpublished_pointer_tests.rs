@@ -210,7 +210,13 @@ fn pointer_handoff_cannot_carry_overlay_order_changes() {
     );
     let new = pointer(&context, UiHostPointerIdentity::new(108), old.target());
     let old_identity = UiMountedAppearanceMechanic::Pointer(old).identity();
-    let valid = handoff(&context, &[old_identity.clone()], new, new.pointer()).unwrap();
+    let valid = handoff(
+        &context,
+        std::slice::from_ref(&old_identity),
+        new,
+        new.pointer(),
+    )
+    .unwrap();
     for order_in_predecessor in [true, false] {
         let participant = UiOverlayParticipantIdentity::Portal(old.target());
         let manifest = UiMountedAppearancePredecessorManifest::from_runtime_mounting(

@@ -4,6 +4,122 @@ appearance role platform.pulse.appearance.root applies_to platform.pulse.compone
 appearance role platform.pulse.appearance.brand applies_to platform.pulse.component.brand {
   foreground use token(theme.platform_pulse.principal_accent)
 }
+appearance role platform.pulse.appearance.runtime_badge applies_to platform.pulse.component.runtime_badge {
+  foreground use token(theme.platform_pulse.positive)
+}
+appearance role platform.pulse.appearance.evidence_title applies_to platform.pulse.component.evidence_title {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+appearance role platform.pulse.appearance.evidence_body applies_to platform.pulse.component.evidence_body {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+appearance role platform.pulse.appearance.source_signal_title applies_to platform.pulse.component.source_signal_title {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+appearance role platform.pulse.appearance.evidence_service_label applies_to platform.pulse.component.evidence_service_label {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+appearance role platform.pulse.appearance.evidence_service_body applies_to platform.pulse.component.evidence_service_body {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+appearance role platform.pulse.appearance.service_eyebrow applies_to platform.pulse.component.service_eyebrow {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+appearance role platform.pulse.appearance.service_title applies_to platform.pulse.component.service_title {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+appearance role platform.pulse.appearance.service_body applies_to platform.pulse.component.service_body {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+appearance role platform.pulse.appearance.action_label applies_to platform.pulse.component.action_label {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+appearance role platform.pulse.appearance.confirmation_label applies_to platform.pulse.component.confirmation_label {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+appearance role platform.pulse.appearance.portal_label applies_to platform.pulse.component.portal_label {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+appearance role platform.pulse.appearance.portal_title applies_to platform.pulse.component.portal_title {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+appearance role platform.pulse.appearance.portal_body applies_to platform.pulse.component.portal_body {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+appearance role platform.pulse.appearance.portal_cancel_label applies_to platform.pulse.component.portal_cancel_label {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+appearance role platform.pulse.appearance.portal_primary_label applies_to platform.pulse.component.portal_primary_label {
+  foreground use token(theme.platform_pulse.action_text)
+}
+appearance role platform.pulse.appearance.query_label applies_to platform.pulse.component.query_label {
+  foreground use token(theme.platform_pulse.secondary_text)
+}
+appearance role platform.pulse.appearance.projected_status applies_to platform.pulse.component.projected_status {
+  foreground use token(theme.platform_pulse.caution)
+}
+appearance role platform.pulse.appearance.native_label applies_to platform.pulse.component.native_label {
+  foreground use token(theme.platform_pulse.positive)
+}
+appearance role platform.pulse.appearance.native_body applies_to platform.pulse.component.native_body {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+appearance role platform.pulse.appearance.query_denial_label applies_to platform.pulse.component.query_denial_label {
+  foreground use token(theme.platform_pulse.caution)
+}
+appearance role platform.pulse.appearance.query_denial_body applies_to platform.pulse.component.query_denial_body {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+appearance role platform.pulse.appearance.status_text applies_to platform.pulse.component.status_text {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+appearance role platform.pulse.appearance.masthead_border applies_to platform.pulse.component.masthead_border {
+  background use token(theme.platform_pulse.structural_rule)
+}
+appearance role platform.pulse.appearance.evidence_border applies_to platform.pulse.component.evidence_border {
+  background use token(theme.platform_pulse.structural_rule)
+}
+appearance role platform.pulse.appearance.evidence_rail applies_to platform.pulse.component.evidence_rail {
+  background use token(theme.platform_pulse.raised_surface)
+}
+appearance role platform.pulse.appearance.source_signal_blue applies_to platform.pulse.component.source_signal_active {
+  background use token(theme.platform_pulse.blue)
+}
+appearance role platform.pulse.appearance.source_signal_green applies_to platform.pulse.component.source_signal_active {
+  background use token(theme.platform_pulse.green)
+}
+appearance role platform.pulse.appearance.service_stage applies_to platform.pulse.component.service_stage {
+  background use token(theme.platform_pulse.elevated_surface)
+  border use token(theme.platform_pulse.border.query_card)
+}
+appearance role platform.pulse.appearance.query_accent applies_to platform.pulse.component.query_accent {
+  background use token(theme.platform_pulse.principal_accent)
+}
+appearance role platform.pulse.appearance.identity_target applies_to platform.pulse.component.identity_target {
+  background use token(theme.platform_pulse.action_fill)
+}
+appearance role platform.pulse.appearance.portal_target applies_to platform.pulse.component.portal_target {
+    background use token(theme.platform_pulse.elevated_surface)
+  }
+appearance role platform.pulse.appearance.portal_accent applies_to platform.pulse.component.portal_accent {
+  background use token(theme.platform_pulse.principal_accent)
+}
+appearance role platform.pulse.appearance.portal_cancel_target applies_to platform.pulse.component.portal_cancel_target {
+  background use token(theme.platform_pulse.raised_surface)
+}
+appearance role platform.pulse.appearance.portal_primary_target applies_to platform.pulse.component.portal_primary_target {
+  background use token(theme.platform_pulse.action_fill)
+}
+appearance role platform.pulse.appearance.confirmation_target applies_to platform.pulse.component.confirmation_target {
+  background use token(theme.platform_pulse.elevated_surface)
+}
+appearance role platform.pulse.appearance.lower_shelf_divider applies_to platform.pulse.component.lower_shelf_divider {
+  background use token(theme.platform_pulse.structural_rule)
+}
+appearance role platform.pulse.appearance.native_card applies_to platform.pulse.component.native_card {
+  background use token(theme.platform_pulse.raised_surface)
+  border use token(theme.platform_pulse.border.query_card)
+}
 appearance role platform.pulse.appearance.query_card applies_to platform.pulse.component.query_card {
   background use token(theme.platform_pulse.raised_surface)
   border use token(theme.platform_pulse.border.query_card)
@@ -31,60 +147,132 @@ component platform.pulse.component.seed {
     }
   }
 }
-component platform.pulse.component.masthead_border {}
+component platform.pulse.component.masthead_border {
+  appearance { role platform.pulse.appearance.masthead_border }
+}
 component platform.pulse.component.brand {
   appearance { role platform.pulse.appearance.brand }
 }
-component platform.pulse.component.runtime_badge {}
-component platform.pulse.component.evidence_border {}
-component platform.pulse.component.evidence_rail {}
-component platform.pulse.component.evidence_title {}
-component platform.pulse.component.evidence_body {}
-component platform.pulse.component.source_signal_title {}
-component platform.pulse.component.source_signal_active {}
-component platform.pulse.component.evidence_service_label {}
-component platform.pulse.component.evidence_service_body {}
-component platform.pulse.component.service_stage {}
+component platform.pulse.component.runtime_badge {
+  appearance { role platform.pulse.appearance.runtime_badge }
+}
+component platform.pulse.component.evidence_border {
+  appearance { role platform.pulse.appearance.evidence_border }
+}
+component platform.pulse.component.evidence_rail {
+  appearance { role platform.pulse.appearance.evidence_rail }
+}
+component platform.pulse.component.evidence_title {
+  appearance { role platform.pulse.appearance.evidence_title }
+}
+component platform.pulse.component.evidence_body {
+  appearance { role platform.pulse.appearance.evidence_body }
+}
+component platform.pulse.component.source_signal_title {
+  appearance { role platform.pulse.appearance.source_signal_title }
+}
+component platform.pulse.component.source_signal_active {
+  appearance { role platform.pulse.appearance.source_signal_blue }
+}
+component platform.pulse.component.evidence_service_label {
+  appearance { role platform.pulse.appearance.evidence_service_label }
+}
+component platform.pulse.component.evidence_service_body {
+  appearance { role platform.pulse.appearance.evidence_service_body }
+}
+component platform.pulse.component.service_stage {
+  appearance { role platform.pulse.appearance.service_stage }
+  region platform.pulse.mosaic.region.service_tile {
+    sizing platform.pulse.mosaic.sizing.service_stage;
+  }
+}
 component platform.pulse.component.service_stage_border {}
-component platform.pulse.component.query_accent {}
-component platform.pulse.component.lower_shelf_divider {}
-component platform.pulse.component.service_eyebrow {}
-component platform.pulse.component.service_title {}
-component platform.pulse.component.service_body {}
+component platform.pulse.component.query_accent {
+  appearance { role platform.pulse.appearance.query_accent }
+}
+component platform.pulse.component.lower_shelf_divider {
+  appearance { role platform.pulse.appearance.lower_shelf_divider }
+}
+component platform.pulse.component.service_eyebrow {
+  appearance { role platform.pulse.appearance.service_eyebrow }
+}
+component platform.pulse.component.service_title {
+  appearance { role platform.pulse.appearance.service_title }
+}
+component platform.pulse.component.service_body {
+  appearance { role platform.pulse.appearance.service_body }
+}
 component platform.pulse.component.query_card {
   appearance { role platform.pulse.appearance.query_card }
 }
 component platform.pulse.component.query_card_border {}
-component platform.pulse.component.query_label {}
-component platform.pulse.component.native_card {}
+component platform.pulse.component.query_label {
+  appearance { role platform.pulse.appearance.query_label }
+}
+component platform.pulse.component.native_card {
+  appearance { role platform.pulse.appearance.native_card }
+  region platform.pulse.mosaic.region.native_tile {
+    sizing platform.pulse.mosaic.sizing.service_stage;
+  }
+}
 component platform.pulse.component.native_card_border {}
-component platform.pulse.component.native_label {}
-component platform.pulse.component.native_body {}
-component platform.pulse.component.query_denial_label {}
-component platform.pulse.component.query_denial_body {}
+component platform.pulse.component.native_label {
+  appearance { role platform.pulse.appearance.native_label }
+}
+component platform.pulse.component.native_body {
+  appearance { role platform.pulse.appearance.native_body }
+}
+component platform.pulse.component.query_denial_label {
+  appearance { role platform.pulse.appearance.query_denial_label }
+}
+component platform.pulse.component.query_denial_body {
+  appearance { role platform.pulse.appearance.query_denial_body }
+}
 component platform.pulse.component.status_band {}
-component platform.pulse.component.status_text {}
+component platform.pulse.component.status_text {
+  appearance { role platform.pulse.appearance.status_text }
+}
 component platform.pulse.component.identity_target {
+  appearance { role platform.pulse.appearance.identity_target }
   interaction activate routes platform.pulse.action.route;
 }
-component platform.pulse.component.action_label {}
+component platform.pulse.component.action_label {
+  appearance { role platform.pulse.appearance.action_label }
+}
 component platform.pulse.component.portal_target {
-  interaction activate routes platform.pulse.portal.open.route;
+  appearance { role platform.pulse.appearance.portal_target }
+  interaction activate routes platform.pulse.portal.open.route opens portal platform.pulse.portal.details;
   interaction submit routes platform.pulse.portal.close.route;
 }
-component platform.pulse.component.portal_label {}
-component platform.pulse.component.portal_surface {}
-component platform.pulse.component.portal_accent {}
-component platform.pulse.component.portal_icon_tile {}
-component platform.pulse.component.portal_icon_text {}
-component platform.pulse.component.portal_title {}
-component platform.pulse.component.portal_body {}
-component platform.pulse.component.portal_cancel_label {}
-component platform.pulse.component.portal_primary_label {}
+component platform.pulse.component.portal_label {
+  appearance { role platform.pulse.appearance.portal_label }
+}
+component platform.pulse.component.portal_surface {
+  }
+component platform.pulse.component.portal_accent {
+  appearance { role platform.pulse.appearance.portal_accent }
+}
+component platform.pulse.component.portal_title {
+  appearance { role platform.pulse.appearance.portal_title }
+}
+component platform.pulse.component.portal_body {
+  appearance { role platform.pulse.appearance.portal_body }
+}
+component platform.pulse.component.portal_cancel_label {
+  appearance { role platform.pulse.appearance.portal_cancel_label }
+}
+component platform.pulse.component.portal_primary_label {
+  appearance { role platform.pulse.appearance.portal_primary_label }
+}
 component platform.pulse.component.confirmation_target {
+  appearance { role platform.pulse.appearance.confirmation_target }
   interaction activate confirms platform.pulse.action.route;
 }
+component platform.pulse.component.confirmation_label {
+  appearance { role platform.pulse.appearance.confirmation_label }
+}
 component platform.pulse.component.projected_status {
+  appearance { role platform.pulse.appearance.projected_status }
   content projection platform.pulse.status
 }
 surface platform.pulse.surface.main {}
@@ -156,17 +344,13 @@ command platform.pulse.command.run.portal {
   scope active_portal;
   binding platform.pulse.component.portal_target;
 }
-token theme.platform_pulse.fill = "theme.platform_pulse.blue";
 token theme.platform_pulse.canvas = "theme.platform_pulse.palette.canvas";
-token theme.platform_pulse.raised_surface = "theme.platform_pulse.palette.raised_surface";
-token theme.platform_pulse.elevated_surface = "theme.platform_pulse.palette.elevated_surface";
-token theme.platform_pulse.structural_rule = "theme.platform_pulse.palette.structural_rule";
-token theme.platform_pulse.primary_text = "theme.platform_pulse.palette.primary_text";
-token theme.platform_pulse.secondary_text = "theme.platform_pulse.palette.secondary_text";
-token theme.platform_pulse.principal_accent = "theme.platform_pulse.palette.principal_accent";
-token theme.platform_pulse.action_text = "theme.platform_pulse.palette.action_text";
-token theme.platform_pulse.positive = "theme.platform_pulse.palette.positive";
-token theme.platform_pulse.caution = "theme.platform_pulse.palette.caution";
-token theme.platform_pulse.identity_target_fill = "theme.platform_pulse.yellow";
-token theme.platform_pulse.confirmation_fill = "theme.platform_pulse.purple";
-token theme.platform_pulse.projected_status.text = "theme.platform_pulse.palette.caution";
+
+portal platform.pulse.portal.details {
+  surface platform.pulse.surface.main
+  anchor platform.pulse.component.portal_target
+  layer modal
+  dismiss escape outside_press anchor_gone
+  focus first_enabled
+  motion system_popover
+}

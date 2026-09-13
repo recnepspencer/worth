@@ -4,7 +4,7 @@ use super::lifecycle::PlatformPulseLifecycleObservation;
 
 pub const PLATFORM_PULSE_LIFECYCLE_OBSERVATION_IDENTITY: &str =
     "worth-ui.platform-pulse.lifecycle-observation";
-pub const PLATFORM_PULSE_LIFECYCLE_OBSERVATION_SCHEMA_VERSION: u16 = 11;
+pub const PLATFORM_PULSE_LIFECYCLE_OBSERVATION_SCHEMA_VERSION: u16 = 12;
 pub const PLATFORM_PULSE_LIFECYCLE_OBSERVATION_STDOUT_PREFIX: &str =
     "WORTH_UI_PLATFORM_PULSE_EVENT ";
 const MAXIMUM_ENCODED_OBSERVATION_BYTES: usize = 1_048_576;
@@ -176,7 +176,7 @@ impl PlatformPulseLifecycleObservationEnvelope {
         match probe.protocol.schema_version {
             PLATFORM_PULSE_LIFECYCLE_OBSERVATION_SCHEMA_VERSION => Self::decode_prefixed_line(line)
                 .map(PlatformPulseDecodedLifecycleObservation::CompleteV10),
-            schema_version @ 2..=10 => {
+            schema_version @ 2..=11 => {
                 let legacy = serde_json::from_str::<PlatformPulseInheritedEnvelope>(json)
                     .map_err(|_| PlatformPulseLifecycleObservationCodecDenial::InvalidJson)?;
                 let _ = (legacy.protocol, legacy.outcome);

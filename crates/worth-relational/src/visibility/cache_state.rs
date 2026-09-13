@@ -235,58 +235,6 @@ pub(crate) fn materialize_historical_visibility(
     )
 }
 
-#[cfg(test)]
-pub(crate) fn retained_state(
-    runtime: &RelationalRuntime,
-    version_id: crate::identity::data::VersionId,
-) -> Option<SnapshotState> {
-    if let Some((_, binding)) = runtime
-        .visibility
-        .published_snapshot_binding_for_version(version_id)
-    {
-        return retained_state_for_basis(runtime, binding.basis);
-    }
-    let branch_id = crate::visibility::branch_scope::branch_for_version(runtime, version_id)?;
-    if let Some(basis) = VisibilitySnapshotBasis::capture_current_for_optional_maintenance(
-        runtime, &branch_id, version_id,
-    ) {
-        return retained_state_for_basis(runtime, basis);
-    }
-    let basis = historical_basis_for_retained_version(runtime, version_id).ok()?;
-    let key = basis_key(&basis);
-    if let Some(state) = runtime.visibility.cache.state(&key) {
-        return Some(state);
-    }
-    if version_id != runtime.current_version_id()
-        && !is_key_protected(runtime, &key)
-        && !runtime.visibility.retains_published_version(version_id)
-    {
-        return None;
-    }
-    Some(ensure_historical_state(runtime, basis, false))
-}
-
-#[cfg(test)]
-pub(crate) fn retained_state_for_basis(
-    runtime: &RelationalRuntime,
-    basis: VisibilitySnapshotBasis,
-) -> Option<SnapshotState> {
-    let version_id = basis.version_id();
-    if version_id.as_u64() > runtime.current_version_id().as_u64() {
-        return None;
-    }
-    if let Some(state) = cached_state(runtime, &basis) {
-        return Some(state);
-    }
-    if version_id != runtime.current_version_id()
-        && !is_protected(runtime, &basis)
-        && !runtime.visibility.retains_published_version(version_id)
-    {
-        return None;
-    }
-    Some(ensure_state(runtime, basis, false))
-}
-
 pub(crate) fn is_protected(runtime: &RelationalRuntime, basis: &VisibilitySnapshotBasis) -> bool {
     let residency = residency(runtime, basis);
     residency.branch_head_refs > 0

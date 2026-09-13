@@ -47,7 +47,7 @@ fn validation_preserves_disjoint_typed_mechanics_and_half_open_edges() {
     assert_eq!(second_candidates.len(), 1);
     assert_eq!(
         second_candidates[0].opacity(),
-        UiVisibleOpacity::Composited(128)
+        UiVisibleOpacity::Unsupported
     );
     let hit_candidates = hit_test.point_candidates(point(23, 7), 16).into_parts().0;
     assert_eq!(hit_candidates.len(), 1);
@@ -62,7 +62,7 @@ fn validation_preserves_disjoint_typed_mechanics_and_half_open_edges() {
 #[test]
 fn unsupported_text_paint_is_validated_without_becoming_exact_attribution() {
     let world = SpatialWorld::new();
-    let supported = paint(&world, bounds(0.0, 0.0, 24.0, 8.0), 1, u8::MAX);
+    let base = paint(&world, bounds(0.0, 0.0, 24.0, 8.0), 1, u8::MAX);
     let text_bounds = bounds(8.0, 0.0, 8.0, 8.0);
     let unsupported = crate::mounting::UiMountedUnsupportedPaintBasis::new(
         world.receipt,
@@ -71,11 +71,12 @@ fn unsupported_text_paint_is_validated_without_becoming_exact_attribution() {
         2,
         71,
     );
-    let basis =
-        crate::mounting::UiMountedVisualRegionBasis::new(Box::new([supported]), Box::new([]))
-            .with_unsupported_paint(Box::new([unsupported]));
+    let basis = crate::mounting::UiMountedVisualRegionBasis::new(
+        Box::new([base, unsupported]),
+        Box::new([]),
+    );
     let observed = [
-        observed_paint(supported, 1),
+        observed_paint(base, 1),
         observed(
             unsupported.node_receipt(),
             realized_geometry(unsupported.bounds(), unsupported.clip()),
@@ -90,7 +91,7 @@ fn unsupported_text_paint_is_validated_without_becoming_exact_attribution() {
         .expect("unsupported text paint remains an exact validated host observation");
     let (visible, _, cost) = indexed.into_parts();
     assert_eq!(visible.len(), 2);
-    assert_eq!(visible.supported_len(), 1);
+    assert_eq!(visible.supported_len(), 0);
     assert_eq!(cost.region_records_examined(), 2);
     let text_candidates = visible.point_candidates(point(8, 0), 16).into_parts().0;
     assert_eq!(text_candidates.len(), 2);
@@ -113,7 +114,7 @@ fn validation_rejects_missing_duplicate_cross_participation_and_wrong_order_rows
     let wrong_hit_order = observed_hit(hit, 6);
     let paint_claimed_as_hit = observed(
         paint.node_receipt(),
-        realized_geometry(paint.bounds(), paint.clip_bounds()),
+        realized_geometry(paint.bounds(), paint.clip()),
         realized_ordering(
             3,
             worth_ui_host_contract::UiHostRealizedRegionParticipation::HitTest,
@@ -135,7 +136,7 @@ fn validation_rejects_missing_duplicate_cross_participation_and_wrong_order_rows
         .receipt_for(foreign_instance);
     let foreign_identity = observed(
         foreign_receipt,
-        realized_geometry(paint.bounds(), paint.clip_bounds()),
+        realized_geometry(paint.bounds(), paint.clip()),
         realized_ordering(
             3,
             worth_ui_host_contract::UiHostRealizedRegionParticipation::Paint,
@@ -177,7 +178,7 @@ fn viewport_clipping_excludes_offscreen_and_right_edge_pixels() {
     assert_eq!(clipped.len(), 1);
     assert_eq!(
         clipped[0].clip_lineage().canonical(),
-        partially_offscreen.clip_bounds()
+        partially_offscreen.clip()
     );
     assert_eq!(
         clipped[0].clip_lineage().realized(),
@@ -213,7 +214,7 @@ fn sparse_1024_record_index_uses_bounded_point_probes() {
         .collect::<Vec<_>>();
     let observed = paint
         .iter()
-        .map(|row| observed_paint(*row, row.layer_semantic_order()))
+        .map(|row| observed_paint(*row, row.semantic_order()))
         .collect::<Vec<_>>();
     let basis =
         crate::mounting::UiMountedVisualRegionBasis::new(paint.into_boxed_slice(), Box::new([]));
@@ -236,7 +237,7 @@ fn overlapping_point_candidates_stop_at_the_explicit_budget() {
         .collect::<Vec<_>>();
     let observed = paint
         .iter()
-        .map(|row| observed_paint(*row, row.layer_semantic_order()))
+        .map(|row| observed_paint(*row, row.semantic_order()))
         .collect::<Vec<_>>();
     let basis =
         crate::mounting::UiMountedVisualRegionBasis::new(paint.into_boxed_slice(), Box::new([]));
@@ -254,19 +255,16 @@ fn overlapping_point_candidates_stop_at_the_explicit_budget() {
 fn assert_first_visible_record(
     record: super::record::UiVisibleRegionRecord,
     world: &SpatialWorld,
-    mechanic: worth_ui_host_contract::UiMountedFilledRectMechanic,
+    mechanic: crate::mounting::UiMountedUnsupportedPaintBasis,
 ) {
     assert_eq!(record.node_receipt(), world.receipt);
     assert_eq!(record.layer_order(), 1);
     assert_eq!(record.paint_order(), 1);
-    assert_eq!(record.opacity(), UiVisibleOpacity::Opaque);
-    assert_eq!(record.clip_lineage().canonical(), mechanic.clip_bounds());
+    assert_eq!(record.opacity(), UiVisibleOpacity::Unsupported);
+    assert_eq!(record.clip_lineage().canonical(), mechanic.clip());
     assert_eq!(
         record.clip_lineage().realized(),
         observed_paint(mechanic, 1).clip()
     );
-    assert_eq!(
-        record.source_projection_digest(),
-        mechanic.semantic_digest()
-    );
+    assert_eq!(record.source_projection_digest(), mechanic.source_digest());
 }

@@ -1,16 +1,5 @@
 {
   "live": {
-    "protocol_floor": 6,
-    "protocol_current": 6,
-    "mounted_frame": 5,
-    "mounted_presentation": 5,
-    "text": 3,
-    "observation": 7,
-    "measurement": 5,
-    "solicited_effect": 1,
-    "native_profile": "worth-ui-windows-dx12-v1"
-  },
-  "intended_next": {
     "protocol_floor": 7,
     "protocol_current": 7,
     "mounted_frame": 6,

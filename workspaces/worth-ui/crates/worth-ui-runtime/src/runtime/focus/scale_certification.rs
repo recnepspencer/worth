@@ -22,8 +22,12 @@ pub(crate) fn focus_scale_evidence() -> (u64, u64, bool) {
             index as u32,
         ));
     }
-    let snapshot =
-        crate::mounting::UiMountedFocusParticipationSnapshot::new(frame, participants, 128);
+    let snapshot = crate::mounting::UiMountedFocusParticipationSnapshot::new(
+        frame,
+        participants,
+        128,
+        Vec::new(),
+    );
     let mut state = super::UiFocusRuntimeState::new_session_restore_candidate();
     let installed = state
         .reconcile_mounted_participation(&snapshot)

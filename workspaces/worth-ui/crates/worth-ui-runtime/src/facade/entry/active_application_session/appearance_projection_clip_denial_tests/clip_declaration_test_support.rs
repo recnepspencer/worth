@@ -24,7 +24,7 @@ pub(super) fn clip_declaration(
     region.push(Atom::RightBrace);
     worth_ui_dsl::WorthUiRustAuthoredArtifactInput::from_modules([
         WorthUiRustAuthoredArtifactInputModule::new("appearance/consumer")
-            .with_token(support::LEGACY_STATIC_PAINT_TOKEN, "#112233")
+            .with_token(support::APPEARANCE_BASE_TOKEN, "#112233")
             .with_component_body_atoms(support::APPEARANCE_NODE_A, region)
             .with_appearance_role(role.clone())
             .with_component_appearance_role(

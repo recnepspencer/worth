@@ -56,10 +56,6 @@ fn expected(axis: Axis, slot: u16) -> Option<(&'static str, &'static str)> {
             "f6ef4a624de34f8b2bab01ddb5c977d7bc36515dc103addcd83ed891c4bc9ade",
             "d5bbca4eafc3ca958b0d966006e90c39fc7e994e4d2b66c010aa0a13becc68b4",
         ),
-        Axis::PaintValue => (
-            "c4fef77c4bbbfbbac670f39c90766a24c647b1422a97b0cc7d131c73b846a6aa",
-            "d5bbca4eafc3ca958b0d966006e90c39fc7e994e4d2b66c010aa0a13becc68b4",
-        ),
         Axis::PaintBoundary => (
             "7f5155e5f19df1b6d31a28ea45f63726bd55bf54cc086b7895aad0829bbe55c9",
             "d5bbca4eafc3ca958b0d966006e90c39fc7e994e4d2b66c010aa0a13becc68b4",

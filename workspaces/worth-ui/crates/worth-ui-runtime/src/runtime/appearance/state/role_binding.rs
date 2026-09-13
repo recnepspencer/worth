@@ -124,10 +124,6 @@ impl UiAppearanceNodeRoleBinding {
         &self.target
     }
 
-    pub(crate) const fn attachment(&self) -> &UiAppearanceRoleAttachment {
-        &self.attachment
-    }
-
     pub(crate) const fn role(&self) -> &worth_ui_dsl::UiAppearanceRoleDeclaration {
         &self.role
     }
@@ -152,24 +148,9 @@ impl UiAppearanceRoleBindingBasis {
         }
     }
 
-    pub(crate) const fn graph_authority_digest(&self) -> u64 {
-        self.graph_authority_digest
-    }
-
+    #[cfg(test)]
     pub(crate) const fn graph_node(&self) -> UiGraphNodeIdentity {
         self.graph_node
-    }
-
-    pub(crate) const fn role(&self) -> &worth_ui_dsl::UiAppearanceRoleIdentity {
-        &self.role
-    }
-
-    pub(crate) const fn revision(&self) -> worth_ui_dsl::UiAppearanceRoleRevision {
-        self.revision
-    }
-
-    pub(crate) const fn aspect_contract(&self) -> &worth_ui_dsl::UiAppearanceAspectContract {
-        &self.aspect_contract
     }
 
     pub(crate) fn semantic_digest(&self) -> u64 {

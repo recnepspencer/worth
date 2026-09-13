@@ -92,7 +92,7 @@ fn surface_binding_coordinate_and_portal_partitions_are_independent() {
     let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
     let first = update(surface, row(0));
     let mut index = UiMountedAppearanceOrderIndex::default();
-    apply(&mut index, &[first.clone()]).unwrap();
+    apply(&mut index, std::slice::from_ref(&first)).unwrap();
     let mut peers = Vec::new();
     let mut other = update(
         UiSemanticSurfaceIdentity::mint_unbound().unwrap(),

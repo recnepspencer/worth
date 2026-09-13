@@ -1,5 +1,3 @@
-use std::num::NonZeroU64;
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiAppearanceTarget {
     session: crate::facade::WorthUiActiveApplicationSessionIdentity,
@@ -9,7 +7,6 @@ pub(crate) struct UiAppearanceTarget {
     incarnation: worth_ui_host_contract::UiMountIncarnation,
     node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
     component_reference: Option<crate::capability::ComponentId>,
-    selection_key: Option<NonZeroU64>,
 }
 
 impl UiAppearanceTarget {
@@ -32,13 +29,7 @@ impl UiAppearanceTarget {
             incarnation,
             node_receipt,
             component_reference: None,
-            selection_key: None,
         })
-    }
-
-    pub(crate) const fn with_selection_key(mut self, key: NonZeroU64) -> Self {
-        self.selection_key = Some(key);
-        self
     }
 
     pub(crate) fn with_component_reference(
@@ -75,10 +66,6 @@ impl UiAppearanceTarget {
         &self,
     ) -> worth_ui_host_contract::UiMountedNodeReceiptIdentity {
         self.node_receipt
-    }
-
-    pub(crate) const fn selection_key(&self) -> Option<NonZeroU64> {
-        self.selection_key
     }
 
     pub(crate) fn component_reference(&self) -> Option<&crate::capability::ComponentId> {

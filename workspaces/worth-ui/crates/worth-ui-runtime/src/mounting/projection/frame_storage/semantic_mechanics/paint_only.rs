@@ -46,8 +46,8 @@ impl UiMountedSemanticMechanicSource {
         else {
             return false;
         };
-        let worth_ui_host_contract::UiMountedAllocationProjection::Known { bounds, basis } =
-            node.presentation_allocation()
+        let Ok((bounds, basis)) =
+            crate::mounting::projection::semantic_text::require_allocation(node, surface)
         else {
             return false;
         };

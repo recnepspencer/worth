@@ -24,9 +24,11 @@ impl UiSelectionPositionChanges {
     pub(super) const fn new(previous: UiSelectionPositions, current: UiSelectionPositions) -> Self {
         Self { previous, current }
     }
+    #[cfg(test)]
     pub(crate) const fn previous(self) -> UiSelectionPositions {
         self.previous
     }
+    #[cfg(test)]
     pub(crate) const fn current(self) -> UiSelectionPositions {
         self.current
     }
@@ -75,6 +77,7 @@ impl UiSelectionDelta {
         self.revision
     }
 
+    #[cfg(test)]
     pub(crate) const fn positions(&self) -> UiSelectionPositionChanges {
         self.positions
     }

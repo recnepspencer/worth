@@ -12,6 +12,10 @@ use crate::{UiHeadlessMountedFrameTranscript, UiHeadlessRecorderCapacity};
 pub(super) enum UiHeadlessRecordedFrame {
     Complete(UiHeadlessMountedFrameTranscript),
     Delta(UiHeadlessRecordedDelta),
+    Appearance {
+        identity: UiHeadlessTranscriptSuccessorIdentity,
+        work: crate::headless_transcript::appearance::UiHeadlessAppearancePresentationTranscript,
+    },
 }
 
 #[derive(Clone)]
@@ -29,12 +33,32 @@ pub(super) struct UiHeadlessRecordedDelta {
             crate::headless_transcript::UiHeadlessSemanticTextMechanic,
         )],
     >,
+    appearance:
+        Option<crate::headless_transcript::appearance::UiHeadlessAppearancePresentationTranscript>,
     capacity: UiHeadlessRecorderCapacity,
 }
 
 impl UiHeadlessRecordedFrame {
     pub(super) fn complete(transcript: UiHeadlessMountedFrameTranscript) -> Self {
         Self::Complete(transcript)
+    }
+
+    pub(super) fn appearance(
+        view: &worth_ui_host_contract::UiMountedFrameConsumptionView<'_>,
+    ) -> Result<Option<Self>, UiHostSurfacePresentationDenial> {
+        let Some(work) = crate::headless_translation::translate_view_appearance(view)? else {
+            return Ok(None);
+        };
+        Ok(Some(Self::Appearance {
+            identity: UiHeadlessTranscriptSuccessorIdentity {
+                host_session_identity: view.host_session_identity(),
+                protocol: view.protocol(),
+                attempt: view.attempt(),
+                frame: view.frame(),
+                binding: view.binding(),
+            },
+            work,
+        }))
     }
 
     pub(super) fn delta(
@@ -76,6 +100,7 @@ impl UiHeadlessRecordedFrame {
             nodes: delta.nodes().into(),
             auxiliary: delta.auxiliary().cloned(),
             semantic_text: semantic_text.into_boxed_slice(),
+            appearance: crate::headless_translation::translate_view_appearance(view)?,
             capacity,
         }))
     }
@@ -89,6 +114,9 @@ impl UiHeadlessRecordedFrame {
             Self::Delta(delta) => delta.materialize(
                 predecessor.ok_or(UiHostSurfacePresentationDenial::MalformedProjection)?,
             ),
+            Self::Appearance { identity, work } => predecessor
+                .ok_or(UiHostSurfacePresentationDenial::MalformedProjection)?
+                .successor_appearance(*identity, work.clone()),
         }
     }
 
@@ -96,6 +124,7 @@ impl UiHeadlessRecordedFrame {
         match self {
             Self::Complete(transcript) => transcript.binding(),
             Self::Delta(delta) => delta.identity.binding,
+            Self::Appearance { identity, .. } => identity.binding,
         }
     }
 }
@@ -105,7 +134,7 @@ impl UiHeadlessRecordedDelta {
         &self,
         predecessor: &UiHeadlessMountedFrameTranscript,
     ) -> Result<UiHeadlessMountedFrameTranscript, UiHostSurfacePresentationDenial> {
-        let commands = predecessor.successor_recorded_delta(
+        let mut commands = predecessor.successor_recorded_delta(
             self.identity,
             &self.changes,
             &self.order,
@@ -114,6 +143,9 @@ impl UiHeadlessRecordedDelta {
             &self.nodes,
             &self.semantic_text,
         )?;
+        if let Some(appearance) = &self.appearance {
+            commands.replace_appearance_work(appearance.clone())?;
+        }
         let Some(auxiliary) = &self.auxiliary else {
             return Ok(commands);
         };

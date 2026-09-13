@@ -16,7 +16,7 @@ impl ScriptedPresentationHost {
         let (outcome, queued_observation, queued_measurement) = {
             let mut state = self.state.lock().unwrap();
             state.presentation_calls += 1;
-            state.last_filled_rect_colors = filled_rect_colors(request.presentation_work());
+            state.last_surface_colors = surface_colors(request.appearance_work());
             let mut requested_portal_commands = state.requested_portal_overlay_commands.clone();
             match request.presentation_work() {
                 worth_ui_host_contract::UiMountedPresentationWorkView::Initial(work) => {
@@ -118,6 +118,7 @@ impl ScriptedPresentationHost {
                 } => {
                     let token = request.issue_completion_token();
                     let identity = token.diagnostic_value();
+                    state.accepted_text.retain_pending(identity, request);
                     state.completions.insert(identity, completions);
                     state.cancellations.insert(identity, cancellation);
                     state
@@ -126,6 +127,9 @@ impl ScriptedPresentationHost {
                     UiHostSurfacePresentationOutcome::InFlight(token)
                 }
             };
+            if matches!(outcome, UiHostSurfacePresentationOutcome::Presented(_)) {
+                state.accepted_text.record(request);
+            }
             (
                 outcome,
                 state.queued_observation.take(),
@@ -142,47 +146,31 @@ impl ScriptedPresentationHost {
     }
 }
 
-fn filled_rect_colors(
-    work: worth_ui_host_contract::UiMountedPresentationWorkView<'_>,
+fn surface_colors(
+    work: Option<&worth_ui_host_contract::UiMountedAppearancePresentationWork>,
 ) -> Vec<worth_ui_host_contract::UiMountedRgba8> {
-    match work {
-        worth_ui_host_contract::UiMountedPresentationWorkView::Initial(work) => work
-            .commands()
-            .iter()
-            .filter_map(filled_rect_color)
-            .collect(),
-        worth_ui_host_contract::UiMountedPresentationWorkView::Delta(work) => work
-            .changes()
-            .iter()
-            .filter_map(|change| match change {
-                worth_ui_host_contract::UiMountedPaintCommandChange::Insert(command)
-                | worth_ui_host_contract::UiMountedPaintCommandChange::Replace {
-                    successor: command,
-                    ..
-                } => filled_rect_color(command),
-                worth_ui_host_contract::UiMountedPaintCommandChange::Remove(_) => None,
-            })
-            .collect(),
-        worth_ui_host_contract::UiMountedPresentationWorkView::Reconstruction(work) => work
-            .commands()
-            .iter()
-            .filter_map(filled_rect_color)
-            .collect(),
-        worth_ui_host_contract::UiMountedPresentationWorkView::Sample(_)
-        | worth_ui_host_contract::UiMountedPresentationWorkView::Unchanged(_) => Vec::new(),
-    }
+    work.into_iter()
+        .flat_map(|work| work.fragments())
+        .flat_map(|fragment| fragment.work().successor().mechanics())
+        .filter_map(surface_color)
+        .collect()
 }
 
-fn filled_rect_color(
-    command: &worth_ui_host_contract::UiMountedPaintCommand,
+fn surface_color(
+    mechanic: &worth_ui_host_contract::UiMountedAppearanceMechanic,
 ) -> Option<worth_ui_host_contract::UiMountedRgba8> {
-    match command {
-        worth_ui_host_contract::UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-            Some(mechanic.color())
+    let worth_ui_host_contract::UiMountedAppearanceMechanic::Surface(mechanic) = mechanic else {
+        return None;
+    };
+    let color = match mechanic.paint() {
+        worth_ui_host_contract::UiMountedSurfacePaint::Fill(color)
+        | worth_ui_host_contract::UiMountedSurfacePaint::FillAndBorder { fill: color, .. } => {
+            *color
         }
-        worth_ui_host_contract::UiMountedPaintCommand::PortalOverlay { .. }
-        | worth_ui_host_contract::UiMountedPaintCommand::SemanticText { .. } => None,
-    }
+        worth_ui_host_contract::UiMountedSurfacePaint::Border { color, .. } => *color,
+    };
+    let [r, g, b, a] = color.straight_srgba();
+    Some(worth_ui_host_contract::UiMountedRgba8::new(r, g, b, a))
 }
 
 fn dispatch_queued_ingress(

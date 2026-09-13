@@ -5,7 +5,7 @@ pub(super) fn projection_row_count(
         projection.nodes().len(),
         projection.clips().rows().len(),
         projection.layers().rows().len(),
-        projection.filled_rects().rows().len(),
+        projection.portal_overlays().rows().len(),
         projection.semantic_text().rows().len(),
         projection.hit_tests().rows().len(),
         projection.paint_batches().rows().len(),

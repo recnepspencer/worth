@@ -116,6 +116,7 @@ impl UiMountedQualifiedSemanticText {
     pub(super) fn rebind(
         &self,
         replacement: super::super::super::UiSurfaceBindingIdentityView,
+        allocation_basis: worth_ui_host_contract::UiMountedAllocationBasis,
     ) -> Result<Self, UiMountedProjectionDenial> {
         if replacement.semantic_surface_identity() != self.surface() {
             return Err(UiMountedProjectionDenial::MissingSurfaceBinding);
@@ -131,8 +132,9 @@ impl UiMountedQualifiedSemanticText {
                     surface: self.surface(),
                     binding: replacement.binding_generation(),
                     mounted_instance: self.mounted_instance(),
+                    portal_group: self.portal_group(),
                     node_receipt: self.node_receipt(),
-                    allocation_basis: self.allocation_basis(),
+                    allocation_basis,
                     bounds: self.bounds(),
                     clip_bounds: self.clip_bounds(),
                     origin_x: self.origin_x(),
@@ -167,6 +169,7 @@ impl UiMountedQualifiedSemanticText {
                     surface: self.surface(),
                     binding: self.binding(),
                     mounted_instance: self.mounted_instance(),
+                    portal_group: self.portal_group(),
                     node_receipt: input.node_receipt,
                     allocation_basis: self.allocation_basis(),
                     bounds: self.bounds(),
@@ -203,6 +206,7 @@ pub(in crate::mounting::projection) fn rebind_semantic_text(
         worth_ui_host_contract::UiSurfaceBindingGeneration,
         super::super::super::UiSurfaceBindingIdentityView,
     )],
+    semantic: &super::super::frame_storage::UiMountedSemanticProjection,
 ) -> Result<(), UiMountedProjectionDenial> {
     for row in rows {
         let Some((_, replacement)) = replacements
@@ -211,7 +215,32 @@ pub(in crate::mounting::projection) fn rebind_semantic_text(
         else {
             continue;
         };
-        *row = row.rebind(*replacement)?;
+        let node = semantic
+            .node(row.mounted_instance())
+            .ok_or(UiMountedProjectionDenial::UnknownGraphNode)?;
+        let allocation_basis = match node.presentation_allocation() {
+            worth_ui_host_contract::UiMountedAllocationProjection::Known { basis, .. }
+            | worth_ui_host_contract::UiMountedAllocationProjection::PortalAnchorObservation {
+                basis,
+                ..
+            } => basis,
+            worth_ui_host_contract::UiMountedAllocationProjection::Omitted(_) => {
+                return Err(UiMountedProjectionDenial::MissingSemanticTextAllocation(
+                    node.receipt().graph_node(),
+                ));
+            }
+        };
+        // Text retains its concrete layout allocation lineage. The mounted
+        // owner supplies only the replacement surface's coordinate authority;
+        // its regional allocation is not the text layout allocation.
+        let text_basis = row.allocation_basis();
+        let rebound_basis = worth_ui_host_contract::UiMountedAllocationBasis::new(
+            text_basis.receipt_identity(),
+            text_basis.receipt_generation(),
+            allocation_basis.coordinate_ownership(),
+            text_basis.transform(),
+        );
+        *row = row.rebind(*replacement, rebound_basis)?;
     }
     Ok(())
 }
@@ -287,6 +316,7 @@ mod tests {
                     binding: worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound()
                         .unwrap(),
                     mounted_instance: instance,
+                    portal_group: None,
                     node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIssuer::mint_for(
                         frame,
                     )

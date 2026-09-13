@@ -17,6 +17,7 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
         prepare_overlays: impl FnOnce(
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+            Option<&crate::runtime::appearance::UiActiveThemeBinding>,
         ) -> Result<
             Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
             (),
@@ -53,6 +54,7 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
         prepare_overlays: impl FnOnce(
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+            Option<&crate::runtime::appearance::UiActiveThemeBinding>,
         ) -> Result<
             Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
             (),
@@ -95,6 +97,7 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
         prepare_overlays: impl FnOnce(
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+            Option<&crate::runtime::appearance::UiActiveThemeBinding>,
         ) -> Result<
             Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
             (),
@@ -113,7 +116,7 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
                 );
             }
         };
-        let mut admission = match self.presentation.admit_reconciliation(
+        let admission = match self.presentation.admit_reconciliation(
             retained,
             replacements,
             &capability_report,
@@ -133,20 +136,27 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
             .iter()
             .map(|surface| surface.requirement().semantic_surface())
             .collect::<Vec<_>>();
-        let appearance_batch = match prepare_overlays(admission.attempt(), &surfaces) {
+        let appearance = match prepare_overlays(
+            admission.attempt(),
+            &surfaces,
+            admission.frame().prepared_theme_binding(),
+        ) {
             Ok(overlays) => admission
                 .lower_appearance_with_overlays(capability_report.appearance_profile(), &overlays),
             Err(()) => admission.deny_appearance_output(),
         };
-        if !admission.appearance_output_available() {
-            let frame = admission.frame().canonical_core().frame();
-            let rejection = admission.reject_appearance_output();
-            return UiMountedPublicationTransition::with_observation_and_appearance(
-                UiMountedFrameOutcome::AdmissionDenied(rejection),
-                super::UiMountedHostObservationTransition::NeverPresented(frame),
-                appearance_batch,
-            );
-        }
+        let (admission, appearance_batch) = match appearance.admit_appearance_retention() {
+            Ok(admission) => admission,
+            Err(rejected) => {
+                let (rejection, appearance_batch) = *rejected;
+                let frame = rejection.frame().canonical_core().frame();
+                return UiMountedPublicationTransition::with_observation_and_appearance(
+                    UiMountedFrameOutcome::AdmissionDenied(rejection),
+                    super::UiMountedHostObservationTransition::NeverPresented(frame),
+                    appearance_batch,
+                );
+            }
+        };
         let reservation =
             UiMountedFrameReconciliationCandidate::reserve(&admission, &current, replacements);
         let attempt = admission.attempt();
@@ -160,7 +170,7 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
             "runtime-minted reconciliation attempts must be unique"
         );
         let outcome = self.presentation.present(
-            admission.into_attempt(),
+            admission,
             host.effect_port(),
             mounted_host_authority(host, &capability_report),
             now,

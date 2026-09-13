@@ -46,7 +46,7 @@ pub enum UiMountedFrameOutcome {
 
 impl UiMountedFrameReconciliationCandidate {
     pub(crate) fn reserve(
-        admission: &super::UiMountedPresentationAdmission,
+        admission: &super::UiMountedPresentationAttempt,
         current: &UiMountedFramePublicationReceipt,
         replacements: &[super::UiMountedSurfaceReconciliationBinding],
     ) -> Self {
@@ -117,7 +117,7 @@ pub enum UiMountedPublicationLeaseDenial {
 
 impl UiMountedFramePublicationCandidate {
     pub(crate) fn reserve(
-        admission: &super::UiMountedPresentationAdmission,
+        admission: &super::UiMountedPresentationAttempt,
         predecessor: Option<UiMountedFrameIdentity>,
     ) -> Self {
         let mut bindings = admission
@@ -258,7 +258,6 @@ impl UiMountedFrameOutcome {
             ),
             Self::AdmissionDenied(rejection) => Some(
                 rejection
-                    .frame()
                     .cost_report()
                     .reclassified(super::UiMountWorkClass::RejectedPresentation)
                     .with_rejected(1)

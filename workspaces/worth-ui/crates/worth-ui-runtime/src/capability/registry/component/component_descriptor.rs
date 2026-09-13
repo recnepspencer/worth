@@ -21,7 +21,6 @@ pub struct ComponentDescriptor {
     realtime_overlay_contract: Option<super::ComponentRealtimeOverlayContract>,
     allocation_contracts:
         super::component_allocation_contract_state::ComponentAllocationContractState,
-    static_paint_contract: Option<super::ComponentStaticPaintContract>,
     surface_paint_order: Option<u32>,
     semantic_text_contract: Option<super::ComponentSemanticTextContract>,
     hit_test_contract: Option<super::ComponentHitTestContract>,
@@ -60,7 +59,6 @@ impl ComponentDescriptor {
             allocation_contracts:
                 super::component_allocation_contract_state::ComponentAllocationContractState::empty(
                 ),
-            static_paint_contract: None,
             surface_paint_order: None,
             semantic_text_contract: None,
             hit_test_contract: None,
@@ -89,7 +87,6 @@ impl ComponentDescriptor {
             allocation_contracts:
                 super::component_allocation_contract_state::ComponentAllocationContractState::empty(
                 ),
-            static_paint_contract: None,
             surface_paint_order: None,
             semantic_text_contract: None,
             hit_test_contract: None,
@@ -118,7 +115,6 @@ impl ComponentDescriptor {
             allocation_contracts:
                 super::component_allocation_contract_state::ComponentAllocationContractState::empty(
                 ),
-            static_paint_contract: None,
             surface_paint_order: None,
             semantic_text_contract: None,
             hit_test_contract: None,
@@ -134,11 +130,6 @@ impl ComponentDescriptor {
 
     pub fn with_focus(mut self, focus: ComponentFocusSupport) -> Self {
         self.focus = focus;
-        self
-    }
-
-    pub fn with_theme_token_dependency(mut self, token_id: ThemeTokenId) -> Self {
-        self.theme_token_dependencies.push(token_id);
         self
     }
 
@@ -183,23 +174,6 @@ impl ComponentDescriptor {
         contract: super::ComponentAllocationMeasurementContract,
     ) -> Self {
         self.allocation_contracts = self.allocation_contracts.record(contract);
-        self
-    }
-
-    pub fn with_static_paint(
-        mut self,
-        contract: super::ComponentStaticPaintContract,
-        allocation: super::ComponentAllocationMeasurementContract,
-    ) -> Self {
-        if !self
-            .theme_token_dependencies
-            .contains(contract.theme_token())
-        {
-            self.theme_token_dependencies
-                .push(contract.theme_token().clone());
-        }
-        self.allocation_contracts = self.allocation_contracts.record(allocation);
-        self.static_paint_contract = Some(contract);
         self
     }
 
@@ -300,10 +274,6 @@ impl ComponentDescriptor {
         &self,
     ) -> Option<super::ComponentAllocationMeasurementContract> {
         self.allocation_contracts.resolved()
-    }
-
-    pub fn static_paint_contract(&self) -> Option<&super::ComponentStaticPaintContract> {
-        self.static_paint_contract.as_ref()
     }
 
     pub fn semantic_text_contract(&self) -> Option<&super::ComponentSemanticTextContract> {

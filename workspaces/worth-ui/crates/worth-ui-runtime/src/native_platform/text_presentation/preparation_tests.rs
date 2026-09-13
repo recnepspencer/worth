@@ -331,6 +331,7 @@ fn mixed_bidi_paint_world() -> (
             surface: worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
             binding: worth_ui_host_contract::UiSurfaceBindingGeneration::mint_unbound().unwrap(),
             mounted_instance: instance,
+            portal_group: None,
             node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIssuer::mint_for(frame)
                 .unwrap()
                 .receipt_for(instance),

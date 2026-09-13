@@ -92,46 +92,6 @@ impl UiOverlayOwnerExportVector {
         })
     }
 
-    #[cfg(test)]
-    pub(super) fn from_prepared(
-        generation: crate::facade::prepared_application_authority::
-            WorthUiPreparedApplicationGenerationIdentity,
-        portal: UiOverlayPortalOwnerExport,
-        extent: UiOverlaySurfaceExtentSnapshot,
-        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-        bindings: UiOverlayPortalBindingExport,
-        motion: Option<UiOverlayMotionOwnerExport>,
-    ) -> Result<Self, UiOverlayOwnerExportDenial> {
-        let generation = UiOverlayApplicationGeneration::from_prepared(generation);
-        let portal_snapshot = portal.into_snapshot();
-        if extent.revision() == 0 {
-            return Err(UiOverlayOwnerExportDenial::InvalidExtentRevision);
-        }
-        if bindings.generation() != &generation {
-            return Err(UiOverlayOwnerExportDenial::BindingGenerationMismatch);
-        }
-        if bindings.runtime_surface() != extent.runtime_surface() {
-            return Err(UiOverlayOwnerExportDenial::BindingSurfaceMismatch);
-        }
-        if bindings.portal_revision() != portal_snapshot.owner_revision() {
-            return Err(UiOverlayOwnerExportDenial::BindingPortalRevisionMismatch);
-        }
-        if motion
-            .as_ref()
-            .is_some_and(|motion| motion.generation() != &generation)
-        {
-            return Err(UiOverlayOwnerExportDenial::MotionGenerationMismatch);
-        }
-        Ok(Self {
-            generation,
-            portal_snapshot,
-            extent,
-            presentation,
-            bindings,
-            motion,
-        })
-    }
-
     pub(super) fn with_composition_input<T>(
         &self,
         compose: impl FnOnce(UiOverlayCompositionInput<'_>) -> T,

@@ -31,7 +31,8 @@ The ordinary source-edit route is:
 - `UiSourceRebindRequest`
 - `WorthUiNativeApplicationShell::begin_source_rebind(...)`
 - `WorthUiNativeSourceRebindDenial`
-- `UiRebindOutcome`
+- `WorthUiNativeManagedSourceRebindOutcome`
+- `WorthUiNativeManagedRebindProgress`
 
 Framework integrations that already own admitted observation evidence may use
 the advanced active-session progression:
@@ -107,21 +108,21 @@ second shows the advanced owner-issued planning progression.
 ```rust
 use worth_ui::facade::app::{
     WorthUiActiveApplicationSession, WorthUiNativeApplicationShell,
-    WorthUiNativeSourceRebindDenial,
+    WorthUiNativeManagedSourceRebindOutcome, WorthUiNativeSourceRebindDenial,
 };
 use worth_ui::facade::inspection::{UiRebindDecisionLookup, UiRebindDecisionRecord};
 use worth_ui::facade::observation::UiChangeClassificationOutcome;
 use worth_ui::facade::rebind::{
-    UiRebindExecutionPolicy, UiRebindOutcome, UiRebindPlanningDenial, UiRebindReceipt,
+    UiRebindExecutionPolicy, UiRebindPlanningDenial, UiRebindReceipt,
     UiSourceRebindRequest,
 };
 use worth_ui::facade::source::WorthUiSettledSourceSnapshot;
 
-fn begin_settled_source_rebind<'shell>(
-    shell: &'shell mut WorthUiNativeApplicationShell,
+fn begin_settled_source_rebind(
+    shell: &mut WorthUiNativeApplicationShell,
     snapshot: WorthUiSettledSourceSnapshot,
     now_tick: u64,
-) -> Result<UiRebindOutcome<'shell>, WorthUiNativeSourceRebindDenial> {
+) -> Result<WorthUiNativeManagedSourceRebindOutcome, WorthUiNativeSourceRebindDenial> {
     let request = UiSourceRebindRequest::new(snapshot)
         .with_deadline(shell.rebind_deadline_at(now_tick.saturating_add(1)))
         .observed_at_tick(now_tick);
@@ -168,27 +169,24 @@ fn main() {
 }
 ```
 
-The returned `UiRebindOutcome<'shell>` borrows the running shell. Complete,
-dispose, retry, reconcile, or drop the returned typed state before borrowing
-the shell for another mutable transition.
+The shell owns incomplete work. A caller receives `Pending` and must advance it
+through `progress_managed_rebind(...)` or `retry_managed_rebind(...)`; it cannot
+detach a completion or retry authority and publish outside shell reconciliation.
 
 ## Outcomes And Recovery
 
-`UiRebindOutcome` distinguishes:
+`WorthUiNativeManagedSourceRebindOutcome` distinguishes immediate `Published`,
+owned `Pending`, and terminal `Stopped`. Managed progression then distinguishes:
 
 - `Published` for one complete atomic successor;
-- `ObservedNoChange` and `Duplicate` for terminal no-effect observations;
-- `SupersededBeforeEffects`, `TimedOutBeforeEffects`,
-  `CancelledBeforeEffects`, and `RejectedBeforeEffects` when the predecessor
-  remains exact current truth;
-- `InFlight` while the runtime owns a completion handle;
-- `Indeterminate` when effects may have begun and reconciliation authority must
-  remain owned; and
+- `Stopped` with the exact no-effect or denial reason while the predecessor
+  remains current truth;
+- `AwaitingProgress` while the shell owns completion, retry, reconstruction, or
+  indeterminate recovery authority; and
 - typed internal-defect posture when realized effects contradict the plan.
 
-Retry only through the exact authority returned by a denial. An in-flight
-handle must be completed or disposed. An indeterminate handle may begin typed
-reconciliation or yield the session for shutdown. The runtime never labels
+Retry and recovery run through the shell's retained exact authority. Shutdown
+disposes that authority through the same owner. The runtime never labels
 uncertain native state as rolled back.
 
 ## Facts, Scope, And Identity
@@ -249,6 +247,22 @@ Inspection remains read-only. It can explain these references but cannot turn
 them back into planning or execution authority. See
 [Application inspection](./inspection.md).
 
+## Appearance And Content Cutover
+
+The replacement path prepares semantic content, per-occurrence geometry,
+owner-state succession, theme resolution, appearance, accepted Motion samples,
+relational Portal/Backdrop order, and retention before presentation. The
+presenter accepts only that completed phase. Assembly alone cannot reach the
+host.
+
+Publication settles per mounted surface. If one surface accepts and another is
+rejected, the exact content revision remains pending for the rejected surface.
+A later retry rebases the retained prepared evidence and cannot count a newly
+mounted occurrence as stale coverage. Returning to an omitted surface uses
+reconstruction and its current semantic provenance. Acceptance commits the
+same prepared owner lifecycle that produced the pixels; rejection and
+cancellation retain predecessor paint and state.
+
 ## Anti-Patterns
 
 - Publishing directly from a watcher or compiler callback.
@@ -263,10 +277,11 @@ them back into planning or execution authority. See
 ## Current Limits
 
 Hot rebind compiles already-authored, currently supported Worth UI meaning. It
-does not itself provide projected product data, admitted user intents,
-services, portals, focus, motion, appearance, expressions, or modules. Those
-features extend the observation/fact/planning contracts above; they do not
-relocate source settlement, publication, or host authority.
+coordinates the current projected content, service, appearance, theme, Motion,
+and Portal owners through their typed preparation and settlement boundaries; it
+does not absorb their authority. Expressions and modules remain outside the
+current authoring surface. None of these features relocates source settlement,
+publication, or host authority.
 
 ## Related Docs
 

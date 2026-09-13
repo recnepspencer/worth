@@ -239,7 +239,7 @@ fn surface_rebind_preserves_occurrence_bounds_and_rebases_coordinate_ownership()
     );
     host.push_native_display_presented();
     let outcome = session
-        .present_prepared_mounted_frame_for_reconciliation(
+        .present_prepared_mounted_reconstruction_frame(
             frame,
             &replacements,
             worth_ui_host_contract::UiPresentationDeadline::at_tick(200),

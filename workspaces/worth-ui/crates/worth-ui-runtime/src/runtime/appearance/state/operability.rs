@@ -80,36 +80,6 @@ impl UiOperabilityAppearanceState {
     pub(crate) const fn class(&self) -> UiAppearanceAxisClass {
         self.class
     }
-
-    pub(crate) const fn source_class(
-        &self,
-    ) -> crate::runtime::intent::UiIntentOperabilityAppearanceClass {
-        self.source_class
-    }
-
-    pub(crate) const fn owner_revision(&self) -> u64 {
-        self.owner_revision
-    }
-
-    pub(crate) const fn graph_node(&self) -> crate::graph::UiGraphNodeIdentity {
-        self.graph_node
-    }
-
-    pub(crate) const fn mounted_instance(&self) -> UiMountedInstanceIdentity {
-        self.mounted_instance
-    }
-
-    pub(crate) const fn node_receipt(&self) -> UiMountedNodeReceiptIdentity {
-        self.node_receipt
-    }
-
-    pub(crate) fn route(&self) -> &str {
-        &self.route
-    }
-
-    pub(crate) fn decision(&self) -> &crate::runtime::intent::UiIntentOperabilityDecision {
-        &self.decision
-    }
 }
 
 #[cfg(test)]

@@ -4,7 +4,8 @@ use super::*;
 fn switching_enforces_surface_application_and_predecessor_cas() {
     let surface = next_surface();
     let other_surface = next_surface();
-    let (origin, application) = admitted_source_origin("theme-origin-cas");
+    let (origins, application) = admitted_source_origins("theme-origin-cas", 2);
+    let origin = origins[0].clone();
     let mut state = UiAppearanceThemeState::default();
     state
         .install_initial(capability("theme.initial", surface, application.clone()))
@@ -55,7 +56,7 @@ fn switching_enforces_surface_application_and_predecessor_cas() {
         .unwrap();
     let stale = state
         .prepare_theme_switch(request(
-            origin.clone(),
+            origins[1].clone(),
             surface,
             1,
             capability("theme.second", surface, application.clone()),
@@ -75,14 +76,14 @@ fn switching_enforces_surface_application_and_predecessor_cas() {
         state.commit_published_switch(stale),
         Err(UiThemeSwitchDenial::UnknownPreparedSwitch)
     );
-    state.cancel_prepared_switch(unrelated).unwrap();
+    drop(unrelated);
     assert_eq!(state.prepared_switch_count(), 0);
 }
 
 #[test]
 fn prepared_switches_are_affine_bounded_and_cancellable() {
     let surface = next_surface();
-    let (origin, application) = admitted_source_origin("theme-origin-bounded");
+    let (origins, application) = admitted_source_origins("theme-origin-bounded", 5);
     let mut state = UiAppearanceThemeState::default();
     state
         .install_initial(capability("theme.initial", surface, application.clone()))
@@ -93,7 +94,7 @@ fn prepared_switches_are_affine_bounded_and_cancellable() {
     );
 
     let mut prepared = Vec::new();
-    for index in 0..4 {
+    for (index, origin) in origins.iter().take(4).enumerate() {
         prepared.push(
             state
                 .prepare_theme_switch(request(
@@ -108,7 +109,7 @@ fn prepared_switches_are_affine_bounded_and_cancellable() {
     assert_eq!(state.prepared_switch_count(), 4);
     assert_eq!(
         state.prepare_theme_switch(request(
-            origin.clone(),
+            origins[4].clone(),
             surface,
             1,
             capability("theme.overflow", surface, application.clone()),
@@ -117,20 +118,79 @@ fn prepared_switches_are_affine_bounded_and_cancellable() {
     );
     let cancelled = prepared.pop().unwrap();
     let replay = duplicate_prepared(&cancelled);
-    state.cancel_prepared_switch(cancelled).unwrap();
+    drop(cancelled);
     assert_eq!(
-        state.cancel_prepared_switch(replay),
+        state.commit_published_switch(replay),
         Err(UiThemeSwitchDenial::UnknownPreparedSwitch)
     );
     assert_eq!(state.prepared_switch_count(), 3);
     assert!(state
         .prepare_theme_switch(request(
-            origin.clone(),
+            origins[4].clone(),
             surface,
             1,
-            capability("theme.replacement", surface, application),
+            capability("theme.replacement", surface, application.clone()),
         ))
         .is_ok());
+    assert_eq!(
+        state.prepared_switch_count(),
+        3,
+        "dropped preparation releases capacity"
+    );
+    drop(prepared);
+    assert_eq!(
+        state.prepared_switch_count(),
+        0,
+        "abandonment releases every reservation"
+    );
+    assert_eq!(
+        state.prepare_theme_switch(request(
+            origins[4].clone(),
+            surface,
+            1,
+            capability("theme.replayed-drop", surface, application.clone())
+        )),
+        Err(UiThemeSwitchDenial::DuplicateOrigin)
+    );
+    assert_eq!(
+        state.prepare_theme_switch(request(
+            origins[3].clone(),
+            surface,
+            1,
+            capability("theme.replayed-cancellation", surface, application)
+        )),
+        Err(UiThemeSwitchDenial::SupersededOrigin)
+    );
+}
+
+#[test]
+fn unchanged_binding_consumes_origin_without_reserving_or_republishing() {
+    let surface = next_surface();
+    let (origin, application) = admitted_source_origin("theme-origin-unchanged");
+    let mut state = UiAppearanceThemeState::default();
+    let initial = capability("theme.initial", surface, application.clone());
+    state.install_initial(initial.clone()).unwrap();
+    state
+        .settle_unchanged_switch(request(origin.clone(), surface, 1, initial.clone()))
+        .unwrap();
+    assert_eq!(state.prepared_switch_count(), 0);
+    assert_eq!(
+        state.active_binding(surface).unwrap().binding_generation(),
+        1
+    );
+    assert_eq!(
+        state.settle_unchanged_switch(request(origin.clone(), surface, 1, initial)),
+        Err(UiThemeSwitchDenial::DuplicateOrigin)
+    );
+    assert_eq!(
+        state.prepare_theme_switch(request(
+            origin,
+            surface,
+            1,
+            capability("theme.next", surface, application)
+        )),
+        Err(UiThemeSwitchDenial::DuplicateOrigin)
+    );
 }
 
 #[test]
@@ -185,6 +245,7 @@ fn duplicate_prepared(prepared: &UiPreparedThemeSwitch) -> UiPreparedThemeSwitch
         successor: prepared.successor.clone(),
         origin: prepared.origin.clone(),
         owner_affinity: prepared.owner_affinity,
+        reservations: prepared.reservations.clone(),
     }
 }
 
@@ -203,136 +264,43 @@ fn admitted_source_origin(
     UiThemeSwitchOrigin,
     crate::runtime::WorthUiActiveApplicationGenerationIdentity,
 ) {
-    use crate::runtime::tests::active_application_session_test_support::component_candidate_submission;
-    use crate::runtime::tests::appearance_component_session_test_support::source_backed_static_paint_consumer_session;
-
-    let mut session = source_backed_static_paint_consumer_session();
-    let application = session.active_generation_identity();
-    let candidate = component_candidate_submission(
-        &session,
-        source_name,
-        "workspace.component.active_session_current",
-    );
-    let mut turn = session.begin_observation_turn().unwrap();
-    turn.admit_source(candidate).unwrap();
-    let admitted = turn.seal().unwrap();
-    let origin = session
-        .issue_theme_switch_origin(&admitted, UiThemeSwitchOriginFamily::SourceEditObservation)
-        .unwrap();
-    let _ = session.shutdown();
-    (origin, application)
+    let (mut origins, application) = admitted_source_origins(source_name, 1);
+    (origins.pop().unwrap(), application)
 }
 
-fn capability(
-    name: &str,
-    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    application: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-) -> UiThemeCapabilityReceipt {
-    let slot = crate::capability::UiThemeSlotDeclaration::new(
-        crate::capability::ThemeTokenId::new("surface.base").unwrap(),
-        crate::capability::ThemeTokenFamily::surface(),
-        worth_ui_dsl::UiThemeValueKind::Color,
-        crate::capability::ThemeTokenSource::application(),
-        crate::capability::UiThemeSlotDisclosure::Public,
-        crate::capability::UiThemeSlotSuccessorCompatibility::ExactMeaning,
-        None,
-    );
-    let catalog = crate::capability::UiThemeSlotCatalog::admit(1, [slot]).unwrap();
-    let definition_identity = crate::capability::UiThemeDefinitionIdentity::new(name).unwrap();
-    let definition = crate::capability::UiThemeDefinition::admit(
-        definition_identity.clone(),
-        1,
-        &catalog,
-        [(
-            crate::capability::ThemeTokenId::new("surface.base").unwrap(),
-            worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([
-                1, 2, 3, 255,
-            ])),
-        )],
-    )
-    .unwrap();
-    let contract = worth_ui_dsl::UiAppearanceAspectContract::component(
-        [worth_ui_dsl::UiAppearanceAspect::Background],
-        [],
-    )
-    .unwrap();
-    let role_identity = worth_ui_dsl::UiAppearanceRoleIdentity::new("theme.test-role").unwrap();
-    let role = worth_ui_dsl::UiAppearanceRoleDeclaration::admit(
-        role_identity.clone(),
-        worth_ui_dsl::UiAppearanceRoleRevision::new(1).unwrap(),
-        worth_ui_dsl::UiAppearanceRoleApplicability::AnyComponent,
-        &contract,
-        [(
-            worth_ui_dsl::UiAppearanceAspect::Background,
-            worth_ui_dsl::UiAppearancePartitionAuthoring::new([])
-                .with_cell(worth_ui_dsl::UiAppearanceCell::when([]).uses_slot(
-                    worth_ui_dsl::UiThemeSlotIdentity::new("surface.base").unwrap(),
-                    worth_ui_dsl::UiThemeValueKind::Color,
-                ))
-                .compile(worth_ui_dsl::UiAppearanceAspect::Background)
+fn admitted_source_origins(
+    source_name: &str,
+    count: usize,
+) -> (
+    Vec<UiThemeSwitchOrigin>,
+    crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+) {
+    use crate::runtime::tests::active_application_session_test_support::component_candidate_submission;
+    use crate::runtime::tests::appearance_component_session_test_support::source_backed_appearance_consumer_session;
+
+    let mut session = source_backed_appearance_consumer_session();
+    let application = session.active_generation_identity();
+    let mut origins = Vec::new();
+    for index in 0..count {
+        let candidate = component_candidate_submission(
+            &session,
+            &format!("{source_name}-{index}"),
+            "workspace.component.active_session_current",
+        );
+        let mut turn = session.begin_observation_turn().unwrap();
+        turn.admit_source(candidate).unwrap();
+        let admitted = turn.seal().unwrap();
+        origins.push(
+            session
+                .issue_theme_switch_origin(
+                    &admitted,
+                    UiThemeSwitchOriginFamily::SourceEditObservation,
+                )
                 .unwrap(),
-        )],
-    )
-    .unwrap();
-    let bundle = crate::capability::FrozenAppearanceThemeCapabilities::admit(
-        catalog,
-        definition_identity.clone(),
-        vec![definition],
-    )
-    .unwrap();
-    let registered = crate::facade::entry::CapabilityRegistrationBuilder::new()
-        .register_appearance_role(role)
-        .unwrap()
-        .register_appearance_theme_bundle(bundle)
-        .unwrap()
-        .freeze_with_registration_report()
-        .into_accepted_snapshot();
-    assert_eq!(
-        registered
-            .freeze_report()
-            .registry_family_width(crate::capability::RegistryFamily::AppearanceTheme),
-        Some(1)
-    );
-    assert!(registered
-        .freeze_report()
-        .has_complete_registry_family_inventory());
-    let host_profile = worth_ui_host_contract::UiHostAppearanceProfileContract::admit(
-        "test-host",
-        1,
-        [
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::SurfaceFill,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::SurfaceBorder,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::CornerRadii,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Outline,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::TextRangeForeground,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::PortalSurface,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Backdrop,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::OverlayOrder,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::PointerAffordance,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Damage,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Clip,
-        ],
-        Some(worth_ui_host_contract::UiHostPrimaryPointerKind::Mouse),
-        worth_ui_host_contract::UiHostAppearanceGeometryQualification::admit([
-            worth_ui_host_contract::UiHostAppearanceScaleGeometryQualification::new(
-                1_000,
-                1,
-                worth_ui_host_contract::UiAppearanceLogicalLength::new(1_000).unwrap(),
-                worth_ui_host_contract::UiHostAppearanceGeometryQualificationBasis::AnalyticSignedDistancePixelCenter,
-            ),
-        ])
-        .expect("the test geometry qualification must admit"),
-    )
-    .unwrap();
-    UiThemeCapabilityAdmission::from_frozen_capabilities(
-        registered.appearance_themes().unwrap(),
-        &definition_identity,
-        registered.appearance_roles(),
-        &host_profile,
-    )
-    .unwrap()
-    .issue([role_identity], surface, application)
-    .unwrap()
+        );
+    }
+    let _ = session.shutdown();
+    (origins, application)
 }
 
 fn next_surface() -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
@@ -367,3 +335,7 @@ fn generation(seed: u64) -> crate::runtime::WorthUiActiveApplicationGenerationId
         app.generation_identity(),
     )
 }
+
+#[path = "state_tests/palette.rs"]
+mod palette;
+use palette::capability;

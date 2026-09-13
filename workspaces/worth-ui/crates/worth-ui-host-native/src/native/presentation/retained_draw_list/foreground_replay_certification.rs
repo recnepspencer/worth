@@ -42,7 +42,7 @@ impl UiNativeRetainedDrawList {
             .as_ref()
             .ok_or(Denial::CommandMismatch)?
             .basis;
-        retained.initialize_text_coverage(vec![foreground.clone()], atlas)?;
+        retained.initialize_text_coverage(vec![foreground.clone()], atlas, view)?;
         let plan = super::super::reconstruction::build_plan(basis, atlas, &mut retained)
             .map_err(|_| Denial::CommandMismatch)?;
         Ok(observe_plan(&plan, extent))
@@ -63,7 +63,7 @@ impl UiNativeRetainedDrawList {
             .as_ref()
             .ok_or(Denial::CommandMismatch)?
             .basis;
-        retained.initialize_text_coverage(vec![foreground.clone()], atlas)?;
+        retained.initialize_text_coverage(vec![foreground.clone()], atlas, view)?;
         let appearance = &mut retained
             .staged_appearance
             .as_mut()

@@ -9,6 +9,34 @@ pub(crate) enum UiPresentedPointLookupDenial {
 }
 
 impl UiMountedFrameRetentionCoordinator {
+    pub(in crate::mounting) fn current_retained_node_receipt(
+        &self,
+        instance: UiMountedInstanceIdentity,
+    ) -> Option<UiMountedNodeReceiptIdentity> {
+        self.authority
+            .borrow()
+            .frames
+            .current
+            .as_ref()?
+            .receipt_for_with_probes(instance)
+            .0
+    }
+
+    pub(in crate::mounting) fn current_node_receipt(
+        &self,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        instance: UiMountedInstanceIdentity,
+    ) -> Result<UiMountedNodeReceiptIdentity, UiPresentedFrameBasisDenial> {
+        let authority = self.authority.borrow();
+        let surface = authority.surface_for_current_presentation(presentation)?;
+        let evidence = authority
+            .surface_evidence(surface)
+            .ok_or(UiPresentedFrameBasisDenial::Unknown)?;
+        evidence
+            .receipt_for_with_probes(instance)
+            .0
+            .ok_or(UiPresentedFrameBasisDenial::InstanceNotPresented)
+    }
     pub(in crate::mounting) fn current_presented_hit_row(
         &self,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
@@ -16,14 +44,10 @@ impl UiMountedFrameRetentionCoordinator {
         work: &mut UiHitTestSpatialWork,
     ) -> Result<crate::mounting::UiPresentedHitTestRow, UiPresentedFrameBasisDenial> {
         let authority = self.authority.borrow();
+        let surface = authority.surface_for_current_presentation(presentation)?;
         let evidence = authority
-            .frames
-            .current
-            .as_ref()
+            .surface_evidence(surface)
             .ok_or(UiPresentedFrameBasisDenial::Unknown)?;
-        if evidence.frame() != presentation.frame() {
-            return Err(UiPresentedFrameBasisDenial::Expired);
-        }
         evidence.classify(presentation, None, None)?;
         let basis = evidence.visual_region_basis(presentation.binding());
         let (row, probes) = basis
@@ -41,7 +65,7 @@ impl UiMountedFrameRetentionCoordinator {
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     ) -> Option<worth_ui_host_contract::UiHostObservationPresentationBasis> {
         let authority = self.authority.borrow();
-        let current = authority.frames.current.as_ref()?;
+        let current = authority.surface_evidence(surface)?;
         let presentation = current
             .current_presentations()
             .find_map(|(candidate, basis)| (candidate == surface).then_some(basis));
@@ -54,25 +78,7 @@ impl UiMountedFrameRetentionCoordinator {
     ) -> Result<worth_ui_host_contract::UiSemanticSurfaceIdentity, UiPresentedFrameBasisDenial>
     {
         let authority = self.authority.borrow();
-        let current = authority
-            .frames
-            .current
-            .as_ref()
-            .ok_or(UiPresentedFrameBasisDenial::Unknown)?;
-        if current.frame() != presentation.frame() {
-            return Err(UiPresentedFrameBasisDenial::Expired);
-        }
-        current.classify(presentation, None, None)?;
-        current
-            .presentation_receipt()
-            .into_iter()
-            .flat_map(|receipt| receipt.surfaces())
-            .find(|surface| {
-                surface.binding() == presentation.binding()
-                    && surface.host_surface() == presentation.host_surface()
-            })
-            .map(|surface| surface.semantic_surface())
-            .ok_or(UiPresentedFrameBasisDenial::Unknown)
+        authority.surface_for_current_presentation(presentation)
     }
 
     pub(in crate::mounting) fn current_hit_evidence(
@@ -84,11 +90,19 @@ impl UiMountedFrameRetentionCoordinator {
     pub(in crate::mounting) fn committed_hit_transition(
         &self,
         previous: Option<Rc<super::super::UiRetainedPresentedFrame>>,
+        frame: UiMountedFrameIdentity,
     ) -> Option<super::super::UiCommittedPresentedHitTransition> {
         Some(super::super::UiCommittedPresentedHitTransition::new(
             previous,
-            self.current_hit_evidence()?,
+            self.hit_evidence(frame)?,
         ))
+    }
+
+    pub(in crate::mounting) fn hit_evidence(
+        &self,
+        frame: UiMountedFrameIdentity,
+    ) -> Option<Rc<super::super::UiRetainedPresentedFrame>> {
+        self.authority.borrow().evidence_rc(frame)
     }
 
     pub(in crate::mounting) fn presented_hit_candidates(
@@ -140,8 +154,32 @@ impl UiMountedFrameRetentionCoordinator {
             return work;
         }
         let mut authority = self.authority.borrow_mut();
-        if let Some(evidence) = authority.frames.current.as_mut() {
-            work.merge(Rc::make_mut(evidence).refresh_hit_motion(sampler, targets));
+        let frames = targets
+            .iter()
+            .filter_map(|target| {
+                authority
+                    .frames
+                    .surface_frames
+                    .get(&target.semantic_surface())
+                    .copied()
+            })
+            .collect::<std::collections::BTreeSet<_>>();
+        for frame in frames {
+            let local_targets = targets
+                .iter()
+                .copied()
+                .filter(|target| {
+                    authority
+                        .frames
+                        .surface_frames
+                        .get(&target.semantic_surface())
+                        == Some(&frame)
+                })
+                .collect::<Vec<_>>();
+            if let Some(mut evidence) = authority.evidence_rc(frame) {
+                work.merge(Rc::make_mut(&mut evidence).refresh_hit_motion(sampler, &local_targets));
+                authority.replace_evidence(evidence);
+            }
         }
         work
     }

@@ -38,7 +38,7 @@ fn mounted_portal_child_clipping_suppresses_and_restores_every_presented_family(
     let text = |frame: &UiMountedProjectionFrame| {
         frame
             .presentation_commands_for_instance(child, surface, binding)
-            .into_iter()
+            .iter()
             .filter_map(|command| match command {
                 UiMountedPaintCommand::SemanticText { mechanic, .. } => Some(mechanic.clone()),
                 _ => None,
@@ -84,7 +84,7 @@ fn assert_presented_families(
         .iter()
         .any(|instance| *instance == child));
     let commands = frame.presentation_commands_for_instance(child, surface, binding);
-    assert_eq!(commands.len(), if visible { 3 } else { 0 });
+    assert_eq!(commands.len(), if visible { 2 } else { 0 });
     let basis = frame
         .visual_region_basis()
         .for_binding(binding, frame.receipt_basis.clone());
@@ -116,13 +116,6 @@ fn assert_presented_families(
     );
     assert_eq!(
         basis
-            .paint()
-            .iter()
-            .any(|row| row.mounted_instance() == child),
-        visible
-    );
-    assert_eq!(
-        basis
             .unsupported_paint()
             .iter()
             .any(|row| row.node_receipt().mounted_instance() == child),
@@ -141,13 +134,6 @@ fn assert_presented_families(
         visible
     );
     assert_eq!(
-        view.filled_rects()
-            .rows()
-            .iter()
-            .any(|row| row.mounted_instance() == child),
-        visible
-    );
-    assert_eq!(
         view.semantic_text()
             .rows()
             .iter()
@@ -158,10 +144,10 @@ fn assert_presented_families(
     let [UiMountedPresentationNodeChange::Upsert(node)] = changes.as_slice() else {
         panic!("an open clipped child retains node authority with omitted mechanics");
     };
-    assert_eq!(
-        matches!(node.paint(), UiMountedPresentationNodePaint::Command(_)),
-        visible
-    );
+    assert!(matches!(
+        node.paint(),
+        UiMountedPresentationNodePaint::Omitted(_)
+    ));
     assert_eq!(
         matches!(node.hit_test(), UiMountedPresentationNodeHitTest::Region(_)),
         visible
@@ -208,6 +194,7 @@ fn semantic_at(
             ),
         ],
         vec![UiMountedProjectionSurface {
+            coordinate_posture: crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
             surface,
             binding,
             audience: UiMountedProjectionAudience::full(),

@@ -20,7 +20,7 @@ pub(super) fn compile_content_plan(
     }
     retain_projection_inputs(candidate, scope, &mut content)?;
     let governed_nodes = schema_transition::compile(predecessor, candidate, scope, &mut content)?;
-    project_intent_postures(scope, &governed_nodes, &mut content)?;
+    project_intent_postures(candidate, scope, &governed_nodes, &mut content)?;
     for lookup in scope.lookups() {
         project_query_content(candidate, scope, lookup, &governed_nodes, &mut content)?;
     }
@@ -106,6 +106,7 @@ fn insert_projected_content(
 }
 
 fn project_intent_postures(
+    candidate: &crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
     scope: &super::super::UiResolvedAffectedScope,
     governed_nodes: &std::collections::BTreeSet<crate::graph::UiGraphNodeIdentity>,
     content: &mut crate::mounting::UiMountedSemanticContentInput,
@@ -123,6 +124,26 @@ fn project_intent_postures(
                 continue;
             };
             if graph_node != posture.graph_node() || governed_nodes.contains(&graph_node) {
+                continue;
+            }
+            // Posture observation does not itself grant text presentation. A
+            // component must have admitted semantic text before receiving the
+            // existing textual posture projection; appearance-only owners keep
+            // their separately authored paint and product-owned copy.
+            let snapshot = candidate.graph_snapshot();
+            let renders_text = snapshot
+                .core_indexes()
+                .node_identity()
+                .node(snapshot.nodes(), graph_node)
+                .and_then(|node| {
+                    crate::graph::component_capability_for_node(
+                        node,
+                        candidate.capabilities(),
+                        &candidate.authored_declaration_lookup(),
+                    )
+                })
+                .is_some_and(|component| component.semantic_text_contract().is_some());
+            if !renders_text {
                 continue;
             }
             let label: Arc<str> = match posture.posture() {

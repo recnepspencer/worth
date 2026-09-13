@@ -4,7 +4,7 @@ use worth_ui::facade::app::{
 use worth_ui::facade::appearance::{UiAppearanceAspect, UiAppearanceAspectContract};
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentHitTestContract, ComponentHitTestOrder,
-    ComponentStaticPaintContract, ComponentStaticPaintOrder, ComponentViewportAxisPlacement,
+    ComponentViewportAxisPlacement,
 };
 use worth_ui_platform_pulse::product_world::{
     PlatformPulseCompositionExtent, PlatformPulseCompositionLayout, PlatformPulseLogicalRect,
@@ -16,12 +16,14 @@ use super::product_structure_geometry::{fixed_end, fixed_start, stretch, viewpor
 
 #[path = "product_structure/descriptor.rs"]
 mod descriptor;
+#[path = "product_structure/review_dialog.rs"]
+mod review_dialog;
 #[path = "product_structure/surfaces.rs"]
 mod surfaces;
 use descriptor::{
-    component, interactive_region, portal_interactive_region, portal_occupying_region,
-    portal_region, portal_text, region, text, text_with_appearance_foreground, text_with_token,
-    token_id,
+    appearance_region, component, interactive_region, portal_interactive_region,
+    portal_occupying_region, portal_region, portal_text, text, text_with_appearance_foreground,
+    text_with_token, token_id,
 };
 
 pub(in crate::application) fn register_structure(
@@ -40,13 +42,7 @@ pub(in crate::application) fn register_structure(
     let builder = builder
         .register_component(
             component(PlatformPulseProductComponent::Root)
-                .with_static_paint(
-                    ComponentStaticPaintContract::opaque_fill(
-                        PlatformPulsePaletteRole::Canvas.token_id(),
-                        ComponentStaticPaintOrder::back_to_front(0),
-                    ),
-                    root_allocation,
-                )
+                .with_allocation_measurement_contract(root_allocation)
                 .with_surface_paint_order(0)
                 .with_appearance_aspect_contract(
                     UiAppearanceAspectContract::component([UiAppearanceAspect::Background], [])
@@ -58,9 +54,8 @@ pub(in crate::application) fn register_structure(
                     root_allocation,
                 )),
         )
-        .register_component(region(
+        .register_component(appearance_region(
             PlatformPulseProductComponent::MastheadBorder,
-            PlatformPulsePaletteRole::StructuralRule.token_id(),
             viewport_rect(
                 ComponentViewportAxisPlacement::stretch_between(24, 24),
                 fixed_start(79, 1),
@@ -72,7 +67,11 @@ pub(in crate::application) fn register_structure(
                 PlatformPulseProductComponent::Brand,
                 PlatformPulseTextRole::Masthead,
                 PlatformPulsePaletteRole::PrimaryText,
-                PlatformPulseStaticCopy::ALL[0].text(),
+                PlatformPulseStaticCopy::ALL
+                    .into_iter()
+                    .find(|copy| copy.component() == PlatformPulseProductComponent::Brand)
+                    .expect("Pulse declares its brand copy")
+                    .text(),
                 PlatformPulseLogicalRect::new(40, 42, 200, 20).allocation(),
                 6,
             )
@@ -93,15 +92,13 @@ pub(in crate::application) fn register_structure(
             ),
             6,
         ))
-        .register_component(region(
+        .register_component(appearance_region(
             PlatformPulseProductComponent::EvidenceBorder,
-            PlatformPulsePaletteRole::StructuralRule.token_id(),
             layout.evidence_border_allocation(),
             1,
         ))
-        .register_component(region(
+        .register_component(appearance_region(
             PlatformPulseProductComponent::EvidenceRail,
-            PlatformPulsePaletteRole::RaisedSurface.token_id(),
             layout.evidence_rail_allocation(),
             2,
         ))
@@ -126,9 +123,8 @@ pub(in crate::application) fn register_structure(
             PlatformPulseLogicalRect::new(48, 256, 160, 48).allocation(),
             6,
         ))
-        .register_component(region(
+        .register_component(appearance_region(
             PlatformPulseProductComponent::SourceSignalActive,
-            token_id("theme.platform_pulse.fill"),
             viewport_rect(fixed_start(48, 144), fixed_end(112, 4)),
             4,
         ))
@@ -146,21 +142,30 @@ pub(in crate::application) fn register_structure(
             PlatformPulseLogicalRect::new(48, 360, 168, 64).allocation(),
             6,
         ))
-        .register_component(region(
-            PlatformPulseProductComponent::ServiceStageBorder,
-            PlatformPulsePaletteRole::StructuralRule.token_id(),
-            viewport_rect(stretch(263, 303), stretch(103, 71)),
-            1,
-        ))
-        .register_component(region(
-            PlatformPulseProductComponent::ServiceStage,
-            PlatformPulsePaletteRole::ElevatedSurface.token_id(),
-            viewport_rect(stretch(264, 304), stretch(104, 72)),
-            2,
-        ))
-        .register_component(region(
+        .register_component(
+            component(PlatformPulseProductComponent::ServiceStageBorder)
+                .with_allocation_measurement_contract(viewport_rect(
+                    stretch(263, 303),
+                    stretch(103, 71),
+                )),
+        )
+        .register_component(
+            appearance_region(
+                PlatformPulseProductComponent::ServiceStage,
+                viewport_rect(stretch(264, 304), stretch(104, 72)),
+                2,
+            )
+            .with_appearance_aspect_contract(
+                UiAppearanceAspectContract::component(
+                    [UiAppearanceAspect::Background, UiAppearanceAspect::Border],
+                    [],
+                )
+                .expect("Pulse service stage appearance contract is valid"),
+            )
+            .expect("Pulse service stage accepts a component appearance contract"),
+        )
+        .register_component(appearance_region(
             PlatformPulseProductComponent::QueryAccent,
-            PlatformPulsePaletteRole::PrincipalAccent.token_id(),
             PlatformPulseLogicalRect::new(264, 104, 96, 2).allocation(),
             3,
         ))
@@ -187,7 +192,6 @@ pub(in crate::application) fn register_structure(
         ))
         .register_component(interactive_region(
             PlatformPulseProductComponent::ActionTarget,
-            PlatformPulsePaletteRole::PrincipalAccent,
             action,
             1,
         ))
@@ -200,7 +204,6 @@ pub(in crate::application) fn register_structure(
         ))
         .register_component(interactive_region(
             PlatformPulseProductComponent::PortalTarget,
-            PlatformPulsePaletteRole::RaisedSurface,
             portal_action,
             2,
         ))
@@ -213,35 +216,19 @@ pub(in crate::application) fn register_structure(
         ))
         .register_component(portal_occupying_region(
             PlatformPulseProductComponent::PortalSurface,
-            PlatformPulsePaletteRole::ElevatedSurface,
             PlatformPulseLogicalRect::new(0, 0, 280, 320).allocation(),
-            0,
             100,
         ))
         .register_component(portal_region(
             PlatformPulseProductComponent::PortalAccent,
-            PlatformPulsePaletteRole::PrincipalAccent,
             PlatformPulseLogicalRect::new(0, 0, 280, 3).allocation(),
             1,
-        ))
-        .register_component(portal_region(
-            PlatformPulseProductComponent::PortalIconTile,
-            PlatformPulsePaletteRole::RaisedSurface,
-            PlatformPulseLogicalRect::new(24, 24, 36, 36).allocation(),
-            2,
-        ))
-        .register_component(portal_text(
-            PlatformPulseProductComponent::PortalIconText,
-            PlatformPulseTextRole::Masthead,
-            PlatformPulsePaletteRole::PrincipalAccent,
-            PlatformPulseLogicalRect::new(36, 31, 18, 20).allocation(),
-            6,
         ))
         .register_component(portal_text(
             PlatformPulseProductComponent::PortalTitle,
             PlatformPulseTextRole::Masthead,
             PlatformPulsePaletteRole::PrimaryText,
-            PlatformPulseLogicalRect::new(76, 25, 180, 24).allocation(),
+            PlatformPulseLogicalRect::new(24, 24, 232, 24).allocation(),
             6,
         ))
         .register_component(portal_text(
@@ -253,7 +240,6 @@ pub(in crate::application) fn register_structure(
         ))
         .register_component(portal_interactive_region(
             PlatformPulseProductComponent::PortalCancelTarget,
-            PlatformPulsePaletteRole::RaisedSurface,
             PlatformPulseLogicalRect::new(24, 248, 104, 40).allocation(),
             21,
         ))
@@ -266,7 +252,6 @@ pub(in crate::application) fn register_structure(
         ))
         .register_component(portal_interactive_region(
             PlatformPulseProductComponent::PortalPrimaryTarget,
-            PlatformPulsePaletteRole::PrincipalAccent,
             PlatformPulseLogicalRect::new(136, 248, 120, 40).allocation(),
             20,
         ))
@@ -285,9 +270,8 @@ pub(in crate::application) fn register_structure(
                 )),
         )
         .register_component(
-            region(
+            appearance_region(
                 PlatformPulseProductComponent::QueryCard,
-                PlatformPulsePaletteRole::RaisedSurface.token_id(),
                 viewport_rect(fixed_end(24, 280), fixed_start(104, 200)),
                 2,
             )
@@ -313,7 +297,6 @@ pub(in crate::application) fn register_structure(
         ))
         .register_component(interactive_region(
             PlatformPulseProductComponent::ConfirmationTarget,
-            PlatformPulsePaletteRole::ElevatedSurface,
             query_action,
             0,
         ))
@@ -324,24 +307,40 @@ pub(in crate::application) fn register_structure(
             query_action_text,
             6,
         ))
-        .register_component(region(
+        .register_component(text(
+            PlatformPulseProductComponent::ConfirmationLabel,
+            PlatformPulseTextRole::Meta,
+            PlatformPulsePaletteRole::SecondaryText,
+            viewport_rect(fixed_end(72, 184), fixed_start(188, 20)),
+            6,
+        ))
+        .register_component(appearance_region(
             PlatformPulseProductComponent::LowerShelfDivider,
-            PlatformPulsePaletteRole::StructuralRule.token_id(),
             viewport_rect(stretch(24, 24), fixed_end(48, 1)),
             3,
         ))
-        .register_component(region(
-            PlatformPulseProductComponent::NativeCardBorder,
-            PlatformPulsePaletteRole::StructuralRule.token_id(),
-            viewport_rect(fixed_end(23, 282), stretch(327, 71)),
-            1,
-        ))
-        .register_component(region(
-            PlatformPulseProductComponent::NativeCard,
-            PlatformPulsePaletteRole::RaisedSurface.token_id(),
-            viewport_rect(fixed_end(24, 280), stretch(328, 72)),
-            2,
-        ))
+        .register_component(
+            component(PlatformPulseProductComponent::NativeCardBorder)
+                .with_allocation_measurement_contract(viewport_rect(
+                    fixed_end(23, 282),
+                    stretch(327, 71),
+                )),
+        )
+        .register_component(
+            appearance_region(
+                PlatformPulseProductComponent::NativeCard,
+                viewport_rect(fixed_end(24, 280), stretch(328, 72)),
+                2,
+            )
+            .with_appearance_aspect_contract(
+                UiAppearanceAspectContract::component(
+                    [UiAppearanceAspect::Background, UiAppearanceAspect::Border],
+                    [],
+                )
+                .expect("Pulse native card appearance contract is valid"),
+            )
+            .expect("Pulse native card accepts a component appearance contract"),
+        )
         .register_component(text(
             PlatformPulseProductComponent::NativeLabel,
             PlatformPulseTextRole::Section,
@@ -381,5 +380,5 @@ pub(in crate::application) fn register_structure(
             viewport_rect(stretch(40, 40), fixed_end(28, 16)),
             6,
         ));
-    surfaces::register(builder)
+    surfaces::register(review_dialog::register(builder))
 }

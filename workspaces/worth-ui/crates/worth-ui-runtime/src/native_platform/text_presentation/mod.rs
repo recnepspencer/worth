@@ -23,11 +23,12 @@ pub(crate) use mounted_coordinator::{
     UiNativeMountedTextCoordinator,
 };
 pub(super) use preparation::mounted_semantic_text;
+#[cfg(test)]
+pub(crate) use preparation::prepare_complete_semantic_text;
 pub(crate) use preparation::{
-    prepare_complete_semantic_text, prepare_from_foreground_reuse, prepare_mounted_semantic_text,
-    presentation_damage_digest, UiMountedEventTimeDpiAuthority,
-    UiNativeTextPresentationPreparation, UiNativeTextPresentationPrepared,
-    UiNativeTextPresentationReadiness,
+    prepare_from_foreground_reuse, prepare_mounted_semantic_text, presentation_damage_digest,
+    UiMountedEventTimeDpiAuthority, UiNativeTextPresentationPreparation,
+    UiNativeTextPresentationPrepared, UiNativeTextPresentationReadiness,
 };
 pub(crate) use query_correspondence::derive_text_presentation_request_bases;
 pub(crate) use rasterization::UiNativeTextMissRasterizer;

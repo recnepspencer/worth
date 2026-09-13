@@ -9,10 +9,8 @@ use super::planner::{
 use super::portal_export::UiOverlayPortalOwnerExport;
 use crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity;
 use crate::runtime::allocation_receipt::UiMountedOverlayExtentOwner;
-use crate::runtime::motion::UiMotionRuntimeState;
 use crate::runtime::portal::{
-    UiPortalOverlayBindingDenial, UiPortalOverlayBindingOwner, UiPortalRuntimeState,
-    UiPortalStackSnapshot,
+    UiPortalOverlayBindingDenial, UiPortalOverlayBindingOwner, UiPortalStackSnapshot,
 };
 use crate::runtime::presentation_state::UiApplicationPresentationOwnerExport;
 
@@ -26,26 +24,6 @@ pub(crate) struct UiOverlayOwnerSources<'a> {
 }
 
 impl<'a> UiOverlayOwnerSources<'a> {
-    pub(crate) fn new(
-        generation: &'a WorthUiPreparedApplicationGenerationIdentity,
-        portal: Option<&'a UiPortalRuntimeState>,
-        extent: &'a UiMountedOverlayExtentOwner,
-        presentation: &'a UiApplicationPresentationOwnerExport,
-        bindings: &'a UiPortalOverlayBindingOwner,
-        motion: Option<&'a UiMotionRuntimeState>,
-    ) -> Self {
-        Self {
-            generation,
-            portal: portal
-                .map(UiPortalRuntimeState::stack_snapshot)
-                .unwrap_or_else(UiPortalStackSnapshot::empty),
-            extent,
-            presentation,
-            bindings,
-            motion: motion.map(UiMotionRuntimeState::overlay_owner_export),
-        }
-    }
-
     pub(crate) const fn from_exports(
         generation: &'a WorthUiPreparedApplicationGenerationIdentity,
         portal: UiPortalStackSnapshot,
@@ -106,16 +84,6 @@ impl UiOverlayCompositionOwnerBridge {
         let exports = assemble_owner_exports(sources)?;
         self.owner
             .prepare_successor(&exports, changes)
-            .map_err(UiOverlayOwnerBridgeDenial::Composition)
-    }
-
-    pub(super) fn reconstruct(
-        &self,
-        sources: UiOverlayOwnerSources<'_>,
-    ) -> Result<UiPreparedOverlayComposition, UiOverlayOwnerBridgeDenial> {
-        let exports = assemble_owner_exports(sources)?;
-        self.owner
-            .reconstruct(&exports)
             .map_err(UiOverlayOwnerBridgeDenial::Composition)
     }
 

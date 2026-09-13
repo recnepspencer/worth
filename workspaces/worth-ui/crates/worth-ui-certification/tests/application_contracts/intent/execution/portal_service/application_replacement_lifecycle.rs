@@ -32,13 +32,18 @@ use crate::intent::operability::{
 #[test]
 fn replacement_keeps_portal_installation_while_removing_one_exact_portal_owner() {
     let host = scripted_motion_host();
-    for _ in 0..12 {
+    for _ in 0..2 {
         host.push_presented();
     }
     let (application, facts) = build_open_portal_application_with_host(host.clone());
     let candidate_facts = facts.clone();
-    let mut world =
-        AdmissionWorld::launch_application_with_target(application, facts, 1, 2, [18, 20]);
+    let mut world = AdmissionWorld::launch_application_on_declared_surface(
+        application,
+        facts,
+        "visual.identity.surface.main",
+        2,
+        [18, 20],
+    );
     open_portal(&mut world);
     assert_eq!(
         world
@@ -70,7 +75,34 @@ fn replacement_keeps_portal_installation_while_removing_one_exact_portal_owner()
     host.push_presented();
     let activation = match replacement.present(UiPresentationDeadline::at_tick(60), 2) {
         WorthUiMountedApplicationReplacementOutcome::Published { application, .. } => application,
-        _ => panic!("the owner-removal successor must publish"),
+        WorthUiMountedApplicationReplacementOutcome::AdmissionDenied(denial) => {
+            panic!(
+                "the owner-removal successor denied admission: {:?}",
+                denial.denial()
+            )
+        }
+        WorthUiMountedApplicationReplacementOutcome::RejectedBeforeEffects(rejection) => panic!(
+            "the owner-removal successor was rejected: {:?}",
+            rejection.rejections()
+        ),
+        WorthUiMountedApplicationReplacementOutcome::InFlight(_) => {
+            panic!("the owner-removal successor remained in flight")
+        }
+        WorthUiMountedApplicationReplacementOutcome::PresentationIndeterminate(_) => {
+            panic!("the owner-removal successor became indeterminate")
+        }
+        WorthUiMountedApplicationReplacementOutcome::RetentionDenied(denial) => {
+            panic!(
+                "the owner-removal successor denied retention: {:?}",
+                denial.denial()
+            )
+        }
+        WorthUiMountedApplicationReplacementOutcome::CompletionDenied(denial) => {
+            panic!(
+                "the owner-removal successor denied completion: {:?}",
+                denial.denial()
+            )
+        }
     };
 
     assert_eq!(
@@ -96,6 +128,11 @@ fn replacement_keeps_portal_installation_while_removing_one_exact_portal_owner()
         host.presentation_calls(),
         presentation_calls + 1,
         "only the required mounted replacement frame reaches the host"
+    );
+    assert_eq!(
+        host.requested_portal_overlay_counts().last(),
+        Some(&0),
+        "the accepted successor presentation removes the retired Portal overlay"
     );
 
     let shutdown = world.session.shutdown();
@@ -267,8 +304,13 @@ fn world_with_retained_exit(
     }
     let (application, facts) = build_open_portal_application_with_host(host.clone());
     let candidate_facts = facts.clone();
-    let mut world =
-        AdmissionWorld::launch_application_with_target(application, facts, 1, 2, [18, 20]);
+    let mut world = AdmissionWorld::launch_application_on_declared_surface(
+        application,
+        facts,
+        "visual.identity.surface.main",
+        2,
+        [18, 20],
+    );
     open_portal(&mut world);
     let boundary = safe_boundary(&mut world);
     script(&host);

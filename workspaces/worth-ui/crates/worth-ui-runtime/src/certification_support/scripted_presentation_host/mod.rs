@@ -8,6 +8,7 @@ use crate::facade::mounted::{
 };
 use worth_ui_host_contract::WorthUiHostCapabilityReport;
 
+mod accepted_text;
 mod adapter;
 mod measurement_adapter;
 mod visual_capture_script;
@@ -52,9 +53,11 @@ struct ScriptedPresentationState {
     wrong_next_deregistration_receipt: bool,
     cancellation_calls: Vec<u64>,
     presentation_calls: usize,
-    last_filled_rect_colors: Vec<worth_ui_host_contract::UiMountedRgba8>,
+    last_surface_colors: Vec<worth_ui_host_contract::UiMountedRgba8>,
+    accepted_text: accepted_text::ScriptedAcceptedText,
     last_presentation_correlation:
         Option<worth_ui_host_native::UiNativePhysicalPresentationCorrelation>,
+    #[cfg(feature = "certification-support")]
     next_physical_presentation_sequence: u64,
     last_focus_placement: Option<worth_ui_host_contract::UiHostFocusPlacementRequest>,
     requested_portal_overlay_commands:
@@ -97,8 +100,10 @@ impl Default for ScriptedPresentationState {
             wrong_next_deregistration_receipt: false,
             cancellation_calls: Vec::new(),
             presentation_calls: 0,
-            last_filled_rect_colors: Vec::new(),
+            last_surface_colors: Vec::new(),
+            accepted_text: Default::default(),
             last_presentation_correlation: None,
+            #[cfg(feature = "certification-support")]
             next_physical_presentation_sequence: 1,
             last_focus_placement: None,
             requested_portal_overlay_commands: HashSet::new(),
@@ -250,8 +255,8 @@ impl ScriptedPresentationHost {
         self.state.lock().unwrap().presentations.len()
     }
 
-    pub fn last_filled_rect_colors(&self) -> Vec<worth_ui_host_contract::UiMountedRgba8> {
-        self.state.lock().unwrap().last_filled_rect_colors.clone()
+    pub fn last_surface_colors(&self) -> Vec<worth_ui_host_contract::UiMountedRgba8> {
+        self.state.lock().unwrap().last_surface_colors.clone()
     }
 
     pub fn last_presentation_correlation(

@@ -200,7 +200,7 @@ fn authored_region_backdrop_uses_completed_occurrence_and_tracks_resize() {
                 .roles_resolved,
             usize::from(revision == 2)
         );
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     }
     lifecycle::verify(
         &mut session,

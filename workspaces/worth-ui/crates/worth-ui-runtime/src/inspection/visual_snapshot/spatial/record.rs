@@ -38,27 +38,26 @@ pub(crate) trait UiSpatialRecord {
 }
 
 impl UiVisibleRegionRecord {
-    pub(crate) fn validated(
-        mechanic: worth_ui_host_contract::UiMountedFilledRectMechanic,
+    pub(crate) fn appearance(
+        mechanic: crate::mounting::UiMountedAppearancePaintBasis,
         realized_clip: worth_ui_host_contract::UiMountedCanonicalBox,
         region: UiSpatialRect,
     ) -> Self {
-        let alpha = mechanic.color().channels()[3];
         Self {
             node_receipt: mechanic.node_receipt(),
             region,
-            layer_order: mechanic.layer_semantic_order(),
-            paint_order: mechanic.layer_semantic_order(),
-            opacity: if alpha == u8::MAX {
-                UiVisibleOpacity::Opaque
-            } else {
-                UiVisibleOpacity::Composited(alpha)
+            layer_order: mechanic.semantic_order(),
+            paint_order: mechanic.semantic_order(),
+            opacity: match mechanic.alpha() {
+                Some(u8::MAX) => UiVisibleOpacity::Opaque,
+                Some(alpha) => UiVisibleOpacity::Composited(alpha),
+                None => UiVisibleOpacity::Unsupported,
             },
             clip_lineage: UiValidatedClipLineage {
-                canonical: mechanic.clip_bounds(),
+                canonical: mechanic.clip(),
                 realized: realized_clip,
             },
-            source_projection_digest: mechanic.semantic_digest(),
+            source_projection_digest: mechanic.source_digest(),
         }
     }
 

@@ -91,6 +91,7 @@ pub struct UiMountedSemanticTextMechanic {
     surface: UiSemanticSurfaceIdentity,
     binding: UiSurfaceBindingGeneration,
     mounted_instance: UiMountedInstanceIdentity,
+    portal_group: Option<UiMountedInstanceIdentity>,
     node_receipt: UiMountedNodeReceiptIdentity,
     allocation_basis: super::UiMountedAllocationBasis,
     bounds: super::UiMountedCanonicalBox,
@@ -123,6 +124,7 @@ pub struct UiMountedSemanticTextCompletionInput<'layout> {
     pub surface: UiSemanticSurfaceIdentity,
     pub binding: UiSurfaceBindingGeneration,
     pub mounted_instance: UiMountedInstanceIdentity,
+    pub portal_group: Option<UiMountedInstanceIdentity>,
     pub node_receipt: UiMountedNodeReceiptIdentity,
     pub allocation_basis: super::UiMountedAllocationBasis,
     pub bounds: super::UiMountedCanonicalBox,
@@ -237,6 +239,7 @@ impl UiMountedSemanticTextMechanic {
             surface: input.surface,
             binding: input.binding,
             mounted_instance: input.mounted_instance,
+            portal_group: input.portal_group,
             node_receipt: input.node_receipt,
             allocation_basis: input.allocation_basis,
             bounds: input.bounds,
@@ -279,6 +282,10 @@ impl UiMountedSemanticTextMechanic {
     }
     pub const fn mounted_instance(&self) -> UiMountedInstanceIdentity {
         self.mounted_instance
+    }
+
+    pub const fn portal_group(&self) -> Option<UiMountedInstanceIdentity> {
+        self.portal_group
     }
     pub const fn node_receipt(&self) -> UiMountedNodeReceiptIdentity {
         self.node_receipt
@@ -351,10 +358,15 @@ impl UiMountedSemanticTextMechanic {
     pub fn presented_within_portal(
         &self,
         portal: super::UiMountedPortalOverlayMechanic,
+        source_anchor: super::UiMountedCanonicalBox,
     ) -> Result<Option<Self>, UiMountedSemanticTextCompletionDenial> {
-        let Some(geometry) =
-            super::portal_child_geometry::project(self.bounds, self.clip_bounds, portal)
-                .map_err(|_| UiMountedSemanticTextCompletionDenial::NonAreaGeometry)?
+        let Some(geometry) = super::portal_child_geometry::project(
+            self.bounds,
+            self.clip_bounds,
+            portal,
+            source_anchor,
+        )
+        .map_err(|_| UiMountedSemanticTextCompletionDenial::NonAreaGeometry)?
         else {
             return Ok(None);
         };
@@ -362,8 +374,8 @@ impl UiMountedSemanticTextMechanic {
         let mut presented = self.clone();
         presented.bounds = bounds;
         presented.clip_bounds = geometry.clip;
-        presented.origin_x = self.origin_x + portal.bounds().x() - portal.anchor_bounds().x();
-        presented.origin_y = self.origin_y + portal.bounds().y() - portal.anchor_bounds().y();
+        presented.origin_x = self.origin_x + portal.bounds().x() - source_anchor.x();
+        presented.origin_y = self.origin_y + portal.bounds().y() - source_anchor.y();
         presented.layer_semantic_order = portal
             .layer_semantic_order()
             .saturating_add(1 + self.layer_semantic_order.min(1_024));

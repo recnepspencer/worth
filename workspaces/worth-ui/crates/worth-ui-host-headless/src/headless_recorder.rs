@@ -184,12 +184,13 @@ impl WorthUiHeadlessRecorder {
             .mechanical_capability_report()
             .profile_identity_digest();
         let state = self.state.borrow();
-        let records_transcript = matches!(
-            view.presentation_work(),
-            worth_ui_host_contract::UiMountedPresentationWorkView::Initial(_)
-                | worth_ui_host_contract::UiMountedPresentationWorkView::Delta(_)
-                | worth_ui_host_contract::UiMountedPresentationWorkView::Reconstruction(_)
-        );
+        let records_transcript = view.appearance_work().is_some()
+            || matches!(
+                view.presentation_work(),
+                worth_ui_host_contract::UiMountedPresentationWorkView::Initial(_)
+                    | worth_ui_host_contract::UiMountedPresentationWorkView::Delta(_)
+                    | worth_ui_host_contract::UiMountedPresentationWorkView::Reconstruction(_)
+            );
         if records_transcript && state.transcripts.len() >= state.capacity.retained_frames() {
             return Err(UiHostSurfacePresentationDenial::CapacityExceeded);
         }
@@ -330,7 +331,7 @@ impl WorthUiHostMechanicsAdapter for WorthUiHeadlessRecorder {
             }
         };
         let binding = view.binding();
-        let adapter_cost = match work_cost(view.presentation_work()) {
+        let adapter_cost = match work_cost(view) {
             Ok(cost) => cost,
             Err(denial) => {
                 return UiHostSurfacePresentationOutcome::RejectedBeforeEffects(denial);

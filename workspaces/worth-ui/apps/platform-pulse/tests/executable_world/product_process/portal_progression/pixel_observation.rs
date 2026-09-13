@@ -19,6 +19,27 @@ pub(super) fn capture(
         .map_err(PlatformPulsePortalJourneyFailure::Native)
 }
 
+pub(super) fn export_capture(
+    name: &str,
+    capture: &crate::external_observation::NativeClientPixelCapture,
+) -> Result<(), String> {
+    let Some(directory) = std::env::var_os("WORTH_UI_NATIVE_CAPTURE_DIRECTORY") else {
+        return Ok(());
+    };
+    let directory = std::path::PathBuf::from(directory);
+    std::fs::create_dir_all(&directory)
+        .map_err(|error| format!("create capture directory {}: {error}", directory.display()))?;
+    let path = directory.join(name);
+    let bytes = crate::failure_teardown::encode_native_capture_png(capture)
+        .map_err(|error| format!("encode {}: {error}", path.display()))?;
+    let mut file = std::fs::File::create(&path)
+        .map_err(|error| format!("create {}: {error}", path.display()))?;
+    std::io::Write::write_all(&mut file, &bytes)
+        .map_err(|error| format!("write {}: {error}", path.display()))?;
+    file.sync_all()
+        .map_err(|error| format!("sync {}: {error}", path.display()))
+}
+
 pub(super) fn await_open_pixels(
     world: &mut NativeBoundExecutableWorld,
     baseline: &crate::external_observation::NativeClientPixelCapture,

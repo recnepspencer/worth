@@ -101,6 +101,22 @@ fn refreshed_visual_pulse_requires_retirement_before_its_next_capture() {
 
 #[test]
 fn in_flight_refresh_coalesces_only_monotonically_newer_content_frames() {
+    let initial = PlatformPulseVisualObservationState::AwaitingSnapshot { frame: 13 };
+    assert_eq!(
+        initial.after_content_publication(17),
+        Ok(PlatformPulseVisualObservationState::AwaitingSnapshot { frame: 17 })
+    );
+    assert!(initial.after_content_publication(12).is_err());
+
+    let overlay = PlatformPulseVisualObservationState::OverlayPublished {
+        snapshot: 7,
+        snapshot_frame: 11,
+        overlay: 13,
+        published_frame: 17,
+    };
+    assert_eq!(overlay.after_content_publication(19), Ok(overlay));
+    assert!(overlay.after_content_publication(16).is_err());
+
     let retained = PlatformPulseVisualObservationState::AwaitingRefreshRetirement {
         snapshot: 17,
         snapshot_frame: 19,

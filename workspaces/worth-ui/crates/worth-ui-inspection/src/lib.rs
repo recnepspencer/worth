@@ -8,6 +8,7 @@ mod appearance_change_distinctions;
 mod evidence_contract;
 mod facade;
 mod intent;
+mod pointer_affordance;
 mod posture;
 mod query;
 mod receipt;
@@ -32,6 +33,14 @@ pub use appearance::{
     UiAppearanceInspectionValue, UiAppearanceInspectionValueSource, UiAppearanceInspectionWorld,
 };
 pub use appearance_change_distinctions::UiAppearanceInspectionChangeDistinctions;
+pub use pointer_affordance::{
+    UiPointerAffordanceInspectionConfirmationStop, UiPointerAffordanceInspectionDecision,
+    UiPointerAffordanceInspectionExpiry, UiPointerAffordanceInspectionExplanation,
+    UiPointerAffordanceInspectionFamily, UiPointerAffordanceInspectionInoperableCause,
+    UiPointerAffordanceInspectionOutcome, UiPointerAffordanceInspectionPresentation,
+    UiPointerAffordanceInspectionPresentationDenial, UiPointerAffordanceInspectionTargetDenial,
+    UiPointerAffordanceInspectionTargetingDenial, UiPointerAffordanceInspectionUnavailable,
+};
 
 // Evidence contract lane
 pub use allocation::{

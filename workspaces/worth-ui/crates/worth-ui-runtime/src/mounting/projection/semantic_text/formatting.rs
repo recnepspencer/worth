@@ -24,6 +24,7 @@ pub(in crate::mounting::projection) struct UiMountedSemanticTextDefault {
     style: Option<worth_ui_text::UiTextStyle>,
     line_height_millipoints: Option<u32>,
     paint_identity: UiMountedTextPaintSpanIdentity,
+    appearance_foreground: bool,
 }
 
 #[derive(Clone, PartialEq)]
@@ -74,12 +75,15 @@ pub(in crate::mounting::projection) fn lower_semantic_text_formatting(
         return Ok(None);
     };
     let default = UiMountedSemanticTextDefault {
-        color: resolve_color(plan, theme_values, contract.theme_token())?,
+        color: semantic_text_seed_color(contract.uses_appearance_foreground(), || {
+            resolve_color(theme_values, contract.theme_token())
+        })?,
         style: contract.style().cloned(),
         line_height_millipoints: contract.line_height_millipoints(),
         paint_identity: UiMountedTextPaintSpanIdentity::from_runtime_mounting(
             contract.default_paint_identity(),
         ),
+        appearance_foreground: contract.uses_appearance_foreground(),
     };
     let scalar_spans = contract
         .scalar_spans()
@@ -88,7 +92,9 @@ pub(in crate::mounting::projection) fn lower_semantic_text_formatting(
             Ok(UiMountedSemanticTextResolvedSpan {
                 original_range: span.original_range(),
                 appearance_foreground: span.uses_appearance_foreground(),
-                color: resolve_color(plan, theme_values, span.foreground_token())?,
+                color: semantic_text_seed_color(span.uses_appearance_foreground(), || {
+                    resolve_color(theme_values, span.foreground_token())
+                })?,
                 style: span.style().clone(),
                 paint_identity: UiMountedTextPaintSpanIdentity::from_runtime_mounting(
                     span.paint_identity(),
@@ -108,12 +114,15 @@ fn lower_directive(
 ) -> Result<UiMountedSemanticTextFormattingSeed, UiMountedProjectionDenial> {
     let contract = directive.contract();
     let default = UiMountedSemanticTextDefault {
-        color: resolve_directive_color(directive, contract.theme_token())?,
+        color: semantic_text_seed_color(contract.uses_appearance_foreground(), || {
+            resolve_directive_color(directive, contract.theme_token())
+        })?,
         style: contract.style().cloned(),
         line_height_millipoints: contract.line_height_millipoints(),
         paint_identity: UiMountedTextPaintSpanIdentity::from_runtime_mounting(
             contract.default_paint_identity(),
         ),
+        appearance_foreground: contract.uses_appearance_foreground(),
     };
     let scalar_spans = contract
         .scalar_spans()
@@ -122,7 +131,9 @@ fn lower_directive(
             Ok(UiMountedSemanticTextResolvedSpan {
                 original_range: span.original_range(),
                 appearance_foreground: span.uses_appearance_foreground(),
-                color: resolve_directive_color(directive, span.foreground_token())?,
+                color: semantic_text_seed_color(span.uses_appearance_foreground(), || {
+                    resolve_directive_color(directive, span.foreground_token())
+                })?,
                 style: span.style().clone(),
                 paint_identity: UiMountedTextPaintSpanIdentity::from_runtime_mounting(
                     span.paint_identity(),
@@ -137,6 +148,17 @@ fn lower_directive(
     })
 }
 
+fn semantic_text_seed_color(
+    appearance_foreground: bool,
+    legacy_color: impl FnOnce() -> Result<UiMountedRgba8, UiMountedProjectionDenial>,
+) -> Result<UiMountedRgba8, UiMountedProjectionDenial> {
+    if appearance_foreground {
+        Ok(UiMountedRgba8::new(0, 0, 0, 0))
+    } else {
+        legacy_color()
+    }
+}
+
 fn resolve_directive_color(
     directive: &crate::mounting::UiMountedSemanticTextFormattingDirective,
     token: &crate::capability::ThemeTokenId,
@@ -145,52 +167,40 @@ fn resolve_directive_color(
     else {
         return Err(UiMountedProjectionDenial::MissingSemanticTextToken);
     };
-    super::super::static_paint::parse_rgba(color.as_str())
-        .map_err(|_| UiMountedProjectionDenial::InvalidSemanticTextColor)
+    Ok(mounted_color(*color))
 }
 
 fn resolve_color(
-    plan: super::super::super::UiMountedPlanProjectionSource<'_>,
     theme_values: &crate::mounting::UiMountedThemeValueSource,
     token_id: &crate::capability::ThemeTokenId,
 ) -> Result<UiMountedRgba8, UiMountedProjectionDenial> {
     if let Some(value) = theme_values.current_value(token_id) {
-        let crate::capability::ThemeTokenValue::Color(color) = value else {
-            return Err(UiMountedProjectionDenial::MissingSemanticTextToken);
-        };
-        return super::super::static_paint::parse_rgba(color.as_str())
-            .map_err(|_| UiMountedProjectionDenial::InvalidSemanticTextColor);
+        let crate::capability::ThemeTokenValue::Color(color) = value;
+        return Ok(mounted_color(*color));
     }
-    if !theme_values.uses_frozen_plan() {
-        return Err(UiMountedProjectionDenial::MissingSemanticTextToken);
-    }
-    let Some((_token_plan_index, token_meaning)) = plan
-        .semantic_text_token(token_id)
-        .map_err(|_| UiMountedProjectionDenial::AmbiguousSemanticTextToken)?
-    else {
-        return Err(UiMountedProjectionDenial::MissingSemanticTextToken);
-    };
-    let crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::Token(token) =
-        token_meaning.as_ref()
-    else {
-        return Err(UiMountedProjectionDenial::ForeignSemanticTextToken);
-    };
-    let color = token
-        .resolved_color_text()
-        .ok_or(UiMountedProjectionDenial::MissingSemanticTextColor)?;
-    super::super::static_paint::parse_rgba(color)
-        .map_err(|_| UiMountedProjectionDenial::InvalidSemanticTextColor)
+    Err(UiMountedProjectionDenial::MissingSemanticTextToken)
+}
+
+fn mounted_color(color: worth_ui_dsl::UiThemeColor) -> UiMountedRgba8 {
+    let [red, green, blue, alpha] = color.channels();
+    UiMountedRgba8::new(red, green, blue, alpha)
 }
 
 impl UiMountedSemanticTextFormattingSeed {
     pub(in crate::mounting::projection) fn appearance_foreground_spans(
         &self,
     ) -> Box<[UiMountedTextPaintSpanIdentity]> {
-        self.scalar_spans
-            .iter()
-            .filter(|span| span.appearance_foreground)
-            .map(|span| span.paint_identity)
-            .collect()
+        std::iter::once((
+            self.default.appearance_foreground,
+            self.default.paint_identity,
+        ))
+        .chain(
+            self.scalar_spans
+                .iter()
+                .map(|span| (span.appearance_foreground, span.paint_identity)),
+        )
+        .filter_map(|(included, identity)| included.then_some(identity))
+        .collect()
     }
 
     pub(in crate::mounting::projection) const fn layer_semantic_order(&self) -> u32 {
@@ -252,6 +262,7 @@ impl UiMountedSemanticTextFormattingSeed {
                 style: None,
                 line_height_millipoints: None,
                 paint_identity: UiMountedTextPaintSpanIdentity::from_runtime_mounting([1; 32]),
+                appearance_foreground: false,
             },
             scalar_spans: Box::new([]),
             layer_semantic_order,

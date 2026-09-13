@@ -16,7 +16,7 @@ pub(in crate::mounting) struct UiMountedSpatialTree {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(crate) struct UiMountedSpatialWork {
+pub struct UiMountedSpatialWork {
     /// Nonzero only in explicit binding reconstruction, never ordinary delta maintenance.
     pub(in crate::mounting) reconstructed_rows: usize,
     pub(in crate::mounting) map_key_probes: usize,
@@ -27,6 +27,25 @@ pub(crate) struct UiMountedSpatialWork {
 }
 
 impl UiMountedSpatialWork {
+    pub const fn reconstructed_rows(self) -> usize {
+        self.reconstructed_rows
+    }
+    pub const fn map_key_probes(self) -> usize {
+        self.map_key_probes
+    }
+    pub const fn map_node_copies(self) -> usize {
+        self.map_node_copies
+    }
+    pub const fn node_visits(self) -> usize {
+        self.node_visits
+    }
+    pub const fn node_copies(self) -> usize {
+        self.node_copies
+    }
+    pub const fn region_tests(self) -> usize {
+        self.region_tests
+    }
+
     pub(crate) fn merge(&mut self, other: Self) {
         self.reconstructed_rows += other.reconstructed_rows;
         self.map_key_probes += other.map_key_probes;
@@ -132,6 +151,7 @@ impl UiMountedSpatialTree {
     }
 
     /// Node payload bytes, excluding reference-count control blocks and allocator overhead.
+    #[cfg(test)]
     pub(in crate::mounting) fn retained_node_payload_bytes(&self) -> Option<usize> {
         self.root
             .as_ref()

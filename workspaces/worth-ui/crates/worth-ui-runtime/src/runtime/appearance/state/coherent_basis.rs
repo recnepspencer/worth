@@ -1,4 +1,4 @@
-use worth_ui_dsl::{UiAppearanceRoleIdentity, UiAppearanceRoleRevision, UiAppearanceStateAxis};
+use worth_ui_dsl::UiAppearanceStateAxis;
 use worth_ui_host_contract::{
     UiHostObservationPresentationBasis, UiMountIncarnation, UiMountedInstanceIdentity,
     UiMountedNodeReceiptIdentity, UiSemanticSurfaceIdentity,
@@ -6,6 +6,8 @@ use worth_ui_host_contract::{
 
 #[path = "coherent_basis_mounted_target.rs"]
 mod mounted_target;
+#[path = "coherent_basis_succession.rs"]
+mod succession;
 
 #[cfg(test)]
 #[path = "coherent_basis_test_support.rs"]
@@ -46,6 +48,7 @@ pub(crate) struct UiAppearanceCoherentBasis {
     session: crate::facade::WorthUiActiveApplicationSessionIdentity,
     source_basis: u64,
     generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    source_generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     consumer: super::UiAppearanceStateConsumer,
     graph_node: crate::graph::UiGraphNodeIdentity,
     mounted_instance: UiMountedInstanceIdentity,
@@ -61,44 +64,19 @@ pub(crate) struct UiAppearanceCoherentBasis {
 }
 
 impl UiAppearanceCoherentBasis {
-    pub(crate) fn admit_current(
-        snapshot: &super::UiAppearanceOwnerSnapshot,
-        consumer: &super::UiAppearanceStateConsumer,
-        mounted: &crate::mounting::WorthUiMountedSessionState,
-        themes: &crate::runtime::appearance::UiAppearanceThemeState,
-        input: UiAppearanceCoherentBasisInput,
-    ) -> Result<Self, UiAppearanceCoherentBasisDenial> {
-        Self::admit_with_target_validation(snapshot, consumer, mounted, themes, input, None)
-    }
-
     pub(crate) fn admit_prepared(
-        frame: &crate::mounting::UiPreparedMountedFrame,
+        frame: &crate::mounting::UiAssembledMountedFrame,
         snapshot: &super::UiAppearanceOwnerSnapshot,
         consumer: &super::UiAppearanceStateConsumer,
         mounted: &crate::mounting::WorthUiMountedSessionState,
         themes: &crate::runtime::appearance::UiAppearanceThemeState,
         input: UiAppearanceCoherentBasisInput,
-    ) -> Result<Self, UiAppearanceCoherentBasisDenial> {
-        Self::admit_with_target_validation(snapshot, consumer, mounted, themes, input, Some(frame))
-    }
-
-    fn admit_with_target_validation(
-        snapshot: &super::UiAppearanceOwnerSnapshot,
-        consumer: &super::UiAppearanceStateConsumer,
-        mounted: &crate::mounting::WorthUiMountedSessionState,
-        themes: &crate::runtime::appearance::UiAppearanceThemeState,
-        input: UiAppearanceCoherentBasisInput,
-        prepared: Option<&crate::mounting::UiPreparedMountedFrame>,
     ) -> Result<Self, UiAppearanceCoherentBasisDenial> {
         let identity = &input.mounted_identity;
         if consumer.graph_node() != identity.graph_node_identity() {
             return Err(UiAppearanceCoherentBasisDenial::ConsumerTargetMismatch);
         }
-        if prepared.is_none() {
-            mounted_target::validate_current(mounted, &input)?;
-        } else {
-            mounted_target::validate_prepared(mounted, &input)?;
-        }
+        mounted_target::validate_prepared(frame, mounted, &input)?;
         for axis in axes() {
             if consumer.consumes(axis) && !snapshot.demand().contains(axis) {
                 return Err(UiAppearanceCoherentBasisDenial::AxisNotDemanded(axis));
@@ -110,8 +88,14 @@ impl UiAppearanceCoherentBasis {
             return Err(UiAppearanceCoherentBasisDenial::OperabilityRouteUnavailable);
         }
         let surface = identity.semantic_surface_identity();
-        mounted_target::validate_selection(mounted, consumer, &input, prepared)?;
-        validate_theme(snapshot, themes, surface, &input.theme)?;
+        mounted_target::validate_selection(mounted, consumer, &input, frame)?;
+        validate_theme(
+            snapshot,
+            themes,
+            surface,
+            &input.theme,
+            frame.prepared_theme_binding(),
+        )?;
         validate_presentation(mounted, surface, input.presentation)?;
         validate_owner_presentation(snapshot, consumer, &input)?;
         Ok(Self {
@@ -119,6 +103,7 @@ impl UiAppearanceCoherentBasis {
             session: snapshot.session(),
             source_basis: snapshot.source_basis(),
             generation: snapshot.generation().clone(),
+            source_generation: snapshot.generation().clone(),
             consumer: consumer.clone(),
             graph_node: identity.graph_node_identity(),
             mounted_instance: input.mounted_instance,
@@ -174,10 +159,6 @@ impl UiAppearanceCoherentBasis {
         self.surface
     }
 
-    pub(crate) fn theme(&self) -> &crate::runtime::appearance::UiActiveThemeBinding {
-        &self.theme
-    }
-
     pub(crate) const fn presentation(&self) -> Option<UiHostObservationPresentationBasis> {
         self.presentation
     }
@@ -194,19 +175,11 @@ impl UiAppearanceCoherentBasis {
         self.operability_route.as_deref()
     }
 
-    pub(crate) const fn role(&self) -> &UiAppearanceRoleIdentity {
-        self.consumer.role()
-    }
-
-    pub(crate) const fn role_revision(&self) -> UiAppearanceRoleRevision {
-        self.consumer.role_revision()
-    }
-
     pub(crate) fn matches_snapshot(&self, snapshot: &super::UiAppearanceOwnerSnapshot) -> bool {
         self.turn == snapshot.turn()
             && self.session == snapshot.session()
             && self.source_basis == snapshot.source_basis()
-            && self.generation == *snapshot.generation()
+            && self.source_generation == *snapshot.generation()
     }
 
     pub(crate) fn presentation_matches_owner_snapshot(
@@ -316,6 +289,7 @@ fn validate_theme(
     themes: &crate::runtime::appearance::UiAppearanceThemeState,
     surface: UiSemanticSurfaceIdentity,
     theme: &crate::runtime::appearance::UiActiveThemeBinding,
+    prepared: Option<&crate::runtime::appearance::UiActiveThemeBinding>,
 ) -> Result<(), UiAppearanceCoherentBasisDenial> {
     if theme.surface() != surface || theme.capability().surface() != surface {
         return Err(UiAppearanceCoherentBasisDenial::ThemeSurfaceMismatch);
@@ -326,7 +300,11 @@ fn validate_theme(
     if theme.binding_generation() == 0 {
         return Err(UiAppearanceCoherentBasisDenial::ThemeBindingUnavailable);
     }
-    if themes.active_binding(surface) != Some(theme) {
+    if prepared
+        .filter(|binding| binding.surface() == surface)
+        .or_else(|| themes.active_binding(surface))
+        != Some(theme)
+    {
         return Err(UiAppearanceCoherentBasisDenial::ThemeBindingNotCurrent);
     }
     Ok(())

@@ -19,6 +19,8 @@ const SEMANTIC_SURFACE_LIMIT: usize = 256;
 const RETIRED_INSTANCE_LIMIT: usize = 256;
 
 mod appearance_receipt_basis;
+mod appearance_succession;
+mod focus_participation;
 mod frame_lifecycle;
 mod graph_replacement;
 mod instance_lifecycle;
@@ -27,6 +29,7 @@ mod layout_basis;
 mod layout_reconstruction;
 mod presentation_attribution;
 pub(crate) mod surface_lifecycle;
+mod text_publication;
 
 pub(crate) use interaction_affinity::{
     UiCurrentHitTarget, UiCurrentHitTargetAffinityDenial, UiCurrentInteractionAffinity,
@@ -191,6 +194,22 @@ impl UiMountedIdentityState {
             .snapshot(self.semantic_revision, self.binding_revision)
     }
 
+    pub(crate) fn projection_changes_for_surfaces(
+        &self,
+        surfaces: &[UiSemanticSurfaceIdentity],
+    ) -> (super::UiMountedProjectionChangeSnapshot, usize) {
+        let all = surfaces.len() == self.bindings.len()
+            && surfaces
+                .iter()
+                .all(|surface| self.bindings.contains_key(surface));
+        self.projection_change_snapshot()
+            .for_surfaces(surfaces, all, |instance| {
+                self.instances
+                    .get(&instance)
+                    .map(|record| record.basis.semantic_surface_identity())
+            })
+    }
+
     fn commit_projection_changes(
         &mut self,
         snapshot: &super::UiMountedProjectionChangeSnapshot,
@@ -248,16 +267,6 @@ impl UiMountedIdentityState {
         self.current_projection_owner()
             .map(|owner| &owner.pointer)
             .or(self.unprojected_pointer_predecessor.as_ref())
-    }
-
-    pub(crate) fn focus_participation_snapshot(
-        &self,
-    ) -> Option<super::UiMountedFocusParticipationSnapshot> {
-        let projection = self.current_projection.as_ref()?.projection();
-        let receipts = self.current_receipt_basis.as_ref()?;
-        Some(super::UiMountedFocusParticipationSnapshot::from_projection(
-            projection, receipts,
-        ))
     }
 
     pub(crate) fn current_allocation_truth_revision(&self) -> Option<u64> {
@@ -371,15 +380,5 @@ impl UiMountedIdentityFrameCandidate {
 
     pub(super) fn receipt_basis(&self) -> &super::UiMountedNodeReceiptBasis {
         &self.receipt_basis
-    }
-}
-
-impl UiAuthorityAdmittedMountedFrame {
-    fn new(frame: super::UiPreparedMountedFrame) -> Self {
-        Self { frame }
-    }
-
-    pub(in crate::mounting) fn into_frame(self) -> super::UiPreparedMountedFrame {
-        self.frame
     }
 }

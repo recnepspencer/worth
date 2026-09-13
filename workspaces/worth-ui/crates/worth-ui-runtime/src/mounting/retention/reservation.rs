@@ -27,6 +27,12 @@ pub(crate) enum UiMountedRetentionCommitDenial {
     RevisionChanged,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum UiMountedRetentionRefreshDenial {
+    RevisionChanged,
+    Capacity(super::UiMountedFrameRetentionDenial),
+}
+
 impl UiRetentionPreparedMountedFrame {
     pub(super) fn new(
         frame: super::super::UiPreparedMountedFrame,
@@ -80,6 +86,28 @@ impl UiMountedRetentionReservation {
         }
         if let Some(current) = self.successor.current.as_mut() {
             let current = Rc::make_mut(current);
+            assert_eq!(
+                current.presented_binding_count(),
+                presentation.surfaces().len(),
+                "settlement completed every admitted surface"
+            );
+            if let Some(previous) = authority
+                .frames
+                .current
+                .as_ref()
+                .filter(|previous| previous.frame() == current.frame())
+            {
+                current.preserve_reconciled_presentations(previous);
+            }
+            for surface in presentation.surfaces() {
+                assert_eq!(
+                    self.successor
+                        .surface_frames
+                        .get(&surface.semantic_surface()),
+                    Some(&current.frame()),
+                    "accepted surface ownership was reserved before host effects"
+                );
+            }
             current.set_mount_cost(mount_cost);
             current.set_presentation_receipt(presentation);
         }
@@ -87,6 +115,79 @@ impl UiMountedRetentionReservation {
         authority.revision = self.successor_revision;
         release_reservation(&mut authority, self.identity, self.structural_bytes);
         self.release_on_drop = false;
+        Ok(())
+    }
+
+    pub(crate) fn refresh_visual_regions(
+        &mut self,
+        visual_regions: super::super::UiMountedVisualRegionBasis,
+    ) -> Result<(), UiMountedRetentionRefreshDenial> {
+        let candidate = self
+            .successor
+            .current
+            .as_mut()
+            .and_then(Rc::get_mut)
+            .ok_or(UiMountedRetentionRefreshDenial::RevisionChanged)?;
+        candidate.replace_visual_regions(visual_regions).ok_or(
+            UiMountedRetentionRefreshDenial::Capacity(
+                super::UiMountedFrameRetentionDenial::AccountingOverflow {
+                    class: super::UiMountedRetentionClass::Current,
+                },
+            ),
+        )?;
+        let replacement_bytes = candidate
+            .structural_bytes()
+            .checked_add(
+                self.successor
+                    .surface_frames
+                    .retained_structural_bytes()
+                    .ok_or(UiMountedRetentionRefreshDenial::RevisionChanged)?,
+            )
+            .ok_or(UiMountedRetentionRefreshDenial::RevisionChanged)?;
+        let mut authority = self.authority.borrow_mut();
+        if authority.revision != self.expected_revision
+            || authority.reservations.get(&self.identity) != Some(&self.structural_bytes)
+        {
+            return Err(UiMountedRetentionRefreshDenial::RevisionChanged);
+        }
+        if !authority.budget.current().admits(1, replacement_bytes) {
+            return Err(UiMountedRetentionRefreshDenial::Capacity(
+                super::UiMountedFrameRetentionDenial::CapacityExceeded {
+                    class: super::UiMountedRetentionClass::Current,
+                    required_frames: 1,
+                    required_structural_bytes: replacement_bytes,
+                    budget: authority.budget.current(),
+                },
+            ));
+        }
+        let in_flight_bytes = authority
+            .in_flight_structural_bytes
+            .checked_sub(self.structural_bytes)
+            .and_then(|bytes| bytes.checked_add(replacement_bytes))
+            .ok_or(UiMountedRetentionRefreshDenial::Capacity(
+                super::UiMountedFrameRetentionDenial::AccountingOverflow {
+                    class: super::UiMountedRetentionClass::InFlight,
+                },
+            ))?;
+        if !authority
+            .budget
+            .in_flight()
+            .admits(authority.reservations.len(), in_flight_bytes)
+        {
+            return Err(UiMountedRetentionRefreshDenial::Capacity(
+                super::UiMountedFrameRetentionDenial::CapacityExceeded {
+                    class: super::UiMountedRetentionClass::InFlight,
+                    required_frames: authority.reservations.len(),
+                    required_structural_bytes: in_flight_bytes,
+                    budget: authority.budget.in_flight(),
+                },
+            ));
+        }
+        authority
+            .reservations
+            .insert(self.identity, replacement_bytes);
+        authority.in_flight_structural_bytes = in_flight_bytes;
+        self.structural_bytes = replacement_bytes;
         Ok(())
     }
 

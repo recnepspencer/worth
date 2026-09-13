@@ -12,8 +12,8 @@ pub use configuration::{
 };
 pub(crate) use execution::{admit_plan, UiRebindFinalAdmissionBasis};
 pub(crate) use execution::{
-    UiDetachedRebindCompletion, UiDetachedRebindRetry, UiRebindComparisonReservation,
-    UiRebindReservation, UiRebindRuntimeState,
+    UiDetachedRebindCompletion, UiDetachedRebindRecovery, UiDetachedRebindRetry,
+    UiRebindComparisonReservation, UiRebindReservation, UiRebindRuntimeState,
 };
 pub use execution::{
     UiDuplicateObservationReceipt, UiEffectingRebind, UiEffectingRebindCompletion,

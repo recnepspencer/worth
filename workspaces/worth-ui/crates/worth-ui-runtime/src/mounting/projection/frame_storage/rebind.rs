@@ -13,7 +13,7 @@ impl UiMountedProjectionFrame {
     ) -> Result<(), UiMountedProjectionDenial> {
         self.rebind_semantic_surfaces(replacements)?;
         self.hit_index_work
-            .merge(self.mechanics.rebind(replacements)?);
+            .merge(self.mechanics.rebind(replacements, &self.semantic)?);
         self.reconstruct_presented_hits()?;
         Ok(())
     }
@@ -29,7 +29,7 @@ impl UiMountedProjectionFrame {
         let mut rebound = self.clone();
         rebound.frame = successor;
         rebound.rebind_semantic_surfaces(replacements)?;
-        rebound.hit_index_work = rebound.mechanics.rebind(replacements)?;
+        rebound.hit_index_work = rebound.mechanics.rebind(replacements, &rebound.semantic)?;
         rebound.reconstruct_presented_hits()?;
         Ok(rebound)
     }
@@ -52,6 +52,11 @@ impl UiMountedProjectionFrame {
                 .ok_or(UiMountedProjectionDenial::MissingSurfaceBinding)?;
             if surface.surface != replacement.semantic_surface_identity() {
                 return Err(UiMountedProjectionDenial::MissingSurfaceBinding);
+            }
+            if surface.coordinate_posture != replacement.profile().coordinate_posture() {
+                return Err(UiMountedProjectionDenial::HitTestCompletion(
+                    worth_ui_host_contract::UiMountedHitTestCompletionDenial::CoordinateSpaceMismatch,
+                ));
             }
             if surface.binding != replacement_binding {
                 surface.binding = replacement_binding;

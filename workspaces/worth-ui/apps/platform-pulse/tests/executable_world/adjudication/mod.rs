@@ -13,8 +13,6 @@ mod native_color;
 #[cfg(target_os = "windows")]
 mod native_input_reachability;
 #[cfg(target_os = "windows")]
-mod platform_pulse_control_points;
-#[cfg(target_os = "windows")]
 mod portal_pixels;
 #[cfg(target_os = "windows")]
 mod predecessor_preservation;
@@ -46,17 +44,16 @@ pub(crate) use content_fingerprint::content_fingerprint;
 pub(crate) use identity_trace::{
     adjudicate_successor_visual_snapshot, adjudicate_visual_comparison,
     adjudicate_visual_retirement, adjudicate_visual_snapshot, adjudicate_visual_trace,
-    ExecutableVisualComparisonEvidence, ExecutableVisualIdentityFailure,
-    ExecutableVisualRetirementEvidence, ExecutableVisualSnapshotEvidence,
-    ExecutableVisualTraceEvidence,
+    ExecutableVisualIdentityFailure, ExecutableVisualRetirementEvidence,
+    ExecutableVisualSnapshotEvidence, ExecutableVisualTraceEvidence,
 };
 #[cfg(target_os = "windows")]
 pub(crate) use intent_control_points::{
     adjudicate_action_control_point, adjudicate_confirmation_control_point,
-    adjudicate_portal_control_point, adjudicate_visible_control_change,
-    require_distinct_control_points, IntentControlPointFailure, NativeControlPixelRegion,
-    PlatformPulseActionControlPoint, PlatformPulseConfirmationControlPoint,
-    VisibleControlPixelChange,
+    adjudicate_portal_control_point, adjudicate_portal_control_point_for_extent,
+    adjudicate_visible_control_change, require_distinct_control_points, IntentControlPointFailure,
+    NativeControlPixelRegion, PlatformPulseActionControlPoint,
+    PlatformPulseConfirmationControlPoint, VisibleControlPixelChange,
 };
 #[cfg(target_os = "windows")]
 pub(crate) use lifecycle_cleanup::{

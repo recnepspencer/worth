@@ -154,28 +154,6 @@ impl UiMountedIdentityState {
         self.current_publication.as_ref()
     }
 
-    pub(crate) fn current_requires_binding(&self, binding: UiSurfaceBindingGeneration) -> bool {
-        self.current_manifest.as_ref().is_some_and(|manifest| {
-            manifest
-                .surfaces()
-                .iter()
-                .any(|requirement| requirement.binding() == binding)
-        })
-    }
-
-    pub(crate) fn current_binding_requirement(
-        &self,
-        binding: UiSurfaceBindingGeneration,
-    ) -> Option<worth_ui_host_contract::UiMountedSurfaceBindingRequirement> {
-        self.current_manifest.as_ref().and_then(|manifest| {
-            manifest
-                .surfaces()
-                .iter()
-                .copied()
-                .find(|requirement| requirement.binding() == binding)
-        })
-    }
-
     pub(crate) fn classify_reuse(
         &self,
         contract: UiMountedFrameReuseContract,

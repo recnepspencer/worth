@@ -63,6 +63,7 @@ pub struct UiMountedSurfaceAppearanceMechanic {
     bounds: super::UiAppearanceAllocationBounds,
     clip: super::UiAppearanceClip,
     surface_paint_order: u32,
+    portal_group: Option<crate::UiMountedInstanceIdentity>,
     visual_bounds: super::UiAppearanceVisualBounds,
     radii: super::UiAppearanceNormalizedLogicalRadii,
     border_edges: UiMountedSurfaceBorderEdges,
@@ -79,6 +80,7 @@ pub struct UiMountedSurfaceAppearanceCompletionInput {
     pub bounds: super::UiAppearanceAllocationBounds,
     pub clip: super::UiAppearanceClip,
     pub surface_paint_order: u32,
+    pub portal_group: Option<crate::UiMountedInstanceIdentity>,
     pub radii: super::UiAppearanceNormalizedLogicalRadii,
     pub border_edges: UiMountedSurfaceBorderEdges,
     pub border_omissions: Box<[super::UiMountedSurfaceBorderOmission]>,
@@ -110,6 +112,7 @@ impl UiMountedSurfaceAppearanceMechanic {
             bounds: self.bounds,
             clip: self.clip,
             surface_paint_order: self.surface_paint_order,
+            portal_group: self.portal_group,
             visual_bounds: self.visual_bounds,
             radii: self.radii,
             border_edges: self.border_edges,
@@ -164,6 +167,7 @@ impl UiMountedSurfaceAppearanceMechanic {
             bounds: input.bounds,
             clip: input.clip,
             surface_paint_order: input.surface_paint_order,
+            portal_group: input.portal_group,
             visual_bounds: super::UiAppearanceVisualBounds::from_surface_allocation(input.bounds),
             radii: input.radii,
             border_edges: input.border_edges,
@@ -185,6 +189,9 @@ impl UiMountedSurfaceAppearanceMechanic {
     }
     pub const fn surface_paint_order(&self) -> u32 {
         self.surface_paint_order
+    }
+    pub const fn portal_group(&self) -> Option<crate::UiMountedInstanceIdentity> {
+        self.portal_group
     }
     pub const fn visual_bounds(&self) -> super::UiAppearanceVisualBounds {
         self.visual_bounds
@@ -232,6 +239,7 @@ mod tests {
             bounds,
             clip: super::super::UiAppearanceClip::new(0, 0, width, height).unwrap(),
             surface_paint_order: 0,
+            portal_group: None,
             radii: super::super::UiAppearanceNormalizedLogicalRadii::normalize(
                 bounds,
                 [super::super::UiAppearanceLogicalLength::ZERO; 4],

@@ -16,6 +16,8 @@ mod pointer_refresh;
 mod presentation_outcome;
 #[path = "program_progress/superseding_pair.rs"]
 mod superseding_pair;
+#[path = "program_progress/theme_switch.rs"]
+mod theme_switch;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum UiNativePresentationSource {
@@ -26,6 +28,7 @@ pub(super) enum UiNativePresentationSource {
 pub(super) struct UiNativeApplicationProgramProgress {
     program: crate::facade::entry::UiNativeApplicationProgram,
     pub(super) next_frame: usize,
+    pending_theme_frame: Option<usize>,
     next_change_frame: usize,
     next_present_tick: u64,
     pub(super) pending: VecDeque<UiNativePendingProgramFrame>,
@@ -36,6 +39,7 @@ pub(super) struct UiNativeApplicationProgramProgress {
     pub(super) readiness_generation: u64,
     surface_basis_generation: u64,
     surface_basis_barrier: Option<(usize, u64)>,
+    #[cfg(feature = "certification-support")]
     runtime_qualification: super::runtime_qualification::UiNativeRuntimeQualificationState,
     pub(super) staged_superseding_successor: Option<UiNativeStagedSupersedingSuccessor>,
     pub(super) staged_superseding_predecessor: Option<crate::mounting::UiPreparedMountedFrame>,
@@ -94,13 +98,14 @@ pub(super) enum FrameProgress {
 impl UiNativeApplicationProgramProgress {
     pub(super) fn new(
         program: crate::facade::entry::UiNativeApplicationProgram,
-        runtime_qualification: Option<
+        #[cfg(feature = "certification-support")] runtime_qualification: Option<
             super::super::runtime_qualification::UiNativeRuntimeQualificationPlan,
         >,
     ) -> Self {
         Self {
             program,
             next_frame: 0,
+            pending_theme_frame: None,
             next_change_frame: 0,
             next_present_tick: 1,
             pending: VecDeque::new(),
@@ -111,6 +116,7 @@ impl UiNativeApplicationProgramProgress {
             readiness_generation: 0,
             surface_basis_generation: 0,
             surface_basis_barrier: None,
+            #[cfg(feature = "certification-support")]
             runtime_qualification:
                 super::runtime_qualification::UiNativeRuntimeQualificationState::new(
                     runtime_qualification,
@@ -134,6 +140,7 @@ impl UiNativeApplicationProgramProgress {
         let program_finished =
             self.program.closes_after_program() && self.next_frame >= self.program.frames().len();
         program_finished
+            && self.pending_theme_frame.is_none()
             && self.pending.is_empty()
             && self.staged_superseding_successor.is_none()
             && self.staged_superseding_predecessor.is_none()
@@ -162,7 +169,7 @@ impl UiNativeApplicationProgramProgress {
             return Ok(());
         }
         while self.next_frame < self.program.frames().len() {
-            if self.physical_recovery.has_pending() {
+            if self.physical_recovery.has_pending() || self.pending_theme_frame.is_some() {
                 break;
             }
             if self.pending.is_empty()
@@ -218,9 +225,6 @@ impl UiNativeApplicationProgramProgress {
                 shell
                     .apply_component_semantic_text(frame.semantic_text())
                     .map_err(|_| ())?;
-                shell
-                    .apply_theme_token_values(frame.theme_values())
-                    .map_err(|_| ())?;
                 self.next_change_frame = self.next_change_frame.saturating_add(1);
             } else if program_frame > self.next_change_frame {
                 return Err(());
@@ -228,7 +232,15 @@ impl UiNativeApplicationProgramProgress {
             layout::complete_program_layout(shell)?;
             let tick = self.next_present_tick;
             self.next_present_tick = self.next_present_tick.checked_add(1).ok_or(())?;
+            if let Some(definition) = frame.theme_switch().cloned() {
+                self.begin_theme_switch(shell, definition, program_frame, tick)?;
+                self.next_frame = self.next_frame.saturating_add(1);
+                continue;
+            }
+            #[cfg(feature = "certification-support")]
             let reconstruction = self.runtime_qualification.reconstruction_required();
+            #[cfg(not(feature = "certification-support"))]
+            let reconstruction = false;
             let outcome = if reconstruction {
                 shell.reconstruct_current_presentation(u64::MAX, tick)?
             } else {
@@ -296,11 +308,17 @@ impl UiNativeApplicationProgramProgress {
         }
         let pending = self.pending_retry.take().expect("observed pending retry");
         self.next_completion_tick = self.next_completion_tick.checked_add(1).ok_or(())?;
-        let outcome = shell.retry_rejected_frame_presentation(
-            pending.rejected,
-            worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
-            self.next_completion_tick,
-        );
+        // A parked retry crosses observation closes: owner facts may have
+        // expired since rejection. Re-enter preparation with the retained
+        // presentation purpose, including reconstruction when required.
+        drop(pending.rejected);
+        let outcome = match pending.reconstruction_authority {
+            Some(_) => shell.reconstruct_current_presentation(u64::MAX, self.next_completion_tick),
+            None => shell
+                .present_frame(u64::MAX, self.next_completion_tick)
+                .map_err(|_| ()),
+        }
+        .map_err(|_| ())?;
         let progress = self.retain_or_attribute(
             shell,
             outcome,

@@ -1,5 +1,6 @@
 mod application;
 mod fixture_profile;
+mod geometry;
 
 pub(super) use fixture_profile::{MixedCarrierFixtureProfile, CLOSURE, SMOKE};
 
@@ -25,8 +26,8 @@ use crate::projection_presentation::collection_query::collection_registration;
 
 const REMOVAL_INDEX: usize = 2;
 const SCALAR_PROJECTION: &str = "host.platform.mixed.scalar.view";
-
 pub(super) struct MixedCarrierProduction {
+    pub appearance_baseline: worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
     pub initial: worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
     pub text_replacement: worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
     pub rectangle_removal: worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
@@ -39,7 +40,6 @@ struct MountedMixedRows {
     surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     rows: Vec<MountedMixedRow>,
 }
-
 struct MountedMixedRow {
     node: worth_ui_runtime::facade::mounted::UiMountedGraphNodeHandle,
     instance: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -57,41 +57,51 @@ pub(super) fn produce(
         .expect("mixed carrier application launches");
     let mut mounted = application::mount(profile, &mut session);
     super::world::establish_allocations(&mut session, profile.rectangle_component_count);
+    let observations = session
+        .begin_observation_turn()
+        .expect("mixed appearance owners can be observed")
+        .seal()
+        .expect("mixed appearance ownership makes the turn meaningful");
+    session
+        .classify_observations(observations)
+        .expect("mixed appearance ownership is current");
+    execute(&mut session, &mounted, 3_139);
+    let appearance_baseline = one_transcript(&recorder, "mixed appearance baseline");
     let opened = open_collection(profile, collection, &mut workspace);
     let (mut live, snapshot) = opened.into_parts();
-
     let _staging_adapter = publish(
         &mut session,
+        &mounted,
         vec![UiProjectionObservation::Collection(
             snapshot.into_observation(),
         )],
         3_140,
     );
     let staging = one_transcript(&recorder, "mixed collection staging");
-    assert_eq!(staging.filled_rects().len(), profile.rectangle_count);
+    assert_eq!(staging.nodes().len(), profile.rectangle_count);
     assert_eq!(staging.semantic_text().len(), profile.collection_rows + 1);
     let initial_adapter = publish(
         &mut session,
+        &mounted,
         vec![UiProjectionObservation::Scalar(scalar_observation)],
         3_141,
     );
     let initial = one_transcript(&recorder, "mixed initial");
     let initial_cost = latest_cost(&recorder);
     assert_initial_ceiling(profile, &initial);
-
     worth_ui_query_binding::certification::update_projection_status(
         &mut workspace,
         entities[profile.collection_rows - 1].clone(),
         &replacement_value(profile, profile.collection_rows - 1),
     );
-    let text_adapter = refresh(&mut live, &mut workspace, &mut session, 3_142);
+    let text_adapter = refresh(&mut live, &mut workspace, &mut session, &mounted, 3_142);
     let text_replacement = one_transcript(&recorder, "mixed text replacement");
     let text_cost = latest_cost(&recorder);
 
     session
         .unmount_instance(mounted.rows[REMOVAL_INDEX].instance)
         .unwrap();
-    let removal_adapter = super::world::execute_frame(&mut session, 3_143);
+    let removal_adapter = execute(&mut session, &mounted, 3_143);
     let rectangle_removal = one_transcript(&recorder, "mixed rectangle removal");
     let removal_cost = latest_cost(&recorder);
 
@@ -99,17 +109,18 @@ pub(super) fn produce(
     removed.instance = session
         .mount_instance(removed.node, mounted.surface)
         .unwrap();
-    let insertion_adapter = super::world::execute_frame(&mut session, 3_144);
+    let insertion_adapter = execute(&mut session, &mounted, 3_144);
     let rectangle_insertion = one_transcript(&recorder, "mixed rectangle insertion");
     let insertion_cost = latest_cost(&recorder);
 
-    let unchanged_adapter = super::world::execute_frame(&mut session, 3_145);
+    let unchanged_adapter = execute(&mut session, &mounted, 3_145);
     assert!(recorder.drain_transcripts().is_empty());
     let unchanged_cost = latest_cost(&recorder);
     close(live, &mut workspace);
     let shutdown = session.shutdown();
     assert!(shutdown.mounted_presentation().is_empty());
     MixedCarrierProduction {
+        appearance_baseline,
         initial,
         text_replacement,
         rectangle_removal,
@@ -250,6 +261,7 @@ fn refresh(
     live: &mut worth_ui_query_binding::UiLiveCollectionProjection,
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
+    mounted: &MountedMixedRows,
     request: u64,
 ) -> worth_ui_host_contract::UiHostPresentationCostReport {
     let fact = match live.refresh(workspace).unwrap() {
@@ -262,6 +274,7 @@ fn refresh(
     };
     publish(
         session,
+        mounted,
         vec![UiProjectionObservation::Collection(fact.into_observation())],
         request,
     )
@@ -269,6 +282,7 @@ fn refresh(
 
 fn publish(
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
+    mounted: &MountedMixedRows,
     observations: Vec<UiProjectionObservation>,
     request: u64,
 ) -> worth_ui_host_contract::UiHostPresentationCostReport {
@@ -289,7 +303,7 @@ fn publish(
     let plan = session
         .compile_rebind_plan(lifecycle, UiRebindExecutionPolicy::ordinary())
         .unwrap();
-    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
+    geometry::install(session, mounted, request);
     let prepared = session
         .prepare_rebind(plan, UiRebindExecutionRequest::new(request))
         .unwrap();
@@ -299,7 +313,9 @@ fn publish(
             .expect("mixed rebind publishes mounted work")
             .adapter(),
         UiRebindOutcome::RejectedBeforeEffects(denial) => panic!(
-            "mixed request {request} rejected: {:?}",
+            "mixed request {request} rejected in {:?}: {:?}; hosts={:?}",
+            denial.stopped_phase(),
+            denial.cause(),
             denial
                 .host_rejections()
                 .iter()
@@ -310,11 +326,20 @@ fn publish(
     }
 }
 
+fn execute(
+    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
+    mounted: &MountedMixedRows,
+    tick: u64,
+) -> worth_ui_host_contract::UiHostPresentationCostReport {
+    geometry::install(session, mounted, tick);
+    super::world::execute_frame_with_established_geometry(session, tick)
+}
+
 fn assert_initial_ceiling(
     profile: MixedCarrierFixtureProfile,
     transcript: &worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
 ) {
-    assert_eq!(transcript.filled_rects().len(), profile.rectangle_count);
+    assert_eq!(transcript.nodes().len(), profile.rectangle_count);
     assert_eq!(transcript.semantic_text().len(), profile.text_count);
     let bytes = transcript
         .semantic_text()

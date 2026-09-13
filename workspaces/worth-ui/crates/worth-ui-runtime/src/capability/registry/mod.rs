@@ -63,9 +63,8 @@ pub use component::{
     ComponentRealtimeOverlayContractDenial, ComponentRealtimeOverlayContractDenialReason,
     ComponentRealtimeOverlayPriority, ComponentSemanticTextContract,
     ComponentSemanticTextContractDenial, ComponentSemanticTextSpanContract,
-    ComponentStateOwnership, ComponentStaticPaintContract, ComponentStaticPaintOrder,
-    ComponentViewportAxisPlacement, ComponentViewportInset, ComponentViewportRegion,
-    FrozenComponentCapabilities,
+    ComponentStateOwnership, ComponentViewportAxisPlacement, ComponentViewportInset,
+    ComponentViewportRegion, FrozenComponentCapabilities,
 };
 pub(crate) use family_names::{
     APPEARANCE_ROLE_FAMILY_NAME, APPEARANCE_THEME_FAMILY_NAME, COMMAND_FAMILY_NAME,
@@ -193,8 +192,8 @@ pub use theme::{
 };
 pub use theme_token::{
     FrozenThemeTokenCapabilities, FrozenThemeTokenEntry, RawColorOutsideTokenDefinition,
-    ThemeColorValue, ThemeColorValueError, ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily,
-    ThemeTokenKey, ThemeTokenSource, ThemeTokenValue,
+    ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenKey, ThemeTokenSource,
+    ThemeTokenValue, UiThemeColor, UiThemeColorParseDenial,
 };
 pub(crate) use theme_token::{ThemeTokenAcceptedRegistrationProof, ThemeTokenRegistry};
 pub use view_binding::{

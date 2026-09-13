@@ -67,6 +67,10 @@ impl WorthUiStateSlotPlanMeaning {
     pub(crate) fn succession(&self) -> &WorthUiStateSlotSuccession {
         &self.succession
     }
+
+    pub(crate) fn same_mounted_layout_meaning(&self, successor: &Self) -> bool {
+        self.owner_identity == successor.owner_identity && self.descriptor == successor.descriptor
+    }
 }
 
 pub(crate) fn durable_family_for_slot(

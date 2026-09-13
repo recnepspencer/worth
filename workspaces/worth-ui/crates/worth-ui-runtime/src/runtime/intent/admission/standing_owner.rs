@@ -13,7 +13,7 @@ struct InstanceFacts {
     routes: UiPersistentOrdMap<Box<str>, UiIntentOperabilityStandingFact>,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(super) struct UiIntentOperabilityStandingOwner {
     facts: UiPersistentOrdMap<UiMountedInstanceIdentity, InstanceFacts>,
     bindings: UiPersistentOrdMap<
@@ -23,7 +23,38 @@ pub(super) struct UiIntentOperabilityStandingOwner {
     revision: u64,
 }
 
+pub(crate) struct UiPreparedIntentOperabilityReceiptSuccession {
+    pub(super) predecessor: Option<UiIntentOperabilityStandingFactSnapshot>,
+    pub(super) successor: Option<UiIntentOperabilityStandingOwner>,
+}
+
 impl UiIntentOperabilityStandingOwner {
+    pub(super) fn prepare_receipt_succession(
+        &self,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        successor: &crate::mounting::UiMountedNodeReceiptBasis,
+    ) -> Self {
+        let mut prepared = self.clone();
+        for (instance, facts) in self.facts.iter() {
+            let Some(successor_receipt) = successor.receipt_for(*instance) else {
+                continue;
+            };
+            let mut rebound = facts.clone();
+            for (route, fact) in facts.routes.iter() {
+                if mounted
+                    .validate_owner_receipt_source(*instance, fact.node_receipt())
+                    .is_err()
+                {
+                    continue;
+                }
+                let mut rebound_fact = fact.clone();
+                rebound_fact.rebind_node_receipt(successor_receipt);
+                rebound.routes.insert(route.clone(), rebound_fact);
+            }
+            prepared.facts.insert(*instance, rebound);
+        }
+        prepared
+    }
     pub(super) fn record(
         &mut self,
         candidate: &crate::runtime::intent::payload::UiPreparedIntentPayload,
@@ -95,14 +126,39 @@ impl UiIntentOperabilityStandingOwner {
         self.revision = revision;
     }
 
-    pub(super) fn clear(&mut self) {
-        if self.facts.is_empty() {
+    pub(super) fn rebind_surface(
+        &mut self,
+        predecessor: UiSurfaceBindingGeneration,
+        successor: UiSurfaceBindingGeneration,
+    ) {
+        let Some(members) = self.bindings.get(&predecessor).cloned() else {
             return;
+        };
+        for instance in members.iter() {
+            let mut row = self
+                .facts
+                .get(instance)
+                .expect("standing binding membership retains its fact row")
+                .clone();
+            row.binding = successor;
+            self.replace_instance(*instance, row);
         }
-        let revision = self.next_revision();
-        self.facts = Default::default();
-        self.bindings = Default::default();
-        self.revision = revision;
+    }
+
+    pub(super) fn prepare_cleared(&self) -> Self {
+        Self {
+            facts: Default::default(),
+            bindings: Default::default(),
+            revision: if self.facts.is_empty() {
+                self.revision
+            } else {
+                self.next_revision()
+            },
+        }
+    }
+
+    pub(super) fn clear(&mut self) {
+        *self = self.prepare_cleared();
     }
 
     pub(super) fn snapshot(&self) -> UiIntentOperabilityStandingFactSnapshot {

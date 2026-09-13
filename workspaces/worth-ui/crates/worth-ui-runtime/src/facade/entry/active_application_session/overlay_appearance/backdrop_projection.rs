@@ -6,6 +6,8 @@ pub(super) fn lower_surface(
     presentation: &crate::runtime::presentation_state::UiApplicationPresentationState,
     capabilities: &crate::capability::CapabilitySnapshot,
     appearance: Option<&crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+    themes: Option<&crate::runtime::presentation_state::UiPreparedAppearanceGenerationSuccession>,
+    prepared_binding: Option<&crate::runtime::appearance::UiActiveThemeBinding>,
     previous: Option<&owner_state::BackdropProjections>,
     work: owner_state::UiActiveBackdropAppearanceWork,
 ) -> Result<
@@ -37,14 +39,16 @@ pub(super) fn lower_surface(
         );
         let declaration = surface.backdrops.get(&row.declaration()).ok_or(())?;
         let role = capabilities.appearance_roles().get(row.role()).ok_or(())?;
-        let theme = presentation
-            .appearance_theme_resolution_view(
-                capabilities,
-                role,
-                snapshot.runtime_surface(),
-                owner_snapshot.generation(),
-            )
-            .map_err(|_| ())?;
+        let binding = prepared_binding
+            .filter(|binding| binding.surface() == snapshot.runtime_surface())
+            .or_else(|| match themes {
+                Some(themes) => themes.binding(snapshot.runtime_surface()),
+                None => presentation.active_appearance_theme_binding(snapshot.runtime_surface()),
+            })
+            .ok_or(())?;
+        let theme = crate::runtime::presentation_state::UiApplicationPresentationState::resolve_appearance_theme_binding(
+            capabilities, role, snapshot.runtime_surface(), owner_snapshot.generation(), binding,
+        ).map_err(|_| ())?;
         candidate.work.candidates_visited += 1;
         let retained = previous
             .and_then(|projections| projections.get(&row.identity()))

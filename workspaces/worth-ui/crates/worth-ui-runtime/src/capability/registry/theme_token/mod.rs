@@ -6,8 +6,8 @@ mod theme_token_key;
 mod theme_token_registry;
 
 pub use descriptor::{
-    RawColorOutsideTokenDefinition, ThemeColorValue, ThemeColorValueError, ThemeTokenAlias,
-    ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenSource, ThemeTokenValue,
+    RawColorOutsideTokenDefinition, ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily,
+    ThemeTokenSource, ThemeTokenValue, UiThemeColor, UiThemeColorParseDenial,
 };
 pub use frozen_theme_token_capabilities::FrozenThemeTokenCapabilities;
 pub use frozen_theme_token_entry::FrozenThemeTokenEntry;

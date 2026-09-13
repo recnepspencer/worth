@@ -166,10 +166,15 @@ impl UiMountedHitTestMechanic {
     pub fn presented_within_portal(
         self,
         portal: super::UiMountedPortalOverlayMechanic,
+        source_anchor: super::UiMountedCanonicalBox,
     ) -> Result<Option<Self>, UiMountedHitTestCompletionDenial> {
-        let Some(geometry) =
-            super::portal_child_geometry::project(self.bounds, self.clip_bounds, portal)
-                .map_err(|_| UiMountedHitTestCompletionDenial::NonAreaGeometry)?
+        let Some(geometry) = super::portal_child_geometry::project(
+            self.bounds,
+            self.clip_bounds,
+            portal,
+            source_anchor,
+        )
+        .map_err(|_| UiMountedHitTestCompletionDenial::NonAreaGeometry)?
         else {
             return Ok(None);
         };

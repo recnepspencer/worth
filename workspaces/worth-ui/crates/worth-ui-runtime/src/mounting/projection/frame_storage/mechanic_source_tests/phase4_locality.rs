@@ -351,7 +351,6 @@ fn semantic_projection_with_width(
         has_appearance_attachment: false,
             appearance_clip:
                 crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
-            static_paint: None,
             semantic_text: Some(seed),
             hit_test: None,
             focus_support: crate::capability::ComponentFocusSupport::not_focusable(),
@@ -361,6 +360,7 @@ fn semantic_projection_with_width(
             portal_child_owner: None,
         }],
         vec![UiMountedProjectionSurface {
+                coordinate_posture: crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
             surface,
             binding,
             audience: UiMountedProjectionAudience::full(),

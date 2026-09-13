@@ -14,13 +14,14 @@ pub(crate) struct PlatformPulsePortalFocusFallbackPixelEvidence {
 pub(crate) fn adjudicate_focus_fallback_portal_pixels(
     before: &NativeClientPixelCapture,
     after: &NativeClientPixelCapture,
+    logical_client_extent: [u32; 2],
 ) -> Result<PlatformPulsePortalFocusFallbackPixelEvidence, PlatformPulsePortalPixelFailure> {
     let manifest = checked_in().map_err(PlatformPulsePortalPixelFailure::Manifest)?;
     require_same_capture(before, after)?;
     let physical = [after.width(), after.height()];
     let primary = project_region(
         manifest.portal_primary_region(),
-        manifest.logical_client_extent(),
+        logical_client_extent,
         physical,
     );
     let mut changed = 0;
@@ -56,7 +57,7 @@ pub(crate) fn adjudicate_focus_fallback_portal_pixels(
     }
     let cancel = project_region(
         manifest.portal_cancel_region(),
-        manifest.logical_client_extent(),
+        logical_client_extent,
         physical,
     );
     let mut differing = 0;
@@ -73,6 +74,30 @@ pub(crate) fn adjudicate_focus_fallback_portal_pixels(
         return Err(PlatformPulsePortalPixelFailure::FallbackActionChanged {
             differing,
             sampled: fallback_action_pixels,
+        });
+    }
+    let portal = project_region(
+        manifest.portal_overlay_region(),
+        logical_client_extent,
+        physical,
+    );
+    let mut surviving = 0;
+    let mut changed_surviving = 0;
+    for y in portal[1]..portal[3] {
+        for x in portal[0]..portal[2] {
+            if x >= primary[0] && x < primary[2] && y >= primary[1] && y < primary[3] {
+                continue;
+            }
+            if let (Some(prior), Some(current)) = (rgba_at(before, x, y), rgba_at(after, x, y)) {
+                surviving += 1;
+                changed_surviving += usize::from(prior != current);
+            }
+        }
+    }
+    if surviving == 0 || changed_surviving != 0 {
+        return Err(PlatformPulsePortalPixelFailure::SurvivingPortalChanged {
+            differing: changed_surviving,
+            sampled: surviving,
         });
     }
     Ok(PlatformPulsePortalFocusFallbackPixelEvidence {

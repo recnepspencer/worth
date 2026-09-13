@@ -7,7 +7,7 @@ use worth_ui_host_native::UiNativeTextReplayOperation as Op;
 #[test]
 fn zero_logical_damage_samples_replay_visible_overhang_and_accept_empty_images() {
     for source in ["W\tW\tW", "   "] {
-        let world = CoverageWorld::with_physical_geometry(
+        let world = CoverageWorld::with_portal_occluders(
             source,
             UiMountedInstanceIdentity::mint_unbound().unwrap(),
             0.0,
@@ -16,6 +16,7 @@ fn zero_logical_damage_samples_replay_visible_overhang_and_accept_empty_images()
             &[(UiSemanticTextSlot::Value, 0.0)],
             ([0, 255, 0, 128], 20_000),
             (1.0, 1_250),
+            1,
         );
         let text = world.fragment.text_candidates()[0].clone();
         assert!(text.bounds().x() + text.bounds().width() < text.clip_bounds().x());
@@ -24,7 +25,10 @@ fn zero_logical_damage_samples_replay_visible_overhang_and_accept_empty_images()
             mechanic: text.clone(),
         };
         let id = command.identity();
-        let commands = [command, rectangle(&text, bounds([380.0, 0.0, 8.0, 8.0]))];
+        let commands = [
+            command,
+            rectangle(&text, world.portals[0], bounds([380.0, 0.0, 8.0, 8.0])),
+        ];
         let order = commands
             .iter()
             .map(|c| UiMountedPaintOrderIdentity::for_command(c.identity()))

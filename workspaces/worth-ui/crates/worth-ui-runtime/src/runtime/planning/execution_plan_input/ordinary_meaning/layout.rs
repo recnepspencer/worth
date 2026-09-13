@@ -64,6 +64,36 @@ impl WorthUiLayoutPlanMeaning {
         }
     }
 
+    pub(crate) fn same_mounted_layout_meaning(&self, successor: &Self) -> bool {
+        match (self, successor) {
+            (
+                Self::Region {
+                    descriptor,
+                    sizing_contract,
+                    ..
+                },
+                Self::Region {
+                    descriptor: next_descriptor,
+                    sizing_contract: next_sizing,
+                    ..
+                },
+            ) => descriptor == next_descriptor && sizing_contract == next_sizing,
+            (
+                Self::Surface {
+                    descriptor,
+                    placement_policy,
+                    ..
+                },
+                Self::Surface {
+                    descriptor: next_descriptor,
+                    placement_policy: next_placement,
+                    ..
+                },
+            ) => descriptor == next_descriptor && placement_policy == next_placement,
+            _ => false,
+        }
+    }
+
     pub(crate) fn semantic_digest(&self) -> u64 {
         match self {
             Self::Region {

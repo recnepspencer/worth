@@ -95,8 +95,7 @@ fn matching_mechanic(
         {
             Some(mechanic)
         }
-        UiMountedPaintCommand::FilledRect { .. }
-        | UiMountedPaintCommand::PortalOverlay { .. }
+        UiMountedPaintCommand::PortalOverlay { .. }
         | UiMountedPaintCommand::SemanticText { .. } => None,
     }
 }

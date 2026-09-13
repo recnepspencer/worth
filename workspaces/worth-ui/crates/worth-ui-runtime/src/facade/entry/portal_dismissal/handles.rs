@@ -16,6 +16,7 @@ impl UiPortalDismissalPublicationCompletion<'_> {
                 .proposal
                 .expect("live dismissal completion retains proposal"),
             mounted: state.mounted,
+            retain_exit: state.admitted.retain_exit,
         }
     }
 }
@@ -66,12 +67,14 @@ impl DetachedUiPortalDismissalInFlight {
         now_tick: u64,
     ) -> UiPortalDismissalPublicationOutcome<'session> {
         let outcome = session.complete_mounted_presentation(self.mounted, now_tick);
-        finish(
+        super::completion::finish_presented(
             UiPortalDismissalAdmitted {
                 session,
                 proposal: Some(self.proposal),
+                retain_exit: self.retain_exit,
             },
             outcome,
+            now_tick,
         )
     }
 
@@ -84,6 +87,7 @@ impl DetachedUiPortalDismissalInFlight {
             UiPortalDismissalAdmitted {
                 session,
                 proposal: Some(self.proposal),
+                retain_exit: self.retain_exit,
             },
             outcome,
         )

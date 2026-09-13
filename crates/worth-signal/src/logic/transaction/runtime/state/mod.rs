@@ -20,8 +20,11 @@ pub(crate) use crate::observation::session::{
     SignalObservationCaptureGate, SignalObservationDropCleanup, SignalObservationSessionState,
 };
 pub(in crate::logic::transaction::runtime) use branching::BranchManager;
+#[cfg(test)]
 pub use branching::{
     bridge_signal_branch_basis_trust_boundary, BoundaryBridgedSignalBranchBasisArtifact,
+};
+pub use branching::{
     BranchTargetedTransactionDenial, BranchTargetedTransactionExecutionOutcome,
     BranchTargetedTransactionRequest, ExecutedBranchTargetedTransactionReceipt,
     LoweredBranchTargetedTransactionPlan, PlannedSignalBranchRetirement,

@@ -81,10 +81,24 @@ pub(super) fn atlas_reconstruction_exact(
     };
     receipt.text_pin_frame_counts().get(predecessor_index)
         == receipt.text_pin_frame_counts().get(reconstructed_index)
-        && receipt.text_pin_frame_observations().get(predecessor_index)
-            == receipt
-                .text_pin_frame_observations()
-                .get(reconstructed_index)
+        && receipt
+            .text_pin_frame_observations()
+            .get(predecessor_index)
+            .zip(
+                receipt
+                    .text_pin_frame_observations()
+                    .get(reconstructed_index),
+            )
+            .is_some_and(|(left, right)| {
+                // Reconstruction reissues pin generations. Its semantic model is
+                // the exact nonempty layout/raster membership, not old live handles.
+                !left.is_empty()
+                    && left.len() == right.len()
+                    && left.iter().zip(right.iter()).all(|(a, b)| {
+                        a.layout_digest() == b.layout_digest()
+                            && a.raster_key_digest() == b.raster_key_digest()
+                    })
+            })
         && receipt
             .text_atlas_model_frame_digests()
             .get(predecessor_index)
@@ -111,6 +125,9 @@ fn next_delta_retry_pair_is_local(
         .iter()
         .filter(|work| work.binding() == binding && work.mounted_frame() == mounted_frame)
         .collect::<Vec<_>>();
+    // "RECONSTRUCT-CURRENT!" has 20 non-space ASCII glyphs, followed by
+    // one intrinsic emoji. The separating space creates no raster demand.
+    const EXPECTED_NEXT_RASTER_DEMAND: u64 = 21;
     work.len() == 2
         && work
             .iter()
@@ -121,9 +138,10 @@ fn next_delta_retry_pair_is_local(
             .sum::<u64>()
             == 2
         && work.iter().map(|work| work.pin_additions()).sum::<u64>() == 21
-        && work
-            .iter()
-            .all(|work| work.demand_records() == 52 && work.binding_pins() == 52)
+        && work.iter().all(|work| {
+            work.demand_records() == EXPECTED_NEXT_RASTER_DEMAND
+                && work.binding_pins() == EXPECTED_NEXT_RASTER_DEMAND
+        })
         && work.windows(2).all(|pair| {
             pair[0].layout_set_digest() == pair[1].layout_set_digest()
                 && pair[0].raster_key_set_digest() == pair[1].raster_key_set_digest()

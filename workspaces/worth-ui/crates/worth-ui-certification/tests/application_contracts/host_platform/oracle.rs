@@ -21,7 +21,7 @@ pub(super) struct OracleDelta {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct OracleExpectation {
     pub owner_delta_count: usize,
-    pub damage: Vec<[u16; 4]>,
+    pub damage: Vec<[i32; 4]>,
     pub ordered_identities: Vec<u16>,
     pub vacated_damage_count: usize,
 }
@@ -44,7 +44,10 @@ pub(super) fn expectation(baseline: &[OracleRect], delta: &OracleDelta) -> Oracl
             .expect("world delta identity belongs to the baseline");
         assert_eq!(*slot, change.previous);
         *slot = change.successor;
-        damage.extend([change.previous.bounds, change.successor.bounds]);
+        damage.extend([
+            change.previous.bounds.map(i32::from),
+            change.successor.bounds.map(i32::from),
+        ]);
     }
     successor.sort_by_key(|row| row.order);
     OracleExpectation {
@@ -62,7 +65,7 @@ pub(super) fn removal_expectation(
     let successor = &baseline[removed_count..];
     let damage = baseline[..removed_count]
         .iter()
-        .map(|row| row.bounds)
+        .map(|row| row.bounds.map(i32::from))
         .collect::<Vec<_>>();
     OracleExpectation {
         owner_delta_count: removed_count,

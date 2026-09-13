@@ -140,6 +140,7 @@ impl EffectExecutionSettlementDeferred {
         super::super::settlement_repair::repair_effect_settlement(authority, &self.settlement)
     }
 
+    #[cfg(test)]
     pub(crate) fn settlement(
         &self,
     ) -> &worth_relational::facade::publication::DeferredPublicationSettlement {

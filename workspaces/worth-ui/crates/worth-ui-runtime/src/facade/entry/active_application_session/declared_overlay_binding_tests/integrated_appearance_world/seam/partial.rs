@@ -139,7 +139,7 @@ fn assert_headless_partial_edge(
     loser: worth_ui_host_contract::UiMountedInstanceIdentity,
 ) {
     let transcript =
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     let owner_frame = surface_frame(&transcript, owner);
     let loser_frame = surface_frame(&transcript, loser);
     let transparent = UiMountedAppearanceColor::from_straight_srgba([0; 4]);

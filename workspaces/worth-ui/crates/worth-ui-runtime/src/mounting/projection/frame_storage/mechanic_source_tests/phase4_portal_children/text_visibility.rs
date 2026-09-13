@@ -47,12 +47,9 @@ fn adopted_foreground_membership_follows_completed_candidate_visibility() {
     );
     let hidden = world.frame(&[0, 1], None);
     let hidden_context = context(&hidden, child);
-    assert!(matches!(
-        hidden_context.appearance_clip(),
-        Clip::Ancestor(_)
-    ));
+    assert!(matches!(hidden_context.appearance_clip, Clip::Ancestor(_)));
     assert!(hidden.appearance_text_candidates(child).unwrap().is_empty());
-    assert!(hidden_context.text_foreground_spans().is_empty());
+    assert!(hidden_context.text_foreground_spans.is_empty());
     assert_eq!(context(&visible, child).text_foreground_spans, original);
     let removal = sidecar.mount(lower(&hidden_context, &projection)).unwrap();
     assert!(removal.successor().mechanics().is_empty());
@@ -187,7 +184,7 @@ fn missing_retained_text_is_not_successful_clipping() {
     let child = world.children[0];
     adopt_value(&mut world, child);
     let visible = world.frame(&[0, 1], None);
-    assert_eq!(context(&visible, child).text_foreground_spans().len(), 1);
+    assert_eq!(context(&visible, child).text_foreground_spans.len(), 1);
     let mut missing = visible.clone();
     // Deliberately remove derived text while keeping admitted adoption. This is
     // corruption/recovery evidence, not a lawful authored suppression transition.
@@ -200,7 +197,40 @@ fn missing_retained_text_is_not_successful_clipping() {
             crate::mounting::UiMountedProjectionDenial::AppearanceTextCandidatesUnavailable,
         ),
     );
-    assert_eq!(context(&visible, child).text_foreground_spans().len(), 1);
+    assert_eq!(context(&visible, child).text_foreground_spans.len(), 1);
+}
+
+#[test]
+fn retained_value_cannot_substitute_for_missing_required_posture() {
+    use worth_ui_host_contract::UiSemanticTextSlot;
+    let mut world = GeometryWorld::new();
+    let child = world.children[0];
+    adopt_value(&mut world, child);
+    let visible = world.frame(&[0, 1], None);
+    let mut slots: Vec<_> = visible
+        .appearance_text_candidates(child)
+        .unwrap()
+        .iter()
+        .map(|row| row.slot())
+        .collect();
+    slots.sort();
+    let mut expected = vec![UiSemanticTextSlot::Value, UiSemanticTextSlot::Posture];
+    expected.sort();
+    assert_eq!(slots, expected);
+    let mut missing = visible.clone();
+    missing.mechanics.remove_text_posture_for_test(child);
+    let remaining = missing.appearance_text_candidates(child).unwrap();
+    assert_eq!(remaining.len(), 1);
+    assert_eq!(remaining[0].slot(), UiSemanticTextSlot::Value);
+    assert_eq!(
+        missing
+            .appearance_visible_foreground_spans(child)
+            .unwrap_err(),
+        crate::mounting::projection::UiMountedAppearanceOutputDenial::TextCandidate(
+            crate::mounting::UiMountedProjectionDenial::AppearanceTextCandidatesUnavailable,
+        ),
+    );
+    assert_eq!(context(&visible, child).text_foreground_spans.len(), 1);
 }
 
 fn adopt_value(world: &mut GeometryWorld, child: UiMountedInstanceIdentity) {
@@ -253,7 +283,7 @@ fn adopt_value(world: &mut GeometryWorld, child: UiMountedInstanceIdentity) {
     let input = content.get(graph_node);
     let formatting = lower_semantic_text_formatting(
         crate::mounting::UiMountedPlanProjectionSource::PreviewOnly,
-        &crate::mounting::UiMountedThemeValueSource::ReplacementCandidateFrozenPlan,
+        &crate::mounting::UiMountedThemeValueSource::from_admitted(Default::default()),
         graph_node,
         None,
         input,

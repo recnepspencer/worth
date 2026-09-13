@@ -30,6 +30,7 @@ posture. A completed rebind also exposes a compact terminal decision record.
 - `WorthUiApp::inspection_support_report_for(...)`
 - `WorthUiApp::expand_evidence_ref(...)`
 - `WorthUiActiveApplicationSession::lookup_intent_causal_trace(...)`
+- `WorthUiActiveApplicationSession::why_pointer_affordance(world, target)`
 - `WorthUiActiveApplicationSession::why_portal_closed()`
 - `WorthUiActiveApplicationSession::why_focus_moved()`
 - `WorthUiActiveApplicationSession::why_focus_restoration_failed()`
@@ -210,11 +211,37 @@ For rebind, inspect the decision key and source basis before counts. Then compar
 planned structural cost with the mounted and host receipts. A matching pixel or
 digest cannot repair wrong generation or frame affinity.
 
+Pointer inspection reads the sealed observation used by mounted preparation:
+
+```rust
+let world = session.appearance_inspection_world(target.surface());
+let outcome = session.why_pointer_affordance(world, target);
+```
+
+The target is an existing `UiPresentedInteractionTargetView`. The inert world
+distinguishes another session from an expired generation or surface binding.
+A found explanation identifies the primary pointer and concrete target coverage,
+observation turn/source, declared activation route, complete product inoperability
+causes or confirmation eligibility/deadline, and the owner's measured work.
+Typed denial codes are stable; optional human-readable detail is not a parsing API.
+
+`Current` means the sealed pointer meaning matches accepted mounted output.
+`Pending` means it still awaits presentation, including after host rejection.
+Inspection never reevaluates mutable Intent facts or grants execution authority.
+An unchanged accepted observation remains explainable through the existing mounted
+reuse proof without another input turn; the query still requires a current physical
+target. Expiry distinguishes generation, binding, presentation, target, invalidated
+surface, and observation-admission failures. Explanations are owned values and
+retain no live owner or history. Only the bounded current pointer rows are searched.
+
 Appearance explanations distinguish a theme-slot source (selected and terminal
 slot), an authored literal, and unavailable resolution. Literal cells retain
 their role, theme binding, coherent state, and mounted attribution while recording
-zero theme-slot lookups. They never report a fabricated slot or alias. This
-inspection applies to the staged, unpublished appearance path until cutover.
+zero theme-slot lookups. They never report a fabricated slot or alias.
+`why_appearance` reports the current or pending generation, selected cell,
+theme-switch basis, mounted occurrence, relevance, and expiry. It remains a
+read-only explanation and cannot select a theme, resolve a cell, publish a
+frame, or reconstruct expired evidence.
 
 ## Anti-Patterns
 

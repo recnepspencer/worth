@@ -5,12 +5,12 @@ use worth_ui_host_contract::{
     UiMountedAppearancePredecessorManifest, UiMountedAppearanceWork,
     UiMountedAppearanceWorkPosture, UiMountedBackdropAppearanceAttribution,
     UiMountedBackdropCompletionInput, UiMountedBackdropIdentity, UiMountedBackdropMechanic,
-    UiMountedBackdropScope, UiMountedLayerProjection, UiMountedLayerReference,
-    UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIssuer, UiMountedOverlayOrderMechanic,
-    UiMountedPortalSurfaceAppearanceMechanic, UiMountedPresentationAttemptIdentity,
-    UiMountedPresentationOpacity, UiMountedSurfaceAppearanceCompletionInput,
-    UiMountedSurfaceAppearanceMechanic, UiMountedSurfacePaint, UiOverlayParticipantIdentity,
-    UiOverlayPlacementReceipt, UiSemanticSurfaceIdentity,
+    UiMountedBackdropScope, UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIssuer,
+    UiMountedOverlayOrderMechanic, UiMountedPortalSurfaceAppearanceMechanic,
+    UiMountedPresentationAttemptIdentity, UiMountedPresentationOpacity,
+    UiMountedSurfaceAppearanceCompletionInput, UiMountedSurfaceAppearanceMechanic,
+    UiMountedSurfacePaint, UiOverlayParticipantIdentity, UiOverlayPlacementReceipt,
+    UiSemanticSurfaceIdentity,
 };
 
 struct FixtureIds {
@@ -33,7 +33,7 @@ fn initial_nonempty_translation_keeps_issued_overlay_order_and_oracle() {
     );
     let work = initial_work(&frame, damage(0, 0, 64, 48));
 
-    let transcript = super::super::super::translate_unpublished_appearance_work(&work).unwrap();
+    let transcript = super::super::super::translate_appearance_fragment_work(&work).unwrap();
 
     assert_eq!(
         transcript.posture(),
@@ -88,8 +88,7 @@ fn delta_and_reconstruction_preserve_exact_damage_and_mechanic_changes() {
         .unwrap()],
         damage(8, 8, 32, 24),
     );
-    let delta_transcript =
-        super::super::super::translate_unpublished_appearance_work(&delta).unwrap();
+    let delta_transcript = super::super::super::translate_appearance_fragment_work(&delta).unwrap();
     assert_eq!(
         delta_transcript.posture(),
         UiMountedAppearanceWorkPosture::Delta
@@ -120,7 +119,7 @@ fn delta_and_reconstruction_preserve_exact_damage_and_mechanic_changes() {
         damage(0, 0, 64, 48),
     );
     let reconstruction_transcript =
-        super::super::super::translate_unpublished_appearance_work(&reconstruction).unwrap();
+        super::super::super::translate_appearance_fragment_work(&reconstruction).unwrap();
     assert_eq!(
         reconstruction_transcript.posture(),
         UiMountedAppearanceWorkPosture::Reconstruction
@@ -145,7 +144,7 @@ fn malformed_order_and_backdrop_placement_are_denied() {
     ];
     let order_frame = frame_with(&ids, frame_identity(), [255, 0, 0, 128], 0, malformed_order);
     assert_eq!(
-        super::super::super::translate_unpublished_appearance_work(&initial_work(
+        super::super::super::translate_appearance_fragment_work(&initial_work(
             &order_frame,
             damage(0, 0, 64, 48),
         )),
@@ -160,7 +159,7 @@ fn malformed_order_and_backdrop_placement_are_denied() {
         valid_order(&ids),
     );
     assert_eq!(
-        super::super::super::translate_unpublished_appearance_work(&initial_work(
+        super::super::super::translate_appearance_fragment_work(&initial_work(
             &misplaced_frame,
             damage(0, 0, 64, 48),
         )),
@@ -279,6 +278,7 @@ fn surface(
             clip: UiAppearanceClip::new(bounds.x(), bounds.y(), bounds.width(), bounds.height())
                 .unwrap(),
             surface_paint_order: 0,
+            portal_group: None,
             radii: worth_ui_host_contract::UiAppearanceNormalizedLogicalRadii::normalize(
                 bounds,
                 [worth_ui_host_contract::UiAppearanceLogicalLength::ZERO; 4],

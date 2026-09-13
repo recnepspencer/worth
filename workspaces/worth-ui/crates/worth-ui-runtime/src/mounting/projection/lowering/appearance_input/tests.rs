@@ -51,6 +51,8 @@ fn projection(
         vec![node],
         binding
             .map(|binding| UiMountedProjectionSurface {
+                coordinate_posture:
+                    crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
                 surface,
                 binding,
                 audience: UiMountedProjectionAudience::full(),
@@ -100,7 +102,6 @@ fn node() -> UiMountedProjectionNodeRecord {
                 ),
                 crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
             ),
-        static_paint: None,
         semantic_text: None,
         hit_test: None,
         focus_support: crate::capability::ComponentFocusSupport::not_focusable(),

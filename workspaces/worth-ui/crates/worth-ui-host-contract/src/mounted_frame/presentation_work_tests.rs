@@ -188,7 +188,6 @@ fn empty_projection(
         nodes: Vec::new(),
         clips: crate::UiMountedClipTable::produced(Vec::new()),
         layers: crate::UiMountedLayerTable::produced(Vec::new()),
-        filled_rects: crate::UiMountedFilledRectTable::empty(),
         portal_overlays: crate::UiMountedPortalOverlayTable::empty(),
         semantic_text: crate::UiMountedSemanticTextTable::empty(),
         hit_tests: crate::UiMountedHitTestTable::empty(),

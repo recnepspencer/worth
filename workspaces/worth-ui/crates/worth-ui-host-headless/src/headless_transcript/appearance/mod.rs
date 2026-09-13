@@ -1,5 +1,3 @@
-// The Gate 1 transcript is an intended-next, headless-only surface.
-
 mod backdrop;
 mod outline;
 mod overlay_order;
@@ -49,7 +47,7 @@ pub struct UiHeadlessAppearanceWorkTranscript {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct UiHeadlessUnpublishedAppearanceFragmentTranscript {
+pub struct UiHeadlessAppearanceFragmentTranscript {
     identity: worth_ui_host_contract::UiUnpublishedAppearanceFragmentIdentity,
     work: UiHeadlessAppearanceWorkTranscript,
     text_candidates: Box<[worth_ui_host_contract::UiMountedSemanticTextMechanic]>,
@@ -58,10 +56,19 @@ pub struct UiHeadlessUnpublishedAppearanceFragmentTranscript {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct UiHeadlessUnpublishedAppearanceFrameTranscript {
+pub struct UiHeadlessAppearancePresentationTranscript {
     frame: worth_ui_host_contract::UiMountedFrameIdentity,
     presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-    fragments: Box<[UiHeadlessUnpublishedAppearanceFragmentTranscript]>,
+    requirement: worth_ui_host_contract::UiMountedSurfaceBindingRequirement,
+    fragments: Box<[UiHeadlessAppearanceFragmentTranscript]>,
+    sample_overrides: Box<[worth_ui_host_contract::UiMountedPresentationSampleChange]>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct UiHeadlessAppearanceProjectionTranscript {
+    frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+    fragments: Box<[UiHeadlessAppearanceFragmentTranscript]>,
 }
 
 impl UiHeadlessAppearanceMechanic {
@@ -187,7 +194,7 @@ impl UiHeadlessAppearanceWorkTranscript {
     }
 }
 
-impl UiHeadlessUnpublishedAppearanceFragmentTranscript {
+impl UiHeadlessAppearanceFragmentTranscript {
     pub(crate) fn from_source(
         source: &worth_ui_host_contract::UiUnpublishedAppearanceFragment,
         work: UiHeadlessAppearanceWorkTranscript,
@@ -228,10 +235,75 @@ impl UiHeadlessUnpublishedAppearanceFragmentTranscript {
     }
 }
 
-impl UiHeadlessUnpublishedAppearanceFrameTranscript {
+impl UiHeadlessAppearancePresentationTranscript {
+    pub(crate) fn from_source(
+        source: &worth_ui_host_contract::UiMountedAppearancePresentationWork,
+        fragments: Vec<UiHeadlessAppearanceFragmentTranscript>,
+    ) -> Self {
+        Self {
+            frame: source.frame(),
+            presentation: source.presentation(),
+            requirement: source.requirement(),
+            fragments: fragments.into_boxed_slice(),
+            sample_overrides: source.sample_overrides().into(),
+        }
+    }
+
+    pub const fn frame(&self) -> worth_ui_host_contract::UiMountedFrameIdentity {
+        self.frame
+    }
+    pub const fn presentation(
+        &self,
+    ) -> worth_ui_host_contract::UiMountedPresentationAttemptIdentity {
+        self.presentation
+    }
+    pub const fn requirement(&self) -> worth_ui_host_contract::UiMountedSurfaceBindingRequirement {
+        self.requirement
+    }
+    pub fn fragments(&self) -> &[UiHeadlessAppearanceFragmentTranscript] {
+        &self.fragments
+    }
+    pub fn sample_overrides(&self) -> &[worth_ui_host_contract::UiMountedPresentationSampleChange] {
+        &self.sample_overrides
+    }
+
+    pub(crate) fn mechanic_count(
+        &self,
+    ) -> Result<u32, worth_ui_host_contract::UiHostSurfacePresentationDenial> {
+        let count = self
+            .fragments
+            .iter()
+            .map(|fragment| fragment.work.successor.mechanics.len())
+            .try_fold(0usize, usize::checked_add)
+            .ok_or(worth_ui_host_contract::UiHostSurfacePresentationDenial::CapacityExceeded)?;
+        u32::try_from(count)
+            .map_err(|_| worth_ui_host_contract::UiHostSurfacePresentationDenial::CapacityExceeded)
+    }
+
+    pub(crate) fn row_count(
+        &self,
+    ) -> Result<usize, worth_ui_host_contract::UiHostSurfacePresentationDenial> {
+        let initial = self
+            .fragments
+            .len()
+            .checked_add(self.sample_overrides.len())
+            .ok_or(worth_ui_host_contract::UiHostSurfacePresentationDenial::CapacityExceeded)?;
+        self.fragments.iter().try_fold(initial, |total, fragment| {
+            total
+                .checked_add(fragment.work.successor.mechanics.len())
+                .and_then(|value| value.checked_add(fragment.work.changes.len()))
+                .and_then(|value| value.checked_add(fragment.work.damage.len()))
+                .and_then(|value| value.checked_add(fragment.text_candidates.len()))
+                .ok_or(worth_ui_host_contract::UiHostSurfacePresentationDenial::CapacityExceeded)
+        })
+    }
+}
+
+impl UiHeadlessAppearanceProjectionTranscript {
+    #[cfg(feature = "certification-support")]
     pub(crate) fn from_source(
         source: &worth_ui_host_contract::UiUnpublishedAppearanceFrameProjection,
-        fragments: Vec<UiHeadlessUnpublishedAppearanceFragmentTranscript>,
+        fragments: Vec<UiHeadlessAppearanceFragmentTranscript>,
     ) -> Self {
         Self {
             frame: source.frame(),
@@ -243,14 +315,12 @@ impl UiHeadlessUnpublishedAppearanceFrameTranscript {
     pub const fn frame(&self) -> worth_ui_host_contract::UiMountedFrameIdentity {
         self.frame
     }
-
     pub const fn presentation(
         &self,
     ) -> worth_ui_host_contract::UiMountedPresentationAttemptIdentity {
         self.presentation
     }
-
-    pub fn fragments(&self) -> &[UiHeadlessUnpublishedAppearanceFragmentTranscript] {
+    pub fn fragments(&self) -> &[UiHeadlessAppearanceFragmentTranscript] {
         &self.fragments
     }
 }

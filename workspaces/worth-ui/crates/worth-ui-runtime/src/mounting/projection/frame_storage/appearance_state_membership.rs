@@ -88,6 +88,10 @@ impl Default for UiMountedAppearanceStateMembers {
 }
 
 impl UiMountedAppearanceStateMembers {
+    pub(super) fn has_pending_lowering(&self) -> bool {
+        !self.pending_keys.is_empty()
+    }
+
     pub(super) fn retained_projection_for_instance(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -326,6 +330,7 @@ impl UiMountedAppearanceStateMembers {
         (Ok(old), work)
     }
 
+    #[cfg(test)]
     pub(super) fn retained_entry(
         &self,
         key: &UiMountedAppearanceStateKey,

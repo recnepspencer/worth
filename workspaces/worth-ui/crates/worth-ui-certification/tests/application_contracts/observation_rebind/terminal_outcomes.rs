@@ -1,6 +1,9 @@
-use worth_ui::facade::app::WorthUiNativeApplicationShell;
+use worth_ui::facade::app::{
+    WorthUiNativeApplicationShell, WorthUiNativeManagedRebindStop,
+    WorthUiNativeManagedSourceRebindOutcome,
+};
 use worth_ui::facade::rebind::{
-    UiRebindOutcome, UiRebindStoppedPhase, UiRebindValidNextAction, UiSourceRebindRequest,
+    UiRebindStoppedPhase, UiRebindValidNextAction, UiSourceRebindRequest,
 };
 use worth_ui::facade::source::{
     WorthUiSettledSourceSnapshot, WorthUiSourceEventIngress, WorthUiSourceProvider,
@@ -79,7 +82,9 @@ fn ordinary_request_distinguishes_no_change_duplicate_and_superseded_evidence() 
         .begin_source_rebind(UiSourceRebindRequest::new(current).observed_at_tick(1))
         .expect("exact current source reaches classification")
     {
-        UiRebindOutcome::ObservedNoChange(receipt) => drop(receipt),
+        WorthUiNativeManagedSourceRebindOutcome::Stopped(
+            WorthUiNativeManagedRebindStop::ObservedNoChange,
+        ) => {}
         outcome => {
             drop(outcome);
             panic!("exact semantic source must be observed no-change");
@@ -93,7 +98,9 @@ fn ordinary_request_distinguishes_no_change_duplicate_and_superseded_evidence() 
         .begin_source_rebind(UiSourceRebindRequest::new(duplicate).observed_at_tick(2))
         .expect("duplicate is a terminal outcome")
     {
-        UiRebindOutcome::Duplicate(_) => {}
+        WorthUiNativeManagedSourceRebindOutcome::Stopped(
+            WorthUiNativeManagedRebindStop::Duplicate,
+        ) => {}
         _ => panic!("equal owner order must be duplicate"),
     }
 
@@ -105,27 +112,36 @@ fn ordinary_request_distinguishes_no_change_duplicate_and_superseded_evidence() 
         .begin_source_rebind(advance)
         .expect("newer owner evidence reaches final admission")
     {
-        UiRebindOutcome::TimedOutBeforeEffects(_) => {}
+        WorthUiNativeManagedSourceRebindOutcome::Stopped(
+            WorthUiNativeManagedRebindStop::TimedOutBeforeEffects(receipt),
+        ) => {
+            assert!(receipt.predecessor_remains_current());
+            assert_eq!(
+                receipt.stopped_phase(),
+                UiRebindStoppedPhase::FinalAdmission
+            );
+            assert_eq!(receipt.valid_next_action(), UiRebindValidNextAction::None);
+        }
         _ => panic!("newer changed evidence should stop at its expired deadline"),
     }
 
-    let superseded = match world
+    match world
         .shell
         .begin_source_rebind(UiSourceRebindRequest::new(historical).observed_at_tick(3))
         .expect("historical evidence is a terminal outcome")
     {
-        UiRebindOutcome::SupersededBeforeEffects(receipt) => receipt,
+        WorthUiNativeManagedSourceRebindOutcome::Stopped(
+            WorthUiNativeManagedRebindStop::SupersededBeforeEffects(receipt),
+        ) => {
+            assert!(receipt.predecessor_remains_current());
+            assert_eq!(
+                receipt.stopped_phase(),
+                UiRebindStoppedPhase::ObservationAdmission
+            );
+            assert_eq!(receipt.valid_next_action(), UiRebindValidNextAction::None);
+        }
         _ => panic!("lower owner order must be superseded"),
-    };
-    assert!(superseded.predecessor_remains_current());
-    assert_eq!(
-        superseded.stopped_phase(),
-        UiRebindStoppedPhase::ObservationAdmission
-    );
-    assert_eq!(
-        superseded.valid_next_action(),
-        UiRebindValidNextAction::None
-    );
+    }
     assert_eq!(world.shell.generation_identity(), &generation);
     assert_eq!(world.host.presentation_calls(), 0);
     world.close();
@@ -143,20 +159,23 @@ fn ordinary_timeout_stops_at_final_admission_without_host_effects() {
         .with_deadline(world.shell.rebind_deadline_at(10))
         .observed_at_tick(11);
 
-    let receipt = match world
+    match world
         .shell
         .begin_source_rebind(request)
         .expect("elapsed request is a typed terminal outcome")
     {
-        UiRebindOutcome::TimedOutBeforeEffects(receipt) => receipt,
+        WorthUiNativeManagedSourceRebindOutcome::Stopped(
+            WorthUiNativeManagedRebindStop::TimedOutBeforeEffects(receipt),
+        ) => {
+            assert!(receipt.predecessor_remains_current());
+            assert_eq!(
+                receipt.stopped_phase(),
+                UiRebindStoppedPhase::FinalAdmission
+            );
+            assert_eq!(receipt.valid_next_action(), UiRebindValidNextAction::None);
+        }
         _ => panic!("elapsed request must time out before effects"),
-    };
-    assert!(receipt.predecessor_remains_current());
-    assert_eq!(
-        receipt.stopped_phase(),
-        UiRebindStoppedPhase::FinalAdmission
-    );
-    assert_eq!(receipt.valid_next_action(), UiRebindValidNextAction::None);
+    }
     assert_eq!(world.shell.generation_identity(), &generation);
     assert_eq!(world.host.presentation_calls(), 0);
     world.close();
@@ -174,20 +193,23 @@ fn ordinary_cancellation_stops_at_final_admission_without_host_effects() {
         .with_cancellation(world.shell.rebind_cancellation_request())
         .observed_at_tick(1);
 
-    let receipt = match world
+    match world
         .shell
         .begin_source_rebind(request)
         .expect("cancelled request is a typed terminal outcome")
     {
-        UiRebindOutcome::CancelledBeforeEffects(receipt) => receipt,
+        WorthUiNativeManagedSourceRebindOutcome::Stopped(
+            WorthUiNativeManagedRebindStop::CancelledBeforeEffects(receipt),
+        ) => {
+            assert!(receipt.predecessor_remains_current());
+            assert_eq!(
+                receipt.stopped_phase(),
+                UiRebindStoppedPhase::FinalAdmission
+            );
+            assert_eq!(receipt.valid_next_action(), UiRebindValidNextAction::None);
+        }
         _ => panic!("cancelled request must stop before effects"),
-    };
-    assert!(receipt.predecessor_remains_current());
-    assert_eq!(
-        receipt.stopped_phase(),
-        UiRebindStoppedPhase::FinalAdmission
-    );
-    assert_eq!(receipt.valid_next_action(), UiRebindValidNextAction::None);
+    }
     assert_eq!(world.shell.generation_identity(), &generation);
     assert_eq!(world.host.presentation_calls(), 0);
     world.close();

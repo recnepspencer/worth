@@ -9,6 +9,7 @@ use worth_ui_host_contract::{
 pub(in crate::mounting::projection) fn portal_presented_allocation(
     allocation: UiMountedAllocationProjection,
     portal: UiMountedPortalOverlayMechanic,
+    source_anchor: UiMountedCanonicalBox,
 ) -> Result<UiMountedAllocationProjection, Denial> {
     let (bounds, basis, anchor) = match allocation {
         UiMountedAllocationProjection::Known { bounds, basis } => (bounds, basis, false),
@@ -19,7 +20,7 @@ pub(in crate::mounting::projection) fn portal_presented_allocation(
             return Ok(UiMountedAllocationProjection::Omitted(reason));
         }
     };
-    let bounds = translate_box(bounds, portal)?;
+    let bounds = translate_box(bounds, portal, source_anchor)?;
     Ok(if anchor {
         UiMountedAllocationProjection::PortalAnchorObservation { bounds, basis }
     } else {
@@ -32,6 +33,7 @@ pub(in crate::mounting::projection) fn portal_presented_allocation(
 pub(in crate::mounting::projection) fn portal_ancestor_clip(
     ancestry: Clip,
     portal: UiMountedPortalOverlayMechanic,
+    source_anchor: UiMountedCanonicalBox,
 ) -> Result<Clip, Denial> {
     if matches!(ancestry, Clip::Unresolved(denial)
         if !matches!(denial, super::UiMountedAppearanceClipDenial::PortalBindingUnavailable(_)))
@@ -48,7 +50,7 @@ pub(in crate::mounting::projection) fn portal_ancestor_clip(
     };
     match ancestry {
         Clip::Ancestor(ancestor) => {
-            let ancestor = translate_clip(ancestor, portal)?;
+            let ancestor = translate_clip(ancestor, portal, source_anchor)?;
             Ok(super::clip::intersect_clips(coverage, ancestor)
                 .map_or(Clip::Suppressed, Clip::Ancestor))
         }
@@ -64,10 +66,11 @@ pub(in crate::mounting::projection) fn portal_ancestor_clip(
 fn translate_box(
     bounds: UiMountedCanonicalBox,
     portal: UiMountedPortalOverlayMechanic,
+    source_anchor: UiMountedCanonicalBox,
 ) -> Result<UiMountedCanonicalBox, Denial> {
     UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-        x: bounds.x() + portal.bounds().x() - portal.anchor_bounds().x(),
-        y: bounds.y() + portal.bounds().y() - portal.anchor_bounds().y(),
+        x: bounds.x() + portal.bounds().x() - source_anchor.x(),
+        y: bounds.y() + portal.bounds().y() - source_anchor.y(),
         width: bounds.width(),
         height: bounds.height(),
         coordinate_space: bounds.coordinate_space(),
@@ -78,9 +81,10 @@ fn translate_box(
 fn translate_clip(
     clip: UiAppearanceClip,
     portal: UiMountedPortalOverlayMechanic,
+    source_anchor: UiMountedCanonicalBox,
 ) -> Result<UiAppearanceClip, Denial> {
     let presented = super::geometry::allocation(portal.bounds())?;
-    let anchor = super::geometry::allocation(portal.anchor_bounds())?;
+    let anchor = super::geometry::allocation(source_anchor)?;
     let x = i64::from(clip.x()) + i64::from(presented.x()) - i64::from(anchor.x());
     let y = i64::from(clip.y()) + i64::from(presented.y()) - i64::from(anchor.y());
     UiAppearanceClip::new(

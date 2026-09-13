@@ -91,7 +91,10 @@ pub trait UiNativeEventLoopClient {
     ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure> {
         Ok(UiNativeEventLoopDirective::Close)
     }
-    fn presentation_attribution(&self) -> Option<UiNativeClientPresentationAttribution>;
+    fn presentation_attribution(
+        &self,
+        observed: &crate::native::UiNativePresentationObservation,
+    ) -> Option<UiNativeClientPresentationAttribution>;
     fn close(self) -> UiNativeEventLoopClientClose;
 }
 
@@ -257,12 +260,12 @@ pub struct UiNativeEventLoopStopReport {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiNativeEventLoopRunReport {
-    pub(super) presentation: UiNativePresentationObservation,
+    pub(super) final_frame: UiNativeRetainedFrameObservation,
     pub(super) graphics: UiNativeGraphicsObservation,
     pub(super) event_loop_thread: Box<str>,
     pub(super) event_loop_thread_matches_launch: bool,
     pub(super) event_loop_thread_posture: super::UiNativeEventLoopThreadPosture,
-    pub(super) client_attribution: UiNativeClientPresentationAttribution,
+    pub(super) client_attribution: Option<UiNativeClientPresentationAttribution>,
     pub(super) readiness_signals: u64,
     pub(super) redraw_turns: u64,
     pub(super) idle_wait_turns: u64,

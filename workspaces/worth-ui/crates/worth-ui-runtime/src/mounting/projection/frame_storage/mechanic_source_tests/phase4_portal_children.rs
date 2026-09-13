@@ -23,7 +23,6 @@ use super::super::{
 use crate::mounting::projection::node_receipt::{UiMountedNodeReceipt, UiMountedNodeReceiptInput};
 use crate::mounting::projection::{
     hit_test::UiMountedHitTestSeed, semantic_text::UiMountedSemanticTextSeed,
-    static_paint::UiMountedStaticPaintSeed,
 };
 
 fn projection_frame(
@@ -119,6 +118,7 @@ fn portal_semantic_projection(
             ),
         ],
         vec![UiMountedProjectionSurface {
+            coordinate_posture: crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
             surface,
             binding,
             audience: UiMountedProjectionAudience::full(),
@@ -181,9 +181,6 @@ fn node(
         has_appearance_attachment: true,
         appearance_clip:
             crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
-        static_paint: Some(UiMountedStaticPaintSeed::for_test(
-            worth_ui_host_contract::UiMountedRgba8::new(42, 36, 68, 255),
-        )),
         semantic_text: semantic_text.then(UiMountedSemanticTextSeed::scalar_for_test),
         hit_test: Some(UiMountedHitTestSeed::for_test((graph - 4_151) as u32)),
         focus_support: crate::capability::ComponentFocusSupport::not_focusable(),
@@ -244,6 +241,7 @@ fn portal_overlay_for_graph(
     crate::mounting::UiMountedPortalOverlayProjectionInput::new(
         identity.diagnostic_value(),
         owner,
+        surface,
         placement,
         crate::runtime::portal::UiPortalLifecyclePosture::Visible,
     )
@@ -273,25 +271,8 @@ fn assert_child_suppressed(
         .any(|hit| hit.mechanic().mounted_instance() == child));
 }
 
-fn owner_filled_rect(
-    frame: &UiMountedProjectionFrame,
-    owner: UiMountedInstanceIdentity,
-    surface: UiSemanticSurfaceIdentity,
-    binding: UiSurfaceBindingGeneration,
-) -> worth_ui_host_contract::UiMountedFilledRectMechanic {
-    frame
-        .presentation_commands_for_instance(owner, surface, binding)
-        .iter()
-        .find_map(|command| match command {
-            UiMountedPaintCommand::FilledRect { mechanic, .. } => Some(*mechanic),
-            _ => None,
-        })
-        .unwrap()
-}
-
 fn command_bounds(command: &UiMountedPaintCommand) -> UiMountedCanonicalBox {
     match command {
-        UiMountedPaintCommand::FilledRect { mechanic, .. } => mechanic.bounds(),
         UiMountedPaintCommand::SemanticText { mechanic, .. } => mechanic.bounds(),
         UiMountedPaintCommand::PortalOverlay { mechanic, .. } => mechanic.bounds(),
     }

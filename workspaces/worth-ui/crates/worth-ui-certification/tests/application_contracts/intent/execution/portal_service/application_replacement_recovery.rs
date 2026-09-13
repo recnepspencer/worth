@@ -21,8 +21,13 @@ fn replacement_keeps_lifecycle_bundle_through_host_in_flight_completion() {
     }
     let (application, facts) = build_open_portal_application_with_host(host.clone());
     let candidate_facts = facts.clone();
-    let mut world =
-        AdmissionWorld::launch_application_with_target(application, facts, 1, 2, [18, 20]);
+    let mut world = AdmissionWorld::launch_application_on_declared_surface(
+        application,
+        facts,
+        "visual.identity.surface.main",
+        2,
+        [18, 20],
+    );
     open_portal(&mut world);
     let (pending, catalog) = prepare_owner_removal(&mut world, &candidate_facts);
     let boundary = safe_boundary(&mut world);
@@ -74,8 +79,13 @@ fn replacement_keeps_portal_authority_through_host_indeterminate_disposal() {
     }
     let (application, facts) = build_open_portal_application_with_host(host.clone());
     let candidate_facts = facts.clone();
-    let mut world =
-        AdmissionWorld::launch_application_with_target(application, facts, 1, 2, [18, 20]);
+    let mut world = AdmissionWorld::launch_application_on_declared_surface(
+        application,
+        facts,
+        "visual.identity.surface.main",
+        2,
+        [18, 20],
+    );
     open_portal(&mut world);
     let (pending, catalog) = prepare_owner_removal(&mut world, &candidate_facts);
     let boundary = safe_boundary(&mut world);

@@ -25,11 +25,11 @@ pub(crate) use coordinator::{
 };
 pub use focus_placement::{
     UiFocusHostPlacementReconciliationDenial, UiFocusHostPlacementReconciliationOutcome,
-    UiFocusHostPlacementReconciliationReceipt, UiFocusHostPlacementShutdownReport,
+    UiFocusHostPlacementReconciliationReceipt, UiFocusHostPlacementSettlementDenial,
+    UiFocusHostPlacementShutdownReport,
 };
 pub(crate) use focus_placement::{
-    UiFocusHostPlacementSettlementDenial, UiMountedFocusPlacementDenial,
-    UiMountedFocusPlacementRequestBasis,
+    UiMountedFocusPlacementDenial, UiMountedFocusPlacementRequestBasis,
 };
 pub(in crate::mounting) use opacity_composition::compose_opacity;
 pub use outcome::{

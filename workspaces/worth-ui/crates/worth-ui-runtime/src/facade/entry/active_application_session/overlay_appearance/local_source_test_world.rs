@@ -44,15 +44,22 @@ impl SourceWorld {
             geometry.clip_bounds(),
             presentation,
         );
-        for index in 0..513 {
+        let foreign = None;
+        for (index, declaration) in declarations
+            .iter()
+            .copied()
+            .map(Some)
+            .chain(std::iter::once(foreign))
+            .enumerate()
+        {
             let portal = UiPortalIdentity::for_owner(UiPortalOwnerIdentity::from_mounted_owner(
                 crate::graph::UiGraphNodeIdentity::new(index as u64 + 1),
                 UiMountedInstanceIdentity::mint_unbound().unwrap(),
             ));
-            let surface = if index == 512 {
-                surfaces[1]
-            } else {
+            let surface = if declaration.is_some() {
                 surfaces[0]
+            } else {
+                surfaces[1]
             };
             let request = UiPortalServiceRequest::open(
                 portal,
@@ -63,8 +70,8 @@ impl SourceWorld {
             );
             let transition = portals.prepare(request).unwrap();
             portals.commit_published(transition).unwrap();
-            if index < 512 {
-                bindings.bind(declarations[index], portal).unwrap();
+            if let Some(declaration) = declaration {
+                bindings.bind(declaration, portal).unwrap();
             }
             portal_ids.push(portal);
         }

@@ -7,7 +7,10 @@ use worth_ui_platform_pulse::observation_contract::PlatformPulseIntentPostureObs
 
 use super::super::PlatformPulseApplicationRuntime;
 
-const MAX_PENDING_INTENT_POSTURES: usize = 64;
+const MAX_PENDING_NATIVE_PUBLICATIONS: usize = 64;
+
+mod publication_queue;
+pub(in crate::native_application) use publication_queue::PlatformPulsePendingNativePublication;
 
 pub(in crate::native_application) struct PlatformPulsePreparedIntentPosture {
     posture: WorthUiNativeIntentPosture,
@@ -104,21 +107,29 @@ impl PlatformPulseApplicationRuntime {
                 }
                 continue;
             };
-            if self.pending_intent_postures.len() == MAX_PENDING_INTENT_POSTURES {
+            if self.pending_native_publications.len() == MAX_PENDING_NATIVE_PUBLICATIONS {
                 self.fail_intent_settlement(format!(
-                    "native intent posture queue exceeded capacity {MAX_PENDING_INTENT_POSTURES}"
+                    "native intent posture queue exceeded capacity {MAX_PENDING_NATIVE_PUBLICATIONS}"
                 ));
                 break;
             }
-            self.pending_intent_postures.push_back(prepared);
+            self.pending_native_publications
+                .push_back(PlatformPulsePendingNativePublication::Intent(prepared));
         }
-        for dismissal in dismissals {
-            if self.terminal_error.is_some() || !self.dismiss_open_portal(shell, dismissal) {
+        // Preserve the existing dismissal-before-posture ordering while the
+        // visual comparison temporarily owns the sole rebind receipt.
+        for dismissal in dismissals.into_iter().rev() {
+            if self.pending_native_publications.len() == MAX_PENDING_NATIVE_PUBLICATIONS {
+                self.fail_intent_settlement(
+                    "native publication queue exceeded its declared capacity",
+                );
                 break;
             }
+            self.pending_native_publications
+                .push_front(PlatformPulsePendingNativePublication::Dismiss(dismissal));
         }
         if self.terminal_error.is_none() {
-            self.advance_pending_intent_postures(shell);
+            self.advance_pending_native_publications(shell);
         }
     }
 
@@ -180,26 +191,6 @@ impl PlatformPulseApplicationRuntime {
         ))
     }
 
-    pub(in crate::native_application) fn advance_pending_intent_postures(
-        &mut self,
-        shell: &mut WorthUiNativeApplicationShell,
-    ) {
-        while self.terminal_error.is_none()
-            && self.pending_managed_rebind.is_none()
-            && self.pending_frame_presentation.is_none()
-        {
-            let Some(prepared) = self.pending_intent_postures.pop_front() else {
-                return;
-            };
-            if !matches!(
-                self.publish_native_intent_posture(shell, prepared),
-                PlatformPulseIntentPosturePublicationDisposition::Published
-            ) {
-                return;
-            }
-        }
-    }
-
     pub(in crate::native_application::intent) fn publish_native_intent_posture(
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
@@ -207,6 +198,10 @@ impl PlatformPulseApplicationRuntime {
     ) -> PlatformPulseIntentPosturePublicationDisposition {
         self.presentation_tick = self.presentation_tick.saturating_add(1);
         let PlatformPulsePreparedIntentPosture { posture, pending } = prepared;
+        if let Err(denial) = self.product_story.prepare_intent_feedback(shell, &posture) {
+            self.fail_intent_settlement(format!("intent feedback admission failed: {denial:?}"));
+            return PlatformPulseIntentPosturePublicationDisposition::Failed;
+        }
         let outcome =
             shell.begin_managed_native_intent_posture_publication(posture, self.presentation_tick);
         let receipt = match outcome {

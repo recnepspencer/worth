@@ -39,7 +39,7 @@ pub struct WorthUiApplicationBuilder<
     intent_application_facts: crate::declaration::UiIntentApplicationFactPlan,
     intent_execution_bindings: crate::runtime::intent_execution::UiIntentExecutionBindingPlan,
     service_policy_defaults: crate::declaration::UiServicePolicyDefaults,
-    font_collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
+    font_collection: Option<std::sync::Arc<worth_ui_text::UiGlobalFontCollection>>,
     change_profile: ChangeProfileState,
     intent_wiring: IntentWiringState,
 }
@@ -88,11 +88,7 @@ impl WorthUiApplicationBuilder<UiChangeProfileMissing, UiIntentWiringSatisfied> 
             intent_execution_bindings:
                 crate::runtime::intent_execution::UiIntentExecutionBindingPlan::new(),
             service_policy_defaults: Default::default(),
-            font_collection: std::sync::Arc::new(
-                worth_ui_text::UiGlobalFontCollection::admit_qualified_profile()
-                    .expect("embedded qualified text profile")
-                    .0,
-            ),
+            font_collection: None,
             change_profile: UiChangeProfileMissing { _sealed: () },
             intent_wiring: UiIntentWiringSatisfied { _sealed: () },
         }
@@ -226,7 +222,7 @@ impl<ChangeProfileState, IntentWiringState>
         mut self,
         collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
     ) -> Self {
-        self.font_collection = collection;
+        self.font_collection = Some(collection);
         self
     }
 

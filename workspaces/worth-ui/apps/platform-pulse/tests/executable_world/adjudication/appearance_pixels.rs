@@ -2,13 +2,15 @@ use std::fmt;
 
 use crate::external_observation::NativeClientPixelCapture;
 
-use super::platform_pulse_control_points::{checked_in, PlatformPulseControlPointManifestFailure};
+use super::visual_contract_manifest::{
+    checked_in_adjudication_contract, PlatformPulseVisualContractFailure,
+};
 
 const MINIMUM_ACCENT_GLYPH_PIXELS: usize = 8;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum FirstFrameAppearanceFailure {
-    Manifest(PlatformPulseControlPointManifestFailure),
+    Manifest(PlatformPulseVisualContractFailure),
     MissingAccentForeground,
     MissingCardInterior,
     SquareCardCorner {
@@ -16,12 +18,17 @@ pub(crate) enum FirstFrameAppearanceFailure {
         observed: Option<[u8; 4]>,
     },
     MissingCurvedCardBorder,
+    IncorrectTileSeam {
+        point: [u32; 2],
+        observed: Option<[u8; 4]>,
+    },
 }
 
 pub(crate) fn adjudicate_first_frame_appearance(
     pixels: &NativeClientPixelCapture,
 ) -> Result<(), FirstFrameAppearanceFailure> {
-    let manifest = checked_in().map_err(FirstFrameAppearanceFailure::Manifest)?;
+    let manifest =
+        checked_in_adjudication_contract().map_err(FirstFrameAppearanceFailure::Manifest)?;
     let accent_pixels = pixels_in_logical_region(pixels, manifest.brand_region())
         .filter(|pixel| {
             matches_rgb(
@@ -60,12 +67,7 @@ pub(crate) fn adjudicate_first_frame_appearance(
         ) {
             return Err(FirstFrameAppearanceFailure::MissingCardInterior);
         }
-        let arc_region = [
-            corner.arc[0] - 2,
-            corner.arc[1] - 2,
-            corner.arc[0] + 3,
-            corner.arc[1] + 3,
-        ];
+        let arc_region = [corner.arc[0] - 2, corner.arc[1] - 2, 5, 5];
         if !pixels_in_logical_region(pixels, arc_region).any(|pixel| {
             matches_rgb(
                 pixel,
@@ -74,6 +76,29 @@ pub(crate) fn adjudicate_first_frame_appearance(
             )
         }) {
             return Err(FirstFrameAppearanceFailure::MissingCurvedCardBorder);
+        }
+    }
+    // Independent product oracle at 960 x 600: Service owns x=655 along the
+    // shared segment; Native starts at x=656 with fill, not a second border.
+    // Stay clear of the horizontal borders at y=328 and y=527.
+    for y in [340, 400, 460, 520] {
+        for (x, expected) in [
+            (655, manifest.structural_rule_rgba()),
+            (656, manifest.raised_surface_rgba()),
+        ] {
+            let point = [x, y];
+            // Sample the interior of each logical pixel. At fractional DPI the
+            // floor of its left edge can land in a partially covered neighbor.
+            let physical = [
+                ((u64::from(x) * 2 + 1) * u64::from(pixels.width()) / (960 * 2)) as u32,
+                ((u64::from(y) * 2 + 1) * u64::from(pixels.height()) / (600 * 2)) as u32,
+            ];
+            let observed = physical_pixel(pixels, physical);
+            if observed
+                .is_none_or(|pixel| !matches_rgb(pixel, expected, manifest.channel_tolerance()))
+            {
+                return Err(FirstFrameAppearanceFailure::IncorrectTileSeam { point, observed });
+            }
         }
     }
     Ok(())
@@ -87,8 +112,8 @@ struct RoundedCornerOracle {
 }
 
 fn rounded_corner_oracle(card: [u32; 4], radius: u32) -> [RoundedCornerOracle; 4] {
-    let right = card[2] - 1;
-    let bottom = card[3] - 1;
+    let right = card[0] + card[2] - 1;
+    let bottom = card[1] + card[3] - 1;
     // For a 24-unit radius, seven units on each axis is the independently
     // rounded 45-degree circle intercept: r - r/sqrt(2).
     let diagonal = ((f64::from(radius) * (1.0 - std::f64::consts::FRAC_1_SQRT_2)).round()) as u32;
@@ -123,7 +148,11 @@ fn pixels_in_logical_region(
 ) -> impl Iterator<Item = [u8; 4]> + '_ {
     let extent = [960, 600];
     let start = scale_point(pixels, [region[0], region[1]], extent);
-    let end = scale_point(pixels, [region[2], region[3]], extent);
+    let end = scale_point(
+        pixels,
+        [region[0] + region[2], region[1] + region[3]],
+        extent,
+    );
     (start[1]..end[1])
         .flat_map(move |y| (start[0]..end[0]).filter_map(move |x| physical_pixel(pixels, [x, y])))
 }
@@ -178,7 +207,7 @@ fn rgb_distance(left: [u8; 4], right: [u8; 4]) -> u16 {
 impl fmt::Display for FirstFrameAppearanceFailure {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Manifest(failure) => write!(formatter, "control-point manifest: {failure:?}"),
+            Self::Manifest(failure) => write!(formatter, "visual contract: {failure:?}"),
             Self::MissingAccentForeground => {
                 formatter.write_str("accent foreground is absent from the Brand glyph region")
             }
@@ -191,6 +220,8 @@ impl fmt::Display for FirstFrameAppearanceFailure {
             ),
             Self::MissingCurvedCardBorder => formatter
                 .write_str("QueryCard has no visible structural border along its rounded corner"),
+            Self::IncorrectTileSeam { point, observed } => write!(formatter,
+                "Service must be the sole tile seam painter at {point:?}: {observed:?}"),
         }
     }
 }

@@ -33,6 +33,7 @@ pub(crate) fn resolve_presented_target(
     mounted: &crate::mounting::WorthUiMountedSessionState,
     presentation: UiHostObservationPresentationBasis,
     position: UiHostSurfacePosition,
+    work: &mut crate::mounting::UiHitTestSpatialWork,
 ) -> Result<UiPresentedInteractionTarget, UiInteractionTargetingDenial> {
     require_viewport_logical(position.basis())?;
     let point = canonical_point(position);
@@ -43,9 +44,11 @@ pub(crate) fn resolve_presented_target(
                 map_presentation_denial(denial)
             }
             crate::mounting::UiPresentedPointLookupDenial::Query(denial) => {
+                work.merge(denial.work());
                 map_hit_query_denial(denial)
             }
         })?;
+    work.merge(basis.query_work());
     debug_assert_eq!(basis.presentation(), presentation);
     let relation = map_relation(basis.relation());
     let rows = basis.rows();
@@ -217,7 +220,7 @@ fn map_relation(
     }
 }
 
-pub(super) fn map_presentation_denial(
+pub(crate) fn map_presentation_denial(
     denial: crate::mounting::UiPresentedFrameBasisDenial,
 ) -> UiInteractionTargetingDenial {
     match denial {
@@ -283,10 +286,10 @@ pub(crate) fn map_hit_query_denial(
     denial: crate::mounting::UiPresentedHitQueryDenial,
 ) -> UiInteractionTargetingDenial {
     match denial {
-        crate::mounting::UiPresentedHitQueryDenial::IncompatibleCoordinateSpace(row) => {
+        crate::mounting::UiPresentedHitQueryDenial::IncompatibleCoordinateSpace { row, .. } => {
             UiInteractionTargetingDenial::IncompatibleHitTestCoordinateSpace { row }
         }
-        crate::mounting::UiPresentedHitQueryDenial::InvalidPoint => {
+        crate::mounting::UiPresentedHitQueryDenial::InvalidPoint { .. } => {
             UiInteractionTargetingDenial::InvalidHitTestPoint
         }
         crate::mounting::UiPresentedHitQueryDenial::NodeBudget { .. } => {

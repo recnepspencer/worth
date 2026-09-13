@@ -2,6 +2,11 @@ use std::collections::BTreeMap;
 
 pub(crate) struct UiPreparedFocusMountedReconciliation {
     participation: Option<UiPreparedFocusMountedParticipation>,
+    predecessor_revision: u64,
+    predecessor_structure: u64,
+    predecessor_appearance: super::UiFocusAppearancePosture,
+    transition: Option<super::UiFocusPlan>,
+    appearance: super::UiFocusAppearancePosture,
     nodes_visited: u32,
     installed: u32,
 }
@@ -10,6 +15,7 @@ struct UiPreparedFocusMountedParticipation {
     participants: BTreeMap<super::UiFocusScopeIdentity, Vec<super::UiFocusParticipant>>,
     participant_index:
         BTreeMap<super::UiFocusParticipantIdentity, (super::UiFocusScopeIdentity, usize)>,
+    nodes_visited: u32,
 }
 
 impl super::UiFocusRuntimeState {
@@ -35,24 +41,62 @@ impl super::UiFocusRuntimeState {
             .map_err(|_| super::UiFocusRoutingDenial::VisitCounterOverflow)?;
             return Ok(UiPreparedFocusMountedReconciliation {
                 participation: None,
+                predecessor_revision: self.revision,
+                predecessor_structure: self.structural_revision,
+                predecessor_appearance: self.appearance_posture(),
+                transition: None,
+                appearance: self.appearance_posture(),
                 nodes_visited: snapshot.nodes_visited(),
                 installed,
             });
         }
-        let participation = prepare_participation(snapshot)?;
+        self.structural_revision
+            .checked_add(1)
+            .ok_or(super::UiFocusRoutingDenial::RevisionExhausted)?;
+        let participation = prepare_participation(snapshot, &self.participants)?;
+        let nodes_visited = participation.nodes_visited;
         let installed = u32::try_from(participation.participant_index.len())
             .map_err(|_| super::UiFocusRoutingDenial::VisitCounterOverflow)?;
+        let transition = self.prepare_reconciliation_transition(&participation);
+        let next = transition.as_ref().map_or(self.current, |plan| plan.next());
+        let appearance_revision = if next != self.current {
+            self.appearance_revision
+                .checked_add(1)
+                .ok_or(super::UiFocusRoutingDenial::RevisionExhausted)?
+        } else {
+            self.appearance_revision
+        };
+        if transition.is_some() && self.revision == u64::MAX {
+            return Err(super::UiFocusRoutingDenial::RevisionExhausted);
+        }
         Ok(UiPreparedFocusMountedReconciliation {
+            predecessor_revision: self.revision,
+            predecessor_structure: self.structural_revision,
+            predecessor_appearance: self.appearance_posture(),
+            appearance: self.appearance_posture_for(next, appearance_revision),
+            transition,
             participation: Some(participation),
-            nodes_visited: snapshot.nodes_visited(),
+            nodes_visited,
             installed,
         })
+    }
+
+    pub(crate) fn admits_mounted_reconciliation(
+        &self,
+        prepared: &UiPreparedFocusMountedReconciliation,
+    ) -> bool {
+        self.revision == prepared.predecessor_revision
+            && self.structural_revision == prepared.predecessor_structure
+            && self.appearance_posture() == prepared.predecessor_appearance
     }
 
     pub(crate) fn commit_mounted_reconciliation(
         &mut self,
         prepared: UiPreparedFocusMountedReconciliation,
     ) -> Result<super::UiFocusReconciliationReceipt, super::UiFocusRoutingDenial> {
+        if !self.admits_mounted_reconciliation(&prepared) {
+            return Err(super::UiFocusRoutingDenial::StalePlan);
+        }
         let Some(participation) = prepared.participation else {
             return Ok(super::UiFocusReconciliationReceipt::new(
                 None,
@@ -61,7 +105,10 @@ impl super::UiFocusRuntimeState {
             ));
         };
         self.install_prepared_participation(participation);
-        let transition = self.reconciliation_transition()?;
+        let transition = prepared
+            .transition
+            .map(|plan| self.commit(plan))
+            .transpose()?;
         Ok(super::UiFocusReconciliationReceipt::new(
             transition,
             prepared.nodes_visited,
@@ -81,7 +128,10 @@ impl super::UiFocusRuntimeState {
         &mut self,
         snapshot: &crate::mounting::UiMountedFocusParticipationSnapshot,
     ) -> Result<u32, super::UiFocusRoutingDenial> {
-        let prepared = prepare_participation(snapshot)?;
+        self.structural_revision
+            .checked_add(1)
+            .ok_or(super::UiFocusRoutingDenial::RevisionExhausted)?;
+        let prepared = prepare_participation(snapshot, &self.participants)?;
         let installed = u32::try_from(prepared.participant_index.len())
             .map_err(|_| super::UiFocusRoutingDenial::VisitCounterOverflow)?;
         self.install_prepared_participation(prepared);
@@ -89,6 +139,10 @@ impl super::UiFocusRuntimeState {
     }
 
     fn install_prepared_participation(&mut self, prepared: UiPreparedFocusMountedParticipation) {
+        self.structural_revision = self
+            .structural_revision
+            .checked_add(1)
+            .expect("prepared participation reserves its structural revision");
         self.participants = prepared.participants;
         self.participant_index = prepared.participant_index;
         if self.active_descendant.is_some_and(|active| {
@@ -103,40 +157,50 @@ impl super::UiFocusRuntimeState {
         }
     }
 
-    fn reconciliation_transition(
-        &mut self,
-    ) -> Result<Option<super::UiFocusTransitionReceipt>, super::UiFocusRoutingDenial> {
-        match self.current {
-            Some(current) => match self.exact_current_successor(current) {
-                Some(successor) => {
-                    let next = super::UiSemanticKeyboardFocus::new(successor);
-                    if current.exact_participant() == successor {
-                        self.current = Some(next);
-                        Ok(None)
-                    } else {
-                        self.apply_immediate(Some(next), super::UiFocusCause::RebindPreserved, 1)
-                            .map(Some)
-                    }
-                }
-                None => {
-                    let fallback = self.first_in_scope(current.scope());
-                    self.apply_immediate(
-                        fallback.map(super::UiSemanticKeyboardFocus::new),
-                        super::UiFocusCause::RebindFallback,
-                        u32::from(fallback.is_some()),
-                    )
-                    .map(Some)
-                }
-            },
-            None => Ok(None),
-        }
+    fn prepare_reconciliation_transition(
+        &self,
+        participation: &UiPreparedFocusMountedParticipation,
+    ) -> Option<super::UiFocusPlan> {
+        let current = self.current?;
+        let successor = participation
+            .participant_index
+            .get(&current.participant())
+            .filter(|(scope, _)| *scope == current.scope())
+            .map(|(scope, index)| participation.participants[scope][*index])
+            .filter(|participant| participant.incarnation() == current.incarnation());
+        let (next, cause) = match successor {
+            Some(successor) if current.exact_participant() == successor => return None,
+            Some(successor) => (Some(successor), super::UiFocusCause::RebindPreserved),
+            None => (
+                participation
+                    .participants
+                    .get(&current.scope())
+                    .and_then(|rows| rows.iter().find(|row| row.container().is_none()))
+                    .copied(),
+                super::UiFocusCause::RebindFallback,
+            ),
+        };
+        Some(self.plan_for(next, cause, u32::from(next.is_some())))
     }
 }
 
 fn prepare_participation(
     snapshot: &crate::mounting::UiMountedFocusParticipationSnapshot,
+    previous: &BTreeMap<super::UiFocusScopeIdentity, Vec<super::UiFocusParticipant>>,
 ) -> Result<UiPreparedFocusMountedParticipation, super::UiFocusRoutingDenial> {
     let mut participants = BTreeMap::<_, Vec<_>>::new();
+    let mut nodes_visited = snapshot.nodes_visited();
+    for (scope, rows) in previous {
+        if snapshot.retains_surface(scope.semantic_surface()) {
+            nodes_visited = nodes_visited
+                .checked_add(
+                    u32::try_from(rows.len())
+                        .map_err(|_| super::UiFocusRoutingDenial::VisitCounterOverflow)?,
+                )
+                .ok_or(super::UiFocusRoutingDenial::VisitCounterOverflow)?;
+            participants.insert(*scope, rows.clone());
+        }
+    }
     for participant in focusable_participants(snapshot) {
         participants
             .entry(participant.scope())
@@ -157,6 +221,7 @@ fn prepare_participation(
     Ok(UiPreparedFocusMountedParticipation {
         participants,
         participant_index,
+        nodes_visited,
     })
 }
 
@@ -169,4 +234,10 @@ pub(super) fn focusable_participants(
         .copied()
         .filter_map(super::UiFocusParticipant::from_mounted)
         .collect()
+}
+
+impl UiPreparedFocusMountedReconciliation {
+    pub(crate) const fn appearance_posture(&self) -> super::UiFocusAppearancePosture {
+        self.appearance
+    }
 }

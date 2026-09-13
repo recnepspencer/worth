@@ -99,7 +99,6 @@ impl super::UiPortalRuntimeState {
         for record in self.records.values_mut().filter(|record| {
             record.posture != super::UiPortalLifecyclePosture::Closed && record.placement.is_some()
         }) {
-            let placement = record.placement.expect("filtered portal retains placement");
             let Some(surface) = surfaces
                 .iter()
                 .find(|surface| surface.semantic_surface() == record.semantic_surface)
@@ -113,9 +112,40 @@ impl super::UiPortalRuntimeState {
                 surface.binding(),
                 surface.epoch(),
             );
-            record.placement = Some(super::UiCommittedPortalPlacement::from_prepared(
-                placement.prepared().with_presentation(presentation),
-            ));
+            rebind_record_presentation(record, presentation);
         }
     }
+
+    /// Rebinds live Portal records on `surface` to the presentation basis that
+    /// accepted a Motion sample. The frame and binding are unchanged; only the
+    /// host epoch advances, and it is the epoch that produced the accepted
+    /// pixels, so dismissal and placement stay exactly current with the host.
+    pub(crate) fn rebind_presented_motion_presentation(
+        &mut self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) {
+        for record in self.records.values_mut().filter(|record| {
+            record.posture != super::UiPortalLifecyclePosture::Closed
+                && record.semantic_surface == surface
+                && record.placement.is_some_and(|placement| {
+                    let committed = placement.prepared().presentation();
+                    committed.frame() == presentation.frame()
+                        && committed.binding() == presentation.binding()
+                        && committed.host_surface() == presentation.host_surface()
+                })
+        }) {
+            rebind_record_presentation(record, presentation);
+        }
+    }
+}
+
+fn rebind_record_presentation(
+    record: &mut super::state::UiPortalRecord,
+    presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+) {
+    let placement = record.placement.expect("filtered portal retains placement");
+    record.placement = Some(super::UiCommittedPortalPlacement::from_prepared(
+        placement.prepared().with_presentation(presentation),
+    ));
 }

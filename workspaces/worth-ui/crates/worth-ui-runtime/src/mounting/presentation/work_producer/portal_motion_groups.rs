@@ -88,8 +88,7 @@ impl UiMountedPortalMotionGroups {
                     ),
                     Some(mechanic.clip_bounds()),
                 )),
-                UiMountedPaintCommand::FilledRect { .. }
-                | UiMountedPaintCommand::SemanticText { .. } => affinity.map(|affinity| {
+                UiMountedPaintCommand::SemanticText { .. } => affinity.map(|affinity| {
                     (
                         target(surface, affinity.owner(), affinity.portal_identity()),
                         None,

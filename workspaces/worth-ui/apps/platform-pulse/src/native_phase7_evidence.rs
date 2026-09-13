@@ -48,11 +48,11 @@ pub(super) fn evidence(
             "samples": samples,
         },
         "presentation": {
-            "frame": receipt.presentation().presented_frame(),
-            "semantic_surface": receipt.presentation().semantic_surface(),
-            "host_surface": receipt.presentation().host_surface(),
-            "binding": receipt.presentation().binding_generation(),
-            "presentation_attempt": receipt.presentation().presentation_attempt(),
+            "frame": receipt.presentation().map(|value| value.presented_frame()),
+            "semantic_surface": receipt.presentation().map(|value| value.semantic_surface()),
+            "host_surface": receipt.presentation().map(|value| value.host_surface()),
+            "binding": receipt.presentation().map(|value| value.binding_generation()),
+            "presentation_attempt": receipt.presentation().map(|value| value.presentation_attempt()),
         },
         "capture_resources": {
             "peak_readback_buffers": receipt.peak_census().readback_buffers,

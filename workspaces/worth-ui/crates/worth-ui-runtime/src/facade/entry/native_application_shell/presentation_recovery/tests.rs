@@ -6,44 +6,56 @@ use crate::inspection::mounted_frame::{UiMountedInspectionReceipt, UiMountedInsp
 
 #[test]
 fn host_required_reconstruction_recovers_through_current_mounted_authority() {
-    let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    let mut shell =
+    for atlas_first in [false, true] {
+        let host = crate::certification_support::ScriptedPresentationHost::native_display();
+        let mut shell =
         crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host(
             host.clone(),
         )
         .launch_native_surface()
         .expect("native certification shell launches");
-    crate::facade::entry::native_application_identity_trace_test_support::
+        crate::facade::entry::native_application_identity_trace_test_support::
         install_bound_surface_geometry(&mut shell);
 
-    host.push_native_display_presented();
-    assert!(matches!(
-        shell
-            .present_frame(2, 1)
-            .unwrap_or_else(|_| panic!("initial frame executes")),
-        UiMountedFrameOutcome::Published(_)
-    ));
+        host.push_native_display_presented();
+        assert!(matches!(
+            shell
+                .present_frame(2, 1)
+                .unwrap_or_else(|_| panic!("initial frame executes")),
+            UiMountedFrameOutcome::Published(_)
+        ));
 
-    host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
-        UiHostSurfacePresentationDenial::ReconstructionRequired,
-    ));
-    let rejected = shell
-        .present_frame(4, 3)
-        .unwrap_or_else(|_| panic!("successor frame executes"));
-    assert!(matches!(
-        rejected,
-        UiMountedFrameOutcome::RejectedBeforeEffects(_)
-    ));
+        host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+            if atlas_first {
+                UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred
+            } else {
+                UiHostSurfacePresentationDenial::ReconstructionRequired
+            },
+        ));
+        let rejected = shell
+            .present_frame(4, 3)
+            .unwrap_or_else(|_| panic!("successor frame executes"));
+        assert!(matches!(
+            rejected,
+            UiMountedFrameOutcome::RejectedBeforeEffects(_)
+        ));
 
-    host.push_native_display_presented();
-    let recovered = shell
-        .recover_reconstruction_required_presentation(rejected, 6, 5)
-        .expect("host-required reconstruction remains available");
-    assert!(matches!(
-        recovered,
-        UiMountedFrameOutcome::Published(_) | UiMountedFrameOutcome::Reconciled(_)
-    ));
-    assert_eq!(host.presentation_calls(), 3);
+        if atlas_first {
+            host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+                UiHostSurfacePresentationDenial::ReconstructionRequired,
+            ));
+        }
+        host.push_native_display_presented();
+        let recovered = shell
+            .resume_frame_presentation(rejected, 6, 5)
+            .expect("host-required reconstruction remains available");
+        assert!(matches!(
+            recovered,
+            UiMountedFrameOutcome::Published(_) | UiMountedFrameOutcome::Reconciled(_)
+        ));
+        assert_eq!(host.presentation_calls(), if atlas_first { 4 } else { 3 });
+        assert_eq!(host.pending_presentation_count(), 0);
+    }
 }
 
 #[test]
@@ -64,13 +76,86 @@ fn non_reconstruction_rejection_is_returned_without_an_extra_host_attempt() {
         .present_frame(2, 1)
         .unwrap_or_else(|_| panic!("frame executes"));
     let returned = shell
-        .recover_reconstruction_required_presentation(rejected, 4, 3)
+        .resume_frame_presentation(rejected, 4, 3)
         .expect("unrelated rejection remains an ordinary outcome");
     assert!(matches!(
         returned,
         UiMountedFrameOutcome::RejectedBeforeEffects(_)
     ));
     assert_eq!(host.presentation_calls(), 1);
+}
+
+#[test]
+fn atlas_ready_resumes_the_rejected_frame_without_rebinding() {
+    use crate::certification_support::ScriptedSurfaceCompletion;
+    use crate::facade::mounted::UiHostSurfaceCancellationOutcome;
+
+    for asynchronous in [false, true] {
+        let host = crate::certification_support::ScriptedPresentationHost::native_display();
+        let mut shell = crate::runtime::tests::active_application_session_test_support::
+            source_backed_component_app_with_host(host.clone()).launch_native_surface().unwrap();
+        crate::facade::entry::native_application_identity_trace_test_support::
+            install_bound_surface_geometry(&mut shell);
+        host.push_native_display_presented();
+        let UiMountedFrameOutcome::Published(predecessor) = shell
+            .present_frame(10_000, 0)
+            .unwrap_or_else(|_| panic!("initial frame executes"))
+        else {
+            panic!("initial publication")
+        };
+        let bindings = predecessor.bindings().to_vec();
+        if asynchronous {
+            host.push_in_flight(
+                vec![ScriptedSurfaceCompletion::RejectedBeforeEffects(
+                    UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred,
+                )],
+                UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
+            );
+        } else {
+            host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+                UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred,
+            ));
+        }
+        let outcome = shell
+            .present_frame(10_001, 1)
+            .unwrap_or_else(|_| panic!("successor prepares"));
+        let outcome = if asynchronous {
+            let UiMountedFrameOutcome::InFlight(pending) = outcome else {
+                panic!("atlas is pending")
+            };
+            shell.complete_frame_presentation(pending, 250)
+        } else {
+            outcome
+        };
+        assert!(matches!(
+            outcome,
+            UiMountedFrameOutcome::RejectedBeforeEffects(_)
+        ));
+        // This successor has unchanged paint: atlas readiness does not invent
+        // a NativePaint effect when the accepted work only advances identity.
+        host.push_native_display_settled_without_effects();
+        let successor = match shell
+            .resume_frame_presentation(outcome, 10_001, 250)
+            .unwrap()
+        {
+            UiMountedFrameOutcome::Published(successor) => successor,
+            UiMountedFrameOutcome::AdmissionDenied(denial) => {
+                panic!("atlas admission: {:?}", denial.denial())
+            }
+            UiMountedFrameOutcome::RejectedBeforeEffects(rejected) => {
+                panic!("atlas rejection: {:?}", rejected.rejections())
+            }
+            UiMountedFrameOutcome::PresentationIndeterminate(frame) => {
+                panic!("atlas indeterminate: {:?}", frame.report())
+            }
+            other => panic!("ready atlas outcome: {:?}", std::mem::discriminant(&other)),
+        };
+        assert_eq!(successor.bindings(), bindings);
+        assert_ne!(successor.frame(), predecessor.frame());
+        assert_eq!(host.presentation_calls(), 3);
+        assert!(host.cancellation_calls().is_empty());
+        assert_eq!(host.pending_presentation_count(), 0);
+    }
 }
 
 #[cfg(feature = "certification-support")]

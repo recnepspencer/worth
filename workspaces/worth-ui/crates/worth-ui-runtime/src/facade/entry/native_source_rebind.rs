@@ -30,27 +30,45 @@ impl WorthUiNativeSourceRebindDenial {
 }
 
 impl WorthUiNativeApplicationShell {
+    pub fn begin_source_rebind(
+        &mut self,
+        request: crate::runtime::rebind::UiSourceRebindRequest,
+    ) -> Result<WorthUiNativeManagedSourceRebindOutcome, WorthUiNativeSourceRebindDenial> {
+        self.begin_managed_source_rebind(request)
+    }
+
+    pub fn begin_source_rebind_with_layout(
+        &mut self,
+        request: crate::runtime::rebind::UiSourceRebindRequest,
+        mut layout: impl FnMut(
+            super::UiNativeReplacementLayoutInput,
+        ) -> Option<crate::mounting::UiMountedSurfaceGeometryBatch>,
+    ) -> Result<WorthUiNativeManagedSourceRebindOutcome, WorthUiNativeSourceRebindDenial> {
+        self.begin_managed_source_rebind_with_layout(request, Some(&mut layout))
+    }
+
     pub fn begin_managed_source_rebind(
         &mut self,
         request: crate::runtime::rebind::UiSourceRebindRequest,
     ) -> Result<WorthUiNativeManagedSourceRebindOutcome, WorthUiNativeSourceRebindDenial> {
-        if self.pending_managed_rebind.is_some() {
-            return Err(WorthUiNativeSourceRebindDenial::ManagedRebindAlreadyInFlight);
-        }
-        let outcome = self.begin_source_rebind(request)?;
+        self.begin_managed_source_rebind_with_layout(request, None)
+    }
+
+    fn begin_managed_source_rebind_with_layout(
+        &mut self,
+        request: crate::runtime::rebind::UiSourceRebindRequest,
+        layout: Option<&mut super::application_replacement::UiNativeReplacementLayoutSupplier<'_>>,
+    ) -> Result<WorthUiNativeManagedSourceRebindOutcome, WorthUiNativeSourceRebindDenial> {
+        let outcome = self.execute_source_rebind(request, layout)?;
         match super::native_managed_rebind::normalize_managed_outcome(outcome) {
             super::native_managed_rebind::ManagedRebindNormalization::Published(receipt) => {
+                self.settle_native_rebind_reconciliation(&receipt);
                 Ok(WorthUiNativeManagedSourceRebindOutcome::Published(receipt))
             }
-            super::native_managed_rebind::ManagedRebindNormalization::Pending(pending) => {
-                if pending.session_identity() != self.session.session_identity() {
-                    return Err(WorthUiNativeSourceRebindDenial::ManagedRebindSessionMismatch);
-                }
-                self.pending_managed_rebind = Some(
-                    super::native_managed_rebind::WorthUiNativePendingManagedRebind::Completion(
-                        pending,
-                    ),
-                );
+            pending @ (super::native_managed_rebind::ManagedRebindNormalization::Pending(_)
+            | super::native_managed_rebind::ManagedRebindNormalization::Retry { .. }
+            | super::native_managed_rebind::ManagedRebindNormalization::Indeterminate { .. }) => {
+                super::native_managed_rebind::retain_normalized_managed_rebind(&mut self.pending_managed_rebind, pending);
                 Ok(WorthUiNativeManagedSourceRebindOutcome::Pending)
             }
             super::native_managed_rebind::ManagedRebindNormalization::Stopped(stop) => {
@@ -59,10 +77,16 @@ impl WorthUiNativeApplicationShell {
         }
     }
 
-    pub fn begin_source_rebind(
+    fn execute_source_rebind(
         &mut self,
         request: crate::runtime::rebind::UiSourceRebindRequest,
+        layout: Option<&mut super::application_replacement::UiNativeReplacementLayoutSupplier<'_>>,
     ) -> Result<crate::runtime::rebind::UiRebindOutcome<'_>, WorthUiNativeSourceRebindDenial> {
+        if self.pending_managed_rebind.is_some() {
+            return Err(WorthUiNativeSourceRebindDenial::ManagedRebindAlreadyInFlight);
+        }
+        let surface = self.surface;
+        let viewport = self.native_layout_viewport();
         let (snapshot, policy, execution) = request.into_parts();
         let candidate = compile_source_candidate(&self.session, snapshot)?;
         let admitted = admit_source_candidate(&mut self.session, candidate)?;
@@ -83,9 +107,14 @@ impl WorthUiNativeApplicationShell {
             NativeSourceRebindPlan::ObservedNoChange(receipt) => Ok(
                 crate::runtime::rebind::UiRebindOutcome::ObservedNoChange(receipt),
             ),
-            NativeSourceRebindPlan::Planned(plan) => {
-                execute_source_rebind(&mut self.session, plan, execution)
-            }
+            NativeSourceRebindPlan::Planned(plan) => execute_source_rebind(
+                &mut self.session,
+                plan,
+                execution,
+                surface,
+                viewport,
+                layout,
+            ),
         }
     }
 }
@@ -191,9 +220,12 @@ fn execute_source_rebind<'session>(
     session: &'session mut crate::facade::WorthUiActiveApplicationSession,
     plan: crate::runtime::rebind::UiRebindPlan,
     execution: crate::runtime::rebind::UiRebindExecutionRequest,
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    viewport: Option<worth_ui_host_contract::UiMountedCanonicalBox>,
+    layout: Option<&mut super::application_replacement::UiNativeReplacementLayoutSupplier<'_>>,
 ) -> Result<crate::runtime::rebind::UiRebindOutcome<'session>, WorthUiNativeSourceRebindDenial> {
     let now_tick = execution.now_tick();
-    match session.prepare_rebind(plan, execution) {
+    match session.prepare_native_rebind(plan, execution, surface, viewport, layout) {
         Ok(prepared) => Ok(prepared.execute(now_tick)),
         Err(crate::runtime::rebind::UiRebindPreparationDenial::TimedOutBeforeEffects) => Ok(
             crate::runtime::rebind::UiRebindOutcome::TimedOutBeforeEffects(

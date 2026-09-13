@@ -58,6 +58,7 @@ impl super::UiPortalRuntimeState {
                         crate::mounting::UiMountedPortalOverlayProjectionInput::new(
                             portal.diagnostic_value(),
                             portal.owner().mounted_instance_identity(),
+                            record.semantic_surface,
                             placement.prepared(),
                             if transition.closes(*portal) {
                                 super::super::UiPortalLifecyclePosture::Closing
@@ -73,6 +74,7 @@ impl super::UiPortalRuntimeState {
                 inputs.push(crate::mounting::UiMountedPortalOverlayProjectionInput::new(
                     target.diagnostic_value(),
                     target.owner().mounted_instance_identity(),
+                    transition.request().semantic_surface(),
                     placement,
                     super::super::UiPortalLifecyclePosture::Visible,
                 ));
@@ -93,6 +95,7 @@ impl super::UiPortalRuntimeState {
                         crate::mounting::UiMountedPortalOverlayProjectionInput::new(
                             portal.diagnostic_value(),
                             portal.owner().mounted_instance_identity(),
+                            record.semantic_surface,
                             placement.prepared(),
                             record.posture,
                         )

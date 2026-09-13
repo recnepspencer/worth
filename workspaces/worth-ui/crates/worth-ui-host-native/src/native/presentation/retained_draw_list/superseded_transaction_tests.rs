@@ -287,9 +287,9 @@ fn pending_delta(
 fn replacement_delta(
     world: &DrawListWorld,
     predecessor: UiMountedFrameIdentity,
-    previous: UiMountedFilledRectMechanic,
+    previous: UiMountedPortalOverlayMechanic,
     successor: UiMountedFrameIdentity,
-    replacement: UiMountedFilledRectMechanic,
+    replacement: UiMountedPortalOverlayMechanic,
 ) -> UiMountedPresentationDelta {
     let replacement = command(replacement);
     let replacement_order = UiMountedPaintOrderIdentity::for_command(replacement.identity());

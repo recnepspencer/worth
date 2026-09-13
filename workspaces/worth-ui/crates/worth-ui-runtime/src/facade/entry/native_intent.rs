@@ -57,6 +57,12 @@ pub enum WorthUiNativeIntentStop {
 
 #[must_use]
 pub enum WorthUiNativeInteractionIngressStop {
+    /// Retry the untouched drain after the managed publication settles.
+    ManagedPublicationPending(worth_ui_host_contract::UiHostObservationDrain),
+    /// Retry the retained progress after the managed publication settles.
+    ManagedObservationProgressPending(
+        crate::native_platform::UiNativeApplicationObservationProgress,
+    ),
     Quarantined(crate::facade::interaction::UiQuarantinedHostInteractionBatch),
     Denied(crate::facade::interaction::UiInteractionObservationDenial),
 }
@@ -74,21 +80,16 @@ impl WorthUiNativeApplicationShell {
         I: crate::facade::intent::UiIntent,
         D: crate::facade::intent::UiIntentDefinitionDestination,
     {
-        let pending_portal_transition = self
-            .pending_managed_rebind
-            .as_ref()
-            .is_some_and(|pending| pending.carries_portal_intent_consequence());
+        if self.pending_managed_rebind.is_some() {
+            return WorthUiNativeIntentIngress::deferred(
+                WorthUiNativeInteractionIngressStop::ManagedPublicationPending(drain),
+            );
+        }
         let outcomes = drain
             .into_batches()
             .into_vec()
             .into_iter()
-            .map(|batch| {
-                self.session
-                    .admit_host_interaction_batch_with_portal_transition(
-                        batch,
-                        pending_portal_transition,
-                    )
-            })
+            .map(|batch| self.session.admit_host_interaction_batch(batch))
             .collect::<Vec<_>>();
         self.admit_native_intent_outcomes(definition, outcomes, deadline)
     }
@@ -103,6 +104,11 @@ impl WorthUiNativeApplicationShell {
         I: crate::facade::intent::UiIntent,
         D: crate::facade::intent::UiIntentDefinitionDestination,
     {
+        if self.pending_managed_rebind.is_some() {
+            return WorthUiNativeIntentIngress::deferred(
+                WorthUiNativeInteractionIngressStop::ManagedObservationProgressPending(progress),
+            );
+        }
         self.admit_native_intent_outcomes(
             definition,
             progress.into_settlement().into_outcomes().into_vec(),

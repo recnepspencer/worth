@@ -37,6 +37,9 @@ use crate::filesystem_mounted_world::{
 #[path = "command_routing/rebind.rs"]
 mod rebind;
 
+#[path = "command_routing/theme_switch.rs"]
+mod theme_switch;
+
 #[test]
 fn validated_host_shortcut_reaches_the_existing_managed_intent_lifecycle() {
     let host = native_command_host();
@@ -318,7 +321,16 @@ fn shortcut_drain(
     presentation: UiHostObservationPresentationBasis,
     repeat: bool,
 ) -> UiHostObservationDrain {
-    let sequence = UiHostObservationSequence::new(1);
+    shortcut_drain_at(host_session, presentation, repeat, 1)
+}
+
+fn shortcut_drain_at(
+    host_session: u64,
+    presentation: UiHostObservationPresentationBasis,
+    repeat: bool,
+    sequence: u64,
+) -> UiHostObservationDrain {
+    let sequence = UiHostObservationSequence::new(sequence);
     let protocol = match UiHostProtocolContract::current().negotiate() {
         UiHostProtocolNegotiation::Compatible(protocol) => protocol,
         UiHostProtocolNegotiation::Incompatible(_) => panic!("current protocol negotiates"),

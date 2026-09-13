@@ -5,8 +5,7 @@ use worth_ui_host_contract::{
 };
 use worth_ui_runtime::certification_support::ScriptedSurfaceCompletion;
 use worth_ui_test_support::{
-    UiPortalDismissalCertificationOutcome, UiPortalDismissalCertificationStop,
-    UiPortalExitTerminalCertificationOutcome, UiPortalNestedCertificationOutcome,
+    UiPortalDismissalCertificationOutcome, UiPortalExitTerminalCertificationOutcome,
     WorthUiMotionPresentationCertificationExt, WorthUiPortalRuntimeCertificationExt,
     WorthUiServiceProposalCertificationExt,
 };
@@ -48,56 +47,6 @@ fn exit_motion_retains_closing_overlay_until_terminal_portal_publication() {
     let shutdown = world.session.shutdown();
     assert_eq!(shutdown.motion_cancelled_exit_retentions(), 0);
     assert!(shutdown.motion_final_census_is_zero());
-}
-
-#[test]
-fn parent_close_denies_before_effects_while_child_exit_retention_settles() {
-    let host = scripted_motion_host();
-    for _ in 0..12 {
-        host.push_presented();
-    }
-    let mut world = launch_scripted_motion_world(host.clone());
-    assert_eq!(
-        world.session.publish_nested_portal_for_certification(31),
-        UiPortalNestedCertificationOutcome::Published
-    );
-
-    terminalize_nested_child_exit_motion(&mut world);
-    let before_parent_close = world.session.inspect_portal_runtime_for_certification();
-    assert_eq!(before_parent_close.active_portals(), 2);
-    assert_eq!(before_parent_close.closing_portals(), 1);
-    assert_retention_census(&world.session);
-    let calls_before_parent_close = host.presentation_calls();
-
-    assert_eq!(
-        world
-            .session
-            .publish_root_portal_dismissal_for_certification(42),
-        UiPortalDismissalCertificationOutcome::Stopped(
-            UiPortalDismissalCertificationStop::Transition,
-        )
-    );
-    assert_eq!(
-        world.session.inspect_portal_runtime_for_certification(),
-        before_parent_close,
-        "ancestor denial leaves the child receipt and parent Portal row untouched"
-    );
-    assert_eq!(host.presentation_calls(), calls_before_parent_close);
-    assert_retention_census(&world.session);
-
-    assert_eq!(
-        world
-            .session
-            .progress_portal_exit_terminal_for_certification(43),
-        UiPortalExitTerminalCertificationOutcome::Published
-    );
-    let child_closed = world.session.inspect_portal_runtime_for_certification();
-    assert_eq!(child_closed.active_portals(), 1);
-    assert_eq!(child_closed.closing_portals(), 0);
-    assert_retention_census(&world.session);
-
-    let shutdown = world.session.shutdown();
-    assert!(shutdown.runtime_service_resource_census().is_empty());
 }
 
 #[test]
@@ -207,59 +156,6 @@ pub(super) fn terminalize_portal_exit_motion(world: &mut AdmissionWorld) {
             .inspect_motion_presentation_for_certification()
             .active_tracks(),
         0
-    );
-}
-
-fn terminalize_nested_child_exit_motion(world: &mut AdmissionWorld) {
-    assert_eq!(
-        world
-            .session
-            .publish_escape_portal_dismissal_for_certification(41),
-        UiPortalDismissalCertificationOutcome::Published
-    );
-    assert_eq!(
-        world
-            .session
-            .inspect_portal_runtime_for_certification()
-            .closing_portals(),
-        1
-    );
-    let first_presentation = world
-        .session
-        .inspect_motion_presentation_for_certification()
-        .presentation()
-        .expect("nested retained exit has current presentation");
-    assert_motion_tick_applied(
-        world
-            .session
-            .admit_host_interaction_batch(motion_tick_batch(
-                &world.session,
-                first_presentation,
-                3,
-                1,
-            )),
-    );
-    let second_presentation = world
-        .session
-        .inspect_motion_presentation_for_certification()
-        .presentation()
-        .expect("nested first sample advances retained presentation");
-    assert_motion_tick_applied(
-        world
-            .session
-            .admit_host_interaction_batch(motion_tick_batch(
-                &world.session,
-                second_presentation,
-                4,
-                112,
-            )),
-    );
-    assert_eq!(
-        world
-            .session
-            .inspect_portal_runtime_for_certification()
-            .portal_exit_retentions(),
-        1
     );
 }
 

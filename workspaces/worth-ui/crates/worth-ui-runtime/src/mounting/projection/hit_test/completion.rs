@@ -43,6 +43,14 @@ pub(in crate::mounting::projection) fn complete_hit_test(
     let surface = semantic
         .surface_for(node.receipt.semantic_surface())
         .ok_or(UiMountedProjectionDenial::MissingSurfaceBinding)?;
+    let bounds = if node.portal_child_owner.is_none() {
+        super::super::frame_storage::surface_coordinates::viewport_bounds(
+            bounds,
+            surface.coordinate_posture,
+        )?
+    } else {
+        bounds
+    };
     let mounted_instance = node.receipt.mounted_instance();
     let node_receipt = receipt_basis
         .receipt_for(mounted_instance)
@@ -151,4 +159,31 @@ pub(in crate::mounting::projection) fn rebind_hit_tests(
         .map_err(UiMountedProjectionDenial::HitTestCompletion)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod coordinate_tests {
+    use super::*;
+    use worth_ui_host_contract::{
+        UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
+    };
+
+    #[test]
+    fn physical_surface_coordinates_cannot_be_relabelled_as_logical_pointer_bounds() {
+        let bounds = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+            x: 80.0,
+            y: 100.0,
+            width: 360.0,
+            height: 120.0,
+            coordinate_space: UiMountedCoordinateSpace::HostSurface,
+        })
+        .unwrap();
+        assert!(matches!(
+            crate::mounting::projection::frame_storage::surface_coordinates::viewport_bounds(
+                bounds,
+                crate::mounting::UiSurfaceBindingCoordinatePosture::PhysicalPixels
+            ),
+            Err(UiMountedProjectionDenial::CoordinateBasisMismatch)
+        ));
+    }
 }

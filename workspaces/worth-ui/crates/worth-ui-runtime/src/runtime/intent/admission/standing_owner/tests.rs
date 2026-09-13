@@ -140,3 +140,28 @@ fn operability_binding_replacement_and_exhaustion_preserve_index_agreement() {
             .0
     );
 }
+
+#[test]
+fn physical_surface_rebind_preserves_standing_meaning_under_the_successor_binding() {
+    let mut owner = UiIntentOperabilityStandingOwner::default();
+    let instance = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let predecessor = UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let successor = UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    owner.replace_instance(instance, row(instance, predecessor, 2, 7));
+    let before = owner.snapshot();
+
+    owner.rebind_surface(predecessor, successor);
+
+    assert_eq!(owner.revision, before.owner_revision());
+    assert!(owner.bindings.get(&predecessor).is_none());
+    assert!(
+        owner
+            .bindings
+            .get(&successor)
+            .unwrap()
+            .contains_with_probes(&instance)
+            .0
+    );
+    assert_eq!(owner.facts.get(&instance).unwrap().binding, successor);
+    assert_eq!(owner.snapshot().facts().len(), 2);
+}

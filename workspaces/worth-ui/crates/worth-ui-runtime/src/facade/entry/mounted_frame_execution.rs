@@ -28,6 +28,31 @@ pub struct WorthUiMountedFrameFrameworkTransitionStop<'session> {
     pub(super) completion: Box<WorthUiActiveFrameworkTurnCompletion<'session>>,
 }
 
+pub(crate) struct UiPreparedMountedReconstructionFrame {
+    frame: crate::mounting::UiPreparedMountedFrame,
+    owner_receipts:
+        super::mounted_owner_receipt_succession::UiPreparedMountedOwnerReceiptSuccession,
+}
+
+impl std::ops::Deref for UiPreparedMountedReconstructionFrame {
+    type Target = crate::mounting::UiPreparedMountedFrame;
+
+    fn deref(&self) -> &Self::Target {
+        &self.frame
+    }
+}
+
+impl UiPreparedMountedReconstructionFrame {
+    pub(super) fn into_parts(
+        self,
+    ) -> (
+        crate::mounting::UiPreparedMountedFrame,
+        super::mounted_owner_receipt_succession::UiPreparedMountedOwnerReceiptSuccession,
+    ) {
+        (self.frame, self.owner_receipts)
+    }
+}
+
 impl WorthUiMountedFrameFrameworkTransitionStop<'_> {
     pub fn generation_identity(
         &self,
@@ -70,15 +95,14 @@ impl WorthUiActiveApplicationSession {
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
         })?;
-        let mut frame = execution
+        let frame = execution
             .prepare_mounted_reconciliation_frame_with_content_internal(
                 request,
-                projection.content(),
-                projection.theme_values(),
+                crate::mounting::UiMountedSemanticContentInput::empty(),
+                projection,
                 replacements,
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
-        frame.set_application_text_publication(projection.text_publication(), execution.mounted);
         Ok(frame)
     }
 
@@ -87,8 +111,7 @@ impl WorthUiActiveApplicationSession {
         request: UiMountedFrameRequest,
         replacements: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
         collect_sources: impl FnOnce(&mut WorthUiFrameworkTurn<'_>),
-    ) -> Result<crate::mounting::UiPreparedMountedFrame, WorthUiMountedFrameExecutionStop<'_>> {
-        let theme_values = self.complete_application_theme_values_source();
+    ) -> Result<UiPreparedMountedReconstructionFrame, WorthUiMountedFrameExecutionStop<'_>> {
         let projection = self
             .presentation
             .project_complete()
@@ -101,16 +124,18 @@ impl WorthUiActiveApplicationSession {
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
         })?;
-        let mut frame = execution
-            .prepare_mounted_reconciliation_frame_with_content_internal(
+        let (frame, owner_receipts) = execution
+            .prepare_mounted_reconstruction_frame_with_content_internal(
                 request,
-                projection.content(),
-                theme_values,
+                crate::mounting::UiMountedSemanticContentInput::empty(),
+                projection,
                 replacements,
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
-        frame.set_application_text_publication(projection.text_publication(), execution.mounted);
-        Ok(frame)
+        Ok(UiPreparedMountedReconstructionFrame {
+            frame,
+            owner_receipts,
+        })
     }
 
     pub(crate) fn prepare_mounted_frame_with_application_presentation(
@@ -130,14 +155,13 @@ impl WorthUiActiveApplicationSession {
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
         })?;
-        let mut frame = execution
+        let frame = execution
             .prepare_mounted_frame_with_content_internal(
                 request,
-                projection.content(),
-                projection.theme_values(),
+                crate::mounting::UiMountedSemanticContentInput::empty(),
+                projection,
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
-        frame.set_application_text_publication(projection.text_publication(), execution.mounted);
         Ok(frame)
     }
 
@@ -159,15 +183,14 @@ impl WorthUiActiveApplicationSession {
                 WorthUiMountedFrameFrameworkTransitionStop { completion },
             )
         })?;
-        let mut frame = execution
+        let frame = execution
             .prepare_mounted_superseding_frame_with_content_internal(
                 request,
-                projection.content(),
-                projection.theme_values(),
+                crate::mounting::UiMountedSemanticContentInput::empty(),
+                projection,
                 predecessor,
             )
             .map_err(|denial| WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial)))?;
-        frame.set_application_text_publication(projection.text_publication(), execution.mounted);
         Ok(frame)
     }
 }
@@ -186,7 +209,9 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
         })?;
 
         match execution.classify_mounted_frame_reuse_internal(&request) {
-            UiMountedFrameReuse::Exact(witness) => {
+            UiMountedFrameReuse::Exact(witness)
+                if !execution.presentation.requires_mounted_projection() =>
+            {
                 execution
                     .mounted
                     .admit_pointer_reuse_observation(
@@ -200,29 +225,38 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                     witness.publication().clone(),
                 ))
             }
-            UiMountedFrameReuse::ComparisonRequired(_) => {
-                let frame =
-                    execution
-                        .prepare_mounted_frame_internal(request)
-                        .map_err(|denial| {
-                            WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial))
-                        })?;
+            UiMountedFrameReuse::ComparisonRequired(_) | UiMountedFrameReuse::Exact(_) => {
+                let presentation = execution.presentation.project().map_err(|denial| {
+                    WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial))
+                })?;
+                let frame = execution
+                    .prepare_mounted_frame_with_content_internal(
+                        request,
+                        crate::mounting::UiMountedSemanticContentInput::empty(),
+                        presentation,
+                    )
+                    .map_err(|denial| {
+                        WorthUiMountedFrameExecutionStop::Preparation(Box::new(denial))
+                    })?;
+                let owner_receipts = execution.prepare_mounted_owner_receipts(&frame);
                 let transition =
                     execution.present_prepared_frame_with_appearance(frame, deadline, now);
-                Ok(finish_mounted_transition(
-                    execution.mounted,
-                    execution.focus,
-                    execution.portal,
-                    execution.interaction,
+                let outcome = finish_mounted_transition(
+                    &mut *execution.mounted,
+                    execution.focus.as_deref_mut(),
+                    execution.portal.as_deref_mut(),
+                    &mut *execution.interaction,
                     execution.host_session,
                     execution.application_session_identity,
                     &execution.generation_identity,
-                    execution.host_exchange,
+                    &mut *execution.host_exchange,
                     transition,
-                    Some(execution.appearance_inspection),
-                    Some(execution.presentation),
-                    Some(execution.overlay_composition_owners),
-                ))
+                    Some(&mut *execution.appearance_inspection),
+                    Some(&mut *execution.presentation),
+                    Some(&mut *execution.overlay_composition_owners),
+                );
+                execution.settle_new_mounted_owner_receipts(owner_receipts, &outcome);
+                Ok(outcome)
             }
         }
     }

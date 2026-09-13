@@ -16,7 +16,7 @@ use worth_ui_test_support::{
 use super::{
     admission::phase3::world::AdmissionWorld,
     execution::{execution_deadline, execution_reading},
-    operability::{build_open_portal_application, PrimaryIntent},
+    operability::{build_open_portal_application, portal_replacement_input, PrimaryIntent},
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -60,8 +60,15 @@ pub(crate) fn run_cancelled_runtime_service_admission_scenario(
 ) -> CancelledRuntimeServiceAdmissionEvidence {
     let (application, facts, _) =
         build_open_portal_application(UiHeadlessRecorderCapacity::new(8, 8, 16_384));
-    let mut world =
-        AdmissionWorld::launch_application_with_target(application, facts, 1, 2, [18, 20]);
+    let replacement = portal_replacement_input(&facts);
+    let mut world = AdmissionWorld::launch_application_on_declared_surface_with_replacement(
+        application,
+        facts,
+        "visual.identity.surface.main",
+        2,
+        [18, 20],
+        replacement,
+    );
     let definition = UiIntentDefinition::<PrimaryIntent>::runtime_service(
         UiIntentRuntimeServiceDestination::OpenPortal,
     );
@@ -117,8 +124,15 @@ pub(crate) fn run_cancelled_runtime_service_admission_scenario(
 pub(crate) fn run_headless_runtime_service_scenario() -> HeadlessRuntimeServiceEvidence {
     let (application, facts, recorder) =
         build_open_portal_application(UiHeadlessRecorderCapacity::new(8, 8, 16_384));
-    let mut world =
-        AdmissionWorld::launch_application_with_target(application, facts, 1, 2, [18, 20]);
+    let replacement = portal_replacement_input(&facts);
+    let mut world = AdmissionWorld::launch_application_on_declared_surface_with_replacement(
+        application,
+        facts,
+        "visual.identity.surface.main",
+        2,
+        [18, 20],
+        replacement,
+    );
     let focus_before = world.session.inspect_focus_runtime_for_certification();
     let definition = UiIntentDefinition::<PrimaryIntent>::runtime_service(
         UiIntentRuntimeServiceDestination::OpenPortal,

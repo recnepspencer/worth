@@ -158,6 +158,83 @@ fn budget() -> UiMountedSpatialBudget {
     }
 }
 
+#[test]
+fn denied_point_queries_retain_partition_probes_without_scanning_regions() {
+    let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
+    let issuer = UiMountedNodeReceiptIssuer::mint_for(frame).unwrap();
+    let binding = UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+    let instance = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    for space in [
+        UiMountedCoordinateSpace::Window,
+        UiMountedCoordinateSpace::Viewport,
+    ] {
+        let bounds = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+            x: 0.0,
+            y: 0.0,
+            width: 10.0,
+            height: 10.0,
+            coordinate_space: space,
+        })
+        .unwrap();
+        let mechanic = UiMountedHitTestMechanic::complete_from_runtime_mounting(
+            UiMountedHitTestCompletionInput {
+                frame,
+                surface,
+                binding,
+                mounted_instance: instance,
+                node_receipt: issuer.receipt_for(instance),
+                bounds,
+                clip_bounds: bounds,
+                order: UiMountedHitTestOrder::from_runtime_plan(1),
+            },
+        )
+        .unwrap();
+        let mut index = UiPresentedHitIndex::default();
+        index.replace_base(
+            instance,
+            Some(UiPresentedHitTestRow::from_mounted(
+                crate::mounting::UiMountedHitTestPresentation::for_test(mechanic),
+            )),
+        );
+        let point = if space == UiMountedCoordinateSpace::Window {
+            [5.0, 5.0]
+        } else {
+            [f64::NAN, 5.0]
+        };
+        let denial = match index.at_point(binding, point, budget()) {
+            Err(denial) => denial,
+            Ok(_) => panic!("incompatible space or nonfinite point must deny"),
+        };
+        match (space, denial) {
+            (
+                UiMountedCoordinateSpace::Window,
+                UiPresentedHitQueryDenial::IncompatibleCoordinateSpace {
+                    row: UiMountedCoordinateSpace::Window,
+                    ..
+                },
+            )
+            | (
+                UiMountedCoordinateSpace::Viewport,
+                UiPresentedHitQueryDenial::InvalidPoint { .. },
+            ) => {}
+            _ => panic!("wrong denial for {space:?}: {denial:?}"),
+        }
+        let work = denial.work();
+        assert!(
+            work.map_key_probes() > 0,
+            "the nonempty partition map was consulted"
+        );
+        assert_eq!(
+            work.node_visits(),
+            0,
+            "neither denial enters a spatial tree"
+        );
+        assert_eq!(work.reconstructed_rows(), 0);
+        assert_eq!(work.node_copies(), 0);
+    }
+}
+
 pub(super) fn row(
     issuer: UiMountedNodeReceiptIssuer,
     binding: UiSurfaceBindingGeneration,

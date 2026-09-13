@@ -33,10 +33,6 @@ impl UiProjectedMountedFrameCandidate {
         self.owner.set_appearance_invalidation_batch(batch);
     }
 
-    pub(in crate::mounting) fn clear_appearance_invalidation_batch(&mut self) {
-        self.owner.clear_appearance_invalidation_batch();
-    }
-
     pub(in crate::mounting) fn appearance_invalidation_batch(
         &self,
     ) -> Option<crate::runtime::appearance::UiAppearanceInvalidationBatch> {
@@ -84,6 +80,7 @@ impl UiProjectedMountedFrameCandidate {
         self.owner.stage_appearance_input_refresh(node)
     }
 
+    #[cfg(test)]
     pub(in crate::mounting) fn lower_appearance(
         &mut self,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
@@ -91,17 +88,6 @@ impl UiProjectedMountedFrameCandidate {
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
     ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
         self.owner.lower_appearance(presentation, bindings, profile)
-    }
-
-    pub(in crate::mounting) fn lower_appearance_with_motion(
-        &mut self,
-        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-        bindings: &[worth_ui_host_contract::UiMountedSurfaceBindingRequirement],
-        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
-        motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
-    ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
-        self.owner
-            .lower_appearance_with_motion(presentation, bindings, profile, motion)
     }
 
     pub(in crate::mounting) fn lower_appearance_with_motion_and_overlays(
@@ -146,12 +132,6 @@ impl UiProjectedMountedFrameCandidate {
         self.owner.prepare_appearance_reconstruction()?;
         self.presentation_node_changed_instances = self.presentation_changed_instances.clone();
         Ok(())
-    }
-
-    pub(in crate::mounting) fn prepare_appearance_reconstruction(
-        &mut self,
-    ) -> Result<(), UiMountedProjectionDenial> {
-        self.owner.prepare_appearance_reconstruction()
     }
 
     pub(in crate::mounting) fn prepare_appearance_reconstruction_for(

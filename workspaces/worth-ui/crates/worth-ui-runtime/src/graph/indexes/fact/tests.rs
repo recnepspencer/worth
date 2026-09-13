@@ -13,8 +13,8 @@ mod appearance_slot_oracle;
 mod appearance_state;
 
 use crate::capability::{
-    ThemeColorValue, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
-    ThemeTokenValue,
+    ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    UiThemeColor,
 };
 use crate::facade::{WorthUi, WorthUiRustAuthoredDeclarationFixture};
 use crate::fact_contract::{
@@ -259,7 +259,7 @@ fn static_paint_app() -> crate::facade::WorthUiApp {
     WorthUi::app()
         .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
         .register_component(
-            crate::runtime::tests::appearance_component_session_test_support::static_paint_component(
+            crate::runtime::tests::appearance_component_session_test_support::appearance_component(
                 STATIC_PAINT_COMPONENT,
                 token.clone(),
             ),
@@ -270,7 +270,7 @@ fn static_paint_app() -> crate::facade::WorthUiApp {
             token,
             ThemeTokenFamily::surface(),
             ThemeTokenSource::application(),
-            ThemeTokenValue::color(ThemeColorValue::hex("#112233").unwrap()),
+            ThemeTokenValue::color(UiThemeColor::parse("#112233").unwrap()),
         ))
         .with_rust_authored_declaration_fixture(
             WorthUiRustAuthoredDeclarationFixture::named("static-paint-fact-index")
@@ -299,14 +299,12 @@ fn static_paint_app() -> crate::facade::WorthUiApp {
                         UiDslSemanticFamily::Control,
                         UiDslSourceProvenance::file_authored("app/static.wui", 1),
                     )
-                    .with_structural_token(UiDslStructuralToken::new(
-                        "control:static-paint-peer",
-                    ))
+                    .with_structural_token(UiDslStructuralToken::new("control:static-paint-peer"))
                     .with_component_reference(
                         worth_ui_dsl::UiDslComponentReference::new(STATIC_PAINT_COMPONENT).unwrap(),
                     )
                     .unwrap(),
-                )
+                ),
         )
         .freeze()
         .map(crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host)

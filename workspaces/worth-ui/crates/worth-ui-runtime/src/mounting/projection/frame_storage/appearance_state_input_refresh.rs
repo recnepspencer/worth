@@ -31,9 +31,6 @@ impl UiMountedAppearanceFrameState {
         &mut self,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
         geometry: &UiMountedAppearanceGeometryScope,
-        portal_instances: &std::collections::BTreeSet<
-            worth_ui_host_contract::UiMountedInstanceIdentity,
-        >,
     ) -> Result<Vec<UiAppearanceInspectionRecord>, UiMountedAppearanceOutputDenial> {
         let mut records = Vec::new();
         for node in std::mem::take(&mut self.input_refresh_nodes) {
@@ -43,7 +40,7 @@ impl UiMountedAppearanceFrameState {
                 return Err(UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable);
             };
             let mut input = node
-                .lower_retained_projection(
+                .lower_resolved_projection(
                     &entry.projection,
                     presentation,
                     geometry.outline_fringe(node.semantic_surface),
@@ -55,7 +52,6 @@ impl UiMountedAppearanceFrameState {
             input
                 .compose_accepted_motion(geometry)
                 .map_err(|_| UiMountedAppearanceOutputDenial::NodeLowering)?;
-            input.retain_node_owned_families(portal_instances);
             let predecessor = entry.sidecar.current_node_receipt();
             let work = entry
                 .sidecar

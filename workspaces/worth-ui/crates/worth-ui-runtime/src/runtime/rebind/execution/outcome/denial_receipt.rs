@@ -5,6 +5,19 @@ use super::{
 use crate::runtime::rebind::execution::state::UiRebindReservation;
 
 impl<'session> UiRebindDenialReceipt<'session> {
+    pub(crate) fn prepared_basis_changed(retry: super::super::UiPreparedRebind<'session>) -> Self {
+        Self {
+            predecessor_remains_current: true,
+            stopped_phase: UiRebindStoppedPhase::EffectAdmission,
+            cause: UiRebindDenialCause::MountedPresentation(
+                crate::mounting::UiMountedPresentationAdmissionDenial::PreparedFrameBasisChanged,
+            ),
+            host_rejections: Box::new([]),
+            valid_next_action: UiRebindValidNextAction::RetryPrepared,
+            retry: Some(Box::new(retry)),
+        }
+    }
+
     pub(crate) fn capacity(
         denial: super::super::UiRebindReservationDenial,
         retry: super::super::UiPreparedRebind<'session>,

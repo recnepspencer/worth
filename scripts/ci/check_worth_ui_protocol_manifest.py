@@ -9,12 +9,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "workspaces/worth-ui/contracts/milestone-3.16-protocol.json"
 EXPECTED_LIVE = {
-    "protocol_floor": 6, "protocol_current": 6, "mounted_frame": 5,
-    "mounted_presentation": 5, "text": 3, "observation": 7,
-    "measurement": 5, "solicited_effect": 1,
-    "native_profile": "worth-ui-windows-dx12-v1",
-}
-EXPECTED_NEXT = {
     "protocol_floor": 7, "protocol_current": 7, "mounted_frame": 6,
     "mounted_presentation": 6, "text": 4, "observation": 7,
     "measurement": 5, "solicited_effect": 1,
@@ -31,12 +25,11 @@ def capture(source: str, pattern: str) -> int:
 
 def validate(root: Path, manifest: Path) -> None:
     contract = json.loads(manifest.read_text(encoding="utf-8"))
+    if set(contract) != {"live"}:
+        raise ValueError("protocol manifest must contain only the current live contract")
     live = contract["live"]
-    intended = contract["intended_next"]
     if live != EXPECTED_LIVE:
-        raise ValueError(f"live manifest must remain exact: {EXPECTED_LIVE}")
-    if intended != EXPECTED_NEXT:
-        raise ValueError(f"intended-next manifest must remain exact: {EXPECTED_NEXT}")
+        raise ValueError(f"live manifest must be exact: {EXPECTED_LIVE}")
     protocol = (root / "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_frame/protocol.rs").read_text(encoding="utf-8")
     text = (root / "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_projection/semantic_text.rs").read_text(encoding="utf-8")
     observed = {
@@ -55,20 +48,13 @@ def validate(root: Path, manifest: Path) -> None:
     profile = root / f"workspaces/worth-ui/crates/worth-ui-host-native/profiles/{live['native_profile']}.toml"
     if not profile.is_file():
         raise ValueError(f"missing live native profile {profile.name}")
-    if intended["protocol_current"] != intended["protocol_floor"]:
-        raise ValueError("intended cutover floor must equal intended current")
-    if intended["protocol_current"] <= live["protocol_current"]:
-        raise ValueError("intended protocol must succeed the live protocol")
-    intended_profile = root / f"workspaces/worth-ui/crates/worth-ui-host-native/profiles/{intended['native_profile']}.toml"
-    if not intended_profile.is_file():
-        raise ValueError("intended-next native profile must be staged")
-    staged_profile = tomllib.loads(intended_profile.read_text(encoding="utf-8"))
-    if staged_profile.get("identity") != intended["native_profile"]:
-        raise ValueError("intended-next native profile identity drifted")
-    if staged_profile.get("profile_stage") != "qualification-only-non-current":
-        raise ValueError("intended-next native profile must remain qualification-only")
-    if staged_profile.get("live_emission") != "disabled":
-        raise ValueError("intended-next native profile must keep live emission disabled")
+    live_profile = tomllib.loads(profile.read_text(encoding="utf-8"))
+    if live_profile.get("identity") != live["native_profile"]:
+        raise ValueError("live native profile identity drifted")
+    if live_profile.get("profile_stage") != "current":
+        raise ValueError("live native profile must be current")
+    if live_profile.get("live_emission") != "enabled":
+        raise ValueError("live native profile must enable emission")
 
 
 def main() -> int:

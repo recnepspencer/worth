@@ -26,6 +26,7 @@ pub(super) fn lower(
             surface_paint_order: input
                 .surface_paint_order
                 .ok_or(UiMountedAppearanceLoweringDenial::SurfacePaintOrderUnavailable)?,
+            portal_group: input.portal_group,
             radii: input.radii,
             border_edges: input.surface_border_edges,
             border_omissions: input.surface_border_omissions.clone(),

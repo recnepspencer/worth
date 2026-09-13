@@ -37,9 +37,14 @@ pub use foreground_replay_certification::UiNativeTextReplayOperation;
 mod appearance_delta;
 #[path = "retained_draw_list/appearance_raster.rs"]
 mod appearance_raster;
+#[path = "retained_draw_list/appearance_regions.rs"]
+mod appearance_regions;
 mod appearance_replay;
 #[path = "retained_draw_list/appearance_state.rs"]
 mod appearance_state;
+#[path = "retained_draw_list/appearance_surface_sample.rs"]
+mod appearance_surface_sample;
+mod attribution;
 #[path = "retained_draw_list/raster_command.rs"]
 mod raster_command;
 #[path = "retained_draw_list/render_order.rs"]
@@ -185,7 +190,7 @@ impl UiNativeRetainedDrawList {
     pub(crate) fn realized_regions(
         &self,
     ) -> Option<Vec<worth_ui_host_contract::UiHostRealizedRegion>> {
-        self.regions.realized(self.order.ordered())
+        self.realized_regions_with_appearance()
     }
 
     pub(super) fn identity_overlay_operations(
@@ -200,56 +205,6 @@ impl UiNativeRetainedDrawList {
 
     pub(crate) const fn identity_overlay_active(&self) -> bool {
         self.identity_overlay.is_active()
-    }
-
-    pub(super) fn top_paint_attribution(
-        &self,
-    ) -> Option<(usize, UiNativeRetainedPresentationAttribution)> {
-        self.current_top_paint_attribution()
-            .or(self.last_paint_attribution)
-            .map(|(ordinal, mut attribution)| {
-                attribution.node_receipt = self.regions.current_receipt(attribution.node_receipt);
-                (ordinal, attribution)
-            })
-    }
-
-    fn current_top_paint_attribution(
-        &self,
-    ) -> Option<(usize, UiNativeRetainedPresentationAttribution)> {
-        let (ordinal, identity) = self.order.ordered().enumerate().last()?;
-        let attribution = match self.commands.get(&identity.command())? {
-            UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-                UiNativeRetainedPresentationAttribution {
-                    color: mechanic.color(),
-                    bounds: mechanic.bounds(),
-                    mounted_instance: mechanic.mounted_instance(),
-                    node_receipt: mechanic.node_receipt(),
-                }
-            }
-            UiMountedPaintCommand::PortalOverlay { mechanic, .. } => {
-                UiNativeRetainedPresentationAttribution {
-                    color: mechanic.color(),
-                    bounds: mechanic.bounds(),
-                    mounted_instance: mechanic.owner(),
-                    node_receipt: mechanic.owner_receipt(),
-                }
-            }
-            UiMountedPaintCommand::SemanticText { mechanic, .. } => {
-                UiNativeRetainedPresentationAttribution {
-                    color: mechanic.foregrounds().first()?.color(),
-                    bounds: mechanic.bounds(),
-                    mounted_instance: mechanic.mounted_instance(),
-                    node_receipt: mechanic.node_receipt(),
-                }
-            }
-        };
-        Some((ordinal, attribution))
-    }
-
-    fn retain_current_paint_attribution(&mut self) {
-        if let Some(attribution) = self.current_top_paint_attribution() {
-            self.last_paint_attribution = Some(attribution);
-        }
     }
 }
 

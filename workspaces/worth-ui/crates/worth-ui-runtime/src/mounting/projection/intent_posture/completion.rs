@@ -34,6 +34,12 @@ impl UiIntentPostureObservation {
         self.owner_order
     }
 
+    pub(crate) const fn mounted_instance(
+        &self,
+    ) -> worth_ui_host_contract::UiMountedInstanceIdentity {
+        self.target.mounted_instance()
+    }
+
     pub(crate) const fn retained_bytes(&self) -> usize {
         std::mem::size_of::<Self>()
     }

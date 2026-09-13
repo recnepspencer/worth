@@ -1,7 +1,7 @@
-use super::index::{compiled_owner_regions, CompiledOwnerIndex, OccurrenceIndex, RegionIndex};
+use super::index::{CompiledOwnerIndex, OccurrenceIndex, RegionIndex};
 use crate::facade::mounted::{UiMountedOccurrenceGeometryDenial, UiMountedSurfaceGeometryBatch};
 
-impl super::WorthUiMountedLayout<'_> {
+impl super::UiMountedOccurrenceGeometryValidationAuthority<'_> {
     pub(super) fn resolve_mosaic_clips(
         &self,
         batch: &UiMountedSurfaceGeometryBatch,
@@ -9,9 +9,7 @@ impl super::WorthUiMountedLayout<'_> {
         region_index: &RegionIndex,
         surface_declaration: Option<worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity>,
         compiled_owners: &mut CompiledOwnerIndex,
-        region_plan_rows_visited: &mut usize,
-        occurrence_ancestry_steps: &mut usize,
-        region_lookup_steps: &mut usize,
+        work: &mut super::validation_authority::UiMountedGeometryValidationWork,
     ) -> Result<
         std::collections::BTreeMap<
             worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -30,20 +28,18 @@ impl super::WorthUiMountedLayout<'_> {
                 let Some(owner) = cursor else {
                     break;
                 };
-                *occurrence_ancestry_steps += 1;
+                work.occurrence_ancestry_steps += 1;
                 let basis = self
-                    .session
-                    .mounted
-                    .current_mounted_identity_basis(owner)
+                    .basis(owner)
                     .ok_or(UiMountedOccurrenceGeometryDenial::UnknownMountedInstance)?;
-                let bindings = compiled_owner_regions(
-                    &self.session.application,
-                    compiled_owners,
-                    surface_declaration,
-                    basis.graph_node_identity(),
-                    region_plan_rows_visited,
-                )
-                .bindings();
+                let bindings = self
+                    .owner_regions(
+                        compiled_owners,
+                        surface_declaration,
+                        basis.graph_node_identity(),
+                        &mut work.region_plan_rows_visited,
+                    )
+                    .bindings();
                 let direct_depth = bindings.iter().map(|binding| binding.depth()).min();
                 let direct = bindings
                     .iter()
@@ -70,7 +66,7 @@ impl super::WorthUiMountedLayout<'_> {
                             clips.push(crate::mounting::UiMountedMosaicClipBinding::Viewport)
                         }
                         Clipping::ClipToRegion => {
-                            *region_lookup_steps += 1;
+                            work.region_lookup_steps += 1;
                             if !region_index.contains(&(owner, binding.declaration())) {
                                 return Err(
                                     UiMountedOccurrenceGeometryDenial::MissingMosaicRegionGeometry,

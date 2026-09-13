@@ -10,7 +10,7 @@ pub(crate) struct UiMountedGraphReplacementSuccessor {
 pub(crate) struct UiMountedGraphReplacementAdmission {
     successor: UiMountedGraphReplacementSuccessor,
     publication: crate::mounting::UiMountedFramePublicationCandidate,
-    admission: crate::mounting::UiMountedPresentationAdmission,
+    admission: crate::mounting::UiMountedPresentationAttempt,
     capability_report: worth_ui_host_contract::WorthUiHostCapabilityReport,
 }
 
@@ -23,6 +23,7 @@ pub(crate) struct UiMountedGraphReplacementInFlight {
 pub(crate) enum UiMountedGraphReplacementPreparation {
     Admitted(UiMountedGraphReplacementAdmission),
     AdmissionDenied {
+        appearance: Option<crate::runtime::appearance::UiAppearanceInspectionAttemptBatch>,
         denial: crate::mounting::UiMountedPresentationAdmissionDenial,
         successor: UiMountedGraphReplacementSuccessor,
         frame: crate::mounting::UiPreparedMountedFrame,
@@ -42,6 +43,7 @@ pub(crate) enum UiMountedGraphReplacementPresentation {
         receipt: crate::mounting::UiMountedFramePublicationReceipt,
     },
     RejectedBeforeEffects {
+        attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
         successor: UiMountedGraphReplacementSuccessor,
         frame: crate::mounting::UiPreparedMountedFrame,
         rejections: Box<[crate::mounting::UiMountedSurfacePresentationRejection]>,
@@ -59,15 +61,46 @@ pub(crate) struct UiMountedGraphReplacementCompletionRejection {
     pub(crate) in_flight: Box<UiMountedGraphReplacementInFlight>,
 }
 
+#[path = "replacement/appearance_basis.rs"]
+mod appearance_basis;
+mod geometry;
+mod settlement;
+use settlement::settle_graph_replacement;
+
 impl UiMountedGraphReplacementSuccessor {
-    pub(crate) fn identity_view(&self) -> crate::mounting::UiMountedIdentityView {
-        self.identity.view()
+    pub(crate) fn mount_candidate_graph_nodes(
+        &mut self,
+        graph: crate::graph::UiGraphAuthority<'_>,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        candidates: &[crate::graph::UiGraphNodeIdentity],
+    ) -> Result<(), crate::mounting::UiMountedIdentityDenial> {
+        for candidate in candidates {
+            let already_mounted = self
+                .identity
+                .view()
+                .mounted_instances()
+                .iter()
+                .any(|mounted| {
+                    mounted.graph_node_identity() == *candidate
+                        && mounted.basis().semantic_surface_identity() == surface
+                });
+            if !already_mounted {
+                let handle = self.identity.graph_node_handle(graph, *candidate)?;
+                self.identity.mount(graph, handle, surface)?;
+            }
+        }
+        Ok(())
     }
 
     pub(crate) fn focus_participation_snapshot(
         &self,
-    ) -> Option<crate::mounting::UiMountedFocusParticipationSnapshot> {
-        self.identity.focus_participation_snapshot()
+        frame: &crate::mounting::UiAssembledMountedFrame,
+    ) -> crate::mounting::UiMountedFocusParticipationSnapshot {
+        frame.focus_participation_snapshot(&self.identity)
+    }
+
+    pub(crate) fn identity_view(&self) -> crate::mounting::UiMountedIdentityView {
+        self.identity.view()
     }
 
     pub(crate) fn contains_mounted_instance(
@@ -146,6 +179,13 @@ impl WorthUiMountedSessionState {
         host: &crate::facade::WorthUiHostSessionAuthority,
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
+        prepare_overlays: impl FnOnce(
+            worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+            &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+        ) -> Result<
+            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
+            (),
+        >,
     ) -> UiMountedGraphReplacementPreparation {
         let capability_report = host.capability_report().clone();
         let admitted = match successor.identity.admit_prepared_frame_authority(frame) {
@@ -153,6 +193,7 @@ impl WorthUiMountedSessionState {
             Err(rejection) => {
                 let observation = never_presented(rejection.frame());
                 return UiMountedGraphReplacementPreparation::AdmissionDenied {
+                    appearance: None,
                     denial: rejection.denial(),
                     successor,
                     frame: rejection.into_frame(),
@@ -172,7 +213,7 @@ impl WorthUiMountedSessionState {
                 };
             }
         };
-        let mut admission =
+        let admission =
             match self
                 .presentation
                 .admit_current(retained, &capability_report, deadline, now)
@@ -181,6 +222,7 @@ impl WorthUiMountedSessionState {
                 Err(rejection) => {
                     let observation = never_presented(rejection.frame());
                     return UiMountedGraphReplacementPreparation::AdmissionDenied {
+                        appearance: None,
                         denial: rejection.denial(),
                         successor,
                         frame: rejection.into_frame(),
@@ -188,9 +230,33 @@ impl WorthUiMountedSessionState {
                     };
                 }
             };
-        // Candidate replacement reconciles retained physical membership; fresh
-        // resolver records are produced by the successor's observation turn.
-        let _appearance = admission.lower_appearance(capability_report.appearance_profile());
+        let surfaces = admission
+            .frame()
+            .surfaces()
+            .iter()
+            .map(|surface| surface.requirement().semantic_surface())
+            .collect::<Vec<_>>();
+        let appearance = match prepare_overlays(admission.attempt(), &surfaces) {
+            Ok(overlays) => admission
+                .lower_appearance_with_overlays(capability_report.appearance_profile(), &overlays),
+            Err(()) => admission.deny_appearance_output(),
+        };
+        let (admission, appearance_batch) = match appearance.admit_appearance_retention() {
+            Ok(admission) => admission,
+            Err(rejected) => {
+                let (rejection, appearance_batch) = *rejected;
+                let observation = never_presented(rejection.frame());
+                return UiMountedGraphReplacementPreparation::AdmissionDenied {
+                    appearance: Some(appearance_batch),
+                    denial: rejection.denial(),
+                    successor,
+                    frame: rejection.into_frame(),
+                    observation,
+                };
+            }
+        };
+        self.presentation
+            .retain_appearance_attempt(admission.attempt(), appearance_batch);
         let publication = crate::mounting::UiMountedFramePublicationCandidate::reserve(
             &admission,
             self.identity.view().current_frame(),
@@ -216,7 +282,7 @@ impl WorthUiMountedSessionState {
             capability_report,
         } = admitted;
         let outcome = self.presentation.present(
-            admission.into_attempt(),
+            admission,
             host.effect_port(),
             super::publication::mounted_host_authority(host, &capability_report),
             now,
@@ -272,51 +338,6 @@ impl WorthUiMountedSessionState {
             in_flight.publication,
             outcome,
         ))
-    }
-}
-
-fn settle_graph_replacement(
-    mut successor: UiMountedGraphReplacementSuccessor,
-    publication: crate::mounting::UiMountedFramePublicationCandidate,
-    outcome: crate::mounting::UiMountedPresentationOutcome,
-) -> UiMountedGraphReplacementPresentation {
-    match outcome {
-        crate::mounting::UiMountedPresentationOutcome::Presented(presented) => {
-            match publication.commit_presented(presented, successor.identity.as_mut()) {
-                crate::mounting::UiMountedFramePublicationCommit::Current(receipt) => {
-                    UiMountedGraphReplacementPresentation::Published { successor, receipt }
-                }
-                crate::mounting::UiMountedFramePublicationCommit::Superseded(_) => {
-                    unreachable!("ordinary graph replacement cannot overlap a successor")
-                }
-            }
-        }
-        crate::mounting::UiMountedPresentationOutcome::RejectedBeforeEffects(rejected) => {
-            let observation = crate::mounting::UiMountedHostObservationTransition::Rejected(
-                rejected.frame().canonical_core().frame(),
-            );
-            let (frame, rejections) = rejected.into_parts();
-            UiMountedGraphReplacementPresentation::RejectedBeforeEffects {
-                successor,
-                frame,
-                rejections,
-                observation,
-            }
-        }
-        crate::mounting::UiMountedPresentationOutcome::InFlight(handle) => {
-            UiMountedGraphReplacementPresentation::InFlight(UiMountedGraphReplacementInFlight {
-                successor,
-                publication,
-                handle,
-            })
-        }
-        crate::mounting::UiMountedPresentationOutcome::Superseded(_) => {
-            unreachable!("ordinary graph replacement cannot settle as superseded")
-        }
-        crate::mounting::UiMountedPresentationOutcome::PresentationIndeterminate(frame) => {
-            let observation = super::publication::indeterminate_observation(&frame);
-            UiMountedGraphReplacementPresentation::PresentationIndeterminate { frame, observation }
-        }
     }
 }
 

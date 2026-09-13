@@ -12,12 +12,9 @@ fn resolver_is_deterministic_and_emits_no_host_commands() {
     super::tests::run_on_appearance_fixture_stack(|| {
         let (session, binding, target, vector, theme) = inputs();
         assert_eq!(binding.basis().graph_node(), target.graph_node());
-        assert_eq!(binding.basis().role(), binding.role().role());
-        assert_eq!(binding.basis().revision(), binding.role().revision());
-        assert_eq!(
-            binding.basis().aspect_contract(),
-            binding.role().aspect_contract()
-        );
+        binding
+            .validate_current(session.graph().snapshot(), session.capabilities())
+            .expect("the role binding must satisfy the actual consumer's complete authority check");
         assert_eq!(vector.binding(), Some(binding.basis()));
         let resolver = UiAppearanceResolver::new();
         let first = resolver
@@ -39,7 +36,7 @@ fn resolver_is_deterministic_and_emits_no_host_commands() {
             )
             .expect("the same sealed inputs should resolve identically");
 
-        assert!(first.exactly_equivalent(&second));
+        assert_eq!(first, second);
         assert_eq!(first.semantic_digest(), second.semantic_digest());
         assert_eq!(first.aspects().len(), 1);
         let aspect = &first.aspects()[0];
@@ -87,12 +84,13 @@ fn resolver_rejects_an_unbound_vector_before_any_effect() {
 
         assert_eq!(
             evidence.denial(),
-            super::UiAppearanceResolutionDenial::VectorRoleBindingMismatch
+            super::resolver::UiAppearanceResolutionDenial::VectorRoleBindingMismatch
         );
         assert_eq!(
-            evidence.subject(),
-            super::UiAppearanceResolutionSubject::GraphNode(target.graph_node())
+            crate::runtime::appearance::UiAppearanceInspectionDenial::from_resolution(evidence),
+            crate::runtime::appearance::UiAppearanceInspectionDenial::Basis
         );
+        assert_eq!(evidence.theme_slots_compared(), 0);
         assert!(session
             .inspect_mounted_identity()
             .frame_receipts()
@@ -158,7 +156,7 @@ fn resolver_uses_the_canonical_node_index_without_linear_fallback() {
             .expect_err("resolver must use the canonical indexed node lookup");
         assert_eq!(
             evidence.denial(),
-            super::UiAppearanceResolutionDenial::NodeRoleBinding(missing,)
+            super::resolver::UiAppearanceResolutionDenial::NodeRoleBinding(missing,)
         );
         assert!(session
             .inspect_mounted_identity()
@@ -196,10 +194,9 @@ pub(crate) fn inputs_from_session(
     use crate::runtime::tests::appearance_component_session_test_support::{
         two_node_appearance_candidate_submission, APPEARANCE_NODE_A,
     };
-
     let candidate = two_node_appearance_candidate_submission(
         &session,
-        "appearance-resolver-test",
+        "two-node-appearance-current",
         &role,
         APPEARANCE_NODE_A,
     );

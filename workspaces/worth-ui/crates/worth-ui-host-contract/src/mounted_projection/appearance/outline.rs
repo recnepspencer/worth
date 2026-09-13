@@ -3,6 +3,7 @@ pub struct UiMountedOutlineAppearanceMechanic {
     node_receipt: crate::UiMountedNodeReceiptIdentity,
     clip: super::UiAppearanceClip,
     surface_paint_order: u32,
+    portal_group: Option<crate::UiMountedInstanceIdentity>,
     geometry: super::UiAppearanceOutlineGeometry,
     color: super::UiMountedAppearanceColor,
     opacity: crate::UiMountedPresentationOpacity,
@@ -15,6 +16,7 @@ pub struct UiMountedOutlineAppearanceCompletionInput {
     pub node_receipt: crate::UiMountedNodeReceiptIdentity,
     pub clip: super::UiAppearanceClip,
     pub surface_paint_order: u32,
+    pub portal_group: Option<crate::UiMountedInstanceIdentity>,
     pub geometry: super::UiAppearanceOutlineGeometry,
     pub color: super::UiMountedAppearanceColor,
     pub opacity: crate::UiMountedPresentationOpacity,
@@ -40,6 +42,7 @@ impl UiMountedOutlineAppearanceMechanic {
             node_receipt,
             clip: self.clip,
             surface_paint_order: self.surface_paint_order,
+            portal_group: self.portal_group,
             geometry: self.geometry,
             color: self.color,
             opacity: self.opacity,
@@ -66,6 +69,7 @@ impl UiMountedOutlineAppearanceMechanic {
             node_receipt: input.node_receipt,
             clip: input.clip,
             surface_paint_order: input.surface_paint_order,
+            portal_group: input.portal_group,
             geometry: input.geometry,
             color: input.color,
             opacity: input.opacity,
@@ -80,6 +84,9 @@ impl UiMountedOutlineAppearanceMechanic {
     }
     pub const fn surface_paint_order(&self) -> u32 {
         self.surface_paint_order
+    }
+    pub const fn portal_group(&self) -> Option<crate::UiMountedInstanceIdentity> {
+        self.portal_group
     }
     pub const fn allocation(&self) -> super::UiAppearanceAllocationBounds {
         self.geometry.allocation()
@@ -138,6 +145,7 @@ mod tests {
         let mechanic = UiMountedOutlineAppearanceMechanic::complete_from_runtime_mounting(
             UiMountedOutlineAppearanceCompletionInput {
                 surface_paint_order: 0,
+                portal_group: None,
                 issuer,
                 node_receipt: issuer
                     .receipt_for(crate::UiMountedInstanceIdentity::mint_unbound().unwrap()),

@@ -13,6 +13,7 @@ pub(crate) use admission::{
     validate_typed_inoperable, UiAdmittedIntentIdentity, UiCurrentIntentAdmissionCandidate,
     UiIntentAdmissionCurrentnessContext, UiIntentAdmissionLease, UiIntentAdmissionState,
     UiIntentOperabilityStandingFactSnapshot, UiPreparedIntentAdmissionCandidate,
+    UiPreparedIntentAdmissionRebind, UiPreparedIntentOperabilityReceiptSuccession,
 };
 pub use admission::{
     UiAdmittedIntent, UiIntentAdmissionCancellationReason, UiIntentAdmissionCost,
@@ -64,7 +65,8 @@ pub(crate) use operability::{UiIntentOccupancyReservation, UiIntentOccupancyRese
 )]
 pub(crate) use operability::{UiIntentOperabilityAppearanceClass, UiIntentOperabilityStandingFact};
 pub(crate) use payload::{
-    prepare_intent_payload, UiIntentApplicationFactState, UiValidationAppearanceClass,
+    prepare_intent_payload, UiIntentApplicationFactState,
+    UiPreparedValidationAppearanceReceiptSuccession, UiValidationAppearanceClass,
     UiValidationAppearanceFactSnapshot,
 };
 #[cfg(any(test, feature = "certification-support"))]

@@ -173,7 +173,7 @@ fn assert_outline(
         );
     }
     let transcript =
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     let [worth_ui_host_headless::UiHeadlessAppearanceMechanic::Outline(translated)] =
         transcript.fragments()[0].work().successor().mechanics()
     else {

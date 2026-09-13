@@ -10,7 +10,9 @@ use super::{
     UiLocalInputRecipientContract, UiLocalInputStopReason,
 };
 
+mod application_rebind;
 mod presentation_refresh;
+pub(crate) use application_rebind::UiPreparedInteractionApplicationRebind;
 
 #[path = "state_ingress.rs"]
 mod ingress;

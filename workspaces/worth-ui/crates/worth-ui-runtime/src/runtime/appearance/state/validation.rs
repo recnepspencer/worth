@@ -66,26 +66,4 @@ impl UiValidationAppearanceState {
     pub(crate) const fn class(&self) -> UiAppearanceAxisClass {
         self.class
     }
-
-    pub(crate) const fn source_class(
-        &self,
-    ) -> Option<crate::runtime::intent::UiValidationAppearanceClass> {
-        self.source_class
-    }
-
-    pub(crate) const fn owner_revision(&self) -> u64 {
-        self.owner_revision
-    }
-
-    pub(crate) const fn fact_identity(&self) -> Option<u64> {
-        self.fact_identity
-    }
-
-    pub(crate) const fn fact_revision(&self) -> Option<u64> {
-        self.fact_revision
-    }
-
-    pub(crate) const fn node_receipt(&self) -> Option<UiMountedNodeReceiptIdentity> {
-        self.node_receipt
-    }
 }

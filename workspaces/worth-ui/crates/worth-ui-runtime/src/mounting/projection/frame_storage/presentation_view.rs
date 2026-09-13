@@ -11,7 +11,7 @@ impl UiMountedProjectionFrame {
             .portal_child_presentation(instance, surface, binding)
             .expect("prepared Portal children retain an unambiguous mounted owner")
         {
-            UiMountedPortalChildPresentation::Presented(portal) => Some(
+            UiMountedPortalChildPresentation::Presented(portal, _) => Some(
                 worth_ui_host_contract::UiMountedPortalPresentationAffinity::from_runtime_mounting(
                     portal.owner(),
                     portal.portal_identity(),
@@ -44,8 +44,8 @@ impl UiMountedProjectionFrame {
                 UiMountedPortalChildPresentation::Suppressed => {
                     portal_children.insert(instance, None);
                 }
-                UiMountedPortalChildPresentation::Presented(portal) => {
-                    portal_children.insert(instance, Some(portal));
+                UiMountedPortalChildPresentation::Presented(portal, source_anchor) => {
+                    portal_children.insert(instance, Some((portal, source_anchor)));
                 }
             }
         }
@@ -71,16 +71,16 @@ impl UiMountedProjectionFrame {
         {
             UiMountedPortalChildPresentation::Ordinary => commands,
             UiMountedPortalChildPresentation::Suppressed => Vec::new(),
-            UiMountedPortalChildPresentation::Presented(portal) => commands
+            UiMountedPortalChildPresentation::Presented(portal, source_anchor) => commands
                 .into_iter()
-                .filter_map(|command| present_portal_child_command(command, portal))
+                .filter_map(|command| present_portal_child_command(command, portal, source_anchor))
                 .collect(),
         };
         for input in self
             .portal_overlays
             .iter()
             .copied()
-            .filter(|input| input.owner() == instance)
+            .filter(|input| input.owner() == instance && input.surface() == surface)
         {
             let owner = self
                 .semantic
@@ -94,7 +94,7 @@ impl UiMountedProjectionFrame {
                 .receipt_for(instance)
                 .expect("prepared Portal overlay retains its mounted receipt");
             let mechanic = input
-                .mechanic_for(self.frame, surface, binding, receipt)
+                .mechanic_for(self.frame, binding, receipt)
                 .expect("prepared Portal overlay retains valid geometry");
             commands.push(
                 worth_ui_host_contract::UiMountedPaintCommand::PortalOverlay {
@@ -160,22 +160,12 @@ impl UiMountedProjectionFrame {
 fn present_portal_child_command(
     command: worth_ui_host_contract::UiMountedPaintCommand,
     portal: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
+    source_anchor: worth_ui_host_contract::UiMountedCanonicalBox,
 ) -> Option<worth_ui_host_contract::UiMountedPaintCommand> {
     Some(match command {
-        worth_ui_host_contract::UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-            let mechanic = mechanic
-                .presented_within_portal(portal)
-                .expect("validated Portal-relative paint remains canonical")?;
-            worth_ui_host_contract::UiMountedPaintCommand::FilledRect {
-                identity: worth_ui_host_contract::UiMountedPaintCommandIdentity::filled_rect(
-                    &mechanic,
-                ),
-                mechanic,
-            }
-        }
         worth_ui_host_contract::UiMountedPaintCommand::SemanticText { mechanic, .. } => {
             let mechanic = mechanic
-                .presented_within_portal(portal)
+                .presented_within_portal(portal, source_anchor)
                 .expect("validated Portal-relative text remains canonical")?;
             worth_ui_host_contract::UiMountedPaintCommand::SemanticText {
                 identity: worth_ui_host_contract::UiMountedPaintCommandIdentity::semantic_text(

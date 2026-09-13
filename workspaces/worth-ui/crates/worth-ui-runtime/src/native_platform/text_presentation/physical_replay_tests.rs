@@ -9,7 +9,7 @@ use worth_ui_host_contract::*;
 
 #[test]
 fn physical_replay_includes_unchanged_overhanging_text_before_its_occluder() {
-    let world = CoverageWorld::with_physical_geometry(
+    let world = CoverageWorld::with_portal_occluders(
         "W\tW\tW",
         UiMountedInstanceIdentity::mint_unbound().unwrap(),
         0.0,
@@ -18,6 +18,7 @@ fn physical_replay_includes_unchanged_overhanging_text_before_its_occluder() {
         &[(UiSemanticTextSlot::Value, 0.0)],
         ([0, 255, 0, 128], 20_000),
         (1.0, 1_250),
+        2,
     );
     let text = world.fragment.text_candidates()[0].clone();
     // Independently locate the third actual raster image; allocation is deliberately
@@ -69,8 +70,8 @@ fn physical_replay_includes_unchanged_overhanging_text_before_its_occluder() {
         identity: UiMountedPaintCommandIdentity::semantic_text(&text),
         mechanic: text.clone(),
     };
-    let occluder = rectangle(&text, damage_bounds);
-    let distant = rectangle(&text, bounds([300.0, 0.0, 8.0, 8.0]));
+    let occluder = rectangle(&text, world.portals[0], damage_bounds);
+    let distant = rectangle(&text, world.portals[1], bounds([300.0, 0.0, 8.0, 8.0]));
     let expected = [text_command.identity(), occluder.identity()];
     let commands = [text_command, occluder, distant];
     let order = commands
@@ -268,30 +269,50 @@ fn physical_replay_includes_unchanged_overhanging_text_before_its_occluder() {
     });
 }
 
+/// A Portal overlay occluder owned by `instance`, which the world's overlay
+/// order must admit for retained render order to place it.
 fn rectangle(
     text: &UiMountedSemanticTextMechanic,
+    instance: UiMountedInstanceIdentity,
     bounds: UiMountedCanonicalBox,
 ) -> UiMountedPaintCommand {
-    let instance = UiMountedInstanceIdentity::mint_unbound().unwrap();
-    let mechanic = UiMountedFilledRectMechanic::complete_from_runtime_mounting(
-        UiMountedFilledRectCompletionInput {
+    let bounds = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+        x: bounds.x(),
+        y: bounds.y(),
+        width: bounds.width(),
+        height: bounds.height(),
+        coordinate_space: UiMountedCoordinateSpace::Viewport,
+    })
+    .unwrap();
+    let mechanic = UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(
+        UiMountedPortalOverlayCompletionInput {
             frame: text.frame(),
             surface: text.surface(),
             binding: text.binding(),
-            mounted_instance: instance,
-            node_receipt: UiMountedNodeReceiptIssuer::mint_for(text.frame())
+            owner: instance,
+            owner_receipt: UiMountedNodeReceiptIssuer::mint_for(text.frame())
                 .unwrap()
                 .receipt_for(instance),
-            allocation_basis: text.allocation_basis(),
+            portal_identity: instance.diagnostic_value(),
+            anchor_presentation: UiHostObservationPresentationBasis::new(
+                UiHostSurfaceIdentity::mint_unbound().unwrap(),
+                text.frame(),
+                text.binding(),
+                UiHostPresentationEpoch::issued_by_host(1),
+            ),
+            anchor_bounds: bounds,
             bounds,
             clip_bounds: bounds,
             color: UiMountedRgba8::new(30, 60, 90, 255),
             layer_semantic_order: 2,
+            layer_depth: 0,
+            lifecycle: UiMountedPortalOverlayLifecyclePosture::Visible,
+            shielding: UiMountedPortalInputShielding::ContentBounds,
         },
     )
     .unwrap();
-    UiMountedPaintCommand::FilledRect {
-        identity: UiMountedPaintCommandIdentity::filled_rect(&mechanic),
+    UiMountedPaintCommand::PortalOverlay {
+        identity: UiMountedPaintCommandIdentity::portal_overlay(&mechanic),
         mechanic,
     }
 }

@@ -1,41 +1,11 @@
 use crate::runtime::tests::appearance_component_session_test_support as support;
 
+#[path = "appearance_receipt_role_test_support/radius.rs"]
+mod radius;
+pub(super) use radius::*;
+
 pub(super) const SWITCHED_SLOT: &str = "theme.appearance_consumer.switched";
 const RADIUS_BACKGROUND_TOKEN: &str = "theme.appearance_radius.background";
-
-pub(super) fn staged_test_host_profile(
-    identity: &str,
-    version: u16,
-) -> worth_ui_host_contract::UiHostAppearanceProfileContract {
-    worth_ui_host_contract::UiHostAppearanceProfileContract::admit(
-        identity,
-        version,
-        [
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::SurfaceFill,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::SurfaceBorder,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::CornerRadii,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Outline,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::TextRangeForeground,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::PortalSurface,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Backdrop,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::OverlayOrder,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::PointerAffordance,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Damage,
-            worth_ui_host_contract::UiHostAppearanceMechanicFamily::Clip,
-        ],
-        Some(worth_ui_host_contract::UiHostPrimaryPointerKind::Mouse),
-        worth_ui_host_contract::UiHostAppearanceGeometryQualification::admit([
-            worth_ui_host_contract::UiHostAppearanceScaleGeometryQualification::new(
-                1_000,
-                1,
-                worth_ui_host_contract::UiAppearanceLogicalLength::new(1_000).unwrap(),
-                worth_ui_host_contract::UiHostAppearanceGeometryQualificationBasis::AnalyticSignedDistancePixelCenter,
-            ),
-        ])
-        .expect("the staged test geometry qualification must admit"),
-    )
-    .expect("the explicit staged test host profile must admit")
-}
 
 pub(super) fn theme_definition<'a>(
     themes: &'a crate::capability::FrozenAppearanceThemeCapabilities,
@@ -166,22 +136,28 @@ pub(super) fn theme_bundle(
     )
     .unwrap();
     let initial = initial_color.unwrap_or("#112233");
-    let definition = crate::capability::UiThemeDefinition::admit(
-        crate::capability::UiThemeDefinitionIdentity::new("theme.appearance.receipts").unwrap(),
-        1,
-        &catalog,
-        tokens.into_iter().map(|token| {
-            (
-                token,
-                worth_ui_dsl::UiThemeValue::Color(initial_theme_color(initial)),
-            )
-        }),
-    )
-    .unwrap();
+    let definition = |identity: &str, color: &str| {
+        crate::capability::UiThemeDefinition::admit(
+            crate::capability::UiThemeDefinitionIdentity::new(identity).unwrap(),
+            1,
+            &catalog,
+            tokens.iter().cloned().map(|token| {
+                (
+                    token,
+                    worth_ui_dsl::UiThemeValue::Color(initial_theme_color(color)),
+                )
+            }),
+        )
+        .unwrap()
+    };
+    let definitions = vec![
+        definition("theme.appearance.receipts", initial),
+        definition("theme.appearance.receipts-405060", "#405060"),
+    ];
     crate::capability::FrozenAppearanceThemeCapabilities::admit(
         catalog,
         crate::capability::UiThemeDefinitionIdentity::new("theme.appearance.receipts").unwrap(),
-        vec![definition],
+        definitions,
     )
     .unwrap()
 }
@@ -253,124 +229,36 @@ pub(super) fn radius_theme_bundle() -> crate::capability::FrozenAppearanceThemeC
         ],
     )
     .unwrap();
-    let definition = crate::capability::UiThemeDefinition::admit(
-        crate::capability::UiThemeDefinitionIdentity::new("theme.appearance.radii").unwrap(),
-        1,
-        &catalog,
-        [
-            (token, radius_value(i32::MAX)),
-            (
-                background,
-                worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([
-                    17, 34, 51, 255,
-                ])),
-            ),
-        ],
-    )
-    .unwrap();
+    let definition = |identity: &str, corners| {
+        crate::capability::UiThemeDefinition::admit(
+            crate::capability::UiThemeDefinitionIdentity::new(identity).unwrap(),
+            1,
+            &catalog,
+            [
+                (token.clone(), radius_value_from(corners)),
+                (
+                    background.clone(),
+                    worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([
+                        17, 34, 51, 255,
+                    ])),
+                ),
+            ],
+        )
+        .unwrap()
+    };
+    let definitions = vec![
+        definition("theme.appearance.radii", [i32::MAX; 4]),
+        definition("theme.appearance.radii-max-minus-1", [i32::MAX - 1; 4]),
+        definition("theme.appearance.radii-max-minus-2", [i32::MAX - 2; 4]),
+        definition("theme.appearance.radii-1", [1; 4]),
+        definition("theme.appearance.radii-2", [2; 4]),
+        definition("theme.appearance.radii-3", [3; 4]),
+        definition("theme.appearance.radii-4", [4; 4]),
+    ];
     crate::capability::FrozenAppearanceThemeCapabilities::admit(
         catalog,
         crate::capability::UiThemeDefinitionIdentity::new("theme.appearance.radii").unwrap(),
-        vec![definition],
+        definitions,
     )
     .unwrap()
-}
-
-fn radius_partition(
-    slot: &str,
-    aspect: worth_ui_dsl::UiAppearanceAspect,
-) -> worth_ui_dsl::UiAppearanceDecisionPartition {
-    worth_ui_dsl::UiAppearancePartitionAuthoring::new([
-        worth_ui_dsl::UiAppearanceAxisDomain::complete(
-            worth_ui_dsl::UiAppearanceStateAxis::Validation,
-        ),
-    ])
-    .with_cell(
-        worth_ui_dsl::UiAppearanceCell::when([worth_ui_dsl::UiAppearanceAxisPredicate::any(
-            worth_ui_dsl::UiAppearanceStateAxis::Validation,
-        )])
-        .uses_slot(
-            worth_ui_dsl::UiThemeSlotIdentity::new(slot).unwrap(),
-            theme_value_kind(aspect),
-        ),
-    )
-    .compile(aspect)
-    .unwrap()
-}
-
-pub(super) fn update_theme(
-    session: &mut crate::facade::WorthUiActiveApplicationSession,
-    hex: &str,
-) {
-    update_theme_at_revision(session, hex, 0);
-}
-
-pub(super) fn update_theme_at_revision(
-    session: &mut crate::facade::WorthUiActiveApplicationSession,
-    hex: &str,
-    expected_revision: u64,
-) {
-    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
-    let value = crate::capability::ThemeTokenValue::color(
-        crate::capability::ThemeColorValue::hex(hex).unwrap(),
-    );
-    let change = super::super::super::UiNativeThemeTokenValueChange::successor(
-        token.clone(),
-        expected_revision,
-        value,
-    )
-    .unwrap();
-    session
-        .admit_application_theme_values(&[change])
-        .expect("receipt theme update should commit");
-}
-
-pub(super) fn update_radius_at_revision(
-    session: &mut crate::facade::WorthUiActiveApplicationSession,
-    corners: [i32; 4],
-    expected_revision: u64,
-) {
-    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
-    let value = crate::capability::ThemeTokenValue::typed(radius_value_from(corners));
-    let change = super::super::super::UiNativeThemeTokenValueChange::successor(
-        token,
-        expected_revision,
-        value,
-    )
-    .unwrap();
-    session
-        .admit_application_theme_values(&[change])
-        .expect("receipt radius update should commit");
-}
-
-pub(super) fn radius_value(base: i32) -> worth_ui_dsl::UiThemeValue {
-    radius_value_from([base, base, base, base])
-}
-
-pub(super) fn radius_value_from(corners: [i32; 4]) -> worth_ui_dsl::UiThemeValue {
-    let lengths = corners.map(worth_ui_dsl::UiLogicalLength::new);
-    worth_ui_dsl::UiThemeValue::CornerRadii(
-        worth_ui_dsl::UiThemeCornerRadii::new(lengths[0], lengths[1], lengths[2], lengths[3])
-            .unwrap(),
-    )
-}
-
-fn theme_value_kind(aspect: worth_ui_dsl::UiAppearanceAspect) -> worth_ui_dsl::UiThemeValueKind {
-    match aspect {
-        worth_ui_dsl::UiAppearanceAspect::Background
-        | worth_ui_dsl::UiAppearanceAspect::Foreground => worth_ui_dsl::UiThemeValueKind::Color,
-        worth_ui_dsl::UiAppearanceAspect::Border => worth_ui_dsl::UiThemeValueKind::SolidStroke,
-        worth_ui_dsl::UiAppearanceAspect::Radius => worth_ui_dsl::UiThemeValueKind::CornerRadii,
-        worth_ui_dsl::UiAppearanceAspect::Opacity => worth_ui_dsl::UiThemeValueKind::Opacity,
-        worth_ui_dsl::UiAppearanceAspect::Outline => worth_ui_dsl::UiThemeValueKind::SolidOutline,
-    }
-}
-
-fn initial_theme_color(hex: &str) -> worth_ui_dsl::UiThemeColor {
-    let channels = match hex {
-        "#405060" => [64, 80, 96, 255],
-        "#112233" => [17, 34, 51, 255],
-        _ => panic!("receipt fixture uses a declared theme color"),
-    };
-    worth_ui_dsl::UiThemeColor::from_channels(channels)
 }

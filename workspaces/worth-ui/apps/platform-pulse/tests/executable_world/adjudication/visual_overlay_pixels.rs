@@ -5,7 +5,9 @@ use worth_ui_platform_pulse::observation_contract::{
 };
 
 use super::{
-    platform_pulse_control_points::{checked_in, PlatformPulseControlPointManifest},
+    visual_contract_manifest::{
+        checked_in_adjudication_contract, PlatformPulseVisualAdjudicationContract,
+    },
     ExecutableVisualIdentityFailure, ExecutableVisualSnapshotEvidence,
     ExecutableVisualTraceEvidence,
 };
@@ -36,7 +38,8 @@ pub(crate) fn adjudicate_overlay_pixels(
     process_id: u32,
     pixels: NativeClientPixelCapture,
 ) -> Result<ExecutableVisualOverlayEvidence, ExecutableVisualIdentityFailure> {
-    let manifest = checked_in().map_err(ExecutableVisualIdentityFailure::ControlPointManifest)?;
+    let manifest = checked_in_adjudication_contract()
+        .map_err(ExecutableVisualIdentityFailure::VisualContract)?;
     let sequence = trace.sequence().saturating_add(1);
     require_sequence(&envelope, sequence)?;
     let PlatformPulseLifecycleObservation::VisualOverlayPublished(overlay) = envelope.outcome()
@@ -85,7 +88,8 @@ pub(crate) fn adjudicate_restored_pixels(
     process_id: u32,
     pixels: NativeClientPixelCapture,
 ) -> Result<ExecutableVisualClearEvidence, ExecutableVisualIdentityFailure> {
-    let manifest = checked_in().map_err(ExecutableVisualIdentityFailure::ControlPointManifest)?;
+    let manifest = checked_in_adjudication_contract()
+        .map_err(ExecutableVisualIdentityFailure::VisualContract)?;
     let sequence = overlay.sequence.saturating_add(1);
     require_sequence(&envelope, sequence)?;
     let PlatformPulseLifecycleObservation::VisualOverlayCleared(clear) = envelope.outcome() else {
@@ -178,7 +182,7 @@ fn require_control_pixels(
     pixels: &NativeClientPixelCapture,
     target_point: [u32; 2],
     background_point: [u32; 2],
-    manifest: &PlatformPulseControlPointManifest,
+    manifest: &PlatformPulseVisualAdjudicationContract,
 ) -> Result<(), ExecutableVisualIdentityFailure> {
     if !pixel_at(pixels, target_point)
         .is_some_and(|pixel| matches_rgb(pixel, manifest.target_rgba(), manifest))
@@ -206,7 +210,7 @@ fn pixel_at(pixels: &NativeClientPixelCapture, point: [u32; 2]) -> Option<[u8; 4
 fn matches_rgb(
     observed: [u8; 4],
     expected: [u8; 4],
-    manifest: &PlatformPulseControlPointManifest,
+    manifest: &PlatformPulseVisualAdjudicationContract,
 ) -> bool {
     observed[..3]
         .iter()

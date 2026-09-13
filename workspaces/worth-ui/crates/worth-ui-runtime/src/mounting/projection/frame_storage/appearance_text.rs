@@ -16,23 +16,53 @@ impl UiMountedProjectionFrame {
             .semantic
             .node(instance)
             .ok_or(UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable)?;
-        let adopted = node.semantic_text.as_ref().map_or_else(
-            || Box::new([]) as Box<[_]>,
-            |text| text.appearance_foreground_spans(),
-        );
+        let Some(text) = node.semantic_text.as_ref() else {
+            return Ok(Box::new([]));
+        };
+        let mut adopted = text.formatting().appearance_foreground_spans();
         if adopted.is_empty() {
             return Ok(Box::new([]));
         }
         let candidates = self.raw_appearance_text_candidates(instance)?;
-        let retained: std::collections::HashSet<_> = candidates
-            .iter()
-            .flat_map(|candidate| candidate.foregrounds().iter().map(|span| span.identity()))
-            .collect();
-        if adopted.iter().any(|span| !retained.contains(span)) {
+        if !candidates.iter().any(|candidate| {
+            candidate.slot() == worth_ui_host_contract::UiSemanticTextSlot::Posture
+        }) {
             return Err(UiMountedAppearanceOutputDenial::TextCandidate(
                 super::super::UiMountedProjectionDenial::AppearanceTextCandidatesUnavailable,
             ));
         }
+        let mut retained = std::collections::HashSet::new();
+        for candidate in candidates
+            .iter()
+            .filter(|candidate| !candidate.text().is_empty())
+        {
+            let formatting = match candidate.slot() {
+                worth_ui_host_contract::UiSemanticTextSlot::Value => {
+                    text.formatting().scalar_value_row()
+                }
+                worth_ui_host_contract::UiSemanticTextSlot::CollectionValue { .. }
+                | worth_ui_host_contract::UiSemanticTextSlot::Posture => {
+                    text.formatting().default_row()
+                }
+            };
+            for span in formatting.appearance_foreground_spans() {
+                if !candidate
+                    .foregrounds()
+                    .iter()
+                    .any(|row| row.identity() == span)
+                {
+                    return Err(UiMountedAppearanceOutputDenial::TextCandidate(
+                        super::super::UiMountedProjectionDenial::AppearanceTextCandidatesUnavailable,
+                    ));
+                }
+                retained.insert(span);
+            }
+        }
+        adopted = adopted
+            .into_vec()
+            .into_iter()
+            .filter(|span| retained.contains(span))
+            .collect();
         let candidates = self.clip_appearance_text_candidates(instance, candidates)?;
         let mut visible: std::collections::HashMap<_, Vec<_>> =
             adopted.iter().map(|span| (*span, Vec::new())).collect();
@@ -104,7 +134,9 @@ impl UiMountedProjectionFrame {
             .into_iter()
             .map(|candidate| {
                 let presented = match geometry.portal_presentation {
-                    Some(portal) => candidate.presented_within_portal(portal),
+                    Some((portal, source_anchor)) => {
+                        candidate.presented_within_portal(portal, source_anchor)
+                    }
                     None => Ok(Some(candidate)),
                 };
                 presented

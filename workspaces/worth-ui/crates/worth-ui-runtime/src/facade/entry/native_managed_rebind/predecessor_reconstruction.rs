@@ -1,33 +1,8 @@
-pub(super) enum RequiredPredecessorReconstruction<'session> {
-    NotRequired(crate::runtime::rebind::UiRebindOutcome<'session>),
-    Required(crate::runtime::rebind::UiDetachedRebindRetry),
-}
-
-pub(super) fn detach_required_predecessor_reconstruction<'session>(
-    outcome: crate::runtime::rebind::UiRebindOutcome<'session>,
-) -> RequiredPredecessorReconstruction<'session> {
-    let crate::runtime::rebind::UiRebindOutcome::RejectedBeforeEffects(denial) = outcome else {
-        return RequiredPredecessorReconstruction::NotRequired(outcome);
-    };
-    let rejections = denial.host_rejections();
-    if !rejections.is_empty()
-        && rejections.iter().all(|rejection| {
-            rejection.denial()
-                == worth_ui_host_contract::UiHostSurfacePresentationDenial::ReconstructionRequired
-        })
-    {
-        match denial.detach_retry_for_native() {
-            Ok(retry) => RequiredPredecessorReconstruction::Required(retry),
-            Err(denial) => RequiredPredecessorReconstruction::NotRequired(
-                crate::runtime::rebind::UiRebindOutcome::RejectedBeforeEffects(denial),
-            ),
-        }
-    } else {
-        RequiredPredecessorReconstruction::NotRequired(
-            crate::runtime::rebind::UiRebindOutcome::RejectedBeforeEffects(denial),
-        )
-    }
-}
+use super::{
+    finish_normalized_managed_rebind, WorthUiNativeManagedRebindDenial,
+    WorthUiNativeManagedRebindProgress, WorthUiNativeManagedRebindStop,
+    WorthUiNativePendingManagedRebind,
+};
 
 pub(super) fn reconstruction_matches_progress(
     in_flight: &crate::mounting::UiMountedPresentationInFlight,
@@ -52,4 +27,44 @@ pub(super) fn reconstruction_settled(outcome: &crate::mounting::UiMountedFrameOu
             | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
             | crate::mounting::UiMountedFrameOutcome::Reconciled(_)
     )
+}
+
+impl super::WorthUiNativeApplicationShell {
+    pub(in crate::facade::entry::native_managed_rebind) fn begin_predecessor_reconstruction(
+        &mut self,
+        retry: crate::runtime::rebind::UiDetachedRebindRetry,
+    ) -> Result<WorthUiNativeManagedRebindProgress, WorthUiNativeManagedRebindDenial> {
+        if retry.session_identity() != self.session.session_identity() {
+            return Err(WorthUiNativeManagedRebindDenial::SessionMismatch);
+        }
+        let recovery = self
+            .reconstruct_current_presentation(u64::MAX, self.managed_rebind_completion_tick)
+            .map_err(|()| WorthUiNativeManagedRebindDenial::PredecessorReconstruction)?;
+        match recovery {
+            crate::mounting::UiMountedFrameOutcome::InFlight(in_flight) => {
+                self.pending_managed_rebind = Some(
+                    WorthUiNativePendingManagedRebind::PredecessorReconstruction {
+                        retry,
+                        in_flight,
+                    },
+                );
+                Ok(WorthUiNativeManagedRebindProgress::AwaitingProgress)
+            }
+            outcome if reconstruction_settled(&outcome) => {
+                let outcome = retry
+                    .rebase_content_and_retry(
+                        &mut self.session,
+                        self.managed_rebind_completion_tick,
+                    )
+                    .map_err(WorthUiNativeManagedRebindDenial::Preparation)?;
+                Ok(finish_normalized_managed_rebind(
+                    &mut self.pending_managed_rebind,
+                    outcome,
+                ))
+            }
+            _ => Ok(WorthUiNativeManagedRebindProgress::Stopped(
+                WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
+            )),
+        }
+    }
 }

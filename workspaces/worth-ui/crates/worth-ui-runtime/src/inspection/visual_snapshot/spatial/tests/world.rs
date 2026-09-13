@@ -28,27 +28,14 @@ pub(super) fn paint(
     bounds: worth_ui_host_contract::UiMountedCanonicalBox,
     order: u32,
     alpha: u8,
-) -> worth_ui_host_contract::UiMountedFilledRectMechanic {
-    worth_ui_host_contract::UiMountedFilledRectMechanic::complete_from_runtime_mounting(
-        worth_ui_host_contract::UiMountedFilledRectCompletionInput {
-            frame: world.frame,
-            surface: world.surface,
-            binding: world.binding,
-            mounted_instance: world.instance,
-            node_receipt: world.receipt,
-            allocation_basis: worth_ui_host_contract::UiMountedAllocationBasis::new(
-                1,
-                1,
-                1,
-                worth_ui_host_contract::UiMountedTransformProjection::Identity,
-            ),
-            bounds,
-            color: worth_ui_host_contract::UiMountedRgba8::new(1, 2, 3, alpha),
-            layer_semantic_order: order,
-            clip_bounds: bounds,
-        },
+) -> crate::mounting::UiMountedUnsupportedPaintBasis {
+    crate::mounting::UiMountedUnsupportedPaintBasis::new(
+        world.receipt,
+        bounds,
+        bounds,
+        order,
+        u64::from(alpha),
     )
-    .unwrap()
 }
 
 pub(super) fn hit_test(
@@ -72,12 +59,12 @@ pub(super) fn hit_test(
 }
 
 pub(super) fn observed_paint(
-    row: worth_ui_host_contract::UiMountedFilledRectMechanic,
+    row: crate::mounting::UiMountedUnsupportedPaintBasis,
     order: u32,
 ) -> worth_ui_host_contract::UiHostRealizedRegion {
     observed(
         row.node_receipt(),
-        realized_geometry(row.bounds(), row.clip_bounds()),
+        realized_geometry(row.bounds(), row.clip()),
         realized_ordering(
             order,
             worth_ui_host_contract::UiHostRealizedRegionParticipation::Paint,

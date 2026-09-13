@@ -60,6 +60,12 @@ impl UiIntentOperabilityStandingFact {
     ) -> worth_ui_host_contract::UiMountedNodeReceiptIdentity {
         self.node_receipt
     }
+    pub(in crate::runtime::intent) fn rebind_node_receipt(
+        &mut self,
+        receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
+    ) {
+        self.node_receipt = receipt;
+    }
     pub(crate) fn route(&self) -> &str {
         &self.route
     }

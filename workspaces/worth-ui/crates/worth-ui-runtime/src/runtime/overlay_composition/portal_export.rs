@@ -10,12 +10,6 @@ impl UiOverlayPortalOwnerExport {
         Self { snapshot }
     }
 
-    pub(super) fn from_owner(owner: &crate::runtime::portal::UiPortalRuntimeState) -> Self {
-        Self {
-            snapshot: owner.stack_snapshot(),
-        }
-    }
-
     pub(super) fn into_snapshot(self) -> UiPortalStackSnapshot {
         self.snapshot
     }

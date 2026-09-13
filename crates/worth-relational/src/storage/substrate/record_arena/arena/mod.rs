@@ -165,6 +165,7 @@ pub(crate) type RelationArena = RecordArena<RelationRecordKind>;
 
 #[derive(Clone, Copy)]
 pub(crate) enum PinClass {
+    #[cfg(test)]
     Branch,
     Replay,
 }

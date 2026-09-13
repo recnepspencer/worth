@@ -14,7 +14,10 @@ mod validation;
 pub(crate) use validation::{
     UiAdmittedValidationAppearanceTarget, UiValidationAppearanceFactDenial,
 };
-pub(crate) use validation::{UiValidationAppearanceClass, UiValidationAppearanceFactSnapshot};
+pub(crate) use validation::{
+    UiPreparedValidationAppearanceReceiptSuccession, UiValidationAppearanceClass,
+    UiValidationAppearanceFactSnapshot,
+};
 
 pub(crate) struct UiIntentApplicationFactState {
     slots_by_identity: BTreeMap<Arc<str>, crate::declaration::UiIntentApplicationFactSlot>,

@@ -16,6 +16,7 @@ pub(crate) struct UiMountedFocusParticipationSnapshot {
     frame: worth_ui_host_contract::UiMountedFrameIdentity,
     participants: Box<[UiMountedFocusParticipant]>,
     nodes_visited: u32,
+    retained_surfaces: Box<[worth_ui_host_contract::UiSemanticSurfaceIdentity]>,
 }
 
 impl UiMountedFocusParticipant {
@@ -90,10 +91,13 @@ impl UiMountedFocusParticipationSnapshot {
     pub(in crate::mounting) fn from_projection(
         projection: &super::UiMountedProjectionFrame,
         receipts: &super::UiMountedNodeReceiptBasis,
+        requested_surfaces: &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+        retained_surfaces: Vec<worth_ui_host_contract::UiSemanticSurfaceIdentity>,
     ) -> Self {
         let mounted_by_graph = projection
             .semantic_projection()
             .nodes_in_mounted_order()
+            .filter(|node| requested_surfaces.contains(&node.receipt().semantic_surface()))
             .map(|node| {
                 (
                     node.receipt().graph_node(),
@@ -108,6 +112,9 @@ impl UiMountedFocusParticipationSnapshot {
             .enumerate()
             .filter_map(|(order, node)| {
                 nodes_visited = nodes_visited.checked_add(1)?;
+                if !requested_surfaces.contains(&node.receipt().semantic_surface()) {
+                    return None;
+                }
                 if node.focus_support == crate::capability::ComponentFocusSupport::NotFocusable {
                     return None;
                 }
@@ -134,18 +141,25 @@ impl UiMountedFocusParticipationSnapshot {
                 Some(participant)
             })
             .collect::<Vec<_>>();
-        Self::new(receipts.frame(), participants, nodes_visited)
+        Self::new(
+            receipts.frame(),
+            participants,
+            nodes_visited,
+            retained_surfaces,
+        )
     }
 
     pub(crate) fn new(
         frame: worth_ui_host_contract::UiMountedFrameIdentity,
         participants: Vec<UiMountedFocusParticipant>,
         nodes_visited: u32,
+        retained_surfaces: Vec<worth_ui_host_contract::UiSemanticSurfaceIdentity>,
     ) -> Self {
         Self {
             frame,
             participants: participants.into_boxed_slice(),
             nodes_visited,
+            retained_surfaces: retained_surfaces.into_boxed_slice(),
         }
     }
 
@@ -157,5 +171,12 @@ impl UiMountedFocusParticipationSnapshot {
     }
     pub(crate) const fn nodes_visited(&self) -> u32 {
         self.nodes_visited
+    }
+
+    pub(crate) fn retains_surface(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> bool {
+        self.retained_surfaces.contains(&surface)
     }
 }

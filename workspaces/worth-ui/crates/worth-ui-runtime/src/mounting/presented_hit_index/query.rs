@@ -4,15 +4,35 @@ use worth_ui_host_contract::UiMountedCoordinateSpace;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiPresentedHitQueryDenial {
-    IncompatibleCoordinateSpace(UiMountedCoordinateSpace),
-    InvalidPoint,
-    NodeBudget { work: UiHitTestSpatialWork },
-    CandidateBudget { work: UiHitTestSpatialWork },
+    IncompatibleCoordinateSpace {
+        row: UiMountedCoordinateSpace,
+        work: UiHitTestSpatialWork,
+    },
+    InvalidPoint {
+        work: UiHitTestSpatialWork,
+    },
+    NodeBudget {
+        work: UiHitTestSpatialWork,
+    },
+    CandidateBudget {
+        work: UiHitTestSpatialWork,
+    },
 }
 
 pub(in crate::mounting) struct UiPresentedHitQuery {
     pub(in crate::mounting) rows: Vec<UiPresentedHitTestRow>,
     pub(in crate::mounting) work: UiHitTestSpatialWork,
+}
+
+impl UiPresentedHitQueryDenial {
+    pub(crate) const fn work(self) -> UiHitTestSpatialWork {
+        match self {
+            Self::IncompatibleCoordinateSpace { work, .. }
+            | Self::InvalidPoint { work }
+            | Self::NodeBudget { work }
+            | Self::CandidateBudget { work } => work,
+        }
+    }
 }
 
 impl UiPresentedHitIndex {
@@ -32,13 +52,14 @@ impl UiPresentedHitIndex {
             let (partition, probes) = self.partitions.get_with_probes(&(binding, space as u8));
             work.map_key_probes += probes;
             if partition.is_some_and(|partition| partition.visible_rows != 0) {
-                return Err(UiPresentedHitQueryDenial::IncompatibleCoordinateSpace(
-                    space,
-                ));
+                return Err(UiPresentedHitQueryDenial::IncompatibleCoordinateSpace {
+                    row: space,
+                    work,
+                });
             }
         }
         if point.iter().any(|coordinate| !coordinate.is_finite()) {
-            return Err(UiPresentedHitQueryDenial::InvalidPoint);
+            return Err(UiPresentedHitQueryDenial::InvalidPoint { work });
         }
         let (partition, probes) = self
             .partitions
@@ -55,7 +76,7 @@ impl UiPresentedHitIndex {
             .at_point(point, budget)
             .map_err(|denial| match denial {
                 UiMountedSpatialQueryDenial::InvalidGeometry => {
-                    UiPresentedHitQueryDenial::InvalidPoint
+                    UiPresentedHitQueryDenial::InvalidPoint { work }
                 }
                 UiMountedSpatialQueryDenial::NodeBudget { work: spatial } => {
                     work.merge(spatial);

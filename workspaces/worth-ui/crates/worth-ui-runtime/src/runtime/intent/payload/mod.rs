@@ -9,7 +9,8 @@ pub(crate) use application_fact_state::{
     UiAdmittedValidationAppearanceTarget, UiValidationAppearanceFactDenial,
 };
 pub(crate) use application_fact_state::{
-    UiIntentApplicationFactState, UiIntentApplicationInputReference, UiValidationAppearanceClass,
+    UiIntentApplicationFactState, UiIntentApplicationInputReference,
+    UiPreparedValidationAppearanceReceiptSuccession, UiValidationAppearanceClass,
     UiValidationAppearanceFactSnapshot,
 };
 pub use application_fact_state::{

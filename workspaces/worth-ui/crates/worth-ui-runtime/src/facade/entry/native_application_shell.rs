@@ -17,6 +17,8 @@ pub(crate) use component_presence::UiNativeComponentPresenceProgress;
 mod launch;
 #[path = "native_application_shell/motion_sampling.rs"]
 mod motion_sampling;
+#[path = "native_application_shell/mounted_row.rs"]
+mod mounted_row;
 #[path = "native_application_shell/observation_clock.rs"]
 mod observation_clock;
 #[path = "native_application_shell/occurrence_geometry.rs"]
@@ -38,6 +40,7 @@ pub use service_inspection::WorthUiNativeReducedMotionPosture;
 mod shutdown;
 #[path = "native_application_shell/viewport_measurement.rs"]
 mod viewport_measurement;
+use mounted_row::NativeMountedRow;
 pub use occurrence_geometry::{
     UiNativeMountedComponentLayoutInput, UiNativeMountedRegionLayoutInput,
 };
@@ -47,7 +50,7 @@ pub use shutdown::{WorthUiNativeApplicationCleanup, WorthUiNativeApplicationShut
 pub struct WorthUiNativeApplicationShell {
     pub(super) session: Box<WorthUiActiveApplicationSession>,
     binding: UiSurfaceBindingGeneration,
-    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    pub(super) surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     scale_factor_milli: u32,
     mounted_rows: Vec<NativeMountedRow>,
     mounted_row_indices: HashMap<Box<str>, usize>,
@@ -65,13 +68,6 @@ pub struct WorthUiNativeApplicationShell {
     reduced_motion_posture: WorthUiNativeReducedMotionPosture,
 }
 
-struct NativeMountedRow {
-    authored_semantic_identity: Box<str>,
-    graph_node: crate::graph::UiGraphNodeIdentity,
-    mounted: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
-    latest_mounted: worth_ui_host_contract::UiMountedInstanceIdentity,
-}
-
 #[derive(Debug)]
 pub enum WorthUiNativeApplicationShellLaunchDenial {
     RuntimeLaunch,
@@ -86,19 +82,16 @@ pub enum WorthUiNativeApplicationShellLaunchDenial {
 
 impl WorthUiNativeApplicationShell {
     pub(crate) fn native_observation_admission_ready(&self) -> bool {
-        self.session.mounted.observation_basis_admission_ready()
+        self.pending_managed_rebind.is_none()
+            && self.session.mounted.observation_basis_admission_ready()
     }
 
     pub(crate) fn admit_native_observation_batches(
         &mut self,
         reachability: worth_ui_host_native::UiNativeInputReachability,
     ) -> UiNativeObservationIngressSettlement {
-        let pending_portal_transition = self
-            .pending_managed_rebind
-            .as_ref()
-            .is_some_and(|pending| pending.carries_portal_intent_consequence());
         self.session
-            .drain_and_admit_host_observation_batches(reachability, pending_portal_transition)
+            .drain_and_admit_host_observation_batches(reachability)
     }
 
     pub(crate) fn cancel_mounted_presentation(
@@ -112,6 +105,7 @@ impl WorthUiNativeApplicationShell {
         &mut self,
         scale_factor_milli: u32,
     ) -> Result<(), ()> {
+        self.refresh_native_surface_reconciliation();
         if self.pending_surface_reconciliation.is_some() {
             return Err(());
         }
@@ -211,7 +205,8 @@ impl WorthUiNativeApplicationShell {
         now_tick: u64,
     ) -> Result<UiMountedFrameOutcome, super::WorthUiMountedFrameExecutionStop<'_>> {
         self.settle_pending_native_viewport_measurements()?;
-        if let Some(replacement) = self.pending_surface_reconciliation {
+        self.refresh_native_surface_reconciliation();
+        if let Some(replacement) = self.pending_native_surface_reconciliation() {
             let replacements = [replacement];
             let outcome = self
                 .session
@@ -239,8 +234,9 @@ impl WorthUiNativeApplicationShell {
     ) -> Result<crate::mounting::UiPreparedMountedFrame, super::WorthUiMountedFrameExecutionStop<'_>>
     {
         self.settle_pending_native_viewport_measurements()?;
+        self.refresh_native_surface_reconciliation();
         let request = self.session.mounted_frame_request();
-        if let Some(replacement) = self.pending_surface_reconciliation {
+        if let Some(replacement) = self.pending_native_surface_reconciliation() {
             let replacements = [replacement];
             let frame = self
                 .session
@@ -276,7 +272,8 @@ impl WorthUiNativeApplicationShell {
         deadline_tick: u64,
         now_tick: u64,
     ) -> Result<UiMountedFrameOutcome, ()> {
-        let outcome = if let Some(replacement) = self.pending_surface_reconciliation {
+        self.refresh_native_surface_reconciliation();
+        let outcome = if let Some(replacement) = self.pending_native_surface_reconciliation() {
             self.session
                 .present_prepared_mounted_frame_for_reconciliation(
                     frame,
@@ -324,11 +321,9 @@ impl WorthUiNativeApplicationShell {
             .map_err(|_| super::UiNativeApplicationProgramDenial::SemanticTextUpdateRejected)
     }
 
-    pub(crate) fn apply_theme_token_values(
-        &mut self,
-        changes: &[super::UiNativeThemeTokenValueChange],
-    ) -> Result<(), ()> {
-        self.session.admit_application_theme_values(changes)
+    /// Whether admitted application presentation is awaiting mounted publication.
+    pub fn native_application_presentation_pending(&self) -> bool {
+        self.session.presentation.requires_mounted_projection()
     }
 
     pub fn complete_frame_presentation(

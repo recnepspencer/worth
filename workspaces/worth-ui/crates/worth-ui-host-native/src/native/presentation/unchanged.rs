@@ -73,7 +73,10 @@ pub(crate) fn present_unchanged_appearance<Port: UiNativePresentationPort>(
             return Err(failure);
         }
     };
-    let effects = super::UiNativePresentationEffects::new(!plan.operations.is_empty(), false);
+    let effects = super::UiNativePresentationEffects::new(
+        !plan.operations.is_empty() || plan.clear_retained_target,
+        false,
+    );
     if plan.operations.is_empty() && !plan.clear_retained_target {
         return Ok(UiNativeUnchangedPresentation {
             cost: plan.cost,
@@ -118,13 +121,13 @@ pub(crate) fn present_unchanged_appearance<Port: UiNativePresentationPort>(
                 effects,
             })
         }
-        Err(UiNativePresentationFailure::Pending(pending)) => {
-            Err(UiNativePresentationFailure::Pending(
-                pending.with_settlement(super::UiNativePendingSurfaceSettlement::Unchanged(
+        Err(UiNativePresentationFailure::Pending(pending)) => Err(
+            UiNativePresentationFailure::Pending(pending.with_settlement(
+                super::UiNativePendingSurfaceSettlement::Unchanged(Box::new(
                     super::UiNativePendingUnchangedSettlement::new(undo, effects),
                 )),
-            ))
-        }
+            )),
+        ),
         Err(failure) => {
             retained
                 .rollback_unchanged(undo)
@@ -174,19 +177,14 @@ fn stage_appearance(
             UiNativeRetainedDrawList::retain_unchanged_appearance(undo, command);
         }
     }
-    let overlay = work
-        .fragments()
-        .first()
-        .ok_or_else(malformed)?
-        .work()
-        .successor()
-        .overlay_order();
-    let command = retained
-        .stage_appearance_overlay(overlay)
-        .map_err(|_| malformed())?;
-    UiNativeRetainedDrawList::retain_unchanged_appearance(undo, command);
+    if let Some(overlay) = work.overlay_order_update() {
+        let command = retained
+            .stage_appearance_overlay(overlay)
+            .map_err(|_| malformed())?;
+        UiNativeRetainedDrawList::retain_unchanged_appearance(undo, command);
+    }
     let samples = retained
-        .stage_appearance_sample_overrides(work.sample_overrides())
+        .stage_appearance_work_sample_overrides(work)
         .map_err(|_| malformed())?;
     UiNativeRetainedDrawList::retain_unchanged_appearance_samples(undo, samples);
     Ok(())

@@ -1,6 +1,6 @@
-use super::UiPreparedMountedFrame;
+use super::UiAssembledMountedFrame;
 
-impl UiPreparedMountedFrame {
+impl UiAssembledMountedFrame {
     pub(in crate::mounting) fn appearance_raw_opacity_for_instance(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -8,6 +8,15 @@ impl UiPreparedMountedFrame {
         self.candidate
             .owner
             .appearance_raw_opacity_for_instance(instance)
+    }
+
+    pub(in crate::mounting) fn appearance_surface_sample_geometry(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> Option<crate::mounting::projection::UiMountedAppearanceSurfaceSampleGeometry> {
+        self.candidate
+            .owner
+            .appearance_surface_sample_geometry(instance)
     }
 
     pub(in crate::mounting) fn appearance_changed_instances(

@@ -38,8 +38,8 @@
         { "identity": "platform.pulse.text.status", "region": "platform.pulse.region.truthful_status_band", "role": "meta", "maximum_lines": 1, "rect": [40, 556, 880, 16] }
       ],
       "minimum_targets": [
-        { "identity": "platform.pulse.target.run_live_action", "action_identity": "intent:platform.pulse.action.route:activate", "label_identity": "platform.pulse.text.action_label", "token_role": "principal-accent", "rect": [296, 416, 216, 48], "minimum_extent": [32, 32], "visibility_gate": "real-service-provider-installed" },
-        { "identity": "platform.pulse.target.open_portal", "action_identity": "intent:platform.pulse.portal.open.route:activate", "label_identity": "platform.pulse.text.portal_label", "token_role": "raised-surface", "rect": [528, 416, 112, 48], "minimum_extent": [32, 32], "visibility_gate": "real-service-provider-installed" },
+        { "identity": "platform.pulse.target.run_live_action", "action_identity": "intent:platform.pulse.action.route:activate", "label_identity": "platform.pulse.text.action_label", "token_role": "action-fill", "rect": [296, 416, 216, 48], "minimum_extent": [32, 32], "visibility_gate": "real-service-provider-installed" },
+        { "identity": "platform.pulse.target.open_portal", "action_identity": "intent:platform.pulse.portal.open.route:activate", "label_identity": "platform.pulse.text.portal_label", "token_role": "elevated-surface", "rect": [528, 416, 112, 48], "minimum_extent": [32, 32], "visibility_gate": "real-service-provider-installed" },
         { "identity": "platform.pulse.target.confirm_live_action", "action_identity": "intent:platform.pulse.action.route:confirm", "label_identity": "platform.pulse.text.projected_status", "token_role": "elevated-surface", "rect": [680, 176, 232, 104], "minimum_extent": [32, 32], "visibility_gate": "real-service-provider-installed" }
       ],
       "control_points": [
@@ -47,12 +47,25 @@
         { "identity": "masthead-canvas", "logical_point": [32, 32], "token_role": "canvas" },
         { "identity": "evidence-tile", "logical_point": [32, 112], "token_role": "raised-surface" },
         { "identity": "hero-tile", "logical_point": [272, 112], "token_role": "elevated-surface" },
-        { "identity": "live-action", "logical_point": [304, 424], "token_role": "principal-accent" },
+        { "identity": "live-action", "logical_point": [304, 424], "token_role": "action-fill" },
         { "identity": "query-tile", "logical_point": [664, 112], "token_role": "raised-surface" },
         { "identity": "native-tile", "logical_point": [664, 336], "token_role": "raised-surface" },
         { "identity": "status-divider", "logical_point": [32, 552], "token_role": "structural-rule" },
         { "identity": "query-control", "logical_point": [688, 184], "token_role": "elevated-surface" },
         { "identity": "source-signal-active", "logical_point": [64, 486], "token_role": "source-signal-blue" }
+      ],
+      "pixel_regions": [
+        { "identity": "portal-overlay", "rect": [528, 88, 280, 320], "corner_radius": 0 },
+        { "identity": "portal-accent", "rect": [528, 88, 280, 3], "corner_radius": 0 },
+        { "identity": "portal-title", "rect": [552, 112, 232, 24], "corner_radius": 0 },
+        { "identity": "portal-body", "rect": [552, 176, 232, 64], "corner_radius": 0 },
+        { "identity": "portal-cancel", "rect": [552, 336, 104, 40], "corner_radius": 0 },
+        { "identity": "portal-cancel-label", "rect": [577, 346, 64, 20], "corner_radius": 0 },
+        { "identity": "portal-primary", "rect": [664, 336, 120, 40], "corner_radius": 0 },
+        { "identity": "portal-primary-label", "rect": [682, 346, 88, 20], "corner_radius": 0 },
+        { "identity": "schema-stable-control", "rect": [888, 194, 24, 20], "corner_radius": 0 },
+        { "identity": "schema-posture", "rect": [704, 214, 208, 56], "corner_radius": 0 },
+        { "identity": "query-card", "rect": [656, 104, 280, 200], "corner_radius": 24 }
       ]
     },
     {
@@ -86,8 +99,8 @@
         { "identity": "platform.pulse.text.status", "region": "platform.pulse.region.truthful_status_band", "role": "meta", "maximum_lines": 1, "rect": [40, 656, 1040, 16] }
       ],
       "minimum_targets": [
-        { "identity": "platform.pulse.target.run_live_action", "action_identity": "intent:platform.pulse.action.route:activate", "label_identity": "platform.pulse.text.action_label", "token_role": "principal-accent", "rect": [296, 416, 216, 48], "minimum_extent": [32, 32], "visibility_gate": "real-service-provider-installed" },
-        { "identity": "platform.pulse.target.open_portal", "action_identity": "intent:platform.pulse.portal.open.route:activate", "label_identity": "platform.pulse.text.portal_label", "token_role": "raised-surface", "rect": [528, 416, 112, 48], "minimum_extent": [32, 32], "visibility_gate": "real-service-provider-installed" },
+        { "identity": "platform.pulse.target.run_live_action", "action_identity": "intent:platform.pulse.action.route:activate", "label_identity": "platform.pulse.text.action_label", "token_role": "action-fill", "rect": [296, 416, 216, 48], "minimum_extent": [32, 32], "visibility_gate": "real-service-provider-installed" },
+        { "identity": "platform.pulse.target.open_portal", "action_identity": "intent:platform.pulse.portal.open.route:activate", "label_identity": "platform.pulse.text.portal_label", "token_role": "elevated-surface", "rect": [528, 416, 112, 48], "minimum_extent": [32, 32], "visibility_gate": "real-service-provider-installed" },
         { "identity": "platform.pulse.target.confirm_live_action", "action_identity": "intent:platform.pulse.action.route:confirm", "label_identity": "platform.pulse.text.projected_status", "token_role": "elevated-surface", "rect": [840, 176, 232, 104], "minimum_extent": [32, 32], "visibility_gate": "real-service-provider-installed" }
       ],
       "control_points": [
@@ -95,12 +108,25 @@
         { "identity": "masthead-canvas", "logical_point": [32, 32], "token_role": "canvas" },
         { "identity": "evidence-tile", "logical_point": [32, 112], "token_role": "raised-surface" },
         { "identity": "hero-tile", "logical_point": [272, 112], "token_role": "elevated-surface" },
-        { "identity": "live-action", "logical_point": [304, 424], "token_role": "principal-accent" },
+        { "identity": "live-action", "logical_point": [304, 424], "token_role": "action-fill" },
         { "identity": "query-tile", "logical_point": [824, 112], "token_role": "raised-surface" },
         { "identity": "native-tile", "logical_point": [824, 336], "token_role": "raised-surface" },
         { "identity": "status-divider", "logical_point": [32, 652], "token_role": "structural-rule" },
         { "identity": "query-control", "logical_point": [848, 184], "token_role": "elevated-surface" },
         { "identity": "source-signal-active", "logical_point": [64, 586], "token_role": "source-signal-blue" }
+      ],
+      "pixel_regions": [
+        { "identity": "portal-overlay", "rect": [528, 88, 280, 320], "corner_radius": 0 },
+        { "identity": "portal-accent", "rect": [528, 88, 280, 3], "corner_radius": 0 },
+        { "identity": "portal-title", "rect": [552, 112, 232, 24], "corner_radius": 0 },
+        { "identity": "portal-body", "rect": [552, 176, 232, 64], "corner_radius": 0 },
+        { "identity": "portal-cancel", "rect": [552, 336, 104, 40], "corner_radius": 0 },
+        { "identity": "portal-cancel-label", "rect": [577, 346, 64, 20], "corner_radius": 0 },
+        { "identity": "portal-primary", "rect": [664, 336, 120, 40], "corner_radius": 0 },
+        { "identity": "portal-primary-label", "rect": [682, 346, 88, 20], "corner_radius": 0 },
+        { "identity": "schema-stable-control", "rect": [1048, 194, 24, 20], "corner_radius": 0 },
+        { "identity": "schema-posture", "rect": [864, 214, 208, 56], "corner_radius": 0 },
+        { "identity": "query-card", "rect": [816, 104, 280, 200], "corner_radius": 24 }
       ]
     }
   ],
@@ -118,11 +144,13 @@
     { "role": "primary-text", "rgba": [242, 244, 247, 255] },
     { "role": "secondary-text", "rgba": [161, 169, 180, 255] },
     { "role": "principal-accent", "rgba": [172, 103, 242, 255] },
+    { "role": "action-fill", "rgba": [148, 64, 212, 255] },
     { "role": "action-text", "rgba": [250, 251, 252, 255] },
     { "role": "positive", "rgba": [92, 201, 120, 255] },
     { "role": "caution", "rgba": [224, 173, 98, 255] },
     { "role": "source-signal-blue", "rgba": [47, 129, 247, 255] },
-    { "role": "source-signal-green", "rgba": [63, 185, 80, 255] }
+    { "role": "source-signal-green", "rgba": [63, 185, 80, 255] },
+    { "role": "visual-inspection-overlay", "rgba": [255, 0, 255, 255] }
   ],
   "typography": [
     { "role": "display", "size": 44, "line_height": 52, "weight": 500 },
@@ -133,6 +161,8 @@
     { "role": "action", "size": 13, "line_height": 20, "weight": 600 }
   ],
   "contrast_pairs": [
+    { "foreground": "primary-text", "background": "action-fill", "minimum_ratio_milli": 4500 },
+    { "foreground": "action-text", "background": "action-fill", "minimum_ratio_milli": 4500 },
     { "foreground": "primary-text", "background": "canvas", "minimum_ratio_milli": 4500 },
     { "foreground": "primary-text", "background": "raised-surface", "minimum_ratio_milli": 4500 },
     { "foreground": "primary-text", "background": "elevated-surface", "minimum_ratio_milli": 4500 },
@@ -156,5 +186,10 @@
     "maximum_capture_rgba_bytes": 50176000,
     "maximum_retained_capture_rgba_bytes": 100352000,
     "channel_tolerance": 12
+  },
+  "inspection": {
+    "visible_region_count": 10,
+    "hit_test_region_count": 4,
+    "target_authored_name": "component:platform.pulse.component.identity_target"
   }
 }

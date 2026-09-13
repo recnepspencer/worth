@@ -10,8 +10,8 @@ use worth_ui::facade::{
         UiTextStyleInput,
     },
     declaration::{
-        ComponentSemanticTextContract, ComponentSemanticTextSpanContract, ThemeColorValue,
-        ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+        ComponentSemanticTextContract, ComponentSemanticTextSpanContract, ThemeTokenDescriptor,
+        ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue, UiThemeColor,
     },
     observation::UiChangeClassificationOutcome,
     rebind::{UiRebindExecutionPolicy, UiRebindExecutionRequest, UiRebindOutcome},
@@ -247,7 +247,7 @@ fn accent_token_descriptor() -> ThemeTokenDescriptor {
         ThemeTokenId::new(ACCENT_COLOR).unwrap(),
         ThemeTokenFamily::surface(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex("#f7812f").unwrap()),
+        ThemeTokenValue::color(UiThemeColor::parse("#f7812f").unwrap()),
     )
 }
 

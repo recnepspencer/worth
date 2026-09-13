@@ -73,7 +73,7 @@ pub(super) fn capture(
     });
     if let Some(previous) = previous {
         for (target, (_, portal)) in &previous.motion_targets {
-            if motion_targets.get(target).is_some()
+            if motion_targets.contains_key(target)
                 && portals.row(*portal).is_some()
                 && motion_rows.get(target).is_none()
             {

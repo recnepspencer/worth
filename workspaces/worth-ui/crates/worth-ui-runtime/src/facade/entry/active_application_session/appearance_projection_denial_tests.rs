@@ -1,6 +1,39 @@
 use super::{support, test_support::theme_session};
 
 #[test]
+fn mounted_publication_denies_missing_theme_before_host_effects() {
+    let role = support::validation_background_role(support::APPEARANCE_TOKEN);
+    let (mut session, host) = theme_session(&role);
+    let (surface, _) = super::mounting_fixture::mount(&mut session, 1_000);
+    let turn = session.begin_observation_turn().unwrap();
+    let admitted = turn.seal().unwrap();
+    session.classify_observations(admitted).unwrap();
+    assert!(session
+        .presentation
+        .remove_appearance_theme_binding_for_test(surface));
+    let calls = host.presentation_calls();
+    let outcome = session
+        .execute_mounted_frame(
+            crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
+            worth_ui_host_contract::UiPresentationDeadline::at_tick(100),
+            1,
+            |_| {},
+        )
+        .unwrap_or_else(|_| panic!("the actual frame handoff must reach appearance admission"));
+    let crate::mounting::UiMountedFrameOutcome::AdmissionDenied(rejected) = outcome else {
+        panic!("missing theme must deny appearance before host presentation");
+    };
+    assert_eq!(
+        rejected.denial(),
+        crate::mounting::UiMountedPresentationAdmissionDenial::AppearanceOutputUnavailable
+    );
+    assert_eq!(host.presentation_calls(), calls);
+    assert!(session.mounted.current_publication().is_none());
+    drop(rejected);
+    let _ = session.shutdown();
+}
+
+#[test]
 fn first_appearance_attempt_denial_is_retained_by_why_appearance() {
     let role = support::validation_background_role_with_axis(
         support::APPEARANCE_TOKEN,
@@ -97,13 +130,12 @@ fn first_appearance_attempt_denial_is_retained_by_why_appearance() {
     session.advance_mounted_identity_frame().unwrap();
 
     let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
-    let change = crate::runtime::tests::appearance_component_session_test_support::initial_appearance_theme_change(
-        token,
-        crate::runtime::tests::appearance_component_session_test_support::appearance_theme_value(
-            "#405060",
-        ),
-    );
-    session.admit_application_theme_values(&[change]).unwrap();
+    crate::runtime::tests::appearance_component_session_test_support::
+        replace_appearance_theme_definition_for_test(
+            &mut session,
+            "theme.appearance.production-405060",
+            &token,
+        );
     assert!(session
         .presentation
         .appearance_invalidation_batch()

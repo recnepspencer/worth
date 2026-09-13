@@ -5,11 +5,8 @@ pub(crate) enum UiAppearanceStateVectorDenial {
     SnapshotChanged,
     PresentationChanged,
     Adapter(UiAppearanceStateAdapterDenial),
-    ForeignSession,
-    ForeignGeneration,
-    MissingAxis(UiAppearanceStateAxis),
-    AmbiguousSelection,
-    RoleBinding(UiAppearanceNodeRoleBindingDenial),
+    #[cfg(test)]
+    RoleBinding(super::UiAppearanceNodeRoleBindingDenial),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -24,6 +21,7 @@ pub(crate) struct UiAppearanceStateVector {
     pressed: Option<super::UiPressedAppearanceState>,
 }
 
+#[cfg(test)]
 pub(crate) trait UiAppearanceStateVectorSealInput {
     fn seal_vector(
         &self,
@@ -31,6 +29,7 @@ pub(crate) trait UiAppearanceStateVectorSealInput {
     ) -> Result<UiAppearanceStateVector, UiAppearanceStateVectorDenial>;
 }
 
+#[cfg(test)]
 impl UiAppearanceStateVectorSealInput for super::UiAppearanceCoherentBasis {
     fn seal_vector(
         &self,
@@ -41,6 +40,7 @@ impl UiAppearanceStateVectorSealInput for super::UiAppearanceCoherentBasis {
 }
 
 impl UiAppearanceStateVector {
+    #[cfg(test)]
     pub(crate) fn seal<Input: UiAppearanceStateVectorSealInput>(
         snapshot: &super::UiAppearanceOwnerSnapshot,
         input: &Input,
@@ -146,30 +146,6 @@ impl UiAppearanceStateVector {
         self.binding.as_ref()
     }
 
-    pub(crate) fn operability(&self) -> Option<&super::UiOperabilityAppearanceState> {
-        self.operability.as_ref()
-    }
-
-    pub(crate) fn focus(&self) -> Option<&super::UiFocusAppearanceState> {
-        self.focus.as_ref()
-    }
-
-    pub(crate) fn validation(&self) -> Option<&super::UiValidationAppearanceState> {
-        self.validation.as_ref()
-    }
-
-    pub(crate) fn selection(&self) -> Option<&super::UiSelectionAppearanceState> {
-        self.selection.as_ref()
-    }
-
-    pub(crate) fn hover(&self) -> Option<&super::UiHoverAppearanceState> {
-        self.hover.as_ref()
-    }
-
-    pub(crate) fn pressed(&self) -> Option<&super::UiPressedAppearanceState> {
-        self.pressed.as_ref()
-    }
-
     pub(crate) fn class(&self, axis: UiAppearanceStateAxis) -> Option<UiAppearanceAxisClass> {
         match axis {
             UiAppearanceStateAxis::Operability => {
@@ -268,14 +244,14 @@ fn selection_for_target(
 ) -> Option<super::UiAppearanceSelectionSelector> {
     snapshot.selection()?.postures().iter().find_map(|posture| {
         let owner = posture.owner();
-        (owner.semantic_surface() == target.surface()
-            && owner.graph_node() == target.graph_node()
-            && target
-                .selection_key()
-                .is_none_or(|key| posture.key().application_value() == key))
-        .then(|| {
-            super::UiAppearanceSelectionSelector::new(owner, posture.key(), posture.incarnation())
-        })
+        (owner.semantic_surface() == target.surface() && owner.graph_node() == target.graph_node())
+            .then(|| {
+                super::UiAppearanceSelectionSelector::new(
+                    owner,
+                    posture.key(),
+                    posture.incarnation(),
+                )
+            })
     })
 }
 
@@ -296,4 +272,4 @@ fn fold(digest: u64, value: u64) -> u64 {
     digest.wrapping_mul(0x0000_0100_0000_01b3) ^ value
 }
 
-use super::{UiAppearanceNodeRoleBindingDenial, UiAppearanceStateAdapterDenial};
+use super::UiAppearanceStateAdapterDenial;

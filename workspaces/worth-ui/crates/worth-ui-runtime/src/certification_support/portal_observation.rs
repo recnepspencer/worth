@@ -14,14 +14,7 @@ pub struct UiPortalRuntimeCertificationSnapshot {
 
 pub trait WorthUiPortalRuntimeCertificationExt {
     fn inspect_portal_runtime_for_certification(&self) -> UiPortalRuntimeCertificationSnapshot;
-    fn publish_nested_portal_for_certification(
-        &mut self,
-        now_tick: u64,
-    ) -> UiPortalNestedCertificationOutcome;
-    fn publish_root_portal_dismissal_for_certification(
-        &mut self,
-        now_tick: u64,
-    ) -> UiPortalDismissalCertificationOutcome;
+
     fn publish_escape_portal_dismissal_for_certification(
         &mut self,
         now_tick: u64,
@@ -34,12 +27,6 @@ pub trait WorthUiPortalRuntimeCertificationExt {
         &mut self,
         now_tick: u64,
     ) -> UiPortalExitTerminalCertificationOutcome;
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum UiPortalNestedCertificationOutcome {
-    Published,
-    NotPublished,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -61,6 +48,7 @@ pub enum UiPortalDismissalCertificationOutcome {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiPortalDismissalCertificationStop {
+    StalePresentation,
     IdentityExhausted,
     Transition,
     Proposal,
@@ -75,26 +63,6 @@ impl WorthUiPortalRuntimeCertificationExt for crate::facade::WorthUiActiveApplic
     fn inspect_portal_runtime_for_certification(&self) -> UiPortalRuntimeCertificationSnapshot {
         crate::facade::WorthUiActiveApplicationSession::inspect_portal_runtime_for_certification(
             self,
-        )
-    }
-
-    fn publish_nested_portal_for_certification(
-        &mut self,
-        now_tick: u64,
-    ) -> UiPortalNestedCertificationOutcome {
-        crate::facade::entry::WorthUiActiveApplicationSession::publish_nested_portal_for_certification(
-            self, now_tick,
-        )
-    }
-
-    fn publish_root_portal_dismissal_for_certification(
-        &mut self,
-        now_tick: u64,
-    ) -> UiPortalDismissalCertificationOutcome {
-        map_dismissal_outcome(
-            crate::facade::entry::WorthUiActiveApplicationSession::publish_root_portal_dismissal_for_certification(
-                self, now_tick,
-            ),
         )
     }
 
@@ -160,6 +128,7 @@ fn map_stop(
     use crate::facade::entry::portal_dismissal::UiPortalDismissalPublicationStop as Stop;
     match stop {
         Stop::IdentityExhausted => UiPortalDismissalCertificationStop::IdentityExhausted,
+        Stop::StalePresentation => UiPortalDismissalCertificationStop::StalePresentation,
         Stop::Transition => UiPortalDismissalCertificationStop::Transition,
         Stop::Proposal => UiPortalDismissalCertificationStop::Proposal,
         Stop::Preparation => UiPortalDismissalCertificationStop::Preparation,

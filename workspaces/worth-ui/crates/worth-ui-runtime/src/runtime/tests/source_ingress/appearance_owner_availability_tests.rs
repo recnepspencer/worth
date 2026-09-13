@@ -1,6 +1,6 @@
 use super::active_application_session_test_support::admit_candidate_catalog;
 use super::appearance_component_session_test_support::{
-    appearance_candidate_submission, source_backed_static_paint_role_capable_session,
+    appearance_candidate_submission, source_backed_appearance_role_capable_session,
 };
 use super::appearance_owner_availability_test_support::{
     focus_background_role, ownerless_focus_consumer_app,
@@ -26,7 +26,7 @@ fn launch_rejects_appearance_demand_without_its_runtime_owner() {
 #[test]
 fn cutover_rejects_new_ownerless_demand_and_preserves_the_predecessor() {
     let role = focus_background_role();
-    let mut session = source_backed_static_paint_role_capable_session(&role);
+    let mut session = source_backed_appearance_role_capable_session(&role);
     let predecessor_generation = session.generation_identity().clone();
     let predecessor_runtime = session.inspect_runtime();
     let mut prepared = session

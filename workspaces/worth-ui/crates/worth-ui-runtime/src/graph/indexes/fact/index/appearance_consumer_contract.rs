@@ -161,13 +161,6 @@ impl UiGraphAppearanceConsumerContract {
             .map_or(&[], Box::as_ref)
     }
 
-    pub(super) fn role_consumers(
-        &self,
-        role: &worth_ui_dsl::UiAppearanceRoleIdentity,
-    ) -> &[crate::graph::UiGraphNodeIdentity] {
-        self.role_consumers.get(role).map_or(&[], Box::as_ref)
-    }
-
     pub(super) fn attached_consumer_nodes(&self) -> Box<[crate::graph::UiGraphNodeIdentity]> {
         self.attached_nodes.clone()
     }

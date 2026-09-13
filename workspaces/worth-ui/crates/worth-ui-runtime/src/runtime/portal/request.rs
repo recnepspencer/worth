@@ -156,18 +156,27 @@ impl UiPortalServiceRequest {
     }
 
     pub(super) const fn with_policy(mut self, policy: crate::declaration::UiPortalPolicy) -> Self {
-        if matches!(self.operation, UiPortalServiceOperation::Open)
-            && self.shielding_uses_policy_default
-        {
-            self.shielding = match policy.kind() {
+        if matches!(self.operation, UiPortalServiceOperation::Open) {
+            self.placement_geometry = Some(match policy.kind() {
                 crate::declaration::UiPortalPolicyKind::ModalDialog => {
-                    super::UiPortalInputShielding::ModalSurface
+                    crate::declaration::UiDeclaredPortalPlacementGeometry::modal_dialog()
                 }
                 crate::declaration::UiPortalPolicyKind::Dropdown
                 | crate::declaration::UiPortalPolicyKind::Popover => {
-                    super::UiPortalInputShielding::ContentBounds
+                    crate::declaration::UiDeclaredPortalPlacementGeometry::dropdown()
                 }
-            };
+            });
+            if self.shielding_uses_policy_default {
+                self.shielding = match policy.kind() {
+                    crate::declaration::UiPortalPolicyKind::ModalDialog => {
+                        super::UiPortalInputShielding::ModalSurface
+                    }
+                    crate::declaration::UiPortalPolicyKind::Dropdown
+                    | crate::declaration::UiPortalPolicyKind::Popover => {
+                        super::UiPortalInputShielding::ContentBounds
+                    }
+                };
+            }
         }
         self
     }

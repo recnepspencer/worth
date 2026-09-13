@@ -313,7 +313,7 @@ fn assert_transport(
 
 fn assert_headless(output: &UiUnpublishedAppearanceFrameProjection) {
     let transcript =
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     assert_eq!(transcript.fragments().len(), output.fragments().len());
     for fragment in transcript.fragments() {
         assert!(fragment.work().damage().is_empty());

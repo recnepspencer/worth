@@ -26,8 +26,10 @@ fn equal_layer_total_order_follows_authored_node_order_not_command_identity() {
     let UiMountedPresentationWorkView::Initial(initial) = work.view() else {
         panic!("first presentation must issue initial work");
     };
-    let second = UiMountedPaintCommandIdentity::filled_rect(&projection.filled_rects().rows()[0]);
-    let first = UiMountedPaintCommandIdentity::filled_rect(&projection.filled_rects().rows()[1]);
+    let second =
+        UiMountedPaintCommandIdentity::portal_overlay(&projection.portal_overlays().rows()[0]);
+    let first =
+        UiMountedPaintCommandIdentity::portal_overlay(&projection.portal_overlays().rows()[1]);
     assert!(
         first.mounted_instance().diagnostic_value() < second.mounted_instance().diagnostic_value()
     );

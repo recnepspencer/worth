@@ -116,6 +116,10 @@ More exactly:
 - the motion-track owner may consume predecessor and prepared-successor
   evidence from planning but mounting/presentation cannot emit motion-track
   facts. Presentation samples consume committed track meaning one-way;
+- the appearance owner resolves declared roles against the admitted theme and
+  coherent owner snapshots for exact mounted occurrences. It consumes accepted
+  Motion samples and Portal-issued relations during preparation but owns no
+  interaction, service, geometry, or host paint truth;
 - mounting may consume application, graph, and sealed planning output;
 - the presentation producer derives host work from mounted authority; hosts do
   not rediscover deltas from a complete projection;
@@ -125,7 +129,9 @@ More exactly:
   animation protocol;
 - host exchange may observe mounted transport but cannot publish;
 - rebind may coordinate owner-issued observation, plan, application, mounting,
-  and host outcomes but does not absorb their source truth;
+  appearance/theme preparation, and host outcomes but does not absorb their
+  source truth. Acceptance commits the exact prepared owner succession used for
+  pixels; rejection keeps predecessor paint and state;
 - visual inspection borrows exact mounted evidence and rebind affinity without
   becoming a publication owner;
 - inspection reads named projections and cannot mutate or reconstruct them; and

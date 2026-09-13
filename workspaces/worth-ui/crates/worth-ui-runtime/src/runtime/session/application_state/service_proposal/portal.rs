@@ -49,7 +49,7 @@ impl WorthUiApplicationSessionState {
         )
     }
 
-    #[cfg(any(test, feature = "certification-support"))]
+    #[cfg(test)]
     pub(crate) fn begin_portal_service_proposal_for_certification(
         &mut self,
         transition: crate::runtime::portal::UiPreparedPortalServiceTransition,

@@ -1,19 +1,18 @@
+use std::rc::Rc;
+
 use super::{CANDIDATE_TOKEN, UNSTYLED_COMPONENT};
 use crate::runtime::tests::appearance_component_session_test_support as support;
 
 pub(super) fn admit_theme(
     session: &mut crate::facade::WorthUiActiveApplicationSession,
     token: crate::capability::ThemeTokenId,
-    revision: u64,
     color: &str,
 ) {
-    let value = crate::capability::ThemeTokenValue::color(
-        crate::capability::ThemeColorValue::hex(color).unwrap(),
+    let definition = format!(
+        "theme.appearance.locality-{}",
+        color.trim_start_matches('#')
     );
-    let change =
-        crate::facade::entry::UiNativeThemeTokenValueChange::successor(token, revision, value)
-            .unwrap();
-    session.admit_application_theme_values(&[change]).unwrap();
+    support::replace_appearance_theme_definition_for_test(session, &definition, &token);
 }
 
 pub(super) fn admit_owner_snapshot(
@@ -183,30 +182,187 @@ pub(super) fn theme_bundle() -> crate::capability::FrozenAppearanceThemeCapabili
         [slot(token_a.clone()), slot(token_b.clone())],
     )
     .unwrap();
-    let definition = crate::capability::UiThemeDefinition::admit(
-        crate::capability::UiThemeDefinitionIdentity::new("theme.appearance.locality").unwrap(),
-        1,
-        &catalog,
-        [
-            (
-                token_a,
-                worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([
-                    17, 34, 51, 255,
-                ])),
-            ),
-            (
-                token_b,
-                worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([
-                    68, 85, 102, 255,
-                ])),
-            ),
-        ],
-    )
-    .unwrap();
+    let definition = |name: &str, a, b| {
+        crate::capability::UiThemeDefinition::admit(
+            crate::capability::UiThemeDefinitionIdentity::new(name).unwrap(),
+            1,
+            &catalog,
+            [
+                (
+                    token_a.clone(),
+                    worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels(a)),
+                ),
+                (
+                    token_b.clone(),
+                    worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels(b)),
+                ),
+            ],
+        )
+        .unwrap()
+    };
+    // Each successor changes precisely the slot invalidated by the scenario.
+    let definitions = vec![
+        definition(
+            "theme.appearance.locality",
+            [17, 34, 51, 255],
+            [68, 85, 102, 255],
+        ),
+        definition(
+            "theme.appearance.locality-405060",
+            [64, 80, 96, 255],
+            [68, 85, 102, 255],
+        ),
+        definition(
+            "theme.appearance.locality-607080",
+            [64, 80, 96, 255],
+            [96, 112, 128, 255],
+        ),
+        definition(
+            "theme.appearance.locality-506070",
+            [80, 96, 112, 255],
+            [96, 112, 128, 255],
+        ),
+        definition(
+            "theme.appearance.locality-708090",
+            [112, 128, 144, 255],
+            [96, 112, 128, 255],
+        ),
+        definition(
+            "theme.appearance.locality-8090a0",
+            [128, 144, 160, 255],
+            [96, 112, 128, 255],
+        ),
+        definition(
+            "theme.appearance.locality-90a0b0",
+            [128, 144, 160, 255],
+            [144, 160, 176, 255],
+        ),
+        definition(
+            "theme.appearance.locality-a0b0c0",
+            [160, 176, 192, 255],
+            [144, 160, 176, 255],
+        ),
+        definition(
+            "theme.appearance.locality-b0c0d0",
+            [160, 176, 192, 255],
+            [176, 192, 208, 255],
+        ),
+    ];
     crate::capability::FrozenAppearanceThemeCapabilities::admit(
         catalog,
         crate::capability::UiThemeDefinitionIdentity::new("theme.appearance.locality").unwrap(),
-        vec![definition],
+        definitions,
     )
     .unwrap()
+}
+
+pub(super) fn prepare_and_publish(
+    session: &mut crate::facade::WorthUiActiveApplicationSession,
+    host: &crate::certification_support::ScriptedPresentationHost,
+    now: u64,
+    native_effects: bool,
+) -> super::LocalityMetrics {
+    for _ in session.inspect_mounted_identity().surface_bindings() {
+        if native_effects {
+            host.push_native_display_presented();
+        } else {
+            host.push_native_display_settled_without_effects();
+        }
+    }
+    let frame = session
+        .prepare_mounted_frame_with_application_presentation(
+            crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
+            |_| {},
+        )
+        .unwrap_or_else(|stop| match stop {
+            crate::facade::entry::WorthUiMountedFrameExecutionStop::Preparation(denial) => {
+                panic!("locality frame should prepare: {denial:?}")
+            }
+            _ => panic!("locality frame stopped before preparation"),
+        });
+    let candidate_projection = frame.projection_rc_for_test();
+    // Tick 5 is the first multi-consumer successor with a published owner basis.
+    if now == 2
+        && frame
+            .appearance_selection_cost_report()
+            .selected_instance_count()
+            == 1
+    {
+        frame.verify_mixed_appearance_reconstruction_denial_and_retry();
+    }
+    if now == 5 {
+        frame.verify_unpublished_appearance_member_denial();
+    }
+    if now == 6 {
+        super::retirement_tests::verify_retry(session, &frame);
+    }
+    let canonical_consumers = frame.appearance_invalidation_batch().map_or(0, |batch| {
+        batch.graph_consumers().len()
+            + batch
+                .mounted_consumers()
+                .iter()
+                .map(|(graph_node, _)| *graph_node)
+                .collect::<std::collections::BTreeSet<_>>()
+                .len()
+    });
+    let surface_projection = frame
+        .surfaces()
+        .first()
+        .expect("locality frame has bound surfaces")
+        .projection_owner();
+    assert!(Rc::ptr_eq(&candidate_projection, &surface_projection));
+    let report = frame.appearance_selection_cost_report();
+    let outcome = session.present_prepared_mounted_frame_internal(
+        frame,
+        worth_ui_host_contract::UiPresentationDeadline::at_tick(100),
+        now,
+    );
+    let host_completed_without_effects =
+        !native_effects && presentation_completed_without_effects(&outcome);
+    let motion_commands = match &outcome {
+        crate::mounting::UiMountedFrameOutcome::Published(receipt)
+        | crate::mounting::UiMountedFrameOutcome::Reconciled(receipt) => {
+            receipt.cost_report().appearance_motion_commands_visited()
+        }
+        _ => 0,
+    };
+    assert!(matches!(
+        outcome,
+        crate::mounting::UiMountedFrameOutcome::Published(_)
+    ));
+    let published_projection = session
+        .current_mounted_projection_rc_for_test()
+        .expect("published locality frame retains its owner");
+    assert!(Rc::ptr_eq(&candidate_projection, &published_projection));
+    super::LocalityMetrics {
+        selected: report.selected_instance_count(),
+        materialized: report.materialized_context_count(),
+        canonical_consumers,
+        index_entries: report.index_entries_touched(),
+        lifecycle_retired: report.lifecycle_memberships_retired(),
+        key_probes: report.membership_key_probes(),
+        copied_nodes: report.membership_copied_avl_nodes(),
+        traversed: report.membership_traversed_entries(),
+        motion_commands,
+        host_completed_without_effects,
+    }
+}
+
+fn presentation_completed_without_effects(
+    outcome: &crate::mounting::UiMountedFrameOutcome,
+) -> bool {
+    let mut completed_without_effects = false;
+    if let crate::mounting::UiMountedFrameOutcome::Published(receipt)
+    | crate::mounting::UiMountedFrameOutcome::Reconciled(receipt) = outcome
+    {
+        receipt.with_surface_presentations(|surfaces| {
+            completed_without_effects = !surfaces.is_empty()
+                && surfaces.iter().all(|surface| {
+                    surface.effects().families().is_empty()
+                        && surface.adapter_cost()
+                            == worth_ui_host_contract::UiHostPresentationCostReport::default()
+                });
+        });
+    }
+    completed_without_effects
 }

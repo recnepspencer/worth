@@ -95,12 +95,16 @@ pub(super) enum CandidateOrigin {
 }
 
 impl UiPreparedFrameCandidates {
-    pub(in crate::mounting) fn bind_appearance_opacity(
+    pub(in crate::mounting) fn bind_appearance_sample_targets(
         &mut self,
         frame: &crate::mounting::UiPreparedMountedFrame,
+        targets: &[(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+        )],
     ) {
         for surface in &mut self.surfaces {
-            surface.state.bind_appearance_opacity(frame);
+            surface.state.bind_appearance_sample_targets(frame, targets);
         }
     }
 

@@ -12,6 +12,8 @@ mod canonical_retirement_batch;
 mod canonical_snapshot_capture;
 mod canonical_snapshot_reconstruction;
 mod fork;
+mod fork_receipt;
+mod fork_resolution;
 mod fork_snapshot;
 mod fork_validation;
 mod lifecycle;
@@ -29,8 +31,11 @@ pub use crate::branch::{
     SignalBranchRetirementBatchDenial, SignalBranchRetirementBatchReceipt,
     SignalBranchRetirementDenial, SignalBranchRetirementReason, SignalBranchRetirementReceipt,
 };
+#[cfg(test)]
 pub use basis::{
     bridge_signal_branch_basis_trust_boundary, BoundaryBridgedSignalBranchBasisArtifact,
+};
+pub use basis::{
     SignalBranchBasis, SignalBranchBasisArtifact, SignalBranchBasisDenial,
     SignalBranchBasisIdentity, SignalBranchBasisReady, SignalBranchBasisValidationOutcome,
     SignalBranchHeadPosture, SignalBranchRestorePosture, StaleSignalBranchBasisArtifact,
@@ -41,10 +46,8 @@ pub(in crate::logic::transaction::runtime::state) use branches::DEFAULT_MAXIMUM_
 pub(in crate::logic::transaction::runtime) use branches::{
     BranchAncestryState, BranchManager, BranchState,
 };
-pub use fork::{
-    SignalBranchForkDenial, SignalBranchForkReceipt, SignalBranchForkRequest,
-    SignalBranchForkRequestBasis,
-};
+pub use fork::{SignalBranchForkDenial, SignalBranchForkRequest, SignalBranchForkRequestBasis};
+pub use fork_receipt::SignalBranchForkReceipt;
 pub(crate) use retirement::SignalBranchRetirementRequest;
 pub use targeted_transaction::{
     BranchTargetedTransactionDenial, BranchTargetedTransactionExecutionOutcome,

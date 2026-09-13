@@ -25,6 +25,7 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
             UiAppearanceClip::new(0, 0, 100, 70).unwrap(),
         ),
         surface_paint_order: Some(0),
+        portal_group: None,
         radii,
         surface_border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
         surface_border_omissions: Box::new([]),

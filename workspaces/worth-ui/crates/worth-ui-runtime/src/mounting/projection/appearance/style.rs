@@ -10,6 +10,26 @@ pub(super) struct ResolvedNodeStyle {
     pub(super) opacity: worth_ui_host_contract::UiMountedAppearanceOpacity,
 }
 
+/// Whether the projection paints a surface at all: a supported background
+/// fill or border stroke.
+pub(in crate::mounting::projection) fn has_surface_paint(
+    projection: &crate::runtime::appearance::UiAppearanceProjection,
+) -> bool {
+    projection.aspects().iter().any(|aspect| {
+        aspect.support() == crate::runtime::appearance::UiAppearanceSupportPosture::Supported
+            && matches!(
+                (aspect.aspect(), aspect.value()),
+                (
+                    worth_ui_dsl::UiAppearanceAspect::Background,
+                    worth_ui_dsl::UiThemeValue::Color(_)
+                ) | (
+                    worth_ui_dsl::UiAppearanceAspect::Border,
+                    worth_ui_dsl::UiThemeValue::SolidStroke(_)
+                )
+            )
+    })
+}
+
 pub(super) fn resolve(
     bounds: worth_ui_host_contract::UiAppearanceAllocationBounds,
     projection: &crate::runtime::appearance::UiAppearanceProjection,

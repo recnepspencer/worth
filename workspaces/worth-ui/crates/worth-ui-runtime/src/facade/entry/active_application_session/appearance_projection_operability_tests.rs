@@ -4,8 +4,15 @@ use worth_ui_host_contract::*;
 #[path = "appearance_projection_operability_fixture.rs"]
 mod fixture;
 
+#[path = "appearance_projection_operability_in_flight_tests.rs"]
+mod in_flight_tests;
 #[path = "appearance_projection_operability_lifecycle_tests.rs"]
 mod lifecycle_tests;
+#[path = "appearance_projection_operability_replacement_tests.rs"]
+mod replacement_tests;
+
+#[path = "intent_posture_content_tests.rs"]
+mod posture_content_tests;
 
 #[path = "intent_operability_observation_tests.rs"]
 mod observation_tests;
@@ -249,6 +256,21 @@ fn activate(
     surface: UiSemanticSurfaceIdentity,
     sequence: u64,
 ) -> (UiMountedInstanceIdentity, UiIntentOperabilityDecision) {
+    let route = activation_route(session, surface, sequence);
+    let target = route.target().mounted_instance();
+    let candidate = session.prepare_intent_payload(route).unwrap();
+    let decision = match session.evaluate_intent_operability(candidate) {
+        UiIntentOperabilityOutcome::Operable(proof) => proof.decision().clone(),
+        UiIntentOperabilityOutcome::Inoperable(candidate) => candidate.decision().clone(),
+    };
+    (target, decision)
+}
+
+fn activation_route(
+    session: &mut crate::facade::WorthUiActiveApplicationSession,
+    surface: UiSemanticSurfaceIdentity,
+    sequence: u64,
+) -> crate::facade::intent::UiResolvedProductIntentRoute {
     let presentation = session
         .mounted
         .current_publication()
@@ -284,10 +306,10 @@ fn activate(
             Some(transition),
             offset == 0,
         );
-        let crate::facade::interaction::UiHostInteractionIngressOutcome::Applied(receipt) =
-            session.admit_host_interaction_batch(batch)
+        let outcome = session.admit_host_interaction_batch(batch);
+        let crate::facade::interaction::UiHostInteractionIngressOutcome::Applied(receipt) = outcome
         else {
-            panic!("real pointer ingress must admit");
+            panic!("real pointer ingress at {sequence} must admit: {outcome:?}");
         };
         for transition in receipt.into_transitions().into_vec() {
             if let crate::facade::interaction::UiInteractionTransition::Semantic(value) = transition
@@ -306,12 +328,7 @@ fn activate(
     let UiIntentRouteResolution::Product(route) = route else {
         panic!("authored product route");
     };
-    let candidate = session.prepare_intent_payload(route).unwrap();
-    let decision = match session.evaluate_intent_operability(candidate) {
-        UiIntentOperabilityOutcome::Operable(proof) => proof.decision().clone(),
-        UiIntentOperabilityOutcome::Inoperable(candidate) => candidate.decision().clone(),
-    };
-    (target, decision)
+    route
 }
 
 fn prepare(

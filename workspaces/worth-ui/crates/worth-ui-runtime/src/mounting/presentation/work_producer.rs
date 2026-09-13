@@ -160,12 +160,6 @@ fn command_same_presentation_meaning(
 ) -> bool {
     match (left, right) {
         (
-            UiMountedPaintCommand::FilledRect { mechanic: left, .. },
-            UiMountedPaintCommand::FilledRect {
-                mechanic: right, ..
-            },
-        ) => left.same_retained_paint_meaning(*right),
-        (
             UiMountedPaintCommand::PortalOverlay { mechanic: left, .. },
             UiMountedPaintCommand::PortalOverlay {
                 mechanic: right, ..
@@ -188,16 +182,6 @@ fn command_same_presentation_meaning_after_binding_replacement(
     replacement: worth_ui_host_contract::UiSurfaceBindingGeneration,
 ) -> bool {
     match (left, right) {
-        (
-            UiMountedPaintCommand::FilledRect { mechanic: left, .. },
-            UiMountedPaintCommand::FilledRect {
-                mechanic: right, ..
-            },
-        ) => left.same_retained_paint_meaning_after_binding_replacement(
-            *right,
-            affected,
-            replacement,
-        ),
         (
             UiMountedPaintCommand::PortalOverlay { mechanic: left, .. },
             UiMountedPaintCommand::PortalOverlay {
@@ -224,9 +208,6 @@ pub(super) fn command_visible_bounds(
     command: &UiMountedPaintCommand,
 ) -> Option<worth_ui_host_contract::UiMountedCanonicalBox> {
     let (bounds, clip) = match command {
-        UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-            (mechanic.bounds(), mechanic.clip_bounds())
-        }
         UiMountedPaintCommand::PortalOverlay { mechanic, .. } => {
             (mechanic.bounds(), mechanic.clip_bounds())
         }

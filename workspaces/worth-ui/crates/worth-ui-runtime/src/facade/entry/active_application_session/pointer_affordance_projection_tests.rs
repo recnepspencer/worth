@@ -2,6 +2,8 @@ use crate::declaration::UiPointerAffordance as Family;
 use crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot;
 use worth_ui_host_contract::*;
 
+#[path = "pointer_affordance_inspection_tests.rs"]
+mod inspection_tests;
 #[path = "pointer_affordance_reuse_tests.rs"]
 mod reuse_tests;
 
@@ -312,3 +314,6 @@ fn mounted_world() -> (
 
 #[path = "pointer_affordance_mounted_tests.rs"]
 mod mounted_tests;
+
+#[path = "pointer_affordance_succession_tests.rs"]
+mod succession_tests;

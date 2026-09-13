@@ -5,6 +5,7 @@ pub(crate) enum WorthUiPreparedApplicationPublication {
         successor: Box<crate::facade::WorthUiApp>,
         intent_contract: crate::declaration::UiIntentCatalogSemanticComparison,
         appearance_consumer_contract_unchanged: bool,
+        projection_contract_unchanged: bool,
     },
     MountedGraph(
         Box<
@@ -14,6 +15,16 @@ pub(crate) enum WorthUiPreparedApplicationPublication {
 }
 
 impl WorthUiPreparedApplicationPublication {
+    pub(crate) fn replacement_authority(
+        &self,
+    ) -> Option<&crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority>
+    {
+        match self {
+            Self::Replacement { successor, .. } => Some(successor.prepared_authority()),
+            Self::MountedGraph(_) => None,
+        }
+    }
+
     pub(crate) fn replacement(
         predecessor: &crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
         successor: crate::facade::WorthUiApp,
@@ -25,10 +36,16 @@ impl WorthUiPreparedApplicationPublication {
         let successor_demand = successor.prepared_authority().consumed_fact_index();
         let appearance_consumer_contract_unchanged =
             predecessor_demand.has_same_appearance_consumer_contract(successor_demand);
+        let previous_projection = predecessor.semantic_handoff();
+        let next_projection = successor.prepared_authority().semantic_handoff();
+        let projection_contract_unchanged = previous_projection.projection_requirements()
+            == next_projection.projection_requirements()
+            && previous_projection.projection_contents() == next_projection.projection_contents();
         Self::Replacement {
             successor: Box::new(successor),
             intent_contract,
             appearance_consumer_contract_unchanged,
+            projection_contract_unchanged,
         }
     }
 
@@ -43,11 +60,13 @@ impl WorthUiPreparedApplicationPublication {
             Self::Replacement {
                 intent_contract,
                 appearance_consumer_contract_unchanged,
+                projection_contract_unchanged,
                 ..
             } => {
                 *intent_contract
                     == crate::declaration::UiIntentCatalogSemanticComparison::Equivalent
                     && *appearance_consumer_contract_unchanged
+                    && *projection_contract_unchanged
             }
             Self::MountedGraph(_) => true,
         }

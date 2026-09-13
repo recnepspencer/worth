@@ -5,8 +5,7 @@ use worth_ui_host_contract::{
     UiHostSurfaceIdentity, UiHostSurfacePresentationMode, UiMountedAppearanceColor,
     UiMountedAppearanceFrame, UiMountedAppearanceMechanic, UiMountedAppearancePredecessorManifest,
     UiMountedAppearanceWork, UiMountedAppearanceWorkPosture, UiMountedFrameIdentity,
-    UiMountedInstanceIdentity, UiMountedLayerProjection, UiMountedLayerReference,
-    UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIssuer,
+    UiMountedInstanceIdentity, UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIssuer,
     UiMountedPresentationAttemptIdentity, UiMountedPresentationUnchanged,
     UiMountedPresentationUnchangedInput, UiMountedRgba8, UiMountedSemanticTextCompletionInput,
     UiMountedSemanticTextMechanic, UiMountedSurfaceAppearanceCompletionInput,
@@ -86,6 +85,7 @@ fn surface(
             bounds,
             clip: UiAppearanceClip::new(0, 0, 32, 32).unwrap(),
             surface_paint_order: 0,
+            portal_group: None,
             radii: worth_ui_host_contract::UiAppearanceNormalizedLogicalRadii::normalize(
                 bounds,
                 [UiAppearanceLogicalLength::ZERO; 4],
@@ -291,6 +291,7 @@ fn text_candidate(
             surface: context.surface,
             binding: context.binding,
             mounted_instance: instance,
+            portal_group: None,
             node_receipt: receipt,
             allocation_basis: worth_ui_host_contract::UiMountedAllocationBasis::new(
                 1,
@@ -336,8 +337,7 @@ fn facade_preserves_shared_span_candidates_in_fragment_order() {
     )
     .unwrap();
 
-    let transcript =
-        crate::translate_unpublished_appearance_for_certification(&projection).unwrap();
+    let transcript = crate::translate_appearance_projection_for_certification(&projection).unwrap();
 
     assert_eq!(transcript.frame(), context.frame);
     assert_eq!(transcript.presentation(), context.presentation);

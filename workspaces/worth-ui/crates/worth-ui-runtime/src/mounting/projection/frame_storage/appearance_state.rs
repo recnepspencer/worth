@@ -1,6 +1,8 @@
+mod epoch;
+
 use super::super::UiMountedAppearanceProjectionSelection;
 use super::appearance_state_membership::{
-    self, UiMountedAppearanceStateEntry, UiMountedAppearanceStateMembers,
+    UiMountedAppearanceStateEntry, UiMountedAppearanceStateMembers,
 };
 use crate::runtime::appearance::{UiAppearanceInvalidationBatch, UiAppearanceProjectionAttempt};
 use std::rc::Rc;
@@ -82,6 +84,13 @@ impl Default for UiMountedAppearanceFrameState {
 }
 
 impl UiMountedAppearanceFrameState {
+    pub(in crate::mounting) fn matches_consumer_basis(
+        &self,
+        basis: crate::graph::UiGraphFactIndexBasis,
+    ) -> bool {
+        self.selection.matches_consumer_basis(basis)
+    }
+
     pub(crate) fn raw_opacity_for_instance(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -91,14 +100,13 @@ impl UiMountedAppearanceFrameState {
             .map(super::super::appearance::resolved_opacity)
     }
 
-    pub(crate) fn requires_epoch_transition(
+    pub(super) fn has_surface_paint_for_instance(
         &self,
-        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
-        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     ) -> bool {
-        self.epoch
-            .as_ref()
-            .is_none_or(|epoch| epoch.session != session || epoch.generation != *generation)
+        self.members
+            .retained_projection_for_instance(instance)
+            .is_some_and(super::super::appearance::has_surface_paint)
     }
 
     pub(in crate::mounting::projection) fn matches_geometry_input(
@@ -205,10 +213,6 @@ impl UiMountedAppearanceFrameState {
         self.batch = Some(batch);
     }
 
-    pub(crate) fn clear_batch(&mut self) {
-        self.batch = None;
-    }
-
     pub(crate) fn prepare_reconstruction(
         &mut self,
         nodes: Vec<super::UiMountedAppearanceNodeInputContext>,
@@ -229,50 +233,6 @@ impl UiMountedAppearanceFrameState {
 
     pub(crate) fn batch(&self) -> Option<&UiAppearanceInvalidationBatch> {
         self.batch.as_ref()
-    }
-
-    pub(crate) fn begin_epoch(
-        &mut self,
-        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
-        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-        retired_instances: &[worth_ui_host_contract::UiMountedInstanceIdentity],
-    ) -> usize {
-        let epoch = UiMountedAppearanceEpoch {
-            session,
-            generation: generation.clone(),
-        };
-        let mut retired_memberships = 0;
-        if self.epoch.as_ref() != Some(&epoch) {
-            let (retired, work) = self.members.clear_for_epoch();
-            retired_memberships = retired;
-            self.selection.record_membership_work(work);
-            self.epoch = Some(epoch);
-            self.capacity_error = None;
-        }
-        let (retired, work) = self
-            .members
-            .retire_instances(retired_instances, &mut self.retirements);
-        self.selection.record_membership_work(work);
-        let retired_memberships = retired_memberships.saturating_add(retired);
-        retired_memberships
-    }
-
-    pub(crate) fn retire_detached_on_epoch_change(
-        &mut self,
-        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
-        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-        attached_instances: &std::collections::BTreeSet<
-            worth_ui_host_contract::UiMountedInstanceIdentity,
-        >,
-    ) -> usize {
-        if !self.requires_epoch_transition(session, generation) {
-            return 0;
-        }
-        let (retired, work) = self
-            .members
-            .retire_unattached(attached_instances, &mut self.retirements);
-        self.selection.record_membership_work(work);
-        retired
     }
 
     pub(crate) fn reserve(
@@ -329,10 +289,6 @@ impl UiMountedAppearanceFrameState {
         result
     }
 
-    pub(super) fn order_retained_bytes(&self) -> usize {
-        self.order.retained_bytes()
-    }
-
     pub(crate) fn validate_selection(
         &self,
         batch: &UiAppearanceInvalidationBatch,
@@ -353,6 +309,34 @@ impl UiMountedAppearanceFrameState {
         &self,
     ) -> &[worth_ui_host_contract::UiMountedInstanceIdentity] {
         self.selection.selected_instances()
+    }
+
+    pub(super) fn has_active_portal_instances(&self) -> bool {
+        !self.active_portal_instances.is_empty()
+    }
+
+    pub(super) fn has_pending_lowering(&self) -> bool {
+        self.reconstruction_nodes.is_some()
+            || !self.input_refresh_nodes.is_empty()
+            || self.members.has_pending_lowering()
+            || !self.retirements.is_empty()
+            || !self.overlay_sidecars.is_empty()
+            || !self.active_portal_instances.is_empty()
+    }
+
+    pub(super) fn refreshed_motion_targets(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+        ),
+    > + '_ {
+        self.reconstruction_nodes
+            .iter()
+            .flatten()
+            .chain(&self.input_refresh_nodes)
+            .map(|node| (node.semantic_surface, node.mounted_instance))
     }
 
     pub(crate) fn retired_instances(&self) -> &[worth_ui_host_contract::UiMountedInstanceIdentity] {
@@ -379,13 +363,6 @@ mod input_refresh;
 
 #[path = "appearance_state_overlay.rs"]
 mod overlay;
-pub(super) use overlay::portal_instances;
-
-pub(super) fn state_key(
-    context: &crate::runtime::appearance::UiAppearanceAttemptContext,
-) -> appearance_state_membership::UiMountedAppearanceStateKey {
-    appearance_state_membership::state_key(context)
-}
 
 #[cfg(test)]
 #[path = "appearance_state_tests.rs"]
@@ -398,3 +375,6 @@ mod reconstruction_tests;
 #[cfg(test)]
 #[path = "appearance_state_test_support.rs"]
 mod test_support;
+
+#[path = "appearance_state_visual_regions.rs"]
+mod visual_regions;

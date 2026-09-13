@@ -59,6 +59,17 @@ impl UiMountedPresentationState {
                     !matches!(command, UiMountedPaintCommand::SemanticText { .. });
                 (command.identity(), portal, instance_composable, accepted)
             })
+            .chain(
+                self.appearance_surface_sample_target(instance)
+                    .map(|target| {
+                        (
+                            UiMountedPaintCommandIdentity::appearance_surface(instance),
+                            false,
+                            true,
+                            target.motion().sample(),
+                        )
+                    }),
+            )
     }
 
     pub(in crate::mounting::presentation::work_producer) fn reconstruction_appearance_motion(

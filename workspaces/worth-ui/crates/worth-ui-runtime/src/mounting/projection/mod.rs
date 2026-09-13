@@ -14,26 +14,31 @@ mod mechanical_role;
 mod node_receipt;
 mod participation;
 mod pointer_affordance;
+mod pointer_affordance_work;
 mod prepared_projection;
 mod semantic_text;
-mod static_paint;
 
+#[cfg(test)]
+pub(crate) use appearance::UiMountedAppearanceClip;
+#[cfg(test)]
+pub(crate) use appearance::UiMountedAppearanceClipDenial;
 pub(crate) use appearance::{
-    UiMountedAppearanceClip, UiMountedAppearanceClipDenial, UiMountedAppearanceGeometryInput,
-    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,
-    UiMountedAppearanceNodeInput, UiMountedAppearanceSurfaceOverlayInput,
-    UiMountedAppearanceTextSpanInput, UiResolvedAppearanceNodeSource,
+    UiMountedAppearanceGeometryInput, UiMountedAppearanceLoweringDenial,
+    UiMountedAppearanceLoweringInput, UiMountedAppearanceNodeInput,
+    UiMountedAppearanceSurfaceOverlayInput, UiMountedAppearanceTextSpanInput,
+    UiResolvedAppearanceNodeSource,
 };
-pub(crate) use appearance_selection::{
-    UiMountedAppearanceProjectionSelection, UiMountedAppearanceSelectionCostReport,
-};
+pub(crate) use appearance_selection::UiMountedAppearanceProjectionSelection;
+pub use appearance_selection::UiMountedAppearanceSelectionCostReport;
 pub use denial::UiMountedProjectionDenial;
 pub(crate) use focus_scope::UiMountedFocusScope;
 pub(in crate::mounting) use frame_storage::diagnostic_source::UiMountedDiagnosticSource;
 pub(crate) use frame_storage::presentation_sources::compile as compile_presentation_sources;
 pub(crate) use frame_storage::UiMountedAppearanceNodeInputContext;
+#[cfg(test)]
 pub(crate) use frame_storage::UiMountedAppearanceOrderDenial;
 pub(crate) use frame_storage::UiMountedAppearanceOutputDenial;
+pub(crate) use frame_storage::UiMountedAppearanceSurfaceSampleGeometry;
 pub(in crate::mounting) use frame_storage::UiMountedHitMechanicSource;
 pub use frame_storage::UiMountedProjectionFrame;
 pub(in crate::mounting) use frame_storage::UiMountedSemanticMechanicSource;
@@ -44,11 +49,9 @@ pub(crate) use frame_storage::{
 };
 pub(in crate::mounting) use hit_test::{reattribute_hit_test, reattribute_hit_test_with_probes};
 pub use node_receipt::UiMountedNodeReceipt;
-pub(crate) use pointer_affordance::{
-    UiMountedPointerAffordanceState, UiMountedPointerAffordanceWork,
-};
+pub(crate) use pointer_affordance::UiMountedPointerAffordanceState;
+pub use pointer_affordance::UiMountedPointerAffordanceWork;
 pub use prepared_projection::UiProjectedMountedFrameCandidate;
-pub(in crate::mounting) use static_paint::reattribute_filled_rect;
 
 pub(crate) use intent_posture::{
     UiIntentPostureCommit, UiIntentPostureObservation, UiIntentPostureTable,

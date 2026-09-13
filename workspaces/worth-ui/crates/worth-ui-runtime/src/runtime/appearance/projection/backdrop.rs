@@ -58,28 +58,9 @@ impl UiBackdropAppearanceProjection {
         self.instance
     }
 
-    pub(crate) const fn declaration(&self) -> &worth_ui_dsl::UiBackdropDeclaration {
-        &self.declaration
-    }
-
-    pub(crate) const fn state(&self) -> &super::super::state::UiBackdropAppearanceStateVector {
-        &self.state
-    }
-
-    pub(crate) fn theme(&self) -> &str {
-        self.theme.definition_identity()
-    }
-
-    pub(crate) const fn theme_revision(&self) -> u64 {
-        self.theme.definition_revision()
-    }
-
+    #[cfg(test)]
     pub(crate) const fn catalog_revision(&self) -> u64 {
         self.theme.catalog_revision()
-    }
-
-    pub(crate) const fn overlay(&self) -> &super::UiOverlayStackSnapshot {
-        &self.overlay
     }
 
     pub(crate) fn aspects(&self) -> &[super::UiResolvedAppearanceAspect] {
@@ -88,10 +69,6 @@ impl UiBackdropAppearanceProjection {
 
     pub(crate) const fn semantic_digest(&self) -> u64 {
         self.semantic_digest
-    }
-
-    pub(crate) fn exactly_equivalent(&self, other: &Self) -> bool {
-        self == other
     }
 
     /// Backdrop roles have no owner-state axes. Carry new evidence and overlay

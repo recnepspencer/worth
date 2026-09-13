@@ -293,6 +293,10 @@ impl UiAppearanceInspectionExplanation {
     pub const fn query(&self) -> UiAppearanceInspectionQuery {
         self.query
     }
+    pub fn with_query(mut self, query: UiAppearanceInspectionQuery) -> Self {
+        self.query = query;
+        self
+    }
     pub fn role(&self) -> &str {
         &self.role
     }

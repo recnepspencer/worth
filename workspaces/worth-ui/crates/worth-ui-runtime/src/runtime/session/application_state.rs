@@ -2,6 +2,8 @@ mod change_classification;
 mod framework_turn;
 mod inspection;
 mod mounted_allocation;
+mod mounted_layout_reuse;
+pub(crate) use mounted_layout_reuse::UiMountedLayoutSuccession;
 mod mounted_region;
 pub(crate) use mounted_region::UiMountedRegionDeclarationBinding;
 #[path = "application_state/service_proposal.rs"]
@@ -82,6 +84,10 @@ impl WorthUiApplicationSessionState {
 
     pub(crate) fn graph_snapshot(&self) -> &crate::graph::UiGraphSnapshot {
         self.app.graph_snapshot()
+    }
+
+    pub(crate) fn mounted_geometry_plan(&self) -> &crate::runtime::WorthUiActiveExecutionPlan {
+        self.runtime.active.active_plan_ref()
     }
 
     #[cfg(any(test, feature = "certification-support"))]

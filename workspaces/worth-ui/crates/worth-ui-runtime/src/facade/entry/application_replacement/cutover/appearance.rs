@@ -28,7 +28,13 @@ pub(super) fn prepare_successor_theme(
         .unwrap_or_default();
     if required_roles.is_empty() {
         return session
-            .prepare_appearance_replacement_succession(successor, None, None, None)
+            .prepare_appearance_replacement_succession(
+                successor,
+                None,
+                None,
+                None,
+                pending.next_app.capabilities().theme_tokens(),
+            )
             .map_err(map_appearance_succession_denial);
     }
 
@@ -75,6 +81,7 @@ pub(super) fn prepare_successor_theme(
             Some(admission),
             rebinding.as_ref(),
             Some(themes),
+            pending.next_app.capabilities().theme_tokens(),
         )
         .map_err(map_appearance_succession_denial)
 }

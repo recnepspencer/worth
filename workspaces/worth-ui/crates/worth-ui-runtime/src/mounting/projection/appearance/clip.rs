@@ -11,9 +11,11 @@ pub(crate) enum UiMountedAppearanceClip {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiMountedAppearanceClipDenial {
+    #[cfg(test)]
     ExecutedPlanUnavailable,
     MountedGeometryUnavailable,
     Geometry(super::UiMountedAppearanceGeometryDenial),
+    #[cfg(test)]
     MosaicBindingUnavailable(crate::graph::UiGraphNodeIdentity),
     PortalBindingUnavailable(crate::graph::UiGraphNodeIdentity),
     ScrollBindingUnavailable(crate::graph::UiGraphNodeIdentity),
@@ -80,11 +82,8 @@ pub(crate) fn derive_unbound_ancestry(
         entries = entries
             .checked_add(2)
             .ok_or(crate::mounting::UiMountedProjectionDenial::CostCounterOverflow)?;
-        match record.value().operator_kind() {
-            Operator::PortalAnchor => {
-                portal_requirement.get_or_insert(node);
-            }
-            _ => {}
+        if record.value().operator_kind() == Operator::PortalAnchor {
+            portal_requirement.get_or_insert(node);
         }
         cursor = topology.value().parent_node_identity();
     }

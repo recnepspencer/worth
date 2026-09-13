@@ -90,6 +90,14 @@ impl PlatformPulseVisualObservationState {
         frame: u64,
     ) -> Result<Self, PlatformPulseLifecycleObservationProjectionDenial> {
         match self {
+            Self::AwaitingSnapshot { frame: previous } if frame >= previous => {
+                Ok(Self::AwaitingSnapshot { frame })
+            }
+            // The live overlay still owns its exact publication and must clear
+            // before its retained snapshot can be retired and refreshed.
+            Self::OverlayPublished {
+                published_frame, ..
+            } if frame >= published_frame => Ok(self),
             Self::Retired => Ok(Self::AwaitingRefreshSnapshot {
                 refresh_frame: frame,
             }),

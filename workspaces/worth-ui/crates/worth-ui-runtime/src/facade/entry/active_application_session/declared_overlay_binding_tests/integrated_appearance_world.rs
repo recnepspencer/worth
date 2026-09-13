@@ -1,25 +1,55 @@
 #[path = "integrated_appearance_world/authored.rs"]
 mod authored;
+#[path = "integrated_appearance_world/captured_geometry.rs"]
+mod captured_geometry;
+#[path = "integrated_appearance_world/content_entry.rs"]
+mod content_entry;
+#[path = "integrated_appearance_world/content_recovery.rs"]
+mod content_recovery;
+#[path = "integrated_appearance_world/focus_modality.rs"]
+mod focus_modality;
 #[path = "integrated_appearance_world/geometry.rs"]
 mod geometry;
+#[path = "integrated_appearance_world/hostile_protocol.rs"]
+mod hostile_protocol;
 #[path = "integrated_appearance_world/locality.rs"]
 mod locality;
 #[path = "integrated_appearance_world/motion.rs"]
 mod motion;
 #[path = "integrated_appearance_world/motion_reconstruction.rs"]
 mod motion_reconstruction;
+#[path = "integrated_appearance_world/motion_work.rs"]
+mod motion_work;
+#[path = "integrated_appearance_world/native_attribution.rs"]
+mod native_attribution;
 #[path = "integrated_appearance_world/palette.rs"]
 mod palette;
+#[path = "integrated_appearance_world/pointer_geometry.rs"]
+mod pointer_geometry;
+#[path = "integrated_appearance_world/portal_dismissal_epoch.rs"]
+mod portal_dismissal_epoch;
+#[path = "integrated_appearance_world/portal_exit_retention.rs"]
+mod portal_exit_retention;
 #[path = "integrated_appearance_world/portal_lifecycle.rs"]
 mod portal_lifecycle;
 #[path = "integrated_appearance_world/reconstruction.rs"]
 mod reconstruction;
+#[path = "integrated_appearance_world/replacement.rs"]
+mod replacement;
+#[path = "integrated_appearance_world/replacement_geometry.rs"]
+mod replacement_geometry;
 #[path = "integrated_appearance_world/seam.rs"]
 mod seam;
 #[path = "integrated_appearance_world/services.rs"]
 mod services;
 #[path = "integrated_appearance_world/session.rs"]
 mod session;
+#[path = "integrated_appearance_world/stationary_motion.rs"]
+mod stationary_motion;
+#[path = "integrated_appearance_world/surface_continuity.rs"]
+mod surface_continuity;
+#[path = "integrated_appearance_world/theme_switch.rs"]
+mod theme_switch;
 use session::World;
 use worth_ui_host_contract::*;
 
@@ -95,7 +125,7 @@ fn shared_authored_world_preserves_surface_outline_and_original_range_text() {
             UiTextOriginalRange::new(1, 2).unwrap()
         );
     }
-    worth_ui_host_headless::translate_unpublished_appearance_for_certification(&output).unwrap();
+    worth_ui_host_headless::translate_appearance_projection_for_certification(&output).unwrap();
     world.publish(frame, 1, true);
     let initial = world
         .session
@@ -128,7 +158,7 @@ fn shared_authored_world_preserves_surface_outline_and_original_range_text() {
         .unwrap();
     assert!(output.fragments().iter().any(|fragment| fragment.identity()
         == UiUnpublishedAppearanceFragmentIdentity::SurfaceOverlay(world.surfaces[0])));
-    assert_portal_backdrop_order(&output, &world);
+    assert_portal_backdrop_order(output, &world);
     motion::compose_declared_samples(&mut world);
     world.close_parent(first, child, second, restoration_target, 200);
     reconstruction::cold_surface(&mut world);
@@ -188,7 +218,7 @@ fn disjoint_mounted_region_neighborhood_suppresses_child_appearance() {
 
 fn assert_always_region_backdrop(output: &UiUnpublishedAppearanceFrameProjection, world: &World) {
     let transcript =
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     let overlay = transcript
         .fragments()
         .iter()

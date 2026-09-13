@@ -19,11 +19,14 @@ use worth_ui_query_binding::{
 
 use super::scalar_query_only::{
     component_descriptor, mount_and_allocate, status_region_descriptor, text_token_descriptor,
-    ACTIVE_COMPONENT, PROJECTION, STATUS_REGION, TEXT_COLOR,
+    ACTIVE_COMPONENT, PROJECTION, TEXT_COLOR,
 };
 
+#[path = "collection_query/appearance.rs"]
+mod appearance;
 #[path = "collection_query/locality.rs"]
 mod locality;
+pub(crate) use appearance::application as collection_appearance_app;
 
 #[test]
 fn real_query_collection_snapshot_and_patch_publish_keyed_semantic_text() {
@@ -304,7 +307,7 @@ fn assert_collection_transcript(
     assert_eq!(
         transcript.unperformed_effects(),
         &[UiHeadlessUnperformedEffect::NativePaint {
-            filled_rect_count: 1,
+            appearance_mechanic_count: 0,
             portal_overlay_count: 0,
             semantic_text_count: u32::try_from(expected_values.len() + 1)
                 .expect("certification row count fits the host contract"),
@@ -325,7 +328,7 @@ pub(crate) fn collection_app(
         .register_collection_projection(registration)
         .expect("product collection projection registers")
         .with_rust_authored_input(WorthUiRustAuthoredArtifactInput::from_modules([
-            collection_module(false),
+            collection_module(),
         ]))
         .freeze()
         .map(|application| {
@@ -337,20 +340,12 @@ pub(crate) fn collection_app(
         .expect("collection content application freezes")
 }
 
-pub(crate) fn collection_module(with_region: bool) -> WorthUiRustAuthoredArtifactInputModule {
-    let mut body = vec![
+pub(crate) fn collection_module() -> WorthUiRustAuthoredArtifactInputModule {
+    let body = vec![
         WorthUiArtifactInputBodyAtom::Identifier("content".to_owned()),
         WorthUiArtifactInputBodyAtom::Identifier("projection".to_owned()),
         WorthUiArtifactInputBodyAtom::Identifier(PROJECTION.to_owned()),
     ];
-    if with_region {
-        body.extend([
-            WorthUiArtifactInputBodyAtom::Identifier("region".to_owned()),
-            WorthUiArtifactInputBodyAtom::Identifier(STATUS_REGION.to_owned()),
-            WorthUiArtifactInputBodyAtom::LeftBrace,
-            WorthUiArtifactInputBodyAtom::RightBrace,
-        ]);
-    }
     WorthUiRustAuthoredArtifactInputModule::new("app/main.wui")
         .with_component_body_atoms_and_authored_identity(
             ACTIVE_COMPONENT,

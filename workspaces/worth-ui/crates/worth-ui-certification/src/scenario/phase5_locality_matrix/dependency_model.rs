@@ -33,12 +33,6 @@ pub(super) fn adjudicate(
                 },
             )?;
         }
-        Axis::PaintValue => {
-            require_plan_count(plans, 3)?;
-            require_local_text(final_work, 2, 2, 23)?;
-            require_zero_layout(final_work)?;
-            require_zero_raster(final_work)?;
-        }
         Axis::PaintBoundary => {
             require_plan_count(plans, 3)?;
             require_local_text(final_work, 2, 3, 23)?;

@@ -36,7 +36,16 @@ impl PlatformPulseNativeInputIngress {
         progress: &worth_ui_native_platform::UiNativeApplicationObservationProgress,
         publisher: &PlatformPulseObservationPublisher,
     ) -> Result<(), PlatformPulseObservationPublicationDenial> {
-        if !self.armed || progress.event_count() == 0 {
+        if !self.armed {
+            return Ok(());
+        }
+        for (focus, mounted) in progress
+            .focus_publications()
+            .filter_map(|result| result.as_ref().ok())
+        {
+            publisher.semantic_focus_published(*focus, mounted)?;
+        }
+        if progress.event_count() == 0 {
             return Ok(());
         }
         let posture = if progress.retained_batch_count() == 0 {

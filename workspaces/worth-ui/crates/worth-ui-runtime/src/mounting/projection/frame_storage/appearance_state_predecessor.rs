@@ -40,9 +40,7 @@ impl UiMountedAppearanceStatePredecessor {
     }
 
     pub(super) fn into_physical(self) -> Option<UiMountedAppearancePhysicalPredecessor> {
-        if self.sidecar().current_node_receipt().is_none() {
-            return None;
-        }
+        self.sidecar().current_node_receipt()?;
         Some(match self {
             Self::Resolved(entry) => UiMountedAppearancePhysicalPredecessor {
                 key: entry.key.local_node,

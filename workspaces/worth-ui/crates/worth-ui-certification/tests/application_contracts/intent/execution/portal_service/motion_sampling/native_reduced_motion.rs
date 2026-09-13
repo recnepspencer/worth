@@ -14,7 +14,7 @@ fn native_reduced_motion_admission_snaps_real_portal_entrance_and_stops_sampling
     host.push_native_display_presented();
     let (application, _) = build_open_portal_application_with_host(host.clone());
     let mut shell = application
-        .launch_native_surface()
+        .launch_native_declared_surface("visual.identity.surface.main")
         .expect("the production native composition root launches");
     crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     assert!(matches!(
@@ -30,7 +30,7 @@ fn native_reduced_motion_admission_snaps_real_portal_entrance_and_stops_sampling
     );
     let ingress = shell.admit_native_intent_observations(
         definition,
-        super::super::native_recovery::native_activation_drain(
+        super::super::native_activation::native_activation_drain(
             shell.host_session_identity().as_u64(),
             presentation,
         ),

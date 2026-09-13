@@ -135,7 +135,7 @@ impl WorthUiActiveApplicationSession {
                 identity,
                 visual_policy,
             );
-        Ok(Self {
+        let mut session = Self {
             identity,
             application,
             host_session,
@@ -215,6 +215,7 @@ impl WorthUiActiveApplicationSession {
             appearance_inspection:
                 crate::runtime::appearance::UiAppearanceInspectionProducer::new(initial_generation),
             appearance_owner_snapshot: None,
+            mounted_owner_receipt_successions: Default::default(),
             observation_clock: None,
             pointer_affordance_snapshot: None,
             visual_inspection,
@@ -226,6 +227,24 @@ impl WorthUiActiveApplicationSession {
             ),
             visual_overlays: crate::inspection::visual_snapshot::UiVisualOverlayRegistry::new(),
             rebind: crate::runtime::rebind::UiRebindRuntimeState::new(rebind_profile),
-        })
+        };
+        if session.appearance_theme_admission.is_some() {
+            // First presentation needs the same owner-issued close evidence as
+            // later observations, even when no product input has arrived yet.
+            let turn = session.begin_observation_turn().map_err(
+                crate::runtime::WorthUiRuntimeLaunchDenial::InitialAppearanceObservationTurn,
+            )?;
+            let owners = turn.seal().map_err(
+                crate::runtime::WorthUiRuntimeLaunchDenial::InitialAppearanceObservationClose,
+            )?;
+            let initial = session.classify_observations(owners).map_err(|_| {
+                crate::runtime::WorthUiRuntimeLaunchDenial::InitialAppearanceObservationClassification
+            })?;
+            if !matches!(initial, crate::runtime::observation::UiChangeClassificationOutcome::ObservedNoChange(receipt) if receipt.observation_count() == 0)
+            {
+                return Err(crate::runtime::WorthUiRuntimeLaunchDenial::InitialAppearanceObservationClassification);
+            }
+        }
+        Ok(session)
     }
 }

@@ -19,11 +19,12 @@ EXPECTED_CONTINUING_DOCUMENTS = [
     "workspaces/worth-ui/docs/native-host-platform.md",
     "workspaces/worth-ui/docs/inspection.md",
     "workspaces/worth-ui/docs/visual-inspection.md",
+    "workspaces/worth-ui/docs/appearance-and-themes.md",
     "workspaces/worth-ui/AI_README.md",
     "_docs/worth-ui/worth_ui_roadmap.md",
     "_docs/worth-ui/milestone-3.16.md",
 ]
-EXPECTED_PLANNED_DOCUMENTS = ["workspaces/worth-ui/docs/appearance-and-themes.md"]
+EXPECTED_PLANNED_DOCUMENTS: list[str] = []
 
 
 def validate(root: Path, manifest: Path | None = None) -> None:
@@ -38,8 +39,6 @@ def validate(root: Path, manifest: Path | None = None) -> None:
             raise ValueError("continuing Worth UI document set must remain exact")
         if contract["planned_documents"] != EXPECTED_PLANNED_DOCUMENTS:
             raise ValueError("planned Worth UI document set must remain exact")
-        if any((root / path).exists() for path in contract["planned_documents"]):
-            raise ValueError("Gate 0 planned appearance documentation must not exist yet")
         documents = [root / path for path in contract["continuing_documents"]]
     if not documents:
         raise ValueError("no continuing Worth UI documentation discovered")

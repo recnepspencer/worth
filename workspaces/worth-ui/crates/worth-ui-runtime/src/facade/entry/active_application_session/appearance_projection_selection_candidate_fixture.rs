@@ -37,12 +37,12 @@ fn prepare(
     let mut execution = completion
         .into_execution()
         .unwrap_or_else(|_| panic!("candidate framework turn executes"));
-    let theme = execution.presentation.theme_values_source();
+    let presentation = execution.presentation.project().unwrap();
     execution
         .prepare_mounted_frame_with_content_internal(
             crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
             content,
-            theme,
+            presentation,
         )
         .unwrap_or_else(|denial| panic!("candidate collection frame prepares: {denial:?}"))
 }
@@ -110,7 +110,7 @@ pub(super) fn assert_candidate(
                         UiAppearanceInspectionDenial::MountLowering
                     }
                 );
-                assert!(receipt.denied_before_effects());
+                assert!(receipt.change_distinctions().denied_before_effects());
                 (context.target().mounted_instance(), None)
             }
         };

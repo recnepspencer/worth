@@ -19,8 +19,8 @@ use worth_ui::facade::{
         NamedMeasurementDefinition, NamedMeasurementToken, PluginCapabilityPermission,
         PluginContributionFamily, PluginSlotDescriptor, PluginSlotDiagnostics, PluginSlotId,
         PluginSlotOrdering, PluginSlotSupportPosture, SurfaceDescriptor, SurfaceId, SurfaceKind,
-        SurfacePlacementClass, SurfaceStateClass, ThemeColorValue, ThemeTokenDescriptor,
-        ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+        SurfacePlacementClass, SurfaceStateClass, ThemeTokenDescriptor, ThemeTokenFamily,
+        ThemeTokenId, ThemeTokenSource, ThemeTokenValue, UiThemeColor,
     },
 };
 
@@ -138,7 +138,7 @@ fn minimal_theme_token_descriptor() -> ThemeTokenDescriptor {
         theme_token_id("minimal.theme.text"),
         ThemeTokenFamily::text(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex("#101820").expect("valid color")),
+        ThemeTokenValue::color(UiThemeColor::parse("#101820").expect("valid color")),
     )
 }
 

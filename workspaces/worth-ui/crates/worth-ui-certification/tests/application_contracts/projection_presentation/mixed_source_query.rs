@@ -9,18 +9,18 @@ use worth_ui::facade::source::{
 };
 use worth_ui_dsl::WorthUiRustAuthoredArtifactInput;
 use worth_ui_host_headless::{
-    UiHeadlessRecorderCapacity, UiHeadlessUnperformedEffect, WorthUiHeadlessRecorder,
+    UiHeadlessAppearanceMechanic, UiHeadlessRecorderCapacity, UiHeadlessUnperformedEffect,
+    WorthUiHeadlessRecorder,
 };
 use worth_ui_query_binding::UiProjectionObservation;
-use worth_ui_runtime::facade::mounted::UiMountedRgba8;
 use worth_ui_test_support::WorthUiMountedIdentityCertificationExt;
 
 use crate::projection_lifecycle::support::ScalarLifecycleWorld;
 
-use super::scalar_query_only::{
-    mount_and_allocate, projection_app, projection_module_with_region, scalar_registration,
-    ACTIVE_COMPONENT, STATUS_REGION,
-};
+use super::scalar_query_only::{mount_and_allocate, scalar_registration};
+
+#[path = "mixed_source_query/appearance.rs"]
+mod appearance;
 
 #[test]
 fn real_source_and_query_turn_publishes_one_semantic_application_successor() {
@@ -33,7 +33,7 @@ fn real_source_and_query_turn_publishes_one_semantic_application_successor() {
     );
     let (mut query, completion) = ScalarLifecycleWorld::standard(NodeId::new(31361, 0), "Ready");
     let registration = scalar_registration(&query);
-    let mut session = projection_app(registration, recorder.clone())
+    let mut session = appearance::application(registration, recorder.clone())
         .launch()
         .expect("active projection application launches");
     let predecessor_mounted_instances = mount_and_allocate(&mut session);
@@ -129,10 +129,37 @@ fn real_source_and_query_turn_publishes_one_semantic_application_successor() {
             .collect::<Vec<_>>(),
         ["Ready", "CURRENT"]
     );
-    assert!(transcript.semantic_text().iter().all(|row| {
-        row.foregrounds().len() == 1
-            && row.foregrounds()[0].color() == UiMountedRgba8::new(255, 255, 255, 255)
-    }));
+    let appearance = transcript
+        .appearance_work()
+        .expect("the first accepted source successor includes resolved appearance");
+    let foregrounds = appearance
+        .fragments()
+        .iter()
+        .flat_map(|fragment| fragment.work().successor().mechanics())
+        .map(|mechanic| match mechanic {
+            UiHeadlessAppearanceMechanic::TextForeground(foreground) => foreground,
+            _ => panic!("the authored role declares only text foreground"),
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(foregrounds.len(), 2);
+    for text in transcript.semantic_text() {
+        assert_eq!(text.foregrounds().len(), 1);
+        let matches = foregrounds
+            .iter()
+            .filter(|foreground| {
+                foreground.command() == text.command_identity()
+                    && foreground.paint_span() == text.foregrounds()[0].identity()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            matches.len(),
+            1,
+            "each Query command has its exact paint span"
+        );
+        assert_eq!(matches[0].node_receipt(), text.node_receipt());
+        assert_eq!(matches[0].foreground().straight_srgba(), [32, 192, 96, 255]);
+        assert_eq!(matches[0].opacity().units(), 65_535);
+    }
     let mounted_identity = transcript.semantic_text()[0].mounted_instance();
     assert!(predecessor_mounted_instances.contains(&mounted_identity));
     assert!(transcript
@@ -147,7 +174,7 @@ fn real_source_and_query_turn_publishes_one_semantic_application_successor() {
     assert_eq!(
         transcript.unperformed_effects(),
         &[UiHeadlessUnperformedEffect::NativePaint {
-            filled_rect_count: 1,
+            appearance_mechanic_count: 2,
             portal_overlay_count: 0,
             semantic_text_count: 2,
             preview_node_count: 0,
@@ -165,10 +192,7 @@ fn candidate_source(
 ) -> worth_ui::facade::source::WorthUiWatchedCandidateSubmission {
     const PROVIDER: &str = "phase-313-mixed-source-query";
     let provider = WorthUiSourceProvider::rust_authored(PROVIDER).with_rust_authored_input(
-        WorthUiRustAuthoredArtifactInput::from_modules([projection_module_with_region(
-            ACTIVE_COMPONENT,
-            STATUS_REGION,
-        )]),
+        WorthUiRustAuthoredArtifactInput::from_modules([appearance::module(true)]),
     );
     WorthUiSourceEventIngress::new(provider)
         .start()

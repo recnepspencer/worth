@@ -15,6 +15,7 @@ pub(crate) struct UiHeadlessRetainedPresentation {
     pub(crate) node_positions: HashMap<worth_ui_host_contract::UiMountedInstanceIdentity, u64>,
     pub(crate) node_by_position: HashMap<u64, worth_ui_host_contract::UiMountedInstanceIdentity>,
     pub(crate) auxiliary: worth_ui_host_contract::UiMountedPresentationAuxiliaryState,
+    pub(super) base_row_count: usize,
     sample_overrides: HashMap<
         worth_ui_host_contract::UiMountedPaintCommandIdentity,
         worth_ui_host_contract::UiMountedPresentationSampleChange,
@@ -35,6 +36,7 @@ impl UiHeadlessRetainedPresentation {
         node_positions: HashMap<worth_ui_host_contract::UiMountedInstanceIdentity, u64>,
         node_by_position: HashMap<u64, worth_ui_host_contract::UiMountedInstanceIdentity>,
         auxiliary: worth_ui_host_contract::UiMountedPresentationAuxiliaryState,
+        base_row_count: usize,
     ) -> Self {
         Self {
             frame,
@@ -49,6 +51,7 @@ impl UiHeadlessRetainedPresentation {
             node_positions,
             node_by_position,
             auxiliary,
+            base_row_count,
             sample_overrides: HashMap::new(),
             sample_damage: Box::default(),
         }
@@ -78,7 +81,7 @@ impl UiHeadlessRetainedPresentation {
             || sample
                 .changes()
                 .iter()
-                .any(|change| !self.commands.contains_key(&change.command()))
+                .any(|change| !self.admits_sample_target(change.command()))
         {
             return Err(malformed());
         }
@@ -102,7 +105,7 @@ impl UiHeadlessRetainedPresentation {
         if overrides.len() != changes.len()
             || overrides
                 .keys()
-                .any(|identity| !self.commands.contains_key(identity))
+                .any(|identity| !self.admits_sample_target(*identity))
         {
             return Err(malformed());
         }
@@ -113,6 +116,18 @@ impl UiHeadlessRetainedPresentation {
         };
         self.sample_overrides = overrides;
         Ok(())
+    }
+
+    /// A retained paint command, or the surface of a retained node that owns none.
+    fn admits_sample_target(
+        &self,
+        identity: worth_ui_host_contract::UiMountedPaintCommandIdentity,
+    ) -> bool {
+        self.commands.contains_key(&identity)
+            || (identity.is_appearance_surface()
+                && self
+                    .node_positions
+                    .contains_key(&identity.mounted_instance()))
     }
 
     pub(super) fn clear_sample_overrides_for(

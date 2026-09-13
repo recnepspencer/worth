@@ -1,10 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::capability::{CapabilitySnapshot, ThemeTokenId};
-use crate::fact_contract::{
-    UiAuthoredChangedFact, UiAuthoredFactKind, UiAuthoredFactSelector, UiConsumedFactContract,
-    UiProducedFact,
-};
+use crate::fact_contract::UiConsumedFactContract;
 use crate::graph::UiGraphSnapshot;
 
 use super::super::{
@@ -18,7 +15,7 @@ impl super::UiGraphConsumedFactIndex {
         requested_basis: UiGraphFactIndexBasis,
         capability_identity: &str,
         authored_identity: &str,
-    ) -> Result<Box<[crate::graph::UiGraphNodeIdentity]>, UiGraphFactLookupDenial> {
+    ) -> Result<UiGraphAppearanceSlotSelection, UiGraphFactLookupDenial> {
         if requested_basis != self.basis() {
             return Err(UiGraphFactLookupDenial::BasisMismatch {
                 index_basis: self.basis(),
@@ -33,16 +30,11 @@ impl super::UiGraphConsumedFactIndex {
                 authored_identity: authored_identity.into(),
             });
         }
-        if !self.authored_by_declaration.contains_key(authored_identity) {
-            return Ok(Box::new([]));
-        }
-        let fact = UiProducedFact::AuthoredSource(UiAuthoredChangedFact::new(
-            UiAuthoredFactSelector::node(authored_identity),
-            UiAuthoredFactKind::SemanticsChanged,
-        ));
-        let receipt = self.lookup(requested_basis, &fact)?;
-        let mut consumers = receipt
-            .entries()
+        let entries = self
+            .authored_by_declaration
+            .get(authored_identity)
+            .map_or(&[][..], |entries| entries.as_ref());
+        let mut consumers = entries
             .iter()
             .filter(|entry| {
                 entry
@@ -56,7 +48,32 @@ impl super::UiGraphConsumedFactIndex {
             .collect::<Vec<_>>();
         consumers.sort_unstable();
         consumers.dedup();
-        Ok(consumers.into_boxed_slice())
+        Ok(UiGraphAppearanceSlotSelection {
+            consumers: consumers.into_boxed_slice(),
+            entries_examined: entries.len(),
+        })
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) struct UiGraphAppearanceSlotSelection {
+    consumers: Box<[crate::graph::UiGraphNodeIdentity]>,
+    entries_examined: usize,
+}
+
+impl UiGraphAppearanceSlotSelection {
+    pub(crate) fn consumers(&self) -> &[crate::graph::UiGraphNodeIdentity] {
+        &self.consumers
+    }
+    /// One capability-domain lookup and one authored consumer-index lookup.
+    pub(crate) const fn index_probes(&self) -> usize {
+        2
+    }
+    pub(crate) const fn entries_examined(&self) -> usize {
+        self.entries_examined
+    }
+    pub(crate) fn into_consumers(self) -> Box<[crate::graph::UiGraphNodeIdentity]> {
+        self.consumers
     }
 }
 
@@ -74,8 +91,19 @@ impl UiGraphAppearanceThemeSlotDomain {
             .theme_tokens()
             .entries()
             .iter()
-            .map(|entry| {
-                let capability_identity = entry.descriptor().id().as_str();
+            .map(|entry| entry.descriptor().id().as_str())
+            .chain(
+                capabilities
+                    .appearance_themes()
+                    .into_iter()
+                    .flat_map(|themes| {
+                        themes
+                            .catalog()
+                            .slots()
+                            .map(|slot| slot.identity().as_str())
+                    }),
+            )
+            .map(|capability_identity| {
                 let authored_identity = authored_declarations
                     .theme_token_declaration_identity(capability_identity)
                     .unwrap_or(capability_identity);

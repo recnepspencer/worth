@@ -6,7 +6,10 @@ use worth_ui_host_contract::{
 use super::UiMountedProjectionDenial;
 
 mod appearance_frame;
+mod appearance_frame_lowering;
 mod appearance_geometry;
+mod appearance_sample_geometry;
+pub(crate) use appearance_sample_geometry::UiMountedAppearanceSurfaceSampleGeometry;
 mod appearance_reconstruction;
 #[cfg(test)]
 mod appearance_suppression_tests;
@@ -43,6 +46,7 @@ mod rebind;
 mod semantic_mechanics;
 mod semantic_projection;
 mod semantic_text_view;
+pub(in crate::mounting::projection) mod surface_coordinates;
 mod table_recording;
 mod view;
 
@@ -251,9 +255,6 @@ impl UiMountedProjectionFrame {
             capability_profile_digest: self.capability_profile_digest,
             font_collection: &self.font_collection,
         })?;
-        self.record_rows::<worth_ui_host_contract::UiMountedFilledRectMechanic>(
-            mutation.filled_rects,
-        )?;
         self.record_rows::<worth_ui_host_contract::UiMountedSemanticTextMechanic>(
             mutation.semantic_text,
         )?;

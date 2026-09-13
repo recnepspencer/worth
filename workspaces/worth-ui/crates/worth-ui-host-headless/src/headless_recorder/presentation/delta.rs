@@ -23,6 +23,13 @@ pub(super) fn apply(
         delta.auxiliary().unwrap_or(&current.auxiliary),
         capacity.mechanics_per_frame(),
     )?;
+    let base_count = prospective_base_row_count(current, delta, nodes.final_count())?;
+    crate::headless_translation::validate_appearance_capacity(
+        view.appearance_work(),
+        base_count,
+        capacity,
+    )?;
+    let recorded = UiHeadlessRecordedFrame::delta(view, delta, capacity)?;
     let undo = DeltaUndo::capture(current, delta, nodes);
     undo.nodes.apply(current);
     for change in delta.changes() {
@@ -53,7 +60,8 @@ pub(super) fn apply(
     if let Some(auxiliary) = delta.auxiliary() {
         current.auxiliary = auxiliary.clone();
     }
-    UiHeadlessRecordedFrame::delta(view, delta, capacity)
+    current.base_row_count = base_count;
+    Ok(recorded)
 }
 
 struct DeltaUndo {
@@ -172,6 +180,46 @@ fn validate_delta(
         return Err(UiHostSurfacePresentationDenial::CapacityExceeded);
     }
     validate_delta_order(current, delta.order(), &inserted, &removed)
+}
+
+fn final_command_count(
+    current: &UiHeadlessRetainedPresentation,
+    delta: &UiMountedPresentationDelta,
+) -> Result<usize, UiHostSurfacePresentationDenial> {
+    let inserted = delta
+        .changes()
+        .iter()
+        .filter(|change| matches!(change, UiMountedPaintCommandChange::Insert(_)))
+        .count();
+    let removed = delta
+        .changes()
+        .iter()
+        .filter(|change| matches!(change, UiMountedPaintCommandChange::Remove(_)))
+        .count();
+    current
+        .commands
+        .len()
+        .checked_add(inserted)
+        .and_then(|count| count.checked_sub(removed))
+        .ok_or_else(malformed)
+}
+
+fn prospective_base_row_count(
+    current: &UiHeadlessRetainedPresentation,
+    delta: &UiMountedPresentationDelta,
+    final_node_count: usize,
+) -> Result<usize, UiHostSurfacePresentationDenial> {
+    if let Some(auxiliary) = delta.auxiliary() {
+        let projection = auxiliary.reconstruct_authored().map_err(|_| malformed())?;
+        return crate::headless_translation::base_row_count(&projection);
+    }
+    current
+        .base_row_count
+        .checked_sub(current.commands.len())
+        .and_then(|count| count.checked_sub(current.node_positions.len()))
+        .and_then(|count| count.checked_add(final_command_count(current, delta).ok()?))
+        .and_then(|count| count.checked_add(final_node_count))
+        .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)
 }
 
 fn validate_delta_order(

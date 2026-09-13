@@ -96,7 +96,7 @@ pub(crate) fn motion_scale_evidence() -> UiMotionScaleEvidence {
         .commit_prepared(inactive_tick)
         .cost()
         .tracks_considered();
-    let retained_inactive_tracks = sampler.retained_track_count() as u64;
+    let retained_inactive_tracks = sampler.certification_observation().1 as u64;
     let active_tracks = state.census().active_tracks() as u64;
     let owner_shutdown = state.shutdown().final_census().is_zero();
     let sampler_released = sampler.shutdown() == 64;

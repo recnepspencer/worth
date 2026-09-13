@@ -63,6 +63,7 @@ mod tests {
                     bounds,
                     clip: super::super::UiAppearanceClip::new(0, 0, 8, 8).unwrap(),
                     surface_paint_order: 0,
+                    portal_group: None,
                     radii: super::super::UiAppearanceNormalizedLogicalRadii::normalize(
                         bounds,
                         [super::super::UiAppearanceLogicalLength::ZERO; 4],

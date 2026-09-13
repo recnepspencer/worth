@@ -49,10 +49,10 @@ fn appearance_refresh_composes_the_exact_physically_accepted_command_sample() {
         .iter()
         .flat_map(|fragment| fragment.work().successor().mechanics())
         .find_map(|mechanic| match mechanic {
-            UiMountedAppearanceMechanic::Surface(surface) => Some(surface),
+            UiMountedAppearanceMechanic::TextForeground(text) => Some(text),
             _ => None,
         })
-        .expect("the exact mounted surface remains present");
+        .expect("the exact mounted text foreground remains present");
     assert_eq!(
         mechanic.node_receipt().mounted_instance(),
         command.mounted_instance()
@@ -241,7 +241,7 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
 }
 
 #[test]
-fn semantic_candidate_keeps_later_accepted_motion_on_unchanged_commands() {
+fn appearance_candidate_keeps_later_accepted_motion_on_unchanged_commands() {
     let (mut session, host, surface, command) = mounted();
     let original = session
         .mounted
@@ -251,10 +251,23 @@ fn semantic_candidate_keeps_later_accepted_motion_on_unchanged_commands() {
         UiMotionTargetIdentity::from_family_owner(surface, command.mounted_instance(), 821);
     install(&mut session, target, original, 821, false, None);
     let graph = session
-        .mounted
-        .current_mounted_identity_basis(command.mounted_instance())
-        .unwrap()
-        .graph_node_identity();
+        .graph()
+        .node_identities()
+        .find(|identity| {
+            session
+                .graph()
+                .lookup()
+                .graph_node(*identity)
+                .is_some_and(|node| {
+                    node.value().declaration_identity().authored_semantic_name()
+                        == format!(
+                            "component:{}",
+                            crate::runtime::tests::appearance_component_session_test_support::
+                                APPEARANCE_NODE_B
+                        )
+                })
+        })
+        .expect("the appearance-only component exists");
     let node = session.mounted_graph_node(graph).unwrap();
     session.mount_instance(node, surface).unwrap();
     crate::facade::entry::mounted_occurrence_geometry_test_support::refresh_nonoverlapping_surface_geometry(
@@ -266,9 +279,9 @@ fn semantic_candidate_keeps_later_accepted_motion_on_unchanged_commands() {
             crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
             |_| {},
         )
-        .unwrap_or_else(|_| panic!("semantic successor prepares"));
+        .unwrap_or_else(|_| panic!("appearance successor prepares"));
     host.push_in_flight(
-        vec![ScriptedSurfaceCompletion::Presented(completion(3, true))],
+        vec![ScriptedSurfaceCompletion::Presented(completion(3, false))],
         UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
     );
     let outcome = session.present_prepared_mounted_frame_internal(
@@ -277,11 +290,11 @@ fn semantic_candidate_keeps_later_accepted_motion_on_unchanged_commands() {
         1,
     );
     if let UiMountedFrameOutcome::RejectedBeforeEffects(ref rejection) = outcome {
-        panic!("semantic rejection: {:?}", rejection.rejections());
+        panic!("appearance rejection: {:?}", rejection.rejections());
     }
     let UiMountedFrameOutcome::InFlight(pending) = outcome else {
         panic!(
-            "semantic candidate stays pending: {:?}",
+            "appearance candidate stays pending: {:?}",
             std::mem::discriminant(&outcome)
         )
     };
@@ -295,10 +308,20 @@ fn semantic_candidate_keeps_later_accepted_motion_on_unchanged_commands() {
         .accepted_motion_for_command(accepted, command)
         .unwrap()
         .unwrap();
-    assert!(matches!(
-        session.complete_mounted_presentation(pending, 2),
-        UiMountedFrameOutcome::Published(_)
-    ));
+    let completed = session.complete_mounted_presentation(pending, 2);
+    if let UiMountedFrameOutcome::RejectedBeforeEffects(ref rejection) = completed {
+        panic!(
+            "appearance completion rejection: {:?}",
+            rejection.rejections()
+        );
+    }
+    if let UiMountedFrameOutcome::PresentationIndeterminate(ref frame) = completed {
+        panic!(
+            "appearance completion became indeterminate: {:?}",
+            frame.report()
+        );
+    }
+    assert!(matches!(completed, UiMountedFrameOutcome::Published(_)));
     let current = session
         .mounted
         .current_presentation_for_surface(surface)

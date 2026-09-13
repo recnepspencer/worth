@@ -91,7 +91,7 @@ pub(super) fn remove_last_nodes_without_a_theme_change(
                 == (bounds.x(), bounds.y(), bounds.width(), bounds.height())
         }));
     }
-    worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+    worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     host.push_native_display_settled_without_effects();
     super::test_support::publish_without_selected_appearance(session, 7);
     assert!(session

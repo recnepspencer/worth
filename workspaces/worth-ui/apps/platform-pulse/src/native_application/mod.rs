@@ -26,6 +26,7 @@ mod readiness;
 mod rebind;
 mod source_rebind;
 mod terminal_error;
+mod theme;
 
 pub(crate) use composition::PlatformPulseApplication;
 
@@ -34,6 +35,7 @@ use projection::PlatformPulseProjectionRebindDenial;
 use terminal_error::PlatformPulseTerminalError;
 
 enum PlatformPulsePendingManagedRebind {
+    ThemeSwitch(crate::theme_preference::PlatformPulseThemePreference),
     Projection(query::PlatformPulsePendingProjection),
     Source(WorthUiSourcePackageRevision),
     IntentPosture(intent::PlatformPulsePendingIntentPosture),
@@ -42,6 +44,7 @@ enum PlatformPulsePendingManagedRebind {
 }
 
 pub(crate) struct PlatformPulseApplicationRuntime {
+    theme_watch: Option<crate::theme_preference::PlatformPulseThemePreferenceWatch>,
     initial_source: Option<WorthUiSourcePackageRevision>,
     startup_ready: bool,
     shell: Option<WorthUiNativeApplicationShell>,
@@ -57,7 +60,8 @@ pub(crate) struct PlatformPulseApplicationRuntime {
     >,
     pending_frame_presentation: Option<PlatformPulsePendingFramePresentation>,
     pending_managed_rebind: Option<PlatformPulsePendingManagedRebind>,
-    pending_intent_postures: std::collections::VecDeque<intent::PlatformPulsePreparedIntentPosture>,
+    pending_native_publications:
+        std::collections::VecDeque<intent::PlatformPulsePendingNativePublication>,
     pending_intent_execution_transitions:
         std::collections::VecDeque<worth_ui::facade::intent::UiIntentExecutionTransition>,
     intent_evidence_index: intent::PlatformPulseIntentEvidenceIndex,
@@ -69,6 +73,7 @@ pub(crate) struct PlatformPulseApplicationRuntime {
     visual_identity: PlatformPulseVisualIdentityExecution,
     intent_clock: intent::PlatformPulseIntentClock,
     presentation_tick: u64,
+    frame_time_origin: std::time::Instant,
     product_story: product_story::PlatformPulseProductStory,
 }
 
@@ -174,6 +179,9 @@ pub(crate) fn publish_preparation_failure(
     denial: &PlatformPulsePreparationDenial,
 ) -> Result<(), PlatformPulseObservationPublicationDenial> {
     match denial {
+        PlatformPulsePreparationDenial::ThemePreference(_) => {
+            publisher.appearance_preparation_failure()
+        }
         PlatformPulsePreparationDenial::WatcherStart(denial)
         | PlatformPulsePreparationDenial::InitialSourceSettlement(denial) => {
             publisher.filesystem_watcher_failure(denial)

@@ -17,7 +17,19 @@ fn one_tail_surface_damage_uses_bounded_semantic_and_rank_lookups_at_512_command
             )
         })
         .collect::<Vec<_>>();
-    let commands = rows.iter().copied().map(command).collect::<Vec<_>>();
+    let commands = rows
+        .iter()
+        .enumerate()
+        .map(|(index, row)| {
+            crate::native::presentation::sample::tests::semantic_text::semantic_text_command_at(
+                &world,
+                frame,
+                row.owner(),
+                index as u32,
+                row.bounds().x(),
+            )
+        })
+        .collect::<Vec<_>>();
     let order = commands
         .iter()
         .map(|command| UiMountedPaintOrderIdentity::for_command(command.identity()))
@@ -58,14 +70,14 @@ fn one_tail_surface_damage_uses_bounded_semantic_and_rank_lookups_at_512_command
         .appearance_operations_for_damage(
             clear,
             crate::native::presentation::raster::UiNativeRasterBasis::new(extent, 1.0),
-            &[command(tail).identity()],
+            &[commands.last().unwrap().identity()],
             &crate::native::text_atlas::UiNativeTextAtlas::new(),
             &mut counters,
         )
         .unwrap();
 
     assert_eq!(operations.len(), 1);
-    assert_eq!(counters.order_index_lookups, 2);
+    assert_eq!(counters.order_index_lookups, 3);
     assert!(counters.order_index_node_touches <= 32);
     assert_eq!(counters.retained_command_scans, 0);
 }

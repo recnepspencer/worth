@@ -42,3 +42,7 @@ fn main() {
         invoke_host_effect_without_runtime_session,
     );
 }
+
+mod incomplete_preparation {
+    include!("incomplete_frame_cannot_reach_presentation.rs");
+}

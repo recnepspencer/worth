@@ -18,19 +18,19 @@ fn presentation_evidence(
 ) -> serde_json::Value {
     let presentation = receipt.presentation();
     serde_json::json!({
-        "presented_source": presentation.source_rgba8(),
-        "retained_center": presentation.retained_center_rgba8(),
-        "retained_baseline": presentation.retained_baseline_rgba8(),
-        "client_physical_size": presentation.client_physical_size(),
-        "scale_factor_milli": presentation.scale_factor_milli(),
-        "frame": presentation.presented_frame(),
-        "surface": presentation.semantic_surface(),
-        "binding": presentation.binding_generation(),
-        "mounted_instance": presentation.mounted_instance(),
-        "node_receipt": presentation.node_receipt(),
-        "presentation_attempt": presentation.presentation_attempt(),
-        "logical_bounds_milli": presentation.logical_bounds_milli(),
-        "order_ordinal": presentation.order_ordinal(),
+        "presented_source": presentation.map(|value| value.source_rgba8()),
+        "retained_center": presentation.map(|value| value.retained_center_rgba8()),
+        "retained_baseline": presentation.map(|value| value.retained_baseline_rgba8()),
+        "client_physical_size": presentation.map(|value| value.client_physical_size()),
+        "scale_factor_milli": presentation.map(|value| value.scale_factor_milli()),
+        "frame": presentation.map(|value| value.presented_frame()),
+        "surface": presentation.map(|value| value.semantic_surface()),
+        "binding": presentation.map(|value| value.binding_generation()),
+        "mounted_instance": presentation.map(|value| value.mounted_instance()),
+        "node_receipt": presentation.map(|value| value.node_receipt()),
+        "presentation_attempt": presentation.map(|value| value.presentation_attempt()),
+        "logical_bounds_milli": presentation.map(|value| value.logical_bounds_milli()),
+        "order_ordinal": presentation.map(|value| value.order_ordinal()),
     })
 }
 
@@ -39,21 +39,21 @@ fn attribution_evidence(
 ) -> serde_json::Value {
     let attribution = receipt.client_attribution();
     serde_json::json!({
-        "frame": attribution.frame(),
-        "surface": attribution.surface(),
-        "binding": attribution.binding(),
-        "mounted_instance": attribution.mounted_instance(),
-        "node_receipt": attribution.node_receipt(),
-        "presentation_attempt": attribution.presentation_attempt(),
-        "authored_provenance_digest": attribution.authored_provenance_digest(),
-        "authored_semantic_identity_digest": attribution.authored_semantic_identity_digest(),
+        "frame": attribution.map(|value| value.frame()),
+        "surface": attribution.map(|value| value.surface()),
+        "binding": attribution.map(|value| value.binding()),
+        "mounted_instance": attribution.map(|value| value.mounted_instance()),
+        "node_receipt": attribution.map(|value| value.node_receipt()),
+        "presentation_attempt": attribution.map(|value| value.presentation_attempt()),
+        "authored_provenance_digest": attribution.map(|value| value.authored_provenance_digest()),
+        "authored_semantic_identity_digest": attribution.map(|value| value.authored_semantic_identity_digest()),
     })
 }
 
 fn counter_evidence(
     receipt: &worth_ui_native_platform::UiNativePlatformCloseReceipt,
 ) -> serde_json::Value {
-    let cost = receipt.presentation().cost();
+    let cost = receipt.final_frame().cost();
     serde_json::json!({
         "surface_acquisitions": cost.surface_acquisitions(),
         "queue_submissions": cost.queue_submissions(),

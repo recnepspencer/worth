@@ -14,9 +14,10 @@ pub(super) fn project(
     bounds: UiMountedCanonicalBox,
     clip: UiMountedCanonicalBox,
     portal: UiMountedPortalOverlayMechanic,
+    source_anchor: UiMountedCanonicalBox,
 ) -> Result<Option<UiPortalChildGeometry>, UiMountedGeometryDenial> {
-    let bounds = translate(bounds, portal)?;
-    let clip = translate(clip, portal)?;
+    let bounds = translate(bounds, portal, source_anchor)?;
+    let clip = translate(clip, portal, source_anchor)?;
     let Some(clip) = intersect(clip, portal.bounds())? else {
         return Ok(None);
     };
@@ -32,10 +33,11 @@ pub(super) fn project(
 fn translate(
     occurrence: UiMountedCanonicalBox,
     portal: UiMountedPortalOverlayMechanic,
+    source_anchor: UiMountedCanonicalBox,
 ) -> Result<UiMountedCanonicalBox, UiMountedGeometryDenial> {
     UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-        x: occurrence.x() + portal.bounds().x() - portal.anchor_bounds().x(),
-        y: occurrence.y() + portal.bounds().y() - portal.anchor_bounds().y(),
+        x: occurrence.x() + portal.bounds().x() - source_anchor.x(),
+        y: occurrence.y() + portal.bounds().y() - source_anchor.y(),
         width: occurrence.width(),
         height: occurrence.height(),
         coordinate_space: portal.bounds().coordinate_space(),

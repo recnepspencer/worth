@@ -5,7 +5,7 @@ pub(super) fn retain_across_source_generation(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
 ) -> worth_ui_host_contract::UiUnpublishedAppearanceFrameProjection {
     let worth_ui_host_contract::UiUnpublishedAppearanceFragmentIdentity::NodeReceipt {
-        successor: Some(old_receipt),
+        successor: Some(mut old_receipt),
         ..
     } = predecessor.fragments()[0].identity()
     else {
@@ -30,11 +30,29 @@ pub(super) fn retain_across_source_generation(
             .mount_incarnation(),
         incarnation
     );
-    assert!(session
+    let carried = session
         .mounted
         .current_unpublished_appearance()
         .unwrap()
-        .is_none());
+        .unwrap();
+    assert_eq!(carried.fragments().len(), 1);
+    let fragment = &carried.fragments()[0];
+    assert_eq!(
+        fragment.work().posture(),
+        worth_ui_host_contract::UiMountedAppearanceWorkPosture::Unchanged
+    );
+    assert!(fragment.work().changes().is_empty());
+    assert!(fragment.work().damage().is_empty());
+    super::test_support::assert_unpublished_surface(carried, [64, 80, 96, 255]);
+    let worth_ui_host_contract::UiUnpublishedAppearanceFragmentIdentity::NodeReceipt {
+        predecessor: Some(previous),
+        successor: Some(current),
+    } = fragment.identity()
+    else {
+        panic!("resolved succession carries both receipt identities");
+    };
+    assert_eq!(previous, old_receipt);
+    old_receipt = current;
 
     let observation = successor_source(session, role, true);
     let admitted = {
@@ -146,7 +164,7 @@ pub(super) fn replace_source(
     ));
 }
 
-fn successor_source(
+pub(super) fn successor_source(
     session: &crate::facade::WorthUiActiveApplicationSession,
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
     attached: bool,
@@ -181,7 +199,7 @@ fn successor_source(
     };
     let module = module
         .with_semantic_declaration(sibling)
-        .with_token(support::LEGACY_STATIC_PAINT_TOKEN, "#112233");
+        .with_token(support::APPEARANCE_BASE_TOKEN, "#112233");
     crate::runtime::tests::source_ingress_boundary_test_support::lower_rust_submission(
         crate::runtime::WorthUiSourceProvider::rust_authored("appearance-consumer-current")
             .with_rust_authored_input(
@@ -259,7 +277,7 @@ pub(super) fn detach_role(
         (damage.x(), damage.y(), damage.width(), damage.height()),
         (bounds.x(), bounds.y(), bounds.width(), bounds.height())
     );
-    worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+    worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     host.push_native_display_settled_without_effects();
     super::test_support::publish_without_selected_appearance(session, 7);
     assert!(session
@@ -267,87 +285,4 @@ pub(super) fn detach_role(
         .current_unpublished_appearance()
         .unwrap()
         .is_none());
-}
-
-pub(super) fn reconstruct_across_source_generation(
-    session: &mut crate::facade::WorthUiActiveApplicationSession,
-    host: &crate::certification_support::ScriptedPresentationHost,
-    predecessor: worth_ui_host_contract::UiUnpublishedAppearanceFrameProjection,
-    role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
-) {
-    let worth_ui_host_contract::UiUnpublishedAppearanceFragmentIdentity::NodeReceipt {
-        successor: Some(old_receipt),
-        ..
-    } = predecessor.fragments()[0].identity()
-    else {
-        panic!("reconstruction needs a real physical predecessor");
-    };
-    let previous_generation = session.active_generation_identity();
-    let source = successor_source(session, role, true);
-    replace_source(session, host, source, 4, None);
-    assert_ne!(session.active_generation_identity(), previous_generation);
-    assert!(!session.has_appearance_owner_snapshot_for_test());
-    let frame = session
-        .prepare_mounted_reconstruction_frame_with_application_presentation(
-            crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
-            &[],
-            |_| {},
-        )
-        .unwrap_or_else(|_| panic!("unpublished reconstruction frame must prepare"));
-    let physical = frame.lower_unpublished_appearance_for_test();
-    assert_eq!(physical.fragments().len(), 1);
-    let fragment = &physical.fragments()[0];
-    assert!(matches!(fragment.identity(),
-        worth_ui_host_contract::UiUnpublishedAppearanceFragmentIdentity::NodeReceipt {
-            predecessor: Some(receipt), successor: Some(successor),
-        } if receipt == old_receipt && successor != old_receipt));
-    assert_eq!(
-        fragment.work().posture(),
-        worth_ui_host_contract::UiMountedAppearanceWorkPosture::Reconstruction
-    );
-    assert!(
-        fragment.work().changes().is_empty(),
-        "same mounted occurrence reissues exact paint across graph identity succession"
-    );
-    drop(frame);
-
-    // A real observation close queues the successor's canonical initial
-    // selection. No theme mutation is used to force the refresh.
-    let observation = successor_source(session, role, true);
-    let admitted = {
-        let mut turn = session.begin_observation_turn().unwrap();
-        turn.admit_source(observation).unwrap();
-        turn.seal().unwrap()
-    };
-    session.classify_observations(admitted).unwrap();
-    let frame = session
-        .prepare_mounted_reconstruction_frame_with_application_presentation(
-            crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
-            &[],
-            |_| {},
-        )
-        .unwrap_or_else(|_| panic!("current owners must refresh reconstruction"));
-    assert_eq!(
-        frame
-            .appearance_selection_cost_report()
-            .selected_instance_count(),
-        1
-    );
-    frame.verify_unpublished_reconstruction_denial_and_retry();
-    let output = frame.lower_unpublished_appearance_for_test();
-    assert_eq!(output.fragments().len(), 1);
-    let fragment = &output.fragments()[0];
-    assert!(matches!(fragment.identity(),
-        worth_ui_host_contract::UiUnpublishedAppearanceFragmentIdentity::NodeReceipt {
-            predecessor: Some(receipt), successor: Some(successor),
-        } if receipt == old_receipt && successor != old_receipt));
-    assert_eq!(
-        fragment.work().posture(),
-        worth_ui_host_contract::UiMountedAppearanceWorkPosture::Reconstruction
-    );
-    assert!(
-        fragment.work().changes().is_empty(),
-        "fresh provenance preserves the unchanged mechanics"
-    );
-    super::test_support::assert_unpublished_surface(&output, [64, 80, 96, 255]);
 }

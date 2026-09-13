@@ -166,7 +166,7 @@ impl crate::runtime::WorthUiRuntime {
             return Err(UiAllocationCatalogDeltaClosureDenial::CandidateGraphAuthorityMismatch);
         }
         let mut counters = UiAllocationCatalogDeltaCounters::default();
-        let (active_changed, candidate_changed) = changed_graph_nodes_for(
+        let (active_changed, candidate_changed) = affected_graph_nodes_for(
             pending,
             active_snapshot,
             &delta.snapshot,
@@ -292,7 +292,7 @@ impl crate::runtime::WorthUiRuntime {
     }
 }
 
-fn changed_graph_nodes_for(
+fn affected_graph_nodes_for(
     pending: &crate::runtime::WorthUiPendingActivation,
     active: &crate::graph::UiGraphSnapshot,
     candidate: &crate::graph::UiGraphSnapshot,

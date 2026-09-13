@@ -2,6 +2,8 @@
 mod appearance_validation;
 #[path = "sealed_semantic_package/authored_route_validation.rs"]
 mod authored_route_validation;
+#[path = "sealed_semantic_package/region_bindings.rs"]
+mod region_bindings;
 #[path = "sealed_semantic_accessors.rs"]
 mod sealed_semantic_accessors;
 #[path = "sealed_semantic_appearance.rs"]
@@ -138,6 +140,7 @@ impl WorthUiSealedSemanticPackage {
         if !state.diagnostics.is_empty() {
             return Err(WorthUiDslCompileReport::new(state.diagnostics));
         }
+        state.seal_region_bindings()?;
         let identity = WorthUiSemanticPackageIdentity::from_modules(
             canonical_module_order.iter().map(|module_id| {
                 (

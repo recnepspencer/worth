@@ -50,7 +50,6 @@ pub(crate) fn semantic_digest(
         match support {
             super::super::UiAppearanceSupportPosture::Supported => 1,
             super::super::UiAppearanceSupportPosture::Unsupported => 2,
-            super::super::UiAppearanceSupportPosture::Inapplicable => 3,
         },
     );
     digest

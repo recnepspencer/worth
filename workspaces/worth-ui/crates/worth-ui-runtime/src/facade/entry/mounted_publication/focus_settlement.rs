@@ -10,7 +10,15 @@ pub(super) fn reconcile_focus_after_published_frame_with_ports(
     let Some(focus) = ports.focus.as_deref_mut() else {
         return;
     };
-    let Some(snapshot) = ports.mounted.focus_participation_snapshot() else {
+    let mut surfaces = Vec::new();
+    publication.with_surface_presentations(|presentations| {
+        surfaces.extend(
+            presentations
+                .iter()
+                .map(|surface| surface.semantic_surface()),
+        );
+    });
+    let Some(snapshot) = ports.mounted.focus_participation_snapshot(&surfaces) else {
         return;
     };
     let transition = focus

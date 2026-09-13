@@ -1,6 +1,9 @@
 use super::state::UiRebindReservation;
 
+mod detached;
 mod progression;
+
+pub(crate) use detached::UiDetachedRebindRecovery;
 
 pub use progression::{
     UiRebindReconciliation, UiRebindReconciliationRequest, UiRebindRecoveryCompletionHandle,

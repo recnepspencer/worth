@@ -17,6 +17,7 @@ fn rebound_portal_recompletion_keeps_raw_and_completed_coordinate_ownership_curr
     rebinding
         .semantic
         .replace_surface(UiMountedProjectionSurface {
+            coordinate_posture: crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
             surface: world.surfaces[0],
             binding,
             audience: UiMountedProjectionAudience::full(),

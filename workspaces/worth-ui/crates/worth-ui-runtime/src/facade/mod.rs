@@ -48,7 +48,8 @@ pub use entry::{
     CapabilityRegistrationBuilder, UiAppearanceInspectionGenerationSuccessionDenial,
     UiChangeProfileInstalled, UiChangeProfileMissing, UiFocusHostPlacementReconciliationDenial,
     UiFocusHostPlacementReconciliationOutcome, UiFocusHostPlacementReconciliationReceipt,
-    UiFocusHostPlacementShutdownReport, UiFocusPlacementReconciliationExecutionDenial,
+    UiFocusHostPlacementSettlementDenial, UiFocusHostPlacementShutdownReport,
+    UiFocusPlacementExecutionDenial, UiFocusPlacementReconciliationExecutionDenial,
     UiPortalDismissalPublicationReceipt, UiSemanticFocusParticipantObservation,
     UiSemanticFocusPhysicalPlacementOutcome, UiSemanticFocusPublicationCause,
     UiSemanticFocusPublicationOutcome, UiSemanticFocusPublicationReceipt, WorthUi,
@@ -109,3 +110,14 @@ pub use host_session_authority::{
     WorthUiHostSessionIdentity, WorthUiHostSessionReleaseRecovery,
 };
 pub use lifecycle::{WorthUiRuntimeSupportInventory, RUNTIME_SUPPORT_INVENTORY};
+
+pub use crate::runtime::appearance::{
+    UiActiveThemeBinding, UiThemeCapabilityReceipt, UiThemeCapabilityReceiptDenial,
+    UiThemeResolutionDenial, UiThemeSwitchDenial, UiThemeSwitchOrigin,
+    UiThemeSwitchOriginAdmissionDenial, UiThemeSwitchOriginFamily, UiThemeSwitchOutcome,
+    UiThemeSwitchRequest, UiThemeSwitchSelectionDenial,
+};
+pub use entry::{
+    UiNativeThemeSwitchDenial, UiProgrammaticThemeSwitchPreparationDenial,
+    UiThemeSwitchPreparationDenial,
+};

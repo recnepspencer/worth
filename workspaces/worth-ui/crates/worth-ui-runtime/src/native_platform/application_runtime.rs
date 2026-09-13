@@ -179,6 +179,21 @@ impl UiNativeApplicationPhysicalProgress {
 }
 
 impl UiNativeApplicationObservationProgress {
+    /// Exact semantic and physical Focus results produced while admitting this input.
+    pub fn focus_publications(
+        &self,
+    ) -> impl Iterator<
+        Item = &Result<
+            (
+                crate::facade::entry::UiSemanticFocusPublicationReceipt,
+                crate::mounting::UiMountedFramePublicationReceipt,
+            ),
+            crate::facade::entry::UiFocusPlacementExecutionDenial,
+        >,
+    > {
+        self.settlement.focus_publications()
+    }
+
     pub(crate) fn from_settlement(
         settlement: crate::facade::entry::UiNativeObservationIngressSettlement,
     ) -> Self {

@@ -90,9 +90,6 @@ fn support(
         super::super::projection::UiAppearanceSupportPosture::Unsupported => {
             UiAppearanceInspectionSupport::Unsupported
         }
-        super::super::projection::UiAppearanceSupportPosture::Inapplicable => {
-            UiAppearanceInspectionSupport::Inapplicable
-        }
     }
 }
 

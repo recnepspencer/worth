@@ -131,17 +131,12 @@ pub(super) fn source_with_role(
     WorthUiRustAuthoredArtifactInput::from_modules([module])
 }
 
-pub(super) fn builder(
-    role: &UiAppearanceRoleDeclaration,
-) -> crate::facade::entry::WorthUiApplicationBuilder {
-    let token = crate::capability::ThemeTokenId::new(support::LEGACY_STATIC_PAINT_TOKEN).unwrap();
-    builder_with_component(
-        role,
-        support::static_paint_component(support::APPEARANCE_NODE_A, token).with_hit_test(
-            crate::capability::ComponentHitTestContract::allocation_bounds(
-                crate::capability::ComponentHitTestOrder::front_to_back(0),
-                crate::capability::ComponentAllocationMeasurementContract::fill_viewport(),
-            ),
+pub(super) fn component() -> crate::capability::ComponentDescriptor {
+    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_BASE_TOKEN).unwrap();
+    support::appearance_component(support::APPEARANCE_NODE_A, token).with_hit_test(
+        crate::capability::ComponentHitTestContract::allocation_bounds(
+            crate::capability::ComponentHitTestOrder::front_to_back(0),
+            crate::capability::ComponentAllocationMeasurementContract::fill_viewport(),
         ),
     )
 }
@@ -154,7 +149,7 @@ pub(super) fn builder_with_component(
         source_backed_package_region, source_backed_package_sizing,
     };
     let (_, _, world) = crate::evidence::measurement::projection::fact_test_support::display_field_projection_context("appearance-operability");
-    let token = crate::capability::ThemeTokenId::new(support::LEGACY_STATIC_PAINT_TOKEN).unwrap();
+    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_BASE_TOKEN).unwrap();
     crate::facade::WorthUi::app()
         .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
         .with_graph_world_profile(world)
@@ -163,6 +158,8 @@ pub(super) fn builder_with_component(
         .register_mosaic_region_kind(source_backed_package_region())
         .register_mosaic_sizing_contract(source_backed_package_sizing())
         .register_appearance_role(role.clone())
+        .unwrap()
+        .register_appearance_role(replacement_role(role))
         .unwrap()
         .register_appearance_theme_bundle(test_support::theme_bundle())
         .unwrap()
@@ -218,10 +215,24 @@ pub(super) fn session_with_source(
     crate::facade::WorthUiActiveApplicationSession,
     crate::certification_support::ScriptedPresentationHost,
 ) {
+    session_with_component(role, source, component())
+}
+
+pub(super) fn session_with_component(
+    role: &UiAppearanceRoleDeclaration,
+    source: WorthUiRustAuthoredArtifactInput,
+    component: crate::capability::ComponentDescriptor,
+) -> (
+    crate::facade::WorthUiActiveApplicationSession,
+    crate::certification_support::ScriptedPresentationHost,
+) {
+    let requires_text_presentation = component.semantic_text_contract().is_some();
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
     host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let observer = host.clone();
-    let capabilities = builder(role).freeze().unwrap();
+    let capabilities = builder_with_component(role, component.clone())
+        .freeze()
+        .unwrap();
     let launch = crate::runtime::tests::source_ingress_boundary_test_support::lower_rust_submission(
         crate::runtime::WorthUiSourceProvider::rust_authored("operability-launch")
             .with_rust_authored_input(source),
@@ -230,15 +241,34 @@ pub(super) fn session_with_source(
         )],
         capabilities.capabilities(),
     );
-    let app = builder(role)
+    let app = builder_with_component(role, component)
         .with_candidate_submission(launch)
         .freeze()
         .unwrap();
-    let session =
+    let mut application =
         crate::facade::entry::WorthUiCertificationApplicationTransition::activate_test_host(
             app, host,
-        )
-        .launch()
-        .unwrap();
+        );
+    if requires_text_presentation {
+        let installation = worth_ui_query_binding::WorthUiPresentationAsyncHostPlan::prepare()
+            .unwrap()
+            .install_for_certification()
+            .unwrap();
+        application
+            .install_presentation_async(installation)
+            .unwrap();
+    }
+    let session = application.launch().unwrap();
     (session, observer)
+}
+
+pub(super) fn replacement_role(role: &UiAppearanceRoleDeclaration) -> UiAppearanceRoleDeclaration {
+    UiAppearanceRoleDeclaration::admit(
+        UiAppearanceRoleIdentity::new(format!("{}.replacement", role.role().as_str())).unwrap(),
+        role.revision(),
+        role.applicability().clone(),
+        role.aspect_contract(),
+        role.partitions().iter().cloned(),
+    )
+    .unwrap()
 }

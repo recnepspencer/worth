@@ -56,6 +56,23 @@ pub(super) fn require_open_focus(
     Ok(())
 }
 
+pub(super) fn require_traversal(
+    opened: PlatformPulseSemanticFocusPublished,
+    traversed: PlatformPulseSemanticFocusPublished,
+) -> Result<(), PlatformPulsePortalJourneyFailure> {
+    if traversed.cause() != PlatformPulseSemanticFocusCause::KeyboardTraversal
+        || traversed.outcome() != worth_ui_platform_pulse::observation_contract::PlatformPulseSemanticFocusOutcome::Moved
+        || traversed.physical_outcome() != PlatformPulseSemanticFocusPhysicalOutcome::Applied
+        || traversed.previous() != opened.current()
+        || traversed.current().is_none()
+        || traversed.current() == traversed.previous()
+        || traversed.revision() <= opened.revision()
+    {
+        return Err(focus_failure("native Tab did not publish the exact Focus traversal"));
+    }
+    Ok(())
+}
+
 pub(super) fn require_restoration_after_rebind(
     opened: PlatformPulseSemanticFocusPublished,
     restored: PlatformPulseSemanticFocusPublished,

@@ -9,12 +9,13 @@ fn vector_seals_all_six_adapter_products_from_the_sealed_snapshot() {
     let vector = UiAppearanceStateVector::seal(&fixture.snapshot, &fixture.basis)
         .expect("one coherent owner snapshot should seal one vector");
     assert_eq!(vector.basis(), &fixture.basis);
-    assert!(vector.operability().is_some());
-    assert!(vector.focus().is_some());
-    assert!(vector.validation().is_some());
-    assert!(vector.selection().is_some());
-    assert!(vector.hover().is_some());
-    assert!(vector.pressed().is_some());
+    use worth_ui_dsl::UiAppearanceStateAxis::*;
+    for axis in [Operability, Focus, Validation, Selection, Hover, Pressed] {
+        assert!(
+            vector.class(axis).is_some(),
+            "sealed vector must resolve {axis:?}"
+        );
+    }
 }
 
 #[test]

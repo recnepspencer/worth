@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
 use worth_ui_host_contract::{
-    UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedPaintCommand,
-    UiMountedPaintCommandIdentity, UiMountedPresentationSample, UiMountedPresentationSampleChange,
-    UiMountedPresentationTransform,
+    UiMountedAppearancePresentationWork, UiMountedCanonicalBox, UiMountedCanonicalBoxInput,
+    UiMountedPaintCommand, UiMountedPaintCommandIdentity, UiMountedPresentationSample,
+    UiMountedPresentationSampleChange, UiMountedPresentationTransform,
 };
 
 use super::mutation::{update_damage, visible_bounds};
@@ -28,10 +28,13 @@ pub(crate) struct UiNativeAppearanceSampleUndo {
 }
 
 impl UiNativeRetainedDrawList {
-    pub(crate) fn stage_appearance_sample_overrides(
+    /// Re-issued samples replace their predecessors; surface samples the work
+    /// replaces or removes without re-issuing retire in the same undo.
+    pub(crate) fn stage_appearance_work_sample_overrides(
         &mut self,
-        changes: &[UiMountedPresentationSampleChange],
+        work: &UiMountedAppearancePresentationWork,
     ) -> Result<UiNativeAppearanceSampleUndo, UiNativeRetainedDrawListDenial> {
+        let changes = work.sample_overrides();
         let unique = changes
             .iter()
             .map(|change| change.command())
@@ -39,41 +42,49 @@ impl UiNativeRetainedDrawList {
         if unique.len() != changes.len()
             || changes
                 .iter()
-                .any(|change| !self.commands.contains(&change.command()))
+                .any(|change| !self.admits_sample_target(change.command()))
         {
             return Err(UiNativeRetainedDrawListDenial::CommandMismatch);
         }
+        let retired = self.retired_appearance_surface_samples(work);
         let undo = UiNativeAppearanceSampleUndo {
-            overrides: changes
+            overrides: retired
                 .iter()
-                .map(|change| {
-                    (
-                        change.command(),
-                        self.sample_overrides.get(&change.command()).copied(),
-                    )
-                })
+                .copied()
+                .chain(changes.iter().map(|change| change.command()))
+                .map(|identity| (identity, self.sample_overrides.get(&identity).copied()))
                 .collect(),
         };
+        for identity in &retired {
+            self.sample_overrides.remove(identity);
+        }
         for (applied, change) in changes.iter().enumerate() {
-            let command = self
-                .commands
-                .get(&change.command())
-                .ok_or(UiNativeRetainedDrawListDenial::CommandMismatch)?;
-            let old = sampled_visible_bounds(
-                command,
-                self.sample_overrides.get(&change.command()).copied(),
-            )?;
-            let new = sampled_visible_bounds(command, Some(*change))?;
-            if let Err(denial) = update_damage(&mut self.damage, change.command(), old, new) {
+            if let Err(denial) = self.apply_sample_change(change) {
                 self.rollback_appearance_sample_overrides(UiNativeAppearanceSampleUndo {
-                    overrides: undo.overrides[..applied].to_vec(),
+                    overrides: undo.overrides[..retired.len() + applied].to_vec(),
                 })
                 .expect("already-refreshed appearance samples roll back exactly");
                 return Err(denial);
             }
-            self.sample_overrides.insert(change.command(), *change);
         }
         Ok(undo)
+    }
+
+    /// Paint commands move through the damage index; appearance surfaces are
+    /// replayed by the sample's own damage and only record their override.
+    fn apply_sample_change(
+        &mut self,
+        change: &UiMountedPresentationSampleChange,
+    ) -> Result<(), UiNativeRetainedDrawListDenial> {
+        let identity = change.command();
+        if !identity.is_appearance_surface() {
+            let old = self
+                .sampled_target_bounds(identity, self.sample_overrides.get(&identity).copied())?;
+            let new = self.sampled_target_bounds(identity, Some(*change))?;
+            update_damage(&mut self.damage, identity, old, new)?;
+        }
+        self.sample_overrides.insert(identity, *change);
+        Ok(())
     }
 
     pub(crate) fn rollback_appearance_sample_overrides(
@@ -149,16 +160,7 @@ impl UiNativeRetainedDrawList {
                 .collect(),
         };
         for (applied, change) in sample.changes().iter().enumerate() {
-            let command = self
-                .commands
-                .get(&change.command())
-                .ok_or(UiNativeRetainedDrawListDenial::CommandMismatch)?;
-            let old = sampled_visible_bounds(
-                command,
-                self.sample_overrides.get(&change.command()).copied(),
-            )?;
-            let new = sampled_visible_bounds(command, Some(*change))?;
-            if let Err(denial) = update_damage(&mut self.damage, change.command(), old, new) {
+            if let Err(denial) = self.apply_sample_change(change) {
                 let applied_undo = UiNativeRetainedSampleUndo {
                     physical_coverage: Vec::new(),
                     overrides: undo.overrides[..applied].to_vec(),
@@ -167,7 +169,6 @@ impl UiNativeRetainedDrawList {
                     .expect("already-applied sample changes roll back exactly");
                 return Err(denial);
             }
-            self.sample_overrides.insert(change.command(), *change);
         }
         match self.replay_plan(sample.damage(), sample.changes().len(), 0) {
             Ok(plan) => Ok((plan, undo)),
@@ -185,14 +186,14 @@ impl UiNativeRetainedDrawList {
     ) -> Result<(), UiNativeRetainedDrawListDenial> {
         self.restore_physical_coverage(undo.physical_coverage)?;
         for (identity, previous) in undo.overrides {
-            let command = self
-                .commands
-                .get(&identity)
-                .ok_or(UiNativeRetainedDrawListDenial::CommandMismatch)?;
-            let current =
-                sampled_visible_bounds(command, self.sample_overrides.get(&identity).copied())?;
-            let restored = sampled_visible_bounds(command, previous)?;
-            update_damage(&mut self.damage, identity, current, restored)?;
+            if !identity.is_appearance_surface() {
+                let current = self.sampled_target_bounds(
+                    identity,
+                    self.sample_overrides.get(&identity).copied(),
+                )?;
+                let restored = self.sampled_target_bounds(identity, previous)?;
+                update_damage(&mut self.damage, identity, current, restored)?;
+            }
             match previous {
                 Some(previous) => {
                     self.sample_overrides.insert(identity, previous);
@@ -229,16 +230,12 @@ impl UiNativeRetainedDrawList {
             || sample
                 .changes()
                 .iter()
-                .any(|change| !self.commands.contains(&change.command()))
+                .any(|change| !self.admits_sample_target(change.command()))
         {
             return Err(UiNativeRetainedDrawListDenial::CommandMismatch);
         }
         for change in sample.changes() {
-            let command = self
-                .commands
-                .get(&change.command())
-                .ok_or(UiNativeRetainedDrawListDenial::CommandMismatch)?;
-            if let Some(bounds) = sampled_visible_bounds(command, Some(*change))? {
+            if let Some(bounds) = self.sampled_target_bounds(change.command(), Some(*change))? {
                 self.damage.validate_bounds(bounds)?;
             }
         }
@@ -256,6 +253,13 @@ pub(in crate::native::presentation) fn sampled_visible_bounds(
     let Some(bounds) = visible_bounds(command) else {
         return Ok(None);
     };
+    sampled_bounds(bounds, change)
+}
+
+pub(super) fn sampled_bounds(
+    bounds: UiMountedCanonicalBox,
+    change: Option<UiMountedPresentationSampleChange>,
+) -> Result<Option<UiMountedCanonicalBox>, UiNativeRetainedDrawListDenial> {
     let Some(change) = change else {
         return Ok(Some(bounds));
     };

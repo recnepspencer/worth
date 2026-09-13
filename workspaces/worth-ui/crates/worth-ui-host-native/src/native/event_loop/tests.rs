@@ -81,7 +81,10 @@ impl UiNativeEventLoopClient for CleanupClient {
         unreachable!("cleanup proof never enters callbacks")
     }
 
-    fn presentation_attribution(&self) -> Option<super::UiNativeClientPresentationAttribution> {
+    fn presentation_attribution(
+        &self,
+        _observed: &crate::native::UiNativePresentationObservation,
+    ) -> Option<super::UiNativeClientPresentationAttribution> {
         None
     }
 

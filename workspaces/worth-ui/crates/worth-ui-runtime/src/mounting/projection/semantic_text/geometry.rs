@@ -10,8 +10,9 @@ pub(super) fn row_origin(
     bounds.y() + bounds.height() * (index as f32 / total as f32)
 }
 
-pub(super) fn require_allocation(
+pub(in crate::mounting::projection) fn require_allocation(
     node: &UiMountedProjectionNodeRecord,
+    surface: super::super::frame_storage::UiMountedProjectionSurface,
 ) -> Result<
     (
         worth_ui_host_contract::UiMountedCanonicalBox,
@@ -20,7 +21,17 @@ pub(super) fn require_allocation(
     UiMountedProjectionDenial,
 > {
     match node.presentation_allocation() {
-        UiMountedAllocationProjection::Known { bounds, basis } => Ok((bounds, basis)),
+        UiMountedAllocationProjection::Known { bounds, basis } => {
+            let bounds = if node.portal_child_owner.is_none() {
+                super::super::frame_storage::surface_coordinates::viewport_bounds(
+                    bounds,
+                    surface.coordinate_posture,
+                )?
+            } else {
+                bounds
+            };
+            Ok((bounds, basis))
+        }
         UiMountedAllocationProjection::PortalAnchorObservation { .. } => Err(
             UiMountedProjectionDenial::UnsupportedSemanticTextAllocation(node.receipt.graph_node()),
         ),

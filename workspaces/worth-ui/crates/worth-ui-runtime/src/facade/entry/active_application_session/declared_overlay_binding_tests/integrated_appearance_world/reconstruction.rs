@@ -5,89 +5,72 @@ use crate::mounting::{
 };
 use worth_ui_host_contract::*;
 
+#[test]
+fn distinct_reconstruction_retains_queued_event_basis_and_sequence() {
+    use crate::facade::observation_report::{
+        UiHostObservationFrameRelation, UiHostObservationReportOutcome,
+    };
+
+    let mut world = World::launch();
+    let frame = world.prepare();
+    world.publish(frame, 1, true);
+    let predecessor = world
+        .session
+        .mounted
+        .current_presentation_for_surface(world.surfaces[0])
+        .unwrap();
+    let queued = super::pointer_geometry::pointer_batch(
+        world.session.host_session.identity().as_u64(),
+        predecessor,
+        1,
+        [44_000, 54_000],
+    );
+    world
+        .host
+        .enqueue_observation_during_next_presentation(queued);
+    reconstruct_surface(&mut world);
+    let successor = world
+        .session
+        .mounted
+        .current_presentation_for_surface(world.surfaces[0])
+        .unwrap();
+    assert_ne!(predecessor.frame(), successor.frame());
+    assert_eq!(world.host.pending_observation_batch_count(), 1);
+    let outcomes = world
+        .session
+        .drain_and_validate_host_observation_batches()
+        .unwrap();
+    let [UiHostObservationReportOutcome::Validated(batch)] = outcomes.as_ref() else {
+        panic!("queued predecessor observation must survive reconstruction: {outcomes:?}");
+    };
+    assert_eq!(
+        batch.frame_relation(),
+        UiHostObservationFrameRelation::SupersededPresented
+    );
+    let next = super::pointer_geometry::pointer_batch(
+        world.session.host_session.identity().as_u64(),
+        successor,
+        2,
+        [44_000, 54_000],
+    );
+    assert!(
+        matches!(
+            world.session.validate_host_observation_batch(next),
+            UiHostObservationReportOutcome::Validated(_)
+        ),
+        "recovery must preserve sequence continuity"
+    );
+    let _ = world.session.shutdown();
+    assert_eq!(world.host.pending_observation_batch_count(), 0);
+    assert_eq!(world.host.pending_presentation_count(), 0);
+}
+
 pub(super) fn cold_surface(world: &mut World) {
     assert_eq!(world.host.pending_presentation_count(), 0);
     let surface = world.surfaces[0];
-    let presentation = world
-        .session
-        .mounted
-        .current_presentation_for_surface(surface)
-        .unwrap();
-    let affected = presentation.binding();
     let (inside_portal, outside_portals) = reference_output(world, surface);
 
-    let lost = world
-        .session
-        .mounted
-        .require_current_layout_reconstruction(affected)
-        .unwrap();
-    assert!(
-        lost > 0,
-        "cold reconstruction discards real qualified text layouts"
-    );
-    assert_eq!(
-        world.session.mounted.reconstruct_current_layouts().unwrap(),
-        lost,
-        "the retained semantic sources rebuild every discarded layout"
-    );
-    let replacement = world
-        .session
-        .rebind_host_surface(
-            affected,
-            UiHostSurfacePresentationMode::NativeDisplay,
-            UiSurfaceBindingProfile::new(
-                1_000,
-                UiSurfaceBindingCoordinatePosture::LogicalPoints,
-                1,
-            )
-            .unwrap(),
-        )
-        .unwrap()
-        .binding_generation();
-    let replacements = [UiMountedSurfaceReconciliationBinding::new(
-        affected,
-        replacement,
-    )];
-    let frame = world
-        .session
-        .prepare_mounted_reconstruction_frame_with_application_presentation(
-            crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
-            &replacements,
-            |_| {},
-        )
-        .unwrap_or_else(|_| panic!("the cold authored world must prepare reconstruction"));
-    for surface in frame.surfaces() {
-        if surface.requirement().binding() == replacement {
-            world.host.push_native_display_presented();
-        } else {
-            world.host.push_native_display_settled_without_effects();
-        }
-    }
-    let outcome = world
-        .session
-        .present_prepared_mounted_frame_for_reconciliation(
-            frame,
-            &replacements,
-            UiPresentationDeadline::at_tick(u64::MAX),
-            400,
-        )
-        .unwrap();
-    match outcome {
-        UiMountedFrameOutcome::Reconciled(_) => {}
-        UiMountedFrameOutcome::AdmissionDenied(denial) => {
-            panic!("cold reconstruction admission: {:?}", denial.denial())
-        }
-        UiMountedFrameOutcome::RejectedBeforeEffects(rejected) => {
-            panic!("cold reconstruction rejected: {:?}", rejected.rejections())
-        }
-        UiMountedFrameOutcome::PresentationIndeterminate(frame) => {
-            panic!("cold reconstruction indeterminate: {:?}", frame.report())
-        }
-        other => panic!(
-            "cold reconstruction outcome: {:?}",
-            std::mem::discriminant(&other)
-        ),
-    }
+    let replacement = reconstruct_surface(world);
 
     let output = world
         .session
@@ -110,10 +93,10 @@ pub(super) fn cold_surface(world: &mut World) {
             UiUnpublishedAppearanceFragmentIdentity::SurfacePointer { .. }
         ) || fragment.work().posture() == UiMountedAppearanceWorkPosture::Reconstruction
     }));
-    assert_complete_reconstructed_mechanics(&affected_fragments);
+    assert_complete_reconstructed_mechanics(&affected_fragments, world);
     assert_original_text_ranges(&affected_fragments);
     let transcript =
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     let overlay = transcript
         .fragments()
         .iter()
@@ -147,7 +130,7 @@ fn reference_output(world: &World, surface: UiSemanticSurfaceIdentity) -> ([u8; 
         .unwrap()
         .unwrap();
     let transcript =
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     let overlay = transcript
         .fragments()
         .iter()
@@ -171,6 +154,7 @@ fn reference_output(world: &World, surface: UiSemanticSurfaceIdentity) -> ([u8; 
 
 fn assert_complete_reconstructed_mechanics(
     fragments: &[&worth_ui_host_contract::UiUnpublishedAppearanceFragment],
+    world: &World,
 ) {
     let mechanics = fragments
         .iter()
@@ -198,8 +182,17 @@ fn assert_complete_reconstructed_mechanics(
     });
     assert_eq!(
         counts,
-        [2, 3, 3, 1, 2, 0],
+        [3, 3, 3, 1, 2, 0],
         "the authored surviving world reconstructs mounted mechanics without stale rebound pointer evidence"
+    );
+    let surviving_portal_owner = world.instances[1];
+    assert!(
+        identities.contains(&UiMountedAppearanceMechanicIdentity::Surface(
+            surviving_portal_owner,
+        )) && identities.contains(&UiMountedAppearanceMechanicIdentity::PortalSurface(
+            surviving_portal_owner,
+        )),
+        "reconstruction retains the surviving owner's ordinary anchor and distinct Portal surface",
     );
 }
 
@@ -226,4 +219,93 @@ fn assert_original_text_ranges(
             UiTextOriginalRange::new(1, 2).unwrap()
         );
     }
+}
+
+// Shared physical recovery boundary; callers retain their own content/overlay oracle.
+pub(super) fn reconstruct_surface(world: &mut World) -> UiSurfaceBindingGeneration {
+    let surface = world.surfaces[0];
+    let presentation = world
+        .session
+        .mounted
+        .current_presentation_for_surface(surface)
+        .unwrap();
+    let affected = presentation.binding();
+    let lost = world
+        .session
+        .mounted
+        .require_current_layout_reconstruction(affected)
+        .unwrap();
+    assert!(
+        lost > 0,
+        "cold reconstruction discards real qualified text layouts"
+    );
+    assert_eq!(
+        world.session.mounted.reconstruct_current_layouts().unwrap(),
+        lost,
+        "the retained semantic sources rebuild every discarded layout"
+    );
+    let replacement = world
+        .session
+        .rebind_host_surface(
+            affected,
+            UiHostSurfacePresentationMode::NativeDisplay,
+            UiSurfaceBindingProfile::new(
+                1_000,
+                UiSurfaceBindingCoordinatePosture::LogicalPoints,
+                1,
+            )
+            .unwrap(),
+        )
+        .unwrap()
+        .binding_generation();
+    let replacements = [UiMountedSurfaceReconciliationBinding::new(
+        affected,
+        replacement,
+    )];
+    let request = world
+        .session
+        .mounted_frame_request()
+        .for_surfaces(vec![surface]);
+    let frame = world
+        .session
+        .prepare_mounted_reconstruction_frame_with_application_presentation(
+            request,
+            &replacements,
+            |_| {},
+        )
+        .unwrap_or_else(|_| panic!("the cold authored world must prepare reconstruction"));
+    for surface in frame.surfaces() {
+        if surface.requirement().binding() == replacement {
+            world.host.push_native_display_presented();
+        } else {
+            world.host.push_native_display_settled_without_effects();
+        }
+    }
+    let outcome = world
+        .session
+        .present_prepared_mounted_reconstruction_frame(
+            frame,
+            &replacements,
+            UiPresentationDeadline::at_tick(u64::MAX),
+            400,
+        )
+        .unwrap();
+    match outcome {
+        UiMountedFrameOutcome::Reconciled(_) => {}
+        UiMountedFrameOutcome::AdmissionDenied(denial) => {
+            panic!("cold reconstruction admission: {:?}", denial.denial())
+        }
+        UiMountedFrameOutcome::RejectedBeforeEffects(rejected) => {
+            panic!("cold reconstruction rejected: {:?}", rejected.rejections())
+        }
+        UiMountedFrameOutcome::PresentationIndeterminate(frame) => {
+            panic!("cold reconstruction indeterminate: {:?}", frame.report())
+        }
+        other => panic!(
+            "cold reconstruction outcome: {:?}",
+            std::mem::discriminant(&other)
+        ),
+    }
+
+    replacement
 }

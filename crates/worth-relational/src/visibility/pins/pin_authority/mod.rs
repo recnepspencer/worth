@@ -1,6 +1,5 @@
 mod branch_head_residency;
 mod replay_pins;
-mod snapshot_state_pins;
 
 use crate::runtime::RelationalRuntime;
 use crate::storage::substrate::PinClass as SubstratePinClass;

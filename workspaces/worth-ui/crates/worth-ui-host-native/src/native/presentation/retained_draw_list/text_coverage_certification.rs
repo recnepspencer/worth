@@ -44,7 +44,7 @@ impl UiNativeRetainedDrawList {
             .collect::<Vec<_>>();
         let mut retained =
             Self::from_text_view_for_certification(&commands, &order, view, extent, atlas)?;
-        retained.initialize_text_coverage(candidates, atlas)?;
+        retained.initialize_text_coverage(candidates, atlas, view)?;
         Ok(retained)
     }
 
@@ -340,13 +340,24 @@ impl UiNativeRetainedDrawList {
         if !appearance.take_damage().is_empty() {
             return Err(Denial::CommandMismatch);
         }
-        let keys = appearance.ordered_keys();
+        // Replay selects by damage bounds; the staged overlay order has none.
+        let keys = appearance
+            .ordered_keys()
+            .iter()
+            .copied()
+            .filter(|key| {
+                matches!(
+                    appearance.command(*key),
+                    Some(crate::native::presentation::appearance::UiNativeAppearanceCommand::TextForeground(_))
+                )
+            })
+            .collect::<Vec<_>>();
         for region in &accepted_replay.staged_appearance_regions {
             let intersects = expected
                 .coverage()
                 .iter()
                 .any(|r| r.intersects(region.damage));
-            let selected = if intersects { keys.as_ref() } else { &[] };
+            let selected = if intersects { keys.as_slice() } else { &[] };
             if region.replay.as_ref() != selected {
                 return Err(Denial::CommandMismatch);
             }
@@ -363,34 +374,6 @@ impl UiNativeRetainedDrawList {
     }
 }
 
-fn coverage(
-    retained: &UiNativeRetainedDrawList,
-) -> Result<Vec<UiNativeFinalizedTextForeground>, Denial> {
-    let (_, appearance) = retained
-        .staged_appearance
-        .as_ref()
-        .ok_or(Denial::CommandMismatch)?;
-    appearance
-        .ordered_keys()
-        .iter()
-        .map(|key| match appearance.command(*key) {
-            Some(
-                crate::native::presentation::appearance::UiNativeAppearanceCommand::TextForeground(
-                    value,
-                ),
-            ) => Ok(value.clone()),
-            _ => Err(Denial::CommandMismatch),
-        })
-        .collect()
-}
-
-struct UnsettledPort;
-impl presentation::UiNativePendingExternalObligation for UnsettledPort {
-    fn poll_observation(
-        &mut self,
-        basis: crate::native::physical_work_signal::UiNativePhysicalSignalExternalBasis,
-        _: Option<&wgpu::Device>,
-    ) -> crate::native::physical_work_signal::UiNativePhysicalSignalExternalObservation {
-        basis.observe(crate::native::physical_work_signal::UiNativePhysicalSignalStatus::Pending)
-    }
-}
+#[path = "text_coverage_certification/certification_port.rs"]
+mod certification_port;
+use certification_port::{coverage, UnsettledPort};

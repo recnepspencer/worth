@@ -273,6 +273,7 @@ impl UiNativeMountedTextCoordinator {
         self.pins.commit_presented(candidate);
     }
 
+    #[cfg(feature = "certification-support")]
     pub(crate) fn require_raster_cache_reconstruction(&mut self) -> usize {
         let lost = self.raster_cache.clear();
         if lost > 0 {

@@ -33,7 +33,7 @@ fn appearance_state_retirement_and_epoch_succession_preserve_exact_membership() 
         target.graph_node().digest(),
     );
     let stale_source = crate::runtime::tests::appearance_component_session_test_support::
-        source_backed_static_paint_consumer_session();
+        source_backed_appearance_consumer_session();
     let stale_generation = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
         session_identity,
         stale_source.generation_identity(),
@@ -79,7 +79,7 @@ fn appearance_state_retirement_and_epoch_succession_preserve_exact_membership() 
             .retained_entry_for_test(&live)
             .expect("live entry remains retained")
             .key,
-        super::state_key(&live)
+        super::super::appearance_state_membership::state_key(&live)
     );
     assert!(state.retained_entry_for_test(&retired).is_none());
     assert!(state

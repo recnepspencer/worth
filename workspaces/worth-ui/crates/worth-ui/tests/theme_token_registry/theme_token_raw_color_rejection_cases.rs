@@ -1,8 +1,8 @@
 use worth_ui::facade::{
     app::WorthUi,
     declaration::{
-        RawColorOutsideTokenDefinition, ThemeColorValue, ThemeTokenDescriptor, ThemeTokenFamily,
-        ThemeTokenSource, ThemeTokenValue,
+        RawColorOutsideTokenDefinition, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenSource,
+        UiThemeColor, UiThemeColorParseDenial,
     },
     diagnostics::CapabilityDiagnosticCode,
 };
@@ -52,16 +52,8 @@ fn theme_token_without_value_or_alias_is_rejected() {
 
 #[test]
 fn invalid_theme_color_literal_is_rejected() {
-    let report = WorthUi::app()
-        .with_change_profile(worth_ui_runtime::facade::rebind::UiChangeProfile::platform_pulse())
-        .register_theme_token(ThemeTokenDescriptor::define(
-            theme_token_id("theme.text.invalid"),
-            ThemeTokenFamily::text(),
-            ThemeTokenSource::application(),
-            ThemeTokenValue::color(ThemeColorValue::invalid_for_diagnostics("white")),
-        ))
-        .freeze_with_registration_report();
-
-    assert_diagnostic_codes(&report, &[CapabilityDiagnosticCode::InvalidThemeTokenValue]);
-    assert!(report.accepted_snapshot().theme_tokens().is_empty());
+    assert_eq!(
+        UiThemeColor::parse("white"),
+        Err(UiThemeColorParseDenial::MissingHash)
+    );
 }

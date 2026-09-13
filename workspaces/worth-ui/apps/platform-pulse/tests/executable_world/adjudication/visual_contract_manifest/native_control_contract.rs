@@ -22,6 +22,12 @@ pub(in crate::adjudication) fn portal_control(
     control("platform.pulse.target.open_portal")
 }
 
+pub(in crate::adjudication) fn portal_control_for_extent(
+    logical_client_extent: [u32; 2],
+) -> Result<PlatformPulseNativeControlContract, PlatformPulseVisualContractFailure> {
+    control_for_extent("platform.pulse.target.open_portal", logical_client_extent)
+}
+
 pub(in crate::adjudication) fn confirmation_control(
 ) -> Result<PlatformPulseNativeControlContract, PlatformPulseVisualContractFailure> {
     control("platform.pulse.target.confirm_live_action")
@@ -30,18 +36,26 @@ pub(in crate::adjudication) fn confirmation_control(
 fn control(
     identity: &str,
 ) -> Result<PlatformPulseNativeControlContract, PlatformPulseVisualContractFailure> {
+    control_for_extent(identity, [960, 600])
+}
+
+fn control_for_extent(
+    identity: &str,
+    logical_client_extent: [u32; 2],
+) -> Result<PlatformPulseNativeControlContract, PlatformPulseVisualContractFailure> {
     let manifest = checked_in()?;
-    from_manifest(&manifest, identity)
+    from_manifest(&manifest, identity, logical_client_extent)
 }
 
 fn from_manifest(
     manifest: &PlatformPulseVisualContractManifest,
     identity: &str,
+    logical_client_extent: [u32; 2],
 ) -> Result<PlatformPulseNativeControlContract, PlatformPulseVisualContractFailure> {
     let layout = manifest
         .layouts
         .iter()
-        .find(|layout| layout.name == "default")
+        .find(|layout| layout.logical_client_extent == logical_client_extent)
         .ok_or(PlatformPulseVisualContractFailure::Target)?;
     let target = layout
         .minimum_targets

@@ -36,11 +36,6 @@ pub(super) fn component_descriptor_basis(descriptor: &ComponentDescriptor) -> St
                 .allocation_measurement_contract()
                 .map(|contract| contract.digest_basis()),
         ),
-        option_digest_basis(
-            descriptor
-                .static_paint_contract()
-                .map(|contract| contract.digest_basis()),
-        ),
     ]
     .join("|")
 }

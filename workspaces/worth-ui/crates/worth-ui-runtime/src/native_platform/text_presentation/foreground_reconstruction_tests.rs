@@ -79,7 +79,7 @@ fn reconstruction_keeps_adopted_and_token_ranges_distinct_at_fractional_dpi() {
     assert!((adopted_color[3] - (128.0 / 255.0) * (20_000.0 / 65_535.0)).abs() < 0.000001);
     // Vertex RGB is linear light; these are the independently evaluated sRGB
     // transfer values for token bytes 100, 150, and 200.
-    let expected_token = [0.127_437_68, 0.304_987_31, 0.577_580_45, 1.0];
+    let expected_token = [0.127_437_68, 0.304_987_3, 0.577_580_45, 1.0];
     for (actual, expected) in token_color.into_iter().zip(expected_token) {
         assert!((actual - expected).abs() < 0.000001);
     }

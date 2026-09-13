@@ -1,26 +1,44 @@
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub(crate) struct UiPreparedThemeSwitch {
     pub(super) reservation: u64,
     pub(super) predecessor_generation: u64,
     pub(super) successor: super::UiActiveThemeBinding,
     pub(super) origin: super::UiThemeSwitchOrigin,
     pub(super) owner_affinity: u64,
+    pub(super) reservations: std::rc::Weak<
+        std::cell::RefCell<
+            std::collections::BTreeMap<u64, super::state::UiPreparedThemeReservation>,
+        >,
+    >,
 }
 
 impl UiPreparedThemeSwitch {
-    pub(crate) const fn reservation(&self) -> u64 {
-        self.reservation
-    }
-
-    pub(crate) const fn predecessor_generation(&self) -> u64 {
-        self.predecessor_generation
-    }
-
     pub(crate) const fn successor(&self) -> &super::UiActiveThemeBinding {
         &self.successor
     }
+}
 
-    pub(crate) const fn origin(&self) -> &super::UiThemeSwitchOrigin {
-        &self.origin
+impl Drop for UiPreparedThemeSwitch {
+    fn drop(&mut self) {
+        if let Some(reservations) = self.reservations.upgrade() {
+            let mut reservations = reservations.borrow_mut();
+            if reservations
+                .get(&self.reservation)
+                .is_some_and(|row| row.owner_affinity == self.owner_affinity)
+            {
+                reservations.remove(&self.reservation);
+            }
+        }
     }
 }
+
+impl PartialEq for UiPreparedThemeSwitch {
+    fn eq(&self, other: &Self) -> bool {
+        self.reservation == other.reservation
+            && self.predecessor_generation == other.predecessor_generation
+            && self.successor == other.successor
+            && self.origin == other.origin
+            && self.owner_affinity == other.owner_affinity
+    }
+}
+impl Eq for UiPreparedThemeSwitch {}

@@ -11,15 +11,6 @@ use super::super::appearance_state_membership::local_node_key;
 use super::super::UiMountedProjectionFrame;
 use super::UiMountedAppearanceFrameState;
 
-pub(in crate::mounting::projection::frame_storage) fn portal_instances(
-    overlays: &[UiMountedAppearanceSurfaceOverlayInput],
-) -> BTreeSet<worth_ui_host_contract::UiMountedInstanceIdentity> {
-    overlays
-        .iter()
-        .flat_map(|overlay| overlay.portal_instances.iter().copied())
-        .collect()
-}
-
 impl UiMountedAppearanceFrameState {
     pub(in crate::mounting::projection::frame_storage) fn stage_portal_ownership_changes(
         &mut self,
@@ -34,6 +25,13 @@ impl UiMountedAppearanceFrameState {
                 .find(|overlay| overlay.semantic_surface == surface)
                 .map(|overlay| overlay.portal_instances.iter().copied().collect())
                 .unwrap_or_default();
+            if frame
+                .portal_overlay_inputs()
+                .iter()
+                .any(|portal| portal.surface() == surface && !current.contains(&portal.owner()))
+            {
+                return Err(UiMountedAppearanceOutputDenial::PortalOrderUnavailable);
+            }
             let previous = self
                 .active_portal_instances
                 .get(&surface)
@@ -67,6 +65,9 @@ impl UiMountedAppearanceFrameState {
                     .selected_instances()
                     .binary_search(instance)
                     .is_err()
+                    // Retired occurrences carry physical removal work, not
+                    // successor node inputs to refresh after leaving a Portal.
+                    && self.selection.retired_instances().binary_search(instance).is_err()
             });
             for portal in refresh {
                 let context = frame
@@ -106,6 +107,17 @@ impl UiMountedAppearanceFrameState {
                 .iter()
                 .copied()
                 .collect::<BTreeSet<_>>();
+            let surface = frame
+                .semantic
+                .surface_for(overlay.semantic_surface)
+                .ok_or(UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable)?;
+            let presentations = frame
+                .portal_overlay_view_rows(surface)
+                .map_err(|_| UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable)?
+                .rows
+                .into_iter()
+                .map(|portal| (portal.owner(), portal))
+                .collect::<std::collections::BTreeMap<_, _>>();
             let mut nodes = Vec::with_capacity(portals.len());
             for portal in &portals {
                 if !frame
@@ -114,15 +126,18 @@ impl UiMountedAppearanceFrameState {
                 {
                     continue;
                 }
+                let portal_surface = presentations
+                    .get(portal)
+                    .ok_or(UiMountedAppearanceOutputDenial::PortalOrderUnavailable)?;
                 let context = frame
-                    .appearance_node_input(*portal)
+                    .appearance_portal_surface_input(*portal_surface)
                     .map_err(|_| UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable)?;
                 let entry = self
                     .members
                     .retained_entry_for_local_node(&local_node_key(&context))
                     .ok_or(UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable)?;
                 let mut input = context
-                    .lower_retained_projection(
+                    .lower_resolved_projection(
                         &entry.projection,
                         presentation,
                         geometry.outline_fringe(context.semantic_surface),

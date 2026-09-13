@@ -1,5 +1,9 @@
 mod focus_changes;
 mod pointer_changes;
+mod receipt_refresh;
+mod retention;
+mod succession;
+pub(crate) use retention::UiPreparedRetainedAppearanceOwnerSuccession;
 
 #[derive(Clone)]
 pub struct UiAppearanceOwnerSnapshot {
@@ -7,6 +11,7 @@ pub struct UiAppearanceOwnerSnapshot {
     session: crate::facade::WorthUiActiveApplicationSessionIdentity,
     source_basis: u64,
     generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    predecessor_generation: Option<crate::runtime::WorthUiActiveApplicationGenerationIdentity>,
     demand: super::UiAppearanceStateAxisDemand,
     focus: Option<crate::runtime::focus::UiFocusAppearancePosture>,
     selection: Option<crate::runtime::selection::UiSelectionAppearanceOwnerSnapshot>,
@@ -38,6 +43,7 @@ impl UiAppearanceOwnerSnapshot {
         pressed: Option<crate::runtime::interaction::gesture::UiPressedAppearanceOwnerSnapshot>,
     ) -> Self {
         Self {
+            predecessor_generation: None,
             turn,
             session,
             source_basis,
@@ -91,6 +97,21 @@ impl UiAppearanceOwnerSnapshot {
             changed.include(worth_ui_dsl::UiAppearanceStateAxis::Pressed);
         }
         changed
+    }
+
+    pub(crate) fn same_owner_snapshot(&self, other: &Self) -> bool {
+        self.turn == other.turn
+            && self.session == other.session
+            && self.source_basis == other.source_basis
+            && self.generation == other.generation
+            && self.predecessor_generation == other.predecessor_generation
+            && self.demand == other.demand
+            && self.focus == other.focus
+            && self.selection == other.selection
+            && self.operability == other.operability
+            && self.validation == other.validation
+            && self.pointer_presence == other.pointer_presence
+            && self.pressed == other.pressed
     }
 
     pub(crate) fn requires_initial_invalidation(&self, predecessor: &Self) -> bool {

@@ -173,7 +173,7 @@ error[E0308]: mismatched types
 error[E0308]: mismatched types
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/theme_token/construction/raw_color_cannot_replace_theme_token_dependency.rs
  note: expected `ThemeTokenId`, found `&str`
- note: method defined here
+ note: associated function defined here
 
 error[E0277]: the trait bound `WorthUiQueryViewRegistration: From<WorthUiQueryViewDefinition>` is not satisfied
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/query_binding/construction/query_registration_requires_installed_view.rs

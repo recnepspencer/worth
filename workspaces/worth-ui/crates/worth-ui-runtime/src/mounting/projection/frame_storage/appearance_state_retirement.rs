@@ -15,6 +15,10 @@ pub(super) struct UiMountedAppearanceRetirements {
 }
 
 impl UiMountedAppearanceRetirements {
+    pub(super) fn is_empty(&self) -> bool {
+        self.pending.is_empty()
+    }
+
     pub(super) fn forget_surface(
         &mut self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,

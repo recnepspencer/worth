@@ -2,6 +2,7 @@
 pub(crate) struct UiMountedPortalOverlayProjectionInput {
     portal_identity: u64,
     owner: worth_ui_host_contract::UiMountedInstanceIdentity,
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     placement: crate::runtime::portal::UiPreparedPortalPlacement,
     lifecycle: crate::runtime::portal::UiPortalLifecyclePosture,
 }
@@ -10,12 +11,14 @@ impl UiMountedPortalOverlayProjectionInput {
     pub(crate) const fn new(
         portal_identity: u64,
         owner: worth_ui_host_contract::UiMountedInstanceIdentity,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         placement: crate::runtime::portal::UiPreparedPortalPlacement,
         lifecycle: crate::runtime::portal::UiPortalLifecyclePosture,
     ) -> Self {
         Self {
             portal_identity,
             owner,
+            surface,
             placement,
             lifecycle,
         }
@@ -25,11 +28,16 @@ impl UiMountedPortalOverlayProjectionInput {
         self.owner
     }
 
+    pub(crate) const fn surface(self) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
+        self.surface
+    }
+
     pub(crate) fn same_mounted_projection_meaning(self, other: Self) -> bool {
         let left_presentation = self.placement.presentation();
         let right_presentation = other.placement.presentation();
         self.portal_identity == other.portal_identity
             && self.owner == other.owner
+            && self.surface == other.surface
             && left_presentation.host_surface() == right_presentation.host_surface()
             && left_presentation.binding() == right_presentation.binding()
             && self.placement.anchor() == other.placement.anchor()
@@ -47,7 +55,6 @@ impl UiMountedPortalOverlayProjectionInput {
     pub(crate) fn mechanic_for(
         self,
         frame: worth_ui_host_contract::UiMountedFrameIdentity,
-        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
         owner_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
     ) -> Result<
@@ -59,7 +66,7 @@ impl UiMountedPortalOverlayProjectionInput {
         worth_ui_host_contract::UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(
             worth_ui_host_contract::UiMountedPortalOverlayCompletionInput {
                 frame,
-                surface,
+                surface: self.surface,
                 binding,
                 owner: self.owner,
                 owner_receipt,

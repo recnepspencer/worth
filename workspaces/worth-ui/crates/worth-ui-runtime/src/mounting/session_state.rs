@@ -36,6 +36,7 @@ pub(crate) struct WorthUiMountedSessionState {
     retention: super::UiMountedFrameRetentionCoordinator,
     presentation: super::UiMountedPresentationCoordinator,
     motion_sampling: super::presentation::motion_sampling::UiMountedMotionSampler,
+    last_motion_sampling_cost: Option<super::UiPresentationMotionSamplingCost>,
     selection_bindings: super::selection_binding::UiMountedSelectionBindings,
     publication_reservations:
         BTreeMap<UiMountedPresentationAttemptIdentity, super::UiMountedFramePublicationCandidate>,
@@ -59,6 +60,7 @@ impl WorthUiMountedSessionState {
             retention: super::UiMountedFrameRetentionCoordinator::with_budget(retention_budget),
             presentation: super::UiMountedPresentationCoordinator::new(presentation_async),
             motion_sampling: Default::default(),
+            last_motion_sampling_cost: None,
             selection_bindings: Default::default(),
             publication_reservations: BTreeMap::new(),
             reconciliation_reservations: BTreeMap::new(),

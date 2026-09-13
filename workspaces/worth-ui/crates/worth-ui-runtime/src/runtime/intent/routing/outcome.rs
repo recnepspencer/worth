@@ -39,7 +39,10 @@ pub(crate) struct UiResolvedProductIntentRouteInput {
 }
 
 pub(crate) enum UiIntentProductInputSource {
-    Mounted(crate::runtime::interaction::UiSemanticInteraction),
+    Mounted {
+        interaction: crate::runtime::interaction::UiSemanticInteraction,
+        target: crate::runtime::interaction::UiPresentedInteractionTargetView,
+    },
     Command {
         receipt: crate::runtime::UiCommandRouteReceipt,
         target: crate::runtime::interaction::UiPresentedInteractionTargetView,
@@ -144,8 +147,12 @@ impl UiResolvedProductIntentRoute {
 impl UiIntentProductInputSource {
     pub(crate) const fn mounted(
         interaction: crate::runtime::interaction::UiSemanticInteraction,
+        target: crate::runtime::interaction::UiPresentedInteractionTargetView,
     ) -> Self {
-        Self::Mounted(interaction)
+        Self::Mounted {
+            interaction,
+            target,
+        }
     }
 
     pub(crate) const fn command(
@@ -159,7 +166,7 @@ impl UiIntentProductInputSource {
         &self,
     ) -> &crate::runtime::WorthUiActiveApplicationGenerationIdentity {
         match self {
-            Self::Mounted(interaction) => interaction.generation(),
+            Self::Mounted { interaction, .. } => interaction.generation(),
             Self::Command { receipt, .. } => receipt.application(),
         }
     }
@@ -168,7 +175,7 @@ impl UiIntentProductInputSource {
         &self,
     ) -> crate::runtime::interaction::UiPresentedInteractionTargetView {
         match self {
-            Self::Mounted(interaction) => interaction.target(),
+            Self::Mounted { target, .. } => *target,
             Self::Command { target, .. } => *target,
         }
     }
@@ -177,7 +184,7 @@ impl UiIntentProductInputSource {
         &self,
     ) -> Option<worth_ui_host_contract::UiHostObservationTimeBasis> {
         match self {
-            Self::Mounted(interaction) => Some(interaction.time_basis()),
+            Self::Mounted { interaction, .. } => Some(interaction.time_basis()),
             Self::Command { receipt, .. } => receipt.time_basis(),
         }
     }
@@ -186,14 +193,14 @@ impl UiIntentProductInputSource {
         &self,
     ) -> Option<&crate::runtime::interaction::UiSemanticInteraction> {
         match self {
-            Self::Mounted(interaction) => Some(interaction),
+            Self::Mounted { interaction, .. } => Some(interaction),
             Self::Command { .. } => None,
         }
     }
 
     pub(crate) const fn command_receipt(&self) -> Option<&crate::runtime::UiCommandRouteReceipt> {
         match self {
-            Self::Mounted(_) => None,
+            Self::Mounted { .. } => None,
             Self::Command { receipt, .. } => Some(receipt),
         }
     }

@@ -69,14 +69,12 @@ fn mounted_allocation_carries_initial_binding_to_the_successor_generation() {
         binding.capability().definition().as_str(),
         "theme.appearance.receipts"
     );
-    assert!(fixture
-        .session
-        .presentation
-        .appearance_theme_resolution_view(
+    assert!(crate::runtime::presentation_state::UiApplicationPresentationState::resolve_appearance_theme_binding(
             fixture.session.capabilities(),
             &role,
             fixture.surface,
             &successor,
+            binding,
         )
         .is_ok());
     let _ = fixture.session.shutdown();

@@ -9,6 +9,7 @@ impl UiPointerPresenceOwner {
         kind: UiPrimaryPointerKind,
         mounted: &crate::mounting::WorthUiMountedSessionState,
         generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+        work: &mut crate::mounting::UiHitTestSpatialWork,
     ) -> Result<
         Option<UiPointerPresenceTargetTransition>,
         super::super::UiPointerPresenceAdmissionDenial,
@@ -23,13 +24,15 @@ impl UiPointerPresenceOwner {
             _ => return Ok(None),
         };
         self.admit_pointer(pointer, kind)?;
-        let resolved = UiPresentedPointerPosition::resolve(mounted, core.presentation(), position)
-            .map_err(
-                |denial| super::super::UiPointerPresenceAdmissionDenial::Targeting {
-                    pointer,
-                    denial,
-                },
-            )?;
+        let resolved = UiPresentedPointerPosition::resolve_observation(
+            mounted,
+            core.presentation(),
+            position,
+            work,
+        )
+        .map_err(
+            |denial| super::super::UiPointerPresenceAdmissionDenial::Targeting { pointer, denial },
+        )?;
         self.record_observation(
             pointer,
             UiPointerPresenceRecord::from_position(kind, report.sequence(), &resolved),

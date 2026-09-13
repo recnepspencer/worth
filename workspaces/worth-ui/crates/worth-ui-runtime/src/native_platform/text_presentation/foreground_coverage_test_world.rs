@@ -2,13 +2,15 @@
 //! No application-world or physical presentation acceptance is asserted here.
 
 mod image_oracle;
+mod native_consumption;
 mod token_suffix;
+use native_consumption::bounds;
 
 use super::{
     prepare_complete_semantic_text, UiMountedEventTimeDpiAuthority, UiNativeTextAtlasTransaction,
     UiNativeTextPresentationPreparation,
 };
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 use worth_ui_host_contract::*;
 
 pub(super) struct CoverageWorld {
@@ -19,6 +21,10 @@ pub(super) struct CoverageWorld {
     presentation: UiMountedPresentationUnchanged,
     pub(super) attempt: UiMountedPresentationAttemptIdentity,
     requirement: UiMountedSurfaceBindingRequirement,
+    /// Portal owners the surface overlay order admits; PortalOverlay paint
+    /// rows in a test must name one of these so retained order stays exact.
+    pub(super) portals: Box<[UiMountedInstanceIdentity]>,
+    appearance_work: Option<UiMountedAppearancePresentationWork>,
 }
 
 impl CoverageWorld {
@@ -98,6 +104,25 @@ impl CoverageWorld {
         paint: ([u8; 4], u16),
         physical: (f32, u32),
     ) -> Self {
+        Self::with_portal_occluders(
+            source, instance, x, clip, basis, commands, paint, physical, 0,
+        )
+    }
+
+    pub(super) fn with_portal_occluders(
+        source: &str,
+        instance: UiMountedInstanceIdentity,
+        x: f32,
+        clip: [f32; 4],
+        basis: Option<&Self>,
+        commands: &[(UiSemanticTextSlot, f32)],
+        paint: ([u8; 4], u16),
+        physical: (f32, u32),
+        occluders: usize,
+    ) -> Self {
+        let portals = (0..occluders)
+            .map(|_| UiMountedInstanceIdentity::mint_unbound().unwrap())
+            .collect::<Box<[_]>>();
         let layout = crate::mounting::qualified_text_test_support::inert_qualified_layout(source);
         let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
         let predecessor = basis.map_or_else(
@@ -149,6 +174,7 @@ impl CoverageWorld {
                         surface,
                         binding,
                         mounted_instance: instance,
+                        portal_group: None,
                         node_receipt: receipt,
                         allocation_basis: UiMountedAllocationBasis::new(
                             1,
@@ -210,14 +236,16 @@ impl CoverageWorld {
             attempt,
             1,
             1,
-            [],
+            portals
+                .iter()
+                .map(|portal| UiOverlayParticipantIdentity::Portal(*portal)),
         )
         .unwrap();
         let appearance = UiMountedAppearanceFrame::from_runtime_mounting(
             frame,
             surface,
             rows.iter().cloned(),
-            order,
+            order.clone(),
         )
         .unwrap();
         let previous_receipt = basis
@@ -269,7 +297,9 @@ impl CoverageWorld {
             Some(
                 UiMountedAppearancePredecessorManifest::from_runtime_mounting(
                     previous_identities,
-                    [],
+                    portals
+                        .iter()
+                        .map(|portal| UiOverlayParticipantIdentity::Portal(*portal)),
                 )
                 .unwrap(),
             ),
@@ -302,6 +332,50 @@ impl CoverageWorld {
             presentation.affinity(),
         )
         .unwrap();
+        let appearance_work = (!portals.is_empty()).then(|| {
+            let overlay = UiUnpublishedAppearanceFragment::from_runtime_mounting(
+                UiUnpublishedAppearanceFragmentIdentity::SurfaceOverlay(surface),
+                UiMountedAppearanceWork::from_runtime_mounting(
+                    UiMountedAppearanceWorkPosture::Delta,
+                    Some(predecessor),
+                    Some(
+                        UiMountedAppearancePredecessorManifest::from_runtime_mounting([], [])
+                            .unwrap(),
+                    ),
+                    UiMountedAppearanceFrame::from_runtime_mounting(frame, surface, [], order)
+                        .unwrap(),
+                    [],
+                    [],
+                    true,
+                )
+                .unwrap(),
+                [],
+                requirement,
+                UiMountedPresentationAffinity::from_runtime_mounting(
+                    Some(predecessor),
+                    frame,
+                    requirement,
+                    content,
+                    None,
+                ),
+            )
+            .unwrap();
+            let projection = UiUnpublishedAppearanceFrameProjection::from_runtime_mounting(
+                frame,
+                attempt,
+                [fragment.clone(), overlay],
+            )
+            .unwrap();
+            UiMountedAppearancePresentationWork::from_runtime_mounting(
+                &projection,
+                frame,
+                attempt,
+                requirement,
+                [],
+            )
+            .unwrap()
+            .expect("the overlay fragment binds the world surface")
+        });
         Self {
             layout,
             fragment,
@@ -310,82 +384,8 @@ impl CoverageWorld {
             presentation,
             attempt,
             requirement,
+            portals,
+            appearance_work,
         }
     }
-
-    pub(super) fn with_native<Output>(
-        &self,
-        attempt: UiMountedPresentationAttemptIdentity,
-        operation: impl FnOnce(&UiMountedFrameConsumptionView<'_>) -> Output,
-    ) -> (Output, super::rasterization::UiNativeTextRasterWorkReport) {
-        let UiNativeTextPresentationPreparation::Prepared(prepared) =
-            prepare_complete_semantic_text(
-                self.fragment.text_candidates(),
-                UiMountedEventTimeDpiAuthority::from_requirement(self.requirement).unwrap(),
-                UiGlyphRasterLane::Ordinary,
-                |id| (id == self.layout.identity()).then_some(self.layout.as_ref()),
-            )
-            .unwrap()
-        else {
-            panic!("complete text preparation denied");
-        };
-        let mut cache = worth_ui_text::UiGlyphRasterCache::default();
-        let mut transaction = UiNativeTextAtlasTransaction::prepare(
-            &prepared,
-            |id| (id == self.layout.identity()).then_some(self.layout.as_ref()),
-            &mut cache,
-        )
-        .unwrap();
-        let resolver = Resolver(&self.layout);
-        transaction.with_mounted_work(
-            UiGlyphRasterPinTransitionView::from_text_mechanics(&[], &[]),
-            &[],
-            |raster| {
-                let UiHostProtocolNegotiation::Compatible(protocol) =
-                    UiHostProtocolContract::current().negotiate()
-                else {
-                    panic!("current protocol denied");
-                };
-                let view = UiMountedFrameConsumptionView::from_inert_mechanics(
-                    UiMountedFrameConsumptionInput {
-                        authority: Rc::new(()),
-                        host_session_identity: 41,
-                        protocol,
-                        capability_generation: self.requirement.capability_generation(),
-                        capability_profile_digest: self.requirement.capability_profile_digest(),
-                        attempt,
-                        deadline: UiPresentationDeadline::at_tick(100),
-                        requirement: self.requirement,
-                        presentation_work: UiMountedPresentationWorkView::Unchanged(
-                            &self.presentation,
-                        ),
-                        appearance_work: None,
-                        qualified_text: &resolver,
-                        text_raster_work: Some(raster),
-                    },
-                );
-                operation(&view)
-            },
-        )
-    }
-}
-
-struct Resolver<'a>(&'a worth_ui_text::UiQualifiedTextLayout);
-impl UiMountedQualifiedTextResolver for Resolver<'_> {
-    fn resolve(
-        &self,
-        identity: UiQualifiedTextLayoutIdentity,
-    ) -> Option<UiQualifiedTextLayoutView<'_>> {
-        (identity == self.0.identity()).then(|| self.0.view())
-    }
-}
-fn bounds(value: [f32; 4]) -> UiMountedCanonicalBox {
-    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-        x: value[0],
-        y: value[1],
-        width: value[2],
-        height: value[3],
-        coordinate_space: UiMountedCoordinateSpace::HostSurface,
-    })
-    .unwrap()
 }

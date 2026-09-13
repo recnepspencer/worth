@@ -1,6 +1,7 @@
 mod completion;
 mod formatting;
 mod geometry;
+pub(in crate::mounting::projection) use geometry::require_allocation;
 mod profile;
 mod qualification;
 mod qualification_cache;

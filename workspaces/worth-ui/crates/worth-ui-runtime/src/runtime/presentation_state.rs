@@ -5,9 +5,14 @@ mod appearance_generation_succession;
 mod appearance_theme;
 mod overlay_export;
 mod projection;
-#[path = "presentation_state/theme_values.rs"]
-mod theme_values;
-
+mod semantic_text_tokens;
+mod text_publication;
+mod text_succession;
+pub(crate) use text_publication::{
+    UiApplicationTextMountedCoverage, UiApplicationTextPublication,
+    UiApplicationTextRevisionSelection,
+};
+pub(crate) use text_succession::UiPreparedApplicationTextSuccession;
 #[cfg(test)]
 #[path = "presentation_state_tests.rs"]
 mod tests;
@@ -15,7 +20,6 @@ mod tests;
 pub(crate) use appearance_generation_succession::{
     UiAppearanceGenerationSuccessionDenial, UiPreparedAppearanceGenerationSuccession,
 };
-#[cfg(test)]
 pub(crate) use appearance_theme::UiAppearanceThemeBindingDenial;
 pub(crate) use overlay_export::UiApplicationPresentationOwnerExport;
 
@@ -23,21 +27,9 @@ pub(crate) struct UiApplicationPresentationState {
     rows: HashMap<Box<str>, UiApplicationSemanticTextRow>,
     token_values:
         Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
-    resolved_targets: BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenId>,
-    mutable_token_revisions: BTreeMap<crate::capability::ThemeTokenId, u64>,
-    theme_revision: u64,
     pending_appearance_invalidation:
         Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
-    pending_theme_tokens: std::collections::BTreeSet<crate::capability::ThemeTokenId>,
     next_appearance_batch_revision: u64,
-    appearance_theme_values: BTreeMap<
-        worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        theme_values::UiApplicationThemeTypedValues,
-    >,
-    #[allow(
-        dead_code,
-        reason = "milestone 3.16 Gate 0 places the future binding owner without activating switching"
-    )]
     appearance_theme_state: Option<crate::runtime::appearance::UiAppearanceThemeState>,
 }
 
@@ -48,6 +40,7 @@ struct UiApplicationSemanticTextRow {
     semantic_revision: u64,
     presentation_revision: u64,
     projected_presentation_revision: Option<u64>,
+    pending_publication_coverage: Option<UiApplicationTextMountedCoverage>,
 }
 
 pub(crate) struct UiApplicationPresentationProjection {
@@ -56,31 +49,9 @@ pub(crate) struct UiApplicationPresentationProjection {
     theme_values: crate::mounting::UiMountedThemeValueSource,
 }
 
-pub(crate) struct UiApplicationTextPublication {
-    revisions: Box<[(Box<str>, crate::graph::UiGraphNodeIdentity, u64)]>,
-}
-
 impl UiApplicationPresentationState {
     pub(crate) fn activate(capabilities: &crate::capability::CapabilitySnapshot) -> Self {
-        let mut token_values = BTreeMap::new();
-        let mut resolved_targets = BTreeMap::new();
-        let mut mutable_token_revisions = BTreeMap::new();
-        for entry in capabilities.theme_tokens().entries() {
-            let target = entry.resolved_target_id().clone();
-            let value = capabilities
-                .theme_tokens()
-                .get(&target)
-                .and_then(crate::capability::ThemeTokenDescriptor::value)
-                .expect("frozen theme-token alias target has a value")
-                .clone();
-            token_values.insert(entry.descriptor().id().clone(), value);
-            resolved_targets.insert(entry.descriptor().id().clone(), target);
-            if entry.descriptor().source().is_application_owned()
-                && entry.descriptor().alias_target().is_none()
-            {
-                mutable_token_revisions.insert(entry.descriptor().id().clone(), 0);
-            }
-        }
+        let token_values = semantic_text_tokens::admit(capabilities.theme_tokens());
         let rows = capabilities
             .components()
             .descriptors()
@@ -96,6 +67,7 @@ impl UiApplicationPresentationState {
                             semantic_revision: 0,
                             presentation_revision: 0,
                             projected_presentation_revision: None,
+                            pending_publication_coverage: None,
                         },
                     )
                 })
@@ -103,14 +75,9 @@ impl UiApplicationPresentationState {
             .collect();
         Self {
             rows,
-            token_values: Arc::new(token_values),
-            resolved_targets,
-            mutable_token_revisions,
-            theme_revision: 0,
+            token_values,
             pending_appearance_invalidation: None,
-            pending_theme_tokens: std::collections::BTreeSet::new(),
             next_appearance_batch_revision: 1,
-            appearance_theme_values: BTreeMap::new(),
             appearance_theme_state: None,
         }
     }
@@ -164,6 +131,7 @@ impl UiApplicationPresentationState {
             row.contract = contract;
             if changed {
                 row.presentation_revision = row.presentation_revision.checked_add(1).ok_or(())?;
+                row.pending_publication_coverage = None;
             }
         }
         Ok(())
@@ -202,6 +170,15 @@ impl UiApplicationPresentationState {
         })
     }
 
+    pub(crate) fn requires_mounted_projection(&self) -> bool {
+        self.pending_appearance_invalidation.is_some()
+            || self.rows.values().any(|row| {
+                row.value.is_some()
+                    && row.graph_node.is_some()
+                    && row.projected_presentation_revision != Some(row.presentation_revision)
+            })
+    }
+
     pub(crate) fn project_complete(
         &self,
     ) -> Result<UiApplicationPresentationProjection, crate::mounting::UiMountedFramePreparationDenial>
@@ -214,55 +191,10 @@ impl UiApplicationPresentationState {
         include: impl Fn(&UiApplicationSemanticTextRow) -> bool,
     ) -> Result<UiApplicationPresentationProjection, crate::mounting::UiMountedFramePreparationDenial>
     {
-        let mut content = crate::mounting::UiMountedSemanticContentInput::empty();
-        let mut revisions = Vec::new();
-        for (identity, row) in &self.rows {
-            if !include(row) {
-                continue;
-            }
-            let (Some(value), Some(graph_node)) = (&row.value, row.graph_node) else {
-                continue;
-            };
-            let token_values = row
-                .contract
-                .foreground_tokens()
-                .map(|token| {
-                    self.token_values
-                        .get(token)
-                        .cloned()
-                        .map(|value| (token.clone(), value))
-                        .ok_or_else(projection::unknown_graph_node)
-                })
-                .collect::<Result<BTreeMap<_, _>, _>>()?;
-            content
-                .insert_scalar_with_formatting(
-                    graph_node,
-                    crate::mounting::UiMountedSemanticTextValueDirective::Replace(Arc::clone(
-                        value,
-                    )),
-                    Arc::from(" "),
-                    Some(
-                        crate::mounting::UiMountedSemanticTextFormattingDirective::new(
-                            row.contract.clone(),
-                            token_values,
-                        ),
-                    ),
-                )
-                .map_err(|_| projection::unknown_graph_node())?;
-            revisions.push((identity.clone(), graph_node, row.presentation_revision));
-        }
-        Ok(UiApplicationPresentationProjection {
-            content,
-            revisions: revisions.into_boxed_slice(),
-            theme_values: self.theme_values_source(),
-        })
-    }
-
-    pub(crate) fn theme_values_source(&self) -> crate::mounting::UiMountedThemeValueSource {
-        crate::mounting::UiMountedThemeValueSource::from_current_with_changes(
+        UiApplicationPresentationProjection::project_rows(
+            self.rows.iter(),
             Arc::clone(&self.token_values),
-            self.pending_theme_tokens.clone(),
-            self.theme_revision,
+            include,
         )
     }
 
@@ -327,33 +259,12 @@ impl UiApplicationPresentationState {
         }
     }
 
-    pub(crate) fn settle_published_theme_values(&mut self, expected_revision: u64) {
-        if expected_revision == self.theme_revision {
-            self.pending_theme_tokens.clear();
-        }
-    }
-
     pub(crate) fn preview_theme_observation(
         &self,
     ) -> crate::mounting::UiMountedPreviewThemeObservation {
         crate::mounting::UiMountedPreviewThemeObservation::admit_from_presentation(
-            self.theme_revision,
+            0,
             Arc::clone(&self.token_values),
         )
-    }
-
-    #[cfg(test)]
-    pub(crate) fn commit(&mut self, projection: &UiApplicationPresentationProjection) {
-        self.settle_published_text(&projection.text_publication());
-    }
-
-    pub(crate) fn settle_published_text(&mut self, publication: &UiApplicationTextPublication) {
-        for (identity, graph_node, revision) in &publication.revisions {
-            if let Some(row) = self.rows.get_mut(identity.as_ref()) {
-                if row.graph_node == Some(*graph_node) && row.presentation_revision == *revision {
-                    row.projected_presentation_revision = Some(*revision);
-                }
-            }
-        }
     }
 }

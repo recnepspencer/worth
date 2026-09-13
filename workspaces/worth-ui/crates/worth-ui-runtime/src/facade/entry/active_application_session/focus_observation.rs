@@ -9,6 +9,15 @@ impl super::WorthUiActiveApplicationSession {
         &mut self,
         payload: &worth_ui_host_contract::UiHostObservationPayload,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        publications: &mut Vec<
+            Result<
+                (
+                    super::super::UiSemanticFocusPublicationReceipt,
+                    crate::mounting::UiMountedFramePublicationReceipt,
+                ),
+                super::super::UiFocusPlacementExecutionDenial,
+            >,
+        >,
     ) -> bool {
         if self.ime_composing {
             return false;
@@ -47,7 +56,10 @@ impl super::WorthUiActiveApplicationSession {
                 };
                 transition
             };
-            let _placement = self.place_committed_semantic_focus(transition, &publication);
+            publications.push(
+                self.place_committed_semantic_focus(transition, &publication)
+                    .map(|focus| (focus, publication.clone())),
+            );
             return true;
         }
         let UiHostFocusNavigation::Container(key) = navigation else {
@@ -65,7 +77,10 @@ impl super::WorthUiActiveApplicationSession {
         if let crate::runtime::focus::UiFocusContainerNavigationReceipt::Roving(transition) =
             navigation
         {
-            let _placement = self.place_committed_semantic_focus(transition, &publication);
+            publications.push(
+                self.place_committed_semantic_focus(transition, &publication)
+                    .map(|focus| (focus, publication.clone())),
+            );
         }
         true
     }

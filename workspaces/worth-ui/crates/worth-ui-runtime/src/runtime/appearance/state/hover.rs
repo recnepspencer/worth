@@ -74,32 +74,4 @@ impl UiHoverAppearanceState {
     pub(crate) const fn class(&self) -> UiAppearanceAxisClass {
         self.class
     }
-
-    pub(crate) const fn source_class(&self) -> crate::runtime::interaction::UiPointerPresenceClass {
-        self.source_class
-    }
-
-    pub(crate) const fn owner_revision(&self) -> u64 {
-        self.owner_revision
-    }
-
-    pub(crate) const fn pointer(&self) -> Option<UiHostPointerIdentity> {
-        self.pointer
-    }
-
-    pub(crate) const fn kind(&self) -> Option<crate::runtime::interaction::UiPrimaryPointerKind> {
-        self.kind
-    }
-
-    pub(crate) const fn target(&self) -> Option<UiMountedInstanceIdentity> {
-        self.target
-    }
-
-    pub(crate) const fn node_receipt(&self) -> Option<UiMountedNodeReceiptIdentity> {
-        self.node_receipt
-    }
-
-    pub(crate) const fn observation_sequence(&self) -> Option<UiHostObservationSequence> {
-        self.observation_sequence
-    }
 }

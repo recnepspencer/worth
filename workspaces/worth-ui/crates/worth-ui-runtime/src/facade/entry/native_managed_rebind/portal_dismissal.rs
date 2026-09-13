@@ -53,6 +53,8 @@ pub enum WorthUiNativeManagedPortalDismissalOutcome {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthUiNativePortalDismissalStop {
+    /// Input names a superseded presentation. No proposal or host work began.
+    StalePresentation,
     Busy,
     IdentityExhausted,
     Transition,
@@ -143,6 +145,29 @@ impl super::super::WorthUiNativeApplicationShell {
             );
         }
         self.retained_portal_dismissal = None;
+        // Escape queued during a publication names the visible predecessor.
+        // Reuse the Portal-owned continuation only across a mounted-admitted
+        // direct successor. Outside presses keep their original geometry basis.
+        let interaction = if matches!(
+            interaction.cause(),
+            crate::facade::interaction::UiDismissInteractionCause::Escape
+        ) {
+            self.session
+                .portal
+                .as_ref()
+                .and_then(crate::runtime::portal::UiPortalRuntimeState::topmost_presentation)
+                .and_then(|current| {
+                    self.session
+                        .mounted
+                        .direct_successor_presentation(interaction.presentation(), current)
+                })
+                .map(|current| {
+                    UiRetainedPortalDismissalRequest::retain(interaction).rebase(current)
+                })
+                .unwrap_or(interaction)
+        } else {
+            interaction
+        };
         let outcome = self.session.publish_portal_dismissal(interaction, now_tick);
         match normalize(outcome) {
             NormalizedPortalDismissal::Ignored => {
@@ -242,6 +267,7 @@ fn map_stop(
     use super::super::portal_dismissal::UiPortalDismissalPublicationStop as Stop;
     match stop {
         Stop::IdentityExhausted => WorthUiNativePortalDismissalStop::IdentityExhausted,
+        Stop::StalePresentation => WorthUiNativePortalDismissalStop::StalePresentation,
         Stop::Transition => WorthUiNativePortalDismissalStop::Transition,
         Stop::Proposal => WorthUiNativePortalDismissalStop::Proposal,
         Stop::Preparation => WorthUiNativePortalDismissalStop::Preparation,

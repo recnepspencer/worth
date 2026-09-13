@@ -24,6 +24,13 @@ impl super::WorthUiNativeApplicationShell {
         if !self.session.interaction.pointer_presence_is_enabled() {
             return Ok(None);
         }
+        if self.pending_managed_rebind.is_some() {
+            return Ok(self
+                .session
+                .pointer_affordance_snapshot
+                .as_ref()
+                .and_then(|snapshot| snapshot.confirmation_deadline()));
+        }
         let turn = self.session.begin_observation_turn().map_err(|_| ())?;
         let observations = turn.seal().map_err(|_| ())?;
         self.session

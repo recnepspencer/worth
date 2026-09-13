@@ -107,7 +107,17 @@ names to issued declaration identities; the prepared runtime binds the declared
 surface and Portal owner under the current application generation, staging and
 settling the binding with the existing Portal transition. Unqualified legacy
 surface creation remains valid but does not acquire authored-Portal eligibility.
-This Gate 4 boundary is staged and unpublished: it emits no live appearance.
+Appearance-role attachments, Backdrop declarations, and overlay relations stay
+in that same sealed candidate and retain source provenance. The mounted runtime
+resolves them against the candidate's admitted theme and concrete occurrence
+geometry. A source edit cannot publish a partially prepared successor: text,
+owner-state succession, appearance, Motion/overlay composition, and retention
+admission must produce the prepared frame consumed by presentation.
+
+Rust authoring registers the same role and theme contracts through
+`WorthUiApplicationBuilder`; DSL `appearance role` and component `appearance`
+blocks lower to the same semantic package. See
+[Appearance and themes](./appearance-and-themes.md) for matching examples.
 
 ### Watched Edit
 

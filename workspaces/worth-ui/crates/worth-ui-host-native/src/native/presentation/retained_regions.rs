@@ -151,17 +151,6 @@ fn command_region(
     command: &UiMountedPaintCommand,
 ) -> (UiMountedPaintCommandIdentity, UiHostRealizedRegion) {
     match command {
-        UiMountedPaintCommand::FilledRect { identity, mechanic } => (
-            *identity,
-            UiHostRealizedRegion::observed_by_host(
-                mechanic.node_receipt(),
-                UiHostRealizedGeometry::observed_by_host(mechanic.bounds(), mechanic.clip_bounds()),
-                UiHostRealizedOrdering::observed_by_host(
-                    mechanic.layer_semantic_order(),
-                    UiHostRealizedRegionParticipation::Paint,
-                ),
-            ),
-        ),
         UiMountedPaintCommand::PortalOverlay { identity, mechanic } => (
             *identity,
             UiHostRealizedRegion::observed_by_host(

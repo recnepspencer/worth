@@ -133,6 +133,24 @@ fn composed(
                     UiMountedAppearanceMechanic::Surface(surface) => {
                         families[0] = true;
                         assert_eq!(surface.opacity().units(), expected);
+                        if let Some(index) = world.instances[..3]
+                            .iter()
+                            .position(|owner| *owner == target)
+                        {
+                            let [x, y, width, height] = super::geometry::BOXES[index];
+                            let bounds = surface.bounds();
+                            assert_eq!(
+                                [
+                                    bounds.x() as f32,
+                                    bounds.y() as f32,
+                                    bounds.width() as f32,
+                                    bounds.height() as f32
+                                ],
+                                [x, y, width, height].map(|value| value * 1_000.0),
+                                "Portal Motion cannot move or erase its ordinary anchor surface"
+                            );
+                            assert_eq!(surface.portal_group(), None);
+                        }
                     }
                     UiMountedAppearanceMechanic::Outline(outline) => {
                         families[1] = true;
@@ -150,7 +168,7 @@ fn composed(
                     other => panic!("unexpected node family {other:?}"),
                 }
             }
-            assert_eq!(families, [target == world.instances[4], true, true]);
+            assert_eq!(families, [true, true, true]);
             assert!(fragment
                 .text_candidates()
                 .iter()
@@ -175,6 +193,24 @@ fn composed(
                 UiMountedAppearanceMechanic::PortalSurface(surface) => {
                     portal_count += 1;
                     assert_eq!(surface.surface().opacity().units(), opacity(40_000, motion));
+                    let index = world.instances[..3]
+                        .iter()
+                        .position(|owner| *owner == surface.portal_instance())
+                        .unwrap();
+                    let bounds = surface.surface().bounds();
+                    let expected = if index == 2 {
+                        [80_000, 268_000, 280_000, 308_000]
+                    } else {
+                        [
+                            [40_000, 118_000, 280_000, 320_000],
+                            [300_000, 128_000, 280_000, 320_000],
+                        ][index]
+                    };
+                    assert_eq!(
+                        [bounds.x(), bounds.y(), bounds.width() as i32, bounds.height() as i32],
+                        expected,
+                        "the Portal uses its owner-issued placement rather than the anchor allocation"
+                    );
                 }
                 _ => {}
             }
@@ -187,7 +223,7 @@ fn composed(
     assert_eq!(targets, expected);
     assert_eq!((backdrop_count, portal_count), (4, 3));
     let transcript =
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     if motion == u16::MAX {
         let overlay = transcript
             .fragments()
@@ -206,17 +242,27 @@ fn composed(
             [4, 8, 12, 191],
             "the two viewport Backdrops cover the point outside exact mounted regions"
         );
-        // Three exact half-opacity scrims surround a sibling surface whose effective
-        // alpha is 128/255 * 40_000/65_535. Independent linear-light
-        // source-over in the declared order rounds to this fixed sample.
+        // The anchor neighborhood contains three scrims, but no Portal surface.
         assert_eq!(
             overlay
                 .work()
                 .successor()
                 .reference_overlay_at(310_000, 60_000)
                 .straight_srgba(),
-            [11, 26, 42, 233],
-            "the surviving sibling Portal composes between its declared Backdrops"
+            [4, 8, 12, 223],
+            "an ordinary anchor allocation cannot become a Portal overlay rectangle"
+        );
+        // The sibling dialog at [300,128..580,448] covers this point; neither
+        // other dialog nor region Backdrop does. Two viewport scrims precede its
+        // color with effective alpha 128/255 * 40_000/65_535.
+        assert_eq!(
+            overlay
+                .work()
+                .successor()
+                .reference_overlay_at(410_000, 140_000)
+                .straight_srgba(),
+            [18, 39, 60, 211],
+            "the sibling Portal paints its owner-issued dialog bounds"
         );
     }
 }

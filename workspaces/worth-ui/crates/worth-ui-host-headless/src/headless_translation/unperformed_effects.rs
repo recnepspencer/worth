@@ -7,10 +7,10 @@ use super::super::UiHeadlessUnperformedEffect;
 
 pub(super) fn unperformed_effects(
     projection: &UiMountedProjectionView,
+    appearance_mechanic_count: u32,
 ) -> Result<Vec<UiHeadlessUnperformedEffect>, UiHostSurfacePresentationDenial> {
     let mut effects = vec![UiHeadlessUnperformedEffect::NativePaint {
-        filled_rect_count: u32::try_from(projection.filled_rects().rows().len())
-            .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
+        appearance_mechanic_count,
         portal_overlay_count: u32::try_from(projection.portal_overlays().rows().len())
             .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
         semantic_text_count: u32::try_from(projection.semantic_text().rows().len())

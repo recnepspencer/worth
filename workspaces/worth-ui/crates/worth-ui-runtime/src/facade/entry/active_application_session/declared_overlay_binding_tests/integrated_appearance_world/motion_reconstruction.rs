@@ -106,7 +106,7 @@ pub(super) fn reject_retry_at_nonterminal_sample(
     }
     let outcome = world
         .session
-        .present_prepared_mounted_frame_for_reconciliation(
+        .present_prepared_mounted_reconstruction_frame(
             rejected,
             &replacements,
             UiPresentationDeadline::at_tick(u64::MAX),
@@ -159,7 +159,7 @@ pub(super) fn reject_retry_at_nonterminal_sample(
     }
     let outcome = world
         .session
-        .present_prepared_mounted_frame_for_reconciliation(
+        .present_prepared_mounted_reconstruction_frame(
             retry,
             &replacements,
             UiPresentationDeadline::at_tick(u64::MAX),
@@ -240,7 +240,7 @@ pub(super) fn reject_retry_at_nonterminal_sample(
 fn prepare(
     world: &mut World,
     replacements: &[UiMountedSurfaceReconciliationBinding],
-) -> crate::mounting::UiPreparedMountedFrame {
+) -> crate::facade::entry::mounted_frame_execution::UiPreparedMountedReconstructionFrame {
     let request = world.session.mounted_frame_request();
     world
         .session
@@ -257,7 +257,7 @@ fn reference_pixels(
     surface: UiSemanticSurfaceIdentity,
 ) -> ([u8; 4], [u8; 4]) {
     let transcript =
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     let overlay = transcript
         .fragments()
         .iter()

@@ -13,7 +13,7 @@ pub(super) struct UiMountedAllocationProjectionJournal {
 struct UiMountedAllocationProjectionJournalEntry {
     predecessor_revision: u64,
     successor_revision: u64,
-    changed_graph_nodes: Box<[crate::graph::UiGraphNodeIdentity]>,
+    changed_projection_graph_keys: Box<[crate::graph::UiGraphNodeIdentity]>,
 }
 
 #[derive(Clone, Debug)]
@@ -30,7 +30,7 @@ pub(crate) enum UiMountedAllocationProjectionDelta {
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct UiMountedAllocationExactDelta {
-    changed_graph_nodes: Box<[crate::graph::UiGraphNodeIdentity]>,
+    changed_projection_graph_keys: Box<[crate::graph::UiGraphNodeIdentity]>,
     journal_entries_touched: usize,
 }
 
@@ -39,19 +39,19 @@ impl UiMountedAllocationProjectionJournal {
         &mut self,
         predecessor_revision: u64,
         successor_revision: u64,
-        mut changed_graph_nodes: Vec<crate::graph::UiGraphNodeIdentity>,
+        mut changed_projection_graph_keys: Vec<crate::graph::UiGraphNodeIdentity>,
     ) {
         debug_assert!(successor_revision >= predecessor_revision);
         if successor_revision <= predecessor_revision {
             return;
         }
-        changed_graph_nodes.sort();
-        changed_graph_nodes.dedup();
+        changed_projection_graph_keys.sort();
+        changed_projection_graph_keys.dedup();
         self.entries
             .push_back(UiMountedAllocationProjectionJournalEntry {
                 predecessor_revision,
                 successor_revision,
-                changed_graph_nodes: changed_graph_nodes.into_boxed_slice(),
+                changed_projection_graph_keys: changed_projection_graph_keys.into_boxed_slice(),
             });
         while self.entries.len() > MOUNTED_PROJECTION_DELTA_HISTORY_LIMIT {
             self.entries.pop_front();
@@ -78,7 +78,7 @@ impl UiMountedAllocationProjectionJournal {
                 continue;
             }
             touched += 1;
-            changed.extend_from_slice(&entry.changed_graph_nodes);
+            changed.extend_from_slice(&entry.changed_projection_graph_keys);
             cursor = entry.successor_revision;
             if cursor == current_revision {
                 changed.sort();
@@ -133,13 +133,13 @@ impl UiMountedAllocationProjectionSource {
 
     fn exact(
         catalog: super::UiMountedAllocationProjectionCatalog,
-        changed_graph_nodes: Vec<crate::graph::UiGraphNodeIdentity>,
+        changed_projection_graph_keys: Vec<crate::graph::UiGraphNodeIdentity>,
         journal_entries_touched: usize,
     ) -> Self {
         Self {
             catalog,
             delta: UiMountedAllocationProjectionDelta::Exact(UiMountedAllocationExactDelta {
-                changed_graph_nodes: changed_graph_nodes.into_boxed_slice(),
+                changed_projection_graph_keys: changed_projection_graph_keys.into_boxed_slice(),
                 journal_entries_touched,
             }),
         }
@@ -154,8 +154,8 @@ impl UiMountedAllocationProjectionSource {
 }
 
 impl UiMountedAllocationExactDelta {
-    pub(crate) fn changed_graph_nodes(&self) -> &[crate::graph::UiGraphNodeIdentity] {
-        &self.changed_graph_nodes
+    pub(crate) fn changed_projection_graph_keys(&self) -> &[crate::graph::UiGraphNodeIdentity] {
+        &self.changed_projection_graph_keys
     }
 
     pub(crate) fn journal_entries_touched(&self) -> usize {
@@ -189,7 +189,7 @@ mod tests {
         };
         assert_eq!(delta.journal_entries_touched(), 2);
         assert_eq!(
-            delta.changed_graph_nodes(),
+            delta.changed_projection_graph_keys(),
             &[
                 crate::graph::UiGraphNodeIdentity::new(10),
                 crate::graph::UiGraphNodeIdentity::new(20),

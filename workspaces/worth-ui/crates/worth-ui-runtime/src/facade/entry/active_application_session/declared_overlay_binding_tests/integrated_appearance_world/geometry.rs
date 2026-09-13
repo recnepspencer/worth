@@ -13,6 +13,7 @@ pub(super) const BOXES: [[f32; 4]; 5] = [
     [40.0, 50.0, 180.0, 60.0],
     [8.0, 12.0, 140.0, 36.0],
 ];
+pub(super) const MOVED_TARGET_BOX: [f32; 4] = [560.0, 420.0, 180.0, 60.0];
 
 pub(super) fn canonical([x, y, width, height]: [f32; 4]) -> UiMountedCanonicalBox {
     canonical_in([x, y, width, height], UiMountedCoordinateSpace::HostSurface)
@@ -42,7 +43,90 @@ pub(super) fn install(
     instances: [UiMountedInstanceIdentity; 5],
     declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
 ) {
-    install_with_child_region(session, surfaces, instances, declarations, 2, BOXES, None);
+    install_with_child_region(
+        session,
+        surfaces,
+        instances,
+        declarations,
+        2,
+        BOXES,
+        None,
+        None,
+    );
+}
+
+pub(super) fn install_without_target(
+    session: &mut WorthUiActiveApplicationSession,
+    surfaces: [UiSemanticSurfaceIdentity; 2],
+    instances: [UiMountedInstanceIdentity; 5],
+    declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
+) {
+    install_with_child_region(
+        session,
+        surfaces,
+        instances,
+        declarations,
+        10,
+        BOXES,
+        None,
+        Some(1),
+    );
+}
+
+pub(super) fn install_successor(
+    session: &mut WorthUiActiveApplicationSession,
+    surfaces: [UiSemanticSurfaceIdentity; 2],
+    instances: [UiMountedInstanceIdentity; 5],
+    declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
+) {
+    install_with_child_region(
+        session,
+        surfaces,
+        instances,
+        declarations,
+        11,
+        BOXES,
+        None,
+        None,
+    );
+}
+
+pub(super) fn install_moved_target(
+    session: &mut WorthUiActiveApplicationSession,
+    surfaces: [UiSemanticSurfaceIdentity; 2],
+    instances: [UiMountedInstanceIdentity; 5],
+    declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
+) {
+    let mut boxes = BOXES;
+    boxes[1] = MOVED_TARGET_BOX;
+    install_with_child_region(
+        session,
+        surfaces,
+        instances,
+        declarations,
+        12,
+        boxes,
+        None,
+        None,
+    );
+}
+
+pub(super) fn install_restored_target(
+    session: &mut WorthUiActiveApplicationSession,
+    surfaces: [UiSemanticSurfaceIdentity; 2],
+    instances: [UiMountedInstanceIdentity; 5],
+    declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
+) {
+    install_with_child_region(
+        session,
+        surfaces,
+        instances,
+        declarations,
+        13,
+        BOXES,
+        None,
+        None,
+    );
 }
 
 pub(super) fn install_disjoint_child_region(
@@ -59,6 +143,7 @@ pub(super) fn install_disjoint_child_region(
         3,
         BOXES,
         Some([1_000.0, 1_000.0, 20.0, 20.0]),
+        None,
     );
 }
 
@@ -82,6 +167,7 @@ pub(super) fn install_seam_pair(
             [10.0, 10.0, 40.0, 40.0],
         ],
         None,
+        None,
     );
 }
 
@@ -93,6 +179,7 @@ fn install_with_child_region(
     revision: u64,
     boxes: [[f32; 4]; 5],
     child_region: Option<[f32; 4]>,
+    excluded: Option<usize>,
 ) {
     for (index, surface) in surfaces.into_iter().enumerate() {
         let surface_declaration = session
@@ -108,7 +195,7 @@ fn install_with_child_region(
         let rows = instances
             .iter()
             .enumerate()
-            .filter(|(mount, _)| (*mount == 3) == (index == 1))
+            .filter(|(mount, _)| Some(*mount) != excluded && (*mount == 3) == (index == 1))
             .map(|(mount, instance)| {
                 if mount == 4 {
                     UiMountedOccurrenceGeometry::parent_relative(
@@ -124,7 +211,7 @@ fn install_with_child_region(
         let regions = instances
             .iter()
             .enumerate()
-            .filter(|(mount, _)| (*mount == 3) == (index == 1))
+            .filter(|(mount, _)| Some(*mount) != excluded && (*mount == 3) == (index == 1))
             .flat_map(|(mount, instance)| {
                 let mounted = session
                     .mounted

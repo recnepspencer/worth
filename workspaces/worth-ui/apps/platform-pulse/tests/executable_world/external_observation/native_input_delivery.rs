@@ -9,6 +9,7 @@ pub(crate) enum NativeInputProbeKind {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum NativeKeyboardCommand {
     Escape,
+    Tab,
     PrimaryShiftP,
 }
 
@@ -17,8 +18,8 @@ pub(crate) struct NativeInputDeliveryObservation {
     kind: NativeInputProbeKind,
     process_id: u32,
     window: NativeWindowIdentity,
-    screen_x: i32,
-    screen_y: i32,
+    qualified_screen_x: i32,
+    qualified_screen_y: i32,
     delivered_event_count: u32,
 }
 
@@ -26,15 +27,15 @@ impl NativeInputDeliveryObservation {
     pub(crate) fn for_client(
         kind: NativeInputProbeKind,
         client: ProcessBoundNativeClientAreaObservation,
-        screen_point: (i32, i32),
+        qualified_screen_point: (i32, i32),
         delivered_event_count: u32,
     ) -> Self {
         Self {
             kind,
             process_id: client.process_id(),
             window: client.window(),
-            screen_x: screen_point.0,
-            screen_y: screen_point.1,
+            qualified_screen_x: qualified_screen_point.0,
+            qualified_screen_y: qualified_screen_point.1,
             delivered_event_count,
         }
     }
@@ -51,8 +52,8 @@ impl NativeInputDeliveryObservation {
         self.window
     }
 
-    pub(crate) fn screen_point(self) -> (i32, i32) {
-        (self.screen_x, self.screen_y)
+    pub(crate) fn qualified_screen_point(self) -> (i32, i32) {
+        (self.qualified_screen_x, self.qualified_screen_y)
     }
 
     pub(crate) fn delivered_event_count(self) -> u32 {

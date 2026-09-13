@@ -53,11 +53,14 @@ pub enum UiNativePresentationWorkKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiNativeRetainedFrameObservation {
     frame: u64,
+    basis: super::physical_work_signal::UiNativePhysicalPresentationBasis,
     kind: UiNativePresentationWorkKind,
     sample_presentation_epoch: Option<UiHostPresentationEpoch>,
     retained_baseline_rgba8: [u8; 4],
     retained_center_rgba8: [u8; 4],
     cost: UiHostPresentationCostReport,
+    port_crossings: u8,
+    alpha_glyphs: Box<[UiNativeGlyphObservation]>,
     intrinsic_glyphs: Box<[UiNativeGlyphObservation]>,
     presentation: Option<UiNativePresentationObservation>,
 }
@@ -271,30 +274,49 @@ fn glyph_transcript_digest<'a>(
 impl UiNativeRetainedFrameObservation {
     pub(crate) fn observed(
         frame: u64,
+        basis: super::physical_work_signal::UiNativePhysicalPresentationBasis,
         kind: UiNativePresentationWorkKind,
         sample_presentation_epoch: Option<UiHostPresentationEpoch>,
         pixels: [[u8; 4]; 2],
         cost: UiHostPresentationCostReport,
+        port_crossings: u8,
         presentation: Option<UiNativePresentationObservation>,
+        intrinsic_glyphs: Box<[UiNativeGlyphObservation]>,
+        alpha_glyphs: Box<[UiNativeGlyphObservation]>,
     ) -> Self {
-        let intrinsic_glyphs = presentation
-            .as_ref()
-            .map(|observation| observation.intrinsic_glyphs().to_vec().into_boxed_slice())
-            .unwrap_or_default();
         Self {
             frame,
+            basis,
             kind,
             sample_presentation_epoch,
             retained_baseline_rgba8: pixels[0],
             retained_center_rgba8: pixels[1],
             cost,
+            port_crossings,
             intrinsic_glyphs,
+            alpha_glyphs,
             presentation,
         }
     }
 
     pub const fn frame(&self) -> u64 {
         self.frame
+    }
+
+    pub const fn binding_generation(&self) -> u64 {
+        self.basis.binding().diagnostic_value()
+    }
+    pub const fn presentation_attempt(&self) -> u64 {
+        self.basis.attempt().diagnostic_value()
+    }
+    pub const fn semantic_surface(&self) -> u64 {
+        self.basis.surface().diagnostic_value()
+    }
+    pub const fn host_surface(&self) -> u64 {
+        self.basis.host_surface().diagnostic_value()
+    }
+    pub fn alpha_glyphs(&self) -> &[UiNativeGlyphObservation] {
+        &self.alpha_glyphs
     }
 
     pub const fn kind(&self) -> UiNativePresentationWorkKind {
@@ -315,6 +337,10 @@ impl UiNativeRetainedFrameObservation {
 
     pub const fn cost(&self) -> UiHostPresentationCostReport {
         self.cost
+    }
+
+    pub const fn port_crossings(&self) -> u8 {
+        self.port_crossings
     }
 
     pub fn intrinsic_glyphs(&self) -> &[UiNativeGlyphObservation] {

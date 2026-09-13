@@ -22,9 +22,31 @@ impl PlatformPulseApplicationRuntime {
         }
         let mut shell = self.take_runtime_shell();
         let managed = shell.progress_managed_rebind(&progress);
+        if matches!(
+            &self.pending_managed_rebind,
+            Some(super::PlatformPulsePendingManagedRebind::ThemeSwitch(_))
+        ) {
+            let Some(super::PlatformPulsePendingManagedRebind::ThemeSwitch(preference)) =
+                self.pending_managed_rebind.take()
+            else {
+                unreachable!()
+            };
+            match managed {
+                Ok(progress) => self.settle_theme_progress(&mut shell, preference, progress),
+                Err(denial) => self.fail(
+                    super::PlatformPulseTerminalError::NativeManagedProgress(denial),
+                    Ok(()),
+                ),
+            }
+            self.shell = Some(shell);
+            self.advance_native_product_turn();
+            let directive = self.native_runtime_directive();
+            return Ok((self.take_runtime_shell(), directive));
+        }
         match managed {
             Ok(worth_ui::facade::app::WorthUiNativeManagedRebindProgress::Published(receipt)) => {
                 let continue_retained_dismissal = match self.pending_managed_rebind.take() {
+                    Some(super::PlatformPulsePendingManagedRebind::ThemeSwitch(_)) => unreachable!("theme progress is handled before other publication families"),
                     Some(super::PlatformPulsePendingManagedRebind::Projection(pending)) => {
                         self.settle_pending_projection(&mut shell, pending, receipt);
                         false
@@ -69,7 +91,7 @@ impl PlatformPulseApplicationRuntime {
                 if continue_retained_dismissal && self.terminal_error.is_none() {
                     self.continue_retained_portal_dismissal(&mut shell);
                 }
-                self.advance_pending_intent_postures(&mut shell);
+                self.advance_pending_native_publications(&mut shell);
                 self.shell = Some(shell);
                 self.advance_native_product_turn();
             }
@@ -95,7 +117,7 @@ impl PlatformPulseApplicationRuntime {
                 if continue_retained_dismissal && self.terminal_error.is_none() {
                     self.continue_retained_portal_dismissal(&mut shell);
                 }
-                self.advance_pending_intent_postures(&mut shell);
+                self.advance_pending_native_publications(&mut shell);
                 self.shell = Some(shell);
                 self.advance_native_product_turn();
             }
@@ -103,6 +125,7 @@ impl PlatformPulseApplicationRuntime {
                 receipt,
             )) => {
                 match self.pending_managed_rebind.take() {
+                    Some(super::PlatformPulsePendingManagedRebind::ThemeSwitch(_)) => unreachable!("theme progress is handled before other publication families"),
                     Some(super::PlatformPulsePendingManagedRebind::PortalDismissal) => {
                         self.settle_portal_dismissal(&mut shell, receipt);
                     }
@@ -113,7 +136,7 @@ impl PlatformPulseApplicationRuntime {
                         Ok(()),
                     ),
                 }
-                self.advance_pending_intent_postures(&mut shell);
+                self.advance_pending_native_publications(&mut shell);
                 self.shell = Some(shell);
                 self.advance_native_product_turn();
             }
@@ -136,6 +159,21 @@ impl PlatformPulseApplicationRuntime {
             }
             Ok(worth_ui::facade::app::WorthUiNativeManagedRebindProgress::RecoveryBlocked(_)) => {
                 self.shell = Some(shell);
+            }
+            Ok(worth_ui::facade::app::WorthUiNativeManagedRebindProgress::RebindRecovered(_)) => {
+                // Recovery reinstalls predecessor presentation; no successor receipt exists.
+                let attribution = self.pending_managed_rebind.take();
+                self.shell = Some(shell);
+                let error = match attribution {
+                    Some(super::PlatformPulsePendingManagedRebind::Source(_)
+                        | super::PlatformPulsePendingManagedRebind::Projection(_)
+                        | super::PlatformPulsePendingManagedRebind::IntentPosture(_)) =>
+                        super::PlatformPulseTerminalError::NativeRecoveredWithoutPublication,
+                    _ => super::PlatformPulseTerminalError::NativeManagedAttribution(
+                        "rebind recovery did not match its product attribution",
+                    ),
+                };
+                self.fail(error, Ok(()));
             }
             Ok(
                 worth_ui::facade::app::WorthUiNativeManagedRebindProgress::RecoveredToPredecessor(
@@ -175,6 +213,7 @@ impl PlatformPulseApplicationRuntime {
             Ok(worth_ui::facade::app::WorthUiNativeManagedRebindProgress::Stopped(stop)) => {
                 self.shell = Some(shell);
                 match self.pending_managed_rebind.take() {
+                    Some(super::PlatformPulsePendingManagedRebind::ThemeSwitch(_)) => unreachable!("theme progress is handled before other publication families"),
                     Some(super::PlatformPulsePendingManagedRebind::Source(_)) => self.fail(
                         super::PlatformPulseTerminalError::NativeManagedSourceRebind(stop),
                         Ok(()),

@@ -37,10 +37,6 @@ impl UiBackdropAppearanceStateVector {
         }
     }
 
-    pub(crate) const fn basis(&self) -> &UiBackdropAppearanceBasis {
-        &self.basis
-    }
-
     pub(crate) const fn session(&self) -> crate::facade::WorthUiActiveApplicationSessionIdentity {
         self.basis.session
     }
@@ -67,13 +63,6 @@ impl UiBackdropAppearanceStateVector {
                 .narrowing_fingerprint(),
         );
         fold(digest, self.basis.surface.diagnostic_value())
-    }
-
-    pub(crate) fn evidence_digest(&self) -> u64 {
-        let mut digest = self.semantic_digest();
-        digest = fold(digest, self.basis.turn.as_u64());
-        digest = fold(digest, self.basis.source_basis);
-        self.basis.owner_revisions.into_iter().fold(digest, fold)
     }
 }
 

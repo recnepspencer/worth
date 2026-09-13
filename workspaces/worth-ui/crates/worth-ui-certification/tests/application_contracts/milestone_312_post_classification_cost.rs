@@ -4,7 +4,7 @@ use worth_ui::facade::observation::UiChangeClassificationOutcome;
 use worth_ui::facade::rebind::UiRebindExecutionPolicy;
 use worth_ui::facade::source::WorthUiFilesystemSourceProvider;
 use worth_ui_certification::scenario::filesystem_application_lifecycle::FilesystemApplicationLifecycleScenario;
-use worth_ui_host_headless::WorthUiHeadlessHost;
+use worth_ui_host_headless::WorthUiHeadlessRecorder;
 use worth_ui_test_support::WorthUiActiveSessionCertificationExt;
 
 use super::filesystem_contract_workspace::FilesystemContractWorkspace;
@@ -59,7 +59,7 @@ pub(crate) fn prove_rebind_post_classification_cost_is_independent_of_unrelated_
         PostClassificationCostVector {
             observations: 1,
             changed_facts: 1,
-            affected_aspects: 1,
+            affected_aspects: 0,
             indexed_consumers: 2,
             selected_decisions: 2,
             graph_and_mounted_entries: 0,
@@ -70,7 +70,7 @@ pub(crate) fn prove_rebind_post_classification_cost_is_independent_of_unrelated_
     assert_eq!(baseline.lookup_receipts, 2);
     assert_eq!(baseline.index_probes, 2);
     assert_eq!(baseline.contract_checks, 4);
-    assert_eq!(baseline.planned_effects, 2);
+    assert_eq!(baseline.planned_effects, 1);
 }
 
 fn compile_platform_pulse_plan(label: &str, unrelated_width: usize) -> CostWorldReceipt {
@@ -86,7 +86,7 @@ fn compile_platform_pulse_plan(label: &str, unrelated_width: usize) -> CostWorld
         .read()
         .expect("scaled initial filesystem world reads");
     let capabilities = scenario.platform_pulse_capability_application_with_unrelated_width(
-        WorthUiHeadlessHost,
+        WorthUiHeadlessRecorder::default(),
         unrelated_width,
     );
     let submission = FilesystemApplicationLifecycleScenario::lower_snapshot(
@@ -96,7 +96,7 @@ fn compile_platform_pulse_plan(label: &str, unrelated_width: usize) -> CostWorld
     let mut session = scenario
         .prepare_platform_pulse_application_with_unrelated_width(
             submission,
-            WorthUiHeadlessHost,
+            WorthUiHeadlessRecorder::default(),
             unrelated_width,
         )
         .launch()
@@ -138,14 +138,7 @@ fn compile_candidate_plan(
         .components()
         .get(&ComponentId::new("platform.pulse.component.seed").unwrap())
         .expect("real Pulse predecessor retains its background component capability");
-    assert_eq!(
-        background
-            .static_paint_contract()
-            .expect("Pulse background retains static-paint authority")
-            .theme_token()
-            .as_str(),
-        "theme.platform_pulse.fill"
-    );
+    assert_eq!(background.surface_paint_order(), Some(0));
     workspace.write(
         "app/main.wui",
         &FilesystemApplicationLifecycleScenario::platform_pulse_green_source_text_with_unrelated_width(

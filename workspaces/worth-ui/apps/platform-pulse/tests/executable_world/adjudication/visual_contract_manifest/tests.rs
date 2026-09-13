@@ -71,9 +71,14 @@ fn visual_contract_rejects_fake_controls_and_authored_palette_drift() {
 }
 
 #[test]
-fn contrast_math_rejects_pale_text_and_proves_action_text_on_accent() {
+fn primary_action_text_clears_body_contrast_in_both_themes() {
     assert!(super::contrast::ratio_milli([250, 250, 250, 255], [255, 255, 255, 255]) < 4_500);
-    assert!(super::contrast::ratio_milli([255, 255, 255, 255], [93, 80, 198, 255]) >= 4_500);
+    for foreground in [[242, 244, 247, 255], [250, 251, 252, 255]] {
+        for background in [[148, 64, 212, 255], [160, 84, 24, 255]] {
+            assert!(super::contrast::ratio_milli(foreground, background) >= 4_500);
+        }
+        assert!(super::contrast::ratio_milli(foreground, [172, 103, 242, 255]) < 4_500);
+    }
 }
 
 #[test]

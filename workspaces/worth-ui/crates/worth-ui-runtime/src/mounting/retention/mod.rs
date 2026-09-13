@@ -43,7 +43,8 @@ pub(crate) use lease::{UiMountedVisualLease, UiMountedVisualLeaseClass};
 pub(crate) use observation_basis::UiMountedObservationBasisRetentionDenial;
 pub use rejection::UiMountedFrameRetentionRejection;
 pub(crate) use reservation::{
-    UiMountedRetentionCommitDenial, UiMountedRetentionReservation, UiRetentionPreparedMountedFrame,
+    UiMountedRetentionCommitDenial, UiMountedRetentionRefreshDenial, UiMountedRetentionReservation,
+    UiRetentionPreparedMountedFrame,
 };
 pub(crate) use snapshot::{UiMountedFrameRetentionSnapshot, UiMountedRetentionUsageSnapshot};
 pub(crate) use visual_capture_basis::UiMountedVisualCaptureBasis;

@@ -126,7 +126,10 @@ impl WorthUiMountedSessionState {
                 | UiMountedFrameOutcome::Unchanged(_)
                 | UiMountedFrameOutcome::Reconciled(_)
         ) {
-            transition.hit_transition = self.retention.committed_hit_transition(hit_predecessor);
+            transition.hit_transition = self.identity.publication_receipt().and_then(|receipt| {
+                self.retention
+                    .committed_hit_transition(hit_predecessor, receipt.frame())
+            });
         }
         transition.appearance = appearance_batch;
         transition

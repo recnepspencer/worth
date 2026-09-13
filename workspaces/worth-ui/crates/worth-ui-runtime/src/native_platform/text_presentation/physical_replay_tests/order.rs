@@ -6,7 +6,7 @@ use worth_ui_host_native::UiNativeTextReplayOperation as Op;
 
 #[test]
 fn text_order_only_replays_overhang_above_and_below_retained_occluder() {
-    let world = CoverageWorld::with_physical_geometry(
+    let world = CoverageWorld::with_portal_occluders(
         "W\tW\tW",
         UiMountedInstanceIdentity::mint_unbound().unwrap(),
         0.0,
@@ -15,14 +15,15 @@ fn text_order_only_replays_overhang_above_and_below_retained_occluder() {
         &[(UiSemanticTextSlot::Value, 0.0)],
         ([0, 255, 0, 128], 20_000),
         (1.0, 1_250),
+        2,
     );
     let text = world.fragment.text_candidates()[0].clone();
     let text_command = UiMountedPaintCommand::SemanticText {
         identity: UiMountedPaintCommandIdentity::semantic_text(&text),
         mechanic: text.clone(),
     };
-    let occluder = rectangle(&text, bounds([112.0, 0.0, 24.0, 48.0]));
-    let distant = rectangle(&text, bounds([380.0, 0.0, 8.0, 8.0]));
+    let occluder = rectangle(&text, world.portals[0], bounds([112.0, 0.0, 24.0, 48.0]));
+    let distant = rectangle(&text, world.portals[1], bounds([380.0, 0.0, 8.0, 8.0]));
     let commands = [text_command, occluder, distant];
     let order = commands
         .iter()

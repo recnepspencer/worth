@@ -71,89 +71,12 @@ impl UiAppearanceResolutionFailure {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum UiAppearanceResolutionSubject {
-    GraphNode(crate::graph::UiGraphNodeIdentity),
-    Backdrop(UiBackdropInstanceIdentity),
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct UiAppearanceResolutionDenialEvidence {
-    subject: UiAppearanceResolutionSubject,
-    denial: UiAppearanceResolutionDenial,
-    input_digest: u64,
-    theme_slots_compared: u32,
-}
-
-impl UiAppearanceResolutionDenialEvidence {
-    fn for_node(
-        subject: UiAppearanceResolutionSubject,
-        failure: UiAppearanceResolutionFailure,
-        input_digest: u64,
-    ) -> Self {
-        Self {
-            subject,
-            denial: failure.denial(),
-            input_digest,
-            theme_slots_compared: failure.theme_slots_compared(),
-        }
-    }
-
-    fn for_backdrop(
-        subject: UiAppearanceResolutionSubject,
-        failure: UiAppearanceResolutionFailure,
-        input_digest: u64,
-    ) -> Self {
-        Self {
-            subject,
-            denial: failure.denial(),
-            input_digest,
-            theme_slots_compared: failure.theme_slots_compared(),
-        }
-    }
-
-    pub(crate) const fn subject(self) -> UiAppearanceResolutionSubject {
-        self.subject
-    }
-
-    pub(crate) const fn denial(self) -> UiAppearanceResolutionDenial {
-        self.denial
-    }
-
-    pub(crate) const fn input_digest(self) -> u64 {
-        self.input_digest
-    }
-
-    pub(crate) const fn theme_slots_compared(self) -> u32 {
-        self.theme_slots_compared
-    }
-}
-
 impl UiAppearanceResolver {
     pub(crate) const fn new() -> Self {
         Self
     }
 
     pub(crate) fn resolve_node(
-        &self,
-        graph: &UiGraphSnapshot,
-        capabilities: &CapabilitySnapshot,
-        binding: &UiAppearanceNodeRoleBinding,
-        vector: &UiAppearanceStateVector,
-        theme: &UiThemeResolutionView,
-    ) -> Result<UiAppearanceProjection, UiAppearanceResolutionDenialEvidence> {
-        let subject = UiAppearanceResolutionSubject::GraphNode(binding.basis().graph_node());
-        let input_digest = fold(
-            fold(vector.evidence_digest(), binding.basis().semantic_digest()),
-            theme.semantic_digest(),
-        );
-        self.resolve_node_projection(graph, capabilities, binding, vector, theme)
-            .map_err(|failure| {
-                UiAppearanceResolutionDenialEvidence::for_node(subject, failure, input_digest)
-            })
-    }
-
-    fn resolve_node_projection(
         &self,
         graph: &UiGraphSnapshot,
         capabilities: &CapabilitySnapshot,
@@ -225,32 +148,6 @@ impl UiAppearanceResolver {
     }
 
     pub(crate) fn resolve_backdrop(
-        &self,
-        instance: UiBackdropInstanceIdentity,
-        declaration: &worth_ui_dsl::UiBackdropDeclaration,
-        role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
-        vector: &UiBackdropAppearanceStateVector,
-        theme: &UiThemeResolutionView,
-        overlay: &UiOverlayStackSnapshot,
-    ) -> Result<UiBackdropAppearanceProjection, UiAppearanceResolutionDenialEvidence> {
-        let subject = UiAppearanceResolutionSubject::Backdrop(instance);
-        let input_digest = fold(
-            fold(
-                fold(
-                    fold_text(vector.evidence_digest(), role.role().as_str()),
-                    role.revision().value(),
-                ),
-                declaration.identity().value(),
-            ),
-            fold(theme.semantic_digest(), overlay.semantic_digest()),
-        );
-        self.resolve_backdrop_projection(instance, declaration, role, vector, theme, overlay)
-            .map_err(|failure| {
-                UiAppearanceResolutionDenialEvidence::for_backdrop(subject, failure, input_digest)
-            })
-    }
-
-    fn resolve_backdrop_projection(
         &self,
         instance: UiBackdropInstanceIdentity,
         declaration: &worth_ui_dsl::UiBackdropDeclaration,
@@ -358,16 +255,4 @@ fn ensure_world(
         return Err(UiAppearanceResolutionDenial::WrongSurface);
     }
     Ok(())
-}
-
-fn fold(digest: u64, value: u64) -> u64 {
-    digest.wrapping_mul(0x0000_0100_0000_01b3) ^ value
-}
-
-fn fold_text(mut digest: u64, value: &str) -> u64 {
-    digest = fold(digest, value.len() as u64);
-    for byte in value.as_bytes() {
-        digest = fold(digest, u64::from(*byte));
-    }
-    digest
 }

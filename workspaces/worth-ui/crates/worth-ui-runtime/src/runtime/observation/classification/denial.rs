@@ -27,6 +27,10 @@ pub enum UiChangeClassificationDenial {
         provenance_digest: u64,
         matches: usize,
     },
+    InconsistentAppearanceAttachment {
+        side: UiAuthoredFactDeclarationSide,
+        declaration: Box<str>,
+    },
     AuthoredFactDeclarationIdentityMismatch {
         predecessor: Box<str>,
         candidate: Box<str>,

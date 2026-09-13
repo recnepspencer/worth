@@ -21,7 +21,9 @@ pub(super) fn normalize_rebind(
     let request = UiSourceRebindRequest::new(snapshot)
         .with_deadline(shell.rebind_deadline_at(deadline_tick))
         .observed_at_tick(now_tick);
-    match shell.begin_managed_source_rebind(request) {
+    match shell
+        .begin_source_rebind_with_layout(request, super::layout::prepare_replacement_native_layout)
+    {
         Ok(WorthUiNativeManagedSourceRebindOutcome::Published(receipt)) => {
             PlatformPulseRebindAction::Published(receipt)
         }

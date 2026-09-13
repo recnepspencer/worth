@@ -6,15 +6,7 @@ use worth_ui::facade::{
     intent::{
         UiIntentDefinition, UiIntentExecutionAdvanceOutcome, UiIntentRuntimeServiceDestination,
     },
-    observation_report::{
-        UiHostObservationBatch, UiHostObservationBatchInput, UiHostObservationDrain,
-        UiHostObservationLoss, UiHostObservationPayload, UiHostObservationPresentationBasis,
-        UiHostObservationReport, UiHostObservationSequence, UiHostObservationSequenceRange,
-        UiHostObservationTimeBasis, UiHostPointerButton, UiHostPointerButtonTransition,
-        UiHostPointerCaptureEpoch, UiHostPointerDeviceKind, UiHostPointerIdentity,
-        UiHostProtocolContract, UiHostProtocolNegotiation, UiHostSurfacePosition,
-        UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-    },
+    observation_report::UiHostObservationPresentationBasis,
 };
 use worth_ui_runtime::facade::mounted::{
     UiHostSurfacePresentationOutcome, UiMountedFrameOutcome, UiMountedInspectionReceipt,
@@ -22,6 +14,7 @@ use worth_ui_runtime::facade::mounted::{
 };
 
 use super::super::{execution_deadline, execution_reading};
+use super::native_activation::native_activation_drain;
 use crate::intent::operability::{build_open_portal_application_with_host, PrimaryIntent};
 
 #[test]
@@ -42,7 +35,7 @@ fn native_indeterminate_portal_publication_reconstructs_and_settles_the_predeces
     host.push_native_display_presented();
     let (application, _) = build_open_portal_application_with_host(host.clone());
     let mut shell = application
-        .launch_native_surface()
+        .launch_native_declared_surface("visual.identity.surface.main")
         .expect("the production native composition root launches");
     crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     let initial = match shell
@@ -159,7 +152,7 @@ fn native_indeterminate_portal_publication_reconstructs_and_settles_the_predeces
 }
 
 #[test]
-fn applied_escape_is_retained_while_portal_open_publication_is_in_flight() {
+fn queued_escape_is_retained_while_portal_open_publication_is_in_flight() {
     let host = worth_ui_runtime::certification_support::ScriptedPresentationHost::default();
     host.set_capabilities(
         worth_ui_host_contract::WorthUiHostCapabilityReport::available(vec![
@@ -175,7 +168,9 @@ fn applied_escape_is_retained_while_portal_open_publication_is_in_flight() {
     );
     host.push_native_display_presented();
     let (application, _) = build_open_portal_application_with_host(host.clone());
-    let mut shell = application.launch_native_surface().unwrap();
+    let mut shell = application
+        .launch_native_declared_surface("visual.identity.surface.main")
+        .unwrap();
     crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     assert!(matches!(
         shell
@@ -228,16 +223,24 @@ fn applied_escape_is_retained_while_portal_open_publication_is_in_flight() {
             .unwrap(),
         WorthUiNativeManagedIntentConsequencePublicationOutcome::Pending
     ));
-    let escape = super::native_duplicate_dismissal::escape_dismissal(
-        &mut shell,
+    let ingress = shell.admit_native_intent_observations(
         definition,
-        presentation,
-        5,
+        super::native_duplicate_dismissal::escape_drain(
+            shell.host_session_identity().as_u64(),
+            presentation,
+            5,
+        ),
+        execution_deadline(65),
     );
-    assert!(matches!(
-        shell.begin_managed_portal_dismissal(escape, 41),
-        worth_ui::facade::app::WorthUiNativeManagedPortalDismissalOutcome::Retained
-    ));
+    assert!(ingress.transitions().is_empty());
+    let mut stops = ingress.into_interaction_stops().into_vec();
+    assert_eq!(stops.len(), 1);
+    let worth_ui::facade::app::WorthUiNativeInteractionIngressStop::ManagedPublicationPending(
+        escape,
+    ) = stops.remove(0)
+    else {
+        panic!("opening publication must retain the untouched Escape input");
+    };
     host.push_native_display_presented();
     let progress =
         worth_ui_runtime::native_platform::UiNativeApplicationPhysicalProgress::from_certification(
@@ -280,12 +283,22 @@ fn applied_escape_is_retained_while_portal_open_publication_is_in_flight() {
             panic!("matching native completion was unrelated")
         }
         WorthUiNativeManagedRebindProgress::Stopped(_) => panic!("open completion stopped"),
+        WorthUiNativeManagedRebindProgress::RebindRecovered(_) => {
+            panic!("portal intent completion cannot recover an unrelated rebind")
+        }
     };
     assert!(matches!(
         progress,
         WorthUiNativeManagedRebindProgress::IntentConsequencePublished(_)
     ));
-    match shell.continue_retained_portal_dismissal_after_managed_intent(42) {
+    let resumed =
+        shell.admit_native_intent_observations(definition, escape, execution_deadline(66));
+    assert!(
+        resumed.interaction_stops().is_empty(),
+        "retained Escape must remain admissible after the open settles"
+    );
+    assert_eq!(resumed.dismissals().len(), 1);
+    match shell.begin_managed_portal_dismissal(resumed.dismissals()[0], 42) {
         worth_ui::facade::app::WorthUiNativeManagedPortalDismissalOutcome::Published(_) => {}
         worth_ui::facade::app::WorthUiNativeManagedPortalDismissalOutcome::Ignored => {
             panic!("published open lost its retained Escape")
@@ -319,64 +332,4 @@ fn applied_escape_is_retained_while_portal_open_publication_is_in_flight() {
     assert!(shutdown.intent_resources_empty());
     assert_eq!(shutdown.portal_final_active_records(), 0);
     assert!(shutdown.host_session_released());
-}
-
-pub(super) fn native_activation_drain(
-    host_session: u64,
-    presentation: UiHostObservationPresentationBasis,
-) -> UiHostObservationDrain {
-    let protocol = match UiHostProtocolContract::current().negotiate() {
-        UiHostProtocolNegotiation::Compatible(agreement) => agreement,
-        UiHostProtocolNegotiation::Incompatible(_) => unreachable!(),
-    };
-    let viewport = UiHostObservationSequence::new(1);
-    let scale = UiHostObservationSequence::new(2);
-    let pressed = UiHostObservationSequence::new(3);
-    let released = UiHostObservationSequence::new(4);
-    let position = UiHostSurfacePosition::viewport_logical(
-        18 * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-        20 * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-    );
-    let report = |sequence, transition| {
-        UiHostObservationReport::new(
-            sequence,
-            UiHostObservationTimeBasis::HostMonotonicMillis(sequence.value()),
-            UiHostObservationPayload::PointerButton {
-                pointer: UiHostPointerIdentity::new(1),
-                capture_epoch: UiHostPointerCaptureEpoch::new(1),
-                button: UiHostPointerButton::Primary,
-                transition,
-                position,
-            },
-        )
-        .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
-        .expect("native pointer reports carry an explicit device kind")
-    };
-    let batch = UiHostObservationBatch::new(UiHostObservationBatchInput {
-        protocol,
-        host_session,
-        presentation,
-        sequences: UiHostObservationSequenceRange::new(viewport, released),
-        loss: UiHostObservationLoss::Complete,
-        reports: vec![
-            UiHostObservationReport::new(
-                viewport,
-                UiHostObservationTimeBasis::HostMonotonicMillis(viewport.value()),
-                UiHostObservationPayload::Viewport {
-                    width_subpixels: 800 * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-                    height_subpixels: 600 * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-                },
-            ),
-            UiHostObservationReport::new(
-                scale,
-                UiHostObservationTimeBasis::HostMonotonicMillis(scale.value()),
-                UiHostObservationPayload::DeviceScale { micros: 1_000_000 },
-            ),
-            report(pressed, UiHostPointerButtonTransition::Pressed),
-            report(released, UiHostPointerButtonTransition::Released),
-        ],
-    })
-    .expect("the native activation batch satisfies the host protocol");
-    UiHostObservationDrain::bounded(vec![batch])
-        .expect("one two-report native activation is mechanically bounded")
 }

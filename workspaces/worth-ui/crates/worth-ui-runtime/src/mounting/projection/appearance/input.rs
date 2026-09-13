@@ -23,6 +23,7 @@ impl UiMountedAppearanceNodeInput {
             allocation: _,
             clip,
             surface_paint_order,
+            portal_group,
             geometry_input,
             text_foreground_spans,
             projection,
@@ -54,6 +55,7 @@ impl UiMountedAppearanceNodeInput {
             bounds,
             clip,
             surface_paint_order,
+            portal_group,
             radii,
             surface_border_edges: surface_paint_posture.border_edges(),
             surface_border_omissions,
@@ -238,20 +240,6 @@ fn lower_outline(
 }
 
 impl super::UiMountedAppearanceLoweringInput {
-    pub(crate) fn retain_node_owned_families(
-        &mut self,
-        portal_instances: &std::collections::BTreeSet<
-            worth_ui_host_contract::UiMountedInstanceIdentity,
-        >,
-    ) {
-        for node in &mut self.nodes {
-            if portal_instances.contains(&node.node_receipt.mounted_instance()) {
-                node.surface_paint = None;
-                node.portal_instance = None;
-            }
-        }
-    }
-
     pub(crate) fn retain_portal_surface(
         &mut self,
         portal: worth_ui_host_contract::UiMountedInstanceIdentity,

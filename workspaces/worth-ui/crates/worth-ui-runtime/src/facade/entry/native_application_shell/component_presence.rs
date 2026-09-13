@@ -114,8 +114,9 @@ impl WorthUiNativeApplicationShell {
                 let row = &self.mounted_rows[index];
                 crate::runtime::portal::UiPortalIdentity::for_owner(
                     crate::runtime::portal::UiPortalOwnerIdentity::from_mounted_owner(
-                        row.graph_node,
-                        row.mounted
+                        self.current_native_graph_node(row)
+                            .expect("validated removal retains its graph node"),
+                        self.current_native_mounted_instance(row)
                             .expect("validated removal retains mounted identity"),
                     ),
                 )
@@ -165,7 +166,11 @@ impl WorthUiNativeApplicationShell {
                     .get(change.authored_semantic_identity())
                     .copied()
                     .ok_or(UiNativeComponentPresenceDenial::UnknownComponent)?;
-                if self.mounted_rows[index].mounted.is_some() == change.present() {
+                if self
+                    .current_native_mounted_instance(&self.mounted_rows[index])
+                    .is_some()
+                    == change.present()
+                {
                     return Err(UiNativeComponentPresenceDenial::AlreadyInRequestedState);
                 }
                 Ok(index)
@@ -174,20 +179,21 @@ impl WorthUiNativeApplicationShell {
     }
 
     fn set_component_presence(&mut self, index: usize, present: bool) -> Result<(), ()> {
-        let row = self.mounted_rows.get_mut(index).ok_or(())?;
+        let row = self.mounted_rows.get(index).ok_or(())?;
+        let graph_node = self.current_native_graph_node(row).ok_or(())?;
+        let current = self.current_native_mounted_instance(row);
         if present {
             let handle = self
                 .session
-                .mounted_graph_node(row.graph_node)
+                .mounted_graph_node(graph_node)
                 .map_err(|_| ())?;
             let mounted = self
                 .session
                 .mount_instance(handle, self.surface)
                 .map_err(|_| ())?;
-            row.mounted = Some(mounted);
-            row.latest_mounted = mounted;
+            self.mounted_rows[index].latest_mounted = mounted;
         } else {
-            let mounted = row.mounted.take().ok_or(())?;
+            let mounted = current.ok_or(())?;
             self.session.unmount_instance(mounted).map_err(|_| ())?;
         }
         Ok(())

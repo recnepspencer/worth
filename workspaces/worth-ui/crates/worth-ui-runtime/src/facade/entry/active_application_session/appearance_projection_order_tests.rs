@@ -95,7 +95,36 @@ fn mounted_order_conflict_sees_retained_neighbor_and_preserves_other_surface() {
     // consume the exact new-mount contribution.
     let frame = prepare(&mut session);
     frame.verify_retained_order_conflict(surface, retained, arriving);
-    drop(frame);
+    let before = frame.cost_report().appearance();
+    let calls = host.presentation_calls();
+    let outcome = session.present_prepared_mounted_frame_internal(
+        frame,
+        UiPresentationDeadline::at_tick(100),
+        2,
+    );
+    let crate::mounting::UiMountedFrameOutcome::AdmissionDenied(rejected) = outcome else {
+        panic!("the actual admission must reject equal-order overlapping surfaces");
+    };
+    assert_eq!(host.presentation_calls(), calls);
+    assert!(
+        rejected
+            .cost_report()
+            .appearance()
+            .order_work()
+            .region_tests()
+            > before.order_work().region_tests(),
+        "the denial receipt must retain the failed overlap comparison cost"
+    );
+    assert_eq!(
+        rejected
+            .frame()
+            .cost_report()
+            .appearance()
+            .order_retained_bytes(),
+        before.order_retained_bytes(),
+        "failed admission cannot alter the retained order footprint"
+    );
+    drop(rejected);
 
     // The same arriving declaration is lawful once the old peer departs in the
     // same batch. The other surface's copy is never selected or removed.
@@ -122,7 +151,7 @@ fn mounted_order_conflict_sees_retained_neighbor_and_preserves_other_surface() {
     assert_eq!(removed, [retained]);
     assert_eq!(inserted, [arriving]);
     assert!(!removed.contains(&unrelated));
-    worth_ui_host_headless::translate_unpublished_appearance_for_certification(&replacement)
+    worth_ui_host_headless::translate_appearance_projection_for_certification(&replacement)
         .unwrap();
     fixture::publish(&mut session, &host, frame, 3);
     let _ = session.shutdown();

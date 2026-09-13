@@ -60,6 +60,57 @@ fn prepared_rebind_removal_is_revision_current_before_it_removes_rows() {
     assert_eq!(state.active_count(), before_stale_commit.rows().len() + 1);
 }
 
+#[test]
+fn accepted_motion_presentation_rebinds_only_same_frame_records_on_its_surface() {
+    let mut state = state();
+    let surface = semantic_surface();
+    let rebound = portal(721, 821);
+    let foreign_frame = portal(722, 822);
+    open_live_on_surface(&mut state, rebound, 926, surface);
+    open_live_on_surface(&mut state, foreign_frame, 927, surface);
+    let committed = state
+        .committed_presentation_for(rebound)
+        .expect("live Portal carries its accepted placement");
+    let foreign = state
+        .committed_presentation_for(foreign_frame)
+        .expect("live Portal carries its accepted placement");
+    assert_ne!(committed.frame(), foreign.frame());
+    let advanced = worth_ui_host_contract::UiHostObservationPresentationBasis::new(
+        committed.host_surface(),
+        committed.frame(),
+        committed.binding(),
+        worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(7),
+    );
+
+    state.rebind_presented_motion_presentation(surface, advanced);
+
+    assert_eq!(state.committed_presentation_for(rebound), Some(advanced));
+    assert_eq!(
+        state.committed_presentation_for(foreign_frame),
+        Some(foreign)
+    );
+    assert_eq!(state.topmost_presentation(), Some(foreign));
+}
+
+fn open_live_on_surface(
+    state: &mut super::UiPortalRuntimeState,
+    portal: super::UiPortalIdentity,
+    lineage: u64,
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+) {
+    let geometry = super::test_support::presented_geometry(1);
+    let request = UiPortalServiceRequest::open(
+        portal,
+        idempotency(lineage),
+        geometry,
+        Some(super::test_support::viewport_bounds(geometry)),
+        surface,
+    );
+    state
+        .commit_published(state.prepare(request).unwrap())
+        .unwrap();
+}
+
 fn open_live(
     state: &mut super::UiPortalRuntimeState,
     portal: super::UiPortalIdentity,

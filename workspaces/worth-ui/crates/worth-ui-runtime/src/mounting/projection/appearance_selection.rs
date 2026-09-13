@@ -10,16 +10,21 @@ pub(crate) struct UiMountedAppearanceProjectionSelection {
     selected_instances: Rc<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
     retired_instances: Rc<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
     index_entries_touched: usize,
-    materialized_contexts: Rc<Cell<usize>>,
-    lifecycle_memberships_retired: Rc<Cell<usize>>,
-    membership_key_probes: Rc<Cell<usize>>,
-    membership_copied_avl_nodes: Rc<Cell<usize>>,
-    membership_traversed_entries: Rc<Cell<usize>>,
-    order_work: Rc<Cell<crate::mounting::spatial_index::UiMountedSpatialWork>>,
+    measurements: Rc<Cell<UiMountedAppearanceSelectionMeasurements>>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct UiMountedAppearanceSelectionCostReport {
+#[derive(Clone, Copy, Default)]
+struct UiMountedAppearanceSelectionMeasurements {
+    materialized_contexts: usize,
+    lifecycle_memberships_retired: usize,
+    membership_key_probes: usize,
+    membership_copied_avl_nodes: usize,
+    membership_traversed_entries: usize,
+    order_work: crate::mounting::spatial_index::UiMountedSpatialWork,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct UiMountedAppearanceSelectionCostReport {
     selected_instance_count: usize,
     materialized_context_count: usize,
     index_entries_touched: usize,
@@ -29,6 +34,7 @@ pub(crate) struct UiMountedAppearanceSelectionCostReport {
     membership_traversed_entries: usize,
     order_work: crate::mounting::spatial_index::UiMountedSpatialWork,
     order_retained_bytes: usize,
+    pointer_work: super::UiMountedPointerAffordanceWork,
 }
 
 impl UiMountedAppearanceProjectionSelection {
@@ -54,16 +60,7 @@ impl UiMountedAppearanceProjectionSelection {
     #[cfg(test)]
     pub(super) fn with_independent_measurements(&self) -> Self {
         Self {
-            materialized_contexts: Rc::new(Cell::new(self.materialized_contexts.get())),
-            lifecycle_memberships_retired: Rc::new(Cell::new(
-                self.lifecycle_memberships_retired.get(),
-            )),
-            membership_key_probes: Rc::new(Cell::new(self.membership_key_probes.get())),
-            membership_copied_avl_nodes: Rc::new(Cell::new(self.membership_copied_avl_nodes.get())),
-            membership_traversed_entries: Rc::new(Cell::new(
-                self.membership_traversed_entries.get(),
-            )),
-            order_work: Rc::new(Cell::new(self.order_work.get())),
+            measurements: Rc::new(Cell::new(self.measurements.get())),
             ..self.clone()
         }
     }
@@ -75,18 +72,14 @@ impl UiMountedAppearanceProjectionSelection {
             selected_instances: Rc::from([]),
             retired_instances: Rc::from([]),
             index_entries_touched: 0,
-            materialized_contexts: Rc::new(Cell::new(0)),
-            lifecycle_memberships_retired: Rc::new(Cell::new(0)),
-            membership_key_probes: Rc::new(Cell::new(0)),
-            membership_copied_avl_nodes: Rc::new(Cell::new(0)),
-            membership_traversed_entries: Rc::new(Cell::new(0)),
-            order_work: Rc::new(Cell::new(Default::default())),
+            measurements: Rc::new(Cell::new(Default::default())),
         }
     }
 
     pub(crate) fn derive(
         state: &super::super::UiMountedIdentityState,
         requested_surfaces: &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+        index: Option<&crate::graph::UiGraphConsumedFactIndex>,
         invalidation: Option<&UiAppearanceInvalidationBatch>,
     ) -> Option<Self> {
         let (basis, batch_revision, selected_instances, index_entries_touched) =
@@ -123,7 +116,7 @@ impl UiMountedAppearanceProjectionSelection {
                         affected.index_entries_touched() + batch.mounted_consumers().len(),
                     )
                 }
-                None => (None, None, Rc::from([]), 0),
+                None => (index.map(|index| index.basis()), None, Rc::from([]), 0),
             };
         Some(Self {
             basis,
@@ -131,12 +124,7 @@ impl UiMountedAppearanceProjectionSelection {
             selected_instances,
             retired_instances: Rc::from([]),
             index_entries_touched,
-            materialized_contexts: Rc::new(Cell::new(0)),
-            lifecycle_memberships_retired: Rc::new(Cell::new(0)),
-            membership_key_probes: Rc::new(Cell::new(0)),
-            membership_copied_avl_nodes: Rc::new(Cell::new(0)),
-            membership_traversed_entries: Rc::new(Cell::new(0)),
-            order_work: Rc::new(Cell::new(Default::default())),
+            measurements: Rc::new(Cell::new(Default::default())),
         })
     }
 
@@ -159,6 +147,13 @@ impl UiMountedAppearanceProjectionSelection {
         &self.retired_instances
     }
 
+    pub(in crate::mounting) fn matches_consumer_basis(
+        &self,
+        basis: crate::graph::UiGraphFactIndexBasis,
+    ) -> bool {
+        self.basis == Some(basis)
+    }
+
     pub(crate) fn matches_batch(&self, batch: &UiAppearanceInvalidationBatch) -> bool {
         self.basis == Some(batch.basis()) && self.batch_revision == Some(batch.revision())
     }
@@ -168,97 +163,108 @@ impl UiMountedAppearanceProjectionSelection {
     }
 
     pub(crate) fn record_materialized_contexts(&self, count: usize) {
-        self.materialized_contexts.set(count);
+        let mut measurements = self.measurements.get();
+        measurements.materialized_contexts = count;
+        self.measurements.set(measurements);
     }
 
     pub(crate) fn record_lifecycle_memberships_retired(&self, count: usize) {
-        self.lifecycle_memberships_retired.set(
-            self.lifecycle_memberships_retired
-                .get()
-                .saturating_add(count),
-        );
+        let mut measurements = self.measurements.get();
+        measurements.lifecycle_memberships_retired = measurements
+            .lifecycle_memberships_retired
+            .saturating_add(count);
+        self.measurements.set(measurements);
     }
 
     pub(crate) fn record_membership_work(
         &self,
         work: super::frame_storage::UiMountedAppearanceMembershipWork,
     ) {
-        self.membership_key_probes.set(
-            self.membership_key_probes
-                .get()
-                .saturating_add(work.key_probes()),
-        );
-        self.membership_copied_avl_nodes.set(
-            self.membership_copied_avl_nodes
-                .get()
-                .saturating_add(work.copied_avl_nodes()),
-        );
-        self.membership_traversed_entries.set(
-            self.membership_traversed_entries
-                .get()
-                .saturating_add(work.traversed_entries()),
-        );
+        let mut measurements = self.measurements.get();
+        measurements.membership_key_probes = measurements
+            .membership_key_probes
+            .saturating_add(work.key_probes());
+        measurements.membership_copied_avl_nodes = measurements
+            .membership_copied_avl_nodes
+            .saturating_add(work.copied_avl_nodes());
+        measurements.membership_traversed_entries = measurements
+            .membership_traversed_entries
+            .saturating_add(work.traversed_entries());
+        self.measurements.set(measurements);
     }
 
     pub(crate) fn record_order_work(
         &self,
         work: crate::mounting::spatial_index::UiMountedSpatialWork,
     ) {
-        let mut measured = self.order_work.get();
-        measured.merge(work);
-        self.order_work.set(measured);
+        let mut measurements = self.measurements.get();
+        measurements.order_work.merge(work);
+        self.measurements.set(measurements);
     }
 
     pub(crate) fn cost_report(
         &self,
         order_retained_bytes: usize,
     ) -> UiMountedAppearanceSelectionCostReport {
+        let measurements = self.measurements.get();
         UiMountedAppearanceSelectionCostReport {
             selected_instance_count: self.selected_instances.len(),
-            materialized_context_count: self.materialized_contexts.get(),
+            materialized_context_count: measurements.materialized_contexts,
             index_entries_touched: self.index_entries_touched,
-            lifecycle_memberships_retired: self.lifecycle_memberships_retired.get(),
-            membership_key_probes: self.membership_key_probes.get(),
-            membership_copied_avl_nodes: self.membership_copied_avl_nodes.get(),
-            membership_traversed_entries: self.membership_traversed_entries.get(),
-            order_work: self.order_work.get(),
+            lifecycle_memberships_retired: measurements.lifecycle_memberships_retired,
+            membership_key_probes: measurements.membership_key_probes,
+            membership_copied_avl_nodes: measurements.membership_copied_avl_nodes,
+            membership_traversed_entries: measurements.membership_traversed_entries,
+            order_work: measurements.order_work,
             order_retained_bytes,
+            pointer_work: Default::default(),
         }
     }
 }
 
 impl UiMountedAppearanceSelectionCostReport {
-    pub(crate) const fn order_retained_bytes(self) -> usize {
+    pub(in crate::mounting) fn with_pointer_work(
+        mut self,
+        work: super::UiMountedPointerAffordanceWork,
+    ) -> Self {
+        self.pointer_work = work;
+        self
+    }
+
+    pub const fn pointer_work(self) -> super::UiMountedPointerAffordanceWork {
+        self.pointer_work
+    }
+    pub const fn order_retained_bytes(self) -> usize {
         self.order_retained_bytes
     }
-    pub(crate) const fn order_work(self) -> crate::mounting::spatial_index::UiMountedSpatialWork {
+    pub const fn order_work(self) -> crate::mounting::spatial_index::UiMountedSpatialWork {
         self.order_work
     }
-    pub(crate) const fn selected_instance_count(self) -> usize {
+    pub const fn selected_instance_count(self) -> usize {
         self.selected_instance_count
     }
 
-    pub(crate) const fn materialized_context_count(self) -> usize {
+    pub const fn materialized_context_count(self) -> usize {
         self.materialized_context_count
     }
 
-    pub(crate) const fn index_entries_touched(self) -> usize {
+    pub const fn index_entries_touched(self) -> usize {
         self.index_entries_touched
     }
 
-    pub(crate) const fn lifecycle_memberships_retired(self) -> usize {
+    pub const fn lifecycle_memberships_retired(self) -> usize {
         self.lifecycle_memberships_retired
     }
 
-    pub(crate) const fn membership_key_probes(self) -> usize {
+    pub const fn membership_key_probes(self) -> usize {
         self.membership_key_probes
     }
 
-    pub(crate) const fn membership_copied_avl_nodes(self) -> usize {
+    pub const fn membership_copied_avl_nodes(self) -> usize {
         self.membership_copied_avl_nodes
     }
 
-    pub(crate) const fn membership_traversed_entries(self) -> usize {
+    pub const fn membership_traversed_entries(self) -> usize {
         self.membership_traversed_entries
     }
 }

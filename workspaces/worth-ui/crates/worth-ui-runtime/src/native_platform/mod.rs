@@ -14,13 +14,13 @@ mod native_platform_binding;
 mod outcome;
 mod platform;
 mod profile;
+#[cfg(feature = "certification-support")]
 mod runtime_qualification;
 pub(crate) mod text_presentation;
 
 pub use crate::facade::entry::{
     UiNativeApplicationFrame, UiNativeApplicationProgram, UiNativeApplicationProgramDenial,
     UiNativeComponentPresenceChange, UiNativeComponentSemanticTextChange,
-    UiNativeThemeTokenValueChange,
 };
 pub use application::{
     UiNativeApplicationBuilder, UiNativeApplicationDefinition, UiNativeApplicationPreparation,

@@ -156,12 +156,14 @@ mod tests {
         UiGlyphRasterSize, UiGlyphRasterSource, UiGlyphVariationCoordinates,
     };
     use crate::{
-        UiFontCollectionGeneration, UiFontCollectionLineageIdentity, UiMountedAllocationBasis,
+        UiFontCollectionGeneration, UiFontCollectionLineageIdentity,
+        UiHostObservationPresentationBasis, UiHostPresentationEpoch, UiHostSurfaceIdentity,
         UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
-        UiMountedFilledRectCompletionInput, UiMountedFilledRectMechanic, UiMountedFrameIdentity,
-        UiMountedInstanceIdentity, UiMountedNodeReceiptIssuer, UiMountedRgba8,
-        UiMountedTransformProjection, UiQualifiedFontFaceIdentity, UiSemanticSurfaceIdentity,
-        UiSurfaceBindingGeneration, UiTextProfileGeneration,
+        UiMountedFrameIdentity, UiMountedInstanceIdentity, UiMountedNodeReceiptIssuer,
+        UiMountedPortalInputShielding, UiMountedPortalOverlayCompletionInput,
+        UiMountedPortalOverlayLifecyclePosture, UiMountedPortalOverlayMechanic, UiMountedRgba8,
+        UiQualifiedFontFaceIdentity, UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
+        UiTextProfileGeneration,
     };
 
     fn sample_key() -> UiGlyphRasterKey {
@@ -184,37 +186,44 @@ mod tests {
     fn mechanic_identity() -> UiMountedPaintCommandIdentity {
         let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
         let mounted_instance = UiMountedInstanceIdentity::mint_unbound().unwrap();
+        let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+        let binding = UiSurfaceBindingGeneration::mint_unbound().unwrap();
         let bounds = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
             x: 0.0,
             y: 0.0,
             width: 16.0,
             height: 16.0,
-            coordinate_space: UiMountedCoordinateSpace::HostSurface,
+            coordinate_space: UiMountedCoordinateSpace::Viewport,
         })
         .unwrap();
-        let mechanic = UiMountedFilledRectMechanic::complete_from_runtime_mounting(
-            UiMountedFilledRectCompletionInput {
+        let mechanic = UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(
+            UiMountedPortalOverlayCompletionInput {
                 frame,
-                surface: UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
-                binding: UiSurfaceBindingGeneration::mint_unbound().unwrap(),
-                mounted_instance,
-                node_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
+                surface,
+                binding,
+                owner: mounted_instance,
+                owner_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
                     .unwrap()
                     .receipt_for(mounted_instance),
-                allocation_basis: UiMountedAllocationBasis::new(
-                    1,
-                    1,
-                    1,
-                    UiMountedTransformProjection::Identity,
+                portal_identity: mounted_instance.diagnostic_value(),
+                anchor_presentation: UiHostObservationPresentationBasis::new(
+                    UiHostSurfaceIdentity::mint_unbound().unwrap(),
+                    frame,
+                    binding,
+                    UiHostPresentationEpoch::issued_by_host(1),
                 ),
+                anchor_bounds: bounds,
                 bounds,
                 color: UiMountedRgba8::new(0, 0, 0, 255),
                 layer_semantic_order: 0,
+                layer_depth: 0,
                 clip_bounds: bounds,
+                lifecycle: UiMountedPortalOverlayLifecyclePosture::Visible,
+                shielding: UiMountedPortalInputShielding::ContentBounds,
             },
         )
         .unwrap();
-        UiMountedPaintCommandIdentity::filled_rect(&mechanic)
+        UiMountedPaintCommandIdentity::portal_overlay(&mechanic)
     }
 
     #[test]

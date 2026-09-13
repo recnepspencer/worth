@@ -5,6 +5,7 @@ use worth_ui_host_contract::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct UiRetainedPresentationBinding {
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     binding: UiSurfaceBindingGeneration,
     host_surface: worth_ui_host_contract::UiHostSurfaceIdentity,
     epoch: UiHostPresentationEpoch,
@@ -73,6 +74,28 @@ pub(crate) enum UiPresentedFrameBasisDenial {
 }
 
 impl UiRetainedPresentedFrame {
+    pub(super) fn replace_visual_regions(
+        &mut self,
+        visual_regions: super::super::UiMountedVisualRegionBasis,
+    ) -> Option<()> {
+        if self.presentation.is_some() || !self.presentation_bindings.is_empty() {
+            return None;
+        }
+        let previous_bytes = self
+            .visual_regions
+            .retained_structural_bytes()?
+            .checked_add(self.visual_regions.motion_acceptance_reserved_bytes()?)?;
+        let successor_bytes = visual_regions
+            .retained_structural_bytes()?
+            .checked_add(visual_regions.motion_acceptance_reserved_bytes()?)?;
+        self.structural_bytes = self
+            .structural_bytes
+            .checked_sub(previous_bytes)?
+            .checked_add(successor_bytes)?;
+        self.visual_regions = visual_regions;
+        Some(())
+    }
+
     pub(super) fn hit_index(&self) -> crate::mounting::presented_hit_index::UiPresentedHitIndex {
         self.visual_regions.presented_hits.clone()
     }
@@ -94,25 +117,17 @@ impl UiRetainedPresentedFrame {
             worth_ui_host_contract::UiHostObservationPresentationBasis,
         ),
     > + '_ {
-        self.presentation
-            .as_ref()
-            .into_iter()
-            .flat_map(|receipt| receipt.surfaces())
-            .map(|surface| {
-                let index = self
-                    .presentation_bindings
-                    .binary_search_by_key(&surface.binding(), |entry| entry.binding)
-                    .expect("presented binding retains epoch");
-                (
-                    surface.semantic_surface(),
-                    worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-                        surface.host_surface(),
-                        self.frame,
-                        surface.binding(),
-                        self.presentation_bindings[index].epoch,
-                    ),
-                )
-            })
+        self.presentation_bindings.iter().map(|entry| {
+            (
+                entry.surface,
+                worth_ui_host_contract::UiHostObservationPresentationBasis::new(
+                    entry.host_surface,
+                    self.frame,
+                    entry.binding,
+                    entry.epoch,
+                ),
+            )
+        })
     }
 
     pub(super) fn receipts(&self) -> &super::super::UiMountedNodeReceiptBasis {
@@ -125,28 +140,13 @@ impl UiRetainedPresentedFrame {
         targets: &[crate::runtime::motion::UiMotionTargetIdentity],
     ) -> crate::mounting::hit_test_work::UiHitTestSpatialWork {
         let mut work = crate::mounting::hit_test_work::UiHitTestSpatialWork::default();
-        if let Some(receipt) = &self.presentation {
-            for surface in receipt.surfaces() {
-                let targets = targets
-                    .iter()
-                    .copied()
-                    .filter(|target| target.semantic_surface() == surface.semantic_surface())
-                    .collect::<Vec<_>>();
-                if targets.is_empty() {
-                    continue;
-                }
-                let epoch = self
-                    .presentation_bindings
-                    .iter()
-                    .find(|entry| entry.binding == surface.binding())
-                    .map(|entry| entry.epoch)
-                    .expect("presented binding has a current epoch");
-                let presentation = worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-                    surface.host_surface(),
-                    self.frame,
-                    surface.binding(),
-                    epoch,
-                );
+        for (surface, presentation) in self.current_presentations().collect::<Vec<_>>() {
+            let targets = targets
+                .iter()
+                .copied()
+                .filter(|target| target.semantic_surface() == surface)
+                .collect::<Vec<_>>();
+            if !targets.is_empty() {
                 work.merge(self.visual_regions.presented_hits.apply_motion(
                     sampler,
                     presentation,
@@ -156,6 +156,7 @@ impl UiRetainedPresentedFrame {
         }
         work
     }
+
     pub(super) fn prepare(input: UiRetainedPresentedFrameInput) -> Option<Self> {
         let mut bindings = input.bindings.into_vec();
         bindings.sort();
@@ -239,6 +240,19 @@ impl UiRetainedPresentedFrame {
         self.mount_cost = mount_cost;
     }
 
+    pub(super) fn preserve_reconciled_presentations(&mut self, previous: &Self) {
+        assert_eq!(
+            self.frame, previous.frame,
+            "reconciliation retains the mounted frame"
+        );
+        self.presentation_bindings = previous
+            .presentation_bindings
+            .iter()
+            .copied()
+            .filter(|entry| self.bindings.binary_search(&entry.binding).is_ok())
+            .collect();
+    }
+
     pub(crate) fn set_presentation_receipt(
         &mut self,
         presentation: super::super::UiMountedPresentationReceipt,
@@ -248,11 +262,19 @@ impl UiRetainedPresentedFrame {
             .surfaces()
             .iter()
             .map(|surface| UiRetainedPresentationBinding {
+                surface: surface.semantic_surface(),
                 binding: surface.binding(),
                 host_surface: surface.host_surface(),
                 epoch: surface.epoch(),
             })
             .collect::<Vec<_>>();
+        presentation_bindings.extend(self.presentation_bindings.iter().copied().filter(|old| {
+            !presentation
+                .surfaces()
+                .iter()
+                .any(|surface| surface.semantic_surface() == old.surface)
+                && self.bindings.binary_search(&old.binding).is_ok()
+        }));
         presentation_bindings.sort_by_key(|entry| entry.binding);
         self.presentation_bindings = presentation_bindings.into_boxed_slice();
         self.presentation = Some(presentation);
@@ -328,6 +350,7 @@ mod tests {
     fn wrong_host_cannot_update_a_retained_binding_epoch() {
         use worth_ui_host_contract::*;
         let mut retained = UiRetainedPresentationBinding {
+            surface: UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
             binding: UiSurfaceBindingGeneration::mint_unbound().unwrap(),
             host_surface: UiHostSurfaceIdentity::mint_unbound().unwrap(),
             epoch: UiHostPresentationEpoch::issued_by_host(1),

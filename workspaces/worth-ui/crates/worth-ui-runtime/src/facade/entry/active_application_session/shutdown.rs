@@ -53,6 +53,7 @@ impl WorthUiActiveApplicationSession {
         for outcome in outcomes {
             let _ = self.finish_mounted_presentation(outcome);
         }
+        assert!(self.mounted_owner_receipt_successions.is_empty());
         self.mounted.assert_shutdown_resolved();
         self.host_exchange.shutdown();
         let host_session_release = self.host_session.release_adapter_session();

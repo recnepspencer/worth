@@ -20,26 +20,14 @@ pub(crate) use tests::inputs as projection_test_inputs;
 #[cfg(test)]
 pub(crate) use tests::inputs_from_session as projection_test_inputs_from_session;
 
-#[allow(
-    unused_imports,
-    reason = "Gate 1 retains sealed overlay snapshot re-exports for later appearance projection"
-)]
-pub(crate) use crate::runtime::overlay_composition::{
-    UiBackdropInstanceIdentity, UiOverlayStackSnapshot,
-};
+pub(crate) use crate::runtime::overlay_composition::UiOverlayStackSnapshot;
 pub(crate) use appearance_projection::UiAppearanceProjection;
 pub(crate) use attempt::{UiAppearanceAttemptContext, UiAppearanceProjectionAttempt};
 pub(crate) use backdrop::UiBackdropAppearanceProjection;
-pub(crate) use change_receipt::{
-    UiAppearanceChangeReceipt, UiAppearanceMountAffinity, UiAppearanceMountAffinityDenial,
-};
+pub(crate) use change_receipt::{UiAppearanceChangeReceipt, UiAppearanceMountAffinity};
 pub(crate) use resolved_aspect::{
     UiAppearanceProvenance, UiAppearanceSupportPosture, UiResolvedAppearanceAspect,
 };
-#[allow(
-    unused_imports,
-    reason = "Gate 1 retains sealed appearance resolution inputs for later mounting consumers"
-)]
 pub(crate) use resolver::{
-    UiAppearanceResolutionDenial, UiAppearanceResolutionSubject, UiAppearanceResolver,
+    UiAppearanceResolutionDenial, UiAppearanceResolutionFailure, UiAppearanceResolver,
 };

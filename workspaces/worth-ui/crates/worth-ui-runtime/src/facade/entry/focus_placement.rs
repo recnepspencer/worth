@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum UiFocusPlacementExecutionDenial {
+pub enum UiFocusPlacementExecutionDenial {
     OwnerUnavailable,
     IdentityExhausted,
     MountedFrameUnavailable,

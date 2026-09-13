@@ -12,7 +12,7 @@ impl WorthUiActiveApplicationSession {
         mounted_successor: crate::mounting::UiMountedGraphReplacementSuccessor,
         lifecycle: super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
         scroll: super::scroll_replacement::UiPreparedScrollReplacement,
-        selection: super::selection_replacement::UiPreparedSelectionReplacement,
+        owners: super::owner_succession::UiApplicationOwnerCutover,
     ) -> WorthUiApplicationCutoverReceipt {
         let transition = prepared
             .transition
@@ -25,7 +25,6 @@ impl WorthUiActiveApplicationSession {
             }
         };
         let publication = self.application.commit_application_activation(activation);
-        self.replace_authored_overlay_binding_generation();
         if let Some(appearance_succession) = prepared.appearance_succession.take() {
             self.commit_appearance_generation_succession(appearance_succession);
         }
@@ -62,23 +61,8 @@ impl WorthUiActiveApplicationSession {
             &mut self.dormant_portal_stack_ordinal_issuer,
         );
         reconcile_motion_installation(&mut self.motion, service_policy_plan.motion());
-        let successor_appearance_demand = self
-            .application
-            .prepared_authority()
-            .consumed_fact_index()
-            .appearance_axis_demand();
-        self.intent_application_facts =
-            crate::runtime::intent::UiIntentApplicationFactState::activate(
-                self.application.intent_application_fact_plan(),
-                successor_appearance_demand
-                    .contains(worth_ui_dsl::UiAppearanceStateAxis::Validation),
-            );
         self.intent_confirmation.cancel_all(
             crate::runtime::intent::UiIntentConfirmationCancellationReason::ApplicationRebound,
-        );
-        self.intent_admission.cancel_all(
-            &mut self.intent_execution,
-            crate::runtime::intent::UiIntentAdmissionCancellationReason::ApplicationRebound,
         );
         let scroll = scroll.into_state();
         if !scroll.is_installed() {
@@ -88,20 +72,33 @@ impl WorthUiActiveApplicationSession {
                 .map(crate::runtime::scroll::UiScrollRuntimeState::shutdown);
         }
         self.scroll = scroll;
-        let selection = selection.into_state();
-        if !selection.is_installed() {
-            let _ = self
-                .selection
-                .as_mut()
-                .map(crate::runtime::selection::UiSelectionRuntimeState::shutdown);
+        match owners {
+            super::owner_succession::UiApplicationOwnerCutover::Mounted(owners) => {
+                owners.commit(self)
+            }
+            super::owner_succession::UiApplicationOwnerCutover::Unmounted { selection, text } => {
+                text.commit(&mut self.presentation);
+                let demand = self
+                    .application
+                    .prepared_authority()
+                    .consumed_fact_index()
+                    .appearance_axis_demand();
+                self.intent_application_facts =
+                    crate::runtime::intent::UiIntentApplicationFactState::activate(
+                        self.application.intent_application_fact_plan(),
+                        demand.contains(worth_ui_dsl::UiAppearanceStateAxis::Validation),
+                    );
+                self.intent_admission.cancel_all(
+                    &mut self.intent_execution,
+                    crate::runtime::intent::UiIntentAdmissionCancellationReason::ApplicationRebound,
+                );
+                self.selection = selection.into_state();
+                appearance::reconcile_successor_owners(self);
+                self.cancel_all_interactions(crate::runtime::interaction::UiInteractionLifecycleStopReason::ApplicationRebound);
+            }
         }
-        self.selection = selection;
-        appearance::reconcile_successor_owners(self);
         self.mounted
             .commit_graph_replacement_successor(mounted_successor);
-        self.cancel_all_interactions(
-            crate::runtime::interaction::UiInteractionLifecycleStopReason::ApplicationRebound,
-        );
         let observation_resources = self.application.retire_observation_resources(
             crate::runtime::observation::UiObservationResourceRetirementCause::
                 ApplicationReplacement,

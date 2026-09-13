@@ -74,15 +74,15 @@ and every unlisted source are rejected during font admission. Runtime does not s
 downgrade a rejected color source to monochrome or ask an operating-system renderer to choose
 another interpretation.
 
-## Staged appearance foreground (Milestone 3.16)
+## Appearance foreground
 
 An existing `ComponentSemanticTextSpanContract` can explicitly adopt its node's
 appearance role color with `span.with_appearance_foreground()`. Other spans keep
 their foreground token. Adoption preserves the original UTF-8 range, style, and
 paint identity; the value range does not adopt a separate posture row.
 
-This currently feeds unpublished mounted appearance and headless translation.
-Live presentation still uses the existing text/token publisher until Gate 5.
+The adopted foreground is part of live mounted appearance and is consumed by
+both native and headless presentation.
 An empty `UiNativeComponentSemanticTextChange::successor` clears the value while
 retaining declared formatting; it still requires the current semantic revision.
 Content and span-adoption changes refresh mounted foreground without requiring
@@ -95,7 +95,7 @@ copy. Each binding retains its accepted presentation predecessor when the scope
 expands again; that surface's complete reconstruction is separate from ordinary
 paint refresh cost.
 
-During staged lowering, foreground membership is restricted to current qualified text candidates
+Foreground membership is restricted to current qualified text candidates
 after mounted ancestor and Portal clipping. A completely clipped candidate has
 no foreground override; restored coverage uses its current original-span identity.
 A partial clip retains the candidate's original spans. This is not per-glyph
@@ -103,16 +103,14 @@ visibility or exact span-damage support.
 Missing retained correspondence or unresolved clip evidence denies preparation
 instead of treating the text as successfully suppressed.
 
-Staged appearance work exposes `text_damage_requirements()` for exact mounted
+Appearance work exposes `text_damage_requirements()` for exact mounted
 target/span insertions, replacements, and removals. Headless transport preserves
 these unresolved requirements separately from completed non-text logical damage.
-The node allocation is no longer reported as text damage. Actual old/new image
-coverage must be finalized by text/presentation after host raster admission and
-before surface submission; that integration remains unfinished.
-
-Gate 4b remains open for clipping lifecycle,
-intrinsic-color admission, exact span damage, and complete work-accounting proof;
-this staged API does not expand the frozen text profile.
+The node allocation is not reported as text damage. Text/presentation finalizes
+actual old/new image coverage after host raster admission and before surface
+submission. Intrinsic-color glyphs retain their own color and exclude the
+appearance foreground; the composed appearance and Motion opacity still apply.
+This path does not expand the frozen text profile.
 
 ## Generations and replacement
 

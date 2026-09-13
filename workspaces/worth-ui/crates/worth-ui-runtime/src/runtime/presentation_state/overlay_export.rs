@@ -10,7 +10,6 @@ use worth_ui_host_contract::UiMountedPresentationAttemptIdentity;
 pub(crate) struct UiApplicationPresentationOwnerExport {
     generation: WorthUiPreparedApplicationGenerationIdentity,
     presentation: UiMountedPresentationAttemptIdentity,
-    revision: u64,
 }
 
 impl UiApplicationPresentationOwnerExport {
@@ -20,10 +19,6 @@ impl UiApplicationPresentationOwnerExport {
 
     pub(crate) const fn presentation(&self) -> UiMountedPresentationAttemptIdentity {
         self.presentation
-    }
-
-    pub(crate) const fn revision(&self) -> u64 {
-        self.revision
     }
 }
 
@@ -38,7 +33,6 @@ impl super::UiApplicationPresentationState {
         UiApplicationPresentationOwnerExport {
             generation,
             presentation,
-            revision: self.theme_revision,
         }
     }
 }

@@ -43,13 +43,6 @@ impl UiOverlayCompositionOwner {
         self.coordinator.prepare_successor(exports, changes)
     }
 
-    pub(super) fn reconstruct(
-        &self,
-        exports: &UiOverlayOwnerExportVector,
-    ) -> Result<UiPreparedOverlayComposition, UiOverlayCompositionDenial> {
-        self.coordinator.reconstruct(exports)
-    }
-
     pub(super) fn retain_prepared(
         &mut self,
         prepared: UiPreparedOverlayComposition,

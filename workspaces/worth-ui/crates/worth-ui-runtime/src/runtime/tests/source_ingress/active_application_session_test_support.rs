@@ -7,6 +7,10 @@ use crate::runtime::{
     WorthUiSourceProvider, WorthUiWatchedCandidateSubmission, WorthUiWatcherEvent,
 };
 
+#[path = "active_application_session_test_support/declared_surface.rs"]
+mod declared_surface;
+pub(crate) use declared_surface::source_backed_declared_surface_component_app_with_host;
+
 pub(crate) use super::active_application_candidate_catalog_test_support::{
     admit_candidate_catalog, admit_candidate_complete_catalog,
     admit_first_candidate_catalog_row_with_viewport_width,
@@ -202,7 +206,7 @@ fn component_builder_with_focus() -> crate::facade::entry::WorthUiApplicationBui
             crate::capability::ThemeTokenFamily::text(),
             crate::capability::ThemeTokenSource::application(),
             crate::capability::ThemeTokenValue::color(
-                crate::capability::ThemeColorValue::hex("#101820")
+                crate::capability::UiThemeColor::parse("#101820")
                     .expect("removal-only fixture token color is valid"),
             ),
         ))
@@ -242,7 +246,7 @@ fn component_builder_with_allocation(
             crate::capability::ThemeTokenFamily::text(),
             crate::capability::ThemeTokenSource::application(),
             crate::capability::ThemeTokenValue::color(
-                crate::capability::ThemeColorValue::hex("#101820")
+                crate::capability::UiThemeColor::parse("#101820")
                     .expect("removal-only fixture token color is valid"),
             ),
         ))
@@ -385,8 +389,7 @@ fn scaled_unrelated_token(index: usize) -> crate::capability::ThemeTokenDescript
         crate::capability::ThemeTokenFamily::text(),
         crate::capability::ThemeTokenSource::application(),
         crate::capability::ThemeTokenValue::color(
-            crate::capability::ThemeColorValue::hex("#101820")
-                .expect("scaled token color is valid"),
+            crate::capability::UiThemeColor::parse("#101820").expect("scaled token color is valid"),
         ),
     )
 }

@@ -1,19 +1,22 @@
 use std::convert::Infallible;
 
 use serde::{Deserialize, Serialize};
+#[cfg(test)]
+use worth_proof::BoundaryBridgedAuthorityRevalidationRequiredBasis;
 use worth_proof::{
-    Artifact, AssumptionBasis, BoundaryBridgedAuthorityRevalidationRequiredBasis, CurrentValidity,
-    FreshnessScopedBasis, PhaseMarker, StaleReadableBasis, TransitionOutcome,
+    Artifact, AssumptionBasis, CurrentValidity, FreshnessScopedBasis, PhaseMarker,
+    StaleReadableBasis, TransitionOutcome,
 };
 
+#[cfg(test)]
+use crate::branch::SignalBranchBasisAuthority;
 use crate::branch::{
-    mint_signal_branch_authority, signal_branch_basis_proof, SignalBranchBasisAuthority,
-    SignalBranchBasisProof,
+    mint_signal_branch_authority, signal_branch_basis_proof, SignalBranchBasisProof,
 };
 use crate::logic::transaction::canonical_digest;
-use crate::state::{
-    SignalBranchHandle, SignalBranchId, SignalSnapshotId, SignalSnapshotV1, SnapshotRestoreIntent,
-};
+#[cfg(test)]
+use crate::state::SignalSnapshotV1;
+use crate::state::{SignalBranchHandle, SignalBranchId, SignalSnapshotId, SnapshotRestoreIntent};
 
 pub const SIGNAL_BRANCH_BASIS_SCHEMA_VERSION: &str = "worth-signal-branch-basis-v1";
 
@@ -121,6 +124,7 @@ impl SignalBranchBasisIdentity {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn from_snapshot_restore(
         snapshot: &SignalSnapshotV1,
         intent: SnapshotRestoreIntent,
@@ -255,6 +259,7 @@ pub type SignalBranchBasisArtifact = Artifact<
     FreshnessScopedBasis<CurrentValidity, AssumptionBasis<SignalBranchBasisIdentity>>,
 >;
 
+#[cfg(test)]
 type BoundaryBridgedSignalBranchBasisState = Artifact<
     SignalBranchBasisReady,
     SignalBranchBasis,
@@ -268,8 +273,10 @@ type BoundaryBridgedSignalBranchBasisState = Artifact<
 /// expose `Artifact::readmit_with_authority<Auth: AuthorityMarker>` as a
 /// generic authority lane. Signal readmission must use Signal's concrete
 /// authority witness.
+#[cfg(test)]
 pub struct BoundaryBridgedSignalBranchBasisArtifact(BoundaryBridgedSignalBranchBasisState);
 
+#[cfg(test)]
 impl BoundaryBridgedSignalBranchBasisArtifact {
     pub fn readmit_with_authority(
         self,
@@ -304,6 +311,7 @@ pub(super) fn materialize_branch_basis(
     Artifact::with_proofs_and_current_basis(payload, proofs, identity, authority)
 }
 
+#[cfg(test)]
 pub fn bridge_signal_branch_basis_trust_boundary(
     basis: SignalBranchBasisArtifact,
 ) -> BoundaryBridgedSignalBranchBasisArtifact {

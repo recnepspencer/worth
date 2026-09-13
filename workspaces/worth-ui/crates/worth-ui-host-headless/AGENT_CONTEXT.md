@@ -11,7 +11,7 @@ Canonical machine constitution: `tools/boundary-check/config/road1.toml`
 
 - Public surface: workspace-owned; package targets remain the explicit export or composition owners
 - Facade exports: `none`
-- Owned internal modules: `headless_baseline_unavailable_host, headless_capability_profile_host, headless_host, headless_measurement, headless_portal_anchor_host, headless_recorder, headless_static_paint_tests, headless_transcript, headless_translation, headless_translation_effect_tests, solicited_effect`
+- Owned internal modules: `headless_baseline_unavailable_host, headless_capability_profile_host, headless_host, headless_measurement, headless_portal_anchor_host, headless_recorder, headless_transcript, headless_translation, headless_translation_effect_tests, solicited_effect`
 - Allowed in-tree dependency bands: `WORTH UI manifest-declared dependencies`
 
 Machine fences:

@@ -1,4 +1,4 @@
-use crate::runtime::{UiCommittedOverlayExtentBounds, UiMountedOverlayExtentOwner};
+use crate::runtime::UiMountedOverlayExtentOwner;
 
 #[path = "overlay_appearance/backdrop_projection.rs"]
 mod backdrop_projection;
@@ -27,140 +27,8 @@ struct UiActiveOverlaySurfacePreparation {
     >,
 }
 
-impl super::WorthUiActiveApplicationSession {
-    pub(in crate::facade::entry) fn prepare_overlay_appearance_sources(
-        &self,
-    ) -> Result<UiActiveOverlayAppearancePreparation, ()> {
-        let owners = self
-            .authored_overlay_bindings
-            .bound_owners()
-            .map(|(declaration, runtime, bindings)| (declaration, runtime, bindings.clone()))
-            .collect();
-        self.prepare_overlay_appearance_sources_from(owners, None)
-    }
-
-    pub(in crate::facade::entry) fn prepare_overlay_appearance_sources_for_portal_transition(
-        &self,
-        transition: &crate::runtime::portal::UiPreparedPortalServiceTransition,
-        stage: Option<&crate::runtime::portal::UiPortalOverlayBindingStage>,
-        staged_motion: Option<crate::runtime::motion::UiMotionOverlayOwnerRow>,
-        retain_exit: bool,
-    ) -> Result<UiActiveOverlayAppearancePreparation, ()> {
-        let owners = self
-            .authored_overlay_bindings
-            .candidate_bound_owners(transition, stage, retain_exit)
-            .map_err(|_| ())?;
-        self.prepare_overlay_appearance_sources_from(
-            owners,
-            Some((transition, staged_motion, retain_exit)),
-        )
-    }
-
-    fn prepare_overlay_appearance_sources_from(
-        &self,
-        bound_owners: Vec<(
-            worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity,
-            worth_ui_host_contract::UiSemanticSurfaceIdentity,
-            crate::runtime::portal::UiPortalOverlayBindingOwner,
-        )>,
-        portal_transition: Option<(
-            &crate::runtime::portal::UiPreparedPortalServiceTransition,
-            Option<crate::runtime::motion::UiMotionOverlayOwnerRow>,
-            bool,
-        )>,
-    ) -> Result<UiActiveOverlayAppearancePreparation, ()> {
-        let generation = self.generation_identity().clone();
-        let mut surfaces = Vec::new();
-        let material = self.application.authored_overlay_material();
-        if bound_owners.is_empty() {
-            return Ok(UiActiveOverlayAppearancePreparation {
-                surfaces: surfaces.into_boxed_slice(),
-            });
-        }
-        for (declaration, runtime, bindings) in bound_owners {
-            let backdrops = material
-                .backdrop_declarations_for_surface(declaration)
-                .map(|declaration| (declaration.identity(), declaration.clone()))
-                .collect::<std::collections::BTreeMap<_, _>>();
-            let regions = backdrops
-                .values()
-                .filter_map(|backdrop| match backdrop.extent() {
-                    worth_ui_dsl::UiBackdropExtentBasis::PresentedMosaicRegion {
-                        region, ..
-                    } => Some(region),
-                    _ => None,
-                })
-                .collect::<std::collections::BTreeSet<_>>();
-            let extent =
-                self.mounted
-                    .current_surface_viewport(runtime)
-                    .and_then(|(revision, viewport)| {
-                        let viewport = UiCommittedOverlayExtentBounds::new(
-                            viewport.x(),
-                            viewport.y(),
-                            viewport.width(),
-                            viewport.height(),
-                        )
-                        .ok()?;
-                        let mut mounted_regions = Vec::new();
-                        for region in &regions {
-                            let Some(rows) =
-                                self.mounted
-                                    .current_region_extents(runtime, &generation, *region)
-                            else {
-                                continue;
-                            };
-                            for (occurrence, bounds) in rows {
-                                mounted_regions.push(
-                                    crate::runtime::UiMountedOverlayRegionExtent::new(
-                                        *region,
-                                        occurrence,
-                                        UiCommittedOverlayExtentBounds::new(
-                                            bounds.x(),
-                                            bounds.y(),
-                                            bounds.width(),
-                                            bounds.height(),
-                                        )
-                                        .ok()?,
-                                    ),
-                                );
-                            }
-                        }
-                        UiMountedOverlayExtentOwner::new(
-                            generation.clone(),
-                            declaration,
-                            runtime,
-                            revision.get(),
-                            viewport,
-                            mounted_regions,
-                        )
-                        .ok()
-                    });
-            surfaces.push(UiActiveOverlaySurfacePreparation {
-                declaration_surface: declaration,
-                runtime_surface: runtime,
-                portal_stack: match portal_transition {
-                    Some((transition, _, retain_exit)) => Some(
-                        self.portal
-                            .as_ref()
-                            .ok_or(())?
-                            .surface_stack_snapshot(runtime)
-                            .for_transition(runtime, transition, retain_exit)
-                            .ok_or(())?,
-                    ),
-                    None => None,
-                },
-                staged_motion: portal_transition.and_then(|(_, motion, _)| motion),
-                extent,
-                bindings,
-                backdrops,
-            });
-        }
-        Ok(UiActiveOverlayAppearancePreparation {
-            surfaces: surfaces.into_boxed_slice(),
-        })
-    }
-}
+#[path = "overlay_appearance/preparation.rs"]
+mod preparation;
 
 impl UiActiveOverlayAppearancePreparation {
     pub(in crate::facade::entry) fn lower(
@@ -175,7 +43,43 @@ impl UiActiveOverlayAppearancePreparation {
         presentation: &crate::runtime::presentation_state::UiApplicationPresentationState,
         capabilities: &crate::capability::CapabilitySnapshot,
         appearance: Option<&crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+        prepared_binding: Option<&crate::runtime::appearance::UiActiveThemeBinding>,
     ) -> Result<Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>, ()> {
+        self.lower_with_themes(
+            attempt,
+            requested_surfaces,
+            owners,
+            generation,
+            portal,
+            motion,
+            presentation,
+            capabilities,
+            appearance,
+            None,
+            prepared_binding,
+        )
+    }
+
+    pub(in crate::facade::entry) fn lower_with_themes(
+        &self,
+        attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        requested_surfaces: &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+        owners: &mut UiActiveOverlayCompositionOwners,
+        generation: &crate::facade::prepared_application_authority::
+            WorthUiPreparedApplicationGenerationIdentity,
+        portal: Option<&crate::runtime::portal::UiPortalRuntimeState>,
+        motion: Option<&crate::runtime::motion::UiMotionRuntimeState>,
+        presentation: &crate::runtime::presentation_state::UiApplicationPresentationState,
+        capabilities: &crate::capability::CapabilitySnapshot,
+        appearance: Option<&crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+        themes: Option<
+            &crate::runtime::presentation_state::UiPreparedAppearanceGenerationSuccession,
+        >,
+        prepared_binding: Option<&crate::runtime::appearance::UiActiveThemeBinding>,
+    ) -> Result<Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>, ()> {
+        if self.surfaces.is_empty() && owners.is_empty() {
+            return Ok(Vec::new());
+        }
         let presentation_export = presentation.overlay_owner_export(generation.clone(), attempt);
         let declaration_revision = generation
             .semantic_package_identity()
@@ -280,6 +184,8 @@ impl UiActiveOverlayAppearancePreparation {
                     presentation,
                     capabilities,
                     appearance,
+                    themes,
+                    prepared_binding,
                     previous,
                     source_work,
                 )?;
@@ -366,7 +272,10 @@ fn overlay_changes(
                 }
             }
         }
-        if viewport_changed {
+        // An extent revision still advances when no active Backdrop exposes a
+        // changed rectangle. Carry that owner change even when its dependency
+        // scope is empty; the consumer must not infer reuse across revisions.
+        if viewport_changed || changed_regions.is_empty() {
             changes.push(UiOverlayChangedBasis::SurfaceExtent(
                 surface.declaration_surface,
             ));

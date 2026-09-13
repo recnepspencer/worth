@@ -59,8 +59,7 @@ fn newly_mounted_copy_is_selected_without_source_close_and_survives_abandonment(
         assert!(matches!(fragment.work().changes(),
             [UiMountedAppearanceMechanicChange::Insert(UiMountedAppearanceMechanic::Surface(mechanic))]
             if mechanic.node_receipt().mounted_instance() == arriving));
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(&output)
-            .unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(&output).unwrap();
         drop(frame);
     }
     let frame = prepare(&mut session);

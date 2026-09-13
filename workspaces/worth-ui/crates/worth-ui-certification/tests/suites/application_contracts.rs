@@ -2,6 +2,8 @@
 
 #[path = "../admission_support_runtime.rs"]
 mod admission_support_runtime;
+#[path = "../application_contracts/appearance_documentation.rs"]
+mod appearance_documentation;
 #[path = "../application_contracts/canvas_spatial_execution.rs"]
 mod canvas_spatial_execution;
 #[path = "../application_contracts/canvas_spatial_replacement.rs"]
@@ -54,6 +56,8 @@ mod milestone_312_observation_admission;
 mod milestone_312_planning_guards;
 #[path = "../application_contracts/milestone_312_post_classification_cost.rs"]
 mod milestone_312_post_classification_cost;
+#[path = "../application_contracts/mounted_appearance.rs"]
+mod mounted_appearance;
 #[path = "../application_contracts/mounted_application_lifecycle/mod.rs"]
 mod mounted_application_lifecycle;
 #[path = "../application_contracts/mounted_cost_evidence.rs"]
@@ -96,8 +100,6 @@ mod mounted_projection_parity;
 mod mounted_protocol_model;
 #[path = "../application_contracts/mounted_publication.rs"]
 mod mounted_publication;
-#[path = "../application_contracts/mounted_static_paint.rs"]
-mod mounted_static_paint;
 #[path = "../application_contracts/multi_removal_filesystem.rs"]
 mod multi_removal_filesystem;
 #[path = "../application_contracts/observation_rebind.rs"]

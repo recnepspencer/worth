@@ -60,16 +60,4 @@ impl UiFocusAppearanceState {
     pub(crate) const fn class(&self) -> UiAppearanceAxisClass {
         self.class
     }
-
-    pub(crate) const fn source_class(&self) -> crate::runtime::focus::UiFocusAppearanceClass {
-        self.source_class
-    }
-
-    pub(crate) const fn owner_revision(&self) -> u64 {
-        self.owner_revision
-    }
-
-    pub(crate) const fn target(&self) -> Option<UiMountedInstanceIdentity> {
-        self.target
-    }
 }

@@ -6,6 +6,7 @@ impl WorthUiActiveApplicationSession {
     pub(in crate::facade::entry) fn observe_scroll_payload(
         &mut self,
         payload: &worth_ui_host_contract::UiHostObservationPayload,
+        work: &mut crate::mounting::UiHitTestSpatialWork,
     ) -> Option<UiHostScrollObservationOutcome> {
         let worth_ui_host_contract::UiHostObservationPayload::ScrollDelta {
             source,
@@ -24,8 +25,8 @@ impl WorthUiActiveApplicationSession {
                 *phase,
                 *precision,
                 *target,
-                *x_subpixels,
-                *y_subpixels,
+                [*x_subpixels, *y_subpixels],
+                work,
             ) {
                 Ok(receipt) => UiHostScrollObservationOutcome::Applied(receipt),
                 Err(denial) => UiHostScrollObservationOutcome::Denied(denial),
@@ -39,10 +40,11 @@ impl WorthUiActiveApplicationSession {
         phase: worth_ui_host_contract::UiHostScrollDeltaPhase,
         precision: worth_ui_host_contract::UiHostScrollDeltaPrecision,
         target: worth_ui_host_contract::UiHostScrollDeltaTargetAffinity,
-        x_subpixels: i64,
-        y_subpixels: i64,
+        delta_subpixels: [i64; 2],
+        work: &mut crate::mounting::UiHitTestSpatialWork,
     ) -> Result<crate::runtime::scroll::UiScrollRouteReceipt, UiHostScrollObservationDenial> {
-        let (mounted_instance, mounted) = self.resolve_scroll_target(target)?;
+        let (mounted_instance, mounted) = self.resolve_scroll_target(target, work)?;
+        let [x_subpixels, y_subpixels] = delta_subpixels;
         let surface_incarnation = self.scroll_owner_incarnation();
         let scroll = self
             .scroll
@@ -106,6 +108,7 @@ impl WorthUiActiveApplicationSession {
     fn resolve_scroll_target(
         &self,
         target: worth_ui_host_contract::UiHostScrollDeltaTargetAffinity,
+        work: &mut crate::mounting::UiHitTestSpatialWork,
     ) -> Result<
         (
             worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -127,6 +130,7 @@ impl WorthUiActiveApplicationSession {
                     &self.mounted,
                     presentation,
                     position,
+                    work,
                 )
                 .map_err(UiHostScrollObservationDenial::Targeting)?;
                 let mounted = target.view().mounted_instance();

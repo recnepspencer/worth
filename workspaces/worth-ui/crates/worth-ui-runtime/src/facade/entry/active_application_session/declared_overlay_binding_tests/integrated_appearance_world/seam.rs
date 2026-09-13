@@ -182,7 +182,7 @@ pub(super) fn seam_batch(
                 .session
                 .application
                 .mounted_region_declarations(surface_declaration, mounted.graph_node_identity());
-            let binding = bindings.0.iter().next().unwrap();
+            let binding = bindings.0.first().unwrap();
             crate::mounting::UiMountedMosaicRegionGeometry::new(
                 *instance,
                 binding.declaration(),
@@ -274,7 +274,7 @@ fn assert_headless_seam_samples(
     loser: UiMountedInstanceIdentity,
 ) {
     let transcript =
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     let owner_frame = surface_frame(&transcript, owner);
     let loser_frame = surface_frame(&transcript, loser);
     let owner_center = owner_frame
@@ -310,10 +310,10 @@ fn assert_headless_seam_samples(
     );
 }
 
-pub(super) fn surface_frame<'a>(
-    transcript: &'a worth_ui_host_headless::UiHeadlessUnpublishedAppearanceFrameTranscript,
+pub(super) fn surface_frame(
+    transcript: &worth_ui_host_headless::UiHeadlessAppearanceProjectionTranscript,
     target: UiMountedInstanceIdentity,
-) -> &'a worth_ui_host_headless::UiHeadlessAppearanceFrameTranscript {
+) -> &worth_ui_host_headless::UiHeadlessAppearanceFrameTranscript {
     transcript
         .fragments()
         .iter()

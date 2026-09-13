@@ -217,10 +217,11 @@ impl UiNativeEventLoopClient for UiNativeApplicationDriver {
 
     fn presentation_attribution(
         &self,
+        observed: &worth_ui_host_native::UiNativePresentationObservation,
     ) -> Option<worth_ui_host_native::UiNativeClientPresentationAttribution> {
         self.shell
             .as_ref()
-            .and_then(WorthUiNativeApplicationShell::current_presentation_attribution)
+            .and_then(|shell| shell.current_presentation_attribution(observed))
     }
 
     fn close(mut self) -> UiNativeEventLoopClientClose {

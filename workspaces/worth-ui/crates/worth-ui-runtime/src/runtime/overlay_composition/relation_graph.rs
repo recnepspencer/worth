@@ -162,19 +162,8 @@ impl UiCompiledOverlayRelationGraph {
         })
     }
 
-    pub(crate) const fn surface(&self) -> UiSemanticSurfaceDeclarationIdentity {
-        self.surface
-    }
-
     pub(crate) fn relations(&self) -> &[UiCompiledOverlayRelation] {
         &self.relations
-    }
-
-    pub(crate) fn relation_for(
-        &self,
-        identity: UiBackdropIdentity,
-    ) -> Option<UiCompiledOverlayRelation> {
-        self.by_backdrop.get(&identity).copied()
     }
 }
 

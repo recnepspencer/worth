@@ -22,6 +22,7 @@ impl WorthUiDetachedPreparedMountedApplicationReplacement {
             mounted_successor: self.mounted_successor,
             frame: self.frame,
             lifecycle: self.lifecycle,
+            owners: self.owners,
         })
     }
 }
@@ -60,6 +61,7 @@ impl WorthUiDetachedMountedApplicationReplacementInFlight {
             application,
             mounted,
             lifecycle,
+            owners,
             ..
         } = self;
         let outcome =
@@ -77,6 +79,7 @@ impl WorthUiDetachedMountedApplicationReplacementInFlight {
                             application,
                             mounted: *rejection.in_flight,
                             lifecycle,
+                            owners,
                         },
                     },
                 ));
@@ -86,6 +89,7 @@ impl WorthUiDetachedMountedApplicationReplacementInFlight {
             session,
             application,
             lifecycle,
+            owners,
             outcome,
             |presented| presented.commit_once(),
         )
@@ -99,6 +103,7 @@ impl WorthUiDetachedMountedApplicationReplacementInFlight {
             application,
             mounted,
             lifecycle,
+            owners,
             ..
         } = self;
         let outcome = session
@@ -115,6 +120,7 @@ impl WorthUiDetachedMountedApplicationReplacementInFlight {
                             application,
                             mounted: *rejection.in_flight,
                             lifecycle,
+                            owners,
                         },
                     },
                 ));
@@ -124,6 +130,7 @@ impl WorthUiDetachedMountedApplicationReplacementInFlight {
             session,
             application,
             lifecycle,
+            owners,
             outcome,
             |presented| presented.commit_once(),
         )

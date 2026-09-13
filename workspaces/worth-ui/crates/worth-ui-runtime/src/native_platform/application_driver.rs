@@ -23,6 +23,7 @@ mod program_progress;
 #[path = "application_driver/program_reconstruction.rs"]
 mod program_reconstruction;
 #[path = "application_driver/runtime_qualification.rs"]
+#[cfg(feature = "certification-support")]
 mod runtime_qualification;
 #[path = "application_driver/shutdown_observation.rs"]
 pub(crate) mod shutdown_observation;
@@ -62,7 +63,7 @@ impl UiNativeApplicationDriver {
     pub(crate) fn new(
         application: WorthUiApp,
         program: crate::facade::entry::UiNativeApplicationProgram,
-        runtime_qualification: Option<
+        #[cfg(feature = "certification-support")] runtime_qualification: Option<
             super::runtime_qualification::UiNativeRuntimeQualificationPlan,
         >,
         application_runtime: Option<Box<dyn super::UiNativeApplicationRuntime>>,
@@ -80,7 +81,11 @@ impl UiNativeApplicationDriver {
             scale_factor_milli: None,
             consumed_application_cleanup_complete: false,
             pending_cleanup: None,
-            progress: UiNativeApplicationProgramProgress::new(program, runtime_qualification),
+            progress: UiNativeApplicationProgramProgress::new(
+                program,
+                #[cfg(feature = "certification-support")]
+                runtime_qualification,
+            ),
             application_runtime,
             application_runtime_ports: None,
             motion_support_installed,
@@ -106,6 +111,7 @@ impl UiNativeApplicationDriver {
             pending_cleanup: None,
             progress: UiNativeApplicationProgramProgress::new(
                 crate::facade::entry::UiNativeApplicationProgram::single_frame(),
+                #[cfg(feature = "certification-support")]
                 None,
             ),
             application_runtime: None,

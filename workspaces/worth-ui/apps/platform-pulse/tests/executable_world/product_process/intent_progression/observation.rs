@@ -13,8 +13,8 @@ use crate::external_observation::{NativeClientPixelPoint, NativeInputProbeKind};
 use crate::native_platform::{NativePlatformContract, NativePlatformFailure};
 
 use super::super::{
-    await_watched_observation, NativeBoundExecutableWorld, WatchedPulseObservationFailure,
-    WatchedPulseTransition,
+    await_next_observation, await_watched_observation, NativeBoundExecutableWorld,
+    WatchedPulseObservationFailure, WatchedPulseTransition,
 };
 use super::states::ConfirmationChallenge;
 
@@ -22,7 +22,7 @@ mod causal_trace;
 mod visual;
 
 pub(super) use visual::{
-    await_visual_rebase, await_visual_refresh, capture_visible_change, capture_visible_confirmation,
+    await_visual_refresh, capture_visible_change, capture_visible_confirmation,
 };
 
 const TRANSITION_DEADLINE: Duration = Duration::from_secs(5);
@@ -78,12 +78,12 @@ pub(super) fn activate_native_control(
     let (client_x, client_y) = point.coordinates();
     let expected_x = client.bounds().left().saturating_add_unsigned(client_x);
     let expected_y = client.bounds().top().saturating_add_unsigned(client_y);
-    let (actual_x, actual_y) = delivery.screen_point();
+    let (actual_x, actual_y) = delivery.qualified_screen_point();
     if actual_x.abs_diff(expected_x) > point.landing_tolerance()
         || actual_y.abs_diff(expected_y) > point.landing_tolerance()
     {
         return Err(IntentObservationFailure::NativeDelivery(
-            "pointer delivery did not land on the pixel-derived control point",
+            "pre-delivery cursor qualification disagreed with the pixel-derived control point",
         ));
     }
 
@@ -332,6 +332,22 @@ pub(super) fn next(
     IntentObservationFailure,
 > {
     await_watched_observation(
+        &mut world.process,
+        &mut world.lifecycle,
+        expected,
+        Instant::now() + TRANSITION_DEADLINE,
+    )
+    .map_err(IntentObservationFailure::Watched)
+}
+
+pub(super) fn next_unfiltered(
+    world: &mut NativeBoundExecutableWorld,
+    expected: WatchedPulseTransition,
+) -> Result<
+    worth_ui_platform_pulse::observation_contract::PlatformPulseLifecycleObservationEnvelope,
+    IntentObservationFailure,
+> {
+    await_next_observation(
         &mut world.process,
         &mut world.lifecycle,
         expected,

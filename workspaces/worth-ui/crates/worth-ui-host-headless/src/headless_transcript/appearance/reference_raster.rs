@@ -109,6 +109,7 @@ mod tests {
                     bounds,
                     clip: worth_ui_host_contract::UiAppearanceClip::new(0, 0, 8, 8).unwrap(),
                     surface_paint_order: 0,
+                    portal_group: None,
                     radii: worth_ui_host_contract::UiAppearanceNormalizedLogicalRadii::normalize(
                         bounds,
                         [worth_ui_host_contract::UiAppearanceLogicalLength::ZERO; 4],

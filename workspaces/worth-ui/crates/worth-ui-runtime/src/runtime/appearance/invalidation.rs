@@ -29,7 +29,6 @@ pub(crate) struct UiAppearanceInvalidationBatch {
 pub(crate) enum UiAppearanceInvalidationCause {
     Initial = 1,
     OwnerState = 2,
-    RoleReplacement = 4,
     ThemeSlot = 8,
     ProjectionInput = 16,
     Mount = 32,
@@ -144,43 +143,34 @@ impl UiAppearanceInvalidationBatch {
         )
     }
 
-    #[cfg(test)]
-    pub(crate) fn owner_state(
+    pub(crate) fn theme_surface(
         index: &crate::graph::UiGraphConsumedFactIndex,
-        axis: worth_ui_dsl::UiAppearanceStateAxis,
-    ) -> Self {
-        Self::from_semantic_index(
-            index,
-            UiAppearanceInvalidationCause::OwnerState,
-            index.appearance_state_consumer_nodes(axis),
-        )
-    }
-
-    pub(crate) fn role_replacement(
-        index: &crate::graph::UiGraphConsumedFactIndex,
-        role: &worth_ui_dsl::UiAppearanceRoleIdentity,
-    ) -> Self {
-        Self::from_semantic_index(
-            index,
-            UiAppearanceInvalidationCause::RoleReplacement,
-            index.appearance_role_consumer_nodes(role),
-        )
-    }
-
-    pub(crate) fn theme_slot(
-        index: &crate::graph::UiGraphConsumedFactIndex,
-        capability_identity: &str,
-        authored_identity: &str,
-    ) -> Result<Self, crate::graph::UiGraphFactLookupDenial> {
-        Ok(Self::from_semantic_index(
-            index,
-            UiAppearanceInvalidationCause::ThemeSlot,
-            index.select_appearance_slot_consumers(
-                index.basis(),
-                capability_identity,
-                authored_identity,
-            )?,
-        ))
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        graph: crate::graph::UiGraphAuthority<'_>,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        nodes: &[crate::graph::UiGraphNodeIdentity],
+    ) -> Result<(Self, usize), crate::mounting::UiMountedIdentityDenial> {
+        let mut batch = Self::empty(index);
+        batch.causes = UiAppearanceInvalidationCause::ThemeSlot as u8;
+        let mut consumers = Vec::new();
+        let mut entries_examined = 0;
+        for &node in nodes {
+            entries_examined += 1;
+            let handle = mounted.graph_node_handle(graph, node)?;
+            for instance in mounted.mounted_instances_for(handle)? {
+                entries_examined += 1;
+                if mounted
+                    .current_mounted_identity_basis(instance)
+                    .is_some_and(|basis| basis.semantic_surface_identity() == surface)
+                {
+                    consumers.push((node, instance));
+                }
+            }
+        }
+        batch.mounted_consumers = consumers.into();
+        batch.canonicalize_mounted_consumers();
+        batch.semantic_mounted_consumers = batch.mounted_consumers.clone();
+        Ok((batch, entries_examined))
     }
 
     pub(crate) fn empty(index: &crate::graph::UiGraphConsumedFactIndex) -> Self {
@@ -302,12 +292,31 @@ impl UiAppearanceInvalidationBatch {
                 .is_ok()
     }
 
-    pub(crate) const fn selected_count(&self) -> u32 {
-        (self.graph_consumers.len() + self.mounted_consumers.len()) as u32
+    pub(crate) fn includes_required(&self, required: &Self) -> bool {
+        self.basis == required.basis
+            && self.revision >= required.revision
+            && required
+                .graph_consumers
+                .iter()
+                .all(|node| self.selects_graph(*node))
+            && required.mounted_consumers.iter().all(|&(node, instance)| {
+                self.selects_graph(node)
+                    || self
+                        .mounted_consumers
+                        .binary_search(&(node, instance))
+                        .is_ok()
+            })
+            && required
+                .semantic_graph_consumers
+                .iter()
+                .all(|node| self.semantic_graph_consumers.binary_search(node).is_ok())
+            && required
+                .semantic_mounted_consumers
+                .iter()
+                .all(|&(node, instance)| self.requires_semantic_resolution(node, instance))
     }
 
-    #[cfg(test)]
-    pub(crate) const fn causes(&self) -> u8 {
-        self.causes
+    pub(crate) const fn selected_count(&self) -> u32 {
+        (self.graph_consumers.len() + self.mounted_consumers.len()) as u32
     }
 }

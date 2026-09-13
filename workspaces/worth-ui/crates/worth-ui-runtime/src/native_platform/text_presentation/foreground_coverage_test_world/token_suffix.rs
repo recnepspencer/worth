@@ -40,6 +40,7 @@ impl CoverageWorld {
                         surface: original.surface(),
                         binding: original.binding(),
                         mounted_instance: original.mounted_instance(),
+                        portal_group: None,
                         node_receipt: original.node_receipt(),
                         allocation_basis: original.allocation_basis(),
                         bounds: original.bounds(),

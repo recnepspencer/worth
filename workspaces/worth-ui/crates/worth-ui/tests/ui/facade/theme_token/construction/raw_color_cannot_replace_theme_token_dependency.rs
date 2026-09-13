@@ -1,5 +1,6 @@
-use worth_ui::facade::{
-    declaration::{ComponentChildPolicy, ComponentDescriptor, ComponentId, ComponentPropSchema, ComponentStateOwnership},
+use worth_ui::facade::declaration::{
+    ComponentChildPolicy, ComponentDescriptor, ComponentId, ComponentPropSchema,
+    ComponentSemanticTextContract, ComponentStateOwnership,
 };
 
 fn main() {
@@ -9,5 +10,5 @@ fn main() {
         ComponentChildPolicy::no_children(),
         ComponentStateOwnership::runtime_owned(),
     )
-    .with_theme_token_dependency("#ffffff");
+    .with_semantic_text(ComponentSemanticTextContract::body_default("#ffffff", 1));
 }

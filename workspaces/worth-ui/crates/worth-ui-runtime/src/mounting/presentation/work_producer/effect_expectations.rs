@@ -14,7 +14,7 @@ impl UiMountedPresentationState {
         if mode == UiHostSurfacePresentationMode::RecordOnly {
             return vec![UiMountedEffectFamily::RecordedProjection];
         }
-        match work.view() {
+        let mut effects = match work.view() {
             UiMountedPresentationWorkView::Initial(_)
             | UiMountedPresentationWorkView::Reconstruction(_) => {
                 let mut effects = self.effects.to_vec();
@@ -46,7 +46,18 @@ impl UiMountedPresentationState {
             .into_iter()
             .collect(),
             UiMountedPresentationWorkView::Unchanged(_) => Vec::new(),
+        };
+        if work.appearance().is_some_and(|appearance| {
+            appearance.fragments().iter().any(|fragment| {
+                !fragment.work().damage().is_empty()
+                    || fragment.work().text_damage_requirements().next().is_some()
+            })
+        }) && !effects.contains(&UiMountedEffectFamily::NativePaint)
+        {
+            effects.push(UiMountedEffectFamily::NativePaint);
+            effects.sort();
         }
+        effects
     }
 }
 

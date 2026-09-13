@@ -19,6 +19,7 @@ pub struct UiClassifiedChange {
     basis: super::UiChangeClassificationBasis,
     facts: Box<[UiProducedFact]>,
     source_succession: Option<UiAuthoredSourceSuccession>,
+    theme_switch: Option<crate::runtime::appearance::UiThemeSwitchChange>,
 }
 
 pub(crate) enum UiAuthoredSourceClassification {
@@ -111,7 +112,7 @@ impl UiAuthoredSourceSuccession {
 }
 
 impl UiObservedNoChangeReceipt {
-    pub(super) const fn new(basis: super::UiChangeClassificationBasis) -> Self {
+    pub(crate) const fn new(basis: super::UiChangeClassificationBasis) -> Self {
         Self { basis }
     }
 
@@ -169,6 +170,23 @@ impl UiClassifiedChange {
             basis,
             facts,
             source_succession,
+            theme_switch: None,
+        }
+    }
+
+    pub(crate) fn theme_switch(&self) -> Option<&crate::runtime::appearance::UiThemeSwitchChange> {
+        self.theme_switch.as_ref()
+    }
+
+    pub(crate) fn from_theme_switch(
+        basis: super::UiChangeClassificationBasis,
+        change: crate::runtime::appearance::UiThemeSwitchChange,
+    ) -> Self {
+        Self {
+            basis,
+            facts: Box::new([]),
+            source_succession: None,
+            theme_switch: Some(change),
         }
     }
 
@@ -190,7 +208,13 @@ impl UiClassifiedChange {
         super::UiChangeClassificationBasis,
         Box<[UiProducedFact]>,
         Option<UiAuthoredSourceSuccession>,
+        Option<crate::runtime::appearance::UiThemeSwitchChange>,
     ) {
-        (self.basis, self.facts, self.source_succession)
+        (
+            self.basis,
+            self.facts,
+            self.source_succession,
+            self.theme_switch,
+        )
     }
 }

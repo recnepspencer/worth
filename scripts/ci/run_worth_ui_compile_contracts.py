@@ -131,7 +131,10 @@ def cargo_check(cases: list[Case]) -> tuple[int, dict[str, list[dict[str, object
 def display_path(path: Path, case: Case) -> str:
     crates = WORKSPACE / "crates"
     if case.owner == "product":
-        return "$WORKSPACE/" + path.relative_to(WORKSPACE).as_posix()
+        try:
+            return "$WORKSPACE/" + path.relative_to(WORKSPACE).as_posix()
+        except ValueError:
+            return path.as_posix()
     owner_root = {
         "certification": crates / "worth-ui-certification",
         "host": crates / "worth-ui-host-contract",

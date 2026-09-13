@@ -65,6 +65,7 @@ impl UiBackdropInstanceIdentity {
     }
 }
 
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) enum UiOverlayParticipantIdentity {
     Portal(crate::runtime::portal::UiPortalIdentity),
@@ -198,20 +199,8 @@ impl UiOverlayBackdropRow {
         self.declaration
     }
 
-    pub(crate) const fn scope(&self) -> UiBackdropScope {
-        self.scope
-    }
-
     pub(crate) const fn extent(&self) -> UiOverlayExtent {
         self.extent
-    }
-
-    pub(crate) const fn presence(&self) -> UiBackdropPresenceBasis {
-        self.presence
-    }
-
-    pub(crate) const fn placement(&self) -> UiBackdropPlacement {
-        self.placement
     }
 
     pub(crate) fn motion(&self) -> Option<super::extent::UiOverlayMotionBinding> {
@@ -233,6 +222,7 @@ pub(crate) enum UiOverlayStackParticipant {
     Backdrop(UiOverlayBackdropRow),
 }
 
+#[cfg(test)]
 impl UiOverlayStackParticipant {
     pub(crate) const fn identity(&self) -> UiOverlayParticipantIdentity {
         match self {
@@ -319,6 +309,7 @@ impl UiOverlayStackSnapshot {
         self.runtime_surface
     }
 
+    #[cfg(test)]
     pub(crate) const fn presentation(
         &self,
     ) -> worth_ui_host_contract::UiMountedPresentationAttemptIdentity {

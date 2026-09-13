@@ -14,7 +14,7 @@ use worth_ui::facade::{
 use worth_ui_runtime::facade::mounted::UiMountedFrameOutcome;
 
 use super::super::{execution_deadline, execution_reading};
-use super::native_recovery::native_activation_drain;
+use super::native_activation::native_activation_drain;
 use crate::intent::operability::{
     build_open_portal_two_focus_application_with_host, PrimaryIntent,
 };
@@ -37,7 +37,7 @@ fn portal_shift_tab_navigation_rebinds_enter_to_the_newly_focused_recipient() {
     host.push_native_display_presented();
     let (application, _) = build_open_portal_two_focus_application_with_host(host.clone());
     let mut shell = application
-        .launch_native_surface()
+        .launch_native_declared_surface("visual.identity.surface.main")
         .expect("the production native composition root launches");
     crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     assert!(matches!(

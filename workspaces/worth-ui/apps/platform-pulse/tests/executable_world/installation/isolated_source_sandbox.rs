@@ -180,6 +180,12 @@ impl IsolatedPulseInstallation {
             let rollback = installation.close();
             return Err(PulseInstallationFailure::PrepareIntentSource { primary, rollback });
         }
+        if let Err(primary) =
+            installation.write_source("modal_review.wui", canonical.modal_review_source_bytes())
+        {
+            let rollback = installation.close();
+            return Err(PulseInstallationFailure::PrepareEntrySource { primary, rollback });
+        }
         Ok(installation)
     }
 

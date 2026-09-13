@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 mod generation;
+mod replacement;
 pub(crate) use generation::UiPreparedPortalOverlayGraphSuccession;
 #[path = "overlay_binding_lifecycle/appearance_candidate.rs"]
 mod appearance_candidate;
@@ -12,8 +13,7 @@ use worth_ui_host_contract::UiSemanticSurfaceIdentity;
 
 use super::{
     UiPortalIdentity, UiPortalLifecyclePosture, UiPortalOverlayBindingDenial,
-    UiPortalOverlayBindingOwner, UiPortalOverlayBindingOwnerExport, UiPortalRuntimeState,
-    UiPreparedPortalServiceTransition,
+    UiPortalOverlayBindingOwner, UiPortalRuntimeState, UiPreparedPortalServiceTransition,
 };
 
 const DECLARED_SURFACE_BINDING_LIMIT: usize = 256;
@@ -237,12 +237,15 @@ impl UiPortalOverlayBindingLifecycle {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(crate) fn exports(
         &self,
         generation: &WorthUiActiveApplicationGenerationIdentity,
         portal_state: Option<&UiPortalRuntimeState>,
-    ) -> Result<Box<[UiPortalOverlayBindingOwnerExport]>, UiPortalOverlayBindingLifecycleDenial>
-    {
+    ) -> Result<
+        Box<[super::UiPortalOverlayBindingOwnerExport]>,
+        UiPortalOverlayBindingLifecycleDenial,
+    > {
         self.require_generation(generation)?;
         let Some(portal_state) = portal_state else {
             return Ok(Box::new([]));
@@ -275,15 +278,6 @@ impl UiPortalOverlayBindingLifecycle {
                     .get(runtime)
                     .map(|owner| (*declaration, *runtime, owner))
             })
-    }
-
-    pub(crate) fn replace_generation(
-        &mut self,
-        generation: WorthUiActiveApplicationGenerationIdentity,
-    ) {
-        self.generation = generation;
-        self.surface_bindings.clear();
-        self.owners.clear();
     }
 
     pub(crate) fn clear_for_shutdown(&mut self) {

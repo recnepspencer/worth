@@ -118,9 +118,9 @@ impl UiNativePendingPresentation {
     pub(crate) fn inherit_predecessor_settlement(
         &mut self,
         predecessor: super::UiNativePendingSurfaceSettlement,
-    ) -> Result<(), super::UiNativePendingSurfaceSettlement> {
+    ) -> Result<(), Box<super::UiNativePendingSurfaceSettlement>> {
         let Some(successor) = self.settlement.as_mut() else {
-            return Err(predecessor);
+            return Err(Box::new(predecessor));
         };
         successor.inherit_predecessor(predecessor)
     }

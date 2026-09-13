@@ -7,7 +7,7 @@ use crate::native::{
         present_cold_reconstruction, present_delta, present_initial, UiNativePresentationFailure,
         UiNativeReconstructionFailure, UiWgpuNativePresentationPort,
     },
-    UiNativeHostState, UiNativePresentationWorkKind, UiNativeRetainedFrameObservation,
+    UiNativeHostState, UiNativePresentationWorkKind,
 };
 
 use super::presentation_text_atlas as text_atlas;
@@ -214,23 +214,13 @@ fn perform_initial(
         defer_initial_observation,
         &mut state.lifecycle,
     );
-    let (observation, cost, retained) = match result {
+    let (observation, retained) = match result {
         Ok(presented) => presented.into_parts(),
         Err(failure) => return settle_presentation_failure(state, view, failure),
     };
     state.lifecycle.record_presented();
-    state.record_retained_frame_observation(UiNativeRetainedFrameObservation::observed(
-        view.frame().diagnostic_value(),
-        UiNativePresentationWorkKind::Initial,
-        None,
-        [
-            observation.retained_baseline_rgba8(),
-            observation.retained_center_rgba8(),
-        ],
-        cost,
-        Some(observation.clone()),
-    ));
-    state.last_presentation = Some(observation);
+    let cost = observation.cost();
+    state.record_retained_frame_observation(observation);
     let effects = crate::native::presentation::UiNativePresentationEffects::new(
         true,
         retained.identity_overlay_active(),

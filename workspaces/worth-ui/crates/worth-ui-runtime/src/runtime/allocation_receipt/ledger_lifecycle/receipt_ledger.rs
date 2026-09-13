@@ -342,7 +342,7 @@ impl UiAllocationReceiptLedger {
             successor.committed_by_scope.insert(scope, receipt.clone());
             successor.mounted_projection_catalog.insert(receipt.clone());
         }
-        let changed_graph_nodes = committed
+        let changed_projection_graph_keys = committed
             .receipts()
             .iter()
             .map(|receipt| receipt.identity().graph_node_identity())
@@ -355,7 +355,7 @@ impl UiAllocationReceiptLedger {
         successor.mounted_projection_journal.record(
             predecessor.truth_revision.revision(),
             successor.truth_revision.revision(),
-            changed_graph_nodes,
+            changed_projection_graph_keys,
         );
         successor.next_transaction_generation = generation;
         if let Some(basis) = mode.durable_resize() {

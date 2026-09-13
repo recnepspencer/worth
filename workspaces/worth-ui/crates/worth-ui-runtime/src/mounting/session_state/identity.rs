@@ -129,8 +129,16 @@ impl WorthUiMountedSessionState {
     ) -> Result<UiSemanticSurfaceIdentity, UiMountedIdentityDenial> {
         self.ensure_identity_mutation_available()?;
         let requires_reconciliation = self.presentation.binding_requires_reconciliation(binding);
-        let required_by_current = self.identity.current_requires_binding(binding);
-        let current_requirement = self.identity.current_binding_requirement(binding);
+        let current_requirement = self
+            .identity
+            .surface_binding(binding)
+            .filter(|view| {
+                self.retention
+                    .current_presentation_for_surface(view.semantic_surface_identity())
+                    .is_some_and(|presentation| presentation.binding() == binding)
+            })
+            .map(crate::mounting::binding_requirement);
+        let required_by_current = current_requirement.is_some();
         let has_published_predecessor = self.identity.publication_receipt().is_some();
         let preserve_published_frame = has_published_predecessor
             && (preserve_for_rebind || requires_reconciliation || !required_by_current);
@@ -152,6 +160,7 @@ impl WorthUiMountedSessionState {
             preserve_for_rebind,
         );
         let semantic_surface = self.identity.commit_surface_deregistration(candidate);
+        self.retention.retire_surface(semantic_surface);
         if !preserve_for_rebind {
             self.selection_bindings.retire_surface(semantic_surface);
             self.occurrence_geometry.retire_surface(semantic_surface);
@@ -243,19 +252,6 @@ impl WorthUiMountedSessionState {
         .with_seam_resolution_work(seam_index_rows, seam_adjacencies_visited))
     }
 
-    pub(crate) fn validate_occurrence_geometry_batch(
-        &self,
-        batch: &super::super::UiMountedSurfaceGeometryBatch,
-    ) -> Result<(), super::super::UiMountedOccurrenceGeometryDenial> {
-        if self.has_active_presentation_attempt() {
-            return Err(super::super::UiMountedOccurrenceGeometryDenial::PresentationInFlight);
-        }
-        let mut candidate = self.occurrence_geometry.clone();
-        candidate
-            .replace_surface(&self.identity, batch.clone())
-            .map(drop)
-    }
-
     pub(crate) fn next_occurrence_geometry_revision(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
@@ -332,14 +328,54 @@ impl WorthUiMountedSessionState {
         self.identity.validate_current_receipt(instance, receipt)
     }
 
+    pub(crate) fn validate_owner_receipt_source(
+        &self,
+        instance: UiMountedInstanceIdentity,
+        receipt: UiMountedNodeReceiptIdentity,
+    ) -> Result<(), UiMountedIdentityDenial> {
+        if self
+            .identity
+            .validate_current_receipt(instance, receipt)
+            .is_ok()
+        {
+            return Ok(());
+        }
+        if self.retention.current_retained_node_receipt(instance) == Some(receipt) {
+            return Ok(());
+        }
+        let surface = self
+            .current_mounted_identity_basis(instance)
+            .ok_or(UiMountedIdentityDenial::UnknownMountedInstance)?
+            .semantic_surface_identity();
+        let presentation = self
+            .retention
+            .current_presentation_for_surface(surface)
+            .ok_or(UiMountedIdentityDenial::NodeReceiptNotCurrent)?;
+        let retained = self
+            .retention
+            .current_node_receipt(presentation, instance)
+            .map_err(|_| UiMountedIdentityDenial::NodeReceiptNotCurrent)?;
+        (retained == receipt)
+            .then_some(())
+            .ok_or(UiMountedIdentityDenial::NodeReceiptNotCurrent)
+    }
+
     pub(crate) fn view(&self) -> UiMountedIdentityView {
         self.identity.view()
     }
 
     pub(crate) fn focus_participation_snapshot(
         &self,
+        surfaces: &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
     ) -> Option<crate::mounting::UiMountedFocusParticipationSnapshot> {
-        self.identity.focus_participation_snapshot()
+        self.identity.focus_participation_snapshot(surfaces)
+    }
+
+    pub(crate) fn candidate_focus_participation_snapshot(
+        &self,
+        frame: &crate::mounting::UiAssembledMountedFrame,
+    ) -> crate::mounting::UiMountedFocusParticipationSnapshot {
+        frame.focus_participation_snapshot(&self.identity)
     }
 
     fn ensure_identity_mutation_available(&self) -> Result<(), UiMountedIdentityDenial> {

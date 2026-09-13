@@ -1,5 +1,8 @@
+#[path = "state/appearance_targets.rs"]
+mod appearance_targets;
 #[path = "state/command_view.rs"]
 mod command_view;
+pub(super) use appearance_targets::UiMountedAppearanceSurfaceSampleTarget;
 
 use worth_ui_host_contract::{
     UiMountedEffectFamily, UiMountedPaintCommand, UiMountedPaintCommandIdentity,
@@ -24,6 +27,10 @@ pub(crate) struct UiMountedPresentationState {
     appearance_opacity_by_instance: UiPersistentOrdMap<
         worth_ui_host_contract::UiMountedInstanceIdentity,
         worth_ui_host_contract::UiMountedAppearanceOpacity,
+    >,
+    appearance_surfaces: UiPersistentOrdMap<
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+        UiMountedAppearanceSurfaceSampleTarget,
     >,
     portal_motion_groups: super::portal_motion_groups::UiMountedPortalMotionGroups,
     instance_order: UiPersistentOrder<worth_ui_host_contract::UiMountedInstanceIdentity>,
@@ -104,6 +111,7 @@ impl UiMountedPresentationState {
             receipt_affinity: projection.node_receipt_affinity(),
             commands_by_instance: persistent_commands,
             appearance_opacity_by_instance: UiPersistentOrdMap::default(),
+            appearance_surfaces: UiPersistentOrdMap::default(),
             portal_motion_groups,
             instance_order,
             command_order,
@@ -119,33 +127,6 @@ impl UiMountedPresentationState {
                 projection,
             ),
         }
-    }
-
-    pub(in crate::mounting::presentation) fn bind_appearance_opacity(
-        &mut self,
-        frame: &crate::mounting::UiPreparedMountedFrame,
-    ) {
-        for instance in frame.appearance_changed_instances().iter().copied() {
-            if let Some(opacity) = frame.appearance_raw_opacity_for_instance(instance) {
-                self.appearance_opacity_by_instance
-                    .insert(instance, opacity);
-            } else {
-                self.appearance_opacity_by_instance.remove(&instance);
-            }
-        }
-        for instance in frame.retired_appearance_instances() {
-            self.appearance_opacity_by_instance.remove(instance);
-        }
-    }
-
-    pub(super) fn appearance_opacity_for_command(
-        &self,
-        command: UiMountedPaintCommandIdentity,
-    ) -> worth_ui_host_contract::UiMountedAppearanceOpacity {
-        self.appearance_opacity_by_instance
-            .get(&command.mounted_instance())
-            .copied()
-            .unwrap_or(worth_ui_host_contract::UiMountedAppearanceOpacity::ONE)
     }
 
     pub(in crate::mounting::presentation) fn successor_from_source(

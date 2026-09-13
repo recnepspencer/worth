@@ -3,6 +3,10 @@ pub struct FrozenAppearanceThemeCapabilities {
     catalog: super::UiThemeSlotCatalog,
     initial_definition: super::UiThemeDefinitionIdentity,
     definitions: Box<[super::UiThemeDefinition]>,
+    differences_from_initial: std::collections::BTreeMap<
+        super::UiThemeDefinitionIdentity,
+        Box<[crate::capability::ThemeTokenId]>,
+    >,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -47,10 +51,21 @@ impl FrozenAppearanceThemeCapabilities {
         {
             return Err(FrozenAppearanceThemeCapabilitiesDenial::MissingInitialDefinition);
         }
+        let initial = &definitions[definitions
+            .binary_search_by(|definition| definition.identity().cmp(&initial_definition))
+            .expect("initial definition presence was validated")];
+        let differences_from_initial = definitions
+            .iter()
+            .map(|definition| {
+                let changed = changed_slots(&catalog, initial, definition);
+                (definition.identity().clone(), changed)
+            })
+            .collect();
         Ok(Self {
             catalog,
             initial_definition,
             definitions: definitions.into_boxed_slice(),
+            differences_from_initial,
         })
     }
 
@@ -71,6 +86,19 @@ impl FrozenAppearanceThemeCapabilities {
             .binary_search_by(|definition| definition.identity().cmp(identity))
             .ok()
             .map(|index| &self.definitions[index])
+    }
+
+    pub(crate) fn transition_candidates(
+        &self,
+        before: &super::UiThemeDefinitionIdentity,
+        after: &super::UiThemeDefinitionIdentity,
+    ) -> Option<Vec<crate::capability::ThemeTokenId>> {
+        let before = self.differences_from_initial.get(before)?;
+        let after = self.differences_from_initial.get(after)?;
+        let mut candidates = std::collections::BTreeSet::new();
+        candidates.extend(before.iter().cloned());
+        candidates.extend(after.iter().cloned());
+        Some(candidates.into_iter().collect())
     }
     pub fn digest_basis(&self) -> u64 {
         let catalog = self
@@ -119,6 +147,34 @@ impl FrozenAppearanceThemeCapabilities {
     }
 }
 
+fn changed_slots(
+    catalog: &super::UiThemeSlotCatalog,
+    initial: &super::UiThemeDefinition,
+    definition: &super::UiThemeDefinition,
+) -> Box<[crate::capability::ThemeTokenId]> {
+    catalog
+        .slots()
+        .filter_map(|slot| {
+            let terminal = terminal_slot(catalog, slot);
+            (initial.value(terminal) != definition.value(terminal)).then(|| slot.identity().clone())
+        })
+        .collect::<Vec<_>>()
+        .into_boxed_slice()
+}
+
+fn terminal_slot<'a>(
+    catalog: &'a super::UiThemeSlotCatalog,
+    slot: &'a super::UiThemeSlotDeclaration,
+) -> &'a crate::capability::ThemeTokenId {
+    let mut current = slot;
+    while let Some(target) = current.alias_target() {
+        current = catalog
+            .get(target)
+            .expect("admitted catalogs retain every alias target");
+    }
+    current.identity()
+}
+
 fn fold(mut digest: u64, value: u64) -> u64 {
     digest ^= value;
     digest.wrapping_mul(0x0000_0100_0000_01b3)
@@ -164,9 +220,77 @@ fn fold_theme_value(digest: u64, value: worth_ui_dsl::UiThemeValue) -> u64 {
 mod tests {
     use super::*;
     use crate::capability::registry::theme::{
-        UiThemeDefinitionIdentity, UiThemeSlotDeclaration, UiThemeSlotDisclosure,
-        UiThemeSlotSuccessorCompatibility,
+        UiThemeDefinition, UiThemeDefinitionIdentity, UiThemeSlotCatalog, UiThemeSlotDeclaration,
+        UiThemeSlotDisclosure, UiThemeSlotSuccessorCompatibility,
     };
+
+    fn slot(identity: &str, alias: Option<&str>) -> UiThemeSlotDeclaration {
+        UiThemeSlotDeclaration::new(
+            crate::capability::ThemeTokenId::new(identity).unwrap(),
+            crate::capability::ThemeTokenFamily::surface(),
+            worth_ui_dsl::UiThemeValueKind::Color,
+            crate::capability::ThemeTokenSource::application(),
+            UiThemeSlotDisclosure::Public,
+            UiThemeSlotSuccessorCompatibility::ExactMeaning,
+            alias.map(|target| crate::capability::ThemeTokenId::new(target).unwrap()),
+        )
+    }
+
+    #[test]
+    fn admitted_bundle_indexes_only_changed_terminal_slots_and_their_aliases() {
+        let catalog = UiThemeSlotCatalog::admit(
+            1,
+            [
+                slot("surface.base", None),
+                slot("surface.alias", Some("surface.base")),
+                slot("surface.stable", None),
+            ],
+        )
+        .unwrap();
+        let identity = |value| UiThemeDefinitionIdentity::new(value).unwrap();
+        let definition = |name, base| {
+            UiThemeDefinition::admit(
+                identity(name),
+                1,
+                &catalog,
+                [
+                    (
+                        crate::capability::ThemeTokenId::new("surface.base").unwrap(),
+                        worth_ui_dsl::UiThemeValue::Color(
+                            worth_ui_dsl::UiThemeColor::from_channels([base, 2, 3, 255]),
+                        ),
+                    ),
+                    (
+                        crate::capability::ThemeTokenId::new("surface.stable").unwrap(),
+                        worth_ui_dsl::UiThemeValue::Color(
+                            worth_ui_dsl::UiThemeColor::from_channels([7, 8, 9, 255]),
+                        ),
+                    ),
+                ],
+            )
+            .unwrap()
+        };
+        let definitions = vec![
+            definition("theme.initial", 1),
+            definition("theme.changed", 4),
+        ];
+        let bundle = FrozenAppearanceThemeCapabilities::admit(
+            catalog,
+            identity("theme.initial"),
+            definitions,
+        )
+        .unwrap();
+        let candidates = bundle
+            .transition_candidates(&identity("theme.initial"), &identity("theme.changed"))
+            .unwrap();
+        assert_eq!(
+            candidates
+                .iter()
+                .map(|slot| slot.as_str())
+                .collect::<Vec<_>>(),
+            ["surface.alias", "surface.base"]
+        );
+    }
 
     #[test]
     fn bundle_requires_the_exact_catalog_basis_not_only_its_revision() {

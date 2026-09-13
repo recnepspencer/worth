@@ -23,12 +23,20 @@ impl super::WorthUiActiveApplicationSession {
         self.validate_pointer_observation_currentness(&observations)?;
         let pointer_snapshot = observations.take_pointer_snapshot();
         let owners = observations.take_appearance_owner_snapshot();
-        let predecessor = self.appearance_owner_snapshot.clone();
         let outcome = self
             .application
             .classify_observations(self.identity, observations)?;
+        self.queue_closed_owner_invalidation(owners.as_ref());
         self.appearance_owner_snapshot = owners;
         self.pointer_affordance_snapshot = pointer_snapshot;
+        Ok(outcome)
+    }
+
+    pub(super) fn queue_closed_owner_invalidation(
+        &mut self,
+        current: Option<&crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+    ) {
+        let predecessor = self.appearance_owner_snapshot.clone();
         let binding_changes = self.mounted.take_selection_binding_changes();
         if !binding_changes.is_empty() {
             let batch = self
@@ -44,7 +52,7 @@ impl super::WorthUiActiveApplicationSession {
                     .expect("appearance invalidation revision remains available");
             }
         }
-        if let Some(current) = self.appearance_owner_snapshot.as_ref() {
+        if let Some(current) = current {
             let index_basis = self
                 .application
                 .prepared_authority()
@@ -54,23 +62,11 @@ impl super::WorthUiActiveApplicationSession {
                 .presentation
                 .appearance_invalidation_batch()
                 .is_some_and(|pending| pending.basis() != index_basis);
-            if predecessor.is_none() || pending_basis_changed {
-                self.presentation
-                    .queue_appearance_invalidation(
-                        self.application.appearance_initial_invalidation_batch(),
-                    )
-                    .expect("appearance invalidation revision remains available");
-            } else if current.requires_initial_invalidation(
-                predecessor.as_ref().expect("owner snapshot is present"),
-            ) {
-                self.presentation
-                    .queue_appearance_invalidation(
-                        self.application.appearance_initial_invalidation_batch(),
-                    )
-                    .expect("appearance invalidation revision remains available");
-            } else {
-                let changed =
-                    current.changed_axes(predecessor.as_ref().expect("owner snapshot is present"));
+            let incremental_predecessor = predecessor.as_ref().filter(|predecessor| {
+                !pending_basis_changed && !current.requires_initial_invalidation(predecessor)
+            });
+            if let Some(predecessor) = incremental_predecessor {
+                let changed = current.changed_axes(predecessor);
                 for axis in [
                     worth_ui_dsl::UiAppearanceStateAxis::Operability,
                     worth_ui_dsl::UiAppearanceStateAxis::Focus,
@@ -80,7 +76,6 @@ impl super::WorthUiActiveApplicationSession {
                     worth_ui_dsl::UiAppearanceStateAxis::Pressed,
                 ] {
                     if changed.contains(axis) {
-                        let predecessor = predecessor.as_ref().expect("owner snapshot is present");
                         let instances = match axis {
                             worth_ui_dsl::UiAppearanceStateAxis::Operability => current
                                 .operability()
@@ -136,9 +131,14 @@ impl super::WorthUiActiveApplicationSession {
                             .expect("appearance invalidation revision remains available");
                     }
                 }
+            } else {
+                self.presentation
+                    .queue_appearance_invalidation(
+                        self.application.appearance_initial_invalidation_batch(),
+                    )
+                    .expect("appearance invalidation revision remains available");
             }
         }
-        Ok(outcome)
     }
 
     fn validate_pointer_observation_currentness(
@@ -175,7 +175,7 @@ impl super::WorthUiActiveApplicationSession {
         dead_code,
         reason = "Gate 0 proves origin admission without enabling live theme switching"
     )]
-    pub(crate) fn issue_theme_switch_origin(
+    pub fn issue_theme_switch_origin(
         &self,
         admitted: &crate::runtime::observation::UiAdmittedObservationSet,
         family: crate::runtime::appearance::UiThemeSwitchOriginFamily,
@@ -195,7 +195,7 @@ impl super::WorthUiActiveApplicationSession {
         let session = self.identity;
         let consumed_facts = self.application.prepared_authority().consumed_fact_index();
         let appearance_axis_demand = consumed_facts.appearance_axis_demand();
-        let appearance_close = consumed_facts.has_appearance_consumers().then(|| {
+        let appearance_close = self.appearance_theme_admission.is_some().then(|| {
             crate::runtime::observation::UiAppearanceObservationCloseInput::new(
                 appearance_axis_demand,
                 crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(

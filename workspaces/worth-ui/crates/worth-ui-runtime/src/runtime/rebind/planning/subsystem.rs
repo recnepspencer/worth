@@ -17,6 +17,7 @@ pub enum UiRebindSubsystemKind {
 pub enum UiRebindPlanTarget {
     Consumer(UiGraphFactConsumerKey),
     QueryBinding(Box<str>),
+    Surface(worth_ui_host_contract::UiSemanticSurfaceIdentity),
 }
 
 #[derive(Debug)]

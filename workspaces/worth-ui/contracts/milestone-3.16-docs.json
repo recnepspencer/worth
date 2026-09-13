@@ -10,11 +10,10 @@
     "workspaces/worth-ui/docs/native-host-platform.md",
     "workspaces/worth-ui/docs/inspection.md",
     "workspaces/worth-ui/docs/visual-inspection.md",
+    "workspaces/worth-ui/docs/appearance-and-themes.md",
     "workspaces/worth-ui/AI_README.md",
     "_docs/worth-ui/worth_ui_roadmap.md",
     "_docs/worth-ui/milestone-3.16.md"
   ],
-  "planned_documents": [
-    "workspaces/worth-ui/docs/appearance-and-themes.md"
-  ]
+  "planned_documents": []
 }

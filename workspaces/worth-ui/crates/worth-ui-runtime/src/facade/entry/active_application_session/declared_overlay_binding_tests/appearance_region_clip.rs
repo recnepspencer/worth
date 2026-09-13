@@ -144,8 +144,7 @@ fn install_geometry(
             .mounted_region_declarations(surface_declaration, graph)
             .0;
         let binding = owner_regions
-            .iter()
-            .next()
+            .first()
             .expect("the executed plan binds the authored region occurrence");
         assert_eq!(owner_regions.len(), 1);
         vec![crate::mounting::UiMountedMosaicRegionGeometry::new(

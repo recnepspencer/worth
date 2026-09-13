@@ -78,13 +78,6 @@ pub(super) fn close_source_with(
     session.classify_observations(observations).unwrap();
 }
 
-pub(super) fn appearance_overlay_session() -> (
-    crate::facade::WorthUiActiveApplicationSession,
-    crate::certification_support::ScriptedPresentationHost,
-) {
-    appearance_overlay_session_with_source(SOURCE)
-}
-
 pub(super) fn appearance_overlay_session_with_source(
     source: &str,
 ) -> (
@@ -255,36 +248,6 @@ pub(super) fn establish_allocation(session: &mut crate::facade::WorthUiActiveApp
     session
         .establish_mounted_allocation_catalog(1, [request])
         .unwrap();
-}
-
-pub(super) fn expected_overlay_color() -> [u8; 4] {
-    let to_linear = |channel: u8| {
-        let value = f64::from(channel) / 255.0;
-        if value <= 0.04045 {
-            value / 12.92
-        } else {
-            ((value + 0.055) / 1.055).powf(2.4)
-        }
-    };
-    let to_srgb = |linear: f64| {
-        let value = if linear <= 0.0031308 {
-            linear * 12.92
-        } else {
-            1.055 * linear.powf(1.0 / 2.4) - 0.055
-        };
-        (value * 255.0).round() as u8
-    };
-    let lower_alpha = 32_768.0 / 65_535.0;
-    let upper_alpha = 128.0 / 255.0;
-    let alpha = upper_alpha + lower_alpha * (1.0 - upper_alpha);
-    let mut result = [0; 4];
-    for (index, (lower, upper)) in [4, 8, 12].into_iter().zip([32, 64, 96]).enumerate() {
-        let premultiplied =
-            to_linear(upper) * upper_alpha + to_linear(lower) * lower_alpha * (1.0 - upper_alpha);
-        result[index] = to_srgb(premultiplied / alpha);
-    }
-    result[3] = (alpha * 255.0).round() as u8;
-    result
 }
 
 pub(super) fn open_portal(

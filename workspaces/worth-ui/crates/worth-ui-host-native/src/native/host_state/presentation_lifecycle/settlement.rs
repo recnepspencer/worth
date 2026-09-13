@@ -115,7 +115,7 @@ impl UiNativeHostState {
                     );
                     return;
                 }
-                Err(returned) => settlement = returned,
+                Err(returned) => settlement = *returned,
             }
         }
         let committed_successor = self

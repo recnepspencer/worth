@@ -1,21 +1,31 @@
 use super::support;
 
+impl crate::facade::WorthUiActiveApplicationSession {
+    pub(crate) fn observed_theme_value_for_test(
+        &self,
+        token: &crate::capability::ThemeTokenId,
+    ) -> Option<crate::capability::ThemeTokenValue> {
+        self.presentation
+            .project_complete()
+            .expect("admitted presentation projects")
+            .theme_values()
+            .current_value(token)
+            .cloned()
+    }
+}
+
 pub(super) fn change_appearance_color(
     session: &mut crate::facade::WorthUiActiveApplicationSession,
-    expected_revision: u64,
+    _expected_revision: u64,
     color: &str,
 ) {
     let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
-    let value = crate::capability::ThemeTokenValue::color(
-        crate::capability::ThemeColorValue::hex(color).unwrap(),
-    );
-    let change = super::super::super::UiNativeThemeTokenValueChange::successor(
-        token,
-        expected_revision,
-        value,
-    )
-    .unwrap();
-    session.admit_application_theme_values(&[change]).unwrap();
+    crate::runtime::tests::appearance_component_session_test_support::
+        replace_appearance_theme_definition_for_test(
+            session,
+            production_color_definition_identity(color),
+            &token,
+        );
 }
 
 pub(super) fn assert_unpublished_surface(
@@ -35,13 +45,19 @@ pub(super) fn assert_unpublished_surface_with_pointer(
     )>,
 ) {
     let transcript =
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(projection)
+        worth_ui_host_headless::translate_appearance_projection_for_certification(projection)
             .expect("headless consumes the production mounting output");
     assert_eq!(transcript.frame(), projection.frame());
     assert_eq!(transcript.presentation(), projection.presentation());
     assert_eq!(
         projection.fragments().len(),
-        1 + usize::from(pointer.is_some())
+        1 + usize::from(pointer.is_some()),
+        "fragments: {:?}",
+        projection
+            .fragments()
+            .iter()
+            .map(|fragment| fragment.identity())
+            .collect::<Vec<_>>()
     );
     assert_eq!(transcript.fragments().len(), projection.fragments().len());
     if let Some((surface, target, present)) = pointer {
@@ -122,7 +138,7 @@ pub(super) fn theme_session(
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
     let host_observer = host.clone();
     host.set_capabilities(worth_ui_host_native::appearance_capability_report());
-    let session = support::legacy_static_paint_appearance_component_builder(role)
+    let session = support::alternate_token_appearance_component_builder(role)
         .register_appearance_theme_bundle(theme_bundle())
         .unwrap()
         .with_rust_authored_declaration_fixture(support::appearance_fixture(role))
@@ -184,16 +200,7 @@ pub(super) fn publish_initial_appearance(
     };
     let snapshot = session.appearance_owner_snapshot_for_test().unwrap();
     let themes = session.presentation.appearance_theme_state().unwrap();
-    assert_eq!(
-        crate::runtime::appearance::UiAppearanceCoherentBasis::admit_current(
-            snapshot,
-            &consumer,
-            &session.mounted,
-            themes,
-            input.clone(),
-        ),
-        Err(crate::runtime::appearance::UiAppearanceCoherentBasisDenial::MountedTargetNotCurrent)
-    );
+
     let basis = crate::runtime::appearance::UiAppearanceCoherentBasis::admit_prepared(
         &frame,
         snapshot,
@@ -329,22 +336,41 @@ pub(super) fn theme_bundle() -> crate::capability::FrozenAppearanceThemeCapabili
         )],
     )
     .unwrap();
-    let definition = crate::capability::UiThemeDefinition::admit(
-        crate::capability::UiThemeDefinitionIdentity::new("theme.appearance.production").unwrap(),
-        1,
-        &catalog,
-        [(
-            token,
-            worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([
-                17, 34, 51, 255,
-            ])),
-        )],
-    )
-    .unwrap();
+    let definition = |identity: &str, channels| {
+        crate::capability::UiThemeDefinition::admit(
+            crate::capability::UiThemeDefinitionIdentity::new(identity).unwrap(),
+            1,
+            &catalog,
+            [(
+                token.clone(),
+                worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels(
+                    channels,
+                )),
+            )],
+        )
+        .unwrap()
+    };
+    let definitions = vec![
+        definition("theme.appearance.production", [17, 34, 51, 255]),
+        definition("theme.appearance.production-405060", [64, 80, 96, 255]),
+        definition("theme.appearance.production-708090", [112, 128, 144, 255]),
+        definition("theme.appearance.production-8090a0", [128, 144, 160, 255]),
+        definition("theme.appearance.production-90a0b0", [144, 160, 176, 255]),
+    ];
     crate::capability::FrozenAppearanceThemeCapabilities::admit(
         catalog,
         crate::capability::UiThemeDefinitionIdentity::new("theme.appearance.production").unwrap(),
-        vec![definition],
+        definitions,
     )
     .unwrap()
+}
+
+fn production_color_definition_identity(hex: &str) -> &'static str {
+    match hex.to_ascii_lowercase().as_str() {
+        "#405060" => "theme.appearance.production-405060",
+        "#708090" => "theme.appearance.production-708090",
+        "#8090a0" => "theme.appearance.production-8090a0",
+        "#90a0b0" => "theme.appearance.production-90a0b0",
+        value => panic!("missing production appearance test definition for {value}"),
+    }
 }

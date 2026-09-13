@@ -13,8 +13,43 @@ pub(super) fn publish_native_layout(
     let Some(viewport) = shell.native_layout_viewport() else {
         return Ok(false);
     };
+    let components = shell.native_component_layout_inputs();
+    let regions = shell.native_region_layout_inputs();
+    let basis = shell
+        .native_layout_basis()
+        .map_err(|denial| format!("native-layout-basis:{denial:?}"))?;
+    let revision = shell
+        .next_native_layout_revision()
+        .map_err(|denial| format!("native-layout-revision:{denial:?}"))?;
+    let batch = prepare_native_layout_batch(viewport, basis, revision, &components, &regions)?;
+    shell
+        .complete_native_layout(batch)
+        .map_err(|denial| format!("native-layout-completion:{denial:?}"))?;
+    Ok(true)
+}
+
+pub(super) fn prepare_replacement_native_layout(
+    input: worth_ui::facade::app::UiNativeReplacementLayoutInput,
+) -> Option<UiMountedSurfaceGeometryBatch> {
+    prepare_native_layout_batch(
+        input.viewport(),
+        input.basis(),
+        input.revision(),
+        input.components(),
+        input.regions(),
+    )
+    .ok()
+}
+
+fn prepare_native_layout_batch(
+    viewport: UiMountedCanonicalBox,
+    basis: worth_ui::facade::app::UiMountedLayoutBasis,
+    revision: worth_ui::facade::app::UiMountedLayoutRevision,
+    components: &[worth_ui::facade::app::UiNativeMountedComponentLayoutInput],
+    region_inputs: &[worth_ui::facade::app::UiNativeMountedRegionLayoutInput],
+) -> Result<UiMountedSurfaceGeometryBatch, String> {
     let mut occurrences = Vec::new();
-    for component in shell.native_component_layout_inputs() {
+    for component in components {
         let contract = component.allocation().ok_or_else(|| {
             format!(
                 "native-layout-missing-allocation:{}",
@@ -40,8 +75,7 @@ pub(super) fn publish_native_layout(
         .map(|occurrence| (occurrence.instance(), occurrence))
         .collect::<std::collections::BTreeMap<_, _>>();
     let mut host_bounds = std::collections::BTreeMap::new();
-    let regions = shell
-        .native_region_layout_inputs()
+    let regions = region_inputs
         .iter()
         .map(|region| {
             let owner = resolve_host_bounds(
@@ -54,19 +88,10 @@ pub(super) fn publish_native_layout(
                 .map(|bounds| region.geometry(bounds))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let basis = shell
-        .native_layout_basis()
-        .map_err(|denial| format!("native-layout-basis:{denial:?}"))?;
-    let revision = shell
-        .next_native_layout_revision()
-        .map_err(|denial| format!("native-layout-revision:{denial:?}"))?;
-    shell
-        .complete_native_layout(
-            UiMountedSurfaceGeometryBatch::new(basis, revision, viewport, occurrences)
-                .with_regions(regions),
-        )
-        .map_err(|denial| format!("native-layout-completion:{denial:?}"))?;
-    Ok(true)
+    Ok(
+        UiMountedSurfaceGeometryBatch::new(basis, revision, viewport, occurrences)
+            .with_regions(regions),
+    )
 }
 
 fn resolve_allocation(
@@ -159,6 +184,11 @@ fn region_bounds(
             (width - 48.0).max(0.0),
             24.0,
         ),
+        kind if kind == PlatformPulseMosaicRegion::ServiceTile.id()
+            || kind == PlatformPulseMosaicRegion::NativeTile.id() =>
+        {
+            (owner.x(), owner.y(), owner.width(), owner.height())
+        }
         _ => return Err(format!("native-layout-unknown-mosaic-region:{region_kind}")),
     };
     canonical_box(

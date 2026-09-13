@@ -5,11 +5,13 @@ use crate::installation::{CanonicalPlatformPulse, IsolatedPulseInstallation};
 use super::atomic_replacement::{self, AppliedPulseSourceDelta, PulseSourceActionFailure};
 use super::PulseSourceDeltaIdentity;
 
-const BLUE_TOKEN: &[u8] = b"theme.platform_pulse.blue";
-const GREEN_TOKEN: &[u8] = b"theme.platform_pulse.green";
+const BLUE_ROLE_ATTACHMENT: &[u8] =
+    b"appearance { role platform.pulse.appearance.source_signal_blue }";
+const GREEN_ROLE_ATTACHMENT: &[u8] =
+    b"appearance { role platform.pulse.appearance.source_signal_green }";
 const MALFORMED_SOURCE: &[u8] = b"component platform.pulse.component.seed {";
-const IDENTITY_TARGET_ROUTE_BINDING: &[u8] = b"component platform.pulse.component.identity_target {\n  interaction activate routes platform.pulse.action.route;";
-const PORTAL_PRIMARY_ROUTE_BINDING: &[u8] = b"component platform.pulse.component.portal_primary_target {\n  interaction activate routes platform.pulse.action.route;";
+const IDENTITY_TARGET_ROUTE_BINDING: &[u8] = b"component platform.pulse.component.identity_target {\n  appearance { role platform.pulse.appearance.identity_target }\n  interaction activate routes platform.pulse.action.route;";
+const PORTAL_PRIMARY_ROUTE_BINDING: &[u8] = b"component platform.pulse.component.portal_primary_target {\n  appearance { role platform.pulse.appearance.portal_primary_target }\n  interaction activate routes platform.pulse.action.route;";
 const INTENT_ROUTE_BINDING: &[u8] = b"  interaction activate routes platform.pulse.action.route;";
 
 #[derive(Debug)]
@@ -34,8 +36,8 @@ pub(crate) struct IntentRouteRemovalSourceDelta {
 
 #[derive(Debug)]
 pub(crate) enum PulseSourceDeltaDefinitionFailure {
-    BlueTokenMissing,
-    BlueTokenAmbiguous(usize),
+    BlueRoleAttachmentMissing,
+    BlueRoleAttachmentAmbiguous(usize),
     StatusFieldMissing,
     StatusFieldAmbiguous(usize),
     IntentRouteBindingMissing,
@@ -47,9 +49,14 @@ pub(crate) enum PulseSourceDeltaDefinitionFailure {
 impl fmt::Display for PulseSourceDeltaDefinitionFailure {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::BlueTokenMissing => formatter.write_str("canonical pulse has no blue token"),
-            Self::BlueTokenAmbiguous(count) => {
-                write!(formatter, "canonical pulse has {count} blue tokens")
+            Self::BlueRoleAttachmentMissing => {
+                formatter.write_str("canonical pulse has no blue role attachment")
+            }
+            Self::BlueRoleAttachmentAmbiguous(count) => {
+                write!(
+                    formatter,
+                    "canonical pulse has {count} blue role attachments"
+                )
             }
             Self::StatusFieldMissing => formatter.write_str("canonical pulse has no status field"),
             Self::StatusFieldAmbiguous(count) => {
@@ -83,20 +90,22 @@ impl GreenPulseSourceDelta {
     ) -> Result<Self, PulseSourceDeltaDefinitionFailure> {
         let source = canonical.source_bytes();
         let offsets = source
-            .windows(BLUE_TOKEN.len())
+            .windows(BLUE_ROLE_ATTACHMENT.len())
             .enumerate()
-            .filter_map(|(offset, candidate)| (candidate == BLUE_TOKEN).then_some(offset))
+            .filter_map(|(offset, candidate)| (candidate == BLUE_ROLE_ATTACHMENT).then_some(offset))
             .collect::<Vec<_>>();
         let [offset] = offsets.as_slice() else {
             return Err(match offsets.len() {
-                0 => PulseSourceDeltaDefinitionFailure::BlueTokenMissing,
-                count => PulseSourceDeltaDefinitionFailure::BlueTokenAmbiguous(count),
+                0 => PulseSourceDeltaDefinitionFailure::BlueRoleAttachmentMissing,
+                count => PulseSourceDeltaDefinitionFailure::BlueRoleAttachmentAmbiguous(count),
             });
         };
-        let mut bytes = Vec::with_capacity(source.len() - BLUE_TOKEN.len() + GREEN_TOKEN.len());
+        let mut bytes = Vec::with_capacity(
+            source.len() - BLUE_ROLE_ATTACHMENT.len() + GREEN_ROLE_ATTACHMENT.len(),
+        );
         bytes.extend_from_slice(&source[..*offset]);
-        bytes.extend_from_slice(GREEN_TOKEN);
-        bytes.extend_from_slice(&source[*offset + BLUE_TOKEN.len()..]);
+        bytes.extend_from_slice(GREEN_ROLE_ATTACHMENT);
+        bytes.extend_from_slice(&source[*offset + BLUE_ROLE_ATTACHMENT.len()..]);
         Ok(Self {
             bytes: bytes.into_boxed_slice(),
         })
@@ -223,8 +232,9 @@ fn token_for_source_line_endings(source: &[u8], token: &[u8]) -> Vec<u8> {
 mod tests {
     use super::{
         token_for_source_line_endings, CanonicalBlueRecoverySourceDelta, GreenPulseSourceDelta,
-        IntentRouteRemovalSourceDelta, MalformedPulseSourceDelta, BLUE_TOKEN, GREEN_TOKEN,
-        IDENTITY_TARGET_ROUTE_BINDING, INTENT_ROUTE_BINDING, PORTAL_PRIMARY_ROUTE_BINDING,
+        IntentRouteRemovalSourceDelta, MalformedPulseSourceDelta, BLUE_ROLE_ATTACHMENT,
+        GREEN_ROLE_ATTACHMENT, IDENTITY_TARGET_ROUTE_BINDING, INTENT_ROUTE_BINDING,
+        PORTAL_PRIMARY_ROUTE_BINDING,
     };
     use crate::installation::{CanonicalPlatformPulse, IsolatedPulseInstallation};
 
@@ -233,8 +243,8 @@ mod tests {
         let canonical = CanonicalPlatformPulse::checked_in();
         let checkout_before = canonical.source_bytes().to_vec();
         let green = GreenPulseSourceDelta::from_checked_in(canonical).expect("green delta");
-        assert_eq!(count(green.source_bytes(), BLUE_TOKEN), 0);
-        assert_eq!(count(green.source_bytes(), GREEN_TOKEN), 1);
+        assert_eq!(count(green.source_bytes(), BLUE_ROLE_ATTACHMENT), 0);
+        assert_eq!(count(green.source_bytes(), GREEN_ROLE_ATTACHMENT), 1);
 
         let mut installation =
             IsolatedPulseInstallation::install(canonical).expect("isolated installation");

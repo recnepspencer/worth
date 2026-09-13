@@ -19,7 +19,6 @@ pub(super) fn require_exact(
         _ => "AAAA",
     };
     let target_foreground: &[u8] = match case.axis() {
-        Phase5LocalityAxis::PaintValue => &[40, 120, 255, 255],
         Phase5LocalityAxis::PaintBoundary => &[229, 57, 53, 255, 240, 242, 245, 255],
         _ => &[229, 57, 53, 255],
     };

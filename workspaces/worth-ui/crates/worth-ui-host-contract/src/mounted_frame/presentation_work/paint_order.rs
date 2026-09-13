@@ -144,12 +144,8 @@ mod tests {
 
     #[test]
     fn adjacency_integrity_updates_only_the_edited_edges() {
-        let commands = [
-            crate::UiMountedPaintCommandIdentity::filled_rect(&mechanic(1)),
-            crate::UiMountedPaintCommandIdentity::filled_rect(&mechanic(2)),
-            crate::UiMountedPaintCommandIdentity::filled_rect(&mechanic(3)),
-        ]
-        .map(UiMountedPaintOrderIdentity::for_command);
+        let commands =
+            [identity(1), identity(2), identity(3)].map(UiMountedPaintOrderIdentity::for_command);
         let initial = UiMountedPaintOrderIntegrity::for_order(&commands);
         let removed = initial
             .remove_edge(Some(commands[0]), commands[1], Some(commands[2]))
@@ -164,44 +160,12 @@ mod tests {
         assert_eq!(restored, initial);
     }
 
-    fn mechanic(slot: u64) -> crate::UiMountedFilledRectMechanic {
-        use crate::{
-            UiMountedAllocationBasis, UiMountedCanonicalBox, UiMountedCanonicalBoxInput,
-            UiMountedCoordinateSpace, UiMountedFilledRectCompletionInput, UiMountedFrameIdentity,
-            UiMountedInstanceIdentity, UiMountedNodeReceiptIssuer, UiMountedRgba8,
-            UiMountedTransformProjection, UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
-        };
-        let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
-        let instance = UiMountedInstanceIdentity::mint_unbound().unwrap();
-        let bounds = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-            x: slot as f32,
-            y: 0.0,
-            width: 1.0,
-            height: 1.0,
-            coordinate_space: UiMountedCoordinateSpace::HostSurface,
-        })
-        .unwrap();
-        crate::UiMountedFilledRectMechanic::complete_from_runtime_mounting(
-            UiMountedFilledRectCompletionInput {
-                frame,
-                surface: UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
-                binding: UiSurfaceBindingGeneration::mint_unbound().unwrap(),
-                mounted_instance: instance,
-                node_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
-                    .unwrap()
-                    .receipt_for(instance),
-                allocation_basis: UiMountedAllocationBasis::new(
-                    1,
-                    1,
-                    1,
-                    UiMountedTransformProjection::Identity,
-                ),
-                bounds,
-                color: UiMountedRgba8::new(1, 2, 3, 255),
-                layer_semantic_order: 0,
-                clip_bounds: bounds,
-            },
+    fn identity(slot: u64) -> crate::UiMountedPaintCommandIdentity {
+        let instance = crate::UiMountedInstanceIdentity::mint_unbound().unwrap();
+        crate::UiMountedPaintCommandIdentity::semantic_text_from_correspondence(
+            instance,
+            u16::try_from(slot).unwrap(),
+            None,
         )
-        .unwrap()
     }
 }

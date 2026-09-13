@@ -19,6 +19,23 @@ pub struct UiRuntimeServiceScaleEvidence {
     proposal_requirements_visited: u64,
     unrelated_neighborhoods_touched: u64,
     terminal_resources_zero: bool,
+    overlay_portal_rows: u64,
+    overlay_portal_depth: u64,
+    overlay_backdrop_rows: u64,
+    overlay_backdrop_categories: [u64; 3],
+    overlay_initial_portal_rows_read: u64,
+    overlay_initial_bindings_read: u64,
+    overlay_initial_backdrops_selected: u64,
+    overlay_initial_relation_edges: u64,
+    overlay_initial_backdrops_changed: u64,
+    overlay_successor_portal_rows_read: u64,
+    overlay_successor_bindings_read: u64,
+    overlay_successor_backdrops_selected: u64,
+    overlay_successor_relation_edges: u64,
+    overlay_successor_backdrops_changed: u64,
+    overlay_successor_replayed: u64,
+    overlay_successor_unrelated_neighborhoods: u64,
+    overlay_released_rows: u64,
 }
 
 pub fn runtime_service_scale_evidence() -> UiRuntimeServiceScaleEvidence {
@@ -33,6 +50,7 @@ pub fn runtime_service_scale_evidence() -> UiRuntimeServiceScaleEvidence {
         crate::runtime::selection::selection_scale_evidence();
     let (commands, command_candidates_resolved, command_zero) = command_scale_evidence();
     let proposal = crate::runtime::session::service_proposal::proposal_scale_evidence();
+    let overlay = crate::runtime::overlay_composition::overlay_scale_evidence();
 
     UiRuntimeServiceScaleEvidence {
         // Read back from the live occupancy index, never restated as a literal.
@@ -61,6 +79,31 @@ pub fn runtime_service_scale_evidence() -> UiRuntimeServiceScaleEvidence {
             && selection_zero
             && command_zero
             && proposal.terminal_census_is_zero,
+        overlay_portal_rows: overlay.portal_rows as u64,
+        overlay_portal_depth: overlay.portal_depth as u64,
+        overlay_backdrop_rows: overlay.backdrop_rows as u64,
+        overlay_backdrop_categories: [
+            overlay.dark_backdrops as u64,
+            overlay.colored_backdrops as u64,
+            overlay.transparent_backdrops as u64,
+        ],
+        overlay_initial_portal_rows_read: overlay.initial.portal_stack_rows_read() as u64,
+        overlay_initial_bindings_read: overlay.initial.portal_binding_entries_read() as u64,
+        overlay_initial_backdrops_selected: overlay.initial.backdrop_declarations_selected() as u64,
+        overlay_initial_relation_edges: overlay.initial.overlay_relation_edges_visited() as u64,
+        overlay_initial_backdrops_changed: overlay.initial.backdrop_mechanics_changed() as u64,
+        overlay_successor_portal_rows_read: overlay.successor.portal_stack_rows_read() as u64,
+        overlay_successor_bindings_read: overlay.successor.portal_binding_entries_read() as u64,
+        overlay_successor_backdrops_selected: overlay.successor.backdrop_declarations_selected()
+            as u64,
+        overlay_successor_relation_edges: overlay.successor.overlay_relation_edges_visited() as u64,
+        overlay_successor_backdrops_changed: overlay.successor.backdrop_mechanics_changed() as u64,
+        overlay_successor_replayed: overlay.successor.backdrop_commands_replayed() as u64,
+        overlay_successor_unrelated_neighborhoods: overlay
+            .successor
+            .unrelated_neighborhoods_touched()
+            as u64,
+        overlay_released_rows: overlay.released_rows as u64,
     }
 }
 
@@ -195,4 +238,27 @@ impl UiRuntimeServiceScaleEvidence {
     pub const fn terminal_resources_zero(self) -> bool {
         self.terminal_resources_zero
     }
+
+    pub const fn overlay_backdrop_categories(self) -> [u64; 3] {
+        self.overlay_backdrop_categories
+    }
+
+    getters!(
+        overlay_portal_rows,
+        overlay_portal_depth,
+        overlay_backdrop_rows,
+        overlay_initial_portal_rows_read,
+        overlay_initial_bindings_read,
+        overlay_initial_backdrops_selected,
+        overlay_initial_relation_edges,
+        overlay_initial_backdrops_changed,
+        overlay_successor_portal_rows_read,
+        overlay_successor_bindings_read,
+        overlay_successor_backdrops_selected,
+        overlay_successor_relation_edges,
+        overlay_successor_backdrops_changed,
+        overlay_successor_replayed,
+        overlay_successor_unrelated_neighborhoods,
+        overlay_released_rows,
+    );
 }

@@ -29,6 +29,14 @@ impl WorthUiApp {
         self.launch_native_surface_at_scale(1_000)
     }
 
+    /// Launch one native surface bound to its authored surface declaration.
+    pub fn launch_native_declared_surface(
+        self,
+        authored_name: &str,
+    ) -> Result<WorthUiNativeApplicationShell, WorthUiNativeApplicationShellLaunchDenial> {
+        self.launch_native_surface_at_scale_for(1_000, Some(authored_name))
+    }
+
     #[doc(hidden)]
     pub fn launch_native_surface_at_scale(
         self,
@@ -248,8 +256,6 @@ fn configure_native_surface(
         }
         mounted_rows.push(NativeMountedRow {
             authored_semantic_identity,
-            graph_node,
-            mounted: Some(mounted),
             latest_mounted: mounted,
         });
     }

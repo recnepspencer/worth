@@ -34,6 +34,15 @@ impl UiDeclaredPortalPlacementGeometry {
         }
     }
 
+    pub(crate) const fn modal_dialog() -> Self {
+        Self {
+            preferred_width: 280,
+            maximum_height: 320,
+            anchor_gap: 8,
+            viewport_margin: 24,
+        }
+    }
+
     #[cfg(test)]
     pub(crate) const fn checked(
         preferred_width: u16,

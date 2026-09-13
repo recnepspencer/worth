@@ -104,8 +104,8 @@ fn stale_or_coordinate_mismatched_sample_denies_without_override_mutation() {
         &world,
         frame,
         identity,
-        viewport_box(10.0, 0.0, 10.0, 10.0),
-        viewport_box(20.0, 0.0, 10.0, 10.0),
+        host_surface_bounds(10.0),
+        host_surface_bounds(20.0),
         32_768,
     );
     assert!(retained.stage_sample(&wrong_space).is_err());
@@ -271,16 +271,35 @@ pub(in crate::native::presentation) fn portal(
     world: &DrawListWorld,
     frame: worth_ui_host_contract::UiMountedFrameIdentity,
 ) -> UiMountedPortalOverlayMechanic {
+    portal_at_order(world, frame, 1)
+}
+
+pub(in crate::native::presentation) fn portal_at_order(
+    world: &DrawListWorld,
+    frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    semantic_order: u32,
+) -> UiMountedPortalOverlayMechanic {
+    portal_for_owner_at_order(world, frame, world.first, 7, semantic_order, 1)
+}
+
+pub(in crate::native::presentation) fn portal_for_owner_at_order(
+    world: &DrawListWorld,
+    frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    owner: worth_ui_host_contract::UiMountedInstanceIdentity,
+    portal_identity: u64,
+    semantic_order: u32,
+    depth: u16,
+) -> UiMountedPortalOverlayMechanic {
     UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(
         UiMountedPortalOverlayCompletionInput {
             frame,
             surface: world.surface,
             binding: world.binding,
-            owner: world.first,
+            owner,
             owner_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
                 .unwrap()
-                .receipt_for(world.first),
-            portal_identity: 7,
+                .receipt_for(owner),
+            portal_identity,
             anchor_presentation: UiHostObservationPresentationBasis::new(
                 world.requirement.host_surface(),
                 frame,
@@ -291,8 +310,8 @@ pub(in crate::native::presentation) fn portal(
             bounds: viewport_box(10.0, 0.0, 30.0, 20.0),
             clip_bounds: viewport_box(15.0, 0.0, 10.0, 20.0),
             color: UiMountedRgba8::new(220, 40, 20, 255),
-            layer_semantic_order: 1,
-            layer_depth: 1,
+            layer_semantic_order: semantic_order,
+            layer_depth: depth,
             lifecycle: UiMountedPortalOverlayLifecyclePosture::Visible,
             shielding: UiMountedPortalInputShielding::ContentBounds,
         },
@@ -304,9 +323,9 @@ fn bounds(x: f32) -> UiMountedCanonicalBox {
     UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
         x,
         y: 0.0,
-        width: 10.0,
-        height: 10.0,
-        coordinate_space: UiMountedCoordinateSpace::HostSurface,
+        width: 32.0,
+        height: 24.0,
+        coordinate_space: UiMountedCoordinateSpace::Viewport,
     })
     .unwrap()
 }
@@ -318,6 +337,17 @@ fn viewport_box(x: f32, y: f32, width: f32, height: f32) -> UiMountedCanonicalBo
         width,
         height,
         coordinate_space: UiMountedCoordinateSpace::Viewport,
+    })
+    .unwrap()
+}
+
+fn host_surface_bounds(x: f32) -> UiMountedCanonicalBox {
+    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+        x,
+        y: 0.0,
+        width: 32.0,
+        height: 24.0,
+        coordinate_space: UiMountedCoordinateSpace::HostSurface,
     })
     .unwrap()
 }

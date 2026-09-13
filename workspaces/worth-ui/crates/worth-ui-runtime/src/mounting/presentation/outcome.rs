@@ -300,7 +300,7 @@ impl UiMountedPresentedFrame {
 impl UiMountedRejectedFrame {
     pub(super) fn new(
         attempt: UiMountedPresentationAttemptIdentity,
-        frame: UiPreparedMountedFrame,
+        mut frame: UiPreparedMountedFrame,
         rejections: Vec<UiMountedSurfacePresentationRejection>,
     ) -> Self {
         let cost = frame
@@ -308,6 +308,7 @@ impl UiMountedRejectedFrame {
             .reclassified(super::super::UiMountWorkClass::RejectedPresentation)
             .with_rejected(rejections.len())
             .expect("bounded surface rejection rows fit cost accounting");
+        frame.restore_rejected_appearance();
         Self {
             attempt,
             frame,

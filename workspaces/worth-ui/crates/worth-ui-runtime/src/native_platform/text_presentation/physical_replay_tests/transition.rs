@@ -17,10 +17,12 @@ fn overhanging_text_transition_replays_old_and_new_images_after_refusal() {
     );
     let occluder = rectangle(
         &first.fragment.text_candidates()[0],
+        UiMountedInstanceIdentity::mint_unbound().unwrap(),
         bounds([112.0, 0.0, 180.0, 48.0]),
     );
     let distant = rectangle(
         &first.fragment.text_candidates()[0],
+        UiMountedInstanceIdentity::mint_unbound().unwrap(),
         bounds([380.0, 0.0, 8.0, 8.0]),
     );
     let commands = [old.clone(), occluder.clone(), distant.clone()];

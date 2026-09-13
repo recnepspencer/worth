@@ -43,7 +43,7 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
     let (application, _) =
         build_open_portal_projection_application_with_host(host.clone(), registration);
     let mut shell = application
-        .launch_native_surface()
+        .launch_native_declared_surface("visual.identity.surface.main")
         .expect("the native portal and Query application launches");
     crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     let (initial_observation, initial_completion) = initial.into_parts();
@@ -82,7 +82,7 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
     );
     let ingress = shell.admit_native_intent_observations(
         definition,
-        super::native_recovery::native_activation_drain(
+        super::native_activation::native_activation_drain(
             shell.host_session_identity().as_u64(),
             presentation,
         ),
@@ -162,6 +162,9 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
         .expect("the exact native completion remains session-bound")
     {
         WorthUiNativeManagedRebindProgress::Published(receipt) => receipt,
+        WorthUiNativeManagedRebindProgress::RebindRecovered(_) => {
+            panic!("before-effects denial must retry the content successor")
+        }
         WorthUiNativeManagedRebindProgress::AwaitingProgress => {
             panic!("immediate reconstruction and retry unexpectedly remained pending")
         }

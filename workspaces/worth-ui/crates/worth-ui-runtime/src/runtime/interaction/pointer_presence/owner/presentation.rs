@@ -26,6 +26,7 @@ impl UiPointerPresenceOwner {
                     mounted,
                     trigger.presentation(),
                     record.position,
+                    &mut Default::default(),
                 )
                 .map(|position| (*pointer, position))
             })
@@ -88,9 +89,14 @@ impl UiPointerPresenceOwner {
                 )?;
             let target = if affected {
                 report.retested += 1;
-                UiPresentedPointerPosition::resolve(mounted, *presentation, record.position)?
-                    .target()
-                    .map(|target| target.view())
+                UiPresentedPointerPosition::resolve(
+                    mounted,
+                    *presentation,
+                    record.position,
+                    neighborhood_work,
+                )?
+                .target()
+                .map(|target| target.view())
             } else {
                 record
                     .target

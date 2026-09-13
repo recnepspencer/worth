@@ -11,6 +11,14 @@ pub struct UiPreparedAppearanceGenerationSuccession {
     inspection: crate::runtime::appearance::UiPreparedAppearanceInspectionGenerationSuccession,
 }
 
+impl UiPreparedAppearanceGenerationSuccession {
+    pub(super) fn theme(
+        &self,
+    ) -> &crate::runtime::presentation_state::UiPreparedAppearanceGenerationSuccession {
+        &self.theme
+    }
+}
+
 impl WorthUiActiveApplicationSession {
     pub(super) fn prepare_appearance_generation_succession(
         &self,
@@ -37,7 +45,7 @@ impl WorthUiActiveApplicationSession {
             .map_err(UiAppearanceGenerationSuccessionDenial::Theme)?;
         let inspection = self
             .appearance_inspection
-            .prepare_generation_succession(&predecessor, &successor)
+            .prepare_retained_generation_succession(&predecessor, &successor)
             .map_err(UiAppearanceGenerationSuccessionDenial::Inspection)?;
         Ok(UiPreparedAppearanceGenerationSuccession { theme, inspection })
     }
@@ -62,6 +70,7 @@ impl WorthUiActiveApplicationSession {
         successor_admission: Option<crate::runtime::appearance::UiPreparedThemeBindingAdmission>,
         rebinding: Option<&crate::runtime::appearance::UiPreparedThemeGenerationRebinding>,
         themes: Option<&crate::capability::FrozenAppearanceThemeCapabilities>,
+        text_tokens: &crate::capability::FrozenThemeTokenCapabilities,
     ) -> Result<UiPreparedAppearanceGenerationSuccession, UiAppearanceGenerationSuccessionDenial>
     {
         let predecessor = self.active_generation_identity();
@@ -74,6 +83,7 @@ impl WorthUiActiveApplicationSession {
                 successor_admission,
                 rebinding,
                 themes,
+                text_tokens,
             )
             .map_err(UiAppearanceGenerationSuccessionDenial::Theme)?;
         let inspection = self

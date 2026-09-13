@@ -6,6 +6,7 @@ use super::{
 
 #[derive(Debug)]
 pub struct UiInteractionBatchReceipt {
+    pub(super) targeting_work: crate::mounting::UiHitTestSpatialWork,
     pub(super) core: UiHostObservationCanonicalCore,
     pub(super) frame_relation: crate::facade::observation_report::UiHostObservationFrameRelation,
     pub(super) disposition: crate::facade::observation_report::UiHostObservationBatchDisposition,
@@ -14,6 +15,15 @@ pub struct UiInteractionBatchReceipt {
     pub(super) state: UiInteractionStateSnapshot,
     pub(super) scroll_observations: Box<[crate::runtime::scroll::UiHostScrollObservationOutcome]>,
     pub(super) command_routes: Box<[crate::runtime::UiCommandRoutingOutcome]>,
+    pub(super) focus_publications: Box<
+        [Result<
+            (
+                crate::facade::entry::UiSemanticFocusPublicationReceipt,
+                crate::mounting::UiMountedFramePublicationReceipt,
+            ),
+            crate::facade::entry::UiFocusPlacementExecutionDenial,
+        >],
+    >,
     #[allow(
         dead_code,
         reason = "Gate 0 exposes owner-issued transitions before Gate 1 live resolver threading"
@@ -50,6 +60,42 @@ pub struct UiInteractionShutdownReport {
 }
 
 impl UiInteractionBatchReceipt {
+    pub(crate) fn retain_focus_publications(
+        &mut self,
+        publications: Vec<
+            Result<
+                (
+                    crate::facade::entry::UiSemanticFocusPublicationReceipt,
+                    crate::mounting::UiMountedFramePublicationReceipt,
+                ),
+                crate::facade::entry::UiFocusPlacementExecutionDenial,
+            >,
+        >,
+    ) {
+        self.focus_publications = publications.into_boxed_slice();
+    }
+
+    pub fn focus_publications(
+        &self,
+    ) -> &[Result<
+        (
+            crate::facade::entry::UiSemanticFocusPublicationReceipt,
+            crate::mounting::UiMountedFramePublicationReceipt,
+        ),
+        crate::facade::entry::UiFocusPlacementExecutionDenial,
+    >] {
+        &self.focus_publications
+    }
+
+    /// Spatial query work performed while resolving this batch, including misses and denials.
+    pub const fn targeting_work(&self) -> crate::mounting::UiHitTestSpatialWork {
+        self.targeting_work
+    }
+
+    pub(crate) fn record_targeting_work(&mut self, work: crate::mounting::UiHitTestSpatialWork) {
+        self.targeting_work.merge(work);
+    }
+
     pub(crate) fn retain_scroll_observations(
         &mut self,
         observations: Vec<crate::runtime::scroll::UiHostScrollObservationOutcome>,

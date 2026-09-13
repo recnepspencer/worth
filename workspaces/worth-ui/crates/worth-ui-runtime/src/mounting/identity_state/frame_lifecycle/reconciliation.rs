@@ -2,6 +2,18 @@ use super::*;
 
 type UiReconciledBindingView = (UiSurfaceBindingGeneration, UiSurfaceBindingIdentityView);
 
+impl super::super::UiAuthorityAdmittedMountedFrame {
+    pub(in crate::mounting::identity_state) fn new(
+        frame: crate::mounting::UiPreparedMountedFrame,
+    ) -> Self {
+        Self { frame }
+    }
+
+    pub(in crate::mounting) fn into_frame(self) -> crate::mounting::UiPreparedMountedFrame {
+        self.frame
+    }
+}
+
 impl UiMountedIdentityState {
     pub(crate) fn prepare_current_reconciliation_frame(
         &self,
@@ -9,6 +21,21 @@ impl UiMountedIdentityState {
         protocol: worth_ui_host_contract::UiHostProtocolAgreement,
         capability_report: &worth_ui_host_contract::WorthUiHostCapabilityReport,
     ) -> Result<super::super::UiAuthorityAdmittedMountedFrame, UiMountedIdentityDenial> {
+        crate::mounting::UiPreparedMountedFrame::reconcile_current(
+            self,
+            replacements,
+            protocol,
+            capability_report,
+        )
+        .map(super::super::UiAuthorityAdmittedMountedFrame::new)
+    }
+
+    pub(in crate::mounting) fn assemble_current_reconciliation_frame(
+        &self,
+        replacements: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
+        protocol: worth_ui_host_contract::UiHostProtocolAgreement,
+        capability_report: &worth_ui_host_contract::WorthUiHostCapabilityReport,
+    ) -> Result<crate::mounting::UiAssembledMountedFrame, UiMountedIdentityDenial> {
         if replacements.is_empty() {
             return Err(UiMountedIdentityDenial::ReconciliationBasisMismatch);
         }
@@ -17,6 +44,8 @@ impl UiMountedIdentityState {
             .current_core
             .ok_or(UiMountedIdentityDenial::NoPublishedMountedFrame)?;
         let admission = crate::mounting::UiPreparedMountedFrameAdmission {
+            text_publication: None,
+            text_publication_work: 0,
             candidate: self.reconciled_projection_candidate(&replacement_views)?,
             generation: self
                 .current_publication
@@ -42,8 +71,7 @@ impl UiMountedIdentityState {
                     capability_report.profile_identity_digest(),
                 ),
         };
-        UiPreparedMountedFrame::admit(admission)
-            .map(super::super::UiAuthorityAdmittedMountedFrame::new)
+        crate::mounting::UiAssembledMountedFrame::admit(admission)
             .map_err(|_| UiMountedIdentityDenial::ReconciliationBasisMismatch)
     }
 
@@ -106,7 +134,6 @@ impl UiMountedIdentityState {
                         crate::mounting::UiMountedAppearanceProjectionSelection::empty(),
                     ),
                 ),
-                current_owner.theme_revision(),
                 current_owner.pointer.clone(),
             ),
             identity_candidate,

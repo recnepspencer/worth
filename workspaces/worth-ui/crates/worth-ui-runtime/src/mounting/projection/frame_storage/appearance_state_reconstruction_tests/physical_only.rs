@@ -23,13 +23,19 @@ fn physical_only_reconstruction_reissues_exact_paint_for_the_current_node() {
     state.begin_epoch(session_identity, &generation, &[]);
     state.retain_projection_for_test(&retained, projection);
     state.replace_sidecar_for_test(&retained, std::mem::take(&mut fixture.sidecar));
+    let accepted_visual = state.retained_visual_mechanics();
+    assert!(!accepted_visual.is_empty());
     state.members.clear_for_epoch();
+    assert_eq!(
+        state.retained_visual_mechanics(),
+        accepted_visual,
+        "retiring semantic authority must not erase the still-accepted physical image from inspection"
+    );
 
     let (successor_frame, successor_receipt, mut node) = successor_node(&fixture, incarnation);
     let successor_graph =
         crate::graph::UiGraphNodeIdentity::new(fixture.graph_node.digest().wrapping_add(1));
     node.graph_node = successor_graph;
-    let successor_issuer = node.issuer;
     state.prepare_reconstruction(vec![node.clone()]);
     let presentation =
         worth_ui_host_contract::UiMountedPresentationAttemptIdentity::mint_unbound().unwrap();
@@ -93,14 +99,7 @@ fn physical_only_reconstruction_reissues_exact_paint_for_the_current_node() {
     .unwrap();
     let successor_context = crate::runtime::appearance::UiAppearanceAttemptContext::new(
         successor_target,
-        successor_frame,
-        successor_issuer,
-        7,
-        known_allocation(),
-        crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
-        Some(0),
-        None,
-        Box::new([]),
+        node.clone(),
         generation.clone(),
         0,
         0,

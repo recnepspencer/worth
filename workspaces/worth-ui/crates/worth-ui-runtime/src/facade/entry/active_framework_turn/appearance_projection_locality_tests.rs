@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::runtime::tests::appearance_component_session_test_support as support;
 
 #[path = "appearance_projection_locality_test_support.rs"]
@@ -8,7 +6,7 @@ mod fixture;
 mod retirement_tests;
 use fixture::{
     admit_owner_snapshot, admit_theme, background_role, graph_node_for, locality_fixture,
-    theme_bundle,
+    prepare_and_publish, theme_bundle,
 };
 
 const CANDIDATE_TOKEN: &str = "theme.appearance_locality_candidate";
@@ -84,10 +82,6 @@ fn appearance_preparation_locality_slope_and_projection_owner_identity() {
     assert_eq!(large.retirement.traversed, 0);
     assert_eq!(small.surviving, 30);
     assert_eq!(large.surviving, 510);
-    assert!(small.baseline_static_paint);
-    assert!(large.baseline_static_paint);
-    assert!(small.appearance_only_host_static_only);
-    assert!(large.appearance_only_host_static_only);
 }
 
 fn avl_work_bound(retained_count: usize) -> usize {
@@ -105,8 +99,6 @@ struct LocalityCase {
     repeated: Vec<LocalityMetrics>,
     retirement: LocalityMetrics,
     surviving: usize,
-    baseline_static_paint: bool,
-    appearance_only_host_static_only: bool,
 }
 
 fn run_case(retained_count: usize) -> LocalityCase {
@@ -115,12 +107,12 @@ fn run_case(retained_count: usize) -> LocalityCase {
     let token_a = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
     let token_b = crate::capability::ThemeTokenId::new(CANDIDATE_TOKEN).unwrap();
     let static_token =
-        crate::capability::ThemeTokenId::new(support::LEGACY_STATIC_PAINT_TOKEN).unwrap();
+        crate::capability::ThemeTokenId::new(support::APPEARANCE_BASE_TOKEN).unwrap();
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
     host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let host_observer = host.clone();
-    let builder = support::legacy_static_paint_appearance_component_builder(&role_a)
-        .register_component(support::static_paint_component(
+    let builder = support::alternate_token_appearance_component_builder(&role_a)
+        .register_component(support::appearance_component(
             UNSTYLED_COMPONENT,
             static_token,
         ))
@@ -224,24 +216,31 @@ fn run_case(retained_count: usize) -> LocalityCase {
     );
     session.advance_mounted_identity_frame().unwrap();
 
-    admit_theme(&mut session, token_a.clone(), 0, "#405060");
-    admit_theme(&mut session, token_b.clone(), 0, "#607080");
+    admit_theme(&mut session, token_a.clone(), "#405060");
+    admit_theme(&mut session, token_b.clone(), "#607080");
     let initial = prepare_and_publish(&mut session, &host_observer, 1, true);
     assert_eq!(initial.selected, retained_count);
     assert_eq!(initial.materialized, retained_count);
-    let baseline_static_paint = {
-        let colors = host_observer.last_filled_rect_colors();
-        !colors.is_empty()
-            && colors
-                .iter()
-                .all(|color| color.channels() == [17, 34, 51, 255])
-    };
-    assert!(baseline_static_paint);
+    let colors = host_observer.last_surface_colors();
+    assert_eq!(colors.len(), retained_count);
+    assert_eq!(
+        colors
+            .iter()
+            .filter(|color| color.channels() == [64, 80, 96, 255])
+            .count(),
+        1
+    );
+    assert_eq!(
+        colors
+            .iter()
+            .filter(|color| color.channels() == [96, 112, 128, 255])
+            .count(),
+        retained_count - 1
+    );
 
     let mut repeated = Vec::new();
     for (offset, color) in ["#506070", "#708090", "#8090a0"].into_iter().enumerate() {
-        let revision = u64::try_from(offset + 1).unwrap();
-        admit_theme(&mut session, token_a.clone(), revision, color);
+        admit_theme(&mut session, token_a.clone(), color);
         let metrics = prepare_and_publish(
             &mut session,
             &host_observer,
@@ -252,12 +251,15 @@ fn run_case(retained_count: usize) -> LocalityCase {
         assert_eq!(metrics.materialized, 1);
         repeated.push(metrics);
     }
-    let appearance_only_host_static_only = host_observer
-        .last_filled_rect_colors()
-        .iter()
-        .all(|color| color.channels() == [17, 34, 51, 255]);
-    assert!(appearance_only_host_static_only);
-    admit_theme(&mut session, token_b.clone(), 1, "#90a0b0");
+    let colors = host_observer.last_surface_colors();
+    assert_eq!(
+        colors
+            .iter()
+            .map(|color| color.channels())
+            .collect::<Vec<_>>(),
+        vec![[128, 144, 160, 255]]
+    );
+    admit_theme(&mut session, token_b.clone(), "#90a0b0");
     let surviving = prepare_and_publish(&mut session, &host_observer, 5, false);
     assert_eq!(surviving.selected, retained_count - 1);
     assert_eq!(surviving.materialized, retained_count - 1);
@@ -266,7 +268,7 @@ fn run_case(retained_count: usize) -> LocalityCase {
 
     let retired_predecessor = retirement_tests::capture(&session, candidate_instances[0]);
     session.unmount_instance(candidate_instances[0]).unwrap();
-    admit_theme(&mut session, token_a, 4, "#a0b0c0");
+    admit_theme(&mut session, token_a, "#a0b0c0");
     let retirement = prepare_and_publish(&mut session, &host_observer, 6, false);
     assert_eq!(retirement.selected, 1);
     assert_eq!(retirement.materialized, 1);
@@ -274,7 +276,7 @@ fn run_case(retained_count: usize) -> LocalityCase {
     assert_eq!(retirement.traversed, 0);
     assert!(retirement.host_completed_without_effects);
     retirement_tests::assert_removed(&session, &retired_predecessor);
-    admit_theme(&mut session, token_b, 2, "#b0c0d0");
+    admit_theme(&mut session, token_b, "#b0c0d0");
     let after_retirement = prepare_and_publish(&mut session, &host_observer, 7, false);
     assert_eq!(after_retirement.selected, retained_count - 2);
     assert_eq!(after_retirement.materialized, retained_count - 2);
@@ -286,112 +288,5 @@ fn run_case(retained_count: usize) -> LocalityCase {
         repeated,
         retirement,
         surviving: after_retirement.selected,
-        baseline_static_paint,
-        appearance_only_host_static_only,
     }
-}
-
-fn prepare_and_publish(
-    session: &mut crate::facade::WorthUiActiveApplicationSession,
-    host: &crate::certification_support::ScriptedPresentationHost,
-    now: u64,
-    native_effects: bool,
-) -> LocalityMetrics {
-    for _ in session.inspect_mounted_identity().surface_bindings() {
-        if native_effects {
-            host.push_native_display_presented();
-        } else {
-            host.push_native_display_settled_without_effects();
-        }
-    }
-    let frame = session
-        .prepare_mounted_frame_with_application_presentation(
-            crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
-            |_| {},
-        )
-        .unwrap_or_else(|stop| match stop {
-            crate::facade::entry::WorthUiMountedFrameExecutionStop::Preparation(denial) => {
-                panic!("locality frame should prepare: {denial:?}")
-            }
-            _ => panic!("locality frame stopped before preparation"),
-        });
-    let candidate_projection = frame.projection_rc_for_test();
-    // Tick 5 is the first multi-consumer successor with a published owner basis.
-    if now == 2
-        && frame
-            .appearance_selection_cost_report()
-            .selected_instance_count()
-            == 1
-    {
-        frame.verify_mixed_appearance_reconstruction_denial_and_retry();
-    }
-    if now == 5 {
-        frame.verify_unpublished_appearance_member_denial();
-    }
-    if now == 6 {
-        retirement_tests::verify_retry(session, &frame);
-    }
-    let canonical_consumers = frame
-        .appearance_invalidation_batch()
-        .map_or(0, |batch| batch.graph_consumers().len());
-    let surface_projection = frame
-        .surfaces()
-        .first()
-        .expect("locality frame has bound surfaces")
-        .projection_owner();
-    assert!(Rc::ptr_eq(&candidate_projection, &surface_projection));
-    let report = frame.appearance_selection_cost_report();
-    let outcome = session.present_prepared_mounted_frame_internal(
-        frame,
-        worth_ui_host_contract::UiPresentationDeadline::at_tick(100),
-        now,
-    );
-    let host_completed_without_effects =
-        !native_effects && presentation_completed_without_effects(&outcome);
-    let motion_commands = match &outcome {
-        crate::mounting::UiMountedFrameOutcome::Published(receipt)
-        | crate::mounting::UiMountedFrameOutcome::Reconciled(receipt) => {
-            receipt.cost_report().appearance_motion_commands_visited()
-        }
-        _ => 0,
-    };
-    assert!(matches!(
-        outcome,
-        crate::mounting::UiMountedFrameOutcome::Published(_)
-    ));
-    let published_projection = session
-        .current_mounted_projection_rc_for_test()
-        .expect("published locality frame retains its owner");
-    assert!(Rc::ptr_eq(&candidate_projection, &published_projection));
-    LocalityMetrics {
-        selected: report.selected_instance_count(),
-        materialized: report.materialized_context_count(),
-        canonical_consumers,
-        index_entries: report.index_entries_touched(),
-        lifecycle_retired: report.lifecycle_memberships_retired(),
-        key_probes: report.membership_key_probes(),
-        copied_nodes: report.membership_copied_avl_nodes(),
-        traversed: report.membership_traversed_entries(),
-        motion_commands,
-        host_completed_without_effects,
-    }
-}
-
-fn presentation_completed_without_effects(
-    outcome: &crate::mounting::UiMountedFrameOutcome,
-) -> bool {
-    let mut completed_without_effects = false;
-    if let crate::mounting::UiMountedFrameOutcome::Published(receipt)
-    | crate::mounting::UiMountedFrameOutcome::Reconciled(receipt) = outcome
-    {
-        receipt.with_surface_presentations(|surfaces| {
-            completed_without_effects = !surfaces.is_empty()
-                && surfaces.iter().all(|surface| {
-                    surface.effects().families().is_empty()
-                        && surface.adapter_cost()
-                            == worth_ui_host_contract::UiHostPresentationCostReport::default()
-                });
-        });
-    }
-    completed_without_effects
 }

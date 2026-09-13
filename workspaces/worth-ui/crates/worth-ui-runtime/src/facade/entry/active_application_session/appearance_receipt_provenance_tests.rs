@@ -1,6 +1,4 @@
-use std::collections::BTreeMap;
-
-use super::role_support::{radius_role, single_aspect_role};
+use super::role_support::single_aspect_role;
 use super::support;
 
 #[test]
@@ -54,52 +52,33 @@ fn real_source_turn_reports_input_evidence_changed() {
 }
 
 #[test]
-fn mounted_resolution_denial_preserves_prior_theme_comparison_work() {
-    let role = radius_role("test.receipt-partial-resolution");
-    let mut fixture = super::mounted_fixture(&role, &[], true);
-    super::role_support::update_radius_at_revision(&mut fixture.session, [i32::MAX - 1; 4], 0);
-    fixture
-        .session
-        .presentation
-        .replace_appearance_theme_values_for_test(
-            fixture.surface,
-            BTreeMap::from([(
-                crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap(),
-                worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([
-                    9, 9, 9, 255,
-                ])),
-            )]),
-        );
-    super::publish_validation_class(
-        &mut fixture.session,
-        fixture.graph_node,
-        crate::runtime::intent::UiValidationAppearanceClass::Valid,
-        None,
+fn radius_value_kind_mismatch_denies_theme_admission_before_resolution() {
+    let themes = super::role_support::radius_theme_bundle();
+    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_TOKEN).unwrap();
+    let definition = crate::capability::UiThemeDefinition::admit(
+        crate::capability::UiThemeDefinitionIdentity::new("theme.appearance.radii-invalid-kind")
+            .unwrap(),
+        1,
+        themes.catalog(),
+        themes
+            .get(themes.initial_definition_identity())
+            .unwrap()
+            .values()
+            .map(|(slot, value)| {
+                (
+                    slot.clone(),
+                    if slot == &token {
+                        worth_ui_dsl::UiThemeValue::Color(
+                            worth_ui_dsl::UiThemeColor::from_channels([9, 9, 9, 255]),
+                        )
+                    } else {
+                        *value
+                    },
+                )
+            }),
     );
-    super::refresh_appearance_owner_snapshot(
-        &mut fixture.session,
-        &role,
-        "appearance-receipt-partial-resolution",
-    );
-    super::publish_frame(&mut fixture.session, 1);
-
-    let explanation =
-        super::query_support::why_for(&fixture, worth_ui_dsl::UiAppearanceAspect::Background);
     assert_eq!(
-        explanation.denial_posture(),
-        Some(worth_ui_inspection::UiAppearanceInspectionDenialPosture::Resolution)
+        definition,
+        Err(crate::capability::UiThemeDefinitionDenial::ValueKindMismatch(token))
     );
-    assert!(!explanation.input_evidence_changed());
-    assert!(!explanation.semantic_projection_changed());
-    assert!(!explanation.resolved_aspect_value_changed());
-    assert!(!explanation.mounted_mechanical_output_changed());
-    assert!(!explanation.equal_output_suppressed());
-    assert!(explanation.denied_before_effects());
-    assert_eq!(explanation.cost().theme_slots_compared(), 2);
-
-    fixture
-        .session
-        .presentation
-        .remove_appearance_theme_values_for_test(fixture.surface);
-    super::query_support::shutdown(fixture.session);
 }

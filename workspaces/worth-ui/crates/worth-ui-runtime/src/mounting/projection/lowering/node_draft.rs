@@ -28,7 +28,6 @@ impl UiMountedProjectionNodeDraft {
             appearance_clip: self.appearance_clip,
             surface_paint_order: self.surface_paint_order,
             has_appearance_attachment: self.has_appearance_attachment,
-            static_paint: self.static_paint,
             semantic_text: self.semantic_text,
             hit_test: self.hit_test,
             focus_support: self.focus_support,

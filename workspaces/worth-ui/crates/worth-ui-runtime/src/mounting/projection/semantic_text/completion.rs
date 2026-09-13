@@ -36,11 +36,11 @@ fn push_node_rows(
     seed: &super::UiMountedSemanticTextSeed,
     rows: &mut Vec<super::UiMountedQualifiedSemanticText>,
 ) -> Result<(), UiMountedProjectionDenial> {
-    let (bounds, allocation_basis) = super::geometry::require_allocation(node)?;
     let surface = context
         .semantic
         .surface_for(node.receipt.semantic_surface())
         .ok_or(UiMountedProjectionDenial::MissingSurfaceBinding)?;
+    let (bounds, allocation_basis) = super::require_allocation(node, surface)?;
     let mounted_instance = node.receipt.mounted_instance();
     let node_receipt = context
         .receipt_basis
@@ -53,6 +53,7 @@ fn push_node_rows(
         UiMountedNodeTextBasis {
             surface,
             mounted_instance,
+            portal_group: node.completed_appearance_geometry().portal_group(),
             node_receipt,
             allocation_basis,
             bounds,
@@ -64,6 +65,7 @@ fn push_node_rows(
         UiMountedSemanticTextRowBasis {
             surface,
             mounted_instance,
+            portal_group: node.completed_appearance_geometry().portal_group(),
             node_receipt,
             allocation_basis,
             bounds,
@@ -109,6 +111,7 @@ pub(in crate::mounting::projection) fn complete_semantic_text_replacement(
             surface: surface.surface,
             binding: surface.binding,
             mounted_instance: node.receipt.mounted_instance(),
+            portal_group: predecessor.portal_group(),
             node_receipt: receipt,
             allocation_basis: predecessor.allocation_basis(),
             bounds: predecessor.bounds(),
@@ -137,6 +140,7 @@ pub(in crate::mounting::projection) fn complete_semantic_text_replacement(
 struct UiMountedNodeTextBasis {
     surface: super::super::frame_storage::UiMountedProjectionSurface,
     mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    portal_group: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
     node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
     allocation_basis: worth_ui_host_contract::UiMountedAllocationBasis,
     bounds: worth_ui_host_contract::UiMountedCanonicalBox,
@@ -145,6 +149,7 @@ struct UiMountedNodeTextBasis {
 struct UiMountedSemanticTextRowBasis<'formatting> {
     surface: super::super::frame_storage::UiMountedProjectionSurface,
     mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    portal_group: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
     node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
     allocation_basis: worth_ui_host_contract::UiMountedAllocationBasis,
     bounds: worth_ui_host_contract::UiMountedCanonicalBox,
@@ -190,6 +195,7 @@ fn push_row(
             surface: row.surface.surface,
             binding: row.surface.binding,
             mounted_instance: row.mounted_instance,
+            portal_group: row.portal_group,
             node_receipt: row.node_receipt,
             allocation_basis: row.allocation_basis,
             bounds: row.bounds,
@@ -306,6 +312,7 @@ fn push_value_row(
         UiMountedSemanticTextRowBasis {
             surface: input.basis.surface,
             mounted_instance: input.basis.mounted_instance,
+            portal_group: input.basis.portal_group,
             node_receipt: input.basis.node_receipt,
             allocation_basis: input.basis.allocation_basis,
             bounds: input.basis.bounds,

@@ -55,18 +55,9 @@ impl UiOverlayCompositionState {
         self.current.as_ref()
     }
 
+    #[cfg(test)]
     pub(crate) fn dependency_index(&self) -> Option<&UiOverlayDependencyIndex> {
         self.index.as_ref()
-    }
-
-    #[cfg(test)]
-    pub(crate) fn discard_index_for_test(&mut self) {
-        self.index = None;
-    }
-
-    #[cfg(test)]
-    pub(crate) fn discard_relation_cache_for_test(&mut self) {
-        self.relations = None;
     }
 
     pub(crate) fn prepare_initial(
@@ -104,9 +95,6 @@ impl UiOverlayCompositionState {
         if !same_world(&predecessor, &input) {
             return Err(UiOverlayCompositionDenial::ReconstructionRequired);
         }
-        if changes.has_declaration_change() {
-            return Err(UiOverlayCompositionDenial::ReconstructionRequired);
-        }
         let index = self
             .index
             .as_ref()
@@ -127,25 +115,6 @@ impl UiOverlayCompositionState {
             reservation,
             counters,
             index: index.clone(),
-            relations,
-        })
-    }
-
-    pub(crate) fn reconstruct(
-        &self,
-        input: UiOverlayCompositionInput<'_>,
-    ) -> Result<UiPreparedOverlayComposition, UiOverlayCompositionDenial> {
-        let index = UiOverlayDependencyIndex::rebuild(&self.declarations)
-            .map_err(|()| UiOverlayCompositionDenial::DuplicateBackdropIdentity)?;
-        let relations = relation_cache::build(&self.declarations)
-            .map_err(UiOverlayCompositionDenial::Relation)?;
-        let (snapshot, reservation, counters) = compile_full(self, &input, &relations)?;
-        Ok(UiPreparedOverlayComposition {
-            predecessor: self.current.clone(),
-            snapshot,
-            reservation,
-            counters,
-            index,
             relations,
         })
     }

@@ -62,7 +62,10 @@ pub(crate) use activation_interruption::interrupt_if_armed;
 pub use activation_interruption::{
     with_activation_precommit_interruption, WorthUiActivationPrecommitStage,
 };
-pub use active_session_observation::WorthUiActiveSessionCertificationExt;
+pub use active_session_observation::{
+    WorthUiActiveSessionCertificationExt, WorthUiDeclaredSurfaceCertificationDenial,
+    WorthUiPresentationFrameCertificationDenial, WorthUiSemanticTextCertificationDenial,
+};
 pub use application_builder::WorthUiApplicationBuilderCertificationExt;
 pub use application_graph::{
     UiRepeatedInstanceIdentityCertificationRow, WorthUiApplicationGraphCertificationExt,
@@ -107,8 +110,8 @@ pub use mounted_frame_execution::{
 pub use planning::planning_pair_for_certification_suite;
 pub use portal_observation::{
     UiPortalDismissalCertificationOutcome, UiPortalDismissalCertificationStop,
-    UiPortalExitTerminalCertificationOutcome, UiPortalNestedCertificationOutcome,
-    UiPortalRuntimeCertificationSnapshot, WorthUiPortalRuntimeCertificationExt,
+    UiPortalExitTerminalCertificationOutcome, UiPortalRuntimeCertificationSnapshot,
+    WorthUiPortalRuntimeCertificationExt,
 };
 pub use presentation_async_installation::{
     WorthUiPresentationAsyncInstallationCertificationDenial,

@@ -56,6 +56,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         self.require_complete_build(build)
     }
 
+    #[cfg(test)]
     fn ensure_primary_indexes_for_commit(
         &self,
         runtime: &mut RelationalRuntime,

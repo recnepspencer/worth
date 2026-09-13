@@ -15,6 +15,8 @@ use portal_service_request::{portal_placement_stop_reason, portal_service_reques
 #[path = "intent_consequence/query_restoration.rs"]
 mod query_restoration;
 use query_restoration::{restore_query_from_batch, restore_query_from_facts};
+#[path = "intent_consequence/stop.rs"]
+mod stop;
 
 impl WorthUiActiveApplicationSession {
     pub fn publish_intent_consequences(
@@ -122,12 +124,22 @@ impl WorthUiActiveApplicationSession {
                 let resolved_owner = self
                     .mounted
                     .current_portal_owner_for_child(handoff.target().mounted_instance());
-                let request = portal_service_request(
+                let request = match portal_service_request(
                     &handoff,
                     destination,
                     presented_viewport,
                     resolved_owner,
-                );
+                ) {
+                    Ok(request) => request,
+                    Err(denial) => {
+                        return self.stop_intent_consequence(
+                            handoff,
+                            UiIntentConsequenceStopReason::RuntimeServicePortalPlacement(
+                                portal_placement_stop_reason(denial),
+                            ),
+                        )
+                    }
+                };
                 let Some(portal) = self.portal.as_ref() else {
                     return self.stop_intent_consequence(
                         handoff,
@@ -324,7 +336,7 @@ impl WorthUiActiveApplicationSession {
             Ok(scope) => scope,
             Err(stop) => {
                 let (denial, change) = stop.into_parts();
-                let (_, facts, _) = change.into_parts();
+                let (_, facts, _, _) = change.into_parts();
                 return self.stop_intent_consequence_from_facts(
                     handoff,
                     UiIntentConsequenceStopReason::AffectedScope(Box::new(denial)),
@@ -374,26 +386,5 @@ impl WorthUiActiveApplicationSession {
             Ok(prepared) => prepared.execute(now_tick),
             Err(stop) => UiIntentConsequencePublicationOutcome::Stopped(stop),
         }
-    }
-
-    fn stop_intent_consequence(
-        &mut self,
-        handoff: UiIntentConsequenceHandoff,
-        reason: UiIntentConsequenceStopReason,
-    ) -> UiIntentConsequencePublicationOutcome<'_> {
-        UiIntentConsequencePublicationOutcome::Stopped(
-            self.intent_execution
-                .retain_consequence_handoff(handoff, reason),
-        )
-    }
-
-    fn stop_intent_consequence_from_facts(
-        &mut self,
-        mut handoff: UiIntentConsequenceHandoff,
-        reason: UiIntentConsequenceStopReason,
-        facts: Box<[crate::fact_contract::UiProducedFact]>,
-    ) -> UiIntentConsequencePublicationOutcome<'_> {
-        restore_query_from_facts(&mut handoff, facts);
-        self.stop_intent_consequence(handoff, reason)
     }
 }

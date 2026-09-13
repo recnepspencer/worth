@@ -1,6 +1,5 @@
-use super::{
-    appearance_state_membership, UiMountedAppearanceFrameState, UiMountedAppearanceStateEntry,
-};
+use super::super::appearance_state_membership;
+use super::{UiMountedAppearanceFrameState, UiMountedAppearanceStateEntry};
 
 impl UiMountedAppearanceFrameState {
     #[cfg(test)]

@@ -1,8 +1,8 @@
+mod appearance_scale;
 mod capture;
 mod lifecycle;
 mod mixed_carrier;
 mod oracle;
-mod scale_world;
 mod world;
 
 use oracle::{adjudicate, expectation, ordered_pixel, OracleDenial};
@@ -20,15 +20,11 @@ fn mixed_carrier_successors_are_local_at_the_4096_command_ceiling() {
     assert_collection_row_correlation(&production.initial, 1_359);
 }
 
-pub(crate) fn verify_4096_mounted_node_world() -> usize {
-    scale_world::verify()
-}
-
 fn assert_mixed_carrier(
     profile: mixed_carrier::MixedCarrierFixtureProfile,
 ) -> mixed_carrier::MixedCarrierProduction {
     let recorder = worth_ui_host_headless::WorthUiHeadlessRecorder::with_viewport_extent(
-        worth_ui_host_headless::UiHeadlessRecorderCapacity::new(1, 8, 8_192),
+        worth_ui_host_headless::UiHeadlessRecorderCapacity::new(1, 8, 16_384),
         worth_ui::facade::measurement_exchange::UiViewportExtentObservation {
             width: 160.0,
             height: 96.0,
@@ -36,14 +32,18 @@ fn assert_mixed_carrier(
     );
     let production = mixed_carrier::produce(recorder, profile);
     assert_eq!(
-        production.initial.filled_rects().len(),
+        world::ordered_surfaces(&production.appearance_baseline).len(),
         profile.rectangle_count
+    );
+    assert_eq!(
+        world::ordered_surfaces(&production.initial).len(),
+        profile.scalar_instance_count
     );
     assert_eq!(production.initial.semantic_text().len(), profile.text_count);
     assert_eq!(production.initial.nodes().len(), profile.rectangle_count);
     assert_eq!(
-        production.text_replacement.filled_rects().len(),
-        profile.rectangle_count
+        world::ordered_surfaces(&production.text_replacement).len(),
+        1
     );
     assert_eq!(
         production.text_replacement.semantic_text().len(),
@@ -54,8 +54,8 @@ fn assert_mixed_carrier(
         profile.rectangle_count
     );
     assert_eq!(
-        production.rectangle_removal.filled_rects().len(),
-        profile.rectangle_count - 1
+        world::ordered_surfaces(&production.rectangle_removal).len(),
+        0
     );
     assert_eq!(
         production.rectangle_removal.semantic_text().len(),
@@ -66,8 +66,8 @@ fn assert_mixed_carrier(
         profile.rectangle_count - 1
     );
     assert_eq!(
-        production.rectangle_insertion.filled_rects().len(),
-        profile.rectangle_count
+        world::ordered_surfaces(&production.rectangle_insertion).len(),
+        1
     );
     assert_eq!(
         production.rectangle_insertion.semantic_text().len(),
@@ -107,8 +107,9 @@ fn assert_mixed_carrier(
         mixed_carrier::text_bytes(&production.text_replacement),
         profile.text_bytes
     );
-    for cost in &production.costs[1..4] {
-        assert_local_successor_cost(*cost);
+    assert_text_successor_cost(production.costs[1]);
+    for cost in &production.costs[2..4] {
+        assert_appearance_successor_cost(*cost);
     }
     assert_zero_successor_cost(production.costs[4]);
     assert_adapter_delta(&production.adapter_costs[1..4]);
@@ -140,19 +141,31 @@ fn assert_collection_row_correlation(
 }
 
 fn assert_adapter_delta(costs: &[worth_ui_host_contract::UiHostPresentationCostReport]) {
-    assert_eq!(costs[0].translated_rows(), 2);
-    assert_eq!(costs[0].delta_rows_carried(), 4);
-    for cost in &costs[1..] {
-        assert_eq!(cost.translated_rows(), 2);
-        assert_eq!(cost.delta_rows_carried(), 4);
+    let expected = [(4, 4), (4, 3), (5, 3)];
+    assert_eq!(costs.len(), expected.len());
+    for (cost, (translated_rows, delta_rows)) in costs.iter().zip(expected) {
+        assert_eq!(cost.translated_rows(), translated_rows);
+        assert_eq!(cost.delta_rows_carried(), delta_rows);
     }
 }
 
-fn assert_local_successor_cost(cost: worth_ui_host_contract::UiMountedPresentationProductionCost) {
+fn assert_text_successor_cost(cost: worth_ui_host_contract::UiMountedPresentationProductionCost) {
     assert_eq!(cost.source_instances(), 1);
     assert_eq!(cost.commands_considered(), 1);
     assert_eq!(cost.command_index_lookups(), 2);
     assert_eq!(cost.order_lookups(), 2);
+    assert_eq!(cost.retained_command_scans(), 0);
+    assert_eq!(cost.retained_command_clones(), 0);
+    assert_eq!(cost.projection_rows_materialized(), 0);
+}
+
+fn assert_appearance_successor_cost(
+    cost: worth_ui_host_contract::UiMountedPresentationProductionCost,
+) {
+    assert_eq!(cost.source_instances(), 1);
+    assert_eq!(cost.commands_considered(), 0);
+    assert_eq!(cost.command_index_lookups(), 0);
+    assert_eq!(cost.order_lookups(), 0);
     assert_eq!(cost.retained_command_scans(), 0);
     assert_eq!(cost.retained_command_clones(), 0);
     assert_eq!(cost.projection_rows_materialized(), 0);
@@ -169,17 +182,17 @@ fn assert_zero_successor_cost(cost: worth_ui_host_contract::UiMountedPresentatio
 }
 
 #[test]
-#[ignore = "closure courtroom: compiles and mounts the full 2,048-row public world"]
+#[ignore = "closure courtroom: compiles and mounts the full 2,048-surface public world"]
 fn maximum_overlap_removals_cross_public_runtime_and_headless_with_exact_work() {
     let recorder = worth_ui_host_headless::WorthUiHeadlessRecorder::with_viewport_extent(
-        worth_ui_host_headless::UiHeadlessRecorderCapacity::new(1, 2, 8_192),
+        worth_ui_host_headless::UiHeadlessRecorderCapacity::new(1, 2, 16_384),
         worth_ui::facade::measurement_exchange::UiViewportExtentObservation {
             width: 160.0,
             height: 96.0,
         },
     );
     let production = produce_maximum_overlap(recorder);
-    let world = MountedPresentationWorld::maximum_overlap(
+    let mut world = MountedPresentationWorld::maximum_overlap(
         &production.initial,
         production.authored_instances,
         production.semantic_surface,
@@ -192,14 +205,13 @@ fn maximum_overlap_removals_cross_public_runtime_and_headless_with_exact_work() 
         world.baseline().last().unwrap().rgba
     );
     assert_eq!(production.deltas.len(), 3);
-    world.assert_unchanged(&production.unchanged);
-    for delta in &production.deltas {
-        world.assert_removal_delta(delta);
-    }
     assert_eq!(production.restorations.len(), 2);
-    for restoration in &production.restorations {
-        world.assert_restoration(restoration);
-    }
+    world.assert_unchanged(&production.unchanged);
+    world.assert_removal_delta(&production.deltas[0]);
+    world.assert_restoration(&production.restorations[0]);
+    world.assert_removal_delta(&production.deltas[1]);
+    world.assert_restoration(&production.restorations[1]);
+    world.assert_removal_delta(&production.deltas[2]);
     assert_required_oracle_mutations_are_rejected();
     let _ = production.session.shutdown();
 }

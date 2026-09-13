@@ -91,6 +91,7 @@ fn surface_mechanic(
             bounds,
             clip: UiAppearanceClip::new(0, 0, 32, 32).unwrap(),
             surface_paint_order: 0,
+            portal_group: None,
             radii: UiAppearanceNormalizedLogicalRadii::normalize(
                 bounds,
                 [UiAppearanceLogicalLength::ZERO; 4],
@@ -313,6 +314,7 @@ fn text_row(
             surface: context.surface,
             binding: context.binding,
             mounted_instance: instance,
+            portal_group: None,
             node_receipt: receipt,
             allocation_basis: UiMountedAllocationBasis::new(
                 1,

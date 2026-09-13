@@ -94,6 +94,18 @@ impl<'session> WorthUiPreparedIntentConsequenceRebind<'session> {
         mut self,
         now_tick: u64,
     ) -> UiIntentConsequencePublicationOutcome<'session> {
+        if let Err(denial) = self
+            .transfer
+            .observation
+            .validate(self.session, &self.frame)
+        {
+            return stop_prepared(
+                self,
+                crate::runtime::intent_execution::UiIntentConsequenceStopReason::Preparation(
+                    Box::new(denial),
+                ),
+            );
+        }
         if let Err(denial) = self.reservation.begin_effecting() {
             return stop_prepared(
                 self,
@@ -121,16 +133,17 @@ impl<'session> WorthUiPreparedIntentConsequenceRebind<'session> {
             frame,
             transfer,
         } = self;
-        let outcome = match transfer.portal_proposal.as_ref() {
-            Some(proposal) => session.present_prepared_portal_frame_internal(
+        let outcome = session
+            .present_prepared_observed_frame(
                 frame,
-                proposal,
-                proposal.overlay_appearance_sources().0.closes_portal(),
+                &transfer.observation,
+                transfer.portal_proposal.as_ref(),
                 deadline,
                 now_tick,
-            ),
-            None => session.present_prepared_mounted_frame_internal(frame, deadline, now_tick),
-        };
+            )
+            .expect(
+                "exclusive consequence admission preserves the validated observation/frame bond",
+            );
         finish_first(
             UiIntentConsequenceAdmitted {
                 session,
@@ -157,10 +170,20 @@ impl UiIntentConsequencePublicationCompletion<'_> {
 impl<'session> UiIntentConsequencePublicationCompletion<'session> {
     pub fn complete(mut self, now_tick: u64) -> UiIntentConsequencePublicationOutcome<'session> {
         let state = self.take_state();
-        let outcome = state
-            .admitted
-            .session
-            .complete_mounted_presentation(state.mounted, now_tick);
+        let outcome =
+            match state.admitted.session.complete_prepared_observed_frame(
+                state.mounted,
+                &state.admitted.transfer.observation,
+                now_tick,
+            ) {
+                Ok(outcome) => outcome,
+                Err(denial) => return stop_admitted(
+                    state.admitted,
+                    crate::runtime::intent_execution::UiIntentConsequenceStopReason::Preparation(
+                        Box::new(denial),
+                    ),
+                ),
+            };
         finish_completion(state.admitted, outcome)
     }
 
@@ -319,8 +342,7 @@ fn publish<'session>(
     let focus = settle_published_portal_proposal(&mut admitted, &mounted);
     admitted
         .session
-        .application
-        .commit_prepared_observation_progress(admitted.transfer.observation);
+        .commit_consequence_observation(admitted.transfer.observation);
     if let Some(posture) = admitted.transfer.posture.take() {
         admitted.session.intent_postures.commit(posture);
     }

@@ -1,5 +1,3 @@
-// Gate 1 deliberately keeps this authority unpublished until a later cutover.
-
 mod backdrop;
 mod clip;
 mod counters;
@@ -20,7 +18,7 @@ mod portal_geometry;
 mod reconstruction;
 mod resolved_node_source;
 mod style;
-pub(in crate::mounting::projection) use style::resolved_opacity;
+pub(in crate::mounting::projection) use style::{has_surface_paint, resolved_opacity};
 mod surface;
 mod text_foreground;
 mod text_geometry;
@@ -146,6 +144,12 @@ pub(crate) struct UiMountedAppearanceSidecar {
 }
 
 impl UiMountedAppearanceSidecar {
+    pub(in crate::mounting::projection) fn current_facts(
+        &self,
+    ) -> Option<&UiMountedAppearanceFacts> {
+        self.current.as_ref()
+    }
+
     pub(crate) fn reconstruct_physical(
         &mut self,
         issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,

@@ -118,10 +118,10 @@ pub(super) fn record_retained_frame(
     port_crossings: u8,
 ) {
     let access = state.presentation_access();
-    let observation = access
+    let (observation, intrinsic, alpha) = access
         .as_ref()
         .zip(state.retained_draw_lists.get(&key))
-        .and_then(|(graphics, retained)| {
+        .map(|(graphics, retained)| {
             observation_for_retained(
                 view,
                 graphics,
@@ -131,16 +131,20 @@ pub(super) fn record_retained_frame(
                 cost,
                 port_crossings,
             )
-        });
+        })
+        .unwrap_or_else(|| (None, Box::new([]), Box::new([])));
     state.record_retained_frame_observation(UiNativeRetainedFrameObservation::observed(
         view.frame().diagnostic_value(),
+        crate::native::physical_work_signal::UiNativePhysicalPresentationBasis::from_view(view),
         kind,
         sample_presentation_epoch,
         pixels,
         cost,
-        observation.clone(),
+        port_crossings,
+        observation,
+        intrinsic,
+        alpha,
     ));
-    state.last_presentation = observation;
 }
 
 pub(super) fn latest_pixels(state: &UiNativeHostState) -> [[u8; 4]; 2] {

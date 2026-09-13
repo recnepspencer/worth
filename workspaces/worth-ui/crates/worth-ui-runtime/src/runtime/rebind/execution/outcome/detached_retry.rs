@@ -12,6 +12,35 @@ enum UiDetachedRebindRetryInner {
 }
 
 impl UiDetachedRebindRetry {
+    pub(crate) fn is_theme_switch(&self) -> bool {
+        match &self.inner {
+            UiDetachedRebindRetryInner::Content(content) => content.is_theme_switch(),
+            UiDetachedRebindRetryInner::Changed(_) => false,
+        }
+    }
+
+    pub(crate) fn reconcile_theme_and_retry<'session>(
+        mut self,
+        session: &'session mut crate::facade::WorthUiActiveApplicationSession,
+        replacements: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
+        now_tick: u64,
+    ) -> Result<
+        crate::runtime::rebind::UiRebindOutcome<'session>,
+        crate::runtime::rebind::UiRebindPreparationDenial,
+    > {
+        self.inner = match self.inner {
+            UiDetachedRebindRetryInner::Content(content) => UiDetachedRebindRetryInner::Content(
+                content.with_theme_reconciliation(replacements)?,
+            ),
+            UiDetachedRebindRetryInner::Changed(_) => {
+                return Err(
+                    crate::runtime::rebind::UiRebindPreparationDenial::CandidateBindingMismatch,
+                )
+            }
+        };
+        self.rebase_content_and_retry(session, now_tick)
+    }
+
     pub(super) fn from_denial(
         mut denial: UiRebindDenialReceipt<'_>,
     ) -> Result<Self, UiRebindDenialReceipt<'_>> {

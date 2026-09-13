@@ -71,6 +71,10 @@ impl UiActiveOverlayCompositionOwners {
         &self.current
     }
 
+    pub(super) fn is_empty(&self) -> bool {
+        self.current.is_empty() && self.backdrops.is_empty() && self.pending.is_empty()
+    }
+
     pub(super) fn sources(
         &self,
         surface: UiSemanticSurfaceIdentity,
@@ -139,7 +143,10 @@ impl UiActiveOverlayCompositionOwners {
         self.current.get(&surface)
     }
 
-    fn commit(&mut self, attempt: UiMountedPresentationAttemptIdentity) {
+    pub(in crate::facade::entry) fn commit(
+        &mut self,
+        attempt: UiMountedPresentationAttemptIdentity,
+    ) {
         let Some(candidate) = self.pending.remove(&attempt) else {
             return;
         };
@@ -167,7 +174,10 @@ impl UiActiveOverlayCompositionOwners {
         }
     }
 
-    fn discard(&mut self, attempt: UiMountedPresentationAttemptIdentity) {
+    pub(in crate::facade::entry) fn discard(
+        &mut self,
+        attempt: UiMountedPresentationAttemptIdentity,
+    ) {
         self.pending.remove(&attempt);
     }
 }

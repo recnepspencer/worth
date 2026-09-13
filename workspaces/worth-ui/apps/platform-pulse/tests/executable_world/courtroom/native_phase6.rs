@@ -62,7 +62,7 @@ fn execute_boundary_world(
         }
         Err(failure) => panic!("the real OS input boundary failed: {failure}"),
     };
-    let click_screen = delivered.screen_point();
+    let click_screen = delivered.qualified_screen_point();
     thread::sleep(Duration::from_millis(250));
     platform
         .deliver_wheel_deltas(&client)

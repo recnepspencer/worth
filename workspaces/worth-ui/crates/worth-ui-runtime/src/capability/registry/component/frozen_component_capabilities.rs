@@ -97,14 +97,8 @@ fn fold_component_descriptor(accumulator: u64, descriptor: &ComponentDescriptor)
             .map_or(0, super::ComponentRealtimeOverlayContract::digest_basis)
             .to_le_bytes(),
     );
-    let with_static_paint = fold_optional_str(
-        with_realtime,
-        descriptor
-            .static_paint_contract()
-            .map(|contract| contract.digest_basis()),
-    );
     let with_surface_order = fold_optional_str(
-        fold_bytes(with_static_paint, b"surface_paint_order"),
+        fold_bytes(with_realtime, b"surface_paint_order"),
         descriptor
             .surface_paint_order()
             .map(|rank| rank.to_string()),
@@ -209,27 +203,6 @@ mod tests {
     }
 
     #[test]
-    fn static_paint_order_participates_in_the_frozen_descriptor_digest() {
-        use crate::capability::{
-            ComponentStaticPaintContract, ComponentStaticPaintOrder, ThemeTokenId,
-        };
-
-        let component_with_order = |rank| {
-            component_descriptor("workspace.component.pulse").with_static_paint(
-                ComponentStaticPaintContract::opaque_fill(
-                    ThemeTokenId::new("theme.pulse.fill").expect("valid token"),
-                    ComponentStaticPaintOrder::back_to_front(rank),
-                ),
-                ComponentAllocationMeasurementContract::fill_viewport(),
-            )
-        };
-        let back = freeze_component(component_with_order(0));
-        let front = freeze_component(component_with_order(1));
-
-        assert_ne!(back.digest_basis(), front.digest_basis());
-    }
-
-    #[test]
     fn hit_test_order_participates_in_the_frozen_descriptor_digest() {
         use crate::capability::{ComponentHitTestContract, ComponentHitTestOrder};
 
@@ -257,7 +230,6 @@ mod tests {
             };
             let frozen = freeze_component(descriptor);
             assert_eq!(frozen.descriptors()[0].surface_paint_order(), order);
-            assert!(frozen.descriptors()[0].static_paint_contract().is_none());
             frozen
         });
         for (index, left) in variants.iter().enumerate() {

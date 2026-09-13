@@ -34,9 +34,7 @@ pub(crate) struct ExecutableVisualComparisonEvidence {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum ExecutableVisualIdentityFailure {
-    ControlPointManifest(
-        super::platform_pulse_control_points::PlatformPulseControlPointManifestFailure,
-    ),
+    VisualContract(super::visual_contract_manifest::PlatformPulseVisualContractFailure),
     WrongEvent(&'static str),
     WrongSequence {
         expected: u64,
@@ -71,7 +69,16 @@ pub(crate) enum ExecutableVisualIdentityFailure {
     IncompleteTrace,
     OverlayAffinity,
     ClearAffinity,
-    RetirementAffinity,
+    RetirementAffinity {
+        expected: [u64; 3],
+        observed: [u64; 3],
+        explicitly_superseded: bool,
+        released_registered_resource: bool,
+    },
+    RefreshDidNotAdvanceContent {
+        rebind_frame: u64,
+        refresh_frame: u64,
+    },
     NativeCaptureExtent,
     NativeProcessIdentity,
     BorderNotVisible {
@@ -107,8 +114,8 @@ fn adjudicate_snapshot_at_sequence(
     expected_frame: u64,
     expected_sequence: u64,
 ) -> Result<ExecutableVisualSnapshotEvidence, ExecutableVisualIdentityFailure> {
-    let manifest = super::platform_pulse_control_points::checked_in()
-        .map_err(ExecutableVisualIdentityFailure::ControlPointManifest)?;
+    let manifest = super::visual_contract_manifest::checked_in_adjudication_contract()
+        .map_err(ExecutableVisualIdentityFailure::VisualContract)?;
     require_sequence(&envelope, expected_sequence)?;
     let PlatformPulseLifecycleObservation::VisualSnapshotCaptured(snapshot) = envelope.outcome()
     else {
@@ -170,8 +177,8 @@ pub(crate) fn adjudicate_visual_trace(
     envelope: PlatformPulseLifecycleObservationEnvelope,
     snapshot: &ExecutableVisualSnapshotEvidence,
 ) -> Result<ExecutableVisualTraceEvidence, ExecutableVisualIdentityFailure> {
-    let manifest = super::platform_pulse_control_points::checked_in()
-        .map_err(ExecutableVisualIdentityFailure::ControlPointManifest)?;
+    let manifest = super::visual_contract_manifest::checked_in_adjudication_contract()
+        .map_err(ExecutableVisualIdentityFailure::VisualContract)?;
     let sequence = snapshot.sequence.saturating_add(1);
     require_sequence(&envelope, sequence)?;
     let PlatformPulseLifecycleObservation::VisualPointTrace(trace) = envelope.outcome() else {
@@ -212,7 +219,7 @@ pub(crate) fn adjudicate_visual_trace(
 
 fn expected_physical_extent(
     snapshot: &PlatformPulseVisualSnapshotCaptured,
-    manifest: &super::platform_pulse_control_points::PlatformPulseControlPointManifest,
+    manifest: &super::visual_contract_manifest::PlatformPulseVisualAdjudicationContract,
 ) -> Result<[u32; 2], ExecutableVisualIdentityFailure> {
     let logical = float_pair(snapshot.coordinates().viewport_logical_dimension_bits());
     let extent = manifest.logical_client_extent();
@@ -260,13 +267,26 @@ pub(crate) fn adjudicate_visual_retirement(
             "visual snapshot retired",
         ));
     };
-    if retirement.snapshot() != snapshot.snapshot.affinity().snapshot()
-        || retirement.predecessor_frame() != snapshot.snapshot.affinity().frame()
-        || retirement.successor_frame() != successor_frame
+    let expected = [
+        snapshot.snapshot.affinity().snapshot(),
+        snapshot.snapshot.affinity().frame(),
+        successor_frame,
+    ];
+    let observed = [
+        retirement.snapshot(),
+        retirement.predecessor_frame(),
+        retirement.successor_frame(),
+    ];
+    if observed != expected
         || !retirement.explicitly_superseded()
         || !retirement.released_registered_resource()
     {
-        return Err(ExecutableVisualIdentityFailure::RetirementAffinity);
+        return Err(ExecutableVisualIdentityFailure::RetirementAffinity {
+            expected,
+            observed,
+            explicitly_superseded: retirement.explicitly_superseded(),
+            released_registered_resource: retirement.released_registered_resource(),
+        });
     }
     Ok(ExecutableVisualRetirementEvidence {
         sequence: expected_sequence,

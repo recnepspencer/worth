@@ -46,8 +46,12 @@ fn adjudicate(receipt: worth_ui_native_platform::UiNativePlatformCloseReceipt) -
     let Some(shutdown) = receipt.client_shutdown() else {
         return ExitCode::from(3);
     };
-    let presentation = receipt.presentation();
-    let attribution = receipt.client_attribution();
+    let Some(presentation) = receipt.presentation() else {
+        return ExitCode::from(3);
+    };
+    let Some(attribution) = receipt.client_attribution() else {
+        return ExitCode::from(3);
+    };
     crate::native_phase_f_world_evidence::publish(&receipt, shutdown);
     if trace_matches_contract(shutdown.presentation_transitions())
         && shutdown.presentation_transition_trace_complete()

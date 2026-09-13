@@ -39,7 +39,7 @@ fn initial_translation_preserves_an_unpublished_empty_structure() {
     )
     .unwrap();
 
-    let transcript = super::super::translate_unpublished_appearance_work(&source).unwrap();
+    let transcript = super::super::translate_appearance_fragment_work(&source).unwrap();
 
     assert_eq!(
         transcript.posture(),
@@ -76,7 +76,7 @@ fn unchanged_translation_preserves_predecessor_and_zero_work() {
     )
     .unwrap();
 
-    let transcript = super::super::translate_unpublished_appearance_work(&source).unwrap();
+    let transcript = super::super::translate_appearance_fragment_work(&source).unwrap();
 
     assert_eq!(transcript.predecessor(), Some(predecessor));
     assert_eq!(

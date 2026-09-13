@@ -7,6 +7,24 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
         lanes: crate::mounting::UiMountedLaneAssembly,
         allocation_truth_revision: u64,
     ) -> crate::mounting::UiMountedFrameReuseContract {
+        self.reuse_contract_with_pointer(
+            request,
+            lanes,
+            allocation_truth_revision,
+            crate::runtime::pointer_affordance::UiPointerAffordanceReuseBasis::from_snapshot(
+                self.pointer_affordance_snapshot.as_ref(),
+                |surface| request.includes_surface(surface),
+            ),
+        )
+    }
+
+    pub(super) fn reuse_contract_with_pointer(
+        &self,
+        request: &crate::mounting::UiMountedFrameRequest,
+        lanes: crate::mounting::UiMountedLaneAssembly,
+        allocation_truth_revision: u64,
+        pointer_affordance: crate::runtime::pointer_affordance::UiPointerAffordanceReuseBasis,
+    ) -> crate::mounting::UiMountedFrameReuseContract {
         self.mounted
             .seal_frame_reuse_contract(crate::mounting::UiMountedFrameReuseExternalBasis {
                 generation: self.generation_identity.clone(),
@@ -22,9 +40,7 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
                 capability_generation: self.host_capability_generation,
                 capability_profile_digest: self.host_capability_profile_digest,
                 visual_overlay_revision: request.visual_overlay_revision(),
-                pointer_affordance: crate::runtime::pointer_affordance::UiPointerAffordanceReuseBasis::from_snapshot(
-                    self.pointer_affordance_snapshot.as_ref(), |surface| request.includes_surface(surface),
-                ),
+                pointer_affordance,
             })
     }
 }

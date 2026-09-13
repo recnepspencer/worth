@@ -30,13 +30,6 @@ impl UiOverlayCompositionCoordinator {
         exports.with_composition_input(|input| self.state.prepare_successor(input, changes))
     }
 
-    pub(super) fn reconstruct(
-        &self,
-        exports: &UiOverlayOwnerExportVector,
-    ) -> Result<UiPreparedOverlayComposition, UiOverlayCompositionDenial> {
-        exports.with_composition_input(|input| self.state.reconstruct(input))
-    }
-
     pub(super) fn retain_prepared(
         &mut self,
         prepared: UiPreparedOverlayComposition,

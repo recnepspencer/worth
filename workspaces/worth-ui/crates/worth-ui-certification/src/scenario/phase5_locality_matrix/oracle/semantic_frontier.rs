@@ -279,7 +279,6 @@ fn expected_subscriber_count(
         }
         (Phase5LocalityAxis::Content, SemanticChange::Content)
         | (Phase5LocalityAxis::Width, SemanticChange::Width)
-        | (Phase5LocalityAxis::PaintValue, SemanticChange::PaintValue)
         | (Phase5LocalityAxis::AtlasMiss, SemanticChange::Content)
         | (Phase5LocalityAxis::PinRelease, SemanticChange::PinRelease) => 2,
         _ => 1,
@@ -294,7 +293,6 @@ fn expected_source_deliveries(
     match (axis, change) {
         (Phase5LocalityAxis::Content, SemanticChange::Content)
         | (Phase5LocalityAxis::Width, SemanticChange::Width)
-        | (Phase5LocalityAxis::PaintValue, SemanticChange::PaintValue)
         | (Phase5LocalityAxis::AtlasMiss, SemanticChange::Content)
         | (Phase5LocalityAxis::PinRelease, SemanticChange::PinRelease)
         | (Phase5LocalityAxis::UploadCompletion, SemanticChange::Content) => subscribers,
@@ -307,7 +305,6 @@ fn expected_changes(axis: Phase5LocalityAxis) -> &'static [SemanticChange] {
     match axis {
         Phase5LocalityAxis::Content | Phase5LocalityAxis::AtlasMiss => &[SemanticChange::Content],
         Phase5LocalityAxis::Width => &[SemanticChange::Width],
-        Phase5LocalityAxis::PaintValue => &[SemanticChange::PaintValue],
         Phase5LocalityAxis::PaintBoundary => &[SemanticChange::PaintBoundary],
         Phase5LocalityAxis::Dpi => &[SemanticChange::Dpi],
         Phase5LocalityAxis::UploadCompletion => {

@@ -64,6 +64,7 @@ impl UiObservationTurn<'_> {
                 .pointer_close
                 .as_ref()
                 .is_some_and(|input| supplied_time || input.has_clock()))
+            && self.appearance_close.is_none()
         {
             return Err(UiObservationAdmissionDenial::EmptyTurn);
         }

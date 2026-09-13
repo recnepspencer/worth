@@ -167,6 +167,22 @@ impl FixedCertificationApplicationBuilder {
         self.map_builder(|builder| builder.register_theme_token(descriptor))
     }
 
+    pub fn register_appearance_role(
+        self,
+        role: worth_ui::facade::appearance::UiAppearanceRoleDeclaration,
+    ) -> Result<Self, worth_ui::facade::appearance::AppearanceRoleRegistrationDenial> {
+        let builder = self.builder.register_appearance_role(role)?;
+        Ok(Self::from_parts(builder, self.activation))
+    }
+
+    pub fn register_appearance_theme_bundle(
+        self,
+        bundle: worth_ui::facade::appearance::FrozenAppearanceThemeCapabilities,
+    ) -> Result<Self, worth_ui::facade::appearance::FrozenAppearanceThemeCapabilitiesDenial> {
+        let builder = self.builder.register_appearance_theme_bundle(bundle)?;
+        Ok(Self::from_parts(builder, self.activation))
+    }
+
     pub fn register_intent_text_fact(
         self,
         fact: worth_ui::facade::intent::UiIntentApplicationFact<

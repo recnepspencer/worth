@@ -177,6 +177,13 @@ impl WorthUiPreparedQueryAwarePlanSwap {
 }
 
 impl WorthUiPreparedApplicationPlanSwap {
+    pub(crate) fn candidate_replacement_authority(
+        &self,
+    ) -> Option<&crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority>
+    {
+        self.activation.activation.candidate_replacement_authority()
+    }
+
     pub(crate) fn candidate_plan(&self) -> &crate::runtime::WorthUiActiveExecutionPlan {
         self.activation.activation.candidate_plan()
     }

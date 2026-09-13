@@ -81,7 +81,12 @@ fn replacement_projection_changes(
         .filter(|identity| !instances.contains_key(identity))
         .copied()
     {
-        changes.mark_retired_instance(identity);
+        changes.mark_retired_instance(
+            identity,
+            predecessor.instances[&identity]
+                .basis
+                .semantic_surface_identity(),
+        );
     }
     changes
 }

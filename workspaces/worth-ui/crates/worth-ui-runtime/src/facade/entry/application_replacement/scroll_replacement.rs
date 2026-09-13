@@ -3,6 +3,16 @@ use super::{WorthUiActiveApplicationSession, WorthUiPreparedApplicationActivatio
 pub(super) struct UiPreparedScrollReplacement(Option<crate::runtime::scroll::UiScrollRuntimeState>);
 
 impl UiPreparedScrollReplacement {
+    pub(super) const fn empty() -> Self {
+        Self(None)
+    }
+
+    pub(super) fn state_mut(
+        &mut self,
+    ) -> Option<&mut crate::runtime::scroll::UiScrollRuntimeState> {
+        self.0.as_mut()
+    }
+
     pub(super) fn into_state(
         self,
     ) -> crate::runtime::UiRuntimeServiceInstallation<crate::runtime::scroll::UiScrollRuntimeState>
@@ -12,29 +22,32 @@ impl UiPreparedScrollReplacement {
 }
 
 impl WorthUiActiveApplicationSession {
-    pub(super) fn prepare_scroll_replacement(
+    pub(super) fn prepare_scroll_replacement_state(
         &self,
         application: &WorthUiPreparedApplicationActivation,
-        successor: &crate::mounting::UiMountedGraphReplacementSuccessor,
-        publication: Option<&crate::mounting::UiMountedFramePublicationReceipt>,
     ) -> UiPreparedScrollReplacement {
-        if application
-            .candidate_service_policy_plan()
-            .scroll()
-            .is_none()
-        {
+        let Some(policy) = application.candidate_service_policy_plan().scroll() else {
             return UiPreparedScrollReplacement(None);
-        }
-        let policy = application
-            .candidate_service_policy_plan()
-            .scroll()
-            .expect("installed Scroll carries normalized policy");
+        };
         let mut scroll = self.scroll.as_ref().cloned().unwrap_or_else(|| {
             crate::runtime::scroll::UiScrollRuntimeState::new_session_restore_candidate_with_policy(
                 policy,
             )
         });
         scroll.apply_policy(policy);
+        UiPreparedScrollReplacement(Some(scroll))
+    }
+
+    pub(super) fn prepare_scroll_replacement(
+        &self,
+        application: &WorthUiPreparedApplicationActivation,
+        successor: &crate::mounting::UiMountedGraphReplacementSuccessor,
+        publication: Option<&crate::mounting::UiMountedFramePublicationReceipt>,
+        mut prepared: UiPreparedScrollReplacement,
+    ) -> UiPreparedScrollReplacement {
+        let Some(scroll) = prepared.state_mut() else {
+            return prepared;
+        };
         let predecessor = self.mounted.view();
         let successor_view = successor.identity_view();
         for prior in predecessor.mounted_instances() {
@@ -47,14 +60,14 @@ impl WorthUiActiveApplicationSession {
             }
         }
         prepare_successor_ownership(
-            &mut scroll,
+            scroll,
             application,
             &successor_view,
             publication,
             &self.mounted,
             self.scroll_owner_incarnation(),
         );
-        UiPreparedScrollReplacement(Some(scroll))
+        prepared
     }
 }
 

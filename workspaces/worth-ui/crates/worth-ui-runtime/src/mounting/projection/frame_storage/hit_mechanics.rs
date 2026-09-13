@@ -1,15 +1,18 @@
 use crate::mounting::UiHitTestSpatialWork;
 use worth_ui_host_contract::{
-    UiMountedCoordinateSpace, UiMountedHitTestMechanic, UiMountedHitTestOrder,
-    UiMountedInstanceIdentity, UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
+    UiMountedHitTestMechanic, UiMountedHitTestOrder, UiMountedInstanceIdentity,
+    UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
 };
 
+use crate::mounting::spatial_index::UiMountedSpatialTree;
+#[cfg(test)]
 use crate::mounting::spatial_index::{
     UiMountedSpatialBudget, UiMountedSpatialQuery, UiMountedSpatialQueryDenial,
-    UiMountedSpatialTree,
 };
 use crate::mounting::UiMountedProjectionDenial;
 use crate::runtime::persistent_index::{UiPersistentIndexMutationWork, UiPersistentOrdMap};
+#[cfg(test)]
+use worth_ui_host_contract::UiMountedCoordinateSpace;
 
 /// Canonical allocation-space hit rows with reconstructible order and spatial indexes.
 /// Portal/Motion presentation geometry and current receipt admission remain downstream.
@@ -74,6 +77,7 @@ impl UiMountedHitMechanicSource {
         Ok(work)
     }
 
+    #[cfg(test)]
     pub(in crate::mounting) fn allocation_candidates(
         &self,
         binding: UiSurfaceBindingGeneration,

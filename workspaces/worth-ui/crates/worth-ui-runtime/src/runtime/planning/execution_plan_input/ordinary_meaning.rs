@@ -75,4 +75,20 @@ impl WorthUiPlanOrdinaryMeaning {
         }
         self.child_range_identity().into_iter().collect()
     }
+
+    pub(crate) fn same_mounted_layout_meaning(&self, successor: &Self) -> bool {
+        match (self, successor) {
+            (Self::Component(previous), Self::Component(successor)) => {
+                previous.same_mounted_layout_meaning(successor)
+            }
+            (Self::Layout(previous), Self::Layout(successor)) => {
+                previous.same_mounted_layout_meaning(successor)
+            }
+            (Self::ChildRange(_), Self::ChildRange(_)) => true,
+            (Self::StateSlot(previous), Self::StateSlot(successor)) => {
+                previous.same_mounted_layout_meaning(successor)
+            }
+            _ => self == successor,
+        }
+    }
 }

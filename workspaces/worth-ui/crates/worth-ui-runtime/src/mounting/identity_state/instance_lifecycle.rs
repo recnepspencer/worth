@@ -12,10 +12,6 @@ const MOUNTED_CLOSURE_LIMIT: usize = 4_097;
 const GRAPH_NODE_MOUNT_LIMIT: usize = 1_024;
 
 impl UiMountedIdentityState {
-    pub(crate) fn graph_occurrence_count(&self, graph_node: UiGraphNodeIdentity) -> usize {
-        self.by_graph.get(&graph_node).map_or(0, BTreeSet::len)
-    }
-
     pub(crate) fn mark_occurrence_geometry_changed(
         &mut self,
         instances: &[UiMountedInstanceIdentity],
@@ -128,7 +124,7 @@ impl UiMountedIdentityState {
             current.remove(identity);
         }
         self.pending_projection_changes
-            .mark_retired_instance(identity);
+            .mark_retired_instance(identity, record.basis.semantic_surface_identity());
         for affected in occurrence_geometry_affected {
             if *affected != identity {
                 self.pending_projection_changes

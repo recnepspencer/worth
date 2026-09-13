@@ -23,6 +23,12 @@ pub enum WorthUiPresentationFrameCertificationDenial {
     Preparation,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthUiDeclaredSurfaceCertificationDenial {
+    UnknownDeclaration,
+    Admission,
+}
+
 /// Certification-only observation of raw runtime plans and host capability authority.
 pub trait WorthUiActiveSessionCertificationExt {
     fn inspect_runtime(&self) -> WorthUiActiveRuntimeObservation;
@@ -84,6 +90,19 @@ pub trait WorthUiActiveSessionCertificationExt {
     ) -> Result<WorthUiOrdinaryPlanSummary, WorthUiOrdinaryPlanSummaryDenial>;
 
     fn host_measurement_capability(&self) -> WorthUiHostMeasurementCapability;
+
+    fn create_declared_semantic_surface(
+        &mut self,
+        authored_name: &str,
+    ) -> Result<
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        WorthUiDeclaredSurfaceCertificationDenial,
+    >;
+
+    fn declared_region_layout_inputs(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Box<[crate::facade::entry::UiNativeMountedRegionLayoutInput]>;
 
     fn lookup_consumed_fact(
         &self,
@@ -197,6 +216,32 @@ impl WorthUiActiveSessionCertificationExt for WorthUiActiveApplicationSession {
 
     fn host_measurement_capability(&self) -> WorthUiHostMeasurementCapability {
         WorthUiActiveApplicationSession::host_measurement_capability(self)
+    }
+
+    fn create_declared_semantic_surface(
+        &mut self,
+        authored_name: &str,
+    ) -> Result<
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        WorthUiDeclaredSurfaceCertificationDenial,
+    > {
+        WorthUiActiveApplicationSession::create_declared_semantic_surface_named(
+            self,
+            authored_name,
+        )
+        .map_err(|denial| match denial {
+            crate::runtime::portal::UiPortalOverlayBindingLifecycleDenial::DeclaredSurfaceUnbound => {
+                WorthUiDeclaredSurfaceCertificationDenial::UnknownDeclaration
+            }
+            _ => WorthUiDeclaredSurfaceCertificationDenial::Admission,
+        })
+    }
+
+    fn declared_region_layout_inputs(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Box<[crate::facade::entry::UiNativeMountedRegionLayoutInput]> {
+        WorthUiActiveApplicationSession::declared_region_layout_inputs(self, surface)
     }
 
     fn lookup_consumed_fact(

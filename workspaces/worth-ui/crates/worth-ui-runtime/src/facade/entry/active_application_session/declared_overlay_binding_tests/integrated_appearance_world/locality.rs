@@ -119,7 +119,7 @@ fn selected(
         pointers,
         [(world.surfaces[0], UiHostPointerIdentity::new(1))]
     );
-    worth_ui_host_headless::translate_unpublished_appearance_for_certification(&output).unwrap();
+    worth_ui_host_headless::translate_appearance_projection_for_certification(&output).unwrap();
     frame
 }
 

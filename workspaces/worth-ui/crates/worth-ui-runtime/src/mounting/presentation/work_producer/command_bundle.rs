@@ -121,9 +121,12 @@ impl UiMountedPresentationCommandBundle {
         {
             return false;
         }
-        let motion = super::command_same_presentation_meaning(&predecessor.command, &replacement)
-            .then(|| predecessor.motion.clone())
-            .unwrap_or_default();
+        let motion = if super::command_same_presentation_meaning(&predecessor.command, &replacement)
+        {
+            predecessor.motion.clone()
+        } else {
+            Default::default()
+        };
         self.commands.insert(
             key,
             CommandRecord {
@@ -239,13 +242,8 @@ impl std::hash::Hasher for UiMountedPresentationIdentityHasher {
 impl UiMountedPresentationCommandKey {
     fn for_command(command: &UiMountedPaintCommand) -> Self {
         match command {
-            UiMountedPaintCommand::FilledRect { .. } => Self {
-                family: 0,
-                slot: 0,
-                collection: None,
-            },
             UiMountedPaintCommand::PortalOverlay { mechanic, .. } => Self {
-                family: 1,
+                family: 0,
                 slot: 0,
                 collection: Some(portal_identity_digest(mechanic.portal_identity())),
             },
@@ -258,7 +256,7 @@ impl UiMountedPresentationCommandKey {
                     UiSemanticTextSlot::Posture => u16::MAX,
                 };
                 Self {
-                    family: 2,
+                    family: 1,
                     slot,
                     collection: mechanic
                         .collection_row()

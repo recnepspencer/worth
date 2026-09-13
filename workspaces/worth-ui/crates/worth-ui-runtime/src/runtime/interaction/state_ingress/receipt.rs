@@ -7,6 +7,7 @@ use crate::runtime::interaction::{
 
 #[derive(Default)]
 pub(super) struct UiInteractionBatchReceiptBuilder {
+    targeting_work: crate::mounting::UiHitTestSpatialWork,
     transitions: Vec<UiInteractionTransition>,
     ignored_reports: usize,
     pointer_presence_transitions: Vec<UiPointerPresenceTargetTransition>,
@@ -15,6 +16,7 @@ pub(super) struct UiInteractionBatchReceiptBuilder {
 
 impl UiInteractionBatchReceiptBuilder {
     pub(super) fn record(&mut self, outcome: UiInteractionReportOutcome) {
+        self.targeting_work.merge(outcome.targeting_work);
         let (transitions, ignored, pointer_presence_transition, pointer_presence_denials) =
             outcome.into_parts();
         self.transitions.extend(transitions);
@@ -34,6 +36,7 @@ impl UiInteractionBatchReceiptBuilder {
         state: &UiInteractionRuntimeState,
     ) -> UiInteractionBatchReceipt {
         UiInteractionBatchReceipt {
+            targeting_work: self.targeting_work,
             core: batch.canonical_core(),
             frame_relation: batch.frame_relation(),
             disposition: batch.disposition(),
@@ -42,6 +45,7 @@ impl UiInteractionBatchReceiptBuilder {
             state: state.snapshot(),
             scroll_observations: Box::new([]),
             command_routes: Box::new([]),
+            focus_publications: Box::new([]),
             pointer_presence_transitions: self.pointer_presence_transitions.into_boxed_slice(),
             pointer_presence_denials: self.pointer_presence_denials.into_boxed_slice(),
         }

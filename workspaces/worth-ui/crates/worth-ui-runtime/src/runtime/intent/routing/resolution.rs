@@ -31,9 +31,10 @@ fn resolve_mounted(
         return Err(UiIntentRouteResolutionStop::ApplicationGenerationChanged);
     }
     let family = interaction.family();
-    let affinity =
-        crate::runtime::interaction::targeting::admit_current_target(mounted, interaction.target())
-            .map_err(UiIntentRouteResolutionStop::Targeting)?;
+    let target = current_mounted_input_target(mounted, interaction.target())
+        .map_err(UiIntentRouteResolutionStop::Targeting)?;
+    let affinity = crate::runtime::interaction::targeting::admit_current_target(mounted, target)
+        .map_err(UiIntentRouteResolutionStop::Targeting)?;
     let graph_node = affinity.graph_node();
     let (route, cost) =
         catalog
@@ -51,7 +52,7 @@ fn resolve_mounted(
                     portal_declaration: route.portal_declaration(),
                     definition_id: definitions.definition_at(declaration.definition()).id(),
                     declaration,
-                    source: super::UiIntentProductInputSource::mounted(interaction),
+                    source: super::UiIntentProductInputSource::mounted(interaction, target),
                     cost,
                 },
             ))
@@ -68,6 +69,41 @@ fn resolve_mounted(
             ))
         }
     })
+}
+
+fn current_mounted_input_target(
+    mounted: &crate::mounting::WorthUiMountedSessionState,
+    observed: crate::runtime::interaction::UiPresentedInteractionTargetView,
+) -> Result<
+    crate::runtime::interaction::UiPresentedInteractionTargetView,
+    crate::runtime::interaction::UiInteractionTargetingDenial,
+> {
+    use crate::runtime::interaction::targeting;
+    use targeting::UiInteractionTargetingDenial as Denial;
+    mounted
+        .classify_interaction_presentation(observed.presentation())
+        .map_err(targeting::map_presentation_denial)?;
+    let affinity = targeting::admit_continued_intent_execution_affinity(observed, mounted)?;
+    let presentation = mounted
+        .current_presentation_for_surface(observed.surface())
+        .ok_or(Denial::PresentationTruthUnavailable)?;
+    let current = targeting::refresh_pointer_target(
+        mounted,
+        presentation,
+        observed,
+        &mut Default::default(),
+    )?;
+    let admitted = targeting::admit_presented_intent_execution_affinity(current, mounted)?;
+    // Hit digests include frame/receipt identity. Authored meaning is protected
+    // by the exact application generation and its catalog lookup above.
+    if current.surface() != observed.surface()
+        || current.binding() != observed.binding()
+        || current.mounted_instance() != observed.mounted_instance()
+        || admitted.graph_node() != affinity.graph_node()
+    {
+        return Err(Denial::MountedInstanceNoLongerCurrent);
+    }
+    Ok(current)
 }
 
 fn resolve_command(

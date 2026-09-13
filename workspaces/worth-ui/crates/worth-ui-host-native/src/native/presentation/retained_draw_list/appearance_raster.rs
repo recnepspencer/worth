@@ -38,16 +38,22 @@ impl UiNativeRetainedDrawList {
         let mut text = Vec::new();
         for identity in sampled_commands {
             match self.command(*identity).ok_or(Denial::CommandMismatch)? {
-                UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-                    direct.push(crate::native::presentation::appearance::UiNativeAppearanceCommandIdentity::Surface(mechanic.mounted_instance()));
-                    direct.push(crate::native::presentation::appearance::UiNativeAppearanceCommandIdentity::Outline(mechanic.mounted_instance()));
-                }
                 UiMountedPaintCommand::PortalOverlay { mechanic, .. } => direct.push(
                     crate::native::presentation::appearance::UiNativeAppearanceCommandIdentity::PortalSurface(mechanic.owner()),
                 ),
                 UiMountedPaintCommand::SemanticText { .. } => text.push(*identity),
             }
         }
+        // Sampled appearance surfaces sit outside the static replay index;
+        // the raster clip to `clear` drops those the damage does not touch.
+        direct.extend(
+            self.sample_overrides
+                .keys()
+                .filter(|identity| identity.is_appearance_surface())
+                .map(|identity| {
+                    crate::native::presentation::appearance::UiNativeAppearanceCommandIdentity::Surface(identity.mounted_instance())
+                }),
+        );
         let keys = {
             let (_, appearance) = self
                 .staged_appearance

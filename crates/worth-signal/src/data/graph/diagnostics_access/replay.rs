@@ -26,15 +26,6 @@ impl SignalGraph {
         self.observation.diagnostics.active_branch()
     }
 
-    pub(crate) fn known_branches(&self) -> Vec<SignalBranchHandle> {
-        self.observation
-            .diagnostics
-            .branch_catalog()
-            .values()
-            .cloned()
-            .collect()
-    }
-
     pub(crate) fn branch_handle(
         &self,
         branch_id: crate::state::SignalBranchId,
@@ -52,21 +43,5 @@ impl SignalGraph {
     ) -> Option<crate::state::SignalSnapshotId> {
         self.branch_handle(branch_id)
             .and_then(|branch| branch.head_snapshot_id)
-    }
-
-    pub(crate) fn branch_ancestry(
-        &self,
-        branch_id: crate::state::SignalBranchId,
-    ) -> Vec<SignalBranchHandle> {
-        let mut lineage = Vec::new();
-        let mut current = self.branch_handle(branch_id);
-        while let Some(branch) = current {
-            current = branch
-                .parent_branch_id
-                .and_then(|parent_id| self.branch_handle(parent_id));
-            lineage.push(branch);
-        }
-        lineage.reverse();
-        lineage
     }
 }

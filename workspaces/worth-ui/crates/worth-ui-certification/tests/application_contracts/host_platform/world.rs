@@ -1,14 +1,14 @@
+use super::oracle::{adjudicate, removal_expectation, OracleExpectation, OracleRect};
 use std::collections::HashMap;
 
-use super::oracle::{adjudicate, removal_expectation, OracleExpectation, OracleRect};
-
+pub(super) mod appearance;
 mod attribution;
 mod production;
 
 pub(super) use production::{
     application_builder, color, color_token, component, component_identity, establish_allocations,
-    execute_frame, produce_maximum_overlap, token_identity, ProducedMaximumDelta,
-    ProducedUnchanged,
+    execute_frame_with_established_geometry, produce_maximum_overlap, token_identity,
+    ProducedMaximumDelta, ProducedUnchanged,
 };
 
 pub(super) struct MountedPresentationWorld {
@@ -17,7 +17,10 @@ pub(super) struct MountedPresentationWorld {
     baseline: Box<[OracleRect]>,
     authored_instances: Box<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
     semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    initial_frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    retained: HashMap<
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+        worth_ui_host_contract::UiMountedSurfaceAppearanceMechanic,
+    >,
 }
 
 impl MountedPresentationWorld {
@@ -31,23 +34,24 @@ impl MountedPresentationWorld {
             .expect("versioned control-point manifest");
         let identity = text(&manifest, "world_identity").to_owned();
         let version = integer(&manifest, "world_version") as u16;
-        let maximum = integer(&manifest, "maximum_rectangles") as usize;
-        let controls = manifest["filled_rect"]
-            .as_array()
-            .expect("filled rectangle controls");
+        let maximum = integer(&manifest, "maximum_surfaces") as usize;
+        let controls = manifest["surface"].as_array().expect("surface controls");
         let baseline = (0..maximum)
-            .map(|identity| expected_rect(identity, controls))
+            .map(|identity| expected_surface(identity, controls))
             .collect::<Vec<_>>();
         assert_exact_rows(transcript, &baseline);
-        assert_exact_order(transcript, &baseline);
-        attribution::assert_initial_attribution(transcript, &authored_instances, semantic_surface);
+        attribution::assert_exact_attribution(transcript, &authored_instances, semantic_surface);
+        let retained = ordered_surfaces(transcript)
+            .into_iter()
+            .map(|row| (row.node_receipt().mounted_instance(), row.clone()))
+            .collect();
         Self {
             identity,
             version,
             baseline: baseline.into_boxed_slice(),
             authored_instances,
             semantic_surface,
-            initial_frame: transcript.frame(),
+            retained,
         }
     }
 
@@ -63,39 +67,35 @@ impl MountedPresentationWorld {
         &self.baseline
     }
 
-    pub(super) fn assert_removal_delta(&self, delta: &ProducedMaximumDelta) {
+    pub(super) fn assert_removal_delta(&mut self, delta: &ProducedMaximumDelta) {
         let count = delta.changed_rows;
-        let expected_successor = &self.baseline[count..];
-        let expected = removal_expectation(&self.baseline, count);
-        let candidate = removal_candidate(delta);
+        let mut expected_removed = self
+            .retained_rows()
+            .into_iter()
+            .take(count)
+            .map(|row| row.node_receipt().mounted_instance())
+            .collect::<Vec<_>>();
+        expected_removed.sort_unstable();
+        let mut expected = removal_expectation(&self.baseline, count);
+        let mut candidate = self.removal_candidate(delta);
+        for bounds in &mut expected.damage {
+            *bounds = bounds.map(|value| value * 1_000);
+        }
+        expected.damage.sort_unstable();
+        candidate.damage.sort_unstable();
         adjudicate(&expected, &candidate).unwrap_or_else(|denial| {
-            let mismatch = expected
-                .damage
-                .iter()
-                .zip(&candidate.damage)
-                .position(|(expected, candidate)| expected != candidate)
-                .map(|index| (index, expected.damage[index], candidate.damage[index]));
-            panic!(
-                "production removal {count} mismatched: {denial:?}; damage-lengths={:?}; first={mismatch:?}",
-                (expected.damage.len(), candidate.damage.len())
-            )
+            panic!("appearance removal {count} mismatched: {denial:?}; expected={expected:?}; candidate={candidate:?}")
         });
         assert_exact_cost(delta, count);
-        assert_exact_rows(&delta.transcript, expected_successor);
-        assert_exact_order(&delta.transcript, expected_successor);
+        self.apply_changes(&delta.transcript);
+        assert_exact_surface_rows(self.retained.values(), &self.baseline[count..]);
         assert_exact_damage(&delta.transcript, &self.baseline[..count]);
-        attribution::assert_exact_attribution(
-            &delta.transcript,
-            &delta.authored_instances,
-            self.semantic_surface,
-        );
+        let mut observed_removed = removed_surface_instances(&delta.transcript);
+        observed_removed.sort_unstable();
+        assert_eq!(observed_removed, expected_removed);
         assert_eq!(
             delta.authored_instances.as_ref(),
             &self.authored_instances[count..]
-        );
-        attribution::assert_exact_frame_attribution(
-            &delta.transcript,
-            &vec![self.initial_frame; delta.authored_instances.len()],
         );
     }
 
@@ -107,13 +107,14 @@ impl MountedPresentationWorld {
         assert_eq!(unchanged.cost.logical_damage_regions(), 0);
     }
 
-    pub(super) fn assert_restoration(&self, delta: &ProducedMaximumDelta) {
-        assert_exact_rows(&delta.transcript, &self.baseline);
-        assert_exact_order(&delta.transcript, &self.baseline);
+    pub(super) fn assert_restoration(&mut self, delta: &ProducedMaximumDelta) {
+        self.apply_changes(&delta.transcript);
+        assert_exact_surface_rows(self.retained.values(), &self.baseline);
         assert_exact_cost(delta, delta.changed_rows);
+        assert_exact_damage(&delta.transcript, &self.baseline[..delta.changed_rows]);
         attribution::assert_exact_attribution(
             &delta.transcript,
-            &delta.authored_instances,
+            &delta.authored_instances[..delta.changed_rows],
             self.semantic_surface,
         );
         assert!(delta.authored_instances[..delta.changed_rows]
@@ -124,48 +125,108 @@ impl MountedPresentationWorld {
             delta.authored_instances[delta.changed_rows..],
             self.authored_instances[delta.changed_rows..]
         );
-        let expected_frames = (0..self.baseline.len())
-            .map(|index| {
-                if index < delta.changed_rows {
-                    delta.transcript.frame()
-                } else {
-                    self.initial_frame
+    }
+
+    fn apply_changes(
+        &mut self,
+        transcript: &worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
+    ) {
+        for fragment in appearance_work(transcript).fragments() {
+            if let Some(manifest) = fragment.work().predecessor_manifest() {
+                assert!(manifest
+                    .mechanic_identities()
+                    .iter()
+                    .all(|identity| match identity {
+                        worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::Surface(
+                            instance,
+                        ) => self.retained.contains_key(instance),
+                        _ => false,
+                    }));
+            }
+            for change in fragment.work().changes() {
+                use worth_ui_host_headless::UiHeadlessAppearanceMechanic as Mechanic;
+                use worth_ui_host_headless::UiHeadlessAppearanceMechanicChange as Change;
+                match change {
+                    Change::Insert(Mechanic::Surface(row)) => {
+                        assert!(self
+                            .retained
+                            .insert(row.node_receipt().mounted_instance(), row.clone())
+                            .is_none());
+                    }
+                    Change::Replace {
+                        predecessor:
+                            worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::Surface(
+                                instance,
+                            ),
+                        successor: Mechanic::Surface(row),
+                    } => {
+                        assert!(self.retained.contains_key(instance));
+                        assert_eq!(*instance, row.node_receipt().mounted_instance());
+                        self.retained.insert(*instance, row.clone());
+                    }
+                    Change::Remove(
+                        worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::Surface(
+                            instance,
+                        ),
+                    ) => {
+                        assert!(self.retained.remove(instance).is_some());
+                    }
+                    _ => panic!("maximum-overlap delta contains a non-surface change"),
                 }
-            })
+            }
+        }
+    }
+
+    fn removal_candidate(&self, delta: &ProducedMaximumDelta) -> OracleExpectation {
+        let work = appearance_work(&delta.transcript);
+        let removed = removed_surface_instances(&delta.transcript)
+            .into_iter()
+            .collect::<std::collections::HashSet<_>>();
+        let ordered_identities = self
+            .retained_rows()
+            .into_iter()
+            .filter(|row| !removed.contains(&row.node_receipt().mounted_instance()))
+            .map(|row| u16::try_from(row.surface_paint_order()).expect("profile order fits"))
+            .collect();
+        let damage = work
+            .fragments()
+            .iter()
+            .flat_map(|fragment| fragment.work().damage())
+            .map(damage_values)
             .collect::<Vec<_>>();
-        attribution::assert_exact_frame_attribution(&delta.transcript, &expected_frames);
+        OracleExpectation {
+            owner_delta_count: removed.len(),
+            vacated_damage_count: damage.len(),
+            damage,
+            ordered_identities,
+        }
+    }
+
+    fn retained_rows(&self) -> Vec<&worth_ui_host_contract::UiMountedSurfaceAppearanceMechanic> {
+        let mut rows = self.retained.values().collect::<Vec<_>>();
+        rows.sort_by_key(|row| row.surface_paint_order());
+        rows
     }
 }
 
-fn removal_candidate(delta: &ProducedMaximumDelta) -> OracleExpectation {
-    let layers = delta
-        .transcript
-        .filled_rects()
+fn removed_surface_instances(
+    transcript: &worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
+) -> Vec<worth_ui_host_contract::UiMountedInstanceIdentity> {
+    appearance_work(transcript)
+        .fragments()
         .iter()
-        .map(|row| (row.command_identity(), row.layer_semantic_order()))
-        .collect::<HashMap<_, _>>();
-    let ordered_identities = delta
-        .transcript
-        .paint_order()
-        .iter()
-        .map(|identity| u16::try_from(layers[&identity.command()]).expect("profile order fits"))
-        .collect();
-    let damage = delta
-        .transcript
-        .logical_damage()
-        .iter()
-        .map(|region| box_values(region.bounds()))
-        .collect::<Vec<_>>();
-    OracleExpectation {
-        owner_delta_count: usize::try_from(delta.draw_mutations).expect("mutation count fits"),
-        vacated_damage_count: damage.len(),
-        damage,
-        ordered_identities,
-    }
+        .flat_map(|fragment| fragment.work().changes())
+        .filter_map(|change| match change {
+            worth_ui_host_headless::UiHeadlessAppearanceMechanicChange::Remove(
+                worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::Surface(instance),
+            ) => Some(*instance),
+            _ => None,
+        })
+        .collect()
 }
 
-fn expected_rect(identity: usize, controls: &[toml::Value]) -> OracleRect {
-    let order = u16::try_from(identity).expect("maximum rectangle identity fits the profile");
+fn expected_surface(identity: usize, controls: &[toml::Value]) -> OracleRect {
+    let order = u16::try_from(identity).expect("maximum surface identity fits the profile");
     let Some(expected) = controls.get(identity) else {
         return OracleRect {
             identity: order,
@@ -185,59 +246,99 @@ fn expected_rect(identity: usize, controls: &[toml::Value]) -> OracleRect {
 fn assert_exact_cost(delta: &ProducedMaximumDelta, count: usize) {
     let count = count as u64;
     assert_eq!(delta.draw_mutations, count);
-    assert_eq!(delta.order_mutations, count);
+    assert_eq!(delta.order_mutations, 0);
     assert_eq!(delta.damage_regions, count);
-    // Each changed drawable carries its mechanic change, mounted-node source,
-    // order edit, and exact damage row.
-    assert_eq!(delta.delta_rows_carried, count * 4);
+    assert_eq!(delta.delta_rows_carried, count * 3);
 }
 
 fn assert_exact_rows(
     transcript: &worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
     expected: &[OracleRect],
 ) {
-    let mut observed = transcript.filled_rects().iter().collect::<Vec<_>>();
-    observed.sort_by_key(|row| row.layer_semantic_order());
-    assert_eq!(observed.len(), expected.len());
-    for (row, expected) in observed.into_iter().zip(expected) {
-        assert_eq!(box_values(row.bounds()), expected.bounds);
-        assert_eq!(row.color().channels(), expected.rgba);
-        assert_eq!(row.layer_semantic_order(), u32::from(expected.order));
-    }
+    assert_exact_surface_rows(ordered_surfaces(transcript), expected);
 }
 
-fn assert_exact_order(
-    transcript: &worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
+fn assert_exact_surface_rows<'a>(
+    observed: impl IntoIterator<Item = &'a worth_ui_host_contract::UiMountedSurfaceAppearanceMechanic>,
     expected: &[OracleRect],
 ) {
-    let layers = transcript
-        .filled_rects()
-        .iter()
-        .map(|row| (row.command_identity(), row.layer_semantic_order()))
-        .collect::<HashMap<_, _>>();
-    let observed = transcript
-        .paint_order()
-        .iter()
-        .map(|identity| layers[&identity.command()])
-        .collect::<Vec<_>>();
-    let expected = expected
-        .iter()
-        .map(|row| u32::from(row.order))
-        .collect::<Vec<_>>();
-    assert_eq!(observed, expected);
+    let mut observed = observed.into_iter().collect::<Vec<_>>();
+    observed.sort_by_key(|row| row.surface_paint_order());
+    assert_eq!(observed.len(), expected.len());
+    for (row, expected) in observed.into_iter().zip(expected) {
+        assert_eq!(
+            surface_bounds(row),
+            expected.bounds.map(|value| u32::from(value) * 1_000)
+        );
+        let worth_ui_host_contract::UiMountedSurfacePaint::Fill(color) = row.paint() else {
+            panic!("maximum-overlap surface must be a fill")
+        };
+        assert_eq!(color.straight_srgba(), expected.rgba);
+        assert_eq!(row.surface_paint_order(), u32::from(expected.order));
+    }
 }
 
 fn assert_exact_damage(
     transcript: &worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
     removed: &[OracleRect],
 ) {
-    let observed = transcript
-        .logical_damage()
+    let observed = appearance_work(transcript)
+        .fragments()
         .iter()
-        .map(|damage| box_values(damage.bounds()))
+        .flat_map(|fragment| fragment.work().damage())
+        .map(damage_values)
         .collect::<Vec<_>>();
-    let expected = removed.iter().map(|row| row.bounds).collect::<Vec<_>>();
+    let mut observed = observed;
+    let mut expected = removed
+        .iter()
+        .map(|row| row.bounds.map(|value| i32::from(value) * 1_000))
+        .collect::<Vec<_>>();
+    observed.sort_unstable();
+    expected.sort_unstable();
     assert_eq!(observed, expected);
+}
+
+pub(super) fn ordered_surfaces(
+    transcript: &worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
+) -> Vec<&worth_ui_host_contract::UiMountedSurfaceAppearanceMechanic> {
+    let mut rows = appearance_work(transcript)
+        .fragments()
+        .iter()
+        .flat_map(|fragment| fragment.work().successor().mechanics())
+        .filter_map(|mechanic| match mechanic {
+            worth_ui_host_headless::UiHeadlessAppearanceMechanic::Surface(row) => Some(row),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    rows.sort_by_key(|row| row.surface_paint_order());
+    rows
+}
+
+fn appearance_work(
+    transcript: &worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
+) -> &worth_ui_host_headless::UiHeadlessAppearancePresentationTranscript {
+    transcript
+        .appearance_work()
+        .expect("appearance work is required")
+}
+
+fn surface_bounds(row: &worth_ui_host_contract::UiMountedSurfaceAppearanceMechanic) -> [u32; 4] {
+    let bounds = row.bounds();
+    [
+        u32::try_from(bounds.x()).expect("profile x is nonnegative"),
+        u32::try_from(bounds.y()).expect("profile y is nonnegative"),
+        bounds.width(),
+        bounds.height(),
+    ]
+}
+
+fn damage_values(bounds: &worth_ui_host_contract::UiAppearanceDamageRegion) -> [i32; 4] {
+    [
+        bounds.x(),
+        bounds.y(),
+        i32::try_from(bounds.width()).expect("profile damage width fits"),
+        i32::try_from(bounds.height()).expect("profile damage height fits"),
+    ]
 }
 
 fn text<'a>(value: &'a toml::Value, key: &str) -> &'a str {
@@ -260,8 +361,4 @@ fn array4(value: &toml::Value, a: &str, b: &str, c: &str, d: &str) -> [u16; 4] {
 fn rgba(value: &toml::Value) -> [u8; 4] {
     let channels = value["rgba"].as_array().expect("rgba array");
     std::array::from_fn(|index| channels[index].as_integer().unwrap() as u8)
-}
-
-fn box_values(bounds: worth_ui_runtime::facade::mounted::UiMountedCanonicalBox) -> [u16; 4] {
-    [bounds.x(), bounds.y(), bounds.width(), bounds.height()].map(|value| value as u16)
 }

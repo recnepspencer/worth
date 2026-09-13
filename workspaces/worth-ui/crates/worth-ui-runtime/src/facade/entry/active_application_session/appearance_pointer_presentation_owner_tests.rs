@@ -1,7 +1,7 @@
-#[path = "appearance_pointer_presentation_owner_tests/automatic.rs"]
-mod automatic;
 #[path = "appearance_pointer_presentation_owner_tests/motion_index.rs"]
 mod motion_index;
+#[path = "appearance_pointer_presentation_owner_tests/query_work.rs"]
+mod query_work;
 
 use crate::runtime::interaction::{
     UiPointerPresenceGeometry, UiPointerPresenceGeometryCandidate,

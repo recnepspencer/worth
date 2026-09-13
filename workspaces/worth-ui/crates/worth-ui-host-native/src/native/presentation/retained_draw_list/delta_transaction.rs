@@ -81,6 +81,7 @@ impl UiNativeRetainedDrawList {
                 .collect(),
             appearance_sample_overrides: Vec::new(),
         };
+        self.retain_current_paint_attribution();
         self.retire_sample_overrides_for_semantic_delta(&changed_identities)?;
         if let Err(error) = self
             .apply_changes(delta.changes(), glyph_runs)
@@ -128,7 +129,6 @@ impl UiNativeRetainedDrawList {
             .rebind_receipt_affinity(delta.affinity().receipt_affinity());
         self.frame = delta.affinity().successor();
         self.content = delta.affinity().content();
-        self.retain_current_paint_attribution();
         let mut replay_damage = delta.damage().to_vec();
         let overlay_damage =
             match super::super::identity_overlay::UiNativeRetainedIdentityOverlay::transition_damage(

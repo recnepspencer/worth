@@ -35,6 +35,10 @@ impl CanonicalPlatformPulse {
         CANONICAL_PORTAL_CANCEL_SOURCE
     }
 
+    pub(crate) fn modal_review_source_bytes(self) -> &'static [u8] {
+        include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/app/modal_review.wui"))
+    }
+
     pub(crate) fn intent_source_bytes(self) -> &'static [u8] {
         CANONICAL_INTENT_SOURCE
     }

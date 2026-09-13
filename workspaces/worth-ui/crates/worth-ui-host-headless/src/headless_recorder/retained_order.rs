@@ -235,11 +235,13 @@ impl UiHeadlessRetainedOrder {
 mod tests {
     use super::{UiHeadlessRetainedOrder, UiHeadlessRetainedOrderDenial};
     use worth_ui_host_contract::{
-        UiMountedAllocationBasis, UiMountedCanonicalBox, UiMountedCanonicalBoxInput,
-        UiMountedCoordinateSpace, UiMountedFilledRectCompletionInput, UiMountedFrameIdentity,
-        UiMountedInstanceIdentity, UiMountedNodeReceiptIssuer, UiMountedPaintCommandIdentity,
-        UiMountedPaintOrderIdentity, UiMountedPaintOrderIntegrity, UiMountedRgba8,
-        UiMountedTransformProjection, UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
+        UiHostObservationPresentationBasis, UiHostPresentationEpoch, UiHostSurfaceIdentity,
+        UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
+        UiMountedFrameIdentity, UiMountedInstanceIdentity, UiMountedNodeReceiptIssuer,
+        UiMountedPaintCommandIdentity, UiMountedPaintOrderIdentity, UiMountedPaintOrderIntegrity,
+        UiMountedPortalInputShielding, UiMountedPortalOverlayCompletionInput,
+        UiMountedPortalOverlayLifecyclePosture, UiMountedPortalOverlayMechanic, UiMountedRgba8,
+        UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
     };
 
     const PROFILE_CAPACITY: usize = 4_096;
@@ -271,38 +273,44 @@ mod tests {
     fn order_identity(slot: u64) -> UiMountedPaintOrderIdentity {
         let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
         let instance = UiMountedInstanceIdentity::mint_unbound().unwrap();
+        let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+        let binding = UiSurfaceBindingGeneration::mint_unbound().unwrap();
         let bounds = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
             x: slot as f32,
             y: 0.0,
             width: 1.0,
             height: 1.0,
-            coordinate_space: UiMountedCoordinateSpace::HostSurface,
+            coordinate_space: UiMountedCoordinateSpace::Viewport,
         })
         .unwrap();
-        let mechanic =
-            worth_ui_host_contract::UiMountedFilledRectMechanic::complete_from_runtime_mounting(
-                UiMountedFilledRectCompletionInput {
+        let mechanic = UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(
+            UiMountedPortalOverlayCompletionInput {
+                frame,
+                surface,
+                binding,
+                owner: instance,
+                owner_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
+                    .unwrap()
+                    .receipt_for(instance),
+                portal_identity: instance.diagnostic_value(),
+                anchor_presentation: UiHostObservationPresentationBasis::new(
+                    UiHostSurfaceIdentity::mint_unbound().unwrap(),
                     frame,
-                    surface: UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
-                    binding: UiSurfaceBindingGeneration::mint_unbound().unwrap(),
-                    mounted_instance: instance,
-                    node_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
-                        .unwrap()
-                        .receipt_for(instance),
-                    allocation_basis: UiMountedAllocationBasis::new(
-                        1,
-                        1,
-                        1,
-                        UiMountedTransformProjection::Identity,
-                    ),
-                    bounds,
-                    color: UiMountedRgba8::new(1, 2, 3, 255),
-                    layer_semantic_order: 0,
-                    clip_bounds: bounds,
-                },
-            )
-            .unwrap();
-        UiMountedPaintOrderIdentity::for_command(UiMountedPaintCommandIdentity::filled_rect(
+                    binding,
+                    UiHostPresentationEpoch::issued_by_host(1),
+                ),
+                anchor_bounds: bounds,
+                bounds,
+                color: UiMountedRgba8::new(1, 2, 3, 255),
+                layer_semantic_order: 0,
+                layer_depth: 0,
+                clip_bounds: bounds,
+                lifecycle: UiMountedPortalOverlayLifecyclePosture::Visible,
+                shielding: UiMountedPortalInputShielding::ContentBounds,
+            },
+        )
+        .unwrap();
+        UiMountedPaintOrderIdentity::for_command(UiMountedPaintCommandIdentity::portal_overlay(
             &mechanic,
         ))
     }

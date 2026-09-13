@@ -240,6 +240,7 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
                 UiHostSurfaceInFlightCompletion::RejectedBeforeEffects(denial)
             }
             Some(ScriptedSurfaceCompletion::Presented(completion)) => {
+                state.accepted_text.accept_pending(identity);
                 clear_token_state(&mut state, identity);
                 UiHostSurfaceInFlightCompletion::Presented(completion)
             }
@@ -266,6 +267,7 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
         let identity = token.diagnostic_value();
         let mut state = self.state.lock().unwrap();
         state.cancellation_calls.push(identity);
+        state.accepted_text.discard_pending(identity);
         state.completions.remove(&identity);
         state.token_sessions.remove(&identity);
         state
@@ -303,6 +305,7 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
 }
 
 fn clear_token_state(state: &mut ScriptedPresentationState, identity: u64) {
+    state.accepted_text.discard_pending(identity);
     state.completions.remove(&identity);
     state.cancellations.remove(&identity);
     state.token_sessions.remove(&identity);

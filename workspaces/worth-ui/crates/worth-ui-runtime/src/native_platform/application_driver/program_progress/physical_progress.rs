@@ -23,6 +23,12 @@ impl UiNativeApplicationProgramProgress {
         shell: &mut WorthUiNativeApplicationShell,
         mut grant: worth_ui_host_native::UiNativePhysicalProgressGrant,
     ) -> Result<(), ()> {
+        if self.pending_theme_frame.is_some() {
+            let progress =
+                crate::native_platform::UiNativeApplicationPhysicalProgress::from_host(grant);
+            self.progress_theme_switch(shell, &progress)?;
+            return self.advance(shell);
+        }
         if shell.component_presence_awaits_portal_dismissal() {
             let progress =
                 crate::native_platform::UiNativeApplicationPhysicalProgress::from_host(grant);
@@ -47,6 +53,7 @@ impl UiNativeApplicationProgramProgress {
                     return Err(())
                 }
                 crate::facade::entry::WorthUiNativeManagedRebindProgress::Unrelated
+                | crate::facade::entry::WorthUiNativeManagedRebindProgress::RebindRecovered(_)
                 | crate::facade::entry::WorthUiNativeManagedRebindProgress::Published(_)
                 | crate::facade::entry::WorthUiNativeManagedRebindProgress::IntentConsequencePublished(_)
                 | crate::facade::entry::WorthUiNativeManagedRebindProgress::RecoveredToPredecessor(_) => {

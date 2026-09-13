@@ -38,6 +38,7 @@ fn runtime_can_complete_inert_mechanics_without_publication_authority() {
             bounds: allocation,
             clip,
             surface_paint_order: 0,
+            portal_group: None,
             radii,
             border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges::ALL,
             border_omissions: Box::new([]),
@@ -55,6 +56,7 @@ fn runtime_can_complete_inert_mechanics_without_publication_authority() {
     let _outline = UiMountedOutlineAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedOutlineAppearanceCompletionInput {
             surface_paint_order: 0,
+            portal_group: None,
             issuer: node_issuer,
             node_receipt: node_issuer.receipt_for(portal),
             clip,

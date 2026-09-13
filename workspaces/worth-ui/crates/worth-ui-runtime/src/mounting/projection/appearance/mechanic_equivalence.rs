@@ -12,6 +12,7 @@ pub(super) fn same_physical_output(
             left.bounds() == right.bounds()
                 && left.clip() == right.clip()
                 && left.surface_paint_order() == right.surface_paint_order()
+                && left.portal_group() == right.portal_group()
                 && left.visual_bounds() == right.visual_bounds()
                 && left.radii() == right.radii()
                 && left.border_edges() == right.border_edges()
@@ -35,6 +36,7 @@ pub(super) fn same_physical_output(
         ) => {
             left.clip() == right.clip()
                 && left.surface_paint_order() == right.surface_paint_order()
+                && left.portal_group() == right.portal_group()
                 && left.allocation() == right.allocation()
                 && left.visual_bounds() == right.visual_bounds()
                 && left.color() == right.color()

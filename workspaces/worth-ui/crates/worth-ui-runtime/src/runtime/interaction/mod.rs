@@ -52,7 +52,10 @@ pub use settlement::UiInteractionLifecycleSettlementReceipt;
 pub use snapshot::{UiInteractionLifecycleCounters, UiInteractionStateSnapshot};
 pub use source::UiIntentRouteSource;
 pub(crate) use source::{command_evidence_input, UiIntentRouteSourceMaterial};
-pub(crate) use state::{UiInteractionLifecycleStopReason, UiInteractionRuntimeState};
+pub(crate) use state::{
+    UiInteractionLifecycleStopReason, UiInteractionRuntimeState,
+    UiPreparedInteractionApplicationRebind,
+};
 pub use targeting::{
     UiInteractionTargetingDenial, UiPresentedInteractionTarget, UiPresentedInteractionTargetView,
     UiPresentedTargetFrameRelation,

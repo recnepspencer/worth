@@ -87,17 +87,11 @@ impl UiNativePlatformProfile {
         worth_ui_host_native::WorthUiPreparedNativeHost::prepare_qualified()
     }
 
+    #[cfg(feature = "certification-support")]
     pub(crate) const fn driver_runtime_qualification(
         &self,
     ) -> Option<super::runtime_qualification::UiNativeRuntimeQualificationPlan> {
-        #[cfg(feature = "certification-support")]
-        {
-            self.runtime_qualification
-        }
-        #[cfg(not(feature = "certification-support"))]
-        {
-            None
-        }
+        self.runtime_qualification
     }
 
     pub(crate) fn validate(&self) -> Result<(), UiNativePlatformPreparationDenial> {

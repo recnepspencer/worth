@@ -1,5 +1,5 @@
-use super::platform_pulse_control_points::checked_in;
 use super::runtime_service_story_pixels::is_intentionally_mutable_story_pixel;
+use super::visual_contract_manifest::checked_in_adjudication_contract as checked_in;
 use crate::external_observation::{NativeClientPixelCapture, NativeClientPixelPoint};
 
 mod authored_surface;
@@ -78,14 +78,6 @@ pub(crate) fn adjudicate_open_portal_pixels(
         )?,
         require_surface(
             opened,
-            manifest.portal_icon_tile_region(),
-            manifest.logical_client_extent(),
-            manifest.raised_surface_rgba(),
-            tolerance,
-            "icon tile",
-        )?,
-        require_surface(
-            opened,
             manifest.portal_cancel_region(),
             manifest.logical_client_extent(),
             manifest.raised_surface_rgba(),
@@ -96,7 +88,7 @@ pub(crate) fn adjudicate_open_portal_pixels(
             opened,
             manifest.portal_primary_region(),
             manifest.logical_client_extent(),
-            manifest.principal_accent_rgba(),
+            manifest.target_rgba(),
             tolerance,
             "primary action",
         )?,
@@ -104,14 +96,6 @@ pub(crate) fn adjudicate_open_portal_pixels(
     .into_iter()
     .sum();
     let semantic_ink_pixels = [
-        require_ink(
-            opened,
-            manifest.portal_icon_text_region(),
-            manifest.logical_client_extent(),
-            manifest.principal_accent_rgba(),
-            tolerance,
-            "icon",
-        )?,
         require_ink(
             opened,
             manifest.portal_title_region(),
@@ -314,8 +298,8 @@ fn project_region(logical: [u32; 4], authored: [u32; 2], physical: [u32; 2]) -> 
     [
         scale(logical[0], authored[0], physical[0]),
         scale(logical[1], authored[1], physical[1]),
-        scale(logical[2], authored[0], physical[0]),
-        scale(logical[3], authored[1], physical[1]),
+        scale(logical[0] + logical[2], authored[0], physical[0]),
+        scale(logical[1] + logical[3], authored[1], physical[1]),
     ]
 }
 

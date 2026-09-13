@@ -1,14 +1,19 @@
 //! Staged appearance coverage participates in the existing presentation delta undo.
+#[cfg(feature = "certification-support")]
+use super::UiNativeRetainedReplayPlan;
 use super::{
     UiNativeRetainedDeltaUndo, UiNativeRetainedDrawList, UiNativeRetainedDrawListDenial as Denial,
-    UiNativeRetainedReplayPlan,
 };
 use crate::native::presentation::appearance::text_foreground::UiNativeFinalizedTextForeground;
+#[cfg(feature = "certification-support")]
+use crate::native::presentation::appearance::UiNativeAppearanceScale;
 use crate::native::presentation::appearance::{
-    UiNativeAppearanceCommandIdentity, UiNativeAppearanceRetained, UiNativeAppearanceScale,
+    UiNativeAppearanceCommandIdentity, UiNativeAppearanceRetained,
 };
 use crate::native::text_atlas::UiNativeTextAtlas;
-use worth_ui_host_contract::{UiGlyphRunView, UiMountedPresentationDelta};
+#[cfg(feature = "certification-support")]
+use worth_ui_host_contract::UiGlyphRunView;
+use worth_ui_host_contract::UiMountedPresentationDelta;
 
 #[path = "text_coverage/staging.rs"]
 mod staging;
@@ -61,11 +66,13 @@ impl UiNativeRetainedDrawList {
         Ok(())
     }
 
-    /// Explicit staging activation; ordinary complete constructors remain inactive.
+    /// Explicit certification staging activation; ordinary complete constructors remain inactive.
+    #[cfg(feature = "certification-support")]
     pub(crate) fn initialize_text_coverage(
         &mut self,
         candidates: Vec<UiNativeFinalizedTextForeground>,
         atlas: &UiNativeTextAtlas,
+        view: &worth_ui_host_contract::UiMountedFrameConsumptionView<'_>,
     ) -> Result<(), Denial> {
         if self.staged_appearance.is_some() || candidates.is_empty() {
             return Err(Denial::CommandMismatch);
@@ -95,11 +102,36 @@ impl UiNativeRetainedDrawList {
                 .map_err(|_| Denial::CommandMismatch)?;
             predecessor = Some(key);
         }
+        // Certification stages the same overlay stack production stages: the
+        // issued update from the consumed appearance work, else the empty order.
+        let overlay = match view
+            .appearance_work()
+            .and_then(|work| work.overlay_order_update())
+        {
+            Some(overlay) => overlay.clone(),
+            None => worth_ui_host_contract::UiMountedOverlayOrderMechanic::complete_from_runtime_overlay_order(
+                self.surface,
+                view.attempt(),
+                0,
+                0,
+                [],
+            )
+            .map_err(|_| Denial::CommandMismatch)?,
+        };
+        appearance
+            .insert(
+                crate::native::presentation::appearance::UiNativeAppearanceCommand::OverlayOrder(
+                    overlay,
+                ),
+                predecessor,
+            )
+            .map_err(|_| Denial::CommandMismatch)?;
         appearance.take_damage();
         self.staged_appearance = Some((binding, appearance));
         Ok(())
     }
 
+    #[cfg(feature = "certification-support")]
     pub(crate) fn stage_text_coverage_replacements(
         &mut self,
         delta: &UiMountedPresentationDelta,

@@ -37,11 +37,10 @@ mod mosaic;
 mod presentation;
 
 use mosaic::register_mosaic;
-use presentation::{
-    register_appearance, register_structure, register_theme_tokens, visual_inspection_policy,
-};
+use presentation::{register_appearance, register_structure, visual_inspection_policy};
 
 pub(crate) struct PreparedPlatformPulseComposition {
+    pub(crate) theme_watcher: crate::theme_preference::PlatformPulseThemePreferenceWatch,
     pub(crate) builder:
         WorthUiApplicationBuilder<UiChangeProfileInstalled, UiIntentWiringSatisfied>,
     pub(crate) watcher: WorthUiFilesystemSourceWatcher,
@@ -55,6 +54,7 @@ pub(crate) struct PreparedPlatformPulseComposition {
 
 #[derive(Debug)]
 pub(crate) enum PlatformPulsePreparationDenial {
+    ThemePreference(crate::theme_preference::PlatformPulseThemePreferenceDenial),
     WatcherStart(WorthUiFilesystemWatcherDenial),
     InitialSourceSettlement(WorthUiFilesystemWatcherDenial),
     CapabilityApplication(Box<WorthUiApplicationPreparationDenial>),
@@ -72,6 +72,10 @@ pub(crate) enum PlatformPulsePreparationDenial {
 pub(crate) fn prepare_composition(
     launch: &AdmittedPlatformPulseLaunchConfiguration,
 ) -> Result<PreparedPlatformPulseComposition, PlatformPulsePreparationDenial> {
+    let theme_watcher = crate::theme_preference::PlatformPulseThemePreferenceWatch::open(
+        launch.intent_source_root(),
+    )
+    .map_err(PlatformPulsePreparationDenial::ThemePreference)?;
     let query = crate::query_source::install(launch.query_source_root())
         .map_err(|denial| PlatformPulsePreparationDenial::QueryInstallation(Box::new(denial)))?;
     let intent = match PlatformPulseIntentInputInstallation::open(launch.intent_source_root()) {
@@ -107,11 +111,17 @@ pub(crate) fn prepare_composition(
             .take_initial_snapshot()
             .map_err(PlatformPulsePreparationDenial::InitialSourceSettlement)?;
         let initial_source = snapshot.source_revision().clone();
+        let fonts = std::sync::Arc::new(
+            worth_ui::facade::app::UiGlobalFontCollection::admit_qualified_profile()
+                .expect("embedded qualified Pulse text profile")
+                .0,
+        );
         let capability_builder = builder(
             registration.clone(),
             action_view.clone(),
             &intent_initial,
             intent_provider.clone(),
+            std::sync::Arc::clone(&fonts),
         )?;
         let capability_app = capability_builder.freeze().map_err(|denial| {
             PlatformPulsePreparationDenial::CapabilityApplication(Box::new(denial))
@@ -121,7 +131,14 @@ pub(crate) fn prepare_composition(
             .into_candidate_submission()
             .map_err(PlatformPulsePreparationDenial::InitialSourceLowering)?;
         drop(capability_app);
-        builder(registration, action_view, &intent_initial, intent_provider).map(|builder| {
+        builder(
+            registration,
+            action_view,
+            &intent_initial,
+            intent_provider,
+            fonts,
+        )
+        .map(|builder| {
             (
                 builder.with_candidate_submission(submission),
                 initial_source,
@@ -130,6 +147,7 @@ pub(crate) fn prepare_composition(
     })();
     match result {
         Ok((builder, initial_source)) => Ok(PreparedPlatformPulseComposition {
+            theme_watcher,
             builder,
             watcher,
             initial_source,
@@ -152,6 +170,7 @@ pub(crate) fn prepare_composition(
 impl std::fmt::Display for PlatformPulsePreparationDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ThemePreference(denial) => write!(formatter, "theme preference: {denial:?}"),
             Self::WatcherStart(denial) => write!(formatter, "watcher start: {denial:?}"),
             Self::InitialSourceSettlement(denial) => {
                 write!(formatter, "initial source settlement: {denial:?}")
@@ -175,7 +194,7 @@ impl std::fmt::Display for PlatformPulsePreparationDenial {
             Self::IntentFact(denial) => write!(formatter, "intent fact: {denial:?}"),
             Self::IntentDefinition(denial) => write!(formatter, "intent definition: {denial:?}"),
             Self::IntentProvider(denial) => write!(formatter, "intent provider: {denial:?}"),
-            Self::Appearance(denial) => write!(formatter, "appearance: {denial:?}"),
+            Self::Appearance(denial) => write!(formatter, "appearance: {denial}"),
         }
     }
 }
@@ -185,15 +204,17 @@ fn builder(
     action_view: WorthUiInstalledQueryView,
     intent: &PlatformPulseIntentInputRecord,
     provider: PlatformPulseActionProvider,
+    fonts: std::sync::Arc<worth_ui::facade::app::UiGlobalFontCollection>,
 ) -> Result<
     WorthUiApplicationBuilder<UiChangeProfileInstalled, UiIntentWiringSatisfied>,
     PlatformPulsePreparationDenial,
 > {
     let builder = register_structure(register_mosaic(
         WorthUi::app()
+            .with_font_collection(fonts)
             .with_change_profile(worth_ui::facade::rebind::UiChangeProfile::platform_pulse()),
     ));
-    let builder = register_appearance(register_theme_tokens(builder))
+    let builder = register_appearance(builder)
         .map_err(PlatformPulsePreparationDenial::Appearance)?
         .register_intent_boolean_fact(platform_pulse_close_portal_mutability_fact(), true)
         .map_err(PlatformPulsePreparationDenial::IntentFact)?

@@ -149,6 +149,18 @@ neighboring region, not both. Clipping and occlusion are applied before visible
 contributors are indexed. Fractional scale and nonzero screen origin do not
 change the client-pixel coordinate brand.
 
+Appearance attribution names the mounted occurrence, surface, role, selected
+cell, theme source, and contributing state evidence. Rounded surface and outline
+bounds include their curved edge and qualified anti-alias fringe. Border seam
+omissions are reported in surface-local coordinates, so an internal regional
+edge cannot masquerade as a missing exterior border.
+
+State and theme comparisons must retain exact predecessor/successor affinity.
+The cumulative Pulse design adjudication captures zero-, one-, and two-modal
+states at both qualified native sizes and checks relational Backdrop/Portal
+composition, text, radii, and border corners. Those pixels remain secondary
+evidence: mounted receipts and host acceptance establish what was presented.
+
 ## Visible Meaning Versus Hit Testing
 
 `UiVisualPointAdjudication` deliberately contains two results:

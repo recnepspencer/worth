@@ -1,9 +1,5 @@
 #[path = "declared_overlay_binding_tests/allocation_succession.rs"]
 mod allocation_succession;
-#[path = "declared_overlay_binding_tests/appearance_publication.rs"]
-mod appearance_publication;
-#[path = "declared_overlay_binding_tests/appearance_publication_lifecycle.rs"]
-mod appearance_publication_lifecycle;
 #[path = "declared_overlay_binding_tests/appearance_publication_support.rs"]
 mod appearance_publication_support;
 #[path = "declared_overlay_binding_tests/appearance_region_clip.rs"]
@@ -12,8 +8,6 @@ mod appearance_region_clip;
 mod appearance_region_extent;
 #[path = "declared_overlay_binding_tests/appearance_structural_portal.rs"]
 mod appearance_structural_portal;
-#[path = "declared_overlay_binding_tests/appearance_surface_scope.rs"]
-mod appearance_surface_scope;
 #[path = "declared_overlay_binding_tests/integrated_appearance_world.rs"]
 mod integrated_appearance_world;
 #[path = "declared_overlay_binding_test_support.rs"]

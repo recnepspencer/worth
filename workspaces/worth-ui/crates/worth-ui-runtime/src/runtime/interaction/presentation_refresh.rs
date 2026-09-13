@@ -36,13 +36,7 @@ pub(super) fn affected(
     let (affected, query_work) = changes
         .affects(presentation.binding(), point.map(f64::from), target)
         .map_err(|denial| {
-            match &denial {
-                crate::mounting::UiPresentedHitQueryDenial::NodeBudget { work: failed }
-                | crate::mounting::UiPresentedHitQueryDenial::CandidateBudget { work: failed } => {
-                    work.merge(*failed)
-                }
-                _ => {}
-            }
+            work.merge(denial.work());
             super::targeting::map_hit_query_denial(denial)
         })?;
     work.merge(query_work);

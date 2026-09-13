@@ -1,8 +1,7 @@
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor, ComponentId,
-    ComponentPropSchema, ComponentStateOwnership, ComponentStaticPaintContract,
-    ComponentStaticPaintOrder, ComponentViewportInset, ThemeColorValue, ThemeTokenDescriptor,
-    ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    ComponentPropSchema, ComponentStateOwnership, ComponentViewportInset, ThemeTokenDescriptor,
+    ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue, UiThemeColor,
 };
 use worth_ui::facade::measurement_exchange::{
     UiMeasurementEvidenceFamily, UiViewportExtentRequest,
@@ -25,7 +24,6 @@ use worth_ui_test_support::{
 const RECTANGLE_COUNT: usize = 2_048;
 const BLUE: &str = "#2f81f7";
 const YELLOW: &str = "#f2cc60";
-
 pub(in crate::host_platform) struct ProducedMaximumOverlap {
     pub session: worth_ui::facade::app::WorthUiActiveApplicationSession,
     pub initial: worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
@@ -35,7 +33,6 @@ pub(in crate::host_platform) struct ProducedMaximumOverlap {
     pub authored_instances: Box<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
     pub semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
 }
-
 pub(in crate::host_platform) struct ProducedMaximumDelta {
     pub changed_rows: usize,
     pub transcript: worth_ui_host_headless::UiHeadlessMountedFrameTranscript,
@@ -45,7 +42,6 @@ pub(in crate::host_platform) struct ProducedMaximumDelta {
     pub order_mutations: u64,
     pub damage_regions: u64,
 }
-
 pub(in crate::host_platform) struct ProducedUnchanged {
     pub cost: worth_ui_host_contract::UiHostPresentationCostReport,
     pub native_work_count: usize,
@@ -68,6 +64,14 @@ pub(crate) fn produce_maximum_overlap(
     let mut session = app.launch().expect("maximum-overlap application launches");
     let mut mounted = mount_maximum_overlap(&mut session);
     establish_allocations(&mut session, RECTANGLE_COUNT);
+    let observations = session
+        .begin_observation_turn()
+        .expect("maximum-overlap appearance owners can be observed")
+        .seal()
+        .expect("maximum-overlap appearance ownership makes the turn meaningful");
+    session
+        .classify_observations(observations)
+        .expect("maximum-overlap appearance ownership is current");
     execute_frame(&mut session, 10);
     let initial = one_transcript(&recorder, "maximum-overlap initial transcript");
     let unchanged = produce_unchanged(&mut session, &recorder, 11);
@@ -200,21 +204,23 @@ fn build_application(
 ) -> worth_ui::facade::app::WorthUiApp {
     let (builder, module) = (0..RECTANGLE_COUNT).fold(
         (
-            application_builder(recorder),
-            WorthUiRustAuthoredArtifactInputModule::new("app/main.wui"),
+            super::appearance::register(application_builder(recorder)),
+            super::appearance::declare_roles(WorthUiRustAuthoredArtifactInputModule::new(
+                "app/main.wui",
+            )),
         ),
         |(builder, module), index| {
             let identity = component_identity(index);
             (
-                builder
-                    .register_theme_token(color_token(&token_identity(index), color(index)))
-                    .register_component(component(&identity, index)),
-                module
-                    .with_token(token_identity(index), color(index))
-                    .with_component_authored_identity(
-                        identity,
+                builder.register_component(component(&identity, index)),
+                super::appearance::attach(
+                    module.with_component_authored_identity(
+                        identity.clone(),
                         format!("host-platform-maximum-{index:04}"),
                     ),
+                    &identity,
+                    index,
+                ),
             )
         },
     );
@@ -270,6 +276,13 @@ pub(in crate::host_platform) fn execute_frame(
     tick: u64,
 ) -> worth_ui_host_contract::UiHostPresentationCostReport {
     crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
+    execute_frame_with_established_geometry(session, tick)
+}
+
+pub(in crate::host_platform) fn execute_frame_with_established_geometry(
+    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
+    tick: u64,
+) -> worth_ui_host_contract::UiHostPresentationCostReport {
     let outcome = match session.execute_mounted_frame(
         UiMountedFrameRequest::all_bound_surfaces(),
         UiPresentationDeadline::at_tick(tick),
@@ -281,7 +294,29 @@ pub(in crate::host_platform) fn execute_frame(
     };
     match outcome {
         UiMountedFrameOutcome::Published(publication) => publication.cost_report().adapter(),
-        _ => panic!("maximum-overlap frame did not publish"),
+        UiMountedFrameOutcome::RejectedBeforeEffects(rejection) => panic!(
+            "maximum-overlap frame rejected: {:?}",
+            rejection.rejections()
+        ),
+        UiMountedFrameOutcome::PresentationIndeterminate(_) => {
+            panic!("maximum-overlap frame became presentation-indeterminate")
+        }
+        UiMountedFrameOutcome::Unchanged(_) => panic!("maximum-overlap frame was unchanged"),
+        UiMountedFrameOutcome::InFlight(_) => panic!("maximum-overlap frame stayed in flight"),
+        UiMountedFrameOutcome::Reconciled(_) => panic!("maximum-overlap frame reconciled"),
+        UiMountedFrameOutcome::Superseded(_) => panic!("maximum-overlap frame was superseded"),
+        UiMountedFrameOutcome::RetentionDenied(_) => {
+            panic!("maximum-overlap frame exceeded retention")
+        }
+        UiMountedFrameOutcome::AdmissionDenied(rejection) => {
+            panic!(
+                "maximum-overlap frame admission was denied: {:?}",
+                rejection.denial()
+            )
+        }
+        UiMountedFrameOutcome::CompletionDenied(_) => {
+            panic!("maximum-overlap frame completion was denied")
+        }
     }
 }
 
@@ -310,13 +345,14 @@ pub(in crate::host_platform) fn component(identity: &str, index: usize) -> Compo
         ComponentChildPolicy::no_children(),
         ComponentStateOwnership::runtime_owned(),
     )
-    .with_static_paint(
-        ComponentStaticPaintContract::opaque_fill(
-            ThemeTokenId::new(token_identity(index)).unwrap(),
-            ComponentStaticPaintOrder::back_to_front(index as u32),
-        ),
-        allocation,
-    )
+    .with_allocation_measurement_contract(allocation)
+    .with_appearance_aspect_contract(super::appearance::role(index).aspect_contract().clone())
+    .expect("maximum-overlap component appearance contract is valid")
+    .with_surface_paint_order(index as u32)
+}
+
+pub(in crate::host_platform) fn component_identity(index: usize) -> String {
+    format!("host.platform.maximum.rect_{index:04}")
 }
 
 pub(in crate::host_platform) fn color_token(identity: &str, value: &str) -> ThemeTokenDescriptor {
@@ -324,12 +360,8 @@ pub(in crate::host_platform) fn color_token(identity: &str, value: &str) -> Them
         ThemeTokenId::new(identity).unwrap(),
         ThemeTokenFamily::surface(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex(value).unwrap()),
+        ThemeTokenValue::color(UiThemeColor::parse(value).unwrap()),
     )
-}
-
-pub(in crate::host_platform) fn component_identity(index: usize) -> String {
-    format!("host.platform.maximum.rect_{index:04}")
 }
 
 pub(in crate::host_platform) fn token_identity(index: usize) -> String {

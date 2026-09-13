@@ -99,7 +99,6 @@ pub(super) fn changed_instances(
     successor
         .keys()
         .copied()
-        .into_iter()
         .filter(|instance| {
             current.is_none_or(|surface| surface.viewport != viewport)
                 || current.and_then(|surface| surface.occurrences.get(instance))

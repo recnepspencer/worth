@@ -20,6 +20,7 @@ impl UiMountedQualifiedSemanticText {
                 surface: self.surface(),
                 binding: self.binding(),
                 mounted_instance: self.mounted_instance(),
+                portal_group: self.portal_group(),
                 node_receipt,
                 allocation_basis: self.allocation_basis(),
                 bounds: self.bounds(),

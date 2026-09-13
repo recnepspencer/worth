@@ -24,6 +24,7 @@ impl super::UiAppearanceCoherentBasis {
             session: snapshot.session(),
             source_basis: snapshot.source_basis(),
             generation: snapshot.generation().clone(),
+            source_generation: snapshot.generation().clone(),
             graph_node: consumer.graph_node(),
             consumer,
             mounted_instance,

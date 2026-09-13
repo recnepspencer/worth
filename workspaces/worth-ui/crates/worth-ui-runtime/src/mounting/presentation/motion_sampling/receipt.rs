@@ -18,7 +18,7 @@ pub(crate) struct UiPresentationMotionTerminalRequest {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(crate) struct UiPresentationMotionSamplingCost {
+pub struct UiPresentationMotionSamplingCost {
     tracks_considered: u64,
     hit_index_work: crate::mounting::hit_test_work::UiHitTestSpatialWork,
 }
@@ -43,6 +43,40 @@ pub(crate) struct UiPresentationMotionSamplingReceipt {
     terminals: Box<[UiPresentationMotionTerminalRequest]>,
     cost: UiPresentationMotionSamplingCost,
     hit_transition: Option<crate::mounting::UiCommittedPresentedHitTransition>,
+    presented_surface: Option<UiPresentationMotionPresentedSurface>,
+}
+
+/// The exact host presentation basis that accepted this tick's sampled pixels,
+/// together with the semantic surface it now makes current. Owners whose
+/// committed records carry a presentation basis for that surface rebind to it.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct UiPresentationMotionPresentedSurface {
+    semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+}
+
+impl UiPresentationMotionPresentedSurface {
+    pub(in crate::mounting) const fn new(
+        semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> Self {
+        Self {
+            semantic_surface,
+            presentation,
+        }
+    }
+
+    pub(crate) const fn semantic_surface(
+        self,
+    ) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
+        self.semantic_surface
+    }
+
+    pub(crate) const fn presentation(
+        self,
+    ) -> worth_ui_host_contract::UiHostObservationPresentationBasis {
+        self.presentation
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -76,13 +110,11 @@ impl UiPresentationMotionSamplingCost {
         }
     }
 
-    pub(in crate::mounting) const fn hit_index_work(
-        self,
-    ) -> crate::mounting::hit_test_work::UiHitTestSpatialWork {
+    pub const fn hit_index_work(self) -> crate::mounting::hit_test_work::UiHitTestSpatialWork {
         self.hit_index_work
     }
 
-    pub(crate) const fn tracks_considered(self) -> u64 {
+    pub const fn tracks_considered(self) -> u64 {
         self.tracks_considered
     }
 }
@@ -248,6 +280,19 @@ impl UiPresentationMotionSamplingReceipt {
         self.cost.hit_index_work.merge(work);
     }
 
+    pub(in crate::mounting) fn record_presented_surface(
+        &mut self,
+        presented: UiPresentationMotionPresentedSurface,
+    ) {
+        self.presented_surface = Some(presented);
+    }
+
+    /// `None` when the tick committed without presenting pixels; the host
+    /// current basis is then unchanged and no owner record needs rebinding.
+    pub(crate) const fn presented_surface(&self) -> Option<UiPresentationMotionPresentedSurface> {
+        self.presented_surface
+    }
+
     pub(super) fn new(
         samples: Vec<UiPresentationMotionSampleReceipt>,
         terminals: Vec<UiPresentationMotionTerminalRequest>,
@@ -259,6 +304,7 @@ impl UiPresentationMotionSamplingReceipt {
             terminals: terminals.into_boxed_slice(),
             cost,
             hit_transition: None,
+            presented_surface: None,
         }
     }
 

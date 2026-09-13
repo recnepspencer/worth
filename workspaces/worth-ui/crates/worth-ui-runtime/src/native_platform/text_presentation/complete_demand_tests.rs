@@ -182,6 +182,7 @@ fn candidate(
             surface: UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
             binding: UiSurfaceBindingGeneration::mint_unbound().unwrap(),
             mounted_instance: instance,
+            portal_group: None,
             node_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
                 .unwrap()
                 .receipt_for(instance),

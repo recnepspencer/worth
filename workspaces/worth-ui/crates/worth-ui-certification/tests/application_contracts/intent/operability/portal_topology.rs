@@ -11,15 +11,15 @@ use worth_ui::facade::intent::{
 use worth_ui_certification::scenario::filesystem_application_lifecycle::FilesystemApplicationLifecycleScenario;
 use worth_ui_dsl::{
     WorthUiArtifactInputBodyAtom, WorthUiIntentInteractionFamily, WorthUiIntentInteractionRoute,
-    WorthUiProjectionLifecycle, WorthUiRustAuthoredArtifactInput,
-    WorthUiRustAuthoredArtifactInputModule,
+    WorthUiPortalDismissalSet, WorthUiPortalLayer, WorthUiProjectionLifecycle,
+    WorthUiRustAuthoredArtifactInput, WorthUiRustAuthoredArtifactInputModule,
 };
 use worth_ui_host_headless::{UiHeadlessRecorderCapacity, WorthUiHeadlessRecorder};
 use worth_ui_runtime::facade::measurement_exchange::UiViewportExtentObservation;
 
 use super::facts::OperabilityFacts;
 use super::intent_types::PrimaryIntent;
-use super::topology::{module, PRIMARY_DECLARATION};
+use super::topology::PRIMARY_DECLARATION;
 
 const CONTRACT: &str = "phase3.portal.operability";
 const CONFIRMATION_POLICY: &str = "phase3.portal.confirmation-policy";
@@ -30,6 +30,7 @@ const PAINT_AND_HIT: &str = "visual.identity.component.paint_and_hit";
 const SECOND_FOCUS: &str = "phase3.portal.component.second_focus";
 const NEITHER: &str = "visual.identity.component.neither";
 const SURFACE: &str = "visual.identity.surface.main";
+const PORTAL: &str = "phase3.portal.details";
 const PAINT_ONLY_TOKEN: &str = "theme.visual_identity.paint_only";
 const PAINT_AND_HIT_TOKEN: &str = "theme.visual_identity.paint_and_hit";
 
@@ -58,12 +59,7 @@ where
     Host: worth_ui_certification::scenario::application_authority_closure::fixed_host::FixedCertificationHostBinding,
 {
     let facts = OperabilityFacts::new();
-    let input = module(
-        PRIMARY_DECLARATION,
-        PRIMARY_DECLARATION,
-        WorthUiIntentInteractionFamily::Activate,
-        [declaration(&facts)],
-    );
+    let input = portal_module(&facts, UiIntentConcurrencyScope::TargetRouteSingleFlight);
     let app = FilesystemApplicationLifecycleScenario::new("phase-3-portal-service-world")
         .portal_semantic_text_action_application_builder(host)
         .register_intent_boolean_fact(facts.mutability.clone(), true)
@@ -101,13 +97,28 @@ where
         WorthUiRustAuthoredArtifactInputModule::new("app/main.wui")
             .with_component(PAINT_ONLY)
             .with_control_routes(HIT_ONLY, [route.clone()])
-            .with_control_routes(PAINT_AND_HIT, [route.clone()])
+            .with_control_routes_and_authored_identity(
+                PAINT_AND_HIT,
+                PAINT_AND_HIT,
+                [route.clone().opens_portal(PORTAL)],
+            )
             .with_control_routes(SECOND_FOCUS, [route])
             .with_component(NEITHER)
             .with_surface(SURFACE)
             .with_token(PAINT_ONLY_TOKEN, "theme.visual_identity.red")
             .with_token(PAINT_AND_HIT_TOKEN, "theme.visual_identity.purple")
-            .with_intent_declaration(declaration(&facts)),
+            .with_intent_declaration(declaration(&facts))
+            .with_portal_declaration(
+                PORTAL,
+                SURFACE,
+                PAINT_AND_HIT,
+                WorthUiPortalLayer::Modal,
+                portal_dismissals(),
+                true,
+                true,
+                "system_popover",
+            )
+            .expect("the two-focus Portal declaration is valid"),
     ]);
     let app = FilesystemApplicationLifecycleScenario::new("phase-3-portal-two-focus-world")
         .portal_semantic_text_action_application_builder(host)
@@ -207,6 +218,9 @@ fn projected_module(facts: &OperabilityFacts) -> WorthUiRustAuthoredArtifactInpu
         WorthUiArtifactInputBodyAtom::Identifier("activate".to_owned()),
         WorthUiArtifactInputBodyAtom::Identifier("routes".to_owned()),
         WorthUiArtifactInputBodyAtom::Identifier(PRIMARY_DECLARATION.to_owned()),
+        WorthUiArtifactInputBodyAtom::Identifier("opens".to_owned()),
+        WorthUiArtifactInputBodyAtom::Identifier("portal".to_owned()),
+        WorthUiArtifactInputBodyAtom::Identifier(PORTAL.to_owned()),
     ];
     let module = WorthUiRustAuthoredArtifactInputModule::new("app/main.wui")
         .with_component(PAINT_ONLY)
@@ -217,7 +231,11 @@ fn projected_module(facts: &OperabilityFacts) -> WorthUiRustAuthoredArtifactInpu
                 PRIMARY_DECLARATION,
             )],
         )
-        .with_component_body_atoms(PAINT_AND_HIT, projection_and_route)
+        .with_component_body_atoms_and_authored_identity(
+            PAINT_AND_HIT,
+            PAINT_AND_HIT,
+            projection_and_route,
+        )
         .with_component(NEITHER)
         .with_surface(SURFACE)
         .with_token(PAINT_ONLY_TOKEN, "theme.visual_identity.red")
@@ -229,11 +247,75 @@ fn projected_module(facts: &OperabilityFacts) -> WorthUiRustAuthoredArtifactInpu
             WorthUiProjectionLifecycle::Live,
         )
         .expect("the product scalar projection declaration is valid")
-        .with_intent_declaration(declaration(facts));
+        .with_intent_declaration(declaration(facts))
+        .with_portal_declaration(
+            PORTAL,
+            SURFACE,
+            PAINT_AND_HIT,
+            WorthUiPortalLayer::Modal,
+            portal_dismissals(),
+            true,
+            true,
+            "system_popover",
+        )
+        .expect("the projected Portal declaration is valid");
     WorthUiRustAuthoredArtifactInput::from_modules([module])
 }
 
+pub(in crate::intent) fn portal_replacement_input(
+    facts: &OperabilityFacts,
+) -> WorthUiRustAuthoredArtifactInput {
+    portal_module(facts, UiIntentConcurrencyScope::DeclarationSingleFlight)
+}
+
+fn portal_module(
+    facts: &OperabilityFacts,
+    concurrency: UiIntentConcurrencyScope,
+) -> WorthUiRustAuthoredArtifactInput {
+    let route = WorthUiIntentInteractionRoute::product(
+        WorthUiIntentInteractionFamily::Activate,
+        PRIMARY_DECLARATION,
+    );
+    let module = WorthUiRustAuthoredArtifactInputModule::new("app/main.wui")
+        .with_component(PAINT_ONLY)
+        .with_control_routes(HIT_ONLY, [route.clone()])
+        .with_control_routes_and_authored_identity(
+            PAINT_AND_HIT,
+            PAINT_AND_HIT,
+            [route.opens_portal(PORTAL)],
+        )
+        .with_component(NEITHER)
+        .with_surface(SURFACE)
+        .with_token(PAINT_ONLY_TOKEN, "theme.visual_identity.red")
+        .with_token(PAINT_AND_HIT_TOKEN, "theme.visual_identity.purple")
+        .with_intent_declaration(declaration_with_concurrency(facts, concurrency))
+        .with_portal_declaration(
+            PORTAL,
+            SURFACE,
+            PAINT_AND_HIT,
+            WorthUiPortalLayer::Modal,
+            portal_dismissals(),
+            true,
+            true,
+            "system_popover",
+        )
+        .expect("the Portal declaration is valid");
+    WorthUiRustAuthoredArtifactInput::from_modules([module])
+}
+
+fn portal_dismissals() -> WorthUiPortalDismissalSet {
+    WorthUiPortalDismissalSet::from_flags(true, true, true, true)
+        .expect("the Portal has explicit dismissal causes")
+}
+
 fn declaration(facts: &OperabilityFacts) -> worth_ui_dsl::WorthUiIntentDeclarationSpec {
+    declaration_with_concurrency(facts, UiIntentConcurrencyScope::TargetRouteSingleFlight)
+}
+
+fn declaration_with_concurrency(
+    facts: &OperabilityFacts,
+    concurrency: UiIntentConcurrencyScope,
+) -> worth_ui_dsl::WorthUiIntentDeclarationSpec {
     UiIntentDeclaration::<PrimaryIntent>::activate(PRIMARY_DECLARATION)
         .unwrap()
         .operability_from(
@@ -252,7 +334,7 @@ fn declaration(facts: &OperabilityFacts) -> worth_ui_dsl::WorthUiIntentDeclarati
             )
             .unwrap(),
         )
-        .concurrency(UiIntentConcurrencyScope::TargetRouteSingleFlight)
+        .concurrency(concurrency)
         .consequences(UiIntentConsequenceContract::mounted_posture())
         .into_dsl_spec()
 }

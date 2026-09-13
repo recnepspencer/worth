@@ -4,6 +4,9 @@ use crate::runtime::tests::appearance_component_session_test_support as support;
 mod test_support;
 use test_support::theme_session;
 
+#[path = "appearance_attachment_source_tests.rs"]
+mod attachment_source_tests;
+
 #[path = "appearance_projection_denial_tests.rs"]
 mod denial_tests;
 
@@ -12,6 +15,9 @@ mod removal_tests;
 
 #[path = "appearance_projection_succession_tests.rs"]
 mod succession_tests;
+
+#[path = "appearance_projection_reconstruction_tests.rs"]
+mod reconstruction_tests;
 
 #[path = "appearance_projection_surface_tests.rs"]
 mod surface_tests;
@@ -148,10 +154,10 @@ fn production_appearance_case(axis: worth_ui_dsl::UiAppearanceStateAxis, lifecyc
         outcome,
         crate::mounting::UiMountedFrameOutcome::Published(_)
     ));
-    let static_paint_colors = host.last_filled_rect_colors();
-    assert!(
-        static_paint_colors.is_empty(),
-        "Gate 4 keeps resolved appearance out of the live host command lane"
+    assert_eq!(
+        host.last_surface_colors(),
+        vec![worth_ui_host_contract::UiMountedRgba8::new(64, 80, 96, 255)],
+        "the accepted host request carries the resolved appearance color"
     );
 
     let projection = session
@@ -203,7 +209,7 @@ fn production_appearance_case(axis: worth_ui_dsl::UiAppearanceStateAxis, lifecyc
     host.push_native_display_settled_without_effects();
     test_support::publish_without_selected_appearance(&mut session, 3);
     if matches!(lifecycle, Lifecycle::Reconstruction) {
-        succession_tests::reconstruct_across_source_generation(
+        reconstruction_tests::reconstruct_across_source_generation(
             &mut session,
             &host,
             physical_predecessor,
@@ -234,3 +240,6 @@ fn production_appearance_case(axis: worth_ui_dsl::UiAppearanceStateAxis, lifecyc
     }
     let _ = session.shutdown();
 }
+
+#[path = "appearance_projection_theme_switch_tests.rs"]
+mod theme_switch_tests;

@@ -1,14 +1,5 @@
 use std::sync::Arc;
 
-use worth_ui::facade::declaration::{
-    MeasurementConstraint, MeasurementValue, MosaicChildRule, MosaicClippingPosture,
-    MosaicFocusScopeKind, MosaicHitTestPosture, MosaicMeasurementAuthority, MosaicOverflowBehavior,
-    MosaicParentGrowthBehavior, MosaicRegionKindDescriptor, MosaicRegionKindId,
-    MosaicRegionPersistence, MosaicRegionRole, MosaicResizePermission, MosaicScrollOwnership,
-    MosaicSizingBehavior, MosaicSizingContractDescriptor, MosaicSizingContractId, MosaicSizingKind,
-    MosaicSizingPersistence, MosaicViewportConstraint, NamedMeasurementDefinition,
-    NamedMeasurementToken, SurfacePlacementClass,
-};
 use worth_ui::facade::intent::{
     UiIntent, UiIntentApplicationFact, UiIntentBoolean, UiIntentConcurrencyScope,
     UiIntentConfirmationContract, UiIntentConsequenceContract, UiIntentDeclaration,
@@ -16,7 +7,6 @@ use worth_ui::facade::intent::{
     UiIntentPolicySource, UiIntentReadinessSource, UiIntentRuntimeServiceDestination, UiIntentText,
     UiIntentUnsigned64,
 };
-use worth_ui::facade::service::UiSelectionPolicy;
 use worth_ui_certification::scenario::application_authority_closure::fixed_host::FixedCertificationHostBinding;
 use worth_ui_dsl::{
     WorthUiIntentInteractionFamily, WorthUiIntentInteractionRoute,
@@ -38,9 +28,9 @@ use worth_ui_certification::scenario::filesystem_application_lifecycle::Filesyst
 
 type BoundBuilder = worth_ui_certification::scenario::application_authority_closure::FixedCertificationApplicationBuilder;
 
-#[path = "world/scroll_selection_input.rs"]
-mod scroll_selection_input;
-pub(in crate::intent) use scroll_selection_input::routed_scroll_selection_input;
+#[path = "world/scroll_portal.rs"]
+mod scroll_portal;
+pub(in crate::intent) use scroll_portal::{launch_scroll_portal, routed_scroll_selection_input};
 
 pub(in crate::intent) const DECLARATION: &str = "phase3.payload.route";
 const PAINT_ONLY: &str = "visual.identity.component.paint_only";
@@ -53,9 +43,6 @@ const PAINT_AND_HIT_TOKEN: &str = "theme.visual_identity.paint_and_hit";
 const OPERABILITY_FACT: &str = "phase3.payload.operable";
 const OPERABILITY_CONTRACT: &str = "phase3.payload.operability";
 const CONFIRMATION_POLICY: &str = "phase3.payload.confirmation";
-const SCROLL_REGION: &str = "phase315.selection.scroll_region";
-const SCROLL_SIZING: &str = "phase315.selection.scroll_sizing";
-const SCROLL_MEASUREMENT: &str = "phase315.selection.scroll_measurement";
 
 pub(in crate::intent) struct PayloadWorld {
     pub(in crate::intent) interaction: InteractionWorld,
@@ -121,70 +108,6 @@ pub(in crate::intent) fn launch<I: UiIntent>(
     let projection_slot = projection_slot(&projection);
     let application = prepare::<I>(input, projection, facts)
         .expect("payload world compiles through production application preparation");
-    launch_prepared(application, projection_slot)
-}
-
-pub(in crate::intent) fn launch_scroll_portal<I: UiIntent>(
-    input: WorthUiRustAuthoredArtifactInput,
-    projection: PayloadProjectionRegistration,
-    facts: PayloadApplicationFacts,
-    host: WorthUiHeadlessRecorder,
-) -> PayloadWorld {
-    let projection_slot = projection_slot(&projection);
-    let scenario = FilesystemApplicationLifecycleScenario::new("phase-315-selection-portal-world");
-    let builder = scenario
-        .portal_semantic_text_action_application_builder(host)
-        .register_mosaic_region_kind(
-            MosaicRegionKindDescriptor::new(
-                MosaicRegionKindId::new(SCROLL_REGION).expect("valid selection scroll region"),
-                MosaicRegionRole::primary(),
-            )
-            .with_sizing_behavior(MosaicSizingBehavior::fills_available_space())
-            .with_scroll_ownership(MosaicScrollOwnership::region_owned())
-            .with_focus_scope(MosaicFocusScopeKind::active_surface_scope())
-            .with_child_rule(MosaicChildRule::accepts_surfaces())
-            .with_allowed_surface_class(SurfacePlacementClass::primary_region())
-            .with_persistence(MosaicRegionPersistence::restorable())
-            .with_clipping(MosaicClippingPosture::clip_to_region())
-            .with_hit_test(MosaicHitTestPosture::participates()),
-        )
-        .register_mosaic_sizing_contract(
-            MosaicSizingContractDescriptor::new(
-                MosaicSizingContractId::new(SCROLL_SIZING).expect("valid selection scroll sizing"),
-                MosaicSizingKind::fill(),
-            )
-            .with_measurement_authority(MosaicMeasurementAuthority::runtime_token())
-            .with_resize_permission(MosaicResizePermission::user_resizable())
-            .with_persistence(MosaicSizingPersistence::restorable())
-            .with_overflow_behavior(MosaicOverflowBehavior::scroll_when_constrained())
-            .with_parent_growth_behavior(MosaicParentGrowthBehavior::does_not_force_parent())
-            .with_viewport_constraint(MosaicViewportConstraint::clamp_to_viewport())
-            .with_named_measurement(NamedMeasurementDefinition::new(
-                NamedMeasurementToken::new(SCROLL_MEASUREMENT)
-                    .expect("valid selection scroll measurement"),
-                MeasurementValue::logical_pixels(320),
-                MeasurementConstraint::between(
-                    MeasurementValue::logical_pixels(200),
-                    MeasurementValue::logical_pixels(640),
-                ),
-            )),
-        )
-        .register_runtime_service_intent_definition(UiIntentDefinition::<I>::runtime_service(
-            UiIntentRuntimeServiceDestination::OpenPortal,
-        ))
-        .expect("typed selection portal definition registers")
-        .with_selection_policy_defaults(UiSelectionPolicy::multiple());
-    let builder = register_projection(builder, projection);
-    let builder = register_facts(builder, facts);
-    let application = builder
-        .with_rust_authored_input(input)
-        .freeze()
-        .expect("selection portal world compiles through production preparation");
-    assert_eq!(
-        application.service_policy_plan().selection(),
-        Some(UiSelectionPolicy::multiple()),
-        "SelectionCommit declarations demand the owner and preserve public policy defaults"
-    );
     launch_prepared(application, projection_slot)
 }
 
@@ -349,28 +272,5 @@ fn bind_operability<I: UiIntent>(
         )
         .concurrency(UiIntentConcurrencyScope::TargetRouteSingleFlight)
         .consequences(UiIntentConsequenceContract::none())
-        .into_dsl_spec()
-}
-
-fn bind_portal_operability<I: UiIntent>(
-    declaration: UiIntentDeclaration<I>,
-) -> worth_ui_dsl::WorthUiIntentDeclarationSpec {
-    let fact = operability_fact();
-    declaration
-        .operability_from(
-            UiIntentOperabilityContract::new(
-                OPERABILITY_CONTRACT,
-                UiIntentMutabilitySource::application_fact(&fact),
-                UiIntentReadinessSource::application_fact(&fact),
-                UiIntentPolicySource::application_fact(&fact),
-            )
-            .expect("payload operability contract identity is valid"),
-        )
-        .confirmation(
-            UiIntentConfirmationContract::not_required(CONFIRMATION_POLICY)
-                .expect("payload confirmation policy identity is valid"),
-        )
-        .concurrency(UiIntentConcurrencyScope::TargetRouteSingleFlight)
-        .consequences(UiIntentConsequenceContract::mounted_posture())
         .into_dsl_spec()
 }

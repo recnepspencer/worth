@@ -11,6 +11,21 @@ pub(in crate::observation_contract) struct PlatformPulseValidatedContentPublicat
 }
 
 impl PlatformPulseLifecycleObservationStream {
+    /// Advances visual currentness from an accepted ordinary content frame.
+    /// The frame is not a new source or Query publication event.
+    pub fn observe_mounted_content_publication(
+        &mut self,
+        publication: &UiMountedFramePublicationReceipt,
+    ) -> Result<(), PlatformPulseLifecycleObservationProjectionDenial> {
+        let publication = self.validate_content_publication(publication)?;
+        let visual = self
+            .visual_state
+            .after_content_publication(publication.frame().diagnostic_value())?;
+        self.commit_content_publication(publication);
+        self.visual_state = visual;
+        Ok(())
+    }
+
     pub(in crate::observation_contract) fn validate_content_publication(
         &self,
         publication: &UiMountedFramePublicationReceipt,

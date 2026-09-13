@@ -36,6 +36,7 @@ impl WorthUiRustAuthoredDeclarationFixture {
         self
     }
 
+    #[cfg(test)]
     pub(crate) fn with_appearance_role(
         mut self,
         module_path: impl Into<String>,
@@ -45,6 +46,7 @@ impl WorthUiRustAuthoredDeclarationFixture {
         self
     }
 
+    #[cfg(test)]
     pub(crate) fn with_component_appearance_role(
         mut self,
         module_path: impl Into<String>,

@@ -47,25 +47,23 @@ pub(super) fn session(
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
     host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let observer = host.clone();
-    let session = intent::register(support::legacy_static_paint_appearance_component_builder(
-        &role,
-    ))
-    .register_appearance_theme_bundle(super::super::test_support::theme_bundle())
-    .unwrap()
-    .register_collection_projection(registration)
-    .unwrap()
-    .with_selection_policy_defaults(crate::declaration::UiSelectionPolicy::multiple())
-    .with_rust_authored_input(WorthUiRustAuthoredArtifactInput::from_modules([module]))
-    .freeze()
-    .map(|application| {
-        crate::facade::entry::WorthUiCertificationApplicationTransition::activate_test_host(
-            application,
-            host,
-        )
-    })
-    .unwrap()
-    .launch()
-    .unwrap();
+    let session = intent::register(support::alternate_token_appearance_component_builder(&role))
+        .register_appearance_theme_bundle(super::super::test_support::theme_bundle())
+        .unwrap()
+        .register_collection_projection(registration)
+        .unwrap()
+        .with_selection_policy_defaults(crate::declaration::UiSelectionPolicy::multiple())
+        .with_rust_authored_input(WorthUiRustAuthoredArtifactInput::from_modules([module]))
+        .freeze()
+        .map(|application| {
+            crate::facade::entry::WorthUiCertificationApplicationTransition::activate_test_host(
+                application,
+                host,
+            )
+        })
+        .unwrap()
+        .launch()
+        .unwrap();
     (session, observer)
 }
 

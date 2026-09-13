@@ -121,7 +121,7 @@ impl super::UiPreparedMountedFrame {
                 predecessor: Some(retiring_receipt),
                 successor: None,
             }));
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(retry).unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(retry).unwrap();
     }
 
     pub(crate) fn verify_mixed_appearance_reconstruction_denial_and_retry(&self) {
@@ -194,7 +194,7 @@ impl super::UiPreparedMountedFrame {
             changed, 1,
             "only the selected theme consumer changes mechanics"
         );
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
     }
 
     pub(crate) fn verify_unpublished_appearance_member_denial(&self) {
@@ -307,7 +307,7 @@ impl super::UiPreparedMountedFrame {
         assert!(retry_output.fragments().iter().all(|fragment| {
             fragment.work().posture() == expected_posture && fragment.work().predecessor().is_some()
         }));
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(retry_output)
+        worth_ui_host_headless::translate_appearance_projection_for_certification(retry_output)
             .unwrap();
         assert_eq!(
             self.candidate.owner.appearance_selection_cost_report(),

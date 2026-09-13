@@ -1,6 +1,25 @@
 use super::{UiMountedAppearanceStateMembers, UiMountedAppearanceStateMembership};
 
 impl UiMountedAppearanceStateMembers {
+    pub(in crate::mounting::projection::frame_storage) fn retained_sidecars(
+        &self,
+    ) -> impl Iterator<Item = &super::UiMountedAppearanceSidecar> {
+        self.primary
+            .iter()
+            .filter_map(|(_, membership)| match membership {
+                UiMountedAppearanceStateMembership::Retained(entry) => Some(&entry.sidecar),
+                // Epoch changes retire semantic authority while the accepted image
+                // remains physically visible until its replacement is accepted.
+                UiMountedAppearanceStateMembership::PhysicalOnly(physical) => {
+                    Some(&physical.sidecar)
+                }
+                UiMountedAppearanceStateMembership::Staged { predecessor, .. } => predecessor
+                    .as_ref()
+                    .map(super::UiMountedAppearanceStatePredecessor::sidecar),
+                UiMountedAppearanceStateMembership::Reserved => None,
+            })
+    }
+
     pub(in crate::mounting::projection::frame_storage) fn matches_geometry_input(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,

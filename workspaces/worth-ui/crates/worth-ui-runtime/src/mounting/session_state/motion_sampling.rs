@@ -8,6 +8,12 @@ pub(crate) enum UiMountedMotionSampleSettlement {
 }
 
 impl WorthUiMountedSessionState {
+    pub(crate) const fn last_motion_sampling_cost(
+        &self,
+    ) -> Option<crate::mounting::UiPresentationMotionSamplingCost> {
+        self.last_motion_sampling_cost
+    }
+
     pub(super) fn rebind_motion_sampling_after_publication(
         &mut self,
         publication: &crate::mounting::UiMountedFramePublicationReceipt,
@@ -27,6 +33,7 @@ impl WorthUiMountedSessionState {
         });
     }
 
+    #[cfg(test)]
     pub(crate) fn accepted_motion_for_command(
         &self,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
@@ -96,9 +103,9 @@ impl WorthUiMountedSessionState {
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     ) -> UiMountedMotionSampleSettlement {
         if prepared.receipt().samples().is_empty() {
-            return UiMountedMotionSampleSettlement::Committed(
-                self.motion_sampling.commit_prepared(prepared),
-            );
+            let receipt = self.motion_sampling.commit_prepared(prepared);
+            self.last_motion_sampling_cost = Some(receipt.cost());
+            return UiMountedMotionSampleSettlement::Committed(receipt);
         }
         let capability_report = host.capability_report().clone();
         let outcome = self.presentation.present_motion_sample(
@@ -136,17 +143,22 @@ impl WorthUiMountedSessionState {
                         .mark_motion_sample_indeterminate(presentation.binding());
                     return UiMountedMotionSampleSettlement::PresentationIndeterminate;
                 };
-                let hit_predecessor = self.retention.current_hit_evidence();
-                if self
+                let hit_predecessor = self.retention.hit_evidence(presentation.frame());
+                let Ok(presented_surface) = self
                     .retention
                     .update_current_presentation_epoch(presentation)
-                    .is_err()
-                {
+                else {
                     self.presentation
                         .mark_motion_sample_indeterminate(presentation.binding());
                     return UiMountedMotionSampleSettlement::PresentationIndeterminate;
-                }
+                };
                 let mut receipt = self.motion_sampling.commit_prepared(prepared);
+                receipt.record_presented_surface(
+                    crate::mounting::presentation::motion_sampling::UiPresentationMotionPresentedSurface::new(
+                        presented_surface,
+                        presentation,
+                    ),
+                );
                 let targets = receipt
                     .samples()
                     .iter()
@@ -156,8 +168,10 @@ impl WorthUiMountedSessionState {
                     .retention
                     .refresh_presented_hit_motion(&self.motion_sampling, &targets);
                 receipt.record_hit_index_work(hit_work);
+                self.last_motion_sampling_cost = Some(receipt.cost());
                 receipt.record_hit_transition(
-                    self.retention.committed_hit_transition(hit_predecessor),
+                    self.retention
+                        .committed_hit_transition(hit_predecessor, presentation.frame()),
                 );
                 let changed = self
                     .presentation
@@ -193,9 +207,19 @@ impl WorthUiMountedSessionState {
         {
             return Err(crate::mounting::UiPresentedFrameBasisDenial::PresentationTruthUnavailable);
         }
+        let relation = self.classify_admitted_interaction_presentation(presentation)?;
+        let row_presentation =
+            if relation == crate::mounting::UiPresentedFrameBasisRelation::Retained {
+                self.current_surface_for_binding(presentation.binding())
+                    .and_then(|surface| self.current_presentation_for_surface(surface))
+                    .filter(|current| current.frame() == presentation.frame())
+                    .unwrap_or(presentation)
+            } else {
+                presentation
+            };
         let coordinate_space = self
             .retention
-            .interaction_hit_test_basis(presentation)?
+            .interaction_hit_test_basis(row_presentation)?
             .rows()
             .iter()
             .find(|row| row.mounted_instance() == mounted_instance)

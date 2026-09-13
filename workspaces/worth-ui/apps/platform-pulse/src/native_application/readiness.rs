@@ -12,16 +12,27 @@ impl PlatformPulseApplicationRuntime {
     ) -> Result<worth_ui_native_platform::UiNativeApplicationReadinessPort, ()> {
         let readiness: [worth_ui_native_platform::UiNativeApplicationReadinessPort; 5] =
             readiness.into_vec().try_into().map_err(|_| ())?;
-        let [startup, source, query, intent, visual] = readiness;
+        let [startup, source, query, product_input, visual] = readiness;
         self.source_watch.as_ref().ok_or(())?.install_readiness(
             worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal::from_native(source),
         );
         self.query_watch.as_ref().ok_or(())?.install_readiness(
             worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal::from_native(query),
         );
-        self.intent_watch.as_ref().ok_or(())?.install_readiness(
-            worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal::from_native(intent),
-        );
+        // Both application-owned inputs are drained on the same product turn.
+        // Coalescing their wake carries no Intent or theme publication authority.
+        let product_input =
+            worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal::from_native(
+                product_input,
+            );
+        self.intent_watch
+            .as_ref()
+            .ok_or(())?
+            .install_readiness(product_input.clone());
+        self.theme_watch
+            .as_ref()
+            .ok_or(())?
+            .install_readiness(product_input);
         self.visual_identity.install_readiness(
             worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal::from_native(visual),
         );
@@ -30,13 +41,14 @@ impl PlatformPulseApplicationRuntime {
 
     fn advance_native_product_turn(&mut self) {
         if !self.startup_ready
+            || self.visual_identity.retains_rebind_receipt()
             || self.pending_managed_rebind.is_some()
             || self.pending_frame_presentation.is_some()
         {
             return;
         }
         let mut shell = self.take_runtime_shell();
-        self.advance_pending_intent_postures(&mut shell);
+        self.advance_pending_native_publications(&mut shell);
         self.shell = Some(shell);
         if self.terminal_error.is_some()
             || self.pending_managed_rebind.is_some()
@@ -55,6 +67,10 @@ impl PlatformPulseApplicationRuntime {
             || self.pending_managed_rebind.is_some()
             || self.pending_frame_presentation.is_some()
         {
+            return;
+        }
+        self.poll_theme_preference();
+        if self.terminal_error.is_some() || self.pending_managed_rebind.is_some() {
             return;
         }
         self.poll_source();
@@ -86,7 +102,9 @@ impl PlatformPulseApplicationRuntime {
         }
     }
 
-    fn take_runtime_shell(&mut self) -> worth_ui::facade::app::WorthUiNativeApplicationShell {
+    pub(super) fn take_runtime_shell(
+        &mut self,
+    ) -> worth_ui::facade::app::WorthUiNativeApplicationShell {
         self.shell
             .take()
             .expect("native application runtime retains the callback shell")
@@ -98,7 +116,7 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
         &self,
     ) -> worth_ui_native_platform::UiNativeApplicationReadinessOwnerCount {
         worth_ui_native_platform::UiNativeApplicationReadinessOwnerCount::new(5)
-            .expect("Pulse has startup, source, Query, intent, and visual readiness owners")
+            .expect("Pulse has startup, source, Query, product-input, and visual readiness owners")
     }
 
     fn activate(
@@ -228,6 +246,18 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
         worth_ui_native_platform::UiNativeApplicationRuntimeProgressStopped,
     > {
         let mut application = application;
+        if let Some(denial) = progress
+            .focus_publications()
+            .find_map(|result| result.as_ref().err())
+        {
+            self.fail(
+                super::PlatformPulseTerminalError::FocusPlacement(*denial),
+                Ok(()),
+            );
+            self.shell = Some(application);
+            let directive = self.native_runtime_directive();
+            return Ok((self.take_runtime_shell(), directive));
+        }
         if let Err(denial) = self.native_input.observe_native(&progress, &self.publisher) {
             self.fail(
                 super::PlatformPulseTerminalError::ObservationPublication,

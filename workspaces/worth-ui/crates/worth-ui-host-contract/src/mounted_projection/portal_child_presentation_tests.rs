@@ -1,12 +1,11 @@
 use crate::{
     UiHostObservationPresentationBasis, UiHostPresentationEpoch, UiHostSurfaceIdentity,
-    UiMountedAllocationBasis, UiMountedCanonicalBox, UiMountedCanonicalBoxInput,
-    UiMountedCoordinateSpace, UiMountedFilledRectCompletionInput, UiMountedFilledRectMechanic,
+    UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
     UiMountedFrameIdentity, UiMountedHitTestCompletionInput, UiMountedHitTestMechanic,
     UiMountedHitTestOrder, UiMountedInstanceIdentity, UiMountedNodeReceiptIssuer,
     UiMountedPortalInputShielding, UiMountedPortalOverlayCompletionInput,
     UiMountedPortalOverlayLifecyclePosture, UiMountedPortalOverlayMechanic, UiMountedRgba8,
-    UiMountedTransformProjection, UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
+    UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
 };
 
 #[test]
@@ -27,21 +26,6 @@ fn portal_children_translate_clip_raise_and_redigest_from_the_portal_surface() {
         UiMountedCoordinateSpace::HostSurface,
     );
 
-    let paint = UiMountedFilledRectMechanic::complete_from_runtime_mounting(
-        UiMountedFilledRectCompletionInput {
-            frame,
-            surface,
-            binding,
-            mounted_instance: child,
-            node_receipt: child_receipt,
-            allocation_basis: allocation_basis(),
-            bounds: occurrence,
-            color: UiMountedRgba8::new(26, 31, 44, 255),
-            layer_semantic_order: 7,
-            clip_bounds: occurrence,
-        },
-    )
-    .unwrap();
     let hit =
         UiMountedHitTestMechanic::complete_from_runtime_mounting(UiMountedHitTestCompletionInput {
             frame,
@@ -55,18 +39,16 @@ fn portal_children_translate_clip_raise_and_redigest_from_the_portal_surface() {
         })
         .unwrap();
 
-    let presented_paint = paint.presented_within_portal(portal).unwrap().unwrap();
-    let presented_hit = hit.presented_within_portal(portal).unwrap().unwrap();
+    let presented_hit = hit
+        .presented_within_portal(portal, portal.anchor_bounds())
+        .unwrap()
+        .unwrap();
     let expected = canonical_box(112.0, 218.0, 80.0, 32.0, UiMountedCoordinateSpace::Viewport);
 
-    assert_eq!(presented_paint.bounds(), expected);
     assert_eq!(presented_hit.bounds(), expected);
-    assert_eq!(presented_paint.clip_bounds(), expected);
     assert_eq!(presented_hit.clip_bounds(), expected);
-    assert_eq!(presented_paint.layer_semantic_order(), 2_008);
     assert_eq!(presented_hit.order().rank(), 9);
     assert!(presented_hit.order() < hit.order());
-    assert_ne!(presented_paint.semantic_digest(), paint.semantic_digest());
     assert_ne!(presented_hit.semantic_digest(), hit.semantic_digest());
 }
 
@@ -191,10 +173,6 @@ fn retained_portal_equivalence_excludes_lineage_but_rejects_physical_changes() {
 }
 
 mod clipping;
-
-fn allocation_basis() -> UiMountedAllocationBasis {
-    UiMountedAllocationBasis::new(1, 2, 3, UiMountedTransformProjection::Identity)
-}
 
 fn canonical_box(
     x: f32,

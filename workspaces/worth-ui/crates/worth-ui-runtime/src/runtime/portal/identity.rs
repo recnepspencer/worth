@@ -49,7 +49,7 @@ impl UiPortalOwnerIdentity {
 }
 
 impl UiPortalIdentity {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn for_test(graph_node: u64) -> Self {
         Self::for_owner(UiPortalOwnerIdentity::for_test(graph_node, 0))
     }

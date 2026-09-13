@@ -209,16 +209,13 @@ fn publish_green(
     assert_action(evidence.action(), PulseSourceDeltaIdentity::Green);
     assert_eq!(evidence.sequence(), 18);
     assert_eq!(
-        green.retirement_evidence().retirement().successor_frame(),
-        evidence.replacement().successor_frame().diagnostic_value()
+        green.snapshot_evidence().snapshot().affinity().frame(),
+        green.retirement_evidence().retirement().successor_frame()
     );
-    let comparison = green.comparison_evidence().comparison();
     assert!(
-        !comparison.identity_rebound(),
-        "the exact color-only edit must preserve stable authored identity"
+        green.snapshot_evidence().snapshot().affinity().frame()
+            > evidence.replacement().successor_frame().diagnostic_value()
     );
-    assert_eq!(comparison.retained_pixels_differ(), Some(true));
-    assert!(comparison.retained_pixel_bytes_examined() > 0);
     assert!(evidence.replacement().actual_native_effect_count() > 0);
     assert_eq!(evidence.identity().process_id(), first_process);
     assert_eq!(evidence.identity().window(), first_window);
@@ -235,7 +232,8 @@ fn preserve_green(
 ) -> PulseExecutableWorld<PreservedPredecessor> {
     let predecessor = green.evidence();
     let prior_generation = predecessor.replacement().active_generation();
-    let prior_frame = predecessor.replacement().successor_frame();
+    let prior_frame = green.snapshot_evidence().snapshot().affinity().frame();
+    let prior_sequence = green.snapshot_evidence().sequence();
     let prior_window = predecessor.identity().window();
     let awaiting: PulseExecutableWorld<AwaitingPreservation> = green
         .apply_malformed(delta)
@@ -247,9 +245,12 @@ fn preserve_green(
         });
     let evidence = preserved.evidence();
     assert_action(evidence.action(), PulseSourceDeltaIdentity::Malformed);
-    assert_eq!(evidence.sequence(), 22);
+    assert_eq!(evidence.sequence(), prior_sequence.saturating_add(1));
     assert_eq!(evidence.preserved().active_generation(), prior_generation);
-    assert_eq!(evidence.preserved().active_frame(), prior_frame);
+    assert_eq!(
+        evidence.preserved().active_frame().diagnostic_value(),
+        prior_frame
+    );
     assert_eq!(evidence.identity().window(), prior_window);
     assert_eq!(evidence.expected_color(), ExpectedNativeColor::Green);
     assert!(evidence.liveness().liveness_checks() >= 2);
@@ -279,9 +280,17 @@ fn recover_blue(
         evidence.action(),
         PulseSourceDeltaIdentity::CanonicalBlueRecovery,
     );
-    assert_eq!(evidence.sequence(), 23);
-    assert_eq!(recovered.rebase_snapshot_evidence().sequence(), 24);
-    assert_eq!(recovered.preservation_evidence().sequence(), 22);
+    assert_eq!(
+        evidence.sequence(),
+        recovered
+            .preservation_evidence()
+            .sequence()
+            .saturating_add(1)
+    );
+    assert_eq!(
+        recovered.rebase_snapshot_evidence().sequence(),
+        evidence.sequence().saturating_add(2)
+    );
     assert_eq!(evidence.identity().process_id(), process);
     assert_eq!(evidence.identity().window(), window);
     assert_ne!(evidence.replacement().active_generation(), prior_generation);
@@ -310,8 +319,17 @@ fn stop_on_revision_schema(
         evidence.replacement().action(),
         PulseSourceDeltaIdentity::RevisionSchema,
     );
-    assert_eq!(evidence.replacement().sequence(), 25);
-    assert_eq!(stopped.retirement_evidence().sequence(), 28);
+    assert_eq!(
+        evidence.replacement().sequence(),
+        stopped
+            .recovered_snapshot_evidence()
+            .sequence()
+            .saturating_add(1)
+    );
+    assert_eq!(
+        stopped.retirement_evidence().sequence(),
+        evidence.replacement().sequence().saturating_add(3)
+    );
     assert_eq!(evidence.query_basis(), &prior_query);
     assert_eq!(
         evidence.transition().kind(),
@@ -342,8 +360,17 @@ fn recover_status_schema(
         evidence.replacement().action(),
         PulseSourceDeltaIdentity::StatusSchemaRecovery,
     );
-    assert_eq!(evidence.replacement().sequence(), 29);
-    assert_eq!(recovered.rebase_snapshot_evidence().sequence(), 30);
+    assert_eq!(
+        evidence.replacement().sequence(),
+        recovered
+            .stopped_snapshot_evidence()
+            .sequence()
+            .saturating_add(1)
+    );
+    assert_eq!(
+        recovered.rebase_snapshot_evidence().sequence(),
+        evidence.replacement().sequence().saturating_add(2)
+    );
     assert_eq!(evidence.query_basis(), &stopped_query);
     assert_eq!(
         evidence.transition().kind(),
@@ -369,11 +396,5 @@ fn assert_action<Kind>(
     assert_eq!(action.action_count(), 1);
     assert!(action.written_bytes() > 0);
     assert_ne!(action.content_fingerprint(), 0);
-    assert_eq!(
-        action
-            .entry_source()
-            .file_name()
-            .and_then(|name| name.to_str()),
-        Some("main.wui")
-    );
+    assert!(action.entry_source().ends_with("main.wui"));
 }

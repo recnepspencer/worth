@@ -1,6 +1,3 @@
-use std::collections::BTreeMap;
-use std::sync::Arc;
-
 use worth_ui_dsl::{UiThemeSlotIdentity, UiThemeValue, UiThemeValueKind};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -8,11 +5,10 @@ pub(crate) struct UiThemeResolutionView {
     definition: crate::capability::UiThemeDefinition,
     catalog: crate::capability::UiThemeSlotCatalog,
     capability: super::UiThemeCapabilityReceipt,
-    typed_values: Option<Arc<BTreeMap<crate::capability::ThemeTokenId, UiThemeValue>>>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum UiThemeResolutionDenial {
+pub enum UiThemeResolutionDenial {
     MissingDefinition,
     DefinitionRevisionMismatch,
     CatalogRevisionMismatch,
@@ -90,16 +86,7 @@ impl UiThemeResolutionView {
             definition: definition.clone(),
             catalog: themes.catalog().clone(),
             capability: capability.clone(),
-            typed_values: None,
         })
-    }
-
-    pub(crate) fn with_typed_values(
-        mut self,
-        values: Arc<BTreeMap<crate::capability::ThemeTokenId, UiThemeValue>>,
-    ) -> Self {
-        self.typed_values = Some(values);
-        self
     }
 
     pub(crate) fn resolve(
@@ -147,14 +134,9 @@ impl UiThemeResolutionView {
         let terminal = UiThemeSlotIdentity::new(current_id.as_str()).ok_or_else(|| {
             UiThemeResolutionFailure::new(UiThemeResolutionDenial::InvalidSlotIdentity, work)
         })?;
-        let value = self
-            .typed_values
-            .as_ref()
-            .and_then(|values| values.get(&current_id).copied())
-            .or_else(|| self.definition.value(&current_id))
-            .ok_or_else(|| {
-                UiThemeResolutionFailure::new(UiThemeResolutionDenial::MissingValue, work)
-            })?;
+        let value = self.definition.value(&current_id).ok_or_else(|| {
+            UiThemeResolutionFailure::new(UiThemeResolutionDenial::MissingValue, work)
+        })?;
         if value.kind() != expected_kind {
             return Err(UiThemeResolutionFailure::new(
                 UiThemeResolutionDenial::ValueKindMismatch,

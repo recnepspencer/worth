@@ -14,10 +14,11 @@ pub(super) fn process(
     report: &UiHostObservationReport,
     kind: Option<UiPrimaryPointerKind>,
     mounted: &crate::mounting::WorthUiMountedSessionState,
+    work: &mut crate::mounting::UiHitTestSpatialWork,
 ) -> Vec<UiPointerGestureOutcome> {
     if let Some((pointer_identity, reason)) = stop {
         state.stop_pointer_for_denial(pointer_identity, report.sequence(), reason)
     } else {
-        state.process_report(core, report, kind, mounted)
+        state.process_report(core, report, kind, mounted, work)
     }
 }

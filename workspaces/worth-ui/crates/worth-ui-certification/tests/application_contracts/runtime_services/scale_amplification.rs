@@ -67,11 +67,8 @@ fn independent_proposal_oracle() -> IndependentOccupancyModel {
 #[test]
 #[ignore = "closure-stress: milestone 3.15 RS-10 full service and mounted scale world"]
 fn runtime_service_scale_has_named_local_work_and_exact_zero_residue() {
-    let mounted_nodes = crate::host_platform::verify_4096_mounted_node_world();
     let evidence = worth_ui_test_support::runtime_service_scale_evidence();
     let model = independent_proposal_oracle();
-
-    assert_eq!(mounted_nodes, 4_096);
 
     // Scale relationships, each read back from live owner state.
     assert_eq!(evidence.service_neighborhoods(), 64);

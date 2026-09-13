@@ -211,6 +211,7 @@ pub(super) fn text_command(
         surface: predecessor.surface(),
         binding: predecessor.binding(),
         mounted_instance: predecessor.mounted_instance(),
+        portal_group: None,
         node_receipt: issuer.receipt_for(predecessor.mounted_instance()),
         allocation_basis: predecessor.allocation_basis(),
         bounds: predecessor.bounds(),

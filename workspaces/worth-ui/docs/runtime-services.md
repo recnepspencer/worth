@@ -97,7 +97,7 @@ succession before allocation work and commits it after successful activation,
 preserving declared surface bindings, live Portal rows, and stack order. A
 failed preparation leaves those bindings on their predecessor generation.
 
-The staged appearance mounting path distinguishes that generation change from
+The appearance mounting path distinguishes that generation change from
 unmounting. Expired semantic projections leave physical-only predecessors for
 still-mounted instances, preserving their exact session, incarnation, receipts,
 and capacity. Fresh resolution may replace those physical facts but cannot use
@@ -113,8 +113,9 @@ retry. Reconstruction after generation expiry requires a real current-owner
 observation close. That close queues the existing canonical initial selection;
 reconciliation consumes its resolver results once while rebuilding the remaining
 current projections. Reconstruction without refreshed semantic provenance denies
-and preserves the physical predecessors. This remains unpublished until the
-appearance protocol cutover.
+and preserves the physical predecessors. Accepted mounted appearance is live in
+presentation protocol revision 6; native and headless hosts consume the same
+prepared meaning.
 
 Physical outline lowering uses the admitted host appearance profile and each
 prepared surface binding's device scale to select the qualified anti-alias
@@ -279,8 +280,9 @@ This exact source is compiled by
 - [Native host platform](./native-host-platform.md) reports mechanics and
   performs the narrow semantic-focus effect. Portals remain ordinary mounted
   overlays, and motion remains runtime-sampled presentation.
-- Milestone 3.16 may consume service postures as appearance inputs. It may not
-  read service internals or create a second state lane.
+- Appearance consumes owner-issued service postures and accepted Motion samples
+  as inputs. It may not read service internals, mutate an owner, or create a
+  second state lane.
 
 ## Inspection And Debugging
 

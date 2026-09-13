@@ -1,8 +1,8 @@
 use std::fmt;
 
 use super::visual_contract_manifest::{
-    action_control, confirmation_control, portal_control, PlatformPulseNativeControlContract,
-    PlatformPulseVisualContractFailure,
+    action_control, confirmation_control, portal_control, portal_control_for_extent,
+    PlatformPulseNativeControlContract, PlatformPulseVisualContractFailure,
 };
 use crate::external_observation::{NativeClientPixelCapture, NativeClientPixelPoint};
 
@@ -70,6 +70,22 @@ pub(crate) fn adjudicate_portal_control_point(
     capture: &NativeClientPixelCapture,
 ) -> Result<PlatformPulsePortalControlPoint, IntentControlPointFailure> {
     let contract = portal_control().map_err(IntentControlPointFailure::VisualContract)?;
+    portal_control_point(capture, contract)
+}
+
+pub(crate) fn adjudicate_portal_control_point_for_extent(
+    capture: &NativeClientPixelCapture,
+    logical_client_extent: [u32; 2],
+) -> Result<PlatformPulsePortalControlPoint, IntentControlPointFailure> {
+    let contract = portal_control_for_extent(logical_client_extent)
+        .map_err(IntentControlPointFailure::VisualContract)?;
+    portal_control_point(capture, contract)
+}
+
+fn portal_control_point(
+    capture: &NativeClientPixelCapture,
+    contract: PlatformPulseNativeControlContract,
+) -> Result<PlatformPulsePortalControlPoint, IntentControlPointFailure> {
     let (point, _) = select_interior_pixel(capture, "portal", contract)?;
     Ok(PlatformPulsePortalControlPoint { point })
 }

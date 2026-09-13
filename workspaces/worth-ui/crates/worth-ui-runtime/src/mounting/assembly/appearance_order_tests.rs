@@ -30,14 +30,10 @@ impl UiPreparedMountedFrame {
             "the conflicting neighbor is retained and unselected"
         );
         assert_eq!(attempts[0].context().mounted_instance(), arriving);
-        let bytes = owner.appearance_order_retained_bytes();
+        let bytes = owner
+            .appearance_selection_cost_report()
+            .order_retained_bytes();
         assert!(bytes > 0);
-        assert_eq!(
-            owner
-                .appearance_selection_cost_report()
-                .order_retained_bytes(),
-            bytes
-        );
         let records = owner.lower_appearance(
             UiMountedPresentationAttemptIdentity::mint_unbound().unwrap(),
             self.manifest.surfaces(),
@@ -57,7 +53,12 @@ impl UiPreparedMountedFrame {
             owner.appearance().physical_node_receipts_for_test(),
             previous
         );
-        assert_eq!(owner.appearance_order_retained_bytes(), bytes);
+        assert_eq!(
+            owner
+                .appearance_selection_cost_report()
+                .order_retained_bytes(),
+            bytes
+        );
         // Retrying the real attempted contribution must still find the retained
         // neighbor. A leaked removal on the first failure would make this pass.
         owner
@@ -78,6 +79,11 @@ impl UiPreparedMountedFrame {
             owner.appearance().physical_node_receipts_for_test(),
             previous
         );
-        assert_eq!(owner.appearance_order_retained_bytes(), bytes);
+        assert_eq!(
+            owner
+                .appearance_selection_cost_report()
+                .order_retained_bytes(),
+            bytes
+        );
     }
 }

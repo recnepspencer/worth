@@ -15,8 +15,8 @@ use crate::capability::{
     MosaicStatePersistencePolicy, MosaicStateReplacementRule, MosaicStateSlotDescriptor,
     MosaicStateSlotId, MosaicStateSlotKind, MosaicStateTruthPosture, MosaicViewportConstraint,
     NamedMeasurementDefinition, NamedMeasurementToken, SurfaceDescriptor, SurfaceId, SurfaceKind,
-    SurfacePlacementClass, SurfaceStateClass, ThemeColorValue, ThemeTokenAlias,
-    ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    SurfacePlacementClass, SurfaceStateClass, ThemeTokenAlias, ThemeTokenDescriptor,
+    ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue, UiThemeColor,
     ViewBindingDescriptor, ViewBindingId,
 };
 use crate::facade::{WorthUi, WorthUiApp};
@@ -105,7 +105,7 @@ fn phase10_test_app(variant: Phase10AppVariant) -> WorthUiApp {
             ThemeTokenId::new("theme.text.primary").unwrap(),
             ThemeTokenFamily::text(),
             ThemeTokenSource::application(),
-            ThemeTokenValue::color(ThemeColorValue::hex("#101820").unwrap()),
+            ThemeTokenValue::color(UiThemeColor::parse("#101820").unwrap()),
         ))
         .register_mosaic_region_kind(primary_region())
         .register_mosaic_region_kind(overlay_region())

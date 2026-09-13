@@ -1,6 +1,7 @@
 mod focus_settlement;
 use focus_settlement::{place_reconciled_focus, reconcile_focus_after_published_frame_with_ports};
 mod observation;
+mod prepared;
 mod reconciliation;
 
 pub(super) use observation::record_mounted_observation;
@@ -20,118 +21,17 @@ impl WorthUiActiveApplicationSession {
         self.mounted.current_projection_rc_for_test()
     }
 
-    pub(crate) fn present_prepared_mounted_frame_internal(
-        &mut self,
-        frame: crate::mounting::UiPreparedMountedFrame,
-        deadline: worth_ui_host_contract::UiPresentationDeadline,
-        now: u64,
-    ) -> UiMountedFrameOutcome {
-        let overlays = self.prepare_overlay_appearance_sources();
-        self.present_prepared_mounted_frame_with_overlay_sources(frame, deadline, now, overlays)
-    }
-
-    pub(crate) fn present_prepared_portal_frame_internal(
-        &mut self,
-        frame: crate::mounting::UiPreparedMountedFrame,
-        proposal: &crate::runtime::session::UiStagedPortalProposalTransaction,
-        retain_exit: bool,
-        deadline: worth_ui_host_contract::UiPresentationDeadline,
-        now: u64,
-    ) -> UiMountedFrameOutcome {
-        let (transition, stage, staged_motion) = proposal.overlay_appearance_sources();
-        let overlays = self.prepare_overlay_appearance_sources_for_portal_transition(
-            transition,
-            stage,
-            staged_motion,
-            retain_exit,
-        );
-        self.present_prepared_mounted_frame_with_overlay_sources(frame, deadline, now, overlays)
-    }
-
-    fn present_prepared_mounted_frame_with_overlay_sources(
-        &mut self,
-        frame: crate::mounting::UiPreparedMountedFrame,
-        deadline: worth_ui_host_contract::UiPresentationDeadline,
-        now: u64,
-        overlays: Result<
-            super::active_application_session::UiActiveOverlayAppearancePreparation,
-            (),
-        >,
-    ) -> UiMountedFrameOutcome {
-        let generation = self.generation_identity().clone();
-        let portal = self.portal.as_ref();
-        let motion = self.motion.as_ref();
-        let presentation = &self.presentation;
-        let capabilities = self.application.capabilities();
-        let appearance = self.appearance_owner_snapshot.as_ref();
-        let transition = self.mounted.present_prepared_frame_with_overlays(
-            &self.host_session,
-            frame,
-            Some(&mut self.appearance_inspection),
-            deadline,
-            now,
-            |attempt, surfaces| {
-                overlays.as_ref().map_err(|_| ())?.lower(
-                    attempt,
-                    surfaces,
-                    &mut self.overlay_composition_owners,
-                    &generation,
-                    portal,
-                    motion,
-                    presentation,
-                    capabilities,
-                    appearance,
-                )
-            },
-        );
-        self.finish_mounted_transition(transition)
-    }
-
-    pub(crate) fn present_prepared_superseding_mounted_frame_internal(
-        &mut self,
-        frame: crate::mounting::UiPreparedMountedFrame,
-        predecessor: crate::mounting::UiMountedSupersedingPresentationBasis,
-        deadline: worth_ui_host_contract::UiPresentationDeadline,
-        now: u64,
-    ) -> UiMountedFrameOutcome {
-        let overlays = self.prepare_overlay_appearance_sources();
-        let generation = self.generation_identity().clone();
-        let portal = self.portal.as_ref();
-        let motion = self.motion.as_ref();
-        let presentation = &self.presentation;
-        let capabilities = self.application.capabilities();
-        let appearance = self.appearance_owner_snapshot.as_ref();
-        let transition = self
-            .mounted
-            .present_prepared_superseding_frame_with_overlays(
-                &self.host_session,
-                frame,
-                predecessor,
-                Some(&mut self.appearance_inspection),
-                deadline,
-                now,
-                |attempt, surfaces| {
-                    overlays.as_ref().map_err(|_| ())?.lower(
-                        attempt,
-                        surfaces,
-                        &mut self.overlay_composition_owners,
-                        &generation,
-                        portal,
-                        motion,
-                        presentation,
-                        capabilities,
-                        appearance,
-                    )
-                },
-            );
-        self.finish_mounted_transition(transition)
-    }
-
     pub fn complete_mounted_presentation(
         &mut self,
         in_flight: UiMountedPresentationInFlight,
         now: u64,
     ) -> UiMountedFrameOutcome {
+        if !self.pending_mounted_owner_receipt_succession_is_current(in_flight.attempt()) {
+            let transition = self
+                .mounted
+                .supersede_presentation(&self.host_session, in_flight);
+            return self.finish_mounted_transition(transition);
+        }
         let transition = self
             .mounted
             .complete_presentation(&self.host_session, in_flight, now);
@@ -211,6 +111,7 @@ impl WorthUiActiveApplicationSession {
         ) {
             self.reconcile_service_state_after_mounted_publication();
         }
+        self.settle_pending_mounted_owner_receipt_succession(&outcome);
         outcome
     }
 
@@ -311,9 +212,7 @@ pub(super) fn finish_mounted_transition(
 fn finish_mounted_transition_with_ports(
     mut ports: UiMountedPublicationSettlementPorts<'_>,
     transition: crate::mounting::UiMountedPublicationTransition,
-    mut appearance_inspection: Option<
-        &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
-    >,
+    appearance_inspection: Option<&mut crate::runtime::appearance::UiAppearanceInspectionProducer>,
     mut appearance_presentation: Option<
         &mut crate::runtime::presentation_state::UiApplicationPresentationState,
     >,
@@ -336,39 +235,27 @@ fn finish_mounted_transition_with_ports(
         }
         _ => {}
     }
-    match &outcome {
-        UiMountedFrameOutcome::Published(receipt) | UiMountedFrameOutcome::Reconciled(receipt) => {
-            if let Some(expected_revision) = ports
-                .mounted
-                .current_theme_revision_for_frame(receipt.frame())
-            {
-                if let Some(presentation) = appearance_presentation.as_deref_mut() {
-                    presentation.settle_published_theme_values(expected_revision);
-                }
-            }
-        }
-        _ => {}
-    }
     if let Some(observation) = observation {
         record_mounted_observation(ports.host_exchange, observation);
     }
     if let Some(appearance) = appearance {
         let (invalidation, records) = appearance.into_parts();
         match &outcome {
-            UiMountedFrameOutcome::Published(_) | UiMountedFrameOutcome::Reconciled(_) => {
-                if let Some(producer) = appearance_inspection.as_deref_mut() {
+            UiMountedFrameOutcome::Published(_)
+            | UiMountedFrameOutcome::Unchanged(_)
+            | UiMountedFrameOutcome::Reconciled(_) => {
+                if let Some(producer) = appearance_inspection {
                     producer.record_frame_attempts(records);
                 }
-                if let (Some(presentation), Some(invalidation)) = (
-                    appearance_presentation.as_deref_mut(),
-                    invalidation.as_ref(),
-                ) {
+                if let (Some(presentation), Some(invalidation)) =
+                    (appearance_presentation, invalidation.as_ref())
+                {
                     presentation.settle_appearance_invalidation(invalidation);
                 }
             }
             UiMountedFrameOutcome::RejectedBeforeEffects(_)
             | UiMountedFrameOutcome::AdmissionDenied(_) => {
-                if let Some(producer) = appearance_inspection.as_deref_mut() {
+                if let Some(producer) = appearance_inspection {
                     producer.record_pre_effect_denials(records);
                 }
             }

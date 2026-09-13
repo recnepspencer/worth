@@ -3,7 +3,7 @@ use crate::installation::{CanonicalPlatformPulse, IsolatedPulseInstallation};
 use super::atomic_replacement::{self, AppliedPulseSourceDelta, PulseSourceActionFailure};
 use super::{PulseSourceDeltaDefinitionFailure, PulseSourceDeltaIdentity};
 
-const PORTAL_PRIMARY_COMPONENT: &[u8] = b"component platform.pulse.component.portal_primary_target {\n  interaction activate routes platform.pulse.action.route;\n}\n";
+const PORTAL_PRIMARY_COMPONENT: &[u8] = b"component platform.pulse.component.portal_primary_target {\n  appearance { role platform.pulse.appearance.portal_primary_target }\n  interaction activate routes platform.pulse.action.route;\n}\n";
 const RETIRED_PORTAL_PRIMARY_SOURCE: &[u8] = b"\n";
 
 #[derive(Debug)]
@@ -59,18 +59,4 @@ fn token_for_source_line_endings(source: &[u8], token: &[u8]) -> Vec<u8> {
         adapted.push(*byte);
     }
     adapted
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fallback_retires_the_only_declaration_in_its_independent_source_module() {
-        let canonical = CanonicalPlatformPulse::checked_in();
-        let delta = PortalFocusFallbackSourceDelta::from_checked_in(canonical)
-            .expect("independent Portal primary source module");
-        assert_eq!(delta.bytes.as_ref(), RETIRED_PORTAL_PRIMARY_SOURCE);
-        assert!(!canonical.source_bytes().is_empty());
-    }
 }

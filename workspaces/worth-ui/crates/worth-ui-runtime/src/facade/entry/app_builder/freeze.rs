@@ -66,7 +66,13 @@ impl WorthUiApplicationBuilder<UiChangeProfileInstalled, UiIntentWiringSatisfied
             prepared,
             mounted_frame_retention_budget: self.mounted_frame_retention_budget,
             host_observation_capacity: self.host_observation_capacity,
-            font_collection: self.font_collection,
+            font_collection: self.font_collection.unwrap_or_else(|| {
+                std::sync::Arc::new(
+                    worth_ui_text::UiGlobalFontCollection::admit_qualified_profile()
+                        .expect("embedded qualified text profile")
+                        .0,
+                )
+            }),
         })
     }
 }

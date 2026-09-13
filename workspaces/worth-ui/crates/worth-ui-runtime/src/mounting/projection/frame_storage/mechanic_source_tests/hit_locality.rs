@@ -82,7 +82,7 @@ fn query(
     source
         .allocation_hit_candidates(
             binding,
-            UiMountedCoordinateSpace::HostSurface,
+            UiMountedCoordinateSpace::Viewport,
             point,
             UiMountedSpatialBudget {
                 node_visits: 1024,
@@ -188,6 +188,8 @@ fn projection(
         surfaces
             .into_iter()
             .map(|(surface, binding)| UiMountedProjectionSurface {
+                coordinate_posture:
+                    crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
                 surface,
                 binding,
                 audience: UiMountedProjectionAudience::full(),
@@ -250,7 +252,6 @@ fn node(
         has_appearance_attachment: false,
         appearance_clip:
             crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
-        static_paint: None,
         semantic_text: None,
         hit_test: Some(UiMountedHitTestSeed::for_test(rank)),
         focus_support: crate::capability::ComponentFocusSupport::not_focusable(),

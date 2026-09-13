@@ -44,7 +44,6 @@ pub(crate) struct UiMountedPreviewProjectionInput {
 }
 
 struct UiMountedNodeLoweringContext<'input, 'graph> {
-    state: &'input super::super::UiMountedIdentityState,
     graph: crate::graph::UiGraphAuthority<'graph>,
     plan: super::super::UiMountedPlanProjectionSource<'input>,
     allocation_source: &'input crate::runtime::UiMountedAllocationProjectionSource,
@@ -52,7 +51,6 @@ struct UiMountedNodeLoweringContext<'input, 'graph> {
     plan_digest: u64,
     semantic_content: &'input super::super::UiMountedSemanticContentInput,
     theme_values: &'input super::super::UiMountedThemeValueSource,
-    appearance_invalidation: Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
     predecessor: Option<&'input UiMountedSemanticProjection>,
     mechanics_predecessor_available: bool,
 }
@@ -72,8 +70,8 @@ struct UiMountedProjectionNodeDraft {
     surface_paint_order: Option<u32>,
     has_appearance_attachment: bool,
     clip_ancestry_entries: usize,
+    text_source_lookups: usize,
     plan_index: Option<u32>,
-    static_paint: Option<super::static_paint::UiMountedStaticPaintSeed>,
     semantic_text: Option<super::semantic_text::UiMountedSemanticTextSeed>,
     hit_test: Option<super::hit_test::UiMountedHitTestSeed>,
     focus_support: crate::capability::ComponentFocusSupport,
@@ -109,11 +107,15 @@ pub(crate) fn prepare_projection(
         let binding = state
             .projection_surface(*surface)
             .ok_or(UiMountedProjectionDenial::MissingSurfaceBinding)?
-            .0
-            .binding_generation();
+            .0;
+        if binding.profile().coordinate_posture()
+            != super::super::UiSurfaceBindingCoordinatePosture::LogicalPoints
+        {
+            return Err(UiMountedProjectionDenial::CoordinateBasisMismatch);
+        }
         if !input
             .occurrence_geometry
-            .validates_binding(*surface, binding)
+            .validates_binding(*surface, binding.binding_generation())
         {
             return Err(UiMountedProjectionDenial::OccurrenceGeometry(
                 super::super::UiMountedOccurrenceGeometryDenial::StaleOccurrenceGeometry,
@@ -132,11 +134,14 @@ pub(crate) fn prepare_projection(
     let pending = appearance_input
         .as_ref()
         .and_then(|input| input.pending.as_ref());
-    let mut appearance_selection =
-        UiMountedAppearanceProjectionSelection::derive(state, input.requested_surfaces, pending)
-            .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
-    let lowering = UiMountedNodeLoweringContext {
+    let mut appearance_selection = UiMountedAppearanceProjectionSelection::derive(
         state,
+        input.requested_surfaces,
+        appearance_input.as_ref().map(|input| input.index),
+        pending,
+    )
+    .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
+    let lowering = UiMountedNodeLoweringContext {
         graph: input.graph,
         plan: input.plan,
         allocation_source: input.allocation_source,
@@ -144,13 +149,13 @@ pub(crate) fn prepare_projection(
         plan_digest: input.plan_digest,
         semantic_content: input.semantic_content,
         theme_values: input.theme_values,
-        appearance_invalidation: pending.cloned(),
         predecessor: input.semantic_predecessor,
         mechanics_predecessor_available: state
             .current_projection()
             .is_some_and(|current| current.plan_digest() == input.plan_digest),
     };
-    let projection_changes = state.projection_change_snapshot();
+    let (projection_changes, scope_work) =
+        state.projection_changes_for_surfaces(input.requested_surfaces);
     let delta_predecessor = state
         .current_projection()
         .filter(|current| current.plan_digest() == input.plan_digest)
@@ -189,6 +194,11 @@ pub(crate) fn prepare_projection(
         })?,
     };
     appearance_selection.set_retired_instances(build.retired_appearance_instances.clone());
+    build.cost.index_entries = build
+        .cost
+        .index_entries
+        .checked_add(scope_work)
+        .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
     build
         .semantic
         .apply_projection_inputs(input.semantic_content);
@@ -236,7 +246,6 @@ pub(crate) fn prepare_projection(
             presentation_changed_instances: build.presentation_changed_instances,
             appearance_selection: std::rc::Rc::new(appearance_selection),
             appearance_invalidation,
-            theme_revision: input.theme_values.active_theme_revision(),
             portal_overlays_changed,
             counters,
             capability_generation: input.capability_generation,
@@ -247,12 +256,8 @@ pub(crate) fn prepare_projection(
 }
 
 impl UiMountedNodeLoweringContext<'_, '_> {
-    fn theme_value_changed(&self, graph_node: crate::graph::UiGraphNodeIdentity) -> bool {
-        self.theme_values.has_theme_changes()
-            && self
-                .appearance_invalidation
-                .as_ref()
-                .is_some_and(|batch| batch.selects_graph(graph_node))
+    fn theme_value_changed(&self, _graph_node: crate::graph::UiGraphNodeIdentity) -> bool {
+        false
     }
 }
 
@@ -288,6 +293,15 @@ fn build_full_projection(
         .filter(|instance| {
             !current_instances.contains(instance)
                 && input.state.projection_instance(**instance).is_none()
+                && input
+                    .lowering
+                    .predecessor
+                    .and_then(|semantic| semantic.node(**instance))
+                    .is_some_and(|node| {
+                        input
+                            .requested_surfaces
+                            .contains(&node.receipt().semantic_surface())
+                    })
         })
         .copied()
         .collect::<Vec<_>>();
@@ -310,6 +324,7 @@ fn build_full_projection(
             let draft = input.lowering.lower(instance)?;
             clip_ancestry_entries = clip_ancestry_entries
                 .checked_add(draft.clip_ancestry_entries)
+                .and_then(|count| count.checked_add(draft.text_source_lookups))
                 .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
             Ok(draft.materialize())
         })
@@ -368,6 +383,7 @@ fn projection_surfaces(
                 .projection_surface(*surface)
                 .ok_or(UiMountedProjectionDenial::MissingSurfaceBinding)?;
             Ok(UiMountedProjectionSurface {
+                coordinate_posture: binding.profile().coordinate_posture(),
                 surface: *surface,
                 binding: binding.binding_generation(),
                 audience,

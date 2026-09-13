@@ -62,32 +62,6 @@ pub(super) fn build_plan(
             let sample = retained.sample_override(*identity);
             let opacity = sample.map_or(1.0, |sample| sample.opacity().factor());
             match command {
-                UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-                    if let Some(UiNativeRasterOperation::Surface(surface)) = retained
-                        .appearance_surface_operation(mechanic.node_receipt(), basis.extent())
-                        .map_err(|_| malformed())?
-                    {
-                        if let Some(surface) = surface.clipped_to(clear, basis.extent()) {
-                            rendered_pixels = add_pixels(rendered_pixels, surface.rect())?;
-                            operations.push(UiNativeRasterOperation::Surface(surface));
-                        }
-                        replayed_commands =
-                            replayed_commands.checked_add(1).ok_or_else(malformed)?;
-                        continue;
-                    }
-                    let sampled = super::sample::sampled_command_bounds(command, sample)?;
-                    let Some(rect) = raster_damage_for_basis(sampled, basis)
-                        .map_err(|_| malformed())?
-                        .and_then(|rect| rect.intersection(clear, basis.extent()))
-                    else {
-                        continue;
-                    };
-                    rendered_pixels = add_pixels(rendered_pixels, rect)?;
-                    operations.push(UiNativeRasterOperation::FilledRect {
-                        rect,
-                        source_rgba8: sampled_color(mechanic.color().channels(), opacity),
-                    });
-                }
                 UiMountedPaintCommand::PortalOverlay { mechanic, .. } => {
                     if let Some(UiNativeRasterOperation::Surface(surface)) = retained
                         .appearance_portal_surface_operation(mechanic.owner(), basis.extent())

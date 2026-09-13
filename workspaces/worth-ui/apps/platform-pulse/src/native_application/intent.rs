@@ -16,7 +16,8 @@ pub(super) use evidence_index::PlatformPulseIntentEvidenceIndex;
 pub(super) use execution::PlatformPulsePendingIntentConsequence;
 pub(super) use native_ingress::{
     PlatformPulseIntentPosturePublicationDisposition, PlatformPulseIntentPostureSettlement,
-    PlatformPulsePendingIntentPosture, PlatformPulsePreparedIntentPosture,
+    PlatformPulsePendingIntentPosture, PlatformPulsePendingNativePublication,
+    PlatformPulsePreparedIntentPosture,
 };
 pub(super) use product_cycle::{
     PlatformPulseIntentExecutionProgress, PlatformPulseIntentProductCycleOutcome,

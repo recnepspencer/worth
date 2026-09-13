@@ -17,60 +17,6 @@ fn appearance_role_is_explicit_per_node_not_a_component_default() {
 }
 
 #[test]
-fn static_paint_selection_retains_each_typed_appearance_relation() {
-    let app = super::static_paint_app();
-    let authority = app.prepared_authority();
-    let index = authority.consumed_fact_index();
-    let fact = crate::fact_contract::UiProducedFact::AuthoredSource(
-        crate::fact_contract::UiAuthoredChangedFact::new(
-            crate::fact_contract::UiAuthoredFactSelector::node(super::STATIC_PAINT_TOKEN),
-            crate::fact_contract::UiAuthoredFactKind::SemanticsChanged,
-        ),
-    );
-    let receipt = index
-        .lookup(index.basis(), &fact)
-        .expect("declared static-paint token should resolve");
-
-    assert_eq!(receipt.entries().len(), 6);
-    assert_eq!(
-        receipt
-            .entries()
-            .iter()
-            .map(|entry| entry.consumer_key().authored_identity())
-            .collect::<BTreeSet<_>>(),
-        BTreeSet::from([super::STATIC_PAINT_COMPONENT, super::STATIC_PAINT_PEER])
-    );
-    assert!(receipt
-        .entries()
-        .iter()
-        .all(|entry| entry.consumption_relation().is_appearance()));
-    assert_eq!(
-        receipt
-            .entries()
-            .iter()
-            .filter(|entry| entry.consumption_relation().is_static_paint())
-            .count(),
-        4
-    );
-    assert_eq!(
-        receipt
-            .entries()
-            .iter()
-            .filter(|entry| entry.consumption_relation().is_appearance_role_slot())
-            .count(),
-        2
-    );
-    assert!(receipt
-        .entries()
-        .iter()
-        .filter(|entry| entry.consumption_relation().is_static_paint())
-        .all(|entry| entry.affected_aspect().is_some_and(|aspect| {
-            aspect.semantic_slice()
-                == crate::declaration::UiAspectSemanticSlice::AppearanceBackground
-        })));
-}
-
-#[test]
 fn unattached_node_does_not_infer_appearance_demand_from_its_component() {
     let app = crate::declaration::appearance_fact_index_test_support::unattached_static_paint_app(
         "unattached-static-paint",
@@ -91,48 +37,28 @@ fn unattached_node_does_not_infer_appearance_demand_from_its_component() {
 }
 
 #[test]
-fn appearance_invalidation_batches_select_from_the_existing_index_without_host_work() {
+fn appearance_slot_selection_uses_the_existing_fact_index_without_host_work() {
     let app = super::static_paint_app();
     let authority = app.prepared_authority();
     let index = authority.consumed_fact_index();
-    let role = crate::runtime::tests::appearance_component_session_test_support::validation_background_role(
-        super::STATIC_PAINT_TOKEN,
-    );
     let slot = worth_ui_dsl::UiThemeSlotIdentity::new(super::STATIC_PAINT_TOKEN).unwrap();
     let node = super::graph_node_named(authority.graph_snapshot(), super::STATIC_PAINT_COMPONENT)
         .graph_node_identity();
 
-    let state_batch = crate::runtime::appearance::UiAppearanceInvalidationBatch::owner_state(
-        index,
-        worth_ui_dsl::UiAppearanceStateAxis::Validation,
-    );
-    let role_batch = crate::runtime::appearance::UiAppearanceInvalidationBatch::role_replacement(
-        index,
-        role.role(),
-    );
-    let slot_batch = crate::runtime::appearance::UiAppearanceInvalidationBatch::theme_slot(
-        index,
-        slot.as_str(),
-        slot.as_str(),
-    )
-    .expect("declared theme slot should resolve");
+    let slot_batch = index
+        .select_appearance_slot_consumers(index.basis(), slot.as_str(), slot.as_str())
+        .expect("declared theme slot should resolve");
 
-    for batch in [&state_batch, &role_batch] {
-        assert_eq!(batch.selected_count(), 1);
-        assert_eq!(batch.graph_consumers(), [node]);
-    }
-    assert_eq!(slot_batch.selected_count(), 2);
+    let attached =
+        super::graph_node_named(authority.graph_snapshot(), super::STATIC_PAINT_COMPONENT);
+    let peer = super::graph_node_named(authority.graph_snapshot(), super::STATIC_PAINT_PEER);
+    assert_eq!(attached.component_reference(), peer.component_reference());
+    assert!(attached.appearance_role_attachment().is_some());
+    assert!(peer.appearance_role_attachment().is_none());
     assert_eq!(
-        slot_batch
-            .graph_consumers()
-            .iter()
-            .copied()
-            .collect::<BTreeSet<_>>(),
-        BTreeSet::from([
-            node,
-            super::graph_node_named(authority.graph_snapshot(), super::STATIC_PAINT_PEER)
-                .graph_node_identity(),
-        ])
+        slot_batch.consumers(),
+        [node],
+        "sharing a component type cannot create an unauthored appearance consumer"
     );
     let fact = crate::fact_contract::UiProducedFact::AuthoredSource(
         crate::fact_contract::UiAuthoredChangedFact::new(
@@ -149,7 +75,7 @@ fn appearance_invalidation_batches_select_from_the_existing_index_without_host_w
 }
 
 #[test]
-fn role_slot_fact_lookup_selects_only_attached_nodes_without_static_paint() {
+fn role_slot_fact_lookup_selects_only_attached_nodes() {
     let app = role_only_app();
     let authority = app.prepared_authority();
     let index = authority.consumed_fact_index();
@@ -165,13 +91,6 @@ fn role_slot_fact_lookup_selects_only_attached_nodes_without_static_paint() {
         ),
     );
 
-    assert!(authority
-        .capabilities()
-        .components()
-        .get(&crate::capability::ComponentId::new(super::STATIC_PAINT_COMPONENT).unwrap())
-        .expect("attached component capability should be present")
-        .static_paint_contract()
-        .is_none());
     let receipt = index
         .lookup_retained(&fact)
         .expect("role slot should be represented by the authored-fact index");
@@ -197,13 +116,10 @@ fn role_slot_fact_lookup_selects_only_attached_nodes_without_static_paint() {
         .all(|entry| entry.affected_aspect().is_none()));
 
     let slot = worth_ui_dsl::UiThemeSlotIdentity::new(super::STATIC_PAINT_TOKEN).unwrap();
-    let batch = crate::runtime::appearance::UiAppearanceInvalidationBatch::theme_slot(
-        index,
-        slot.as_str(),
-        slot.as_str(),
-    )
-    .expect("declared theme slot should resolve");
-    assert_eq!(batch.graph_consumers(), [attached]);
+    let batch = index
+        .select_appearance_slot_consumers(index.basis(), slot.as_str(), slot.as_str())
+        .expect("declared theme slot should resolve");
+    assert_eq!(batch.consumers(), [attached]);
     assert_ne!(attached, peer);
 }
 
@@ -218,18 +134,6 @@ fn canonical_slot_selection_exposes_unknown_authored_fact_denial() {
 
     assert_eq!(
         denial,
-        Err(
-            crate::graph::UiGraphFactLookupDenial::UnknownAuthoredDeclaration {
-                authored_identity: "theme.pulse.missing".into(),
-            }
-        )
-    );
-    assert_eq!(
-        crate::runtime::appearance::UiAppearanceInvalidationBatch::theme_slot(
-            index,
-            slot.as_str(),
-            "theme.pulse.missing",
-        ),
         Err(
             crate::graph::UiGraphFactLookupDenial::UnknownAuthoredDeclaration {
                 authored_identity: "theme.pulse.missing".into(),

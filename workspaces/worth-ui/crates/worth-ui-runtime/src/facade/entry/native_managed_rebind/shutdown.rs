@@ -7,9 +7,23 @@ impl WorthUiNativeApplicationShell {
             return;
         };
         match pending {
+            WorthUiNativePendingManagedRebind::Indeterminate { recovery, frame } => {
+                drop((recovery, frame))
+            }
+            WorthUiNativePendingManagedRebind::RecoveryReconstruction {
+                recovery,
+                in_flight,
+            } => {
+                drop(self.session.cancel_mounted_presentation(in_flight));
+                drop(recovery);
+            }
+            WorthUiNativePendingManagedRebind::RecoveryReconstructionDeferred(recovery) => {
+                drop(recovery)
+            }
             WorthUiNativePendingManagedRebind::Completion(pending) => {
                 drop(pending.cancel(&mut self.session));
             }
+            WorthUiNativePendingManagedRebind::Retry { retry, .. } => drop(retry),
             WorthUiNativePendingManagedRebind::IntentPosture(pending) => {
                 pending.cancel(&mut self.session);
             }

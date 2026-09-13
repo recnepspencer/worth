@@ -39,6 +39,12 @@ pub(super) fn begin(
 }
 
 impl PlatformPulseVisualComparisonCapture {
+    pub(super) fn cancel(self, shell: &mut WorthUiNativeApplicationShell) {
+        shell.cancel_visual_snapshot(self.capture.pending);
+        shell.dispose_visual_snapshot(self.predecessor.snapshot);
+        drop(self.rebind);
+    }
+
     pub(super) const fn deadline(&self) -> Instant {
         self.capture.deadline
     }
@@ -124,21 +130,15 @@ pub(super) fn poll(
 
 fn refresh_after_replacement(
     predecessor: PlatformPulseRetainedSnapshot,
-    shell: &WorthUiNativeApplicationShell,
+    _shell: &WorthUiNativeApplicationShell,
     now: Instant,
 ) -> Result<PlatformPulseVisualIdentityState, PlatformPulseVisualExecutionDenial> {
-    if super::replacement::portal_active(shell) {
-        Ok(PlatformPulseVisualIdentityState::DeferredRefresh(
-            predecessor,
-        ))
-    } else {
-        Ok(PlatformPulseVisualIdentityState::AwaitingRefresh {
-            predecessor,
-            budget: super::capture_restart::PlatformPulseAwaitingCaptureBudget::fresh(
-                replacement_frame_deadline(now)?,
-            ),
-        })
-    }
+    Ok(PlatformPulseVisualIdentityState::AwaitingRefresh {
+        predecessor,
+        budget: super::capture_restart::PlatformPulseAwaitingCaptureBudget::fresh(
+            replacement_frame_deadline(now)?,
+        ),
+    })
 }
 
 fn compare_and_dispose(

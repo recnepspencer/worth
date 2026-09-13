@@ -18,8 +18,6 @@ pub(in crate::mounting) struct UiMountedProjectionNodeRecord {
     pub(in crate::mounting::projection) appearance_geometry: super::UiMountedAppearanceGeometry,
     pub(in crate::mounting::projection) occurrence_allocation:
         worth_ui_host_contract::UiMountedAllocationProjection,
-    pub(in crate::mounting::projection) static_paint:
-        Option<super::super::static_paint::UiMountedStaticPaintSeed>,
     pub(in crate::mounting::projection) semantic_text:
         Option<super::super::semantic_text::UiMountedSemanticTextSeed>,
     pub(in crate::mounting::projection) hit_test:
@@ -39,16 +37,14 @@ impl UiMountedProjectionNodeRecord {
     pub(in crate::mounting::projection) fn presentation_allocation(
         &self,
     ) -> worth_ui_host_contract::UiMountedAllocationProjection {
-        if self.portal_child_owner.is_some() {
-            self.occurrence_allocation
-        } else {
-            self.receipt.allocation()
-        }
+        self.occurrence_allocation
     }
 }
 
 #[derive(Clone, Copy)]
 pub(in crate::mounting::projection) struct UiMountedProjectionSurface {
+    pub(in crate::mounting::projection) coordinate_posture:
+        crate::mounting::UiSurfaceBindingCoordinatePosture,
     pub(in crate::mounting::projection) surface: UiSemanticSurfaceIdentity,
     pub(in crate::mounting::projection) binding: UiSurfaceBindingGeneration,
     pub(in crate::mounting::projection) audience: UiMountedProjectionAudience,
@@ -155,17 +151,11 @@ impl UiMountedSemanticProjection {
         &self,
         surfaces: &[UiSemanticSurfaceIdentity],
     ) -> bool {
-        surfaces.len() == self.semantic_surfaces.len()
-            && surfaces
-                .iter()
-                .all(|surface| self.semantic_surfaces.contains_with_probes(surface).0)
-    }
-
-    pub(in crate::mounting::projection) fn contains(
-        &self,
-        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-    ) -> bool {
-        self.membership.contains_with_probes(&instance).0
+        // Omitted surfaces remain retained predecessors; only missing requested
+        // coverage requires reconstruction at this boundary.
+        surfaces
+            .iter()
+            .all(|surface| self.semantic_surfaces.contains_with_probes(surface).0)
     }
 
     pub(in crate::mounting::projection) fn node(
@@ -173,6 +163,13 @@ impl UiMountedSemanticProjection {
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     ) -> Option<&UiMountedProjectionNodeRecord> {
         self.nodes.get(&instance)
+    }
+
+    pub(in crate::mounting::projection) fn invalidate_surface_coverage(
+        &mut self,
+        surface: UiSemanticSurfaceIdentity,
+    ) -> crate::runtime::persistent_index::UiPersistentIndexMutationWork {
+        self.semantic_surfaces.remove_with_work(&surface).1
     }
 
     pub(in crate::mounting::projection) fn node_with_probes(
@@ -235,13 +232,28 @@ impl UiMountedSemanticProjection {
         work
     }
 
-    pub(in crate::mounting::projection) fn replace_order(
+    pub(in crate::mounting::projection) fn replace_surface_order(
         &mut self,
         order: Vec<worth_ui_host_contract::UiMountedInstanceIdentity>,
-    ) {
-        self.order
-            .replace_all(&order)
-            .expect("validated semantic order contains unique identities");
+    ) -> crate::runtime::persistent_index::UiPersistentIndexMutationWork {
+        let mut work = crate::runtime::persistent_index::UiPersistentIndexMutationWork::default();
+        for instance in &order {
+            work.merge(
+                self.order
+                    .remove(*instance)
+                    .expect("requested mounted identity retains an order row"),
+            )
+            .expect("mounted order work fits address space");
+        }
+        for instance in order {
+            work.merge(
+                self.order
+                    .append(instance)
+                    .expect("requested identities are unique and removed before reorder"),
+            )
+            .expect("mounted order work fits address space");
+        }
+        work
     }
 
     pub(in crate::mounting::projection) fn replace_order_snapshot(

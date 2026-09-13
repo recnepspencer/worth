@@ -196,7 +196,7 @@ pub(super) fn verify(
     host.push_native_display_presented();
     assert!(matches!(
         session
-            .present_prepared_mounted_frame_for_reconciliation(
+            .present_prepared_mounted_reconstruction_frame(
                 frame,
                 &replacements,
                 worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
@@ -210,7 +210,7 @@ pub(super) fn verify(
         .current_unpublished_appearance()
         .unwrap()
         .unwrap();
-    worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+    worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
 }
 
 fn batch(

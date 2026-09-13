@@ -50,6 +50,7 @@ pub(crate) enum PointerExpiryPresentation {
     Immediate,
     PendingRefresh,
     RejectedRefresh,
+    RejectedProgram,
     PendingProgram,
 }
 
@@ -60,30 +61,23 @@ pub(crate) fn exercise_pointer_expiry(
     shell: WorthUiNativeApplicationShell,
     host: ScriptedPresentationHost,
     expires: u64,
-    paint_token: &str,
     scenario: PointerExpiryPresentation,
 ) -> WorthUiNativeApplicationShell {
     let mut driver = UiNativeApplicationDriver::from_launched_shell_for_test(shell);
-    let change = crate::runtime::tests::appearance_component_session_test_support::initial_appearance_theme_change(
-        crate::capability::ThemeTokenId::new(paint_token).unwrap(),
-        crate::capability::ThemeTokenValue::color(
-            crate::capability::ThemeColorValue::hex("#315779").unwrap(),
-        ),
-    );
-    let frame = if scenario == PointerExpiryPresentation::PendingProgram {
-        crate::facade::entry::UiNativeApplicationFrame::with_theme_token_values([change.clone()])
-            .unwrap()
-    } else {
-        crate::facade::entry::UiNativeApplicationFrame::present_current()
-    };
+    let frame = crate::facade::entry::UiNativeApplicationFrame::present_current();
     driver.progress = super::program_progress::UiNativeApplicationProgramProgress::new(
         crate::facade::entry::UiNativeApplicationProgram::new([frame])
             .unwrap()
             .remain_open_until_external_close(),
+        #[cfg(feature = "certification-support")]
         None,
     );
     if scenario == PointerExpiryPresentation::PendingProgram {
         enqueue_pending(&host);
+    } else if scenario == PointerExpiryPresentation::RejectedProgram {
+        host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+            UiHostSurfacePresentationDenial::ExternalTimeout,
+        ));
     } else {
         host.push_native_display_settled_without_effects();
     }
@@ -91,19 +85,23 @@ pub(crate) fn exercise_pointer_expiry(
         .progress
         .advance(driver.shell.as_mut().unwrap())
         .unwrap();
-    assert_eq!(driver.progress.next_frame, 1);
+    let parked_program = scenario == PointerExpiryPresentation::RejectedProgram;
+    if parked_program {
+        assert_eq!(
+            driver
+                .progress
+                .pending_retry
+                .as_ref()
+                .expect("pre-expiry rejection is parked")
+                .source,
+            UiNativePresentationSource::Program(0)
+        );
+    }
+    assert_eq!(driver.progress.next_frame, usize::from(!parked_program));
     if matches!(
         scenario,
         PointerExpiryPresentation::PendingRefresh | PointerExpiryPresentation::RejectedRefresh
     ) {
-        // Static paint is still the Gate4 live publisher. A real color change
-        // supplies physical work alongside the unpublished pointer successor.
-        driver
-            .shell
-            .as_mut()
-            .unwrap()
-            .apply_theme_token_values(&[change])
-            .unwrap();
         if scenario == PointerExpiryPresentation::PendingRefresh {
             enqueue_pending(&host);
         } else {
@@ -130,7 +128,8 @@ pub(crate) fn exercise_pointer_expiry(
     assert_eq!(progress.deadline(), None);
     assert_eq!(progress.directive(), UiNativeEventLoopDirective::Continue);
     assert_eq!(
-        driver.progress.next_frame, 1,
+        driver.progress.next_frame,
+        usize::from(!parked_program),
         "refresh does not consume authored frames"
     );
     let calls = host.presentation_calls();
@@ -176,10 +175,14 @@ pub(crate) fn exercise_pointer_expiry(
             }
             driver.observation_time_ready().unwrap();
         }
-        PointerExpiryPresentation::RejectedRefresh => {
+        PointerExpiryPresentation::RejectedRefresh | PointerExpiryPresentation::RejectedProgram => {
             assert_eq!(
                 driver.progress.pending_retry.as_ref().unwrap().source,
-                UiNativePresentationSource::PointerRefresh
+                if parked_program {
+                    UiNativePresentationSource::Program(0)
+                } else {
+                    UiNativePresentationSource::PointerRefresh
+                }
             );
             assert!(driver
                 .shell
@@ -188,14 +191,28 @@ pub(crate) fn exercise_pointer_expiry(
                 .native_pointer_presentation_pending());
             driver.observation_time_ready().unwrap();
             assert_eq!(host.presentation_calls(), calls);
-            host.push_native_display_presented();
+            host.push_native_display_settled_without_effects();
             driver.progress.observe_readiness(1, 1);
             driver
                 .progress
                 .advance(driver.shell.as_mut().unwrap())
                 .unwrap();
             assert!(driver.progress.pending_retry.is_none());
+            assert!(
+                !driver
+                    .shell
+                    .as_ref()
+                    .unwrap()
+                    .native_pointer_presentation_pending(),
+                "the first accepted retry must already contain the expired owner result"
+            );
+            let accepted_calls = host.presentation_calls();
             driver.observation_time_ready().unwrap();
+            assert_eq!(
+                host.presentation_calls(),
+                accepted_calls,
+                "a later observation must not repair stale retry output"
+            );
         }
     }
     assert_eq!(driver.progress.next_frame, 1);
@@ -218,12 +235,8 @@ fn enqueue_pending(host: &ScriptedPresentationHost) {
             UiMountedSurfacePresentationCompletion::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 crate::certification_support::scripted_presentation_epoch(),
-                UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
-                UiHostPresentationCostReport::from_adapter(UiHostPresentationCostInput {
-                    presented_surfaces: 1,
-                    asynchronous_handoffs: 1,
-                    ..Default::default()
-                }),
+                UiMountedCompletedEffects::new(Vec::new()),
+                UiHostPresentationCostReport::default(),
             ),
         )],
         UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,

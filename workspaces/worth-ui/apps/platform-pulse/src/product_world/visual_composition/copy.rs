@@ -7,7 +7,21 @@ pub struct PlatformPulseStaticCopy {
 }
 
 impl PlatformPulseStaticCopy {
-    pub const ALL: [Self; 23] = [
+    pub const ALL: [Self; 28] = [
+        Self::new(PlatformPulseProductComponent::ReviewLabel, "Review action"),
+        Self::new(
+            PlatformPulseProductComponent::ReviewTitle,
+            "Review live action",
+        ),
+        Self::new(
+            PlatformPulseProductComponent::ReviewBody,
+            "This action uses the live Query owner.\nCancel returns to details.",
+        ),
+        Self::new(PlatformPulseProductComponent::ReviewCancelLabel, "Cancel"),
+        Self::new(
+            PlatformPulseProductComponent::ReviewPrimaryLabel,
+            "Run action",
+        ),
         Self::new(PlatformPulseProductComponent::Brand, "W  O  R  T  H"),
         Self::new(
             PlatformPulseProductComponent::RuntimeBadge,
@@ -47,6 +61,10 @@ impl PlatformPulseStaticCopy {
         ),
         Self::new(PlatformPulseProductComponent::QueryLabel, "QUERY POSTURE"),
         Self::new(
+            PlatformPulseProductComponent::ConfirmationLabel,
+            "Confirm action",
+        ),
+        Self::new(
             PlatformPulseProductComponent::NativeLabel,
             "COMMAND CONTEXT",
         ),
@@ -67,7 +85,6 @@ impl PlatformPulseStaticCopy {
             "Run live action",
         ),
         Self::new(PlatformPulseProductComponent::PortalLabel, "Details"),
-        Self::new(PlatformPulseProductComponent::PortalIconText, "↗"),
         Self::new(
             PlatformPulseProductComponent::PortalTitle,
             "Run live action",

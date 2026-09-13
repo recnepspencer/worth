@@ -11,6 +11,7 @@ pub(super) struct PlatformPulseVisualContractManifest {
     pub(super) typography: Vec<TypographyContract>,
     pub(super) contrast_pairs: Vec<ContrastPairContract>,
     pub(super) limits: VisualLimitsContract,
+    pub(super) inspection: VisualInspectionContract,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
@@ -28,6 +29,7 @@ pub(super) struct LayoutContract {
     pub(super) text_bounds: Vec<TextBoundsContract>,
     pub(super) minimum_targets: Vec<TargetContract>,
     pub(super) control_points: Vec<ControlPointContract>,
+    pub(super) pixel_regions: Vec<PixelRegionContract>,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
@@ -92,6 +94,13 @@ pub(super) struct ControlPointContract {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+pub(super) struct PixelRegionContract {
+    pub(super) identity: String,
+    pub(super) rect: [u32; 4],
+    pub(super) corner_radius: u32,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 pub(super) struct VisualLimitsContract {
     pub(super) maximum_mounted_nodes: u32,
     pub(super) maximum_capture_scale: u32,
@@ -99,6 +108,13 @@ pub(super) struct VisualLimitsContract {
     pub(super) maximum_capture_rgba_bytes: u64,
     pub(super) maximum_retained_capture_rgba_bytes: u64,
     pub(super) channel_tolerance: u8,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+pub(super) struct VisualInspectionContract {
+    pub(super) visible_region_count: u64,
+    pub(super) hit_test_region_count: u64,
+    pub(super) target_authored_name: String,
 }
 
 pub(super) fn inside(rect: [u32; 4], extent: [u32; 2]) -> bool {

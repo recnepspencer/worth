@@ -1,5 +1,9 @@
 use super::WorthUiActiveApplicationSession;
 
+mod detached;
+mod preparation;
+mod theme;
+
 pub(crate) struct WorthUiPreparedMountedContentRebind<'session> {
     session: &'session mut WorthUiActiveApplicationSession,
     frame: crate::mounting::UiPreparedMountedFrame,
@@ -30,10 +34,19 @@ pub(crate) struct WorthUiMountedContentRebindIndeterminate<'session> {
 
 enum WorthUiMountedContentPublication {
     RetainedGeneration,
+    ThemeSwitch {
+        theme: crate::runtime::appearance::UiThemeSwitchChange,
+        reconciliation: Box<[crate::mounting::UiMountedSurfaceReconciliationBinding]>,
+    },
     AuthoredSuccessor {
         authority:
             crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
         appearance_succession: super::UiPreparedAppearanceGenerationSuccession,
+        overlay_bindings: crate::runtime::portal::UiPortalOverlayBindingLifecycle,
+        occurrence_geometry: crate::mounting::UiMountedOccurrenceGeometryState,
+        pointer_succession:
+            crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
+        owners: crate::runtime::appearance::UiPreparedRetainedAppearanceOwnerSuccession,
     },
 }
 
@@ -65,31 +78,47 @@ pub(crate) enum WorthUiMountedContentRebindOutcome<'session> {
 }
 
 impl<'session> WorthUiPreparedMountedContentRebind<'session> {
-    pub(crate) fn new(
+    fn new(
         session: &'session mut WorthUiActiveApplicationSession,
         frame: crate::mounting::UiPreparedMountedFrame,
+        publication: WorthUiMountedContentPublication,
     ) -> Self {
         Self {
             session,
             frame,
-            publication: WorthUiMountedContentPublication::RetainedGeneration,
+            publication,
         }
     }
 
-    pub(crate) fn authored(
+    pub(in crate::facade::entry) fn prepare_authored(
         session: &'session mut WorthUiActiveApplicationSession,
-        frame: crate::mounting::UiPreparedMountedFrame,
+        semantic_content: crate::mounting::UiMountedSemanticContentInput,
         successor: crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
         appearance_succession: super::UiPreparedAppearanceGenerationSuccession,
-    ) -> Self {
-        Self {
+        overlay_bindings: crate::runtime::portal::UiPortalOverlayBindingLifecycle,
+        occurrence_geometry: crate::mounting::UiMountedOccurrenceGeometryState,
+        pointer_succession: crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
+        owners: crate::runtime::appearance::UiPreparedRetainedAppearanceOwnerSuccession,
+    ) -> Result<Self, crate::runtime::rebind::UiRebindPreparationDenial> {
+        let frame = session.prepare_authored_content_frame(
+            semantic_content,
+            session.mounted_frame_request(),
+            &pointer_succession,
+            &owners,
+            &occurrence_geometry,
+        )?;
+        Ok(Self {
             session,
             frame,
             publication: WorthUiMountedContentPublication::AuthoredSuccessor {
                 authority: successor,
                 appearance_succession,
+                overlay_bindings,
+                occurrence_geometry,
+                pointer_succession,
+                owners,
             },
-        }
+        })
     }
 
     pub(crate) fn frame(&self) -> &crate::mounting::UiPreparedMountedFrame {
@@ -113,12 +142,71 @@ impl<'session> WorthUiPreparedMountedContentRebind<'session> {
         deadline: worth_ui_host_contract::UiPresentationDeadline,
         now: u64,
     ) -> WorthUiMountedContentRebindOutcome<'session> {
+        if let WorthUiMountedContentPublication::ThemeSwitch { theme, .. } = &self.publication {
+            if self.frame.prepared_theme_binding() != Some(theme.prepared().successor())
+                || self
+                    .session
+                    .presentation
+                    .appearance_theme_state()
+                    .is_none_or(|state| state.validate_prepared_switch(theme.prepared()).is_err())
+            {
+                return WorthUiMountedContentRebindOutcome::AdmissionDenied {
+                    denial: crate::mounting::UiMountedPresentationAdmissionDenial::PreparedFrameBasisChanged,
+                    retry: self,
+                };
+            }
+        }
+        if let WorthUiMountedContentPublication::AuthoredSuccessor {
+            pointer_succession,
+            owners,
+            appearance_succession,
+            authority,
+            ..
+        } = &self.publication
+        {
+            if pointer_succession
+                .validate_predecessor(
+                    &self.session.active_generation_identity(),
+                    self.session.pointer_affordance_snapshot.as_ref(),
+                    self.session
+                        .observation_clock
+                        .as_ref()
+                        .map(|clock| clock.sample_millis()),
+                    &self.session.mounted,
+                )
+                .is_err()
+                || !owners.matches_projection(self.session.appearance_owner_snapshot.as_ref())
+                || self
+                    .session
+                    .prepare_retained_appearance_owners(authority, appearance_succession)
+                    .is_err()
+            {
+                return WorthUiMountedContentRebindOutcome::AdmissionDenied {
+                    denial: crate::mounting::UiMountedPresentationAdmissionDenial::PreparedFrameBasisChanged,
+                    retry: self,
+                };
+            }
+        }
         let Self {
             session,
             frame,
             publication,
         } = *self;
-        let outcome = session.present_prepared_mounted_frame_internal(frame, deadline, now);
+        let outcome = match &publication {
+            WorthUiMountedContentPublication::ThemeSwitch { reconciliation, .. }
+                if !reconciliation.is_empty() =>
+            {
+                session
+                    .present_prepared_mounted_frame_for_reconciliation(
+                        frame,
+                        reconciliation,
+                        deadline,
+                        now,
+                    )
+                    .expect("prepared theme reconciliation retains its accepted predecessor")
+            }
+            _ => session.present_prepared_mounted_frame_internal(frame, deadline, now),
+        };
         finish(session, outcome, publication)
     }
 }
@@ -169,91 +257,6 @@ impl<'session> WorthUiMountedContentRebindInFlight<'session> {
     }
 }
 
-impl WorthUiDetachedPreparedMountedContentRebind {
-    pub(crate) const fn session_identity(
-        &self,
-    ) -> crate::facade::WorthUiActiveApplicationSessionIdentity {
-        self.session_identity
-    }
-
-    pub(crate) fn rebase<'session>(
-        self,
-        session: &'session mut WorthUiActiveApplicationSession,
-        semantic_content: crate::mounting::UiMountedSemanticContentInput,
-    ) -> Result<
-        Box<WorthUiPreparedMountedContentRebind<'session>>,
-        crate::runtime::rebind::UiRebindPreparationDenial,
-    > {
-        let frame_request = session.mounted_frame_request();
-        let completion = session.execute_framework_turn(|_| {}).map_err(|_| {
-            crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
-        })?;
-        let mut execution = completion.into_execution().map_err(|_| {
-            crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
-        })?;
-        let theme_values = execution.presentation.theme_values_source();
-        let frame = execution
-            .prepare_mounted_frame_with_content_internal(
-                frame_request,
-                semantic_content,
-                theme_values,
-            )
-            .map_err(|denial| {
-                crate::runtime::rebind::UiRebindPreparationDenial::ContentMountedPreparation(
-                    Box::new(denial),
-                )
-            })?;
-        Ok(Box::new(WorthUiPreparedMountedContentRebind {
-            session,
-            frame,
-            publication: self.publication,
-        }))
-    }
-}
-
-impl WorthUiDetachedMountedContentRebindInFlight {
-    pub(crate) fn session_identity(
-        &self,
-    ) -> crate::facade::WorthUiActiveApplicationSessionIdentity {
-        self.session_identity
-    }
-
-    pub(crate) fn attempt(&self) -> worth_ui_host_contract::UiMountedPresentationAttemptIdentity {
-        self.mounted.attempt()
-    }
-
-    pub(crate) fn awaits_progress_class(
-        &self,
-        class: worth_ui_host_contract::UiHostPresentationProgressClass,
-    ) -> bool {
-        self.mounted.awaits_progress_class(class)
-    }
-
-    pub(crate) fn pending_bindings(
-        &self,
-    ) -> impl ExactSizeIterator<Item = worth_ui_host_contract::UiSurfaceBindingGeneration> + '_
-    {
-        self.mounted.pending_bindings()
-    }
-
-    pub(crate) fn complete<'session>(
-        self,
-        session: &'session mut WorthUiActiveApplicationSession,
-        now: u64,
-    ) -> WorthUiMountedContentRebindOutcome<'session> {
-        let outcome = session.complete_mounted_presentation(self.mounted, now);
-        finish(session, outcome, self.publication)
-    }
-
-    pub(crate) fn cancel<'session>(
-        self,
-        session: &'session mut WorthUiActiveApplicationSession,
-    ) -> WorthUiMountedContentRebindOutcome<'session> {
-        let outcome = session.cancel_mounted_presentation(self.mounted);
-        finish(session, outcome, self.publication)
-    }
-}
-
 impl<'session> WorthUiMountedContentRebindIndeterminate<'session> {
     pub(crate) fn frame(&self) -> &crate::mounting::UiMountedIndeterminateFrame {
         &self.frame
@@ -275,16 +278,40 @@ fn finish<'session>(
     outcome: crate::mounting::UiMountedFrameOutcome,
     publication: WorthUiMountedContentPublication,
 ) -> WorthUiMountedContentRebindOutcome<'session> {
+    if matches!(
+        &outcome,
+        crate::mounting::UiMountedFrameOutcome::Reconciled(_)
+    ) {
+        assert!(
+            matches!(&publication, WorthUiMountedContentPublication::ThemeSwitch { reconciliation, .. } if !reconciliation.is_empty()),
+            "only a prepared theme reconciliation may settle content as reconciled"
+        );
+    }
     match outcome {
-        crate::mounting::UiMountedFrameOutcome::Published(receipt) => {
+        crate::mounting::UiMountedFrameOutcome::Published(receipt)
+        | crate::mounting::UiMountedFrameOutcome::Reconciled(receipt) => {
             let authored_generations = match publication {
                 WorthUiMountedContentPublication::RetainedGeneration => None,
+                WorthUiMountedContentPublication::ThemeSwitch { theme, .. } => {
+                    session.presentation.commit_published_appearance_theme_switch(theme.into_prepared())
+                        .expect("the exclusively held accepted frame retains its admitted theme predecessor");
+                    None
+                }
                 WorthUiMountedContentPublication::AuthoredSuccessor {
                     authority,
                     appearance_succession,
+                    overlay_bindings,
+                    occurrence_geometry,
+                    pointer_succession,
+                    owners,
                 } => {
                     let generations = session.application.commit_evidence_only_rebind(authority);
-                    session.commit_appearance_generation_succession(appearance_succession);
+                    session.commit_retained_appearance_succession(appearance_succession, owners);
+                    session.authored_overlay_bindings = overlay_bindings;
+                    session.pointer_affordance_snapshot = pointer_succession.into_snapshot();
+                    session
+                        .mounted
+                        .commit_retained_geometry_succession(occurrence_geometry);
                     Some(generations)
                 }
             };
@@ -297,10 +324,11 @@ fn finish<'session>(
             let rejections = rejected.rejections().to_vec().into_boxed_slice();
             WorthUiMountedContentRebindOutcome::RejectedBeforeEffects {
                 rejections,
-                retry: Box::new(
-                    WorthUiPreparedMountedContentRebind::new(session, rejected.into_frame())
-                        .with_publication(publication),
-                ),
+                retry: Box::new(WorthUiPreparedMountedContentRebind::new(
+                    session,
+                    rejected.into_frame(),
+                    publication,
+                )),
             }
         }
         crate::mounting::UiMountedFrameOutcome::InFlight(mounted) => {
@@ -323,35 +351,29 @@ fn finish<'session>(
         crate::mounting::UiMountedFrameOutcome::RetentionDenied(rejection) => {
             WorthUiMountedContentRebindOutcome::RetentionDenied {
                 denial: rejection.denial(),
-                retry: Box::new(
-                    WorthUiPreparedMountedContentRebind::new(session, rejection.into_frame())
-                        .with_publication(publication),
-                ),
+                retry: Box::new(WorthUiPreparedMountedContentRebind::new(
+                    session,
+                    rejection.into_frame(),
+                    publication,
+                )),
             }
         }
         crate::mounting::UiMountedFrameOutcome::AdmissionDenied(rejection) => {
             WorthUiMountedContentRebindOutcome::AdmissionDenied {
                 denial: rejection.denial(),
-                retry: Box::new(
-                    WorthUiPreparedMountedContentRebind::new(session, rejection.into_frame())
-                        .with_publication(publication),
-                ),
+                retry: Box::new(WorthUiPreparedMountedContentRebind::new(
+                    session,
+                    rejection.into_frame(),
+                    publication,
+                )),
             }
         }
         crate::mounting::UiMountedFrameOutcome::CompletionDenied(denial) => {
             WorthUiMountedContentRebindOutcome::CompletionDenied(denial)
         }
-        crate::mounting::UiMountedFrameOutcome::Unchanged(_)
-        | crate::mounting::UiMountedFrameOutcome::Reconciled(_) => {
+        crate::mounting::UiMountedFrameOutcome::Unchanged(_) => {
             unreachable!("explicit content preparation always presents a fresh mounted frame")
         }
-    }
-}
-
-impl WorthUiPreparedMountedContentRebind<'_> {
-    fn with_publication(mut self, publication: WorthUiMountedContentPublication) -> Self {
-        self.publication = publication;
-        self
     }
 }
 

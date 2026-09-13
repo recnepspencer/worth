@@ -13,5 +13,6 @@ pub use stop::{UiPointerGestureStop, UiPointerGestureStopReason};
 )]
 pub(crate) use pointer::{
     UiPointerGestureOutcome, UiPointerGestureRuntimeState, UiPointerGestureStateSnapshot,
-    UiPressedAppearanceClass, UiPressedAppearanceOwnerSnapshot, UiPressedAppearancePosture,
+    UiPreparedPointerGestureCancellation, UiPressedAppearanceClass,
+    UiPressedAppearanceOwnerSnapshot, UiPressedAppearancePosture,
 };

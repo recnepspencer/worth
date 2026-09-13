@@ -33,6 +33,9 @@ impl PlatformPulseApplicationRuntime {
         match outcome {
             WorthUiNativeManagedPortalDismissalOutcome::Ignored => true,
             WorthUiNativeManagedPortalDismissalOutcome::Retained => true,
+            WorthUiNativeManagedPortalDismissalOutcome::Stopped(
+                worth_ui::facade::app::WorthUiNativePortalDismissalStop::StalePresentation,
+            ) => true,
             WorthUiNativeManagedPortalDismissalOutcome::Published(receipt) => {
                 self.settle_portal_dismissal(shell, receipt)
             }
@@ -67,7 +70,7 @@ impl PlatformPulseApplicationRuntime {
         }
         if let Err(error) = self
             .publisher
-            .semantic_focus_published(receipt.focus_publication())
+            .semantic_focus_published(receipt.focus_publication(), receipt.mounted())
         {
             self.fail(
                 super::super::PlatformPulseTerminalError::ObservationPublication,

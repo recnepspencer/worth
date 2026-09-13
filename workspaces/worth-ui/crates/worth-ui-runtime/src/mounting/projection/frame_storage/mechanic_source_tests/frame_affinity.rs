@@ -30,15 +30,6 @@ fn unchanged_successor_views_refresh_affinity_without_mutating_retained_mechanic
             1,
         ))
         .unwrap();
-    let predecessor_rect = source
-        .filled_rects_for(
-            &semantic,
-            surface,
-            binding,
-            predecessor_frame,
-            &predecessor_receipts,
-        )
-        .unwrap()[0];
     let predecessor_hit = source
         .hit_tests_for(
             &semantic,
@@ -73,26 +64,10 @@ fn unchanged_successor_views_refresh_affinity_without_mutating_retained_mechanic
             2,
         ))
         .unwrap();
-    assert_eq!(
-        (
-            mutation.filled_rects,
-            mutation.semantic_text,
-            mutation.hit_tests
-        ),
-        (0, 0, 0)
-    );
+    assert_eq!((mutation.semantic_text, mutation.hit_tests), (0, 0));
     assert!(mutation.command_changes.is_empty());
 
     let successor_receipt = successor_receipts.receipt_for(instance).unwrap();
-    let successor_rects = source
-        .filled_rects_for(
-            &semantic,
-            surface,
-            binding,
-            successor_frame,
-            &successor_receipts,
-        )
-        .unwrap();
     let successor_hits = source
         .hit_tests_for(
             &semantic,
@@ -112,14 +87,12 @@ fn unchanged_successor_views_refresh_affinity_without_mutating_retained_mechanic
             &successor_receipts,
         )
         .unwrap();
-    assert_eq!(successor_rects[0].node_receipt(), successor_receipt);
     assert_eq!(successor_hits[0].node_receipt(), successor_receipt);
     assert!(successor_text.iter().all(|row| {
         row.frame() == successor_frame
             && row.content_generation() == successor_content
             && row.node_receipt() == successor_receipt
     }));
-    assert_eq!(predecessor_rect.frame(), predecessor_frame);
     assert_eq!(predecessor_hit.frame(), predecessor_frame);
     assert!(predecessor_text
         .iter()
@@ -128,9 +101,6 @@ fn unchanged_successor_views_refresh_affinity_without_mutating_retained_mechanic
         .commands_for_instance(instance, surface, binding)
         .iter()
         .all(|command| match command {
-            UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-                mechanic.frame() == predecessor_frame
-            }
             UiMountedPaintCommand::PortalOverlay { mechanic, .. } => {
                 mechanic.frame() == predecessor_frame
             }

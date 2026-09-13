@@ -9,14 +9,4 @@ pub(crate) enum UiAppearanceStateAdapterDenial {
     ForeignSource(UiAppearanceStateAxis),
 }
 
-impl UiAppearanceStateAdapterDenial {
-    pub(crate) const fn axis(self) -> UiAppearanceStateAxis {
-        match self {
-            Self::MissingOwner(axis)
-            | Self::MissingSource(axis)
-            | Self::AmbiguousSource(axis)
-            | Self::StaleSource(axis)
-            | Self::ForeignSource(axis) => axis,
-        }
-    }
-}
+impl UiAppearanceStateAdapterDenial {}

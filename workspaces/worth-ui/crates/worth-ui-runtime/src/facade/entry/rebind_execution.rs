@@ -3,101 +3,74 @@ use super::{
     WorthUiPreparedApplicationReplacement,
 };
 
-pub(crate) struct WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
-    session: &'session mut WorthUiActiveApplicationSession,
-    successor_authority:
-        crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
-    appearance_succession: Option<super::UiPreparedAppearanceGenerationSuccession>,
-    _admitted_candidate: crate::runtime::WorthUiAdmittedReplacementCandidate,
-    _comparison: crate::runtime::WorthUiRuntimeArtifactComparison,
-}
-
-impl<'session> WorthUiPreparedEvidenceOnlyApplicationRebind<'session> {
-    fn new(
-        session: &'session mut WorthUiActiveApplicationSession,
-        succession: crate::runtime::observation::UiAuthoredSourceSuccession,
-    ) -> Result<Self, crate::runtime::rebind::UiRebindPreparationDenial> {
-        let crate::runtime::observation::UiAuthoredSourceSuccession::EvidenceOnly {
-            successor_authority,
-            admitted_candidate,
-            comparison,
-        } = succession
-        else {
-            return Err(crate::runtime::rebind::UiRebindPreparationDenial::InvalidSemanticProof);
-        };
-        let predecessor = session.active_generation_identity();
-        let successor = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
-            session.session_identity(),
-            successor_authority.generation_identity(),
-        );
-        let generation_succession = crate::facade::prepared_application_authority::
-            WorthUiPreparedApplicationGenerationSuccession::new(
-                predecessor.prepared_generation().clone(),
-                successor.prepared_generation().clone(),
-            );
-        let appearance_succession = session
-            .prepare_appearance_generation_succession(&generation_succession)
-            .map(Some)
-            .map_err(|denial| match denial {
-                super::UiAppearanceGenerationSuccessionDenial::Theme(denial) => {
-                    crate::runtime::rebind::UiRebindPreparationDenial::AppearanceThemeSuccession(
-                        denial,
-                    )
-                }
-                super::UiAppearanceGenerationSuccessionDenial::Inspection(denial) => {
-                    crate::runtime::rebind::UiRebindPreparationDenial::AppearanceInspectionSuccession(
-                        denial,
-                    )
-                }
-            })?;
-        Ok(Self {
-            session,
-            successor_authority,
-            appearance_succession,
-            _admitted_candidate: admitted_candidate,
-            _comparison: comparison,
-        })
-    }
-
-    pub(crate) fn commit(
-        self,
-    ) -> (
-        crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
-        crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
-    ) {
-        let Self {
-            session,
-            successor_authority,
-            appearance_succession,
-            _admitted_candidate: _,
-            _comparison: _,
-        } = self;
-        let generations = session
-            .application
-            .commit_evidence_only_rebind(successor_authority);
-        if let Some(appearance_succession) = appearance_succession {
-            session.commit_appearance_generation_succession(appearance_succession);
-        }
-        generations
-    }
-
-    pub(crate) fn generation_identity(
-        &self,
-    ) -> &crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity
-    {
-        self.successor_authority.generation_identity()
-    }
-}
+mod evidence_only;
+pub(crate) use evidence_only::WorthUiPreparedEvidenceOnlyApplicationRebind;
 
 impl WorthUiActiveApplicationSession {
     pub fn prepare_rebind(
         &mut self,
-        mut plan: crate::runtime::rebind::UiRebindPlan,
+        plan: crate::runtime::rebind::UiRebindPlan,
         request: crate::runtime::rebind::UiRebindExecutionRequest,
     ) -> Result<
         crate::runtime::rebind::UiPreparedRebind<'_>,
         crate::runtime::rebind::UiRebindPreparationDenial,
     > {
+        self.prepare_rebind_with_inputs(plan, request, &[], None, None, None)
+    }
+
+    pub(in crate::facade::entry) fn prepare_native_rebind(
+        &mut self,
+        plan: crate::runtime::rebind::UiRebindPlan,
+        request: crate::runtime::rebind::UiRebindExecutionRequest,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        viewport: Option<worth_ui_host_contract::UiMountedCanonicalBox>,
+        layout: Option<&mut super::application_replacement::UiNativeReplacementLayoutSupplier<'_>>,
+    ) -> Result<
+        crate::runtime::rebind::UiPreparedRebind<'_>,
+        crate::runtime::rebind::UiRebindPreparationDenial,
+    > {
+        self.prepare_rebind_with_inputs(plan, request, &[], Some(surface), viewport, layout)
+    }
+
+    pub(in crate::facade::entry) fn prepare_rebind_with_reconciliation(
+        &mut self,
+        plan: crate::runtime::rebind::UiRebindPlan,
+        request: crate::runtime::rebind::UiRebindExecutionRequest,
+        reconciliation: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
+    ) -> Result<
+        crate::runtime::rebind::UiPreparedRebind<'_>,
+        crate::runtime::rebind::UiRebindPreparationDenial,
+    > {
+        self.prepare_rebind_with_inputs(plan, request, reconciliation, None, None, None)
+    }
+
+    fn prepare_rebind_with_inputs(
+        &mut self,
+        mut plan: crate::runtime::rebind::UiRebindPlan,
+        request: crate::runtime::rebind::UiRebindExecutionRequest,
+        reconciliation: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
+        native_surface: Option<worth_ui_host_contract::UiSemanticSurfaceIdentity>,
+        native_viewport: Option<worth_ui_host_contract::UiMountedCanonicalBox>,
+        native_layout: Option<
+            &mut super::application_replacement::UiNativeReplacementLayoutSupplier<'_>,
+        >,
+    ) -> Result<
+        crate::runtime::rebind::UiPreparedRebind<'_>,
+        crate::runtime::rebind::UiRebindPreparationDenial,
+    > {
+        let pointer_succession = plan
+            .retained_successor_authority()
+            .map(|authority| self.prepare_pointer_generation_succession(authority))
+            .transpose()?;
+        let pointer_publication = pointer_succession.as_ref().is_some_and(|pointer| {
+            !pointer.changed_surfaces().is_empty() || pointer.requires_timed_publication()
+        });
+        if pointer_publication {
+            let pointer = pointer_succession
+                .as_ref()
+                .expect("publication has prepared pointer owner");
+            self.include_pointer_publication(&mut plan, pointer)?;
+        }
         let reservation = crate::runtime::rebind::admit_plan(
             &self.rebind,
             crate::runtime::rebind::UiRebindFinalAdmissionBasis::new(
@@ -108,17 +81,76 @@ impl WorthUiActiveApplicationSession {
             &plan,
             request,
         )?;
-        match plan.take_semantic_proof() {
-            crate::runtime::rebind::UiRebindSemanticProof::Changed(changed) => {
-                self.prepare_changed_rebind(plan, reservation, changed)
-            }
-            crate::runtime::rebind::UiRebindSemanticProof::AuthoredContent(content) => {
-                self.prepare_authored_content_rebind(plan, reservation, *content)
-            }
+        let semantic_proof = plan.take_semantic_proof();
+        if !reconciliation.is_empty()
+            && !matches!(
+                &semantic_proof,
+                crate::runtime::rebind::UiRebindSemanticProof::ThemeSwitch(_)
+            )
+        {
+            return Err(crate::runtime::rebind::UiRebindPreparationDenial::InvalidSemanticProof);
+        }
+        match semantic_proof {
+            crate::runtime::rebind::UiRebindSemanticProof::Changed(changed) => self
+                .prepare_changed_rebind(
+                    plan,
+                    reservation,
+                    changed,
+                    native_surface,
+                    native_viewport,
+                    native_layout,
+                ),
+            crate::runtime::rebind::UiRebindSemanticProof::AuthoredContent(content) => self
+                .prepare_authored_content_rebind(
+                    plan,
+                    reservation,
+                    *content,
+                    pointer_succession
+                        .expect("authored content requires prepared pointer succession"),
+                ),
             crate::runtime::rebind::UiRebindSemanticProof::EvidenceOnly(succession) => {
+                let pointer = pointer_succession
+                    .expect("evidence publication requires prepared pointer succession");
+                if pointer_publication {
+                    let crate::runtime::observation::UiAuthoredSourceSuccession::EvidenceOnly {
+                        successor_authority,
+                        admitted_candidate,
+                        comparison: _,
+                    } = *succession
+                    else {
+                        unreachable!("evidence plan retains evidence-only succession")
+                    };
+                    let content = crate::runtime::rebind::UiAuthoredContentRebindSemanticProof {
+                        successor_authority,
+                        source_candidate_artifact_digest: admitted_candidate
+                            .candidate()
+                            .basis()
+                            .artifact_digest()
+                            .raw(),
+                    };
+                    return self.prepare_authored_content_rebind(
+                        plan,
+                        reservation,
+                        content,
+                        pointer,
+                    );
+                }
                 let prepared =
-                    WorthUiPreparedEvidenceOnlyApplicationRebind::new(self, *succession)?;
+                    WorthUiPreparedEvidenceOnlyApplicationRebind::new(self, *succession, pointer)?;
                 crate::runtime::rebind::UiPreparedRebind::evidence_only(plan, reservation, prepared)
+            }
+            crate::runtime::rebind::UiRebindSemanticProof::ThemeSwitch(theme) => {
+                let content = Box::new(super::WorthUiPreparedMountedContentRebind::prepare_theme(
+                    self,
+                    plan.content().clone(),
+                    *theme,
+                    reconciliation,
+                )?);
+                Ok(crate::runtime::rebind::UiPreparedRebind::content(
+                    plan,
+                    reservation,
+                    content,
+                ))
             }
             crate::runtime::rebind::UiRebindSemanticProof::NonSource => {
                 self.prepare_content_rebind(plan, reservation)
@@ -137,43 +169,12 @@ impl WorthUiActiveApplicationSession {
         crate::runtime::rebind::UiPreparedRebind<'_>,
         crate::runtime::rebind::UiRebindPreparationDenial,
     > {
-        let mut semantic_content = plan.content().clone();
-        let presentation = self.presentation.project().map_err(|denial| {
-            crate::runtime::rebind::UiRebindPreparationDenial::ContentMountedPreparation(Box::new(
-                denial,
-            ))
-        })?;
-        semantic_content
-            .merge_application_presentation(presentation.content())
-            .map_err(|denial| {
-                crate::runtime::rebind::UiRebindPreparationDenial::ContentMountedPreparation(
-                    Box::new(crate::mounting::UiMountedFramePreparationDenial::Projection(denial)),
-                )
-            })?;
-        let frame_request = self.current_portal_rebind_frame_request();
-        let mut frame = {
-            let completion = self.execute_framework_turn(|_| {}).map_err(|_| {
-                crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
-            })?;
-            let mut execution = completion.into_execution().map_err(|_| {
-                crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
-            })?;
-            let theme_values = execution.presentation.theme_values_source();
-            execution
-                .prepare_mounted_frame_with_content_internal(
-                    frame_request,
-                    semantic_content,
-                    theme_values,
-                )
-                .map_err(|denial| {
-                    crate::runtime::rebind::UiRebindPreparationDenial::ContentMountedPreparation(
-                        Box::new(denial),
-                    )
-                })?
-        };
-        frame.set_application_text_publication(presentation.text_publication(), &self.mounted);
-        let content =
-            Box::new(crate::facade::entry::WorthUiPreparedMountedContentRebind::new(self, frame));
+        let content = Box::new(
+            crate::facade::entry::WorthUiPreparedMountedContentRebind::prepare(
+                self,
+                plan.content().clone(),
+            )?,
+        );
         Ok(crate::runtime::rebind::UiPreparedRebind::content(
             plan,
             reservation,
@@ -186,11 +187,32 @@ impl WorthUiActiveApplicationSession {
         plan: crate::runtime::rebind::UiRebindPlan,
         reservation: crate::runtime::rebind::UiRebindReservation,
         content: crate::runtime::rebind::UiAuthoredContentRebindSemanticProof,
+        pointer_succession: crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
     ) -> Result<
         crate::runtime::rebind::UiPreparedRebind<'_>,
         crate::runtime::rebind::UiRebindPreparationDenial,
     > {
         let semantic_content = plan.content().clone();
+        let overlay_bindings = self
+            .authored_overlay_bindings
+            .prepare_application_replacement(
+                self.application.prepared_authority(),
+                &content.successor_authority,
+                &[],
+            )
+            .map_err(|_| {
+                crate::runtime::rebind::UiRebindPreparationDenial::CandidateCutoverPreparation
+            })?;
+        let occurrence_geometry = self
+            .application
+            .prepare_retained_layout_succession(
+                &self.mounted,
+                &content.successor_authority,
+                &overlay_bindings,
+            )
+            .map_err(
+                crate::runtime::rebind::UiRebindPreparationDenial::CandidateOccurrenceGeometry,
+            )?;
         let predecessor = self.active_generation_identity();
         let successor = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
             self.session_identity(),
@@ -216,33 +238,20 @@ impl WorthUiActiveApplicationSession {
                 }
             }
             })?;
-        let frame_request = self.current_portal_rebind_frame_request();
-        let frame = {
-            let completion = self.execute_framework_turn(|_| {}).map_err(|_| {
-                crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
-            })?;
-            let mut execution = completion.into_execution().map_err(|_| {
-                crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
-            })?;
-            let theme_values = execution.presentation.theme_values_source();
-            execution
-                .prepare_mounted_frame_with_content_internal(
-                    frame_request,
-                    semantic_content,
-                    theme_values,
-                )
-                .map_err(|denial| {
-                    crate::runtime::rebind::UiRebindPreparationDenial::ContentMountedPreparation(
-                        Box::new(denial),
-                    )
-                })?
-        };
-        let prepared = crate::facade::entry::WorthUiPreparedMountedContentRebind::authored(
+        let owners = self.prepare_retained_appearance_owners(
+            &content.successor_authority,
+            &appearance_succession,
+        )?;
+        let prepared = crate::facade::entry::WorthUiPreparedMountedContentRebind::prepare_authored(
             self,
-            frame,
+            semantic_content,
             content.successor_authority,
             appearance_succession,
-        );
+            overlay_bindings,
+            occurrence_geometry,
+            pointer_succession,
+            owners,
+        )?;
         Ok(crate::runtime::rebind::UiPreparedRebind::content(
             plan,
             reservation,
@@ -255,10 +264,32 @@ impl WorthUiActiveApplicationSession {
         plan: crate::runtime::rebind::UiRebindPlan,
         reservation: crate::runtime::rebind::UiRebindReservation,
         changed: Box<crate::runtime::rebind::UiChangedRebindSemanticProof>,
+        native_surface: Option<worth_ui_host_contract::UiSemanticSurfaceIdentity>,
+        native_viewport: Option<worth_ui_host_contract::UiMountedCanonicalBox>,
+        native_layout: Option<
+            &mut super::application_replacement::UiNativeReplacementLayoutSupplier<'_>,
+        >,
     ) -> Result<
         crate::runtime::rebind::UiPreparedRebind<'_>,
         crate::runtime::rebind::UiRebindPreparationDenial,
     > {
+        let native_component_candidates = native_surface
+            .map(|_| {
+                plan.identity_decisions()
+                    .iter()
+                    .filter(|entry| {
+                        entry.key().kind() == crate::graph::UiGraphFactConsumerKind::GraphNode
+                            && entry.key().authored_identity().starts_with("component:")
+                    })
+                    .filter_map(|entry| match entry.candidate() {
+                        Some(crate::graph::UiGraphFactConsumerIdentity::GraphNode(node)) => {
+                            Some(node)
+                        }
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
         let semantic_content = plan.content().clone();
         let mut prepared = WorthUiPreparedApplicationReplacement::from_changed_rebind_plan(
             self.identity,
@@ -295,11 +326,20 @@ impl WorthUiActiveApplicationSession {
                 None,
                 semantic_content,
                 self.current_portal_rebind_frame_request(),
+                native_surface,
+                &native_component_candidates,
+                native_viewport,
+                native_layout,
             )
             .map_err(|denial| match denial {
                 crate::facade::WorthUiApplicationCutoverDenial::MountedFrame(denial) => {
                     crate::runtime::rebind::UiRebindPreparationDenial::CandidateMountedPreparation(
                         Box::new(denial),
+                    )
+                }
+                crate::facade::WorthUiApplicationCutoverDenial::OccurrenceGeometry(denial) => {
+                    crate::runtime::rebind::UiRebindPreparationDenial::CandidateOccurrenceGeometry(
+                        denial,
                     )
                 }
                 _ => crate::runtime::rebind::UiRebindPreparationDenial::CandidateCutoverPreparation,

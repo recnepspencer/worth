@@ -15,10 +15,10 @@ fn evidence_only_rebind_changes_exact_inspection_generation_without_world_aliasi
         fixture.graph_node.digest(),
         worth_ui_dsl::UiAppearanceAspect::Background,
     );
-    assert!(matches!(
-        fixture.session.why_appearance(query),
-        worth_ui_inspection::UiAppearanceInspectionOutcome::Found(_)
-    ));
+    let predecessor_explanation = match fixture.session.why_appearance(query) {
+        worth_ui_inspection::UiAppearanceInspectionOutcome::Found(explanation) => explanation,
+        other => panic!("initial published appearance must be inspectable: {other:?}"),
+    };
 
     let candidate = support::appearance_candidate_submission(
         &fixture.session,
@@ -77,21 +77,34 @@ fn evidence_only_rebind_changes_exact_inspection_generation_without_world_aliasi
         worth_ui_inspection::UiAppearanceInspectionOutcome::WrongWorld
     );
 
+    let successor_query = worth_ui_inspection::UiAppearanceInspectionQuery::new(
+        successor_world,
+        fixture.graph_node.digest(),
+        worth_ui_dsl::UiAppearanceAspect::Background,
+    );
+    let successor_explanation = match fixture.session.why_appearance(successor_query) {
+        worth_ui_inspection::UiAppearanceInspectionOutcome::Found(explanation) => explanation,
+        other => panic!("retained successor must be immediately inspectable: {other:?}"),
+    };
+    assert_eq!(successor_explanation.query(), successor_query);
+    assert_eq!(
+        fixture.session.why_appearance(successor_query),
+        worth_ui_inspection::UiAppearanceInspectionOutcome::Found(predecessor_explanation.clone().with_query(successor_query)),
+        "retained cutover exposes the original decision evidence immediately, without another frame"
+    );
     super::refresh_appearance_owner_snapshot(
         &mut fixture.session,
         &role,
         "appearance-inspection-generation-frame",
     );
     super::publish_frame(&mut fixture.session, 3);
-    let successor_query = worth_ui_inspection::UiAppearanceInspectionQuery::new(
-        successor_world,
-        fixture.graph_node.digest(),
-        worth_ui_dsl::UiAppearanceAspect::Background,
-    );
-    assert!(matches!(
+    assert_eq!(
         fixture.session.why_appearance(successor_query),
-        worth_ui_inspection::UiAppearanceInspectionOutcome::Found(_)
-    ));
+        worth_ui_inspection::UiAppearanceInspectionOutcome::Found(
+            predecessor_explanation.with_query(successor_query)
+        ),
+        "an unchanged frame must retain the same decision evidence"
+    );
     assert_eq!(
         fixture.session.why_appearance(query),
         worth_ui_inspection::UiAppearanceInspectionOutcome::WrongWorld

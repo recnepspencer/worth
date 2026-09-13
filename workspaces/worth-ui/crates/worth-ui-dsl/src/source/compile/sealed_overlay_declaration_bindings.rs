@@ -12,6 +12,36 @@ pub struct WorthUiSealedOverlayDeclarationBindings {
 }
 
 impl WorthUiSealedOverlayDeclarationBindings {
+    /// Bind declared region kinds independently of whether an overlay uses them.
+    /// The mounted owner still proves the actual occurrence on a bound surface.
+    pub(super) fn bind_declared_regions(
+        &mut self,
+        declared: &BTreeSet<String>,
+        reserved_identity: u64,
+    ) -> Result<(), ()> {
+        let mut next = self
+            .regions
+            .values()
+            .map(|identity| identity.value())
+            .max()
+            .unwrap_or(0)
+            .max(reserved_identity);
+        for surface in self.surfaces.keys() {
+            for region in declared {
+                let key = region_key(surface, region);
+                if self.regions.contains_key(&key) {
+                    continue;
+                }
+                next = next.checked_add(1).ok_or(())?;
+                self.regions.insert(
+                    key,
+                    crate::UiMosaicRegionDeclarationIdentity::new(next).ok_or(())?,
+                );
+            }
+        }
+        Ok(())
+    }
+
     pub(super) fn from_parts(
         backdrops: BTreeMap<String, crate::UiBackdropIdentity>,
         portals: BTreeMap<String, crate::UiPortalDeclarationId>,
@@ -45,6 +75,23 @@ impl WorthUiSealedOverlayDeclarationBindings {
         self.surfaces.get(name).copied()
     }
 
+    /// Recover authored identity within this exact compiler-issued package.
+    pub fn surface_name(
+        &self,
+        identity: crate::UiSemanticSurfaceDeclarationIdentity,
+    ) -> Option<&str> {
+        self.surfaces
+            .iter()
+            .find_map(|(name, candidate)| (*candidate == identity).then_some(name.as_str()))
+    }
+
+    /// Package-local numbers must cross generations through authored identity.
+    pub fn portal_name(&self, identity: crate::UiPortalDeclarationId) -> Option<&str> {
+        self.portals
+            .iter()
+            .find_map(|(name, candidate)| (*candidate == identity).then_some(name.as_str()))
+    }
+
     pub fn contains_surface(&self, identity: crate::UiSemanticSurfaceDeclarationIdentity) -> bool {
         self.surfaces
             .values()
@@ -64,10 +111,7 @@ impl WorthUiSealedOverlayDeclarationBindings {
         surface: crate::UiSemanticSurfaceDeclarationIdentity,
         region: &str,
     ) -> Option<crate::UiMosaicRegionDeclarationIdentity> {
-        let surface_name = self
-            .surfaces
-            .iter()
-            .find_map(|(name, identity)| (*identity == surface).then_some(name.as_str()))?;
+        let surface_name = self.surface_name(surface)?;
         self.region_named(surface_name, region)
     }
 }

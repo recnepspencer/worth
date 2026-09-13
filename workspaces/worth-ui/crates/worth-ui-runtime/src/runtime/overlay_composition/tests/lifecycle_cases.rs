@@ -119,9 +119,7 @@ fn topmost_close_recomputes_only_the_closed_portal_neighborhood() {
     let successor = state
         .prepare_successor(
             input(&extent, &after, &retained_binding, None, presentation),
-            &UiOverlayChangeSet::from_changes([UiOverlayChangedBasis::PortalPresence(
-                second_declaration,
-            )]),
+            &UiOverlayChangeSet::from_changes([UiOverlayChangedBasis::Portal(second_declaration)]),
         )
         .unwrap();
 
@@ -323,7 +321,7 @@ fn resize_recomputes_extent_dependents_without_mutating_the_predecessor() {
 }
 
 #[test]
-fn rebind_requires_reconstruction_and_accepts_a_new_owner_generation() {
+fn rebind_requires_new_owner_admission() {
     let surface = worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity::new(1).unwrap();
     let old_runtime_surface =
         worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap();
@@ -360,24 +358,6 @@ fn rebind_requires_reconstruction_and_accepts_a_new_owner_generation() {
         Err(UiOverlayCompositionDenial::ReconstructionRequired)
     );
     assert_eq!(state.current(), Some(&previous));
-    let reconstructed = state
-        .reconstruct(input_with_generation(
-            2,
-            &new_extent,
-            &new_portals,
-            &[],
-            None,
-            presentation,
-        ))
-        .unwrap();
-    assert_eq!(
-        reconstructed.snapshot().runtime_surface(),
-        new_runtime_surface
-    );
-    assert_eq!(
-        reconstructed.snapshot().generation(),
-        &UiOverlayApplicationGeneration::Test(2)
-    );
 }
 
 #[test]

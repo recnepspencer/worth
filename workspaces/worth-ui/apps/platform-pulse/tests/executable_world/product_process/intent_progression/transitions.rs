@@ -164,12 +164,6 @@ impl<State> IntentJourney<'_, State> {
         Ok(())
     }
 
-    fn record_rebase(&mut self) -> Result<(), PlatformPulseIntentJourneyFailure> {
-        let sequence = observation::await_visual_rebase(self.world)?;
-        self.evidence.record_sequence(sequence);
-        Ok(())
-    }
-
     fn record_query_completion(
         &mut self,
         attempt: worth_ui_platform_pulse::observation_contract::PlatformPulseIntentAttemptObservationReference,
@@ -317,7 +311,7 @@ impl<'a> IntentJourney<'a, ConfirmationStale> {
         let challenge = observation::await_confirmation_required(self.world)?;
         if challenge.value == self.state.predecessor {
             return Err(PlatformPulseIntentJourneyFailure::Cancellation(
-                "fresh activation replayed the stale confirmation challenge",
+                "fresh activation replayed the stale confirmation challenge".to_owned(),
             ));
         }
         self.evidence.record_sequence(challenge.sequence);
@@ -338,7 +332,7 @@ impl<'a> IntentJourney<'a, FreshConfirmationPending> {
     ) -> Result<IntentJourney<'a, SecondCompleted>, PlatformPulseIntentJourneyFailure> {
         if self.state.challenge.expires_at_millis == 0 {
             return Err(PlatformPulseIntentJourneyFailure::Cancellation(
-                "fresh challenge carried no expiry boundary",
+                "fresh challenge carried no expiry boundary".to_owned(),
             ));
         }
         self.advance_action("activate-fresh-confirmation")?;

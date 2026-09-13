@@ -1,4 +1,6 @@
 mod accessors;
+mod cancellation;
+pub(crate) use cancellation::UiPreparedPointerGestureCancellation;
 mod appearance;
 mod model;
 mod presentation;
@@ -44,8 +46,9 @@ impl UiPointerGestureRuntimeState {
         report: &worth_ui_host_contract::UiHostObservationReport,
         kind: Option<crate::runtime::interaction::UiPrimaryPointerKind>,
         mounted: &crate::mounting::WorthUiMountedSessionState,
+        work: &mut crate::mounting::UiHitTestSpatialWork,
     ) -> Vec<UiPointerGestureOutcome> {
-        self.process_pointer_report(core, report, kind, mounted)
+        self.process_pointer_report(core, report, kind, mounted, work)
     }
 
     pub(crate) fn stop_pointer_for_denial(
@@ -95,7 +98,8 @@ impl UiPointerGestureRuntimeState {
         &mut self,
         reason: UiPointerGestureStopReason,
     ) -> Vec<super::UiPointerGestureStop> {
-        self.cancel_where(|_| true, reason)
+        let prepared = self.prepare_cancel_all(reason);
+        self.commit_prepared_cancellation(prepared)
     }
 
     fn cancel_where(

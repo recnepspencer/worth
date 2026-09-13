@@ -2,8 +2,11 @@ use worth_ui::facade::source::WorthUiFilesystemSourceProvider;
 use worth_ui_certification::scenario::filesystem_application_lifecycle::FilesystemApplicationLifecycleScenario;
 use worth_ui_host_headless::WorthUiHeadlessRecorder;
 use worth_ui_runtime::facade::mounted::{
-    UiMountedAllocationProjection, UiMountedFrameOutcome, UiMountedFrameRequest,
-    UiMountedOmissionReason, UiMountedParticipationStatus, UiPresentationDeadline,
+    UiMountedAllocationProjection, UiMountedCanonicalBox, UiMountedCanonicalBoxInput,
+    UiMountedCoordinateSpace, UiMountedFrameOutcome, UiMountedFramePreparationDenial,
+    UiMountedFrameRequest, UiMountedLayoutRevision, UiMountedOccurrenceGeometry,
+    UiMountedOccurrenceGeometryDenial, UiMountedParticipationStatus, UiMountedProjectionDenial,
+    UiMountedSurfaceGeometryBatch, UiPresentationDeadline,
 };
 use worth_ui_test_support::WorthUiMountedFrameExecutionCertificationExt;
 use worth_ui_test_support::WorthUiMountedIdentityCertificationExt;
@@ -16,14 +19,14 @@ use super::mounted_application_lifecycle::known_empty_surface_world::{
     first_node, registered_surface,
 };
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, PartialEq)]
 struct AuthoredMountedOracle {
     paint: UiMountedParticipationStatus,
     input: UiMountedParticipationStatus,
     focus: UiMountedParticipationStatus,
     hit_test: UiMountedParticipationStatus,
     diagnostic: UiMountedParticipationStatus,
-    allocation_omission: UiMountedOmissionReason,
+    allocation_bounds: [f32; 4],
 }
 
 struct ProjectedMountedOracle {
@@ -59,7 +62,7 @@ fn file_and_rust_query_free_and_backed_worlds_match_one_mounted_contract() {
         focus: UiMountedParticipationStatus::Deferred,
         hit_test: UiMountedParticipationStatus::Deferred,
         diagnostic: UiMountedParticipationStatus::Withheld,
-        allocation_omission: UiMountedOmissionReason::NoCommittedAllocation,
+        allocation_bounds: [8.0, 12.0, 28.0, 20.0],
     };
 
     for observed in [&file_free, &rust_free, &file_backed, &rust_backed] {
@@ -188,21 +191,39 @@ fn project_first_node(
     let surface = registered_surface(session);
     let node = first_node(session);
     let mounted_instance = session.mount_instance(node, surface).unwrap();
-    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
+    let missing_geometry = match session
+        .execute_framework_turn(|_| {})
+        .expect("no mounted presentation lease is active")
+        .into_execution()
+        .unwrap_or_else(|_| panic!("empty source turn permits mounted projection"))
+        .prepare_mounted_frame(UiMountedFrameRequest::all_bound_surfaces())
+    {
+        Ok(_) => panic!("supported frame handoff requires exact occurrence geometry"),
+        Err(denial) => denial,
+    };
+    assert_eq!(
+        missing_geometry,
+        UiMountedFramePreparationDenial::Projection(UiMountedProjectionDenial::OccurrenceGeometry(
+            UiMountedOccurrenceGeometryDenial::MissingOccurrenceGeometry,
+        ),)
+    );
+    install_single_occurrence_geometry(session, surface, mounted_instance);
     let candidate = session
         .execute_framework_turn(|_| {})
         .expect("no mounted presentation lease is active")
         .into_execution()
         .unwrap_or_else(|_| panic!("empty source turn permits mounted projection"))
         .prepare_mounted_frame(UiMountedFrameRequest::all_bound_surfaces())
-        .unwrap();
+        .expect("explicit occurrence geometry permits mounted projection");
     let cost = candidate.cost_report();
     let view = &candidate.surfaces()[0].projection();
     let node = &view.nodes()[0];
     let participation = node.participation();
-    let allocation_omission = match node.allocation() {
-        UiMountedAllocationProjection::Omitted(reason) => reason,
-        other => panic!("authored scenario has no committed allocation, got {other:?}"),
+    let allocation_bounds = match node.allocation() {
+        UiMountedAllocationProjection::Known { bounds, .. } => {
+            [bounds.x(), bounds.y(), bounds.width(), bounds.height()]
+        }
+        other => panic!("explicit layout must project exact known allocation, got {other:?}"),
     };
     let authored = AuthoredMountedOracle {
         paint: participation.paint().status(),
@@ -210,7 +231,7 @@ fn project_first_node(
         focus: participation.focus().status(),
         hit_test: participation.hit_test().status(),
         diagnostic: participation.diagnostic().status(),
-        allocation_omission,
+        allocation_bounds,
     };
     drop(candidate);
     let first = session
@@ -265,4 +286,40 @@ fn project_first_node(
         transcript_count: recorder.observed_transcripts().len(),
         second_outcome,
     }
+}
+
+fn install_single_occurrence_geometry(
+    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
+    surface: worth_ui_runtime::facade::mounted::UiSemanticSurfaceIdentity,
+    mounted_instance: worth_ui_runtime::facade::mounted::UiMountedInstanceIdentity,
+) {
+    let occurrence_bounds = canonical_box([8.0, 12.0, 28.0, 20.0]);
+    assert!(occurrence_bounds.width() > 0.0);
+    assert!(occurrence_bounds.height() > 0.0);
+    let mut layout = session.begin_mounted_layout();
+    let basis = layout
+        .basis(surface)
+        .expect("parity surface remains bound during explicit layout");
+    layout
+        .complete_surface_geometry(UiMountedSurfaceGeometryBatch::new(
+            basis,
+            UiMountedLayoutRevision::new(1).expect("parity layout revision is nonzero"),
+            canonical_box([0.0, 0.0, 320.0, 96.0]),
+            [UiMountedOccurrenceGeometry::surface(
+                mounted_instance,
+                occurrence_bounds,
+            )],
+        ))
+        .expect("parity layout covers its exact mounted occurrence");
+}
+
+fn canonical_box([x, y, width, height]: [f32; 4]) -> UiMountedCanonicalBox {
+    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+        x,
+        y,
+        width,
+        height,
+        coordinate_space: UiMountedCoordinateSpace::HostSurface,
+    })
+    .expect("parity geometry is finite surface-logical geometry")
 }

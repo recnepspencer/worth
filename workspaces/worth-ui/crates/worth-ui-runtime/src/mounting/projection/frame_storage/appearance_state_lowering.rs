@@ -103,43 +103,21 @@ impl UiMountedAppearanceFrameState {
         records
     }
 
-    #[cfg(test)]
     pub(crate) fn lower(
         &mut self,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
         geometry: &UiMountedAppearanceGeometryScope,
-    ) -> Result<Vec<UiAppearanceInspectionRecord>, UiMountedAppearanceOutputDenial> {
-        self.lower_with_portals(presentation, geometry, &Default::default())
-    }
-
-    pub(crate) fn lower_with_portals(
-        &mut self,
-        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-        geometry: &UiMountedAppearanceGeometryScope,
-        portal_instances: &std::collections::BTreeSet<
-            worth_ui_host_contract::UiMountedInstanceIdentity,
-        >,
     ) -> Result<Vec<UiAppearanceInspectionRecord>, UiMountedAppearanceOutputDenial> {
         self.node_work.clear();
         self.overlay_work.clear();
         if let Some(nodes) = self.reconstruction_nodes.take() {
             self.order = Default::default();
             let complete = std::mem::take(&mut self.reconstruction_complete);
-            return self.lower_reconstruction(
-                presentation,
-                geometry,
-                portal_instances,
-                &nodes,
-                complete,
-            );
+            return self.lower_reconstruction(presentation, geometry, &nodes, complete);
         }
-        let mut records = self.lower_pending(
-            presentation,
-            geometry,
-            portal_instances,
-            AppearanceLoweringPosture::Delta,
-        )?;
-        records.extend(self.lower_input_refreshes(presentation, geometry, portal_instances)?);
+        let mut records =
+            self.lower_pending(presentation, geometry, AppearanceLoweringPosture::Delta)?;
+        records.extend(self.lower_input_refreshes(presentation, geometry)?);
         Ok(records)
     }
 
@@ -147,9 +125,6 @@ impl UiMountedAppearanceFrameState {
         &mut self,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
         geometry: &UiMountedAppearanceGeometryScope,
-        portal_instances: &std::collections::BTreeSet<
-            worth_ui_host_contract::UiMountedInstanceIdentity,
-        >,
         posture: AppearanceLoweringPosture,
     ) -> Result<Vec<UiAppearanceInspectionRecord>, UiMountedAppearanceOutputDenial> {
         let mut records = Vec::new();
@@ -177,7 +152,6 @@ impl UiMountedAppearanceFrameState {
                     predecessor,
                     presentation,
                     geometry,
-                    portal_instances,
                     posture,
                     &mut records,
                 )?,
@@ -192,22 +166,24 @@ impl UiMountedAppearanceFrameState {
         mut predecessor: Option<UiMountedAppearanceStatePredecessor>,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
         geometry: &UiMountedAppearanceGeometryScope,
-        portal_instances: &std::collections::BTreeSet<
-            worth_ui_host_contract::UiMountedInstanceIdentity,
-        >,
         posture: AppearanceLoweringPosture,
         records: &mut Vec<UiAppearanceInspectionRecord>,
     ) -> Result<(), UiMountedAppearanceOutputDenial> {
         let context = attempt.context();
         let key = appearance_state_membership::state_key(context);
         let Some(projection) = attempt.projection() else {
-            records.push(denial_record(
-                context.clone(),
-                attempt
-                    .denial()
-                    .unwrap_or(UiAppearanceInspectionDenial::Basis),
-            ));
-            self.restore_predecessor(&mut predecessor);
+            let denial = attempt
+                .denial()
+                .unwrap_or(UiAppearanceInspectionDenial::Basis);
+            records.push(denial_record(context.clone(), denial));
+            if denial.retires_owner_dependent_paint() {
+                if let Some(physical) = predecessor.take().and_then(|prior| prior.into_physical()) {
+                    let work = self.retirements.capture(physical);
+                    self.selection.record_membership_work(work);
+                }
+            } else {
+                self.restore_predecessor(&mut predecessor);
+            }
             return Ok(());
         };
         if predecessor
@@ -246,7 +222,6 @@ impl UiMountedAppearanceFrameState {
         input
             .compose_accepted_motion(geometry)
             .map_err(|_| UiMountedAppearanceOutputDenial::NodeLowering)?;
-        input.retain_node_owned_families(portal_instances);
         let affinity = UiAppearanceMountAffinity {
             session: context.target().session(),
             generation: context.generation().clone(),

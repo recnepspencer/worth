@@ -6,35 +6,46 @@ pub(super) fn portal_service_request(
         crate::graph::UiGraphNodeIdentity,
         worth_ui_host_contract::UiMountedInstanceIdentity,
     )>,
-) -> crate::runtime::portal::UiPortalServiceRequest {
-    let owner = resolved_owner.map_or_else(
-        || {
-            crate::runtime::portal::UiPortalOwnerIdentity::from_target(
-                handoff.graph_node(),
-                handoff.target(),
-            )
-        },
-        |(graph_node, mounted_instance)| {
-            crate::runtime::portal::UiPortalOwnerIdentity::from_mounted_owner(
-                graph_node,
-                mounted_instance,
-            )
-        },
-    );
-    let portal = crate::runtime::portal::UiPortalIdentity::for_owner(owner);
+) -> Result<
+    crate::runtime::portal::UiPortalServiceRequest,
+    crate::runtime::portal::UiPortalPlacementDenial,
+> {
+    use crate::runtime::portal::{UiPortalIdentity, UiPortalOwnerIdentity, UiPortalServiceRequest};
+    let target = UiPortalIdentity::for_owner(UiPortalOwnerIdentity::from_target(
+        handoff.graph_node(),
+        handoff.target(),
+    ));
+    let containing_portal = resolved_owner.map(|(graph_node, mounted_instance)| {
+        UiPortalIdentity::for_owner(UiPortalOwnerIdentity::from_mounted_owner(
+            graph_node,
+            mounted_instance,
+        ))
+    });
     let request = match destination {
-        crate::capability::UiIntentRuntimeServiceDestination::OpenPortal => {
-            crate::runtime::portal::UiPortalServiceRequest::open(
-                portal,
+        crate::capability::UiIntentRuntimeServiceDestination::OpenPortal => match containing_portal
+        {
+            Some(parent) => UiPortalServiceRequest::open_nested(
+                target,
+                handoff.idempotency(),
+                handoff.target().geometry(),
+                presented_viewport.ok_or(
+                    crate::runtime::portal::UiPortalPlacementDenial::MissingPresentedViewport,
+                )?,
+                handoff.target().surface(),
+                parent,
+                crate::runtime::portal::UiPortalInputShielding::ContentBounds,
+            ),
+            None => UiPortalServiceRequest::open(
+                target,
                 handoff.idempotency(),
                 handoff.target().geometry(),
                 presented_viewport,
                 handoff.target().surface(),
-            )
-        }
+            ),
+        },
         crate::capability::UiIntentRuntimeServiceDestination::ClosePortal => {
             crate::runtime::portal::UiPortalServiceRequest::close(
-                portal,
+                containing_portal.unwrap_or(target),
                 handoff.idempotency(),
                 crate::runtime::portal::UiPortalDismissalCause::ExplicitOwnerRequest,
                 handoff.target().surface(),
@@ -44,13 +55,13 @@ pub(super) fn portal_service_request(
             unreachable!("command consequences never construct mounted portal service requests")
         }
     };
-    match destination {
+    Ok(match destination {
         crate::capability::UiIntentRuntimeServiceDestination::OpenPortal => {
             request.with_declared_portal(handoff.authored_portal_declaration())
         }
         crate::capability::UiIntentRuntimeServiceDestination::ClosePortal
         | crate::capability::UiIntentRuntimeServiceDestination::InvokeCommand => request,
-    }
+    })
 }
 
 pub(super) fn portal_placement_stop_reason(

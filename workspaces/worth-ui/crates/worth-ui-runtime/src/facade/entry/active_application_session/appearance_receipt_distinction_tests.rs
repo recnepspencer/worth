@@ -184,9 +184,9 @@ fn mounted_fixture(
     six_axis: bool,
 ) -> MountedAppearanceFixture {
     let base = if six_axis {
-        support::radius_appearance_component_builder_with_legacy_static_paint(role)
+        support::radius_appearance_component_builder(role)
     } else {
-        support::legacy_static_paint_appearance_component_builder(role)
+        support::alternate_token_appearance_component_builder(role)
     };
     let appearance_theme = if six_axis {
         radius_theme_bundle()
@@ -206,13 +206,8 @@ fn mounted_fixture(
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
     host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     host.push_native_display_presented();
-    if six_axis {
-        host.push_native_display_settled_without_effects();
-        host.push_native_display_settled_without_effects();
-    } else {
-        host.push_native_display_settled_without_effects();
-        host.push_native_display_settled_without_effects();
-    }
+    host.push_native_display_settled_without_effects();
+    host.push_native_display_settled_without_effects();
     let fixture_host = host.clone();
     let mut session = builder
         .with_rust_authored_declaration_fixture(support::appearance_fixture(role))

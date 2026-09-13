@@ -5,6 +5,18 @@ use super::{
 };
 
 impl WorthUiNativeIntentIngress {
+    pub(super) fn deferred(stop: super::WorthUiNativeInteractionIngressStop) -> Self {
+        Self {
+            transitions: Box::new([]),
+            dismissals: Box::new([]),
+            duplicate_batches: 0,
+            interaction_stops: Box::new([stop]),
+        }
+    }
+
+    pub fn into_interaction_stops(self) -> Box<[super::WorthUiNativeInteractionIngressStop]> {
+        self.interaction_stops
+    }
     pub fn transitions(&self) -> &[WorthUiNativeIntentTransition] {
         &self.transitions
     }

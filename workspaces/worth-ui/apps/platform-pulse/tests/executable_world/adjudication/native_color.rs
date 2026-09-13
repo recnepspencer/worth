@@ -2,8 +2,9 @@ use std::fmt;
 
 use crate::external_observation::{NativeClientPixelCapture, NativeClientPixelPoint};
 
-use super::platform_pulse_control_points::{
-    checked_in, PlatformPulseControlPointManifest, PlatformPulseControlPointManifestFailure,
+use super::visual_contract_manifest::{
+    checked_in_adjudication_contract, PlatformPulseVisualAdjudicationContract,
+    PlatformPulseVisualContractFailure,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -21,7 +22,7 @@ pub(crate) struct NativeColorVerdict {
 
 #[derive(Debug)]
 pub(crate) enum NativeColorFailure {
-    ControlPointManifest(PlatformPulseControlPointManifestFailure),
+    VisualContract(PlatformPulseVisualContractFailure),
     InsufficientPixelSamples,
     ExpectedColorNotVisible {
         expected: ExpectedNativeColor,
@@ -50,7 +51,8 @@ pub(crate) fn adjudicate_native_color(
     pixels: &NativeClientPixelCapture,
     expected: ExpectedNativeColor,
 ) -> Result<NativeColorVerdict, NativeColorFailure> {
-    let manifest = checked_in().map_err(NativeColorFailure::ControlPointManifest)?;
+    let manifest =
+        checked_in_adjudication_contract().map_err(NativeColorFailure::VisualContract)?;
     let samples = signal_samples(pixels, expected, &manifest);
     let sampled_pixels = samples.len();
     let matching_samples = samples
@@ -102,7 +104,8 @@ pub(crate) fn adjudicate_native_background_point(
     pixels: &NativeClientPixelCapture,
     expected: ExpectedNativeColor,
 ) -> Result<NativeClientPixelPoint, NativeColorFailure> {
-    let manifest = checked_in().map_err(NativeColorFailure::ControlPointManifest)?;
+    let manifest =
+        checked_in_adjudication_contract().map_err(NativeColorFailure::VisualContract)?;
     let expected_rgb = expected.rgb(&manifest);
     let mut interior = Vec::new();
     for y in 1..pixels.height().saturating_sub(1) {
@@ -139,7 +142,7 @@ struct TargetPixelSummary {
 
 fn target_pixel_summary(
     pixels: &NativeClientPixelCapture,
-    manifest: &PlatformPulseControlPointManifest,
+    manifest: &PlatformPulseVisualAdjudicationContract,
 ) -> TargetPixelSummary {
     let mut matching_pixels = 0;
     let mut minimum = [u32::MAX, u32::MAX];
@@ -169,7 +172,7 @@ fn target_pixel_summary(
 fn signal_samples(
     pixels: &NativeClientPixelCapture,
     expected: ExpectedNativeColor,
-    manifest: &PlatformPulseControlPointManifest,
+    manifest: &PlatformPulseVisualAdjudicationContract,
 ) -> Vec<NativePixelSampleObservation> {
     let point = scaled_point(
         pixels,
@@ -250,7 +253,7 @@ impl NativeColorVerdict {
 }
 
 impl ExpectedNativeColor {
-    fn rgb(self, manifest: &PlatformPulseControlPointManifest) -> [u8; 3] {
+    fn rgb(self, manifest: &PlatformPulseVisualAdjudicationContract) -> [u8; 3] {
         match self {
             Self::Blue => manifest.blue_rgba()[..3].try_into().expect("RGB prefix"),
             Self::Green => manifest.green_rgba()[..3].try_into().expect("RGB prefix"),
@@ -261,8 +264,8 @@ impl ExpectedNativeColor {
 impl fmt::Display for NativeColorFailure {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::ControlPointManifest(failure) => {
-                write!(formatter, "test-owned control-point manifest: {failure:?}")
+            Self::VisualContract(failure) => {
+                write!(formatter, "Platform Pulse visual contract: {failure:?}")
             }
             Self::InsufficientPixelSamples => {
                 formatter.write_str("native client capture yielded fewer than nine samples")

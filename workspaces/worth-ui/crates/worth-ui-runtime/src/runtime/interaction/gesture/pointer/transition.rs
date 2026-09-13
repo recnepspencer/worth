@@ -34,6 +34,7 @@ impl UiPointerGestureRuntimeState {
         report: &worth_ui_host_contract::UiHostObservationReport,
         kind: Option<crate::runtime::interaction::UiPrimaryPointerKind>,
         mounted: &crate::mounting::WorthUiMountedSessionState,
+        work: &mut crate::mounting::UiHitTestSpatialWork,
     ) -> Vec<UiPointerGestureOutcome> {
         match report.payload() {
             UiHostObservationPayload::PointerButton {
@@ -59,25 +60,12 @@ impl UiPointerGestureRuntimeState {
                     mounted,
                 };
                 vec![match transition {
-                    UiHostPointerButtonTransition::Pressed => self.press(input),
-                    UiHostPointerButtonTransition::Released => self.release(input),
+                    UiHostPointerButtonTransition::Pressed => self.press(input, work),
+                    UiHostPointerButtonTransition::Released => self.release(input, work),
                 }]
             }
-            UiHostObservationPayload::PointerMotion {
-                pointer,
-                capture_epoch,
-                position,
-                ..
-            } => kind.map_or_else(Vec::new, |kind| {
-                self.motion(
-                    core,
-                    report.sequence(),
-                    *pointer,
-                    *capture_epoch,
-                    *position,
-                    kind,
-                    mounted,
-                )
+            UiHostObservationPayload::PointerMotion { .. } => kind.map_or_else(Vec::new, |kind| {
+                self.motion(core, report, kind, mounted, work)
             }),
             UiHostObservationPayload::WindowFocus { focused: false, .. } => {
                 self.focus_loss(report.sequence())
@@ -99,7 +87,11 @@ impl UiPointerGestureRuntimeState {
         vec![self.active_stop(pointer, active, sequence, reason)]
     }
 
-    fn press(&mut self, input: UiPointerButtonReport<'_>) -> UiPointerGestureOutcome {
+    fn press(
+        &mut self,
+        input: UiPointerButtonReport<'_>,
+        work: &mut crate::mounting::UiHitTestSpatialWork,
+    ) -> UiPointerGestureOutcome {
         if input.button != UiHostPointerButton::Primary {
             return self.failed_stop(
                 input,
@@ -125,6 +117,7 @@ impl UiPointerGestureRuntimeState {
             input.mounted,
             input.core.presentation(),
             input.position,
+            work,
         ) {
             Ok(target) => target,
             Err(denial) => {
@@ -158,7 +151,11 @@ impl UiPointerGestureRuntimeState {
         })
     }
 
-    fn release(&mut self, input: UiPointerButtonReport<'_>) -> UiPointerGestureOutcome {
+    fn release(
+        &mut self,
+        input: UiPointerButtonReport<'_>,
+        work: &mut crate::mounting::UiHitTestSpatialWork,
+    ) -> UiPointerGestureOutcome {
         let Some(active) = self.active.remove(&input.pointer) else {
             return self.failed_stop(input, UiPointerGestureStopReason::NoActiveGesture);
         };
@@ -180,6 +177,7 @@ impl UiPointerGestureRuntimeState {
             input.mounted,
             input.core.presentation(),
             input.position,
+            work,
         ) {
             Ok(target) => target,
             Err(denial) => {
@@ -223,13 +221,22 @@ impl UiPointerGestureRuntimeState {
     fn motion(
         &mut self,
         core: UiHostObservationCanonicalCore,
-        sequence: UiHostObservationSequence,
-        pointer: UiHostPointerIdentity,
-        observed: UiHostPointerCaptureEpoch,
-        position: worth_ui_host_contract::UiHostSurfacePosition,
+        report: &worth_ui_host_contract::UiHostObservationReport,
         kind: crate::runtime::interaction::UiPrimaryPointerKind,
         mounted: &crate::mounting::WorthUiMountedSessionState,
+        work: &mut crate::mounting::UiHitTestSpatialWork,
     ) -> Vec<UiPointerGestureOutcome> {
+        let UiHostObservationPayload::PointerMotion {
+            pointer,
+            capture_epoch,
+            position,
+            ..
+        } = report.payload()
+        else {
+            return Vec::new();
+        };
+        let (pointer, observed, position, sequence) =
+            (*pointer, *capture_epoch, *position, report.sequence());
         let Some(active_capture_epoch) = self
             .active
             .get(&pointer)
@@ -256,10 +263,13 @@ impl UiPointerGestureRuntimeState {
             if !self.appearance_enabled {
                 return Vec::new();
             }
-            match active
-                .appearance
-                .refresh(&active.target, core.presentation(), position, mounted)
-            {
+            match active.appearance.refresh(
+                &active.target,
+                core.presentation(),
+                position,
+                mounted,
+                work,
+            ) {
                 Ok(true) => self.bump_appearance_revision(),
                 Ok(false) => {}
                 Err(denial) => {

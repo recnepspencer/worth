@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(crate) struct UiHitTestSpatialWork {
+pub struct UiHitTestSpatialWork {
     /// Nonzero only in explicit binding reconstruction, never ordinary delta maintenance.
     pub(in crate::mounting) reconstructed_rows: usize,
     pub(in crate::mounting) map_key_probes: usize,
@@ -13,6 +13,34 @@ pub(crate) struct UiHitTestSpatialWork {
 }
 
 impl UiHitTestSpatialWork {
+    pub const fn reconstructed_rows(self) -> usize {
+        self.reconstructed_rows
+    }
+    pub const fn map_key_probes(self) -> usize {
+        self.map_key_probes
+    }
+    pub const fn map_node_copies(self) -> usize {
+        self.map_node_copies
+    }
+    pub const fn node_visits(self) -> usize {
+        self.node_visits
+    }
+    pub const fn node_copies(self) -> usize {
+        self.node_copies
+    }
+    pub const fn region_tests(self) -> usize {
+        self.region_tests
+    }
+    pub const fn motion_members_visited(self) -> usize {
+        self.motion_members_visited
+    }
+    pub const fn motion_rows_projected(self) -> usize {
+        self.motion_rows_projected
+    }
+    pub const fn motion_tracks_considered(self) -> usize {
+        self.motion_tracks_considered
+    }
+
     pub(crate) fn merge(&mut self, other: impl Into<Self>) {
         let other = other.into();
         self.reconstructed_rows += other.reconstructed_rows;

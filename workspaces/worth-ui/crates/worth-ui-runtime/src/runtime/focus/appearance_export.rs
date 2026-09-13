@@ -24,7 +24,15 @@ pub(crate) struct UiFocusAppearanceTarget {
 
 impl super::UiFocusRuntimeState {
     pub(crate) fn appearance_posture(&self) -> UiFocusAppearancePosture {
-        let target = self.current.map(|focus| UiFocusAppearanceTarget {
+        self.appearance_posture_for(self.current, self.appearance_revision)
+    }
+
+    pub(super) fn appearance_posture_for(
+        &self,
+        current: Option<super::UiSemanticKeyboardFocus>,
+        revision: u64,
+    ) -> UiFocusAppearancePosture {
+        let target = current.map(|focus| UiFocusAppearanceTarget {
             graph_node: focus.graph_node(),
             mounted_instance: focus.mounted_instance(),
             incarnation: focus.incarnation(),
@@ -44,7 +52,7 @@ impl super::UiFocusRuntimeState {
             target,
             window: self.window_focus,
             modality: self.modality,
-            owner_revision: self.appearance_revision,
+            owner_revision: revision,
         }
     }
 }

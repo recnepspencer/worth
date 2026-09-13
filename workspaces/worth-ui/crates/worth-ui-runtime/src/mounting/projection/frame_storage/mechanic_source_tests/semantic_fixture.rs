@@ -7,24 +7,33 @@ pub(super) fn semantic_projection(
     binding: UiSurfaceBindingGeneration,
     seed: UiMountedSemanticTextSeed,
 ) -> UiMountedSemanticProjection {
-    semantic_projection_with_static_color(
+    semantic_projection_in_coordinates(
         graph_node,
         instance,
         surface,
         binding,
         seed,
-        UiMountedRgba8::new(47, 129, 247, 255),
+        UiMountedCoordinateSpace::Viewport,
     )
 }
 
-pub(super) fn semantic_projection_with_static_color(
+pub(super) fn semantic_projection_in_coordinates(
     graph_node: crate::graph::UiGraphNodeIdentity,
     instance: UiMountedInstanceIdentity,
     surface: UiSemanticSurfaceIdentity,
     binding: UiSurfaceBindingGeneration,
     seed: UiMountedSemanticTextSeed,
-    static_color: UiMountedRgba8,
+    coordinate_space: UiMountedCoordinateSpace,
 ) -> UiMountedSemanticProjection {
+    let viewport = canonical_bounds();
+    let bounds = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+        x: viewport.x(),
+        y: viewport.y(),
+        width: viewport.width(),
+        height: viewport.height(),
+        coordinate_space,
+    })
+    .unwrap();
     UiMountedSemanticProjection::initial(
         vec![UiMountedProjectionNodeRecord {
             receipt: UiMountedNodeReceipt::from_input(UiMountedNodeReceiptInput {
@@ -36,7 +45,7 @@ pub(super) fn semantic_projection_with_static_color(
                 role: UiMountedMechanicalRole::Control,
                 participation: admitted_participation(),
                 allocation: UiMountedAllocationProjection::Known {
-                    bounds: canonical_bounds(),
+                    bounds,
                     basis: UiMountedAllocationBasis::new(
                         1,
                         2,
@@ -47,7 +56,7 @@ pub(super) fn semantic_projection_with_static_color(
             }),
             plan_index: Some(0),
         occurrence_allocation: UiMountedAllocationProjection::Known {
-                    bounds: canonical_bounds(),
+                    bounds,
                     basis: UiMountedAllocationBasis::new(
                         1,
                         2,
@@ -57,7 +66,7 @@ pub(super) fn semantic_projection_with_static_color(
                 },
         appearance_geometry: crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
                 UiMountedAllocationProjection::Known {
-                    bounds: canonical_bounds(),
+                    bounds,
                     basis: UiMountedAllocationBasis::new(
                         1,
                         2,
@@ -71,7 +80,6 @@ pub(super) fn semantic_projection_with_static_color(
         has_appearance_attachment: false,
             appearance_clip:
                 crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
-            static_paint: Some(UiMountedStaticPaintSeed::for_test(static_color)),
             semantic_text: Some(seed),
             hit_test: Some(UiMountedHitTestSeed::for_test(0)),
             focus_support: crate::capability::ComponentFocusSupport::not_focusable(),
@@ -81,6 +89,7 @@ pub(super) fn semantic_projection_with_static_color(
             portal_child_owner: None,
         }],
         vec![UiMountedProjectionSurface {
+                coordinate_posture: crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
             surface,
             binding,
             audience: UiMountedProjectionAudience::full(),

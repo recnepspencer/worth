@@ -102,6 +102,29 @@ impl UiMountedCanonicalBox {
     pub fn height(self) -> f32 {
         self.height
     }
+    /// The overlap of two boxes in one coordinate space; `None` when they do
+    /// not overlap or their spaces differ.
+    pub fn intersection(self, other: Self) -> Option<Self> {
+        if self.coordinate_space() != other.coordinate_space() {
+            return None;
+        }
+        let left = self.x().max(other.x());
+        let top = self.y().max(other.y());
+        let right = (self.x() + self.width()).min(other.x() + other.width());
+        let bottom = (self.y() + self.height()).min(other.y() + other.height());
+        if right <= left || bottom <= top {
+            return None;
+        }
+        Self::canonicalize(UiMountedCanonicalBoxInput {
+            x: left,
+            y: top,
+            width: right - left,
+            height: bottom - top,
+            coordinate_space: self.coordinate_space(),
+        })
+        .ok()
+    }
+
     pub fn coordinate_space(self) -> UiMountedCoordinateSpace {
         self.coordinate_space
     }

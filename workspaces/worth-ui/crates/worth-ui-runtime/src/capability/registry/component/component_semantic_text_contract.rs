@@ -20,6 +20,7 @@ pub struct ComponentSemanticTextContract {
     line_height_millipoints: Option<u32>,
     scalar_spans: Box<[ComponentSemanticTextSpanContract]>,
     default_paint_identity: [u8; 32],
+    appearance_foreground: bool,
 }
 
 impl ComponentSemanticTextContract {
@@ -32,6 +33,7 @@ impl ComponentSemanticTextContract {
             line_height_millipoints: None,
             scalar_spans: Box::new([]),
             default_paint_identity,
+            appearance_foreground: false,
         }
     }
 
@@ -48,6 +50,7 @@ impl ComponentSemanticTextContract {
             line_height_millipoints: None,
             scalar_spans: Box::new([]),
             default_paint_identity,
+            appearance_foreground: false,
         }
     }
 
@@ -68,6 +71,7 @@ impl ComponentSemanticTextContract {
             line_height_millipoints: Some(line_height_millipoints),
             scalar_spans: Box::new([]),
             default_paint_identity,
+            appearance_foreground: false,
         })
     }
 
@@ -86,6 +90,7 @@ impl ComponentSemanticTextContract {
             line_height_millipoints: None,
             scalar_spans: scalar_spans.into_boxed_slice(),
             default_paint_identity,
+            appearance_foreground: false,
         })
     }
 
@@ -97,6 +102,15 @@ impl ComponentSemanticTextContract {
         validate_spans(&scalar_spans)?;
         self.scalar_spans = scalar_spans.into_boxed_slice();
         Ok(self)
+    }
+
+    pub fn with_appearance_foreground(mut self) -> Self {
+        self.appearance_foreground = true;
+        self
+    }
+
+    pub const fn uses_appearance_foreground(&self) -> bool {
+        self.appearance_foreground
     }
 
     pub fn theme_token(&self) -> &ThemeTokenId {
@@ -120,8 +134,15 @@ impl ComponentSemanticTextContract {
     }
 
     pub fn foreground_tokens(&self) -> impl Iterator<Item = &ThemeTokenId> {
-        std::iter::once(&self.theme_token)
-            .chain(self.scalar_spans.iter().map(|span| span.foreground_token()))
+        (!self.appearance_foreground)
+            .then_some(&self.theme_token)
+            .into_iter()
+            .chain(
+                self.scalar_spans
+                    .iter()
+                    .filter(|span| !span.uses_appearance_foreground())
+                    .map(|span| span.foreground_token()),
+            )
     }
 
     pub(crate) const fn default_paint_identity(&self) -> [u8; 32] {
@@ -158,10 +179,11 @@ impl ComponentSemanticTextContract {
                 digest
             });
         format!(
-            "semantic-text:{}:{}:{style}:line-height:{:?}",
+            "semantic-text:{}:{}:{style}:line-height:{:?}:appearance:{}",
             self.theme_token.as_str(),
             self.layer_semantic_order,
             self.line_height_millipoints,
+            self.appearance_foreground,
         ) + &spans
     }
 }

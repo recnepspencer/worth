@@ -166,45 +166,9 @@ pub(in crate::native::presentation) fn semantic_text(
     world: &DrawListWorld,
     frame: worth_ui_host_contract::UiMountedFrameIdentity,
 ) -> (UiMountedPaintCommand, UiGlyphRunView, UiGlyphRasterKey) {
-    let text: Arc<str> = Arc::from("A");
+    let mechanic = semantic_text_mechanic(world, frame, world.first, None, 8, 10.0);
     let layout = inert_layout();
     let bounds = viewport_box(10.0, 10.0, 40.0, 20.0);
-    let mechanic = UiMountedSemanticTextMechanic::complete_from_runtime_mounting(
-        UiMountedSemanticTextCompletionInput {
-            content_generation: world.content,
-            frame,
-            surface: world.surface,
-            binding: world.binding,
-            mounted_instance: world.first,
-            node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIssuer::mint_for(frame)
-                .unwrap()
-                .receipt_for(world.first),
-            allocation_basis: UiMountedAllocationBasis::new(
-                1,
-                2,
-                3,
-                UiMountedTransformProjection::Identity,
-            ),
-            bounds,
-            clip_bounds: bounds,
-            origin_x: 22.0,
-            origin_y: 18.0,
-            text,
-            layout,
-            slot: UiSemanticTextSlot::Value,
-            collection_row: None,
-            foregrounds: Arc::from([UiMountedTextForegroundSpan::from_runtime_mounting(
-                UiTextOriginalRange::new(0, 1).unwrap(),
-                UiMountedRgba8::new(235, 238, 245, 255),
-                UiMountedTextPaintSpanIdentity::from_runtime_mounting([9; 32]),
-            )]),
-            profile: UiSemanticTextProfile::BodyDefault,
-            layer_semantic_order: 8,
-            capability_generation: WorthUiHostCapabilityObservationGeneration::new(7),
-            capability_profile_digest: 11,
-        },
-    )
-    .unwrap();
     let identity = UiMountedPaintCommandIdentity::semantic_text(&mechanic);
     let key = raster_key();
     let run = UiGlyphRunView::from_text_mechanics(UiGlyphRunViewInput {
@@ -226,6 +190,78 @@ pub(in crate::native::presentation) fn semantic_text(
         run,
         key,
     )
+}
+
+pub(in crate::native::presentation) fn semantic_text_command_at(
+    world: &DrawListWorld,
+    frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    semantic_order: u32,
+    x: f32,
+) -> UiMountedPaintCommand {
+    semantic_text_command_in_group_at(world, frame, instance, None, semantic_order, x)
+}
+
+pub(in crate::native::presentation) fn semantic_text_command_in_group_at(
+    world: &DrawListWorld,
+    frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    portal_group: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
+    semantic_order: u32,
+    x: f32,
+) -> UiMountedPaintCommand {
+    let mechanic = semantic_text_mechanic(world, frame, instance, portal_group, semantic_order, x);
+    let identity = UiMountedPaintCommandIdentity::semantic_text(&mechanic);
+    UiMountedPaintCommand::SemanticText { identity, mechanic }
+}
+
+fn semantic_text_mechanic(
+    world: &DrawListWorld,
+    frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    portal_group: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
+    semantic_order: u32,
+    x: f32,
+) -> UiMountedSemanticTextMechanic {
+    let text: Arc<str> = Arc::from("A");
+    let bounds = viewport_box(x, 10.0, 40.0, 20.0);
+    UiMountedSemanticTextMechanic::complete_from_runtime_mounting(
+        UiMountedSemanticTextCompletionInput {
+            content_generation: world.content,
+            frame,
+            surface: world.surface,
+            binding: world.binding,
+            mounted_instance: instance,
+            portal_group,
+            node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIssuer::mint_for(frame)
+                .unwrap()
+                .receipt_for(instance),
+            allocation_basis: UiMountedAllocationBasis::new(
+                1,
+                2,
+                3,
+                UiMountedTransformProjection::Identity,
+            ),
+            bounds,
+            clip_bounds: bounds,
+            origin_x: x + 12.0,
+            origin_y: 18.0,
+            text,
+            layout: inert_layout(),
+            slot: UiSemanticTextSlot::Value,
+            collection_row: None,
+            foregrounds: Arc::from([UiMountedTextForegroundSpan::from_runtime_mounting(
+                UiTextOriginalRange::new(0, 1).unwrap(),
+                UiMountedRgba8::new(235, 238, 245, 255),
+                UiMountedTextPaintSpanIdentity::from_runtime_mounting([9; 32]),
+            )]),
+            profile: UiSemanticTextProfile::BodyDefault,
+            layer_semantic_order: semantic_order,
+            capability_generation: WorthUiHostCapabilityObservationGeneration::new(7),
+            capability_profile_digest: 11,
+        },
+    )
+    .unwrap()
 }
 
 fn inert_layout() -> UiQualifiedTextLayoutView<'static> {

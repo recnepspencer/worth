@@ -1,8 +1,9 @@
 use super::{UiMotionSamplePresentationOutcome, UiMountedPresentationCoordinator};
+#[cfg(test)]
 use crate::mounting::UiPresentedFrameBasisDenial;
-use worth_ui_host_contract::{
-    UiHostObservationPresentationBasis, UiMountedPaintCommandIdentity, UiSurfaceBindingGeneration,
-};
+use worth_ui_host_contract::UiSurfaceBindingGeneration;
+#[cfg(test)]
+use worth_ui_host_contract::{UiHostObservationPresentationBasis, UiMountedPaintCommandIdentity};
 
 impl UiMountedPresentationCoordinator {
     pub(in crate::mounting) fn motion_appearance_instances(
@@ -24,6 +25,12 @@ impl UiMountedPresentationCoordinator {
                         .command_identities_for_instance(target.mounted_instance())
                         .map(|command| command.mounted_instance()),
                 );
+                if state
+                    .appearance_surface_sample_target(target.mounted_instance())
+                    .is_some()
+                {
+                    instances.push(target.mounted_instance());
+                }
             }
         }
         instances.sort_unstable();
@@ -58,6 +65,7 @@ impl UiMountedPresentationCoordinator {
     /// Reads live physical evidence through the current command owner only.
     /// The returned receipt records when the sample was accepted; unchanged
     /// commands can retain it across subsequent physical epochs and frames.
+    #[cfg(test)]
     pub(in crate::mounting) fn accepted_motion_for_command(
         &self,
         presentation: UiHostObservationPresentationBasis,

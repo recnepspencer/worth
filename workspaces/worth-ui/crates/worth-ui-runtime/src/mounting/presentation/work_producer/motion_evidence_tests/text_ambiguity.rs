@@ -117,6 +117,7 @@ fn text_command(
             surface: mechanic.surface(),
             binding: mechanic.binding(),
             mounted_instance: mechanic.mounted_instance(),
+            portal_group: None,
             node_receipt: mechanic.node_receipt(),
             allocation_basis: mechanic.allocation_basis(),
             bounds: mechanic.bounds(),

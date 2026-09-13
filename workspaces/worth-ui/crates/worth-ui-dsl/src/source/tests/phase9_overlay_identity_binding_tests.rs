@@ -1,5 +1,8 @@
 use std::path::PathBuf;
 
+#[path = "phase9_overlay_identity_binding_tests/declared_regions.rs"]
+mod declared_regions;
+
 use crate::{
     UiAppearanceAspect, UiAppearanceCell, UiAppearancePartitionAuthoring, UiAppearanceRole,
     UiAppearanceRoleIdentity, UiBackdropDeclaration, UiBackdropExtentBasis, UiBackdropIdentity,

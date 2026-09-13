@@ -16,6 +16,53 @@ pub(super) fn source() -> String {
     source_with_seam(false)
 }
 
+pub(super) fn ap07_bootstrap_source() -> String {
+    let content = format!(
+        "component {} {{ appearance {{ role overlay.content1 }} region workspace.region.primary {{ sizing workspace.sizing.mosaic_support; }} }}",
+        COMPONENTS[1]
+    );
+    let routed_content = format!(
+        "component {} {{ appearance {{ role overlay.content1 }} region workspace.region.primary {{ sizing workspace.sizing.mosaic_support; }} interaction activate routes integrated.ap07.activate; }}",
+        COMPONENTS[1]
+    );
+    source_with_seam(false)
+        .replace(&content, &routed_content)
+        .replace(
+            "    interaction activate routes workspace.intent.open opens portal overlay.menu;",
+            "    interaction activate routes workspace.intent.open opens portal overlay.menu;\n    interaction selection-commit routes integrated.ap07.selection;",
+        )
+        + r#"
+intent integrated.ap07.selection {
+    definition integrated.ap07.selection
+    interaction selection-commit
+    operability integrated.ap07.selection.operability
+        mutability-application-boolean integrated.ap07.selection.mutable
+        readiness-application-boolean integrated.ap07.selection.ready
+        policy-application-boolean integrated.ap07.selection.policy
+    confirmation integrated.ap07.selection.confirmation not-required
+    concurrency target-route-single-flight
+    consequences none
+    payload selection projection-selection integrated.ap07.selection
+}
+intent integrated.ap07.activate {
+    definition integrated.ap07.activate
+    interaction activate
+    operability integrated.ap07.activate.operability
+        mutability-application-boolean integrated.ap07.selection.mutable
+        readiness-application-boolean integrated.ap07.selection.ready
+        policy-application-boolean integrated.ap07.selection.policy
+    confirmation integrated.ap07.activate.confirmation not-required
+    concurrency target-route-single-flight
+    consequences none
+}
+"#
+}
+
+pub(super) fn ap07_source() -> String {
+    ap07_bootstrap_source().replace("role overlay.content1 }", "role overlay.ap07.six }")
+        + &six_axis_role_source()
+}
+
 pub(super) fn seam_source() -> String {
     source_with_seam(true)
 }
@@ -197,6 +244,85 @@ pub(super) fn role(index: usize) -> UiAppearanceRoleDeclaration {
             .unwrap();
     }
     authoring.build().unwrap()
+}
+
+pub(super) fn six_axis_role() -> UiAppearanceRoleDeclaration {
+    let rows = [
+        (
+            UiAppearanceAspect::Background,
+            UiAppearanceStateAxis::Operability,
+            "overlay.content.background",
+            UiThemeValueKind::Color,
+        ),
+        (
+            UiAppearanceAspect::Foreground,
+            UiAppearanceStateAxis::Focus,
+            "overlay.content.foreground",
+            UiThemeValueKind::Color,
+        ),
+        (
+            UiAppearanceAspect::Border,
+            UiAppearanceStateAxis::Validation,
+            "overlay.content.border",
+            UiThemeValueKind::SolidStroke,
+        ),
+        (
+            UiAppearanceAspect::Radius,
+            UiAppearanceStateAxis::Selection,
+            "overlay.content.radius",
+            UiThemeValueKind::CornerRadii,
+        ),
+        (
+            UiAppearanceAspect::Opacity,
+            UiAppearanceStateAxis::Hover,
+            "overlay.content.opacity",
+            UiThemeValueKind::Opacity,
+        ),
+        (
+            UiAppearanceAspect::Outline,
+            UiAppearanceStateAxis::Pressed,
+            "overlay.content.outline",
+            UiThemeValueKind::SolidOutline,
+        ),
+    ];
+    let mut role =
+        UiAppearanceRole::authoring(UiAppearanceRoleIdentity::new("overlay.ap07.six").unwrap())
+            .applies_to_component(UiDslComponentReference::new(COMPONENTS[1]).unwrap());
+    for (aspect, axis, slot, kind) in rows {
+        role = role
+            .cover(
+                aspect,
+                UiAppearancePartitionAuthoring::new([UiAppearanceAxisDomain::complete(axis)])
+                    .with_cell(
+                        UiAppearanceCell::when([UiAppearanceAxisPredicate::any(axis)])
+                            .uses_slot(UiThemeSlotIdentity::new(slot).unwrap(), kind),
+                    ),
+            )
+            .unwrap();
+    }
+    role.build().unwrap()
+}
+
+fn six_axis_role_source() -> String {
+    let rows = [
+        ("background", "operability", "overlay.content.background"),
+        ("foreground", "focus", "overlay.content.foreground"),
+        ("border", "validation", "overlay.content.border"),
+        ("radius", "selection", "overlay.content.radius"),
+        ("opacity", "hover", "overlay.content.opacity"),
+        ("outline", "pressed", "overlay.content.outline"),
+    ];
+    let mut source = format!(
+        "appearance role overlay.ap07.six applies_to {} {{\n",
+        COMPONENTS[1]
+    );
+    for (aspect, axis, slot) in rows {
+        source.push_str(&format!(
+            "    {aspect} over [{axis}] {{ otherwise use token({slot}) }}\n"
+        ));
+    }
+    source.push_str("}\n");
+    source
 }
 
 pub(super) fn component(index: usize) -> ComponentDescriptor {

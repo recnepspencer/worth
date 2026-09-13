@@ -27,6 +27,17 @@ impl World {
         parent: Option<UiPortalIdentity>,
         now: u64,
     ) -> UiPortalIdentity {
+        self.open_inspecting_frame(index, declaration, parent, now, |_| {})
+    }
+
+    pub(super) fn open_inspecting_frame(
+        &mut self,
+        index: usize,
+        declaration: &str,
+        parent: Option<UiPortalIdentity>,
+        now: u64,
+        inspect: impl FnOnce(&crate::mounting::UiPreparedMountedFrame),
+    ) -> UiPortalIdentity {
         let session = &mut self.session;
         let expected_shielding = if declaration == "overlay.child" {
             UiPortalInputShielding::ModalSurface
@@ -78,15 +89,33 @@ impl World {
             session.mounted.current_surface_viewport(surface).unwrap().1,
             super::geometry::canonical(super::geometry::VIEWPORT)
         );
-        let anchor =
-            crate::runtime::interaction::UiPresentedInteractionGeometry::for_test_with_components(
-                presentation,
-                super::geometry::BOXES[index],
-                super::geometry::VIEWPORT,
-            );
-        let viewport = crate::runtime::interaction::UiPresentedViewportGeometry::for_test(
-            anchor.clip_bounds(),
+        let [x, y, width, height] = super::geometry::BOXES[index];
+        let target = crate::runtime::interaction::targeting::resolve_presented_target(
+            &session.mounted,
             presentation,
+            UiHostSurfacePosition::viewport_logical(
+                ((x + width / 2.0) * 1_000.0) as i64,
+                ((y + height / 2.0) * 1_000.0) as i64,
+            ),
+            &mut Default::default(),
+        )
+        .unwrap();
+        assert_eq!(target.mounted_instance(), instance);
+        let anchor = target.view().geometry();
+        let committed_viewport = session
+            .application
+            .mounted_viewport_bounds_for(self.graphs[if index == 3 { 0 } else { index }])
+            .unwrap()
+            .unwrap();
+        let viewport =
+            crate::runtime::interaction::UiPresentedViewportGeometry::from_current_interaction(
+                committed_viewport,
+                anchor,
+            )
+            .unwrap();
+        assert_eq!(
+            viewport.bounds(),
+            super::geometry::viewport(super::geometry::VIEWPORT)
         );
         let idempotency =
             crate::runtime::intent_execution::UiIntentExecutionIdempotencyIdentity::issued(
@@ -167,27 +196,12 @@ impl World {
                 session.motion.as_mut().unwrap(),
             )
             .unwrap();
+        inspect(&frame);
         self.host.push_native_display_presented();
-        let outcome = session.present_prepared_portal_frame_internal(
-            frame,
-            &proposal,
-            false,
-            UiPresentationDeadline::at_tick(u64::MAX),
-            now,
-        );
-        let diagnostic = match &outcome {
-            crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(frame) => {
-                format!("{:?}", frame.report())
-            }
-            crate::mounting::UiMountedFrameOutcome::AdmissionDenied(denial) => {
-                format!("{:?}", denial.denial())
-            }
-            _ => format!("{:?}", std::mem::discriminant(&outcome)),
-        };
-        match crate::facade::entry::portal_dismissal::finish_portal_service_proposal(session, proposal, outcome) {
+        match crate::facade::entry::portal_dismissal::present_portal_service_proposal(session, frame, proposal, false, now) {
             crate::facade::entry::portal_dismissal::UiPortalDismissalPublicationOutcome::Published(_) => {},
-            crate::facade::entry::portal_dismissal::UiPortalDismissalPublicationOutcome::Stopped(stop) => panic!("declared Portal {index} proposal: {stop:?}; {diagnostic}"),
-            other => panic!("declared Portal {index} proposal: {:?}; {diagnostic}", std::mem::discriminant(&other)),
+            crate::facade::entry::portal_dismissal::UiPortalDismissalPublicationOutcome::Stopped(stop) => panic!("declared Portal {index} proposal: {stop:?}"),
+            other => panic!("declared Portal {index} proposal: {:?}", std::mem::discriminant(&other)),
         }
         assert_eq!(
             session

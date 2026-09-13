@@ -12,6 +12,7 @@ use crate::native::text_atlas::{
 };
 use worth_ui_host_contract::*;
 
+#[derive(Default)]
 pub struct UiNativeTextForegroundAtlasModel {
     atlas: UiNativeTextAtlas,
     presentation: Option<crate::native::presentation::UiNativeRetainedDrawList>,
@@ -153,10 +154,7 @@ impl UiNativeTextForegroundAtlasModel {
     }
 
     pub fn new() -> Self {
-        Self {
-            atlas: UiNativeTextAtlas::new(),
-            presentation: None,
-        }
+        Self::default()
     }
 
     pub fn certify_finalized_text_retention(

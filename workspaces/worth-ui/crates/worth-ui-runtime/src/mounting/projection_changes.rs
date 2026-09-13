@@ -1,4 +1,5 @@
 use worth_ui_host_contract::{UiMountedInstanceIdentity, UiSemanticSurfaceIdentity};
+mod surface_scope;
 
 #[derive(Clone, Default)]
 pub(crate) struct UiMountedProjectionChanges {
@@ -6,8 +7,10 @@ pub(crate) struct UiMountedProjectionChanges {
         crate::runtime::persistent_index::UiPersistentOrdSet<UiMountedInstanceIdentity>,
     appearance_input_changed_instances:
         crate::runtime::persistent_index::UiPersistentOrdSet<UiMountedInstanceIdentity>,
-    retired_instances:
-        crate::runtime::persistent_index::UiPersistentOrdSet<UiMountedInstanceIdentity>,
+    retired_instances: crate::runtime::persistent_index::UiPersistentOrdMap<
+        UiMountedInstanceIdentity,
+        UiSemanticSurfaceIdentity,
+    >,
     changed_surfaces:
         crate::runtime::persistent_index::UiPersistentOrdSet<UiSemanticSurfaceIdentity>,
     removed_surfaces:
@@ -40,13 +43,18 @@ impl UiMountedProjectionChanges {
         }
     }
 
-    pub(crate) fn mark_retired_instance(&mut self, instance: UiMountedInstanceIdentity) {
+    pub(crate) fn mark_retired_instance(
+        &mut self,
+        instance: UiMountedInstanceIdentity,
+        surface: UiSemanticSurfaceIdentity,
+    ) {
         self.changed_instances.remove_with_work(&instance);
         self.appearance_input_changed_instances
             .remove_with_work(&instance);
-        if !self.retired_instances.insert(instance) {
+        if self.retired_instances.get(&instance).is_some() {
             self.record_coalesced();
         }
+        self.retired_instances.insert(instance, surface);
     }
 
     pub(crate) fn mark_order_changed(&mut self, order: &[UiMountedInstanceIdentity]) {
@@ -95,7 +103,7 @@ impl UiMountedProjectionChanges {
             self.appearance_input_changed_instances
                 .remove_with_work(instance);
         }
-        for instance in applied.retired_instances.iter() {
+        for (instance, _) in applied.retired_instances.iter() {
             self.retired_instances.remove_with_work(instance);
         }
         for surface in applied.changed_surfaces.iter() {
@@ -122,8 +130,8 @@ impl UiMountedProjectionChanges {
                 self.record_coalesced();
             }
         }
-        for instance in addition.retired_instances.iter().copied() {
-            self.mark_retired_instance(instance);
+        for (instance, surface) in addition.retired_instances.iter() {
+            self.mark_retired_instance(*instance, *surface);
         }
         for surface in addition.changed_surfaces.iter().copied() {
             self.mark_changed_surface(surface);
@@ -159,7 +167,10 @@ impl UiMountedProjectionChangeSnapshot {
     }
 
     pub(crate) fn retired_instances(&self) -> impl Iterator<Item = UiMountedInstanceIdentity> + '_ {
-        self.applied.retired_instances.iter().copied()
+        self.applied
+            .retired_instances
+            .iter()
+            .map(|(instance, _)| *instance)
     }
 
     pub(crate) fn appearance_input_changed(&self, instance: UiMountedInstanceIdentity) -> bool {
@@ -223,8 +234,9 @@ impl UiMountedProjectionChangeSnapshot {
                 || self
                     .observed
                     .retired_instances
-                    .contains_with_probes(instance)
+                    .get_with_probes(instance)
                     .0
+                    .is_some()
         });
         if self.observed.order_changed || current_changed {
             return None;

@@ -4,6 +4,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use super::admit;
 use worth_ui_platform_pulse::observation_contract::PlatformPulseLaunchConfigurationDenial;
 
+#[path = "tests/product_geometry.rs"]
+mod product_geometry;
+
 static NEXT_INSTALLATION: AtomicU64 = AtomicU64::new(1);
 
 struct IsolatedInstallation {
@@ -108,6 +111,7 @@ fn explicit_absolute_installation_reaches_real_application_preparation() {
     } = prepared;
     let application = builder.freeze().expect("prepared application freezes");
     assert_product_capabilities_are_fully_admitted(application.capabilities());
+    product_geometry::assert_service_and_native_tiles(application.capabilities());
     let definitions = application.capabilities().intent_definitions();
     assert_eq!(definitions.len(), 3);
     assert!(definitions

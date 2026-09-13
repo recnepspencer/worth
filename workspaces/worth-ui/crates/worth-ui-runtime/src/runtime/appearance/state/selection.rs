@@ -87,32 +87,4 @@ impl UiSelectionAppearanceState {
     pub(crate) const fn class(&self) -> UiAppearanceAxisClass {
         self.class
     }
-
-    pub(crate) const fn source_class(
-        &self,
-    ) -> crate::runtime::selection::UiSelectionAppearanceClass {
-        self.source_class
-    }
-
-    pub(crate) const fn source_bits(&self) -> (bool, bool, bool) {
-        self.source_bits
-    }
-
-    pub(crate) const fn owner_revision(&self) -> u64 {
-        self.owner_revision
-    }
-
-    pub(crate) const fn owner(&self) -> crate::runtime::selection::UiSelectionOwnerIdentity {
-        self.owner
-    }
-
-    pub(crate) const fn incarnation(
-        &self,
-    ) -> crate::runtime::selection::UiSelectionOwnerIncarnation {
-        self.incarnation
-    }
-
-    pub(crate) const fn key(&self) -> crate::runtime::selection::UiSelectionStableKey {
-        self.key
-    }
 }

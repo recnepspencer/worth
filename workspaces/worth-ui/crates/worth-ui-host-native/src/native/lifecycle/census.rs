@@ -168,9 +168,10 @@ impl UiNativeResourceCensus {
         self.pending_text_presentations = self
             .pending_text_presentations
             .max(state.pending_text_presentations.len());
-        self.retained_frame_observations = self
-            .retained_frame_observations
-            .max(state.retained_frame_observations.len());
+        self.retained_frame_observations = self.retained_frame_observations.max(
+            state.retained_frame_observations.len()
+                + usize::from(state.last_retained_frame.is_some()),
+        );
         self.text_pin_frame_observations = self
             .text_pin_frame_observations
             .max(state.text_pin_frame_observations.len());

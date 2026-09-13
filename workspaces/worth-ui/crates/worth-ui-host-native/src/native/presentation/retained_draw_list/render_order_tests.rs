@@ -2,37 +2,64 @@ use super::*;
 use crate::native::presentation::appearance::{
     UiNativeAppearanceRetained, UiNativeAppearanceScale,
 };
-use crate::native::presentation::retained_draw_list::tests::{command, DrawListWorld};
+use crate::native::presentation::retained_draw_list::tests::DrawListWorld;
 use worth_ui_host_contract::{
     UiAppearanceAllocationBounds, UiAppearanceClip, UiAppearanceLogicalLength,
-    UiAppearanceNormalizedLogicalRadii, UiMountedAppearanceColor, UiMountedCanonicalBox,
-    UiMountedCanonicalBoxInput, UiMountedCoordinateSpace, UiMountedNodeAppearanceAttribution,
-    UiMountedNodeReceiptIssuer, UiMountedOverlayOrderMechanic, UiMountedPaintOrderIdentity,
-    UiMountedPaintOrderIntegrity, UiMountedPresentationAttemptIdentity,
-    UiMountedPresentationOpacity, UiMountedPresentationReconstruction,
-    UiMountedPresentationReconstructionInput, UiMountedPresentationSampleChange,
-    UiMountedPresentationTransform, UiMountedRgba8, UiMountedSurfaceAppearanceCompletionInput,
-    UiMountedSurfaceAppearanceMechanic, UiMountedSurfaceBorderEdges, UiMountedSurfacePaint,
+    UiAppearanceNormalizedLogicalRadii, UiAppearanceOutlineGeometry, UiMountedAppearanceColor,
+    UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
+    UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIssuer,
+    UiMountedOutlineAppearanceCompletionInput, UiMountedOutlineAppearanceMechanic,
+    UiMountedOverlayOrderMechanic, UiMountedPaintOrderIdentity, UiMountedPaintOrderIntegrity,
+    UiMountedPresentationAttemptIdentity, UiMountedPresentationOpacity,
+    UiMountedPresentationReconstruction, UiMountedPresentationReconstructionInput,
+    UiMountedPresentationSampleChange, UiMountedPresentationTransform, UiMountedRgba8,
+    UiMountedSurfaceAppearanceCompletionInput, UiMountedSurfaceAppearanceMechanic,
+    UiMountedSurfaceBorderEdges, UiMountedSurfacePaint,
 };
 
+#[path = "render_order_tests/appearance_only.rs"]
+mod appearance_only;
 #[path = "render_order_tests/locality.rs"]
 mod locality;
+#[path = "render_order_tests/portal_group.rs"]
+mod portal_group;
 
 #[test]
 fn complete_and_damage_join_surfaces_at_their_ordinary_text_slots() {
     let world = DrawListWorld::new();
     let frame = worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap();
-    let first = world.rect(frame, world.first, 0.0, UiMountedRgba8::new(1, 2, 3, 255));
-    let (text, _, _) =
-        crate::native::presentation::sample::tests::semantic_text::semantic_text(&world, frame);
-    let third = world.rect_at_order(
+    let first_source = world.rect(frame, world.first, 0.0, UiMountedRgba8::new(1, 2, 3, 255));
+    let first_text =
+        crate::native::presentation::sample::tests::semantic_text::semantic_text_command_at(
+            &world,
+            frame,
+            world.first,
+            0,
+            0.0,
+        );
+    let text = crate::native::presentation::sample::tests::semantic_text::semantic_text_command_at(
+        &world,
+        frame,
+        worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
+        8,
+        20.0,
+    );
+    let third_source = world.rect_at_order(
         frame,
         world.third,
         40.0,
         UiMountedRgba8::new(4, 5, 6, 255),
-        9,
+        12,
     );
-    let commands = [command(first), text, command(third)];
+    let third_text =
+        crate::native::presentation::sample::tests::semantic_text::semantic_text_command_at(
+            &world,
+            frame,
+            world.third,
+            16,
+            40.0,
+        );
+    let commands = [first_text, text, third_text];
     let order = commands
         .iter()
         .map(|command| UiMountedPaintOrderIdentity::for_command(command.identity()))
@@ -53,13 +80,13 @@ fn complete_and_damage_join_surfaces_at_their_ordinary_text_slots() {
         UiNativeAppearanceRetained::new(UiNativeAppearanceScale::qualified(1_000).unwrap());
     let third_key = appearance
         .insert(
-            UiNativeAppearanceCommand::Surface(surface_at(third, 9)),
+            UiNativeAppearanceCommand::Surface(surface_at(third_source, 12)),
             None,
         )
         .unwrap();
     let first_key = appearance
         .insert(
-            UiNativeAppearanceCommand::Surface(surface_at(first, 0)),
+            UiNativeAppearanceCommand::Surface(surface_at(first_source, 4)),
             Some(third_key),
         )
         .unwrap();
@@ -73,64 +100,20 @@ fn complete_and_damage_join_surfaces_at_their_ordinary_text_slots() {
         .unwrap();
     assert_eq!(
         joined.len(),
-        3,
-        "static and sampled selection cannot paint twice"
+        5,
+        "appearance surfaces join the ordinary semantic text order"
     );
-    assert!(matches!(joined[0], UiNativeRetainedRenderItem::Appearance(key) if key == first_key));
     assert!(
-        matches!(joined[1], UiNativeRetainedRenderItem::Paint(id) if id == commands[1].identity())
+        matches!(joined[0], UiNativeRetainedRenderItem::Paint(id) if id == commands[0].identity())
     );
-    assert!(matches!(joined[2], UiNativeRetainedRenderItem::Appearance(key) if key == third_key));
-}
-
-#[test]
-fn appearance_only_surfaces_use_semantic_order_without_legacy_rect_anchors() {
-    let world = DrawListWorld::new();
-    let frame = worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap();
-    let (text, _, _) =
-        crate::native::presentation::sample::tests::semantic_text::semantic_text(&world, frame);
-    let order = [UiMountedPaintOrderIdentity::for_command(text.identity())];
-    let mut retained = UiNativeRetainedDrawList::from_complete(
-        frame,
-        world.surface,
-        world.binding,
-        world.content,
-        world.requirement.baseline(),
-        std::slice::from_ref(&text),
-        &order,
-        UiMountedPaintOrderIntegrity::for_order(&order),
-        &[],
-    )
-    .unwrap();
-    let before = surface_at(
-        world.rect(frame, world.first, 0.0, UiMountedRgba8::new(1, 2, 3, 255)),
-        4,
+    assert!(matches!(joined[1], UiNativeRetainedRenderItem::Appearance(key) if key == first_key));
+    assert!(
+        matches!(joined[2], UiNativeRetainedRenderItem::Paint(id) if id == commands[1].identity())
     );
-    let after = surface_at(
-        world.rect(frame, world.third, 40.0, UiMountedRgba8::new(4, 5, 6, 255)),
-        12,
+    assert!(matches!(joined[3], UiNativeRetainedRenderItem::Appearance(key) if key == third_key));
+    assert!(
+        matches!(joined[4], UiNativeRetainedRenderItem::Paint(id) if id == commands[2].identity())
     );
-    let mut appearance =
-        UiNativeAppearanceRetained::new(UiNativeAppearanceScale::qualified(1_000).unwrap());
-    let before_key = appearance
-        .insert(UiNativeAppearanceCommand::Surface(before), None)
-        .unwrap();
-    let after_key = appearance
-        .insert(UiNativeAppearanceCommand::Surface(after), Some(before_key))
-        .unwrap();
-    retained.staged_appearance = Some((world.requirement, appearance));
-
-    let joined = retained
-        .ordered_render_items([text.identity()], [after_key, before_key])
-        .unwrap();
-    assert!(matches!(
-        joined.as_ref(),
-        [
-            UiNativeRetainedRenderItem::Appearance(before),
-            UiNativeRetainedRenderItem::Paint(text_identity),
-            UiNativeRetainedRenderItem::Appearance(after),
-        ] if *before == before_key && *text_identity == text.identity() && *after == after_key
-    ));
 }
 
 #[test]
@@ -201,8 +184,14 @@ fn backdrop_after_portal_stays_after_its_ordinary_content() {
         identity: worth_ui_host_contract::UiMountedPaintCommandIdentity::portal_overlay(&portal),
         mechanic: portal,
     };
-    let (child, _, _) =
-        crate::native::presentation::sample::tests::semantic_text::semantic_text(&world, frame);
+    let child = crate::native::presentation::sample::tests::semantic_text::semantic_text_command_in_group_at(
+        &world,
+        frame,
+        worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
+        Some(world.first),
+        10,
+        30.0,
+    );
     let commands = [portal, child];
     let order = commands
         .iter()
@@ -262,6 +251,11 @@ fn backdrop_after_portal_stays_after_its_ordinary_content() {
             && *child == commands[1].identity()
             && *backdrop == backdrop_key
     ));
+    assert!(retained.last_paint_attribution.is_some());
+    assert!(
+        retained.top_paint_attribution().is_none(),
+        "the top backdrop must not inherit a previously attributed component"
+    );
 }
 
 #[test]
@@ -276,22 +270,32 @@ fn accepted_reconstruction_motion_moves_appearance_surface_onscreen_once() {
         UiMountedRgba8::new(30, 60, 90, 255),
     );
     let complete = world.initial(frame, [rect]);
-    let identity = command(rect).identity();
+    let text = crate::native::presentation::sample::tests::semantic_text::semantic_text_command_at(
+        &world,
+        frame,
+        world.first,
+        0,
+        120.0,
+    );
+    let identity = text.identity();
+    let source = match &text {
+        UiMountedPaintCommand::SemanticText { mechanic, .. } => mechanic.bounds(),
+        UiMountedPaintCommand::PortalOverlay { .. } => unreachable!(),
+    };
     let sampled = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
         x: 20.0,
-        y: 0.0,
-        width: rect.bounds().width(),
-        height: rect.bounds().height(),
-        coordinate_space: UiMountedCoordinateSpace::HostSurface,
+        y: 10.0,
+        width: source.width(),
+        height: source.height(),
+        coordinate_space: UiMountedCoordinateSpace::Viewport,
     })
     .unwrap();
     let sample = UiMountedPresentationSampleChange::from_runtime_sampling(
         identity,
-        Some(
-            UiMountedPresentationTransform::from_runtime_sampling(rect.bounds(), sampled).unwrap(),
-        ),
+        Some(UiMountedPresentationTransform::from_runtime_sampling(source, sampled).unwrap()),
         UiMountedPresentationOpacity::from_runtime_composition(32_768),
     );
+    let order = [UiMountedPaintOrderIdentity::for_command(identity)];
     let reconstruction = UiMountedPresentationReconstruction::from_inert_mechanics(
         UiMountedPresentationReconstructionInput {
             predecessor,
@@ -301,10 +305,10 @@ fn accepted_reconstruction_motion_moves_appearance_surface_onscreen_once() {
             content: world.content,
             baseline: world.requirement.baseline(),
             projection: complete.projection().clone(),
-            commands: complete.commands().to_vec(),
+            commands: vec![text],
             sample_overrides: vec![sample],
-            order: complete.order().to_vec(),
-            order_integrity: complete.order_integrity(),
+            order: order.to_vec(),
+            order_integrity: UiMountedPaintOrderIntegrity::for_order(&order),
             damage: complete.damage().to_vec(),
             production_cost: Default::default(),
         },
@@ -331,13 +335,13 @@ fn accepted_reconstruction_motion_moves_appearance_surface_onscreen_once() {
 }
 
 fn surface(
-    source: worth_ui_host_contract::UiMountedFilledRectMechanic,
+    source: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
 ) -> UiMountedSurfaceAppearanceMechanic {
     surface_at(source, 0)
 }
 
 fn surface_at(
-    source: worth_ui_host_contract::UiMountedFilledRectMechanic,
+    source: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
     surface_paint_order: u32,
 ) -> UiMountedSurfaceAppearanceMechanic {
     let issuer = UiMountedNodeReceiptIssuer::mint_for(source.frame()).unwrap();
@@ -352,7 +356,7 @@ fn surface_at(
     UiMountedSurfaceAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedSurfaceAppearanceCompletionInput {
             issuer,
-            node_receipt: source.node_receipt(),
+            node_receipt: source.owner_receipt(),
             bounds: allocation,
             clip: UiAppearanceClip::new(
                 allocation.x(),
@@ -362,6 +366,7 @@ fn surface_at(
             )
             .unwrap(),
             surface_paint_order,
+            portal_group: None,
             radii: UiAppearanceNormalizedLogicalRadii::normalize(
                 allocation,
                 [UiAppearanceLogicalLength::ZERO; 4],

@@ -105,8 +105,6 @@ impl WorthUiActiveApplicationSession {
             binding,
             crate::runtime::intent::UiIntentConfirmationCancellationReason::SurfaceRebound,
         );
-        self.intent_admission
-            .cancel_binding(&mut self.intent_execution, binding);
         match self.mounted.register_rebound_host_surface(
             &self.host_session,
             binding,
@@ -115,16 +113,27 @@ impl WorthUiActiveApplicationSession {
             mode,
             profile,
         ) {
-            Ok(binding) => Ok(UiSurfaceRebindInteractionReceipt {
-                binding,
-                interaction,
-            }),
-            Err(denial) => Err(
-                UiSurfaceRebindInteractionDenial::AfterInteractionSettlement {
-                    denial,
-                    interaction: Box::new(interaction),
-                },
-            ),
+            Ok(rebound) => {
+                self.intent_admission.rebind_surface(
+                    &mut self.intent_execution,
+                    binding,
+                    rebound.binding_generation(),
+                );
+                Ok(UiSurfaceRebindInteractionReceipt {
+                    binding: rebound,
+                    interaction,
+                })
+            }
+            Err(denial) => {
+                self.intent_admission
+                    .cancel_binding(&mut self.intent_execution, binding);
+                Err(
+                    UiSurfaceRebindInteractionDenial::AfterInteractionSettlement {
+                        denial,
+                        interaction: Box::new(interaction),
+                    },
+                )
+            }
         }
     }
 }

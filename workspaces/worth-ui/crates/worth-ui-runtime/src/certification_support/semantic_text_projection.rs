@@ -93,7 +93,6 @@ pub fn empty_projection_for_certification() -> UiMountedProjectionView {
         nodes: Vec::new(),
         clips: worth_ui_host_contract::UiMountedClipTable::produced(Vec::new()),
         layers: worth_ui_host_contract::UiMountedLayerTable::produced(Vec::new()),
-        filled_rects: worth_ui_host_contract::UiMountedFilledRectTable::empty(),
         portal_overlays: worth_ui_host_contract::UiMountedPortalOverlayTable::empty(),
         semantic_text: UiMountedSemanticTextTable::empty(),
         hit_tests: worth_ui_host_contract::UiMountedHitTestTable::empty(),
@@ -215,7 +214,7 @@ fn projection(basis: SemanticTextProjectionBasis) -> UiMountedProjectionView {
     let nodes = vec![node(&basis)];
     let rows = vec![basis.row];
     let (authored_paint_commands, authored_paint_order) =
-        crate::mounting::compile_presentation_sources(&nodes, &[], &[], &rows);
+        crate::mounting::compile_presentation_sources(&nodes, &[], &rows);
     UiMountedProjectionView::new(UiMountedProjectionViewInput {
         frame: basis.frame,
         surface: basis.surface,
@@ -224,7 +223,6 @@ fn projection(basis: SemanticTextProjectionBasis) -> UiMountedProjectionView {
         nodes,
         clips: worth_ui_host_contract::UiMountedClipTable::produced(Vec::new()),
         layers: worth_ui_host_contract::UiMountedLayerTable::produced(Vec::new()),
-        filled_rects: worth_ui_host_contract::UiMountedFilledRectTable::empty(),
         portal_overlays: worth_ui_host_contract::UiMountedPortalOverlayTable::empty(),
         semantic_text: UiMountedSemanticTextTable::from_runtime_mounting(rows)
             .expect("one semantic row fits the mounted table"),
@@ -247,6 +245,7 @@ fn semantic_row(input: SemanticTextRowBasis) -> UiMountedSemanticTextMechanic {
             surface: input.surface,
             binding: input.binding,
             mounted_instance: input.instance,
+            portal_group: None,
             node_receipt: input.receipt,
             allocation_basis: input.allocation,
             bounds: input.bounds,

@@ -34,7 +34,7 @@ fn explicit_line_height_reaches_mounted_row_formatting() {
         BTreeMap::from([(
             token,
             crate::capability::ThemeTokenValue::color(
-                crate::capability::ThemeColorValue::hex("#241F2B").unwrap(),
+                crate::capability::UiThemeColor::parse("#241F2B").unwrap(),
             ),
         )]),
     );

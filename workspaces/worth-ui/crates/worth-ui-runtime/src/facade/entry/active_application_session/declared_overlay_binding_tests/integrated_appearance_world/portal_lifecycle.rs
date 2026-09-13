@@ -46,13 +46,60 @@ impl World {
         restoration_target: UiMountedInstanceIdentity,
         now: u64,
     ) {
+        use crate::facade::entry::portal_dismissal::{
+            UiPortalDismissalPublicationOutcome as Outcome,
+            UiPortalDismissalPublicationStop as Stop,
+        };
+        let predecessor = self.session.current_mounted_publication().unwrap().frame();
         for _ in self.surfaces {
-            self.host.push_native_display_settled_without_effects();
+            self.host.push_rejected();
         }
-        let focus = match self
+        assert!(matches!(
+            self.session
+                .publish_anchor_loss_portal_dismissal(parent, now),
+            Outcome::Stopped(Stop::HostRejectedBeforeEffects)
+        ));
+        assert_eq!(
+            self.session.current_mounted_publication().unwrap().frame(),
+            predecessor
+        );
+        assert_eq!(
+            self.session.portal.as_ref().unwrap().posture(parent),
+            UiPortalLifecyclePosture::Visible
+        );
+        assert_eq!(
+            self.session.portal.as_ref().unwrap().posture(child),
+            UiPortalLifecyclePosture::Visible
+        );
+        for _ in self.surfaces {
+            self.host.push_in_flight(
+                vec![
+                    crate::certification_support::ScriptedSurfaceCompletion::RejectedBeforeEffects(
+                        UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred,
+                    ),
+                ],
+                UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
+            );
+        }
+        let pending = match self
             .session
             .publish_anchor_loss_portal_dismissal(parent, now)
         {
+            Outcome::InFlight(completion) => completion.detach_for_native(),
+            _ => panic!("atlas preparation retains the dismissal proposal"),
+        };
+        assert_eq!(
+            self.session.current_mounted_publication().unwrap().frame(),
+            predecessor
+        );
+        assert_eq!(
+            self.session.portal.as_ref().unwrap().posture(parent),
+            UiPortalLifecyclePosture::Visible
+        );
+        for _ in self.surfaces {
+            self.host.push_native_display_settled_without_effects();
+        }
+        let focus = match pending.complete(&mut self.session, now) {
             crate::facade::entry::portal_dismissal::UiPortalDismissalPublicationOutcome::Published(
                 receipt,
             ) => receipt.focus_publication(),
@@ -153,6 +200,14 @@ impl World {
         self.session.present_prepared_motion_tick(prepared, basis);
         assert!(self.session.portal_exit_terminal_work_pending());
 
+        // The terminal frame removes the exiting group. Its immediate atlas
+        // retry must preserve that removal posture, unlike initial dismissal.
+        for _ in self.surfaces {
+            self.host
+                .push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+                    UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred,
+                ));
+        }
         for (epoch, effects) in [
             (93, vec![UiMountedEffectFamily::NativePaint]),
             (94, Vec::new()),

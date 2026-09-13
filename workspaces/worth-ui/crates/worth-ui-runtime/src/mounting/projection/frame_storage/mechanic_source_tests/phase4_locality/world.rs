@@ -30,6 +30,7 @@ pub(super) fn append_paragraphs(
     let projection = UiMountedSemanticProjection::initial(
         added,
         vec![UiMountedProjectionSurface {
+            coordinate_posture: crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
             surface,
             binding,
             audience: UiMountedProjectionAudience::full(),
@@ -71,6 +72,7 @@ pub(super) fn apply_one(
             width,
         )],
         vec![UiMountedProjectionSurface {
+            coordinate_posture: crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
             surface,
             binding,
             audience: UiMountedProjectionAudience::full(),
@@ -166,7 +168,6 @@ fn locality_node(
         has_appearance_attachment: false,
         appearance_clip:
             crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
-        static_paint: None,
         semantic_text: Some(UiMountedSemanticTextSeed::posture_only_for_test(text)),
         hit_test: None,
         focus_support: crate::capability::ComponentFocusSupport::not_focusable(),

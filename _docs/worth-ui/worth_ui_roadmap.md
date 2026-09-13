@@ -2258,14 +2258,13 @@ is created.
 
 Detailed spec: [milestone-3.16.md](./milestone-3.16.md)
 
-Status: In progress, Gate 4. Gates 0 and 1 are complete. Gate 4's five sections
-remain open: [mounted geometry](./milestone-3.16.md#gate-4a--mounted-geometry),
-[text foreground](./milestone-3.16.md#gate-4b--text-foreground),
-[Motion composition](./milestone-3.16.md#gate-4c--motion-composition),
-[backdrop and Portal](./milestone-3.16.md#gate-4d--backdrop-and-portal), and
-[integrated closure](./milestone-3.16.md#gate-4e--integrated-closure).
-The spec owns their plans and acceptance. Emission remains disabled until Gate 5's
-atomic cutover; Gate 6 owns live/native/design milestone closure.
+Implementation spans the remaining production handoffs across Gates 4–6. The
+[detailed spec](./milestone-3.16.md#remaining-closure-sequence) orders that work
+as five vertical closure slices: replacement geometry, content publication,
+owner-state and live-theme succession, Motion and overlay succession, and the
+integrated closure. Gate 4's detailed technical acceptance remains governing.
+Gate 5's live protocol and static-paint deletion are the baseline; Gate 6 owns
+final live/native/design milestone closure.
 
 The governing design freezes explicit role attachment,
 surface-bound theme capability, coherent owner-issued state vectors, finite

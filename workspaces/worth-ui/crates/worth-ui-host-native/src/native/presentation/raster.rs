@@ -14,6 +14,7 @@ impl UiNativeRasterBasis {
         }
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(super) const fn new(extent: [u32; 2], scale_factor: f32) -> Self {
         Self {
             extent,
@@ -94,30 +95,6 @@ pub(super) struct GlyphVertex {
     pub(super) position: [f32; 2],
     pub(super) texture_uv: [f32; 2],
     pub(super) color: [f32; 4],
-}
-
-pub(super) fn raster_rect(
-    mechanic: worth_ui_host_contract::UiMountedFilledRectMechanic,
-    graphics: &UiNativePresentationAccess,
-) -> Result<RasterRect, ()> {
-    raster_rect_for_basis(
-        mechanic,
-        UiNativeRasterBasis::from_presentation_access(graphics),
-    )
-}
-
-pub(super) fn raster_rect_for_basis(
-    mechanic: worth_ui_host_contract::UiMountedFilledRectMechanic,
-    basis: UiNativeRasterBasis,
-) -> Result<RasterRect, ()> {
-    let bounds = mechanic.bounds();
-    let clip = mechanic.clip_bounds();
-    raster_from_basis(
-        [bounds.x(), bounds.y(), bounds.width(), bounds.height()],
-        [clip.x(), clip.y(), clip.width(), clip.height()],
-        basis.extent(),
-        basis.scale_factor(),
-    )
 }
 
 pub(super) fn raster_portal_overlay(

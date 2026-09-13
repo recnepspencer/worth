@@ -3,6 +3,7 @@ use super::{
     UiMountedSemanticTextMechanic, UiMountedTextSchemaVersion, UiSemanticTextBaselinePosture,
     UiSemanticTextSlot, UiSemanticTextWrapPosture,
 };
+use crate::UiMountedInstanceIdentity;
 
 pub(super) fn validate_completion(
     input: &UiMountedSemanticTextCompletionInput,
@@ -95,6 +96,9 @@ pub(super) fn semantic_digest_mechanic(mechanic: &UiMountedSemanticTextMechanic)
         mechanic.surface.diagnostic_value(),
         mechanic.binding.diagnostic_value(),
         mechanic.mounted_instance.diagnostic_value(),
+        mechanic
+            .portal_group
+            .map_or(0, UiMountedInstanceIdentity::diagnostic_value),
         mechanic.node_receipt.diagnostic_value(),
         mechanic.allocation_basis.receipt_identity(),
         mechanic.allocation_basis.receipt_generation(),
@@ -155,7 +159,7 @@ fn matching_foregrounds(input: &UiMountedSemanticTextCompletionInput) -> bool {
             .all(|(style, foreground)| style.original_range() == foreground.original_range())
 }
 
-fn identity_values(input: &UiMountedSemanticTextCompletionInput) -> [u64; 15] {
+fn identity_values(input: &UiMountedSemanticTextCompletionInput) -> [u64; 16] {
     [
         u64::from(UiMountedTextSchemaVersion::current().revision()),
         input.content_generation.diagnostic_value(),
@@ -163,6 +167,9 @@ fn identity_values(input: &UiMountedSemanticTextCompletionInput) -> [u64; 15] {
         input.surface.diagnostic_value(),
         input.binding.diagnostic_value(),
         input.mounted_instance.diagnostic_value(),
+        input
+            .portal_group
+            .map_or(0, UiMountedInstanceIdentity::diagnostic_value),
         input.node_receipt.diagnostic_value(),
         input.allocation_basis.receipt_identity(),
         input.allocation_basis.receipt_generation(),

@@ -17,6 +17,20 @@ pub struct UiNativeMountedRegionLayoutInput {
 }
 
 impl UiNativeMountedComponentLayoutInput {
+    pub(crate) fn new(
+        authored_semantic_identity: impl Into<Box<str>>,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        allocation: Option<crate::capability::ComponentAllocationMeasurementContract>,
+        portal_parent: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
+    ) -> Self {
+        Self {
+            authored_semantic_identity: authored_semantic_identity.into(),
+            instance,
+            allocation,
+            portal_parent,
+        }
+    }
+
     pub fn authored_semantic_identity(&self) -> &str {
         &self.authored_semantic_identity
     }
@@ -35,6 +49,20 @@ impl UiNativeMountedComponentLayoutInput {
 }
 
 impl UiNativeMountedRegionLayoutInput {
+    pub(crate) fn from_mounted_region(
+        owner: worth_ui_host_contract::UiMountedInstanceIdentity,
+        region_kind: &str,
+        declaration: worth_ui_dsl::UiMosaicRegionDeclarationIdentity,
+        executed_region: &str,
+    ) -> Self {
+        Self {
+            owner,
+            region_kind: region_kind.into(),
+            declaration,
+            executed_region: executed_region.into(),
+        }
+    }
+
     pub fn owner(&self) -> worth_ui_host_contract::UiMountedInstanceIdentity {
         self.owner
     }
@@ -68,7 +96,7 @@ impl WorthUiNativeApplicationShell {
             || self
                 .mounted_rows
                 .iter()
-                .filter_map(|row| row.mounted)
+                .filter_map(|row| self.current_native_mounted_instance(row))
                 .any(|instance| {
                     !self
                         .session
@@ -85,7 +113,7 @@ impl WorthUiNativeApplicationShell {
         self.mounted_rows
             .iter()
             .filter_map(|row| {
-                let instance = row.mounted?;
+                let instance = self.current_native_mounted_instance(row)?;
                 let component_id = row
                     .authored_semantic_identity
                     .strip_prefix("component:")
@@ -101,13 +129,12 @@ impl WorthUiNativeApplicationShell {
                             contract.owner().as_str()
                         ))
                     });
-                Some(UiNativeMountedComponentLayoutInput {
-                    authored_semantic_identity: row.authored_semantic_identity.clone(),
+                Some(UiNativeMountedComponentLayoutInput::new(
+                    row.authored_semantic_identity.clone(),
                     instance,
-                    allocation: descriptor
-                        .and_then(|descriptor| descriptor.allocation_measurement_contract()),
+                    descriptor.and_then(|descriptor| descriptor.allocation_measurement_contract()),
                     portal_parent,
-                })
+                ))
             })
             .collect::<Vec<_>>()
             .into_boxed_slice()
@@ -127,7 +154,7 @@ impl WorthUiNativeApplicationShell {
         self.mounted_rows
             .iter()
             .filter_map(|row| {
-                let owner = row.mounted?;
+                let owner = self.current_native_mounted_instance(row)?;
                 let graph_node = self
                     .session
                     .mounted
@@ -141,11 +168,13 @@ impl WorthUiNativeApplicationShell {
                     .mounted_region_declarations(surface_declaration, graph_node)
                     .0
                     .into_iter()
-                    .map(move |binding| UiNativeMountedRegionLayoutInput {
-                        owner,
-                        region_kind: binding.region_kind().into(),
-                        declaration: binding.declaration(),
-                        executed_region: binding.executed_region().into(),
+                    .map(move |binding| {
+                        UiNativeMountedRegionLayoutInput::from_mounted_region(
+                            owner,
+                            binding.region_kind(),
+                            binding.declaration(),
+                            binding.executed_region(),
+                        )
                     })
             })
             .collect::<Vec<_>>()
@@ -160,7 +189,7 @@ impl WorthUiNativeApplicationShell {
         authored_semantic_identity: &str,
     ) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
         let index = *self.mounted_row_indices.get(authored_semantic_identity)?;
-        self.mounted_rows.get(index)?.mounted
+        self.current_native_mounted_instance(self.mounted_rows.get(index)?)
     }
 
     /// Mint the current basis for one exact native layout publication.

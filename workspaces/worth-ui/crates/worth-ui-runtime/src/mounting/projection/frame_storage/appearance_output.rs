@@ -17,6 +17,7 @@ pub(crate) enum UiMountedAppearanceOutputDenial {
     HostGeometryScale(worth_ui_host_contract::UiHostAppearanceScaleDenial),
     AncestorClip(super::super::appearance::UiMountedAppearanceClipDenial),
     CurrentProjectionUnavailable,
+    PortalOrderUnavailable,
     TextCandidate(super::super::UiMountedProjectionDenial),
     Transport(UiUnpublishedAppearanceFrameProjectionDenial),
 }
@@ -48,6 +49,11 @@ pub(super) fn assemble(
     ),
     UiMountedAppearanceOutputDenial,
 > {
+    if nodes.is_empty() && overlays.is_empty() {
+        if let Some(pointers) = pointers.settle_without_output() {
+            return Ok((None, pointers));
+        }
+    }
     let bindings = bindings
         .iter()
         .map(|binding| (binding.semantic_surface(), *binding))

@@ -1,7 +1,6 @@
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor,
     ComponentHitTestContract, ComponentId, ComponentPropSchema, ComponentStateOwnership,
-    ComponentStaticPaintOrder,
 };
 
 fn component() -> ComponentDescriptor {
@@ -16,8 +15,5 @@ fn component() -> ComponentDescriptor {
 fn main() {
     let allocation = ComponentAllocationMeasurementContract::fill_viewport();
     let _ = component().with_hit_test(allocation);
-    let _ = ComponentHitTestContract::allocation_bounds(
-        ComponentStaticPaintOrder::back_to_front(0),
-        allocation,
-    );
+    let _ = ComponentHitTestContract::allocation_bounds(0, allocation);
 }

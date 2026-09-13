@@ -8,8 +8,10 @@ use worth_ui_host_contract::{
     UiMountedPresentationWorkView, UiMountedSurfaceBindingRequirement,
 };
 
+#[cfg(test)]
 #[path = "preparation/complete.rs"]
 mod complete;
+#[cfg(test)]
 pub(crate) use complete::prepare_complete_semantic_text;
 
 #[path = "preparation/demand_join.rs"]

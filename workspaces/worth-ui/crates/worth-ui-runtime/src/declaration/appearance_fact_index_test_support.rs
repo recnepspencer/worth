@@ -1,5 +1,5 @@
 use crate::runtime::tests::appearance_component_session_test_support::{
-    appearance_theme_token, static_paint_component, validation_background_role,
+    appearance_component, appearance_theme_token, validation_background_role,
 };
 
 pub(crate) fn unattached_static_paint_app(
@@ -16,7 +16,7 @@ pub(crate) fn unattached_static_paint_app(
     crate::facade::WorthUi::app()
         .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
         .with_graph_world_profile(world_profile)
-        .register_component(static_paint_component(component_identity, token.clone()))
+        .register_component(appearance_component(component_identity, token.clone()))
         .register_appearance_role(role)
         .unwrap()
         .register_theme_token(appearance_theme_token(token))

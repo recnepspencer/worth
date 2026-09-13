@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+mod application_text;
+
 #[cfg(test)]
 #[path = "semantic_content_tests.rs"]
 mod tests;
@@ -8,6 +10,8 @@ mod tests;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiMountedSemanticContentInput {
     by_graph_node: BTreeMap<crate::graph::UiGraphNodeIdentity, UiMountedSemanticTextContent>,
+    application_text_source:
+        Arc<BTreeMap<crate::graph::UiGraphNodeIdentity, UiMountedSemanticTextContent>>,
     projection_inputs: UiMountedProjectionInputTransition,
     schema_transitions: Vec<crate::runtime::rebind::UiProjectionSchemaTransition>,
 }
@@ -118,31 +122,10 @@ impl UiMountedSemanticContentInput {
     pub(crate) fn empty() -> Self {
         Self {
             by_graph_node: BTreeMap::new(),
+            application_text_source: Arc::default(),
             projection_inputs: UiMountedProjectionInputTransition::Retain,
             schema_transitions: Vec::new(),
         }
-    }
-
-    pub(crate) fn merge_application_presentation(
-        &mut self,
-        presentation: Self,
-    ) -> Result<(), crate::mounting::UiMountedProjectionDenial> {
-        if !matches!(
-            presentation.projection_inputs,
-            UiMountedProjectionInputTransition::Retain
-        ) || !presentation.schema_transitions.is_empty()
-        {
-            return Err(crate::mounting::UiMountedProjectionDenial::DuplicateLaneContribution);
-        }
-        if presentation
-            .by_graph_node
-            .keys()
-            .any(|graph_node| self.by_graph_node.contains_key(graph_node))
-        {
-            return Err(crate::mounting::UiMountedProjectionDenial::DuplicateLaneContribution);
-        }
-        self.by_graph_node.extend(presentation.by_graph_node);
-        Ok(())
     }
 
     pub(crate) fn insert_scalar(
@@ -191,6 +174,9 @@ impl UiMountedSemanticContentInput {
         graph_node: crate::graph::UiGraphNodeIdentity,
         content: UiMountedSemanticTextContent,
     ) -> Result<(), ()> {
+        if self.application_text_source.contains_key(&graph_node) {
+            return Err(());
+        }
         if self.by_graph_node.insert(graph_node, content).is_some() {
             return Err(());
         }
@@ -302,6 +288,19 @@ impl UiMountedSemanticContentInput {
         &self,
     ) -> &[crate::runtime::rebind::UiProjectionSchemaTransition] {
         &self.schema_transitions
+    }
+}
+
+impl UiMountedSemanticTextContent {
+    pub(crate) fn preserves_published_value(&self) -> bool {
+        match self {
+            Self::Scalar(scalar) => {
+                *scalar.value() == UiMountedSemanticTextValueDirective::Preserve
+            }
+            Self::Collection(collection) => {
+                *collection.value() == UiMountedCollectionTextDirective::Preserve
+            }
+        }
     }
 }
 

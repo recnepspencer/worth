@@ -11,6 +11,13 @@ pub(crate) struct UiMountedRegionDeclarationBinding {
 }
 
 impl UiMountedRegionDeclarationBinding {
+    pub(crate) fn same_layout_meaning(&self, successor: &Self) -> bool {
+        self.executed_region == successor.executed_region
+            && self.region_kind == successor.region_kind
+            && self.depth == successor.depth
+            && self.clipping == successor.clipping
+    }
+
     pub(crate) fn executed_region(&self) -> &str {
         &self.executed_region
     }
@@ -33,23 +40,6 @@ impl UiMountedRegionDeclarationBinding {
 }
 
 impl super::WorthUiApplicationSessionState {
-    pub(crate) fn mounted_region_declaration_for_plan_index(
-        &self,
-        surface: worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity,
-        plan_index: u32,
-    ) -> Option<worth_ui_dsl::UiMosaicRegionDeclarationIdentity> {
-        use crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning as Meaning;
-        let plan = self.runtime.active.active_plan_ref();
-        let meaning = plan.mounted_projection_ordinary_meaning(plan_index)?;
-        let Meaning::Layout(layout) = meaning.as_ref() else {
-            return None;
-        };
-        let descriptor = layout.region_descriptor()?;
-        self.authored_overlay_material()
-            .overlay_declaration_bindings()
-            .region_on_surface(surface, descriptor.id().as_str())
-    }
-
     /// Enumerate only the exact owner's executed layout subtree at layout
     /// completion. Paint invalidation consumes the resulting carried bindings.
     pub(crate) fn mounted_region_declarations(
@@ -57,12 +47,27 @@ impl super::WorthUiApplicationSessionState {
         surface: worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity,
         node: crate::graph::UiGraphNodeIdentity,
     ) -> (Vec<UiMountedRegionDeclarationBinding>, usize) {
+        Self::region_declarations_from_plan(
+            self.runtime.active.active_plan_ref(),
+            self.app.graph(),
+            self.authored_overlay_material(),
+            surface,
+            node,
+        )
+    }
+
+    pub(crate) fn region_declarations_from_plan(
+        plan: &crate::runtime::WorthUiActiveExecutionPlan,
+        graph: crate::graph::UiGraphAuthority<'_>,
+        material: &crate::runtime::WorthUiAuthoredOverlayMaterial,
+        surface: worth_ui_dsl::UiSemanticSurfaceDeclarationIdentity,
+        node: crate::graph::UiGraphNodeIdentity,
+    ) -> (Vec<UiMountedRegionDeclarationBinding>, usize) {
         use crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning as Meaning;
         let mut regions = Vec::new();
-        let Some(graph_node) = self.app.graph().lookup().graph_node(node) else {
+        let Some(graph_node) = graph.lookup().graph_node(node) else {
             return (regions, 0);
         };
-        let plan = self.runtime.active.active_plan_ref();
         let Ok(Some(index)) =
             plan.mounted_projection_plan_index(graph_node.value().authored_provenance_digest())
         else {
@@ -93,7 +98,7 @@ impl super::WorthUiApplicationSessionState {
             if let Meaning::Layout(layout) = meaning.as_ref() {
                 if let Some(descriptor) = layout.region_descriptor() {
                     if let (Some(declaration), Some(clipping)) = (
-                        self.authored_overlay_material()
+                        material
                             .overlay_declaration_bindings()
                             .region_on_surface(surface, descriptor.id().as_str()),
                         descriptor.clipping().cloned(),

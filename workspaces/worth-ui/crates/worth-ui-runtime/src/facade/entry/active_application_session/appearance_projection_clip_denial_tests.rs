@@ -83,7 +83,7 @@ fn current_scroll_topology_is_not_waived_by_a_portal_child_requirement() {
 fn unrelated_mosaic_mount_replacement_does_not_revoke_a_retained_consumer() {
     let role = support::validation_background_role(support::APPEARANCE_TOKEN);
     let builder = || {
-        support::legacy_static_paint_appearance_component_builder(&role)
+        support::alternate_token_appearance_component_builder(&role)
             .register_surface(crate::capability::SurfaceDescriptor::new(
                 crate::capability::SurfaceId::new("appearance.mosaic.surface").unwrap(),
                 crate::capability::SurfaceKind::primary_content(),
@@ -122,7 +122,7 @@ fn unrelated_mosaic_mount_replacement_does_not_revoke_a_retained_consumer() {
         .expect("Mosaic and independent appearance consumer must prepare")
         .launch()
         .expect("Mosaic source must launch through the real plan");
-    let (_, target) = super::mounting_fixture::mount(&mut session, 1_000);
+    let (_, target) = super::mounting_fixture::mount_only_appearance_consumer(&mut session);
     let graph = session.graph();
     let topology = graph.lookup().topology_node(target).unwrap();
     let parent = topology.value().parent_node_identity().unwrap();

@@ -22,7 +22,7 @@ use worth_ui_runtime::facade::mounted::{
 };
 
 use super::super::{execution_deadline, execution_reading};
-use super::native_recovery::native_activation_drain;
+use super::native_activation::native_activation_drain;
 use crate::intent::{
     operability::{build_open_portal_application_with_host, PrimaryIntent},
     runtime_services_kit::{NativeRuntimeServiceEvidence, RuntimeServiceSemanticOutcome},
@@ -60,7 +60,7 @@ pub(crate) fn run_native_runtime_service_scenario() -> NativeRuntimeServiceEvide
     host.push_native_display_presented();
     let (application, _) = build_open_portal_application_with_host(host.clone());
     let mut shell = application
-        .launch_native_surface()
+        .launch_native_declared_surface("visual.identity.surface.main")
         .expect("the production native composition root launches");
     crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     match shell
@@ -282,6 +282,10 @@ pub(super) fn escape_dismissal(
                     format!("quarantined:{:?}", stop.quarantine()),
                 worth_ui::facade::app::WorthUiNativeInteractionIngressStop::Denied(stop) =>
                     format!("denied:{:?}", stop.denial()),
+                worth_ui::facade::app::WorthUiNativeInteractionIngressStop::ManagedPublicationPending(_) =>
+                    "managed publication pending".to_owned(),
+                worth_ui::facade::app::WorthUiNativeInteractionIngressStop::ManagedObservationProgressPending(_) =>
+                    "managed observation progress pending".to_owned(),
             })
             .collect::<Vec<_>>()
     );
@@ -289,7 +293,7 @@ pub(super) fn escape_dismissal(
     ingress.dismissals()[0]
 }
 
-fn escape_drain(
+pub(super) fn escape_drain(
     host_session: u64,
     presentation: UiHostObservationPresentationBasis,
     sequence: u64,

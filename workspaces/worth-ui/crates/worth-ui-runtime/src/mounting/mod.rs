@@ -38,6 +38,7 @@ pub use session_state::UiMountedSelectionBindingDenial;
 mod surface_binding;
 mod text_reuse;
 mod theme_values;
+mod visual_region_appearance;
 mod visual_region_basis;
 
 pub(crate) use appearance_receipt_basis::{
@@ -52,10 +53,11 @@ pub(crate) use focus_participation::{
     UiMountedFocusParticipant, UiMountedFocusParticipationSnapshot,
 };
 pub(crate) use frame_assembler::{
-    UiMountedFrameAssembler, UiMountedFrameAssemblyInput, UiMountedLaneAssembly,
-    UiMountedPlanProjectionSource,
+    UiMountedFrameAssembler, UiMountedFrameAssemblyInput, UiMountedFrameContentSource,
+    UiMountedLaneAssembly, UiMountedPlanProjectionSource,
 };
 pub(crate) use frame_manifest_validation::validate_manifest;
+pub use hit_test_work::UiHitTestSpatialWork;
 pub(crate) use host_truth::UiMountedHostTruthCoordinator;
 pub use identity::{UiMountedGraphNodeHandle, UiMountedGraphWorldIdentity, UiMountedIdentityBasis};
 pub(crate) use identity_overlay::UiMountedVisualOverlayProjectionInput;
@@ -79,10 +81,12 @@ pub(crate) use occurrence_geometry::{
     UiMountedMosaicClipBinding, UiMountedScrollClipBinding, UiMountedSurfacePaintPosture,
 };
 pub(crate) use portal_overlay::UiMountedPortalOverlayProjectionInput;
+pub use presentation::motion_sampling::UiPresentationMotionSamplingCost;
 pub use presentation::{
     UiFocusHostPlacementReconciliationDenial, UiFocusHostPlacementReconciliationOutcome,
-    UiFocusHostPlacementReconciliationReceipt, UiFocusHostPlacementShutdownReport,
-    UiHostPresentationReconciliation, UiMountedIndeterminateFrame, UiMountedPresentationAdmission,
+    UiFocusHostPlacementReconciliationReceipt, UiFocusHostPlacementSettlementDenial,
+    UiFocusHostPlacementShutdownReport, UiHostPresentationReconciliation,
+    UiMountedIndeterminateFrame, UiMountedPresentationAdmission,
     UiMountedPresentationAdmissionDenial, UiMountedPresentationAdmissionRejection,
     UiMountedPresentationAttempt, UiMountedPresentationCompletionDenial,
     UiMountedPresentationInFlight, UiMountedPresentationOutcome, UiMountedPresentationReceipt,
@@ -93,13 +97,16 @@ pub use presentation::{
     UiPresentationIndeterminateReport,
 };
 pub(crate) use presentation::{
-    UiFocusHostPlacementSettlementDenial, UiMotionSamplePresentationOutcome,
-    UiMountedFocusPlacementDenial, UiMountedFocusPlacementRequestBasis,
-    UiMountedHostPresentationAuthority, UiMountedPresentationCoordinator,
-    UiMountedSupersedingPresentationBasis,
+    UiMotionSamplePresentationOutcome, UiMountedFocusPlacementDenial,
+    UiMountedFocusPlacementRequestBasis, UiMountedHostPresentationAuthority,
+    UiMountedPresentationCoordinator, UiMountedSupersedingPresentationBasis,
 };
 #[allow(unused_imports)]
 pub(crate) use projection::compile_presentation_sources;
+#[cfg(test)]
+pub(crate) use projection::UiMountedAppearanceClip;
+#[cfg(test)]
+pub(crate) use projection::UiMountedAppearanceClipDenial;
 pub(crate) use projection::UiMountedAppearanceProjectionSelection;
 pub(crate) use projection::UiMountedFocusScope;
 pub(crate) use projection::{
@@ -108,15 +115,15 @@ pub(crate) use projection::{
     UiPreparedMountedProjection,
 };
 pub(crate) use projection::{
-    UiMountedAppearanceClip, UiMountedAppearanceClipDenial, UiMountedAppearanceGeometryInput,
-    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,
-    UiMountedAppearanceNodeInput, UiMountedAppearanceSurfaceOverlayInput,
-    UiMountedAppearanceTextSpanInput, UiResolvedAppearanceNodeSource,
-};
-pub(crate) use projection::{
     UiMountedAppearanceFrameState, UiMountedAppearanceStateMutationDenial,
     UiMountedProjectionFrameOwner,
 };
+pub(crate) use projection::{
+    UiMountedAppearanceGeometryInput, UiMountedAppearanceLoweringDenial,
+    UiMountedAppearanceLoweringInput, UiMountedAppearanceNodeInputContext,
+    UiMountedAppearanceSurfaceOverlayInput, UiMountedAppearanceTextSpanInput,
+};
+pub use projection::{UiMountedAppearanceSelectionCostReport, UiMountedPointerAffordanceWork};
 pub use projection::{
     UiMountedNodeReceipt, UiMountedProjectionDenial, UiMountedProjectionFrame,
     UiProjectedMountedFrameCandidate,
@@ -169,17 +176,21 @@ pub(crate) use session_state::{
     UiMountedMotionSampleSettlement, UiMountedObservationValidationBasis,
     UiMountedPublicationTransition, WorthUiMountedSessionState,
 };
+pub use spatial_index::UiMountedSpatialWork;
 pub use surface_binding::{UiSurfaceBindingCoordinatePosture, UiSurfaceBindingProfile};
 pub(crate) use text_reuse::{
     UiMountedTextForegroundPresentationBasis, UiMountedTextForegroundReuseReceipt,
+};
+pub(crate) use visual_region_appearance::{
+    UiMountedAppearancePaintBasis, UiMountedRetainedAppearanceVisualMechanic,
 };
 pub(crate) use visual_region_basis::{
     UiMountedHitTestPresentation, UiMountedUnsupportedPaintBasis, UiMountedVisualRegionBasis,
 };
 
 pub use assembly::{
-    UiMountedFramePreparationDenial, UiMountedFrameReceipt, UiMountedFrameRequest,
-    UiMountedSurfaceReceipt, UiPreparedMountedFrame,
+    UiAssembledMountedFrame, UiMountedFramePreparationDenial, UiMountedFrameReceipt,
+    UiMountedFrameRequest, UiMountedSurfaceReceipt, UiPreparedMountedFrame,
 };
 pub(crate) use theme_values::{UiMountedPreviewThemeObservation, UiMountedThemeValueSource};
 pub use worth_ui_host_contract::{
@@ -193,5 +204,3 @@ pub use worth_ui_host_contract::{
 pub(crate) fn prove_paint_only_mechanic_locality() {
     projection::prove_paint_only_mechanic_locality();
 }
-
-pub(crate) use hit_test_work::UiHitTestSpatialWork;

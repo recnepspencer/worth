@@ -36,7 +36,7 @@ pub(crate) enum ExecutableSchemaTransitionFailure {
     QueryOwnerDidNotReachSecondCurrent,
     QueryGenerationMissing,
     CaptureExtentChanged,
-    ControlPointManifest,
+    VisualContract,
     StableControlRegionChanged { differing_bytes: usize },
     PostureRegionDidNotChange,
     CanonicalCurrentPostureNotRestored,
@@ -135,8 +135,8 @@ fn require_visible_preservation(
     if predecessor.width() != successor.width() || predecessor.height() != successor.height() {
         return Err(ExecutableSchemaTransitionFailure::CaptureExtentChanged);
     }
-    let manifest = super::platform_pulse_control_points::checked_in()
-        .map_err(|_| ExecutableSchemaTransitionFailure::ControlPointManifest)?;
+    let manifest = super::visual_contract_manifest::checked_in_adjudication_contract()
+        .map_err(|_| ExecutableSchemaTransitionFailure::VisualContract)?;
     let stable_control_region = scaled_region(
         manifest.schema_stable_control_region(),
         manifest.logical_client_extent(),
@@ -170,8 +170,8 @@ pub(crate) fn schema_posture_changed_pixel_bytes(
     if predecessor.width() != successor.width() || predecessor.height() != successor.height() {
         return Err(ExecutableSchemaTransitionFailure::CaptureExtentChanged);
     }
-    let manifest = super::platform_pulse_control_points::checked_in()
-        .map_err(|_| ExecutableSchemaTransitionFailure::ControlPointManifest)?;
+    let manifest = super::visual_contract_manifest::checked_in_adjudication_contract()
+        .map_err(|_| ExecutableSchemaTransitionFailure::VisualContract)?;
     let posture_region = scaled_region(
         manifest.schema_posture_region(),
         manifest.logical_client_extent(),
@@ -193,8 +193,8 @@ pub(crate) fn schema_posture_matches(
     if expected.width() != observed.width() || expected.height() != observed.height() {
         return Err(ExecutableSchemaTransitionFailure::CaptureExtentChanged);
     }
-    let manifest = super::platform_pulse_control_points::checked_in()
-        .map_err(|_| ExecutableSchemaTransitionFailure::ControlPointManifest)?;
+    let manifest = super::visual_contract_manifest::checked_in_adjudication_contract()
+        .map_err(|_| ExecutableSchemaTransitionFailure::VisualContract)?;
     let posture_region = scaled_region(
         manifest.schema_posture_region(),
         manifest.logical_client_extent(),
@@ -215,8 +215,8 @@ fn scaled_region(
     let region = [
         scale(logical[0], capture.width(), logical_extent[0]),
         scale(logical[1], capture.height(), logical_extent[1]),
-        scale(logical[2], capture.width(), logical_extent[0]),
-        scale(logical[3], capture.height(), logical_extent[1]),
+        scale(logical[0] + logical[2], capture.width(), logical_extent[0]),
+        scale(logical[1] + logical[3], capture.height(), logical_extent[1]),
     ];
     (region[0] < region[2]
         && region[1] < region[3]
@@ -294,7 +294,7 @@ impl fmt::Display for ExecutableSchemaTransitionFailure {
             }
             Self::QueryGenerationMissing => "retained Query basis omitted generation identity",
             Self::CaptureExtentChanged => "schema transition changed native capture extent",
-            Self::ControlPointManifest => "schema transition control-point manifest is invalid",
+            Self::VisualContract => "schema transition visual contract is invalid",
             Self::StableControlRegionChanged { .. } => unreachable!(),
             Self::PostureRegionDidNotChange => {
                 "schema transition did not visibly change the native posture region"

@@ -20,7 +20,7 @@ fn pointer_handoff_and_removal_translate_without_node_or_paint_work() {
             [fragment],
         )
         .unwrap();
-        let transcript = crate::translate_unpublished_appearance_for_certification(&projection)
+        let transcript = crate::translate_appearance_projection_for_certification(&projection)
             .expect("a sealed primary handoff reaches the headless boundary");
         assert_eq!(transcript.fragments().len(), 1);
         let fragment = &transcript.fragments()[0];

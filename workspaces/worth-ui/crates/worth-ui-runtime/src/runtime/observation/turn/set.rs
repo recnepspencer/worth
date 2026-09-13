@@ -22,7 +22,11 @@ impl UiAdmittedObservationSet {
         pointer_snapshot: Option<crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
         lease: super::super::resource_ledger::UiObservationSetLease,
     ) -> Self {
-        debug_assert!(!observations.is_empty() || pointer_snapshot.is_some());
+        debug_assert!(
+            !observations.is_empty()
+                || appearance_owner_snapshot.is_some()
+                || pointer_snapshot.is_some()
+        );
         let families = observations
             .iter()
             .map(UiAdmittedObservation::family)

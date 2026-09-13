@@ -31,7 +31,18 @@ pub(super) fn session_with_text(
     crate::facade::WorthUiActiveApplicationSession,
     crate::certification_support::ScriptedPresentationHost,
 ) {
-    session_with_services(role, second_order, text, false)
+    session_with_services(role, second_order, text, false, "appearance/consumer.wui")
+}
+
+pub(super) fn session_with_text_at_module(
+    role: &UiAppearanceRoleDeclaration,
+    text: crate::capability::ComponentSemanticTextContract,
+    module: &str,
+) -> (
+    crate::facade::WorthUiActiveApplicationSession,
+    crate::certification_support::ScriptedPresentationHost,
+) {
+    session_with_services(role, 65_537, Some(text), false, module)
 }
 
 pub(super) fn session_with_motion(
@@ -40,7 +51,15 @@ pub(super) fn session_with_motion(
     crate::facade::WorthUiActiveApplicationSession,
     crate::certification_support::ScriptedPresentationHost,
 ) {
-    session_with_services(role, 65_537, None, true)
+    let text = super::text_tests::text_contract();
+    let (mut session, host) =
+        session_with_services(role, 65_537, Some(text), false, "appearance/consumer.wui");
+    session.motion = crate::runtime::UiRuntimeServiceInstallation::from_optional(Some(
+        crate::runtime::motion::UiMotionRuntimeState::new(
+            crate::runtime::UiServiceStatePersistencePosture::Ephemeral,
+        ),
+    ));
+    (session, host)
 }
 
 fn session_with_services(
@@ -48,6 +67,7 @@ fn session_with_services(
     second_order: u32,
     text: Option<crate::capability::ComponentSemanticTextContract>,
     motion: bool,
+    module: &str,
 ) -> (
     crate::facade::WorthUiActiveApplicationSession,
     crate::certification_support::ScriptedPresentationHost,
@@ -73,6 +93,7 @@ fn session_with_services(
             role,
             "focus-initial-source",
             motion,
+            module,
         ))
         .freeze()
         .map(|application| {
@@ -108,21 +129,24 @@ fn builder(
         crate::evidence::measurement::projection::fact_test_support::display_field_projection_context(
             "appearance-focus-neighborhoods",
         );
-    let token = crate::capability::ThemeTokenId::new(support::LEGACY_STATIC_PAINT_TOKEN).unwrap();
+    let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_BASE_TOKEN).unwrap();
     let component = |name, paint_order| {
-        support::static_paint_component(name, token.clone())
+        support::appearance_component(name, token.clone())
             .with_surface_paint_order(paint_order)
             .with_focus(crate::capability::ComponentFocusSupport::focusable())
     };
     let mut first = component(support::APPEARANCE_NODE_A, 65_536);
     if let Some(text) = text {
-        first = first
-            .with_semantic_text(text)
-            .with_appearance_aspect_contract(
-                UiAppearanceAspectContract::component([UiAppearanceAspect::Foreground], [])
-                    .unwrap(),
-            )
-            .unwrap();
+        first = first.with_semantic_text(text);
+        if role
+            .partitions()
+            .iter()
+            .any(|(aspect, _)| *aspect == UiAppearanceAspect::Foreground)
+        {
+            first = first
+                .with_appearance_aspect_contract(role.aspect_contract().clone())
+                .unwrap();
+        }
     }
     crate::facade::WorthUi::app()
         .with_focus_policy_defaults(crate::declaration::UiFocusPolicy::workbench())
@@ -241,21 +265,19 @@ pub(super) fn close_source(
     close_source_with_services(session, role, source_name, false);
 }
 
-pub(super) fn close_source_with_motion(
-    session: &mut crate::facade::WorthUiActiveApplicationSession,
-    role: &UiAppearanceRoleDeclaration,
-    source_name: &str,
-) {
-    close_source_with_services(session, role, source_name, true);
-}
-
 fn close_source_with_services(
     session: &mut crate::facade::WorthUiActiveApplicationSession,
     role: &UiAppearanceRoleDeclaration,
     source_name: &str,
     motion: bool,
 ) {
-    let candidate = source(session.capabilities(), role, source_name, motion);
+    let candidate = source(
+        session.capabilities(),
+        role,
+        source_name,
+        motion,
+        "appearance/consumer.wui",
+    );
     let mut turn = session.begin_observation_turn().unwrap();
     turn.admit_source(candidate).unwrap();
     let observations = turn.seal().unwrap();
@@ -267,41 +289,11 @@ fn source(
     role: &UiAppearanceRoleDeclaration,
     source_name: &str,
     motion: bool,
+    module: &str,
 ) -> crate::runtime::WorthUiWatchedCandidateSubmission {
-    let mut text = String::from("focus appearance.focus { scope workbench; restore; reveal; }\n");
-    if motion {
-        text.push_str("motion appearance.motion { reduced system_respecting }\n");
-    }
-    for (component, role_name) in [
-        (support::APPEARANCE_NODE_A, role.role().as_str()),
-        (support::APPEARANCE_NODE_B, "test.focus.b"),
-    ] {
-        let aspect = if component == support::APPEARANCE_NODE_A
-            && role
-                .partitions()
-                .iter()
-                .any(|(aspect, _)| *aspect == UiAppearanceAspect::Foreground)
-        {
-            "foreground"
-        } else {
-            "background"
-        };
-        text.push_str(&format!(
-            "appearance role {role_name} applies_to {component} {{ {aspect} over [focus] {{\n"
-        ));
-        for (_, label, red) in states() {
-            text.push_str(&format!(
-                "cell {label} when focus = {label} use token(focus.color.c{red})\n"
-            ));
-        }
-        text.push_str("} }\n");
-        text.push_str(&format!(
-            "component {component} {{ appearance {{ role {role_name} }} region workspace.region.primary {{ sizing workspace.sizing.mosaic_support; }} }}\n",
-        ));
-    }
+    let text = source_text(role, motion);
     crate::runtime::tests::source_ingress_boundary_test_support::lower_file_submission(
-        crate::runtime::WorthUiSourceProvider::in_memory(source_name)
-            .with_file("appearance/consumer.wui", text),
+        crate::runtime::WorthUiSourceProvider::in_memory(source_name).with_file(module, text),
         [crate::runtime::WorthUiWatcherEvent::provider_revision(
             source_name,
         )],
@@ -337,4 +329,46 @@ pub(super) fn publish(
         }
         other => panic!("publication {now}: {:?}", std::mem::discriminant(&other)),
     }
+}
+
+pub(super) fn source_text(role: &UiAppearanceRoleDeclaration, motion: bool) -> String {
+    let mut text = String::from("focus appearance.focus { scope workbench; restore; reveal; }\n");
+    if motion {
+        text.push_str("motion appearance.motion { reduced system_respecting }\n");
+    }
+    for (component, role_name) in [
+        (support::APPEARANCE_NODE_A, role.role().as_str()),
+        (support::APPEARANCE_NODE_B, "test.focus.b"),
+    ] {
+        text.push_str(&format!(
+            "appearance role {role_name} applies_to {component} {{\n"
+        ));
+        let aspects = if component == support::APPEARANCE_NODE_A {
+            role.partitions()
+                .iter()
+                .map(|(aspect, _)| *aspect)
+                .collect::<Vec<_>>()
+        } else {
+            vec![UiAppearanceAspect::Background]
+        };
+        for aspect in aspects {
+            let aspect = match aspect {
+                UiAppearanceAspect::Background => "background",
+                UiAppearanceAspect::Foreground => "foreground",
+                _ => unreachable!("focus fixture only authors color aspects"),
+            };
+            text.push_str(&format!("{aspect} over [focus] {{\n"));
+            for (_, label, red) in states() {
+                text.push_str(&format!(
+                    "cell {label} when focus = {label} use token(focus.color.c{red})\n"
+                ));
+            }
+            text.push_str("}\n");
+        }
+        text.push_str("}\n");
+        text.push_str(&format!(
+            "component {component} {{ appearance {{ role {role_name} }} region workspace.region.primary {{ sizing workspace.sizing.mosaic_support; }} }}\n",
+        ));
+    }
+    text
 }

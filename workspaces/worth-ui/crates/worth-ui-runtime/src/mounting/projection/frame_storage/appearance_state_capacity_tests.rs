@@ -78,7 +78,9 @@ fn appearance_state_capacity_preserves_predecessor_at_4097th_membership() {
             .retained_entry_for_test(&retained)
             .expect("predecessor remains retained")
             .key,
-        super::super::state_key(&retained)
+        crate::mounting::projection::frame_storage::appearance_state_membership::state_key(
+            &retained
+        )
     );
 
     let _ = session.shutdown();

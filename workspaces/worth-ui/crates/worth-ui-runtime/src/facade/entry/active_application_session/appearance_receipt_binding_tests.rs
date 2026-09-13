@@ -1,6 +1,4 @@
-use super::role_support::{
-    single_aspect_role, staged_test_host_profile, theme_bundle, theme_definition, update_theme,
-};
+use super::role_support::{single_aspect_role, theme_bundle, theme_definition, update_theme};
 use super::support;
 use crate::runtime::tests::{
     active_application_session_test_support, appearance_component_session_test_support,
@@ -12,7 +10,7 @@ mod admission_tests;
 #[test]
 fn application_replacement_rebinds_selected_definition_to_successor_generation() {
     let mut session =
-        appearance_component_session_test_support::source_backed_static_paint_consumer_session();
+        appearance_component_session_test_support::source_backed_appearance_consumer_session();
     let role = appearance_component_session_test_support::validation_background_role(
         support::APPEARANCE_TOKEN,
     );
@@ -74,9 +72,8 @@ fn application_replacement_rebinds_selected_definition_to_successor_generation()
         after.capability().host_profile(),
         before.capability().host_profile()
     );
-    assert!(session
-        .presentation
-        .appearance_theme_resolution_view(session.capabilities(), &role, surface, &successor,)
+    assert!(crate::runtime::presentation_state::UiApplicationPresentationState::resolve_appearance_theme_binding(
+        session.capabilities(), &role, surface, &successor, after)
         .is_ok());
     let _ = session.shutdown();
 }
@@ -85,7 +82,7 @@ fn application_replacement_rebinds_selected_definition_to_successor_generation()
 fn evidence_only_rebind_materializes_first_appearance_binding() {
     let role = support::validation_background_role(support::APPEARANCE_TOKEN);
     let mut session =
-        appearance_component_session_test_support::source_backed_static_paint_consumer_session();
+        appearance_component_session_test_support::source_backed_appearance_consumer_session();
     assert!(session
         .presentation
         .appearance_theme_state()
@@ -163,69 +160,6 @@ fn evidence_only_rebind_materializes_first_appearance_binding() {
 }
 
 #[test]
-fn appearance_resolution_denies_missing_active_theme_binding() {
-    let role = single_aspect_role(
-        "test.receipt-missing-binding",
-        worth_ui_dsl::UiAppearanceAspect::Background,
-        support::APPEARANCE_TOKEN,
-    );
-    let mut session = theme_capable_unbound_session(&role);
-    let surface = session.create_semantic_surface().unwrap();
-    assert!(session
-        .presentation
-        .remove_appearance_theme_binding_for_test(surface));
-    let denial = session
-        .presentation
-        .appearance_theme_resolution_view(
-            session.capabilities(),
-            &role,
-            surface,
-            &session.active_generation_identity(),
-        )
-        .unwrap_err();
-
-    assert_eq!(
-        denial,
-        crate::runtime::presentation_state::UiAppearanceThemeBindingDenial::MissingActiveBinding
-    );
-    let _ = session.shutdown();
-}
-
-#[test]
-fn appearance_resolution_denies_typed_values_from_stale_binding_authority() {
-    let role = single_aspect_role(
-        "test.receipt-stale-binding",
-        worth_ui_dsl::UiAppearanceAspect::Background,
-        support::APPEARANCE_TOKEN,
-    );
-    let mut fixture = super::mounted_fixture(&role, &[], false);
-    update_theme(&mut fixture.session, "#405060");
-    super::publish_frame(&mut fixture.session, 1);
-
-    let successor = issue_capability(&fixture.session, &role, fixture.surface, "receipt-new", 2);
-    fixture
-        .session
-        .presentation
-        .replace_appearance_theme_binding_for_test(successor);
-    let denial = fixture
-        .session
-        .presentation
-        .appearance_theme_resolution_view(
-            fixture.session.capabilities(),
-            &role,
-            fixture.surface,
-            &fixture.session.active_generation_identity(),
-        )
-        .unwrap_err();
-
-    assert_eq!(
-        denial,
-        crate::runtime::presentation_state::UiAppearanceThemeBindingDenial::StaleTypedValues
-    );
-    super::query_support::shutdown(fixture.session);
-}
-
-#[test]
 fn materializing_later_surface_preserves_existing_typed_theme_values() {
     let role = single_aspect_role(
         "test.receipt-later-surface",
@@ -238,13 +172,12 @@ fn materializing_later_surface_preserves_existing_typed_theme_values() {
     let second = session.create_semantic_surface().unwrap();
     assert_ne!(first, second);
 
-    let view = session
-        .presentation
-        .appearance_theme_resolution_view(
+    let view = crate::runtime::presentation_state::UiApplicationPresentationState::resolve_appearance_theme_binding(
             session.capabilities(),
             &role,
             first,
             &session.active_generation_identity(),
+            session.presentation.active_appearance_theme_binding(first).unwrap(),
         )
         .unwrap();
     let resolved = view
@@ -276,7 +209,7 @@ fn theme_capable_application(
     role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
     host: crate::certification_support::ScriptedPresentationHost,
 ) -> crate::facade::WorthUiApp {
-    support::legacy_static_paint_appearance_component_builder(role)
+    support::alternate_token_appearance_component_builder(role)
         .register_appearance_theme_bundle(theme_bundle(&[], None))
         .unwrap()
         .with_rust_authored_declaration_fixture(support::appearance_fixture(role))
@@ -288,50 +221,4 @@ fn theme_capable_application(
             )
         })
         .expect("theme-capable fixture should prepare")
-}
-
-fn issue_capability(
-    session: &crate::facade::WorthUiActiveApplicationSession,
-    role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
-    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    host_identity: &str,
-    host_version: u16,
-) -> crate::runtime::appearance::UiThemeCapabilityReceipt {
-    issue_capability_for_definition(
-        session,
-        role,
-        surface,
-        "theme.appearance.receipts",
-        host_identity,
-        host_version,
-    )
-}
-
-fn issue_capability_for_definition(
-    session: &crate::facade::WorthUiActiveApplicationSession,
-    role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
-    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    definition_identity: &str,
-    host_identity: &str,
-    host_version: u16,
-) -> crate::runtime::appearance::UiThemeCapabilityReceipt {
-    let themes = session
-        .capabilities()
-        .appearance_themes()
-        .expect("binding fixture has frozen appearance themes");
-    let definition = theme_definition(themes, definition_identity);
-    let profile = staged_test_host_profile(host_identity, host_version);
-    crate::runtime::appearance::UiThemeCapabilityAdmission::from_frozen_capabilities(
-        themes,
-        definition.identity(),
-        session.capabilities().appearance_roles(),
-        &profile,
-    )
-    .unwrap()
-    .issue(
-        [role.role().clone()],
-        surface,
-        session.active_generation_identity(),
-    )
-    .unwrap()
 }

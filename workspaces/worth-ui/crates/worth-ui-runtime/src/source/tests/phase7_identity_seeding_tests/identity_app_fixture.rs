@@ -14,8 +14,8 @@ use crate::capability::{
     MosaicStatePersistencePolicy, MosaicStateReplacementRule, MosaicStateSlotDescriptor,
     MosaicStateSlotId, MosaicStateSlotKind, MosaicStateTruthPosture, MosaicViewportConstraint,
     NamedMeasurementDefinition, NamedMeasurementToken, SurfaceDescriptor, SurfaceId, SurfaceKind,
-    SurfacePlacementClass, SurfaceStateClass, ThemeColorValue, ThemeTokenAlias,
-    ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    SurfacePlacementClass, SurfaceStateClass, ThemeTokenAlias, ThemeTokenDescriptor,
+    ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue, UiThemeColor,
     ViewBindingDescriptor, ViewBindingId,
 };
 use crate::facade::{WorthUi, WorthUiApp};
@@ -78,7 +78,7 @@ pub(crate) fn identity_test_app() -> WorthUiApp {
             ThemeTokenId::new("theme.text.primary").unwrap(),
             ThemeTokenFamily::text(),
             ThemeTokenSource::application(),
-            ThemeTokenValue::color(ThemeColorValue::hex("#101820").unwrap()),
+            ThemeTokenValue::color(UiThemeColor::parse("#101820").unwrap()),
         ))
         .register_theme_token(ThemeTokenDescriptor::alias(
             ThemeTokenId::new("theme.text.default").unwrap(),

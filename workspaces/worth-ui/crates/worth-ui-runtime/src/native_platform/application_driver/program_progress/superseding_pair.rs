@@ -76,9 +76,6 @@ impl UiNativeApplicationProgramProgress {
         shell
             .apply_component_semantic_text(frame.semantic_text())
             .map_err(|_| ())?;
-        shell
-            .apply_theme_token_values(frame.theme_values())
-            .map_err(|_| ())?;
         self.next_change_frame = self.next_change_frame.checked_add(1).ok_or(())?;
         Ok(true)
     }

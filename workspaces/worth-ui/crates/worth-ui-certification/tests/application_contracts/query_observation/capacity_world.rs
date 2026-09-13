@@ -166,7 +166,7 @@ fn source_candidate(
     provider: &str,
 ) -> worth_ui::facade::source::WorthUiWatchedCandidateSubmission {
     let source = WorthUiSourceProvider::rust_authored(provider).with_rust_authored_input(
-        WorthUiRustAuthoredArtifactInput::from_modules([collection_module(false)]),
+        WorthUiRustAuthoredArtifactInput::from_modules([collection_module()]),
     );
     WorthUiSourceEventIngress::new(source)
         .start()

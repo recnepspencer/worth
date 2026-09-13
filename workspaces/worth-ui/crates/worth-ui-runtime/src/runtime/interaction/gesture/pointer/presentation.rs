@@ -29,6 +29,7 @@ impl super::UiPointerGestureRuntimeState {
                 trigger.presentation(),
                 active.position,
                 mounted,
+                &mut Default::default(),
             )? {
                 updates.push((*pointer, appearance));
             }
@@ -92,7 +93,13 @@ impl super::UiPointerGestureRuntimeState {
                 )?
             {
                 report.retested += 1;
-                appearance.refresh(&active.target, *presentation, active.position, mounted)?;
+                appearance.refresh(
+                    &active.target,
+                    *presentation,
+                    active.position,
+                    mounted,
+                    neighborhood_work,
+                )?;
             } else {
                 appearance.refresh_evidence(&active.target, *presentation, mounted)?;
             }

@@ -13,9 +13,6 @@ pub(super) fn initial_after_stale_frame(
     tick: u64,
     now: Instant,
 ) -> Result<PlatformPulseVisualIdentityState, PlatformPulseVisualExecutionDenial> {
-    if super::replacement::portal_active(shell) {
-        return Ok(PlatformPulseVisualIdentityState::DeferredCapture);
-    }
     restart(
         shell,
         tick,
@@ -29,9 +26,6 @@ pub(super) fn rebase_after_stale_frame(
     tick: u64,
     now: Instant,
 ) -> Result<PlatformPulseVisualIdentityState, PlatformPulseVisualExecutionDenial> {
-    if super::replacement::portal_active(shell) {
-        return Ok(PlatformPulseVisualIdentityState::DeferredRebase);
-    }
     restart(
         shell,
         tick,
@@ -46,11 +40,6 @@ pub(super) fn refresh_after_stale_frame(
     predecessor: PlatformPulseRetainedSnapshot,
     now: Instant,
 ) -> Result<PlatformPulseVisualIdentityState, PlatformPulseVisualExecutionDenial> {
-    if super::replacement::portal_active(shell) {
-        return Ok(PlatformPulseVisualIdentityState::DeferredRefresh(
-            predecessor,
-        ));
-    }
     restart_refresh(shell, tick, predecessor, CaptureRestartBudget::FreshAt(now))
 }
 

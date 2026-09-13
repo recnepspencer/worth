@@ -18,6 +18,7 @@ use worth_ui_platform_pulse::observation_contract::{
 mod focus;
 mod intent;
 mod query;
+mod theme;
 
 const MAXIMUM_EVENTS: usize = 256;
 const MAXIMUM_ENCODED_BYTES: usize = 1_048_576;
@@ -49,6 +50,18 @@ pub(crate) enum PlatformPulseObservationPublicationDenial {
 }
 
 impl PlatformPulseObservationPublisher {
+    pub(crate) fn mounted_content_published(
+        &self,
+        receipt: &UiMountedFramePublicationReceipt,
+    ) -> Result<(), PlatformPulseObservationPublicationDenial> {
+        self.with_publication(|publication| {
+            publication
+                .stream
+                .observe_mounted_content_publication(receipt)
+                .map_err(PlatformPulseObservationPublicationDenial::Projection)
+        })
+    }
+
     pub(crate) fn appearance_preparation_failure(
         &self,
     ) -> Result<(), PlatformPulseObservationPublicationDenial> {

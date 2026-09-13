@@ -5,7 +5,14 @@ use worth_ui_host_contract::*;
 fn standing_observation_precedes_activation_and_tracks_stationary_dependencies_without_a_role() {
     let role = super::fixture::role();
     let source = super::fixture::source_with_role(None, 2);
-    let (mut session, host) = super::fixture::session_with_source(&role, source);
+    let component = super::fixture::component().with_semantic_text(
+        crate::capability::ComponentSemanticTextContract::body_default(
+            crate::capability::ThemeTokenId::new(super::super::support::APPEARANCE_BASE_TOKEN)
+                .unwrap(),
+            7,
+        ),
+    );
+    let (mut session, host) = super::fixture::session_with_component(&role, source, component);
     let graph = session
         .graph()
         .node_identities()
@@ -27,12 +34,28 @@ fn standing_observation_precedes_activation_and_tracks_stationary_dependencies_w
         .iter()
         .all(|node| node.appearance_role_attachment().is_none()));
     let (surface, _) = super::super::mounting_fixture::mount_graph_node(&mut session, 1_000, graph);
-    session.advance_mounted_identity_frame().unwrap();
+    session
+        .admit_application_semantic_text(&[
+            crate::native_platform::UiNativeComponentSemanticTextChange::new(
+                format!("component:{}", super::super::support::APPEARANCE_NODE_A),
+                "Ready",
+            )
+            .unwrap(),
+        ])
+        .unwrap();
     let frame = super::prepare(&mut session);
-    super::publish(&mut session, &host, frame, 1);
+    host.push_native_display_presented();
+    assert!(matches!(
+        session.present_prepared_mounted_frame_internal(
+            frame,
+            UiPresentationDeadline::at_tick(100),
+            1,
+        ),
+        crate::mounting::UiMountedFrameOutcome::Published(_)
+    ));
     let target = target_at_center(&session, surface);
     let baseline = session.intent_admission_metrics();
-    let ready = session.observe_activation_operability(target).unwrap();
+    let ready = observe(&session, target).unwrap();
     assert_eq!(ready.generation(), &session.active_generation_identity());
     assert_eq!(ready.graph_node(), graph);
     assert_eq!(ready.target().node_receipt(), target.node_receipt());
@@ -46,7 +69,7 @@ fn standing_observation_precedes_activation_and_tracks_stationary_dependencies_w
     session
         .update_intent_boolean_fact(&super::fixture::fact(super::fixture::MUTABLE), false)
         .unwrap();
-    let readonly = session.observe_activation_operability(target).unwrap();
+    let readonly = observe(&session, target).unwrap();
     assert_eq!(
         readonly.product_decision().unwrap().primary_cause(),
         Some(UiIntentInoperableCause::Readonly)
@@ -54,7 +77,7 @@ fn standing_observation_precedes_activation_and_tracks_stationary_dependencies_w
     session
         .update_intent_boolean_fact(&super::fixture::fact(super::fixture::POLICY), false)
         .unwrap();
-    let denied = session.observe_activation_operability(target).unwrap();
+    let denied = observe(&session, target).unwrap();
     assert_eq!(
         denied.product_decision().unwrap().primary_cause(),
         Some(UiIntentInoperableCause::PolicyDenied)
@@ -75,11 +98,18 @@ fn standing_observation_precedes_activation_and_tracks_stationary_dependencies_w
     );
 
     advance_motion_epoch(&mut session, &host, target);
+    let Err(expired) = observe(&session, target) else {
+        panic!("old physical epoch")
+    };
+    assert!(matches!(expired.inspection(),
+        worth_ui_inspection::UiPointerAffordanceInspectionUnavailable::Presentation {
+            cause: worth_ui_inspection::UiPointerAffordanceInspectionPresentationDenial::PresentationEpochMismatch, ..
+        }));
     assert!(
         matches!(
-            session.observe_activation_operability(target),
+            observe(&session, target),
             Err(UiIntentStandingOperabilityUnavailable::Presentation(
-                crate::mounting::UiPresentedFrameBasisDenial::PresentationEpochMismatch { .. }
+                crate::mounting::UiPresentedFrameBasisDenial::PresentationEpochMismatch
             ))
         ),
         "a retained node receipt cannot freshen an old physical target"
@@ -91,8 +121,7 @@ fn standing_observation_precedes_activation_and_tracks_stationary_dependencies_w
         target.presentation().epoch()
     );
     assert_eq!(
-        session
-            .observe_activation_operability(current_target)
+        observe(&session, current_target)
             .unwrap()
             .product_decision()
             .unwrap()
@@ -102,8 +131,16 @@ fn standing_observation_precedes_activation_and_tracks_stationary_dependencies_w
     session
         .unmount_instance(current_target.mounted_instance())
         .unwrap();
+    let Err(unmounted) = observe(&session, current_target) else {
+        panic!("unmounted target")
+    };
+    assert!(matches!(unmounted.inspection(),
+        worth_ui_inspection::UiPointerAffordanceInspectionUnavailable::Target {
+            cause: worth_ui_inspection::UiPointerAffordanceInspectionTargetDenial::Targeting(
+                worth_ui_inspection::UiPointerAffordanceInspectionTargetingDenial::MountedInstanceNoLongerCurrent), ..
+        }));
     assert!(matches!(
-        session.observe_activation_operability(current_target),
+        observe(&session, current_target),
         Err(UiIntentStandingOperabilityUnavailable::Target(_))
     ));
     let _ = session.shutdown();
@@ -122,11 +159,11 @@ fn standing_observation_rejects_missing_activation_and_matches_real_payload_eval
         let target = target_at_center(&session, surface);
         if routes == 0 {
             assert!(matches!(
-                session.observe_activation_operability(target),
+                observe(&session, target),
                 Err(UiIntentStandingOperabilityUnavailable::MissingActivationRoute)
             ));
         } else {
-            let standing = session.observe_activation_operability(target).unwrap();
+            let standing = observe(&session, target).unwrap();
             let (_, actual) = super::activate(&mut session, surface, 1);
             assert_eq!(
                 standing.product_decision().unwrap(),
@@ -136,6 +173,31 @@ fn standing_observation_rejects_missing_activation_and_matches_real_payload_eval
         }
         let _ = session.shutdown();
     }
+}
+
+fn observe(
+    session: &crate::facade::WorthUiActiveApplicationSession,
+    target: crate::runtime::interaction::UiPresentedInteractionTargetView,
+) -> Result<
+    crate::runtime::intent::UiIntentStandingOperabilityObservation,
+    UiIntentStandingOperabilityUnavailable,
+> {
+    let prepared = session.application.prepared_authority();
+    crate::runtime::intent::observe_activation_operability(
+        target,
+        prepared.intent_catalog(),
+        prepared.capabilities().intent_definitions(),
+        prepared.intent_execution_bindings(),
+        &session.active_generation_identity(),
+        &session.mounted,
+        &session.intent_application_facts,
+        session.intent_execution.occupancy(),
+        &session.intent_confirmation,
+        session
+            .observation_clock
+            .as_ref()
+            .map(|clock| UiHostObservationTimeBasis::HostMonotonicMillis(clock.sample_millis())),
+    )
 }
 
 fn advance_motion_epoch(
@@ -215,6 +277,7 @@ fn target_at_center(
         &session.mounted,
         presentation,
         position,
+        &mut Default::default(),
     )
     .unwrap()
     .view()

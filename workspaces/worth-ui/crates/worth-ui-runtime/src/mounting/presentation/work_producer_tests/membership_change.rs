@@ -48,9 +48,12 @@ fn removal_and_insert_carry_exact_identities_vacated_damage_and_total_order() {
         panic!("membership change must produce delta work");
     };
     assert_eq!(delta.changes().len(), 2);
-    let removed = UiMountedPaintCommandIdentity::filled_rect(&predecessor.filled_rects().rows()[0]);
-    let retained = UiMountedPaintCommandIdentity::filled_rect(&successor.filled_rects().rows()[0]);
-    let inserted = UiMountedPaintCommandIdentity::filled_rect(&successor.filled_rects().rows()[1]);
+    let removed =
+        UiMountedPaintCommandIdentity::portal_overlay(&predecessor.portal_overlays().rows()[0]);
+    let retained =
+        UiMountedPaintCommandIdentity::portal_overlay(&successor.portal_overlays().rows()[0]);
+    let inserted =
+        UiMountedPaintCommandIdentity::portal_overlay(&successor.portal_overlays().rows()[1]);
     assert!(delta.changes().iter().any(|change| matches!(
         change,
         worth_ui_host_contract::UiMountedPaintCommandChange::Remove(identity) if *identity == removed

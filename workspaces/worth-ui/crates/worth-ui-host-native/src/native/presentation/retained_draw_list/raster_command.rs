@@ -50,22 +50,6 @@ impl UiNativeRetainedDrawList {
         let sample = self.sample_override(identity);
         let opacity = sample.map_or(1.0, |sample| sample.opacity().factor());
         let operation = match command {
-            UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-                let Some(bounds) = super::sampled_visible_bounds(command, sample)
-                    .map_err(|_| Denial::CommandMismatch)?
-                else {
-                    return Ok(Vec::new());
-                };
-                raster_damage_for_basis(bounds, basis)
-                    .map_err(|_| Denial::CommandMismatch)?
-                    .map(|rect| UiNativeRasterOperation::FilledRect {
-                        rect,
-                        source_rgba8: crate::native::presentation::retained_raster::sampled_color(
-                            mechanic.color().channels(),
-                            opacity,
-                        ),
-                    })
-            }
             UiMountedPaintCommand::PortalOverlay { mechanic, .. } => {
                 let Some(bounds) = super::sampled_visible_bounds(command, sample)
                     .map_err(|_| Denial::CommandMismatch)?
@@ -177,7 +161,7 @@ impl UiNativeRetainedDrawList {
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
         portal: bool,
     ) -> Result<Option<UiMountedPresentationSampleChange>, Denial> {
-        let samples = self
+        let mut samples = self
             .commands
             .identities_for_instance(instance)
             .filter_map(|identity| {
@@ -188,6 +172,11 @@ impl UiNativeRetainedDrawList {
                     .flatten()
             })
             .collect::<Vec<_>>();
+        if !portal {
+            samples.extend(
+                self.sample_override(UiMountedPaintCommandIdentity::appearance_surface(instance)),
+            );
+        }
         let mut selected = None;
         for sample in samples {
             if selected.is_some_and(|current: UiMountedPresentationSampleChange| {

@@ -31,7 +31,7 @@ pub(in crate::mounting::presentation) struct UiPreparedCommandMotionAcceptance {
 pub(in crate::mounting::presentation) enum UiCommandMotionAcceptanceDenial {
     PresentationChanged,
     CommandReplaced,
-    SampleBasis(super::super::motion_sampling::UiPresentationGeometrySamplingDenial),
+    SampleBasis,
 }
 
 impl UiPreparedCommandMotionAcceptance {
@@ -64,7 +64,7 @@ impl UiPreparedCommandMotionAcceptance {
             update.sample = update
                 .sample
                 .with_presentation_basis(presentation)
-                .map_err(UiCommandMotionAcceptanceDenial::SampleBasis)?;
+                .map_err(|_| UiCommandMotionAcceptanceDenial::SampleBasis)?;
         }
         for update in self.updates {
             update.slot.0.set(Some(update.sample));
@@ -80,27 +80,35 @@ impl UiMountedPresentationState {
     ) -> Vec<worth_ui_host_contract::UiMountedPresentationSampleChange> {
         instances
             .iter()
-            .flat_map(|instance| self.command_identities_for_instance(*instance))
-            .filter_map(|identity| {
-                let sample = self.motion_for_command(identity)??;
-                let command = self.command_option(identity)?;
-                let transform = super::motion_sample::sample_transform(
-                    sample,
-                    command.clip_bounds().coordinate_space(),
-                )
-                .ok()?;
-                Some(
-                    worth_ui_host_contract::UiMountedPresentationSampleChange::from_runtime_sampling(
-                        identity,
-                        transform,
-                        super::super::compose_opacity(
-                            self.appearance_opacity_for_command(identity),
-                            sample.opacity_units(),
-                        ),
-                    ),
-                )
+            .flat_map(|instance| {
+                self.command_identities_for_instance(*instance)
+                    .filter_map(|identity| self.command_sample_change(identity))
+                    .chain(self.appearance_surface_sample_change(*instance))
             })
             .collect()
+    }
+
+    fn command_sample_change(
+        &self,
+        identity: UiMountedPaintCommandIdentity,
+    ) -> Option<worth_ui_host_contract::UiMountedPresentationSampleChange> {
+        let sample = self.motion_for_command(identity)??;
+        let command = self.command_option(identity)?;
+        let transform = super::motion_sample::sample_transform(
+            sample,
+            command.clip_bounds().coordinate_space(),
+        )
+        .ok()?;
+        Some(
+            worth_ui_host_contract::UiMountedPresentationSampleChange::from_runtime_sampling(
+                identity,
+                transform,
+                super::super::compose_opacity(
+                    self.appearance_opacity_for_command(identity),
+                    sample.opacity_units(),
+                ),
+            ),
+        )
     }
 
     pub(super) fn prepare_command_motion_update(
@@ -122,6 +130,11 @@ impl UiMountedPresentationState {
         &self,
         command: UiMountedPaintCommandIdentity,
     ) -> Option<&UiCommandMotionAcceptance> {
+        if command.is_appearance_surface() {
+            return self
+                .appearance_surface_sample_target(command.mounted_instance())
+                .map(super::state::UiMountedAppearanceSurfaceSampleTarget::motion);
+        }
         self.commands_by_instance
             .get(&command.mounted_instance())?
             .motion_slot(command)
@@ -159,6 +172,7 @@ impl UiMountedPresentationState {
         if self.requirement.semantic_surface() != predecessor.requirement.semantic_surface() {
             return;
         }
+        self.inherit_appearance_surface_targets(predecessor);
         let affected = predecessor
             .rebound_from_binding
             .unwrap_or_else(|| predecessor.requirement.binding());
@@ -206,6 +220,10 @@ impl UiMountedPresentationState {
                     ),
                 )
             })
+            .chain(
+                self.bound_appearance_surface_instances()
+                    .filter_map(|instance| self.appearance_surface_sample_change(instance)),
+            )
             .collect()
     }
 }

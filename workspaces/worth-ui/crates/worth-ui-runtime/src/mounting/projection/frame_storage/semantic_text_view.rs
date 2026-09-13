@@ -36,12 +36,13 @@ impl UiMountedProjectionFrame {
                     rows.push(row)
                 }
                 super::portal_child_view::UiMountedPortalChildPresentation::Suppressed => {}
-                super::portal_child_view::UiMountedPortalChildPresentation::Presented(portal) => {
-                    rows.extend(
-                        row.presented_within_portal(portal)
-                            .map_err(UiMountedProjectionDenial::SemanticTextCompletion)?,
-                    )
-                }
+                super::portal_child_view::UiMountedPortalChildPresentation::Presented(
+                    portal,
+                    source_anchor,
+                ) => rows.extend(
+                    row.presented_within_portal(portal, source_anchor)
+                        .map_err(UiMountedProjectionDenial::SemanticTextCompletion)?,
+                ),
             }
         }
         let mut references = UiMountedSemanticTextReferenceIndex::new();

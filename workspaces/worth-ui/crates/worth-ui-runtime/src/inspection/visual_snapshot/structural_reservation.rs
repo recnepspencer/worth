@@ -4,13 +4,19 @@ pub(crate) fn host_structural_reservation(
     regions: &crate::mounting::UiMountedVisualRegionBasis,
     trace: &crate::mounting::UiMountedIdentityTraceBasis,
 ) -> Result<u64, worth_ui_inspection::UiVisualSnapshotDenial> {
-    enforce_region_capacities(scope, regions)?;
+    let paint_count = regions
+        .appearance_paint()
+        .len()
+        .checked_add(regions.unsupported_paint().len())
+        .ok_or(worth_ui_inspection::UiVisualSnapshotDenial::CapacityExceeded)?;
+    let hit_count = regions.hit_test().len();
+    enforce_region_capacities(scope, paint_count, hit_count)?;
     let common = checked_add(
         Some(snapshot_lease.structural_bytes()),
         trace.retained_structural_bytes(),
     )?;
     let pending = checked_add(Some(common), regions.retained_structural_bytes())?;
-    let completed = checked_add(Some(common), estimated_index_bytes(regions))?;
+    let completed = checked_add(Some(common), estimated_index_bytes(paint_count, hit_count))?;
     let reservation = u64::try_from(pending.max(completed))
         .map_err(|_| worth_ui_inspection::UiVisualSnapshotDenial::CapacityExceeded)?;
     if reservation > scope.maximum_retained_structural_bytes_per_receipt() {
@@ -38,32 +44,21 @@ pub(crate) fn retained_snapshot_structure(
 
 fn enforce_region_capacities(
     scope: super::UiVisualGrantScope,
-    regions: &crate::mounting::UiMountedVisualRegionBasis,
+    paint_count: usize,
+    hit_count: usize,
 ) -> Result<(), worth_ui_inspection::UiVisualSnapshotDenial> {
-    let paint = regions.paint();
-    let unsupported_paint = regions.unsupported_paint();
-    let hit_test = regions.hit_test();
-    if paint.len().saturating_add(unsupported_paint.len())
-        > usize::try_from(scope.maximum_visible_region_records()).unwrap_or(usize::MAX)
-    {
+    if paint_count > usize::try_from(scope.maximum_visible_region_records()).unwrap_or(usize::MAX) {
         return Err(worth_ui_inspection::UiVisualSnapshotDenial::VisibleRegionCapacityExceeded);
     }
-    if hit_test.len()
-        > usize::try_from(scope.maximum_hit_test_region_records()).unwrap_or(usize::MAX)
-    {
+    if hit_count > usize::try_from(scope.maximum_hit_test_region_records()).unwrap_or(usize::MAX) {
         return Err(worth_ui_inspection::UiVisualSnapshotDenial::HitTestRegionCapacityExceeded);
     }
     Ok(())
 }
 
-fn estimated_index_bytes(regions: &crate::mounting::UiMountedVisualRegionBasis) -> Option<usize> {
-    let paint = regions.paint();
-    let unsupported_paint = regions.unsupported_paint();
-    let hit_test = regions.hit_test();
-    super::UiVisibleRegionIndex::estimated_retained_structural_bytes(
-        paint.len().checked_add(unsupported_paint.len())?,
-    )?
-    .checked_add(super::UiHitTestRegionIndex::estimated_retained_structural_bytes(hit_test.len())?)
+fn estimated_index_bytes(paint_count: usize, hit_count: usize) -> Option<usize> {
+    super::UiVisibleRegionIndex::estimated_retained_structural_bytes(paint_count)?
+        .checked_add(super::UiHitTestRegionIndex::estimated_retained_structural_bytes(hit_count)?)
 }
 
 fn checked_add(

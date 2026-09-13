@@ -10,7 +10,10 @@ pub(in crate::mounting::projection) struct UiMountedAppearanceGeometry {
     pub(super) allocation: worth_ui_host_contract::UiMountedAllocationProjection,
     pub(super) clip: Clip,
     pub(super) portal_group: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
-    pub(super) portal_presentation: Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
+    pub(super) portal_presentation: Option<(
+        worth_ui_host_contract::UiMountedPortalOverlayMechanic,
+        worth_ui_host_contract::UiMountedCanonicalBox,
+    )>,
     pub(super) surface_paint_posture: crate::mounting::UiMountedSurfacePaintPosture,
 }
 
@@ -47,6 +50,12 @@ impl UiMountedAppearanceGeometry {
     ) -> worth_ui_host_contract::UiMountedAllocationProjection {
         self.allocation
     }
+
+    pub(in crate::mounting::projection) const fn portal_group(
+        &self,
+    ) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
+        self.portal_group
+    }
 }
 
 impl UiMountedProjectionNodeRecord {
@@ -73,7 +82,7 @@ impl UiMountedProjectionFrame {
     pub(crate) fn appearance_clip_for_test(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-    ) -> Option<crate::mounting::UiMountedAppearanceClip> {
+    ) -> Option<crate::mounting::projection::UiMountedAppearanceClip> {
         self.semantic
             .node(instance)
             .map(UiMountedProjectionNodeRecord::completed_appearance_geometry)
@@ -150,17 +159,21 @@ impl UiMountedProjectionFrame {
                 geometry.clip = Clip::Unresolved(Denial::MountedGeometryUnavailable);
             }
             UiMountedPortalChildPresentation::Suppressed => geometry.clip = Clip::Suppressed,
-            UiMountedPortalChildPresentation::Presented(portal) => {
+            UiMountedPortalChildPresentation::Presented(portal, source_anchor) => {
                 geometry.portal_group = Some(portal.owner());
-                geometry.portal_presentation = Some(portal);
+                geometry.portal_presentation = Some((portal, source_anchor));
                 geometry.allocation = super::super::appearance::portal_presented_allocation(
                     geometry.allocation,
                     portal,
+                    source_anchor,
                 )
                 .map_err(|_| UiMountedProjectionDenial::NonFiniteGeometry)?;
-                geometry.clip =
-                    super::super::appearance::portal_ancestor_clip(geometry.clip, portal)
-                        .unwrap_or_else(|denial| Clip::Unresolved(Denial::Geometry(denial)));
+                geometry.clip = super::super::appearance::portal_ancestor_clip(
+                    geometry.clip,
+                    portal,
+                    source_anchor,
+                )
+                .unwrap_or_else(|denial| Clip::Unresolved(Denial::Geometry(denial)));
             }
         }
         Ok((

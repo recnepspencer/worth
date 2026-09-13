@@ -80,19 +80,34 @@ impl WorthUiActiveApplicationSession {
                         &candidate_graph,
                     ))
                     .map_err(WorthUiApplicationCutoverDenial::MountedIdentity)?;
-                let lifecycle = self.prepare_application_lifecycle(
+                let mut lifecycle =
+                    self.prepare_application_lifecycle(&next_mounted, &activation)?;
+                let staged_scroll = lifecycle.take_staged_scroll();
+                let scroll = self.prepare_scroll_replacement(
+                    &activation,
                     &next_mounted,
-                    activation.candidate_service_policy_plan().portal(),
+                    None,
+                    staged_scroll,
                 );
-                let scroll = self.prepare_scroll_replacement(&activation, &next_mounted, None);
                 let selection =
-                    self.prepare_selection_replacement(&activation, &next_mounted, false);
+                    self.prepare_selection_replacement(&activation, &next_mounted, None);
+                let text = self
+                    .presentation
+                    .prepare_text_succession(
+                        self.capabilities(),
+                        activation.candidate_replacement_authority().capabilities(),
+                        crate::graph::UiGraphAuthority::new(&candidate_graph),
+                    )
+                    .map_err(WorthUiApplicationCutoverDenial::MountedFrame)?;
                 let receipt = self.commit_application_activation(
                     activation,
                     next_mounted,
                     lifecycle,
                     scroll,
-                    selection,
+                    super::owner_succession::UiApplicationOwnerCutover::Unmounted {
+                        selection,
+                        text,
+                    },
                 );
                 Ok(WorthUiApplicationReplacementOutcome::Activated(Box::new(
                     receipt,

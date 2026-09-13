@@ -92,5 +92,5 @@ pub(super) fn assert_removed(
         (damage.x(), damage.y(), damage.width(), damage.height()),
         (bounds.x(), bounds.y(), bounds.width(), bounds.height())
     );
-    worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+    worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
 }

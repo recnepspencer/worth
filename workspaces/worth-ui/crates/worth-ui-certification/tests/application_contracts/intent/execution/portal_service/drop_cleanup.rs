@@ -26,8 +26,13 @@ fn dropping_indeterminate_intent_consequence_releases_exact_service_proposals() 
     host.push_presented();
     host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
     let (application, facts) = build_open_portal_application_with_host(host);
-    let mut world =
-        AdmissionWorld::launch_application_with_target(application, facts, 1, 2, [18, 20]);
+    let mut world = AdmissionWorld::launch_application_on_declared_surface(
+        application,
+        facts,
+        "visual.identity.surface.main",
+        2,
+        [18, 20],
+    );
     let handle = completed_portal_consequence(&mut world);
 
     let recovery = match world.session.publish_intent_consequences(
@@ -75,8 +80,13 @@ fn dropping_indeterminate_portal_dismissal_releases_exact_service_proposals() {
     host.push_presented();
     host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
     let (application, facts) = build_open_portal_application_with_host(host);
-    let mut world =
-        AdmissionWorld::launch_application_with_target(application, facts, 1, 2, [18, 20]);
+    let mut world = AdmissionWorld::launch_application_on_declared_surface(
+        application,
+        facts,
+        "visual.identity.surface.main",
+        2,
+        [18, 20],
+    );
     let handle = completed_portal_consequence(&mut world);
     assert!(matches!(
         world.session.publish_intent_consequences(

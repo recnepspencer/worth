@@ -51,9 +51,6 @@ impl UiAppearanceProjection {
     pub(crate) fn role(&self) -> &worth_ui_dsl::UiAppearanceRoleIdentity {
         &self.role
     }
-    pub(crate) const fn role_schema(&self) -> worth_ui_dsl::UiAppearanceRoleSchemaVersion {
-        self.role_schema
-    }
     pub(crate) const fn role_revision(&self) -> worth_ui_dsl::UiAppearanceRoleRevision {
         self.role_revision
     }
@@ -63,9 +60,6 @@ impl UiAppearanceProjection {
     pub(crate) const fn theme_revision(&self) -> u64 {
         self.theme_revision
     }
-    pub(crate) const fn catalog_revision(&self) -> u64 {
-        self.catalog_revision
-    }
     pub(crate) const fn state(&self) -> &super::super::state::UiAppearanceStateVector {
         &self.state
     }
@@ -74,9 +68,6 @@ impl UiAppearanceProjection {
     }
     pub(crate) const fn semantic_digest(&self) -> u64 {
         self.semantic_digest
-    }
-    pub(crate) fn exactly_equivalent(&self, other: &Self) -> bool {
-        self == other
     }
 }
 

@@ -84,10 +84,12 @@ fn assert_ordinary_transcript(
         transcript.nodes()[0].paint(),
         UiHeadlessNodePaintMechanic::Omitted(UiMountedOmissionReason::NotProducedByExecutedLane)
     );
-    assert_eq!(
-        transcript.nodes()[0].allocation(),
-        UiMountedAllocationProjection::Omitted(UiMountedOmissionReason::NoCommittedAllocation)
-    );
+    let UiMountedAllocationProjection::Known { bounds, .. } = transcript.nodes()[0].allocation()
+    else {
+        panic!("installed occurrence geometry must reach the headless transcript")
+    };
+    assert_eq!([bounds.x(), bounds.y()], [8.0, 12.0]);
+    assert_eq!([bounds.width(), bounds.height()], [28.0, 20.0]);
     assert_eq!(
         transcript.nodes()[0].participation().paint().status(),
         UiMountedParticipationStatus::Deferred
@@ -99,7 +101,7 @@ fn assert_ordinary_transcript(
     assert_eq!(
         transcript.unperformed_effects()[0],
         worth_ui_host_headless::UiHeadlessUnperformedEffect::NativePaint {
-            filled_rect_count: transcript.filled_rects().len() as u32,
+            appearance_mechanic_count: 0,
             portal_overlay_count: transcript.portal_overlays().len() as u32,
             semantic_text_count: transcript.semantic_text().len() as u32,
             preview_node_count: 0,
@@ -110,8 +112,13 @@ fn assert_ordinary_transcript(
 #[test]
 fn real_cross_lane_recording_preserves_exact_unperformed_external_mechanics() {
     let recorder = WorthUiHeadlessRecorder::default();
-    let (mut scenario, workspace, mut session) = launch_cross_lane(recorder.clone());
-    let (frame, binding) = prepare_cross_lane(&mut scenario, &mut session);
+    let (mut scenario, workspace, mut session) =
+        launch_cross_lane("headless-cross-lane-recording", recorder.clone());
+    let frame = prepare_cross_lane(
+        &mut scenario,
+        &mut session,
+        UiHostSurfacePresentationMode::RecordOnly,
+    );
     assert!(matches!(
         session.present_prepared_mounted_frame(frame, UiPresentationDeadline::at_tick(10), 0,),
         UiMountedFrameOutcome::Published(_)
@@ -119,37 +126,40 @@ fn real_cross_lane_recording_preserves_exact_unperformed_external_mechanics() {
 
     let transcripts = recorder.observed_transcripts();
     assert_exact_external_mechanics(&transcripts[0]);
-    session
-        .rebind_host_surface(
-            binding,
-            UiHostSurfacePresentationMode::NativeDisplay,
-            profile(2),
-        )
-        .unwrap();
-    let native_frame = execute_cross_lane_frame(&mut session);
+    let _ = session.shutdown();
+    workspace.close();
+
+    let (mut native_scenario, native_workspace, mut native_session) =
+        launch_cross_lane("headless-cross-lane-native", recorder.clone());
+    let native_frame = prepare_cross_lane(
+        &mut native_scenario,
+        &mut native_session,
+        UiHostSurfacePresentationMode::NativeDisplay,
+    );
     assert_rejected(
         "cross-lane native presentation",
-        session.present_prepared_mounted_frame(
+        native_session.present_prepared_mounted_frame(
             native_frame,
             UiPresentationDeadline::at_tick(20),
-            1,
+            0,
         ),
         UiHostSurfacePresentationDenial::UnsupportedEffect(UiMountedEffectFamily::CanvasSpatial),
     );
     assert_eq!(recorder.observed_transcripts().len(), 1);
-    let _ = session.shutdown();
-    workspace.close();
+    let _ = native_session.shutdown();
+    native_workspace.close();
 }
 
 fn launch_cross_lane(
+    label: &str,
     recorder: WorthUiHeadlessRecorder,
 ) -> (
     FilesystemApplicationLifecycleScenario,
     FilesystemContractWorkspace,
     worth_ui::facade::app::WorthUiActiveApplicationSession,
 ) {
-    let scenario = FilesystemApplicationLifecycleScenario::new("headless-cross-lane");
-    let workspace = FilesystemContractWorkspace::new("headless-cross-lane");
+    let scenario = FilesystemApplicationLifecycleScenario::new(label);
+    let workspace = FilesystemContractWorkspace::new(label);
     workspace.write(
         "app/main.wui",
         &FilesystemApplicationLifecycleScenario::cross_lane_source_text(),
@@ -171,19 +181,12 @@ fn launch_cross_lane(
 fn prepare_cross_lane(
     scenario: &mut FilesystemApplicationLifecycleScenario,
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
-) -> (
-    worth_ui_runtime::facade::mounted::UiPreparedMountedFrame,
-    worth_ui_runtime::facade::mounted::UiSurfaceBindingGeneration,
-) {
+    mode: UiHostSurfacePresentationMode,
+) -> worth_ui_runtime::facade::mounted::UiPreparedMountedFrame {
     let surface = session.create_semantic_surface().unwrap();
-    let binding = session
-        .register_host_surface(
-            surface,
-            UiHostSurfacePresentationMode::RecordOnly,
-            profile(1),
-        )
-        .unwrap()
-        .binding_generation();
+    session
+        .register_host_surface(surface, mode, profile(1))
+        .unwrap();
     let nodes = session.graph().node_identities().collect::<Vec<_>>();
     for node in nodes {
         let handle = session.mounted_graph_node(node).unwrap();
@@ -202,7 +205,7 @@ fn prepare_cross_lane(
             .expect("no mounted presentation lease is active")
             .into_completion(),
     );
-    (execute_cross_lane_frame(session), binding)
+    execute_cross_lane_frame(session)
 }
 
 fn execute_cross_lane_frame(
@@ -280,8 +283,11 @@ fn assert_rejected(
         UiMountedFrameOutcome::RetentionDenied(_) => {
             panic!("{context} unexpectedly denied retention")
         }
-        UiMountedFrameOutcome::AdmissionDenied(_) => {
-            panic!("{context} unexpectedly denied runtime admission")
+        UiMountedFrameOutcome::AdmissionDenied(denial) => {
+            panic!(
+                "{context} unexpectedly denied runtime admission: {:?}",
+                denial.denial()
+            )
         }
         UiMountedFrameOutcome::CompletionDenied(_) => {
             panic!("{context} unexpectedly denied completion")

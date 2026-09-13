@@ -78,13 +78,10 @@ fn observed_slot_consumers(
     let authored_identity = declarations
         .theme_token_declaration_identity(capability_identity)
         .unwrap_or(capability_identity);
-    let batch = crate::runtime::appearance::UiAppearanceInvalidationBatch::theme_slot(
-        index,
-        capability_identity,
-        authored_identity,
-    )
-    .expect("declared theme slot should resolve");
-    batch.graph_consumers().iter().copied().collect()
+    let batch = index
+        .select_appearance_slot_consumers(index.basis(), capability_identity, authored_identity)
+        .expect("declared theme slot should resolve");
+    batch.consumers().iter().copied().collect()
 }
 
 fn authoritative_role_slot_consumers(
@@ -120,7 +117,7 @@ fn authoritative_role_slot_consumers(
                     matches(requested_slot)
                         || authoritative_terminal_slot(capabilities, requested_slot)
                             .as_deref()
-                            .is_some_and(|terminal| matches(terminal))
+                            .is_some_and(matches)
                 })
                 .then_some(node.graph_node_identity())
         })

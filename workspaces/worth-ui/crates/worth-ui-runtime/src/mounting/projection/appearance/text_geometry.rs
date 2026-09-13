@@ -37,10 +37,6 @@ impl UiMountedAppearanceTextSpanInput {
     pub(super) fn geometry(&self) -> Arc<[UiMountedAppearanceTextGeometry]> {
         Arc::clone(&self.geometry)
     }
-
-    pub(super) fn commands(&self) -> impl Iterator<Item = UiMountedPaintCommandIdentity> + '_ {
-        self.geometry.iter().map(|geometry| geometry.command)
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -50,6 +46,8 @@ pub(crate) struct UiMountedAppearanceTextGeometry {
     // Runtime registration/rebind mints a fresh generation for its immutable
     // profile, including DPI. Qualification scale alone is not that evidence.
     binding: UiSurfaceBindingGeneration,
+    // Qualification identity includes exact source bytes and glyph coverage.
+    // Transport content generations can change without changing this geometry.
     layout: UiQualifiedTextLayoutIdentity,
     profile: UiTextProfileGeneration,
     fonts: UiFontCollectionGeneration,

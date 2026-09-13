@@ -17,8 +17,8 @@ fn order_only_text_damage_preserves_sampled_coverage_and_opacity_on_retry() {
         20.0,
         UiMountedRgba8::new(30, 60, 90, 255),
     );
-    let rect = UiMountedPaintCommand::FilledRect {
-        identity: UiMountedPaintCommandIdentity::filled_rect(&rect),
+    let rect = UiMountedPaintCommand::PortalOverlay {
+        identity: UiMountedPaintCommandIdentity::portal_overlay(&rect),
         mechanic: rect,
     };
     let order = [

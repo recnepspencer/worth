@@ -25,7 +25,6 @@ pub(crate) struct UiPreparedMountedProjection {
         std::rc::Rc<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
     appearance_selection: std::rc::Rc<UiMountedAppearanceProjectionSelection>,
     appearance_invalidation: Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
-    theme_revision: Option<u64>,
     portal_overlays_changed: bool,
     counters: super::super::UiMountStageCounters,
     capability_generation: worth_ui_host_contract::WorthUiHostCapabilityObservationGeneration,
@@ -45,7 +44,6 @@ pub(super) struct UiPreparedMountedProjectionInput {
     pub(super) appearance_selection: std::rc::Rc<UiMountedAppearanceProjectionSelection>,
     pub(super) appearance_invalidation:
         Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
-    pub(super) theme_revision: Option<u64>,
     pub(super) portal_overlays_changed: bool,
     pub(super) counters: super::super::UiMountStageCounters,
     pub(super) capability_generation:
@@ -74,7 +72,6 @@ impl UiPreparedMountedProjection {
             presentation_changed_instances: input.presentation_changed_instances,
             appearance_selection: input.appearance_selection,
             appearance_invalidation: input.appearance_invalidation,
-            theme_revision: input.theme_revision,
             portal_overlays_changed: input.portal_overlays_changed,
             counters: input.counters,
             capability_generation: input.capability_generation,
@@ -194,7 +191,6 @@ impl UiPreparedMountedProjection {
         let mut owner = UiMountedProjectionFrameOwner::new(
             std::rc::Rc::new(frame),
             appearance,
-            self.theme_revision,
             state.pointer_predecessor().cloned().unwrap_or_default(),
         );
         if let Some(batch) = self.appearance_invalidation {

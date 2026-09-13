@@ -15,8 +15,8 @@ pub use continuity::UiPointerGestureContinuityKind;
 pub use presented_frame::UiInteractionTargetingDenial;
 pub(crate) use presented_frame::{
     admit_current_target, admit_current_target_incarnation, map_current_affinity_denial,
-    require_current_presentation, require_current_target, resolve_presented_focus_target,
-    resolve_presented_surface_target,
+    map_presentation_denial, require_current_presentation, require_current_target,
+    resolve_presented_focus_target, resolve_presented_surface_target,
 };
 #[cfg(test)]
 pub(crate) use presented_target::interaction_target_view_for_test;

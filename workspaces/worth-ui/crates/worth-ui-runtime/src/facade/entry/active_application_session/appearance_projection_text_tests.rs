@@ -5,6 +5,8 @@ use worth_ui_host_contract::*;
 mod geometry_tests;
 #[path = "appearance_projection_text_publication_tests.rs"]
 mod publication_tests;
+#[path = "appearance_projection_text_replacement_tests.rs"]
+mod replacement_tests;
 
 #[test]
 fn foreground_adoption_changes_contract_meaning_without_reidentifying_spans() {
@@ -86,7 +88,20 @@ fn authored_foreground_changes_only_adopted_original_ranges() {
     assert_eq!(current.bounds(), original.bounds());
     assert_eq!(current.clip_bounds(), original.clip_bounds());
     assert_eq!(current.performed_layout_cost(), None);
-    fixture::publish(&mut session, &host, changed, 2);
+    // The host finalizes glyph-image damage after preflight. Its real paint
+    // completion must be accepted even though logical text damage is empty.
+    for _ in changed.surfaces() {
+        host.push_native_display_presented();
+    }
+    let painted = session.present_prepared_mounted_frame_internal(
+        changed,
+        UiPresentationDeadline::at_tick(100),
+        2,
+    );
+    assert!(matches!(
+        painted,
+        crate::mounting::UiMountedFrameOutcome::Published(_)
+    ));
     let unchanged = prepare(&mut session);
     unchanged.assert_no_unpublished_appearance_for_test();
     drop(unchanged);
@@ -224,13 +239,22 @@ fn assert_foreground_removed(frame: &crate::mounting::UiPreparedMountedFrame) {
         )
     ));
     assert!(fragment.text_candidates().is_empty());
-    worth_ui_host_headless::translate_unpublished_appearance_for_certification(&output).unwrap();
+    worth_ui_host_headless::translate_appearance_projection_for_certification(&output).unwrap();
 }
 
 fn text_candidate(
     frame: &crate::mounting::UiPreparedMountedFrame,
     adopted: [u8; 32],
     red: u8,
+) -> UiMountedSemanticTextMechanic {
+    text_candidate_named(frame, adopted, red, "AB")
+}
+
+fn text_candidate_named(
+    frame: &crate::mounting::UiPreparedMountedFrame,
+    adopted: [u8; 32],
+    red: u8,
+    expected_text: &str,
 ) -> UiMountedSemanticTextMechanic {
     let output = frame.lower_unpublished_appearance_for_test();
     let texts = output
@@ -273,11 +297,11 @@ fn text_candidate(
         UiMountedAppearanceColor::from_straight_srgba([red, 0, 0, 255])
     );
     assert_eq!(fragment.text_candidates().len(), 2);
-    worth_ui_host_headless::translate_unpublished_appearance_for_certification(&output).unwrap();
+    worth_ui_host_headless::translate_appearance_projection_for_certification(&output).unwrap();
     fragment
         .text_candidates()
         .iter()
-        .find(|row| row.text() == "AB")
+        .find(|row| row.text() == expected_text)
         .unwrap()
         .clone()
 }
@@ -288,8 +312,7 @@ fn assert_text_damage_transition(
 ) {
     let output = frame.lower_unpublished_appearance_for_test();
     let transcript =
-        worth_ui_host_headless::translate_unpublished_appearance_for_certification(&output)
-            .unwrap();
+        worth_ui_host_headless::translate_appearance_projection_for_certification(&output).unwrap();
     let requirements = transcript
         .fragments()
         .iter()
@@ -315,9 +338,9 @@ fn prepare(
         .unwrap_or_else(|_| panic!("foreground frame prepares"))
 }
 
-fn text_contract() -> crate::capability::ComponentSemanticTextContract {
+pub(super) fn text_contract() -> crate::capability::ComponentSemanticTextContract {
     use crate::capability::*;
-    let token = ThemeTokenId::new(super::super::support::LEGACY_STATIC_PAINT_TOKEN).unwrap();
+    let token = ThemeTokenId::new(super::super::support::APPEARANCE_BASE_TOKEN).unwrap();
     let constraints = worth_ui_text::UiTextParagraphConstraints::new(
         worth_ui_text::UiTextParagraphConstraintsInput {
             language: std::sync::Arc::from("und"),
@@ -350,3 +373,6 @@ fn text_contract() -> crate::capability::ComponentSemanticTextContract {
     )
     .unwrap()
 }
+
+#[path = "appearance_projection_text_retry_tests.rs"]
+mod retry_tests;

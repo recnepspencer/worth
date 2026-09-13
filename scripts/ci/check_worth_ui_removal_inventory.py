@@ -7,44 +7,44 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "workspaces/worth-ui/contracts/milestone-3.16-removal-inventory.json"
-CURRENT_STAGE = "gate_4"
+CURRENT_STAGE = "gate_5_cutover"
 INVENTORY_KEYS = {"current_stage", "cutover_target", "entries"}
 REQUIRED_FAMILIES = {
     "static-paint authority": (
         "ComponentStaticPaintContract", 51, 50,
         "Gate 0 preserves the live static-paint prerequisite until the Gate 5 cutover.",
-        50,
-        "Gate 4 retains the live static-paint authority prerequisite until the Gate 5 cutover.",
+        0,
+        "Removed at the Gate 5 cutover.",
     ),
     "bootstrap component token dependencies": (
         "with_theme_token_dependency", 10, 10,
         "Gate 0 preserves bootstrap dependency declarations until the Gate 5 cutover.",
-        10,
-        "Gate 4 retains bootstrap dependency declarations required by the preserved static-paint path until the Gate 5 cutover.",
+        0,
+        "Removed at the Gate 5 cutover.",
     ),
     "string-backed ThemeColorValue": (
         "ThemeColorValue", 96, 99,
         "Two Gate 0 explicit-attachment fixtures and the real native pointer-observation fixture use the live ThemeTokenDescriptor input required by preserved static paint; migrate them with the Gate 5 cutover.",
-        110,
-        "Gate 4 retains string color values in the pre-cutover token definitions and the native pointer-observation and appearance/theme fixtures that exercise preserved static-paint prerequisites; migrate them with the Gate 5 cutover.",
+        0,
+        "Removed at the Gate 5 cutover.",
     ),
     "Pulse Unicode icon text": (
         "portal_icon_text", 6, 6,
         "Gate 0 inventories Pulse icon text for its later typed-icon migration.",
-        6,
-        "Gate 4 retains Pulse's Unicode icon-text substitute and pixel control-point fields for the pre-cutover portal evidence; migrate them with the Gate 5 cutover.",
+        0,
+        "Removed at the Gate 5 cutover.",
     ),
     "direct token publication": (
         "UiNativeThemeTokenValueChange", 20, 20,
         "Gate 0 preserves the live publication path until the Gate 5 cutover.",
-        33,
-        "Gate 4 retains the native token-publication boundary for staged appearance updates, including its runtime signatures and test/support callers; migrate it with the Gate 5 cutover.",
+        0,
+        "Removed at the Gate 5 cutover.",
     ),
     "legacy changed-node selection": (
         "changed_graph_nodes", 46, 46,
         "Gate 0 preserves legacy selection until its planned query-owned replacement.",
-        25,
-        "Gate 4 retains changed-node plumbing in allocation and mounted-delta paths after the G3 legacy theme-selector retirement; remove the remaining migration residue with the Gate 5 cutover.",
+        0,
+        "Removed at the Gate 5 cutover.",
     ),
 }
 RUST_GLOB = "workspaces/worth-ui/**/*.rs"
@@ -81,7 +81,7 @@ def validate_inventory_shape(inventory: object) -> list[object]:
     if set(inventory) != INVENTORY_KEYS:
         raise ValueError("removal inventory keys must remain exact")
     if inventory["current_stage"] != CURRENT_STAGE:
-        raise ValueError("removal inventory current stage must remain gate_4")
+        raise ValueError("removal inventory current stage must be gate_5_cutover")
     if type(inventory["cutover_target"]) is not int or inventory["cutover_target"] != 0:
         raise ValueError("cutover target must be exactly zero")
     if not isinstance(inventory["entries"], list):
@@ -139,7 +139,7 @@ def validate(root: Path, manifest: Path) -> None:
         observed = sum(path.read_text(encoding="utf-8").count(entry["literal"]) for path in files)
         if observed != entry["current_remaining"]:
             raise ValueError(
-                f"{family}: observed {observed}, expected exact Gate 4 current "
+                f"{family}: observed {observed}, expected exact cutover "
                 f"remaining {entry['current_remaining']}"
             )
     if families != set(REQUIRED_FAMILIES):

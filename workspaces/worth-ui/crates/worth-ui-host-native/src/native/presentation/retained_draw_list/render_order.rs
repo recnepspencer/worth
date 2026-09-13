@@ -15,6 +15,13 @@ pub(super) enum UiNativeRetainedRenderItem {
     Paint(UiMountedPaintCommandIdentity),
 }
 
+// Ordinary content precedes the issued overlay stack. Within a Portal group,
+// its surface precedes children, whose component rendering meaning orders them.
+#[path = "render_order/item_order.rs"]
+mod item_order;
+
+type RenderOrderKey = (u8, usize, u8, u32, u8, usize, u32);
+
 impl UiNativeRetainedDrawList {
     pub(super) fn ordered_render_items(
         &self,
@@ -29,18 +36,6 @@ impl UiNativeRetainedDrawList {
         let mut appearance_keys = appearance_keys.into_iter().collect::<BTreeSet<_>>();
         for identity in &paint {
             match self.command(*identity).ok_or(Denial::CommandMismatch)? {
-                UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-                    extend_if_present(
-                        appearance,
-                        &mut appearance_keys,
-                        UiNativeAppearanceCommandIdentity::Surface(mechanic.mounted_instance()),
-                    );
-                    extend_if_present(
-                        appearance,
-                        &mut appearance_keys,
-                        UiNativeAppearanceCommandIdentity::Outline(mechanic.mounted_instance()),
-                    );
-                }
                 UiMountedPaintCommand::PortalOverlay { mechanic, .. } => extend_if_present(
                     appearance,
                     &mut appearance_keys,
@@ -50,86 +45,86 @@ impl UiNativeRetainedDrawList {
             }
         }
 
-        let needs_overlay_order = paint.iter().any(|identity| {
-            matches!(
-                self.command(*identity),
-                Some(UiMountedPaintCommand::PortalOverlay { .. })
-            )
+        let needs_overlay_order = paint.iter().any(|identity| match self.command(*identity) {
+            Some(UiMountedPaintCommand::PortalOverlay { .. }) => true,
+            Some(UiMountedPaintCommand::SemanticText { mechanic, .. }) => {
+                mechanic.portal_group().is_some()
+            }
+            None => false,
         }) || appearance_keys.iter().any(|key| {
-            matches!(
-                appearance.command(*key),
+            match appearance.command(*key) {
                 Some(
                     UiNativeAppearanceCommand::PortalSurface(_)
-                        | UiNativeAppearanceCommand::Backdrop(_)
-                )
-            )
+                    | UiNativeAppearanceCommand::Backdrop(_),
+                ) => true,
+                Some(UiNativeAppearanceCommand::Surface(mechanic)) => {
+                    mechanic.portal_group().is_some()
+                }
+                Some(UiNativeAppearanceCommand::Outline(mechanic)) => {
+                    mechanic.portal_group().is_some()
+                }
+                _ => false,
+            }
         });
         let overlay = needs_overlay_order
             .then(|| appearance.overlay_order())
             .transpose()
             .map_err(|_| Denial::CommandMismatch)?;
+        let appearance_keys = appearance
+            .ordered_subset_keys(appearance_keys)
+            .map_err(|_| Denial::CommandMismatch)?;
         let mut entries = Vec::with_capacity(paint.len() + appearance_keys.len());
         for identity in paint {
-            let command = self.command(identity).ok_or(Denial::CommandMismatch)?;
-            let replaced = match command {
-                UiMountedPaintCommand::FilledRect { mechanic, .. } => appearance
-                    .key_for_identity(&UiNativeAppearanceCommandIdentity::Surface(
-                        mechanic.mounted_instance(),
-                    ))
-                    .is_some(),
-                UiMountedPaintCommand::PortalOverlay { mechanic, .. } => appearance
-                    .key_for_identity(&UiNativeAppearanceCommandIdentity::PortalSurface(
-                        mechanic.owner(),
-                    ))
-                    .is_some(),
-                UiMountedPaintCommand::SemanticText { .. } => false,
-            };
-            if !replaced {
-                entries.push((
-                    (paint_rank(self, identity)?, 2_u8, 0_usize, 0_u32),
-                    UiNativeRetainedRenderItem::Paint(identity),
-                ));
+            if let Some(entry) = self.paint_render_entry(appearance, overlay, identity)? {
+                entries.push(entry);
             }
         }
-
-        for key in appearance_keys {
-            let command = appearance.command(key).ok_or(Denial::CommandMismatch)?;
-            let order = match command {
-                UiNativeAppearanceCommand::Surface(mechanic) => (
-                    semantic_rank(self, mechanic.surface_paint_order())?,
-                    0,
-                    0,
-                    key.value(),
-                ),
-                UiNativeAppearanceCommand::Outline(mechanic) => (
-                    semantic_rank(self, mechanic.surface_paint_order())?,
-                    1,
-                    0,
-                    key.value(),
-                ),
-                UiNativeAppearanceCommand::PortalSurface(mechanic) => (
-                    portal_anchor_rank(self, mechanic.portal_instance())?,
-                    1,
-                    0,
-                    key.value(),
-                ),
-                UiNativeAppearanceCommand::Backdrop(mechanic) => backdrop_order(
-                    self,
-                    overlay.ok_or(Denial::CommandMismatch)?,
-                    mechanic.identity(),
-                    key,
-                )?,
-                UiNativeAppearanceCommand::TextForeground(_)
-                | UiNativeAppearanceCommand::OverlayOrder(_)
-                | UiNativeAppearanceCommand::PointerAffordance(_) => continue,
-            };
-            entries.push((order, UiNativeRetainedRenderItem::Appearance(key)));
+        for (rank, key) in appearance_keys.iter().copied().enumerate() {
+            if let Some(entry) = self.appearance_render_entry(appearance, overlay, rank, key)? {
+                entries.push(entry);
+            }
         }
         if let Some(overlay) = overlay {
             validate_portal_anchors(self, overlay)?;
         }
         entries.sort_by_key(|entry| entry.0);
         Ok(entries.into_iter().map(|(_, item)| item).collect())
+    }
+
+    pub(super) fn top_render_item(
+        &self,
+    ) -> Result<Option<(usize, UiNativeRetainedRenderItem)>, Denial> {
+        let (_, appearance) = self
+            .staged_appearance
+            .as_ref()
+            .ok_or(Denial::CommandMismatch)?;
+        let keys = appearance
+            .ordered_render_keys()
+            .map_err(|_| Denial::CommandMismatch)?;
+        let overlay = appearance.overlay_order().ok();
+        let paint = self
+            .order
+            .ordered()
+            .map(|identity| self.paint_render_entry(appearance, overlay, identity.command()));
+        let appearance_entries = keys
+            .iter()
+            .copied()
+            .enumerate()
+            .map(|(rank, key)| self.appearance_render_entry(appearance, overlay, rank, key));
+        let mut top = None;
+        let mut count = 0;
+        for entry in paint.chain(appearance_entries) {
+            if let Some((key, item)) = entry? {
+                count += 1;
+                if top.as_ref().is_none_or(|(current, _)| key > *current) {
+                    top = Some((key, item));
+                }
+            }
+        }
+        if let Some(overlay) = overlay {
+            validate_portal_anchors(self, overlay)?;
+        }
+        Ok(top.map(|(_, item)| (count - 1, item)))
     }
 
     pub(super) fn record_render_order_cost(
@@ -188,8 +183,40 @@ fn semantic_rank(
         })
 }
 
+fn appearance_surface_order(
+    retained: &UiNativeRetainedDrawList,
+    overlay: Option<&worth_ui_host_contract::UiMountedOverlayOrderMechanic>,
+    portal_group: Option<UiMountedInstanceIdentity>,
+    semantic_order: u32,
+    family: u8,
+    appearance_rank: usize,
+    key: UiNativeAppearanceCommandKey,
+) -> Result<RenderOrderKey, Denial> {
+    match portal_group {
+        Some(portal) => Ok((
+            1,
+            portal_anchor_rank(retained, overlay, portal)?,
+            1,
+            semantic_order,
+            family,
+            appearance_rank,
+            key.value(),
+        )),
+        None => Ok((
+            0,
+            semantic_rank(retained, semantic_order)?,
+            0,
+            0,
+            0,
+            appearance_rank,
+            key.value(),
+        )),
+    }
+}
+
 fn portal_anchor_rank(
     retained: &UiNativeRetainedDrawList,
+    overlay: Option<&worth_ui_host_contract::UiMountedOverlayOrderMechanic>,
     instance: UiMountedInstanceIdentity,
 ) -> Result<usize, Denial> {
     let mut matches = retained
@@ -200,35 +227,31 @@ fn portal_anchor_rank(
                 matches!(command, UiMountedPaintCommand::PortalOverlay { .. })
             })
         });
-    let identity = matches.next().ok_or(Denial::CommandMismatch)?;
+    matches.next().ok_or(Denial::CommandMismatch)?;
     if matches.next().is_some() {
         return Err(Denial::CommandMismatch);
     }
-    paint_rank(retained, identity)
+    overlay
+        .ok_or(Denial::CommandMismatch)?
+        .bottom_to_top()
+        .iter()
+        .position(|participant| *participant == UiOverlayParticipantIdentity::Portal(instance))
+        .ok_or(Denial::CommandMismatch)
 }
 
 fn backdrop_order(
-    retained: &UiNativeRetainedDrawList,
     overlay: &worth_ui_host_contract::UiMountedOverlayOrderMechanic,
     identity: &worth_ui_host_contract::UiMountedBackdropIdentity,
+    appearance_rank: usize,
     key: UiNativeAppearanceCommandKey,
-) -> Result<(usize, u8, usize, u32), Denial> {
+) -> Result<RenderOrderKey, Denial> {
     let participant = UiOverlayParticipantIdentity::Backdrop(identity.clone());
     let position = overlay
         .bottom_to_top()
         .iter()
         .position(|candidate| candidate == &participant)
         .ok_or(Denial::CommandMismatch)?;
-    let next_portal = overlay.bottom_to_top()[position + 1..]
-        .iter()
-        .find_map(|participant| match participant {
-            UiOverlayParticipantIdentity::Portal(instance) => Some(*instance),
-            UiOverlayParticipantIdentity::Backdrop(_) => None,
-        });
-    let rank = next_portal.map_or(Ok(retained.order.len()), |instance| {
-        portal_anchor_rank(retained, instance)
-    })?;
-    Ok((rank, 0, position, key.value()))
+    Ok((1, position, 0, 0, 0, appearance_rank, key.value()))
 }
 
 fn validate_portal_anchors(
@@ -237,7 +260,7 @@ fn validate_portal_anchors(
 ) -> Result<(), Denial> {
     for participant in overlay.bottom_to_top() {
         if let UiOverlayParticipantIdentity::Portal(instance) = participant {
-            portal_anchor_rank(retained, *instance)?;
+            portal_anchor_rank(retained, Some(overlay), *instance)?;
         }
     }
     Ok(())

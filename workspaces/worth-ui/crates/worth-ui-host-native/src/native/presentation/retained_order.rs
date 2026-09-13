@@ -202,14 +202,6 @@ where
         Ok(())
     }
 
-    fn insert_after(
-        &mut self,
-        identity: Identity,
-        predecessor: Option<Identity>,
-    ) -> Result<(), UiNativeRetainedOrderDenial> {
-        self.insert_after_weighted(identity, predecessor, 0)
-    }
-
     fn insert_after_weighted(
         &mut self,
         identity: Identity,

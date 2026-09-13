@@ -243,6 +243,7 @@ impl UiOverlayRelationGraph {
             validation::ensure_unambiguous(
                 &validation::backdrops_from_relations(&relations, &participant_surfaces),
                 &edges,
+                &relations,
             )?;
         }
         relations.sort_by_key(|relation| (relation.lower, relation.upper, relation.kind));

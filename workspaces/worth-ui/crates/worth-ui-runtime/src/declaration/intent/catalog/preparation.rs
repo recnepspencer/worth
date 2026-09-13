@@ -180,15 +180,6 @@ fn validate_schemas(
     Ok(())
 }
 
-fn bind_routes(
-    material: &crate::declaration::WorthUiAuthoredIntentMaterial,
-    declarations: &[Arc<UiCanonicalIntentDeclaration>],
-    declaration_index: &BTreeMap<Box<str>, u32>,
-    graph: &crate::graph::UiGraphSnapshot,
-) -> Result<ResolvedIntentRoutes, UiIntentCatalogPreparationDenial> {
-    route_preparation::bind_routes(material, declarations, declaration_index, graph)
-}
-
 fn runtime_family(
     family: worth_ui_dsl::WorthUiIntentInteractionFamily,
 ) -> UiSemanticInteractionFamily {

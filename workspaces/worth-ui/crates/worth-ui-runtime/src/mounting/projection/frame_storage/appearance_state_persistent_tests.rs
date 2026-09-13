@@ -74,7 +74,7 @@ fn foreign_epoch_denial_does_not_reserve_or_stage_over_predecessor() {
     let identities = context_identities();
     let valid = context(identities, session_identity, &generation, 1);
     let foreign_source =
-        crate::runtime::tests::appearance_component_session_test_support::source_backed_static_paint_consumer_session();
+        crate::runtime::tests::appearance_component_session_test_support::source_backed_appearance_consumer_session();
     let foreign_generation = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
         session_identity,
         foreign_source.generation_identity(),

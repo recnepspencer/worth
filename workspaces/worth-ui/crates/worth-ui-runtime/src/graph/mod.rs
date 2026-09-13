@@ -19,6 +19,7 @@ pub(crate) mod allocation_neighborhood_test_support;
 mod closeout;
 mod identity;
 mod indexes;
+pub(crate) use indexes::component_capability_for_node;
 mod inspection;
 #[cfg(test)]
 mod measurement_neighborhood_hint;

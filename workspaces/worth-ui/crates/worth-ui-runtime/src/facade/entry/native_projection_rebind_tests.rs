@@ -1,4 +1,4 @@
-use crate::runtime::rebind::{UiProjectionRebindRequest, UiRebindOutcome, UiRebindReceipt};
+use crate::runtime::rebind::{UiProjectionRebindRequest, UiRebindReceipt};
 use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host_and_scalar_projection;
 
 use super::native_identity_trace_host::NativeIdentityTraceHost;
@@ -26,7 +26,6 @@ fn native_projection_rebind_returns_the_exact_fact_to_its_query_owner() {
         shell
             .begin_projection_rebind(UiProjectionRebindRequest::new(pending).observed_at_tick(1))
             .expect("pending projection enters the standard native rebind"),
-        1,
     );
     let pending_observation = match pending_receipt.release_scalar_projection_observation() {
         Ok(observation) => observation,
@@ -47,7 +46,6 @@ fn native_projection_rebind_returns_the_exact_fact_to_its_query_owner() {
         shell
             .begin_projection_rebind(UiProjectionRebindRequest::new(current).observed_at_tick(2))
             .expect("current projection enters the standard native rebind"),
-        2,
     );
     let current_observation = match current_receipt.release_scalar_projection_observation() {
         Ok(observation) => observation,
@@ -65,13 +63,9 @@ fn native_projection_rebind_returns_the_exact_fact_to_its_query_owner() {
     assert_eq!(shutdown.released_surface_count(), 1);
 }
 
-fn published(outcome: UiRebindOutcome<'_>, tick: u64) -> UiRebindReceipt {
+fn published(outcome: super::WorthUiNativeManagedProjectionRebindOutcome) -> UiRebindReceipt {
     match outcome {
-        UiRebindOutcome::Published(receipt) => receipt,
-        UiRebindOutcome::InFlight(completion) => match completion.complete(tick) {
-            UiRebindOutcome::Published(receipt) => receipt,
-            _ => panic!("native projection completion did not publish"),
-        },
+        super::WorthUiNativeManagedProjectionRebindOutcome::Published(receipt) => receipt,
         _ => panic!("native projection rebind did not reach publication"),
     }
 }

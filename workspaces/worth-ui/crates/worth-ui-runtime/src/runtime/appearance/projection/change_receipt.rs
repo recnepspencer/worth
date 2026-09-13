@@ -168,25 +168,12 @@ impl UiAppearanceChangeReceipt {
         }
     }
 
-    pub(crate) const fn input_evidence_changed(self) -> bool {
-        self.input_evidence_changed
-    }
-    pub(crate) const fn semantic_projection_changed(self) -> bool {
-        self.semantic_projection_changed
-    }
-    pub(crate) const fn resolved_aspect_value_changed(self) -> bool {
-        self.resolved_aspect_value_changed
-    }
     pub(crate) const fn mounted_mechanical_output_changed(self) -> bool {
         self.mounted_mechanical_output_changed
     }
     pub(crate) const fn equal_output_suppressed(self) -> bool {
         self.equal_output_suppressed
     }
-    pub(crate) const fn denied_before_effects(self) -> bool {
-        self.denied_before_effects
-    }
-
     pub(crate) fn change_distinctions(
         self,
     ) -> worth_ui_inspection::UiAppearanceInspectionChangeDistinctions {

@@ -14,6 +14,7 @@ use super::{UiMountedOccurrenceGeometryDenial, UiMountedSurfaceGeometryBatch};
 mod projection;
 #[path = "state/resolution.rs"]
 mod resolution;
+mod succession;
 
 use resolution::{
     changed_instances, exact_region_bounds, resolve_surface_geometry, validate_placement,
@@ -26,7 +27,10 @@ struct UiMountedOccurrenceGeometryRow {
     incarnation: UiMountIncarnation,
     bounds: worth_ui_host_contract::UiMountedCanonicalBox,
     basis: UiMountedAllocationBasis,
+    mosaic_clip_bindings: Box<[super::UiMountedMosaicClipBinding]>,
     mosaic_clips: Box<[UiMountedCanonicalBox]>,
+    scroll_clip_bindings:
+        Result<Box<[super::UiMountedScrollClipBinding]>, crate::graph::UiGraphNodeIdentity>,
     scroll_clips: Result<Box<[UiMountedCanonicalBox]>, crate::graph::UiGraphNodeIdentity>,
     surface_paint_posture: super::UiMountedSurfacePaintPosture,
 }
@@ -131,11 +135,13 @@ impl UiMountedOccurrenceGeometryState {
                 .expect("the completed occurrence set was validated above")
                 .graph_node_identity();
             let prior = current.and_then(|surface| surface.occurrences.get(&instance));
-            let mosaic_clips = batch
+            let mosaic_clip_bindings = batch
                 .mosaic_clips()
                 .get(&instance)
-                .into_iter()
-                .flatten()
+                .cloned()
+                .unwrap_or_default();
+            let mosaic_clips = mosaic_clip_bindings
+                .iter()
                 .map(|binding| match binding {
                     super::UiMountedMosaicClipBinding::Viewport => Ok(batch.viewport()),
                     super::UiMountedMosaicClipBinding::Region { owner, declaration } => {
@@ -145,13 +151,13 @@ impl UiMountedOccurrenceGeometryState {
                 })
                 .collect::<Result<Vec<_>, _>>()?
                 .into_boxed_slice();
-            let scroll_bindings = batch
+            let scroll_clip_bindings = batch
                 .scroll_clips()
                 .get(&instance)
                 .cloned()
                 .unwrap_or_else(|| Ok(Box::default()));
-            let scroll_clips = match scroll_bindings {
-                Err(node) => Err(node),
+            let scroll_clips = match &scroll_clip_bindings {
+                Err(node) => Err(*node),
                 Ok(bindings) => Ok(bindings
                     .iter()
                     .map(|binding| match binding {
@@ -179,7 +185,9 @@ impl UiMountedOccurrenceGeometryState {
                         && row.graph_node == graph_node
                         && row.incarnation == incarnation
                         && row.bounds == bounds
+                        && row.mosaic_clip_bindings == mosaic_clip_bindings
                         && row.mosaic_clips == mosaic_clips
+                        && row.scroll_clip_bindings == scroll_clip_bindings
                         && row.scroll_clips == scroll_clips
                         && row.surface_paint_posture == surface_paint_posture
                 })
@@ -200,7 +208,9 @@ impl UiMountedOccurrenceGeometryState {
                     incarnation,
                     bounds,
                     basis,
+                    mosaic_clip_bindings,
                     mosaic_clips,
+                    scroll_clip_bindings,
                     scroll_clips,
                     surface_paint_posture,
                 },
@@ -243,22 +253,6 @@ impl UiMountedOccurrenceGeometryState {
                 geometry.viewport,
             )
         })
-    }
-
-    pub(crate) fn region_extent(
-        &self,
-        surface: UiSemanticSurfaceIdentity,
-        generation: &crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
-        region: worth_ui_dsl::UiMosaicRegionDeclarationIdentity,
-    ) -> Option<(
-        UiMountedInstanceIdentity,
-        UiMountIncarnation,
-        UiMountedCanonicalBox,
-    )> {
-        match self.region_extents(surface, generation, region)?.as_ref() {
-            [row] => Some(*row),
-            _ => None,
-        }
     }
 
     pub(crate) fn region_extents(

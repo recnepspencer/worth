@@ -43,9 +43,13 @@ pub(super) fn finish(
     if geometry.selected_count() == 0 {
         return Ok(input.pending);
     }
-    let addition =
-        UiMountedAppearanceProjectionSelection::derive(state, requested_surfaces, Some(&geometry))
-            .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
+    let addition = UiMountedAppearanceProjectionSelection::derive(
+        state,
+        requested_surfaces,
+        Some(input.index),
+        Some(&geometry),
+    )
+    .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
     let mut effective = geometry;
     if let Some(pending) = input.pending {
         if pending.selected_count() == 0 {

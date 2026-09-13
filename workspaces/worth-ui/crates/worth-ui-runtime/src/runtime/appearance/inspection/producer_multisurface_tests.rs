@@ -136,7 +136,7 @@ fn appearance_inspection_multisurface_real_surfaces_have_independent_current_wor
         worth_ui_inspection::UiAppearanceInspectionOutcome::Unavailable
     );
 
-    let mut foreign = support::source_backed_static_paint_consumer_session();
+    let mut foreign = support::source_backed_appearance_consumer_session();
     let foreign_surface = foreign.create_semantic_surface().unwrap();
     let foreign_world = foreign.appearance_inspection_world(foreign_surface);
     assert_eq!(

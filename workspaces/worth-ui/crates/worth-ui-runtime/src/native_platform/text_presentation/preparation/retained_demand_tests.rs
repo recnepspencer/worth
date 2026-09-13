@@ -179,6 +179,7 @@ fn repaint(
             surface: previous.surface(),
             binding: previous.binding(),
             mounted_instance: previous.mounted_instance(),
+            portal_group: None,
             node_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
                 .unwrap()
                 .receipt_for(previous.mounted_instance()),

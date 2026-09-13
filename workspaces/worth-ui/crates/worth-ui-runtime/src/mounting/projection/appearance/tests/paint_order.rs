@@ -5,11 +5,14 @@ fn order_only_changes_update_surface_and_outline_with_visual_damage() {
     let (mut initial, ids) = node_input([12, 34, 56, 255], 7, true);
     initial.nodes[0].text_foregrounds = Box::new([]);
     initial.nodes[0].surface_paint_order = Some(65_536);
+    let portal_group = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    initial.nodes[0].portal_group = Some(portal_group);
     let mut sidecar = UiMountedAppearanceSidecar::default();
     let before = sidecar.mount(initial).unwrap();
     let (mut next, _) = node_input_for([12, 34, 56, 255], 7, true, Some(&ids));
     next.nodes[0].text_foregrounds = Box::new([]);
     next.nodes[0].surface_paint_order = Some(u32::MAX);
+    next.nodes[0].portal_group = Some(portal_group);
     let after = sidecar.mount(next).unwrap();
 
     for (work, expected) in [(&before, 65_536), (&after, u32::MAX)] {
@@ -20,6 +23,8 @@ fn order_only_changes_update_surface_and_outline_with_visual_damage() {
         };
         assert_eq!(surface.surface_paint_order(), expected);
         assert_eq!(outline.surface_paint_order(), expected);
+        assert_eq!(surface.portal_group(), Some(portal_group));
+        assert_eq!(outline.portal_group(), Some(portal_group));
         assert!(!outline.participates_in_hit_testing());
     }
     assert_eq!(after.changes().len(), 2);

@@ -26,6 +26,10 @@ impl super::UiFocusRuntimeState {
                 None => current_target(&ordered, self.current),
             }
         };
+        let structural_revision = self
+            .structural_revision
+            .checked_add(1)
+            .ok_or(crate::runtime::focus::UiPortalFocusTransitionDenial::Routing)?;
         self.pending_portal.insert(
             owner.proposal(),
             crate::runtime::focus::portal_transition::UiPreparedPortalFocusTransition::new(
@@ -38,6 +42,7 @@ impl super::UiFocusRuntimeState {
                 requirement.closed_descendants().into(),
             ),
         );
+        self.structural_revision = structural_revision;
         Ok(())
     }
 
@@ -117,10 +122,17 @@ impl super::UiFocusRuntimeState {
         &mut self,
         proposal: crate::runtime::session::service_proposal::UiServiceProposalIdentity,
     ) -> Result<(), crate::runtime::focus::UiPortalFocusTransitionDenial> {
-        self.pending_portal
-            .remove(&proposal)
-            .map(drop)
-            .ok_or(crate::runtime::focus::UiPortalFocusTransitionDenial::UnknownProposal)
+        let structural_revision = self
+            .structural_revision
+            .checked_add(1)
+            .ok_or(crate::runtime::focus::UiPortalFocusTransitionDenial::Routing)?;
+        drop(
+            self.pending_portal
+                .remove(&proposal)
+                .ok_or(crate::runtime::focus::UiPortalFocusTransitionDenial::UnknownProposal)?,
+        );
+        self.structural_revision = structural_revision;
+        Ok(())
     }
 
     pub(crate) fn requires_focused_submit(&self) -> bool {

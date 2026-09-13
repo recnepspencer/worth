@@ -2,10 +2,10 @@ use crate::capability::{
     CapabilitySnapshot, CapabilitySnapshotFreezeInput, CapabilitySupportCatalog,
     ComponentChildPolicy, ComponentDescriptor, ComponentId, ComponentPropSchema,
     ComponentStateOwnership, RegisteredCapabilitySet, RegistrationCandidate, SurfaceDescriptor,
-    SurfaceId, SurfaceKind, SurfacePlacementClass, SurfaceStateClass, ThemeColorValue,
-    ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
-    ThemeTokenValue, ViewBindingDescriptor, ViewBindingFamily, ViewBindingId,
-    COMPONENT_FAMILY_NAME, SURFACE_FAMILY_NAME, THEME_TOKEN_FAMILY_NAME, VIEW_BINDING_FAMILY_NAME,
+    SurfaceId, SurfaceKind, SurfacePlacementClass, SurfaceStateClass, ThemeTokenAlias,
+    ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    UiThemeColor, ViewBindingDescriptor, ViewBindingFamily, ViewBindingId, COMPONENT_FAMILY_NAME,
+    SURFACE_FAMILY_NAME, THEME_TOKEN_FAMILY_NAME, VIEW_BINDING_FAMILY_NAME,
 };
 use crate::facade::{WorthUi, WorthUiApp};
 use crate::source::{WorthUiResolutionDiagnosticCode, WorthUiResolutionReport};
@@ -58,7 +58,7 @@ pub(super) fn admitted_app() -> WorthUiApp {
             ThemeTokenId::new("theme.text.primary").unwrap(),
             ThemeTokenFamily::text(),
             ThemeTokenSource::application(),
-            ThemeTokenValue::color(ThemeColorValue::hex("#101820").unwrap()),
+            ThemeTokenValue::color(UiThemeColor::parse("#101820").unwrap()),
         ))
         .register_theme_token(ThemeTokenDescriptor::alias(
             ThemeTokenId::new("theme.text.default").unwrap(),

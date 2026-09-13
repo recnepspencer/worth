@@ -1,16 +1,18 @@
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor, ComponentId,
     ComponentPropSchema, ComponentSemanticTextContract, ComponentStateOwnership,
-    ComponentStaticPaintContract, ComponentStaticPaintOrder, ComponentViewportInset,
-    SurfaceDescriptor, SurfaceId, SurfaceKind, SurfacePlacementClass, SurfaceStateClass,
-    ThemeColorValue, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
-    ThemeTokenValue, WorthUiRustAuthoredArtifactInput, WorthUiRustAuthoredArtifactInputModule,
+    ComponentViewportInset, SurfaceDescriptor, SurfaceId, SurfaceKind, SurfacePlacementClass,
+    SurfaceStateClass, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
+    ThemeTokenValue, UiThemeColor, WorthUiRustAuthoredArtifactInput,
+    WorthUiRustAuthoredArtifactInputModule,
 };
 use worth_ui_native_platform::{
     UiNativeApplicationDefinition, UiNativeApplicationFrame, UiNativeApplicationPreparation,
     UiNativeApplicationPreparationOutcome, UiNativeApplicationProgram,
-    UiNativeComponentSemanticTextChange, UiNativeThemeTokenValueChange,
+    UiNativeComponentSemanticTextChange,
 };
+
+mod appearance;
 
 const ROOT: &str = "phase.f.root";
 const TEXT: &str = "phase.f.text";
@@ -75,28 +77,50 @@ impl UiNativeApplicationDefinition for PlatformPulseNativePhaseFApplication {
                 self.remain_open_until_external_close,
                 self.program_mode,
             ))?;
-            let mut builder = preparation.builder();
-            builder
-                .with_change_profile(worth_ui::facade::rebind::UiChangeProfile::platform_pulse())?;
-            builder.register_theme_token(root_token())?;
-            builder.register_theme_token(text_token())?;
-            builder.register_component(root_component())?;
-            builder.register_component(text_component())?;
-            builder.register_surface(SurfaceDescriptor::new(
-                SurfaceId::new(SURFACE).expect("Phase F surface identity"),
-                SurfaceKind::primary_content(),
-                ComponentId::new(ROOT).expect("Phase F root identity"),
-                SurfacePlacementClass::primary_region(),
-                SurfaceStateClass::ephemeral(),
-            ))?;
-            builder.with_rust_authored_input(WorthUiRustAuthoredArtifactInput::from_modules([
-                WorthUiRustAuthoredArtifactInputModule::new("app/phase_f_async.wui")
-                    .with_token(ROOT_TOKEN, "#17202a")
-                    .with_token(TEXT_TOKEN, "#ffffff")
-                    .with_component_authored_identity(ROOT, "phase-f-root")
-                    .with_component_authored_identity(TEXT, "phase-f-text")
-                    .with_surface_authored_identity(SURFACE, "phase-f-surface"),
-            ]))
+            let [root_role, text_role] = appearance::roles();
+            let authored = WorthUiRustAuthoredArtifactInputModule::new("app/phase_f_async.wui")
+                .with_token(ROOT_TOKEN, "#17202a")
+                .with_token(TEXT_TOKEN, "#ffffff")
+                .with_component_authored_identity(ROOT, "phase-f-root")
+                .with_component_authored_identity(TEXT, "phase-f-text")
+                .with_surface_authored_identity(SURFACE, "phase-f-surface");
+            let authored = [(ROOT, &root_role), (TEXT, &text_role)].into_iter().fold(authored, |module, (component, role)| {
+                module.with_appearance_role(role.clone()).with_component_appearance_role(
+                    component,
+                    worth_ui::facade::appearance::UiAppearanceRoleAttachmentDeclaration::new(role.role().clone(), role.revision()),
+                ).expect("Phase F components have one role each")
+            });
+            let builder = worth_ui::facade::app::WorthUi::app()
+                .with_change_profile(worth_ui::facade::rebind::UiChangeProfile::platform_pulse())
+                .register_theme_token(root_token())
+                .register_theme_token(text_token())
+                .register_component(
+                    root_component()
+                        .with_appearance_aspect_contract(root_role.aspect_contract().clone())
+                        .unwrap(),
+                )
+                .register_component(
+                    text_component()
+                        .with_appearance_aspect_contract(text_role.aspect_contract().clone())
+                        .unwrap(),
+                )
+                .register_appearance_role(root_role)
+                .unwrap()
+                .register_appearance_role(text_role)
+                .unwrap()
+                .register_appearance_theme_bundle(appearance::theme())
+                .unwrap()
+                .register_surface(SurfaceDescriptor::new(
+                    SurfaceId::new(SURFACE).expect("Phase F surface identity"),
+                    SurfaceKind::primary_content(),
+                    ComponentId::new(ROOT).expect("Phase F root identity"),
+                    SurfacePlacementClass::primary_region(),
+                    SurfaceStateClass::ephemeral(),
+                ))
+                .with_rust_authored_input(WorthUiRustAuthoredArtifactInput::from_modules([
+                    authored,
+                ]));
+            preparation.install_application_composition(builder)
         })();
         match result {
             Ok(()) => preparation.complete(),
@@ -124,8 +148,8 @@ fn phase_f_program(
         ],
         PhaseFProgramMode::TransitionCourtroom => vec![
             text_frame("ASYNC-A"),
-            text_paint_frame("#d8e8ff", 0).superseding_pending(),
-            text_paint_frame("#ffffff", 1),
+            text_frame("ASYNC-B").superseding_pending(),
+            text_frame("ASYNC-C"),
         ],
     };
     let program =
@@ -146,16 +170,6 @@ fn text_frame(text: &str) -> UiNativeApplicationFrame {
     .expect("Phase F text frame")
 }
 
-fn text_paint_frame(color: &str, expected_revision: u64) -> UiNativeApplicationFrame {
-    UiNativeApplicationFrame::with_theme_token_values([UiNativeThemeTokenValueChange::successor(
-        ThemeTokenId::new(TEXT_TOKEN).expect("Phase F text token"),
-        expected_revision,
-        ThemeTokenValue::color(ThemeColorValue::hex(color).expect("Phase F text paint value")),
-    )
-    .expect("Phase F text paint change")])
-    .expect("Phase F text paint frame")
-}
-
 fn root_component() -> ComponentDescriptor {
     ComponentDescriptor::new(
         ComponentId::new(ROOT).expect("Phase F root identity"),
@@ -163,13 +177,8 @@ fn root_component() -> ComponentDescriptor {
         ComponentChildPolicy::no_children(),
         ComponentStateOwnership::runtime_owned(),
     )
-    .with_static_paint(
-        ComponentStaticPaintContract::opaque_fill(
-            ThemeTokenId::new(ROOT_TOKEN).expect("Phase F root token"),
-            ComponentStaticPaintOrder::back_to_front(0),
-        ),
-        ComponentAllocationMeasurementContract::fill_viewport(),
-    )
+    .with_allocation_measurement_contract(ComponentAllocationMeasurementContract::fill_viewport())
+    .with_surface_paint_order(0)
 }
 
 fn text_component() -> ComponentDescriptor {
@@ -201,6 +210,6 @@ fn color_token(identity: &str, value: &str) -> ThemeTokenDescriptor {
         ThemeTokenId::new(identity).expect("Phase F token identity"),
         ThemeTokenFamily::surface(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex(value).expect("Phase F token color")),
+        ThemeTokenValue::color(UiThemeColor::parse(value).expect("Phase F token color")),
     )
 }

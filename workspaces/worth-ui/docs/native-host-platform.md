@@ -89,7 +89,7 @@ a stop with retained external obligations also exposes cleanup authority.
 
 ## Presentation Contract
 
-Runtime owns presentation meaning and emits one sealed revision-5 work item:
+Runtime owns presentation meaning and emits one sealed revision-6 work item:
 
 - `Initial` carries every attributed command, stable total order, initial
   logical damage, auxiliary reconstruction state, and the surface-issued
@@ -103,6 +103,19 @@ Host mechanics retain commands by owner-issued identity. They may build
 mechanical indexes for execution, but they do not receive the complete
 projection on ordinary successor frames and do not rediscover semantic deltas.
 Candidate retained state commits only after every required surface succeeds.
+
+Revision 6 carries runtime-resolved surface fill, border and corner radii,
+outline, text-range foreground, pointer affordance, Backdrop, and relational
+overlay-order mechanics. Native and headless hosts translate that sealed work;
+they do not select roles, theme cells, visual state, seams, or Portal order.
+Motion arrives as the exact accepted command sample already composed into the
+prepared appearance work.
+
+Border and outline geometry follows half-open mounted visual bounds. A seam
+omission is expressed in owner-surface local coordinates and applies only where
+the owning region's shared edge coincides with that surface's exterior edge.
+Native rasterization preserves border coverage through rounded corners and
+includes qualified anti-alias fringes in damage.
 
 ## Runtime-Service Mechanics
 
@@ -240,9 +253,10 @@ host-native's private Signal owner.
 The checked-in qualified identities are:
 
 - text profile: `worth-ui-body-default-v1`;
-- native profile: `worth-ui-windows-dx12-v1`;
-- host protocol: revision 6;
-- mounted frame and presentation schemas: revision 5;
+- native profile: `worth-ui-windows-dx12-v2`;
+- host protocol: revision 7;
+- mounted frame and presentation schemas: revision 6;
+- text schema: revision 4;
 - observation schema: revision 7;
 - measurement schema: revision 5;
 - solicited-effect schema: revision 1;

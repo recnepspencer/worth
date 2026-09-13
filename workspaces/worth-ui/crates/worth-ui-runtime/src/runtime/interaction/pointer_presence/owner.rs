@@ -191,13 +191,21 @@ impl UiPointerPresenceOwner {
         }
     }
 
-    pub(crate) fn cancel_all(&mut self) {
-        if self.pointers.is_empty() && self.primary_by_surface.is_empty() {
-            return;
+    pub(crate) const fn revision(&self) -> u64 {
+        self.revision
+    }
+
+    pub(crate) fn prepare_cleared(&self) -> Self {
+        let mut successor = Self::new(self.capacity);
+        successor.revision = self.revision;
+        if !self.pointers.is_empty() || !self.primary_by_surface.is_empty() {
+            successor.bump_revision();
         }
-        self.pointers.clear();
-        self.primary_by_surface.clear();
-        self.bump_revision();
+        successor
+    }
+
+    pub(crate) fn cancel_all(&mut self) {
+        *self = self.prepare_cleared();
     }
 
     #[allow(dead_code, reason = "Gate 1 staged pointer retirement")]

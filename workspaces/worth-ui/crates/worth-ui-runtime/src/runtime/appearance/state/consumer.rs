@@ -73,14 +73,6 @@ impl UiAppearanceStateConsumer {
         &self.role
     }
 
-    pub(crate) const fn role_revision(&self) -> UiAppearanceRoleRevision {
-        self.role_revision
-    }
-
-    pub(crate) const fn axes(&self) -> super::UiAppearanceStateAxisDemand {
-        self.axes
-    }
-
     pub(crate) const fn consumes(&self, axis: UiAppearanceStateAxis) -> bool {
         self.axes.contains(axis)
     }
@@ -119,70 +111,5 @@ impl UiAppearanceStateConsumer {
             role_revision: UiAppearanceRoleRevision::new(1).expect("test role revision"),
             axes,
         }
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct UiAppearanceStateConsumerSelection {
-    basis: crate::graph::UiGraphFactIndexBasis,
-    axis: UiAppearanceStateAxis,
-    consumers: Box<[UiAppearanceStateConsumer]>,
-    cost: UiAppearanceStateConsumerSelectionCost,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct UiAppearanceStateConsumerSelectionCost {
-    index_probes: usize,
-    selected_consumers: usize,
-    unrelated_neighborhoods_touched: usize,
-}
-
-impl UiAppearanceStateConsumerSelection {
-    pub(crate) fn new(
-        basis: crate::graph::UiGraphFactIndexBasis,
-        axis: UiAppearanceStateAxis,
-        consumers: Box<[UiAppearanceStateConsumer]>,
-    ) -> Self {
-        let selected_consumers = consumers.len();
-        Self {
-            basis,
-            axis,
-            consumers,
-            cost: UiAppearanceStateConsumerSelectionCost {
-                index_probes: 1,
-                selected_consumers,
-                unrelated_neighborhoods_touched: 0,
-            },
-        }
-    }
-
-    pub(crate) const fn basis(&self) -> crate::graph::UiGraphFactIndexBasis {
-        self.basis
-    }
-
-    pub(crate) const fn axis(&self) -> UiAppearanceStateAxis {
-        self.axis
-    }
-
-    pub(crate) fn consumers(&self) -> &[UiAppearanceStateConsumer] {
-        &self.consumers
-    }
-
-    pub(crate) const fn cost(&self) -> UiAppearanceStateConsumerSelectionCost {
-        self.cost
-    }
-}
-
-impl UiAppearanceStateConsumerSelectionCost {
-    pub(crate) const fn index_probes(self) -> usize {
-        self.index_probes
-    }
-
-    pub(crate) const fn selected_consumers(self) -> usize {
-        self.selected_consumers
-    }
-
-    pub(crate) const fn unrelated_neighborhoods_touched(self) -> usize {
-        self.unrelated_neighborhoods_touched
     }
 }

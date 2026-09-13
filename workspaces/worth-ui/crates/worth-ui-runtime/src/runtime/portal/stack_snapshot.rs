@@ -234,7 +234,7 @@ impl UiPortalStackSnapshot {
         &self.rows
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn for_test(
         owner_revision: u64,
         rows: impl IntoIterator<

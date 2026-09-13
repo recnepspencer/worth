@@ -31,6 +31,7 @@ impl UiActivePressedAppearance {
         presentation: UiHostObservationPresentationBasis,
         position: UiHostSurfacePosition,
         mounted: &crate::mounting::WorthUiMountedSessionState,
+        work: &mut crate::mounting::UiHitTestSpatialWork,
     ) -> Result<bool, UiInteractionTargetingDenial> {
         let node_receipt = mounted
             .current_presented_incarnation_receipt(
@@ -42,7 +43,7 @@ impl UiActivePressedAppearance {
                 presentation,
             )
             .map_err(map_current_affinity_denial)?;
-        let inside = match resolve_presented_target(mounted, presentation, position) {
+        let inside = match resolve_presented_target(mounted, presentation, position, work) {
             Ok(current) => issue_continuity(original, &current).is_ok(),
             Err(UiInteractionTargetingDenial::NoTarget { .. }) => false,
             Err(denial) => return Err(denial),

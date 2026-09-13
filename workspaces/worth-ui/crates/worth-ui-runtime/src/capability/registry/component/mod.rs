@@ -15,8 +15,6 @@ mod component_rendering_contracts;
 mod component_semantic_text_contract;
 mod component_semantic_text_span_contract;
 mod component_state_ownership;
-mod component_static_paint_contract;
-mod component_static_paint_order;
 mod component_viewport_axis_placement;
 mod component_viewport_inset;
 mod component_viewport_region;
@@ -45,8 +43,6 @@ pub use component_semantic_text_contract::{
 };
 pub use component_semantic_text_span_contract::ComponentSemanticTextSpanContract;
 pub use component_state_ownership::ComponentStateOwnership;
-pub use component_static_paint_contract::ComponentStaticPaintContract;
-pub use component_static_paint_order::ComponentStaticPaintOrder;
 pub use component_viewport_axis_placement::ComponentViewportAxisPlacement;
 pub use component_viewport_inset::ComponentViewportInset;
 pub use component_viewport_region::ComponentViewportRegion;

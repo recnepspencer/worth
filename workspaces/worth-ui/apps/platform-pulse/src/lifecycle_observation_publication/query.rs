@@ -60,6 +60,7 @@ impl PlatformPulseObservationPublisher {
         query: crate::query_source::PlatformPulseQueryShutdownReceipt,
         query_watcher: crate::query_source::PlatformPulseExternalValueWatchShutdownReceipt,
         intent_watcher: worth_ui_platform_pulse::intent::PlatformPulseIntentInputWatchShutdownReceipt,
+        theme_watch_released: bool,
         application: &WorthUiNativeApplicationShutdownReceipt,
     ) -> Result<(), PlatformPulseObservationPublicationDenial> {
         let query = PlatformPulseQueryShutdownEvidence::new(
@@ -84,7 +85,9 @@ impl PlatformPulseObservationPublisher {
             intent_watcher.pending_event_count() as u64,
         );
         self.with_publication(|publisher| {
-            publisher.project(|stream| stream.project_shutdown(watcher, query, intent, application))
+            publisher.project(|stream| {
+                stream.project_shutdown(watcher, query, intent, theme_watch_released, application)
+            })
         })
     }
 }

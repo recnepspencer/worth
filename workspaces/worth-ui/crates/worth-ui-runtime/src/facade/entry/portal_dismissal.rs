@@ -16,23 +16,35 @@ pub(crate) enum UiPortalDismissalPublicationOutcome<'session> {
     Stopped(UiPortalDismissalPublicationStop),
 }
 
-pub(in crate::facade::entry) fn finish_portal_service_proposal(
+pub(in crate::facade::entry) fn present_portal_service_proposal(
     session: &mut WorthUiActiveApplicationSession,
+    frame: crate::mounting::UiPreparedMountedFrame,
     proposal: crate::runtime::session::UiStagedPortalProposalTransaction,
-    outcome: crate::mounting::UiMountedFrameOutcome,
+    retain_exit: bool,
+    now_tick: u64,
 ) -> UiPortalDismissalPublicationOutcome<'_> {
-    completion::finish(
+    let outcome = session.present_prepared_portal_frame_internal(
+        frame,
+        &proposal,
+        retain_exit,
+        worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
+        now_tick,
+    );
+    completion::finish_presented(
         UiPortalDismissalAdmitted {
             session,
             proposal: Some(proposal),
+            retain_exit,
         },
         outcome,
+        now_tick,
     )
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiPortalDismissalPublicationStop {
     IdentityExhausted,
+    StalePresentation,
     Transition,
     Proposal,
     Preparation,
@@ -55,6 +67,7 @@ pub(crate) struct UiPortalDismissalPublicationRecovery<'session> {
 struct UiPortalDismissalAdmitted<'session> {
     session: &'session mut WorthUiActiveApplicationSession,
     proposal: Option<crate::runtime::session::UiStagedPortalProposalTransaction>,
+    retain_exit: bool,
 }
 
 struct UiPortalDismissalInFlight<'session> {
@@ -72,6 +85,7 @@ pub(in crate::facade::entry) struct DetachedUiPortalDismissalInFlight {
     session: crate::facade::WorthUiActiveApplicationSessionIdentity,
     proposal: crate::runtime::session::UiStagedPortalProposalTransaction,
     mounted: crate::mounting::UiMountedPresentationInFlight,
+    retain_exit: bool,
 }
 
 pub(in crate::facade::entry) struct DetachedUiPortalDismissalIndeterminate {
@@ -95,14 +109,35 @@ impl WorthUiActiveApplicationSession {
         interaction: crate::facade::interaction::UiDismissInteraction,
         now_tick: u64,
     ) -> UiPortalDismissalPublicationOutcome<'_> {
-        if !self.portal.is_installed() {
+        if self
+            .portal
+            .as_ref()
+            .and_then(|portal| portal.topmost_presentation())
+            .is_none()
+        {
             return UiPortalDismissalPublicationOutcome::IgnoredNoMatchingPortal;
         }
+        let presentation = interaction.presentation();
         let semantic_surface = match self
             .mounted
-            .current_semantic_surface_for_presentation(interaction.presentation())
+            .classify_admitted_interaction_presentation(presentation)
         {
-            Ok(surface) => surface,
+            Ok(_) => match self
+                .mounted
+                .current_surface_for_binding(presentation.binding())
+            {
+                Some(surface) => surface,
+                None => {
+                    return UiPortalDismissalPublicationOutcome::Stopped(
+                        UiPortalDismissalPublicationStop::Transition,
+                    );
+                }
+            },
+            Err(crate::mounting::UiPresentedFrameBasisDenial::Expired) => {
+                return UiPortalDismissalPublicationOutcome::Stopped(
+                    UiPortalDismissalPublicationStop::StalePresentation,
+                );
+            }
             Err(_) => {
                 return UiPortalDismissalPublicationOutcome::Stopped(
                     UiPortalDismissalPublicationStop::Transition,
@@ -186,17 +221,25 @@ impl WorthUiActiveApplicationSession {
                 UiPortalDismissalPublicationStop::Proposal,
             );
         }
-        if expected_presentation.is_some_and(|presentation| {
-            crate::runtime::interaction::targeting::require_current_presentation(
-                &self.mounted,
-                presentation,
-            )
-            .is_err()
-        }) {
-            return UiPortalDismissalPublicationOutcome::Stopped(
-                UiPortalDismissalPublicationStop::Transition,
-            );
-        }
+        let expected_relation = match expected_presentation
+            .map(|presentation| {
+                self.mounted
+                    .classify_admitted_interaction_presentation(presentation)
+            })
+            .transpose()
+        {
+            Ok(relation) => relation,
+            Err(crate::mounting::UiPresentedFrameBasisDenial::Expired) => {
+                return UiPortalDismissalPublicationOutcome::Stopped(
+                    UiPortalDismissalPublicationStop::StalePresentation,
+                );
+            }
+            Err(_) => {
+                return UiPortalDismissalPublicationOutcome::Stopped(
+                    UiPortalDismissalPublicationStop::Transition,
+                );
+            }
+        };
         let lineage = self.next_portal_service_event_identity;
         self.next_portal_service_event_identity = match lineage.checked_add(1) {
             Some(next) => next,
@@ -236,6 +279,11 @@ impl WorthUiActiveApplicationSession {
                 );
             }
         };
+        if expected_relation == Some(crate::mounting::UiPresentedFrameBasisRelation::Retained) {
+            return UiPortalDismissalPublicationOutcome::Stopped(
+                UiPortalDismissalPublicationStop::StalePresentation,
+            );
+        }
         if expected_presentation.is_some_and(|expected| dismissal.presentation() != expected) {
             return UiPortalDismissalPublicationOutcome::Stopped(
                 UiPortalDismissalPublicationStop::Transition,
@@ -312,20 +360,7 @@ impl WorthUiActiveApplicationSession {
                 );
             }
         };
-        let outcome = self.present_prepared_portal_frame_internal(
-            frame,
-            &proposal,
-            true,
-            worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
-            now_tick,
-        );
-        completion::finish(
-            UiPortalDismissalAdmitted {
-                session: self,
-                proposal: Some(proposal),
-            },
-            outcome,
-        )
+        present_portal_service_proposal(self, frame, proposal, true, now_tick)
     }
 }
 
@@ -359,18 +394,4 @@ fn dismissal_trigger(
             )
         }
     }
-}
-
-pub(in crate::facade::entry) fn finish_detached_portal_proposal<'session>(
-    session: &'session mut WorthUiActiveApplicationSession,
-    proposal: crate::runtime::session::UiStagedPortalProposalTransaction,
-    outcome: crate::mounting::UiMountedFrameOutcome,
-) -> UiPortalDismissalPublicationOutcome<'session> {
-    completion::finish(
-        UiPortalDismissalAdmitted {
-            session,
-            proposal: Some(proposal),
-        },
-        outcome,
-    )
 }

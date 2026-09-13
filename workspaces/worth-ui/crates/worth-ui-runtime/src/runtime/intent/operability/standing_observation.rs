@@ -1,6 +1,9 @@
 use crate::declaration::UiIntentCatalogResolvedRoute;
 use crate::runtime::interaction::UiPresentedInteractionTargetView;
 
+#[path = "standing_observation/inspection.rs"]
+mod inspection;
+
 /// An observation of declared operability, never permission to execute an intent.
 pub(crate) struct UiIntentStandingOperabilityObservation {
     generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,

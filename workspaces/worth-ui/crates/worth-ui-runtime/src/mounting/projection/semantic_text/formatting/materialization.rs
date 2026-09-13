@@ -1,6 +1,25 @@
 use super::*;
 
 impl UiMountedSemanticTextRowFormatting<'_> {
+    pub(in crate::mounting::projection) fn appearance_foreground_spans(
+        &self,
+    ) -> impl Iterator<Item = UiMountedTextPaintSpanIdentity> + '_ {
+        let (default, spans): (_, &[UiMountedSemanticTextResolvedSpan]) = match self {
+            Self::Default(default) => (
+                default
+                    .appearance_foreground
+                    .then_some(default.paint_identity),
+                &[],
+            ),
+            Self::ScalarSpans(spans, _) => (None, spans),
+        };
+        default.into_iter().chain(
+            spans
+                .iter()
+                .filter_map(|span| span.appearance_foreground.then_some(span.paint_identity)),
+        )
+    }
+
     pub(in crate::mounting::projection::semantic_text) const fn line_height_millipoints(
         self,
     ) -> Option<u32> {

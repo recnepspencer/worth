@@ -1,6 +1,14 @@
 use super::{WorthUiApplicationCutoverTransition, WorthUiPreparedApplicationActivation};
 
 impl WorthUiPreparedApplicationActivation {
+    pub(in crate::facade::entry) fn candidate_replacement_authority(
+        &self,
+    ) -> &crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority {
+        self.prepared_transition()
+            .candidate_replacement_authority()
+            .expect("application replacement owns its prepared successor")
+    }
+
     pub(super) const fn candidate_service_policy_plan(
         &self,
     ) -> crate::declaration::UiNormalizedServicePolicyPlan {
@@ -13,7 +21,9 @@ impl WorthUiPreparedApplicationActivation {
         self.visual_trace_source.clone()
     }
 
-    pub(super) fn candidate_plan(&self) -> &crate::runtime::WorthUiActiveExecutionPlan {
+    pub(in crate::facade::entry) fn candidate_plan(
+        &self,
+    ) -> &crate::runtime::WorthUiActiveExecutionPlan {
         self.prepared_transition().candidate_plan()
     }
 

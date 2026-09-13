@@ -22,6 +22,7 @@ pub(crate) struct UiFocusRuntimeState {
     >,
     pub(super) portal_restorations:
         BTreeMap<super::UiPortalFocusBoundaryIdentity, Option<super::UiFocusRestorationToken>>,
+    pub(super) structural_revision: u64,
     pub(super) revision: u64,
     pub(super) appearance_revision: u64,
     pub(super) last_transition: Option<super::UiFocusTransitionReceipt>,
@@ -60,6 +61,7 @@ impl UiFocusRuntimeState {
             modality: super::UiFocusVisibleModality::Initial,
             pending_portal: BTreeMap::new(),
             portal_restorations: BTreeMap::new(),
+            structural_revision: 0,
             revision: 0,
             appearance_revision: 0,
             last_transition: None,

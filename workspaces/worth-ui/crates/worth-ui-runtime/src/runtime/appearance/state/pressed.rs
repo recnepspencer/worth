@@ -81,34 +81,4 @@ impl UiPressedAppearanceState {
     pub(crate) const fn class(&self) -> UiAppearanceAxisClass {
         self.class
     }
-
-    pub(crate) const fn source_class(
-        &self,
-    ) -> Option<crate::runtime::interaction::gesture::UiPressedAppearanceClass> {
-        self.source_class
-    }
-
-    pub(crate) const fn owner_revision(&self) -> u64 {
-        self.owner_revision
-    }
-
-    pub(crate) const fn pointer(&self) -> Option<UiHostPointerIdentity> {
-        self.pointer
-    }
-
-    pub(crate) const fn presentation(&self) -> Option<UiHostObservationPresentationBasis> {
-        self.presentation
-    }
-
-    pub(crate) const fn target(&self) -> UiMountedInstanceIdentity {
-        self.target
-    }
-
-    pub(crate) const fn node_receipt(&self) -> Option<UiMountedNodeReceiptIdentity> {
-        self.node_receipt
-    }
-
-    pub(crate) const fn press_sequence(&self) -> Option<UiHostObservationSequence> {
-        self.press_sequence
-    }
 }

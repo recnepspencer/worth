@@ -50,6 +50,7 @@ pub(super) fn mounted_surface_with_edges(
             bounds: input.allocation,
             clip: input.clip,
             surface_paint_order: 0,
+            portal_group: None,
             radii: UiAppearanceNormalizedLogicalRadii::normalize(input.allocation, input.radii),
             border_edges,
             border_omissions: Box::new([]),
@@ -110,6 +111,7 @@ pub(super) fn mounted_outline(
     UiMountedOutlineAppearanceMechanic::complete_from_runtime_mounting(
         UiMountedOutlineAppearanceCompletionInput {
             surface_paint_order: 0,
+            portal_group: None,
             issuer,
             node_receipt: issuer.receipt_for(UiMountedInstanceIdentity::mint_unbound().unwrap()),
             clip: input.clip,

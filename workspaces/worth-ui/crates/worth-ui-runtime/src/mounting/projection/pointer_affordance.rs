@@ -6,7 +6,7 @@ use std::rc::Rc;
 use worth_ui_host_contract::*;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(crate) struct UiMountedPointerAffordanceWork {
+pub struct UiMountedPointerAffordanceWork {
     pub(crate) observations_examined: usize,
     pub(crate) targets_examined: usize,
     pub(crate) membership_key_probes: usize,
@@ -36,10 +36,36 @@ pub(crate) struct UiMountedPointerAffordanceState {
     rows: Rc<BTreeMap<UiSemanticSurfaceIdentity, RetainedPointer>>,
     admitted: Rc<BTreeMap<UiSemanticSurfaceIdentity, UiPointerAffordanceObservationIdentity>>,
     staged: Option<StagedPointers>,
+    staged_empty: bool,
     work: UiMountedPointerAffordanceWork,
 }
 
 impl UiMountedPointerAffordanceState {
+    pub(in crate::mounting::projection) fn settle_without_output(&self) -> Option<Self> {
+        if self.staged_empty {
+            if !self.rows.is_empty() || !self.admitted.is_empty() {
+                return None;
+            }
+            let mut next = self.clone();
+            next.staged_empty = false;
+            next.work.surfaces_changed = 0;
+            return Some(next);
+        }
+        let staged = self.staged.as_ref()?;
+        if !self.rows.is_empty()
+            || !self.admitted.is_empty()
+            || !staged.rows.is_empty()
+            || staged.observation.is_some()
+            || !staged.admitted_surfaces.is_empty()
+        {
+            return None;
+        }
+        let mut next = self.clone();
+        next.staged = None;
+        next.work.surfaces_changed = 0;
+        Some(next)
+    }
+
     #[cfg(test)]
     pub(in crate::mounting) fn retained_mechanic_for_test(
         &self,
@@ -87,12 +113,24 @@ impl UiMountedPointerAffordanceState {
         observation: Option<&UiPointerAffordanceSnapshot>,
         admitted_surfaces: Vec<UiSemanticSurfaceIdentity>,
     ) {
+        if self.rows.is_empty()
+            && self.admitted.is_empty()
+            && desired.is_empty()
+            && observation.is_none()
+            && admitted_surfaces.is_empty()
+        {
+            self.staged = None;
+            self.staged_empty = true;
+            self.work = work;
+            return;
+        }
         self.staged = Some(StagedPointers {
             rows: desired.into(),
             surfaces: Rc::new(surfaces.into_iter().collect()),
             observation: observation.map(UiPointerAffordanceSnapshot::observation_identity),
             admitted_surfaces: admitted_surfaces.into(),
         });
+        self.staged_empty = false;
         self.work = work;
     }
 
@@ -164,11 +202,14 @@ impl UiMountedPointerAffordanceState {
         bindings: &BTreeMap<UiSemanticSurfaceIdentity, UiMountedSurfaceBindingRequirement>,
     ) -> Result<(Self, Vec<UiUnpublishedAppearanceFragment>), super::UiMountedAppearanceOutputDenial>
     {
-        let desired = self
-            .staged
-            .as_ref()
-            .map(|staged| staged.rows.to_vec())
-            .unwrap_or_else(|| self.rows.values().map(|row| row.mechanic).collect());
+        let desired = if self.staged_empty {
+            Vec::new()
+        } else {
+            self.staged
+                .as_ref()
+                .map(|staged| staged.rows.to_vec())
+                .unwrap_or_else(|| self.rows.values().map(|row| row.mechanic).collect())
+        };
         let mut next = self.clone();
         let mut current = BTreeMap::new();
         for mechanic in desired {
@@ -211,18 +252,18 @@ impl UiMountedPointerAffordanceState {
             let successor = current.get(&surface).copied();
             let changed = previous.map(|row| row.mechanic) != successor;
             let reconstruction = previous.is_some_and(|row| row.reconstruction);
-            if changed || reconstruction && successor.is_some() {
-                if previous.is_some() || successor.is_some() {
-                    fragments.push(lower_fragment(
-                        frame,
-                        presentation,
-                        binding,
-                        previous,
-                        successor,
-                        reconstruction,
-                    )?);
-                    next.work.surfaces_changed += 1;
-                }
+            if (changed || reconstruction && successor.is_some())
+                && (previous.is_some() || successor.is_some())
+            {
+                fragments.push(lower_fragment(
+                    frame,
+                    presentation,
+                    binding,
+                    previous,
+                    successor,
+                    reconstruction,
+                )?);
+                next.work.surfaces_changed += 1;
             }
             match successor {
                 Some(mechanic) if changed || reconstruction => {
@@ -252,6 +293,7 @@ impl UiMountedPointerAffordanceState {
             }
         }
         next.staged = None;
+        next.staged_empty = false;
         Ok((next, fragments))
     }
 }

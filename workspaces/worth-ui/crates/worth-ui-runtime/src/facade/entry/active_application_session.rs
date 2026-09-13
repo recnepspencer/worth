@@ -47,6 +47,8 @@ pub(in crate::facade::entry) use portal_exit_retention::{
 #[cfg(any(test, feature = "certification-support"))]
 #[path = "active_application_session/plan_observation.rs"]
 mod plan_observation;
+#[path = "active_application_session/pointer_inspection.rs"]
+mod pointer_inspection;
 #[path = "active_application_session/portal_exit_retention.rs"]
 mod portal_exit_retention;
 #[path = "active_application_session/portal_motion.rs"]
@@ -70,8 +72,6 @@ mod service_state_observation;
 #[path = "active_application_session/service_state_reconciliation.rs"]
 mod service_state_reconciliation;
 mod shutdown;
-#[path = "active_application_session/theme_values.rs"]
-mod theme_values;
 /// The one ordinary owner of a running Worth UI application generation.
 pub struct WorthUiActiveApplicationSession {
     pub(super) identity: WorthUiActiveApplicationSessionIdentity,
@@ -115,6 +115,8 @@ pub struct WorthUiActiveApplicationSession {
         Option<crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
     pub(super) appearance_owner_snapshot:
         Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+    pub(super) mounted_owner_receipt_successions:
+        super::mounted_owner_receipt_succession::UiMountedOwnerReceiptSuccessionCoordinator,
     pub(super) visual_inspection:
         crate::inspection::visual_snapshot::WorthUiVisualInspectionAuthority,
     pub(super) next_visual_capture_identity: u64,
@@ -175,6 +177,72 @@ impl WorthUiActiveApplicationSession {
         &self,
     ) -> Option<&crate::runtime::appearance::UiAppearanceOwnerSnapshot> {
         self.appearance_owner_snapshot.as_ref()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn replace_appearance_theme_definition_for_test(
+        &mut self,
+        definition: &str,
+        changed_token: &crate::capability::ThemeTokenId,
+    ) {
+        let receipts = {
+            let themes = self
+                .capabilities()
+                .appearance_themes()
+                .expect("appearance test session must carry a theme bundle");
+            let identity = crate::capability::UiThemeDefinitionIdentity::new(definition).unwrap();
+            let roles = self.capabilities().appearance_roles();
+            self.presentation
+                .appearance_theme_state()
+                .expect("appearance test session must have active theme bindings")
+                .active_bindings()
+                .map(|binding| {
+                    crate::runtime::appearance::UiThemeCapabilityAdmission::
+                        from_frozen_capabilities(
+                            themes,
+                            &identity,
+                            roles,
+                            binding.capability().host_profile(),
+                        )
+                        .unwrap()
+                        .issue(
+                            binding
+                                .capability()
+                                .required_roles()
+                                .iter()
+                                .map(|role| role.identity().clone()),
+                            binding.surface(),
+                            self.active_generation_identity(),
+                        )
+                        .unwrap()
+                })
+                .collect::<Vec<_>>()
+        };
+        let authority = self.application.prepared_authority();
+        let index = authority.consumed_fact_index();
+        let declarations = authority.authored_declaration_lookup();
+        let authored = declarations
+            .theme_token_declaration_identity(changed_token.as_str())
+            .unwrap_or(changed_token.as_str());
+        let selected = index
+            .select_appearance_slot_consumers(index.basis(), changed_token.as_str(), authored)
+            .expect("test theme switch selects declared slot consumers");
+        for receipt in receipts {
+            let (batch, _) =
+                crate::runtime::appearance::UiAppearanceInvalidationBatch::theme_surface(
+                    index,
+                    &self.mounted,
+                    self.graph(),
+                    receipt.surface(),
+                    selected.consumers(),
+                )
+                .expect("test theme switch selects only the bound surface");
+            self.presentation
+                .replace_appearance_theme_binding_for_test(receipt);
+            self.presentation
+                .queue_appearance_invalidation(batch)
+                .expect("test theme switch queues its surface invalidation");
+        }
     }
 
     pub fn resolve_affected_scope(
@@ -239,6 +307,21 @@ impl WorthUiActiveApplicationSession {
             intent_catalog,
             consumed_facts,
         ) = turn.into_parts();
+        if self
+            .presentation
+            .appearance_invalidation_batch()
+            .is_some_and(|pending| pending.basis() != consumed_facts.basis())
+        {
+            // Framework measurements may advance the dependency index before
+            // initial publication. Recompute pending work on that exact index.
+            self.presentation
+                .queue_appearance_invalidation(
+                    crate::runtime::appearance::UiAppearanceInvalidationBatch::initial(
+                        consumed_facts,
+                    ),
+                )
+                .expect("appearance invalidation revision remains available");
+        }
         Ok(WorthUiActiveFrameworkTurnCompletion {
             application_session_identity: self.identity,
             generation_identity,
@@ -255,11 +338,15 @@ impl WorthUiActiveApplicationSession {
             host_session: &self.host_session,
             host_exchange: &mut self.host_exchange,
             focus: self.focus.as_mut(),
+            selection: self.selection.as_mut(),
             portal: self.portal.as_mut(),
             overlay_composition_owners: &mut self.overlay_composition_owners,
             interaction: &mut self.interaction,
             presentation: &mut self.presentation,
-            appearance_owner_snapshot: &self.appearance_owner_snapshot,
+            appearance_owner_snapshot: &mut self.appearance_owner_snapshot,
+            intent_admission: &mut self.intent_admission,
+            intent_application_facts: &mut self.intent_application_facts,
+            mounted_owner_receipt_successions: &mut self.mounted_owner_receipt_successions,
             pointer_affordance_snapshot: &self.pointer_affordance_snapshot,
             appearance_inspection: &mut self.appearance_inspection,
             overlay_appearance,

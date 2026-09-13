@@ -34,6 +34,7 @@ fn candidate_with_slot(
             surface: context.surface,
             binding: context.binding,
             mounted_instance: instance,
+            portal_group: None,
             node_receipt: receipt,
             allocation_basis: UiMountedAllocationBasis::new(
                 1,

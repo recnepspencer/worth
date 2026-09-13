@@ -1,13 +1,33 @@
-use super::{UiMountedFramePreparationDenial as Denial, UiPreparedMountedFrame};
+use super::{UiAssembledMountedFrame, UiMountedFramePreparationDenial as Denial};
 use crate::mounting::projection::UiMountedPointerAffordanceWork;
 
-impl UiPreparedMountedFrame {
+impl UiAssembledMountedFrame {
     pub(crate) fn stage_pointer_affordance(
         &mut self,
         snapshot: Option<&crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
         mounted: &crate::mounting::WorthUiMountedSessionState,
     ) -> Result<(), Denial> {
+        if snapshot
+            .is_some_and(|snapshot| snapshot.generation().prepared_generation() != &self.generation)
+        {
+            return Err(Denial::PointerSnapshotGenerationMismatch);
+        }
         self.stage_pointer_affordance_snapshot(snapshot, mounted, true)
+    }
+
+    pub(crate) fn stage_pointer_affordance_succession(
+        &mut self,
+        succession: &crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+    ) -> Result<(), Denial> {
+        if succession.predecessor().prepared_generation() != &self.generation
+            || succession
+                .snapshot()
+                .is_some_and(|snapshot| snapshot.generation() != succession.successor())
+        {
+            return Err(Denial::PointerSnapshotGenerationMismatch);
+        }
+        self.stage_pointer_affordance_snapshot(succession.snapshot(), mounted, true)
     }
 
     #[cfg(test)]
@@ -16,6 +36,11 @@ impl UiPreparedMountedFrame {
         snapshot: Option<&crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot>,
         mounted: &crate::mounting::WorthUiMountedSessionState,
     ) -> Result<(), Denial> {
+        if snapshot
+            .is_some_and(|snapshot| snapshot.generation().prepared_generation() != &self.generation)
+        {
+            return Err(Denial::PointerSnapshotGenerationMismatch);
+        }
         self.stage_pointer_affordance_snapshot(snapshot, mounted, false)
     }
 
@@ -29,9 +54,6 @@ impl UiPreparedMountedFrame {
         let mut admitted_surfaces = Vec::new();
         let mut work = UiMountedPointerAffordanceWork::default();
         if let Some(snapshot) = snapshot {
-            if snapshot.generation().prepared_generation() != &self.generation {
-                return Err(Denial::PointerSnapshotGenerationMismatch);
-            }
             for projection in snapshot.active_projections() {
                 work.observations_examined += 1;
                 let current_observation =

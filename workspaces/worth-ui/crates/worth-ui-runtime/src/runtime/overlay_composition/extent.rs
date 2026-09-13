@@ -172,6 +172,8 @@ impl UiOverlayMotionBinding {
     pub(crate) const fn portal(self) -> crate::runtime::portal::UiPortalIdentity {
         self.portal
     }
+
+    #[cfg(test)]
     pub(crate) const fn revision(self) -> u64 {
         self.revision
     }

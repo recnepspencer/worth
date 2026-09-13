@@ -2,23 +2,13 @@
 
 ## Status and Placement
 
-Implementation is in Gate 4. Gates 0 and 1 are complete; Gate 1's approved
-integration is `e1d61bce2aeaa059777028f861e797f09c0ea785`. All five Gate 4
-sections remain open. Static paint stays the live publisher until Gate 5.
-
-| Section | Required result |
-| --- | --- |
-| [4a Mounted geometry](#gate-4a--mounted-geometry) | Exact occurrence allocation, surface binding, clipping, and paint order |
-| [4b Text foreground](#gate-4b--text-foreground) | Adopted spans, actual-image damage, accepted coverage, and paint-only work |
-| [4c Motion composition](#gate-4c--motion-composition) | Accepted samples composed once in both directions |
-| [4d Backdrop and Portal](#gate-4d--backdrop-and-portal) | Authored instances, extents, total order, and lifecycle |
-| [4e Integrated closure](#gate-4e--integrated-closure) | Combined mounting/headless behavior, locality, failure, reconstruction, and cleanup |
-
-**Open product decision:** Gate 4a needs a structural placement contract.
-Explicit parent-relative placement for 3.16 and advancing automatic split/stack
-layout from Milestone 4 have different product meanings. Region roles, scalar
-sizing, and eligibility do not determine sibling rectangles. Settle that choice
-before occurrence geometry can close.
+Implementation now spans the production handoffs across Gates 4–6. The detailed
+gate contracts below remain governing, but remaining work closes through five
+ordered vertical slices. Each slice must reach its production entry, physical
+presentation, rejection or partial-settlement recovery, and authoritative
+commit before the next slice becomes the implementation focus. Gate 5's live
+protocol and static-paint deletion are the baseline for this remaining work;
+there is no legacy publisher to preserve or restore.
 
 This spec governs decisions and acceptance. Routine implementation history and
 test-run reports belong in task output and code review, not this document.
@@ -122,35 +112,46 @@ cumulative application dimming, the second backdrop dimming the exposed first
 dialog, no top-dialog self-dimming, and depth-one restoration within tolerance.
 Masks may exclude AA/edges/motion/external chrome, never disagreeing stable interiors.
 
-Human review of the actual executable at both sizes/modal depths/focus-visible
-must meet the Linear-or-Notion quality bar: coherent non-flat Mosaic, conventional
-hierarchy/actions, restrained elevation, no disconnected cards/Fluent imitation/
-muddy slab/weak wash. Mechanical checks cannot approve design; design cannot
-approve authority or locality.
+Run one bounded visual review of the actual executable at both sizes, both modal
+depths, and focus-visible posture. Record concrete defects in hierarchy, spacing,
+contrast, clipping, elevation, or interaction feedback and fix material defects.
+Subjective preference without an observable defect does not keep the milestone
+open. Mechanical checks cannot approve design; design cannot approve authority or
+locality.
 
 ### `AP-07`: Coherent-state, authority, and protocol hostility
 
-Through production declarations/session/rebind/publication and headless/native
-contracts, combine a six-axis node, text, two modal depths, same-surface non-modal
-Portal, Motion-retained exit, and two themed surfaces. Press a selected focusable
-target; move presented geometry and captured pointer; change window modality;
-prepare A's theme switch; rebind/reincarnate target and change role/B's binding;
-deliver stale/duplicate/foreign bases in worst lawful order; reject before effects,
-then produce indeterminate physical work; shut down with pointer/switch/exit and
-reconciliation obligations live.
+Use three production-path proofs rather than forcing every hostile condition into
+one application lifetime:
 
-Require coherent exact bases, no stable-ID inheritance or cross-surface theme
-authority, exact pre-effect preservation, retained indeterminate owner, and zero
-clean-shutdown census. Include modal-without-backdrop/non-modal-with-backdrop;
-preserve explicit presence/Motion/order and atomic close/rebind/exit dependents.
-Wrong currentness, mixed reads, committed-geometry hover, cascade, double opacity,
-early quantization, depth/ID sorting, automatic/flattened backdrops, implicit Portal
-Motion, paint-controlled shielding, or timeout-as-success must fail observations.
+1. **Authority and recovery.** Exercise a six-axis node with text on two themed
+   surfaces through source rebind/reincarnation, role and surface-binding change,
+   stale/duplicate/foreign bases, rejection before effects, indeterminate physical
+   work, reconciliation, and shutdown. Require coherent exact bases, no stable-ID
+   inheritance or cross-surface theme authority, exact predecessor preservation,
+   retained recovery authority, and a zero final census.
+2. **Portal, Motion, and modality.** Exercise two modal depths, a same-surface
+   non-modal Portal, modal-without-backdrop, non-modal-with-backdrop, captured
+   pointer geometry, window modality, explicit presence and relational order,
+   Motion-retained exit, atomic close dependents, and clean shutdown.
+3. **Focused state and locality.** Exercise equal and unused theme changes plus
+   mounted geometry/locality at their smallest honest production handoffs. Keep
+   independent selection, damage, and zero-work oracles.
+
+Each proof crosses real declaration, session, publication, and host boundaries.
+Together they must reject wrong currentness, mixed reads, committed-geometry hover,
+cascade, double opacity, early quantization, depth/identity sorting, automatic or
+flattened backdrops, implicit Portal Motion, paint-controlled shielding, and
+timeout-as-success. A diagnostic trace is complete for the journey it observes;
+no proof must choreograph unrelated publications merely to fit the 64-record
+inspection bound.
 
 ### `AP-10`: Scale, locality, and amplification
 
-Use the filtered closure-stress/subprocess lane on integration-spine and nightly/
-master qualification. World: 4,096 nodes in 64 neighborhoods (3,072 styled, 1,024
+Use the filtered closure-stress/subprocess lane as scheduled qualification after
+the affected machinery is stable, including nightly/master qualification. Do not
+rerun it while iterating on unrelated integration failures. World: 4,096 nodes in
+64 neighborhoods (3,072 styled, 1,024
 unstyled controls), 256 roles, 512 slots, six axes with <=64 simultaneously changing
 consumers, 32 text paragraphs, four themed surfaces, 64 Motion tracks, and a 32-deep
 Portal stack with 48 independently placed dark/colored/transparent backdrops.
@@ -678,10 +679,12 @@ publication. Failure preserves the complete prior portal and overlay snapshots;
 it cannot partially publish a presence dependent, reorder an unaffected
 participant, or convert backdrop capacity into Portal shielding capacity.
 
-Focused saturation proofs cover the role catalog, slot catalog, decision cells
-per aspect, mounted projections, concurrent switches, retained records, alias
-hops, independent portal/backdrop rows, placement edges, and stack ordinals.
-Each denial names the exceeded bound and preserves exact current authority.
+Test each capacity boundary once at its owning authority. The resulting focused
+proofs collectively cover the role catalog, slot catalog, decision cells per
+aspect, mounted projections, concurrent switches, retained records, alias hops,
+independent portal/backdrop rows, placement edges, and stack ordinals. Integrated
+fixtures reuse those admitted bounds without repeating every maximum. Each denial
+names the exceeded bound and preserves exact current authority.
 
 Unused roles, themes, state axes, pointer presence, inspection detail, and
 switch capacity create no live owner, per-frame poll, or physical resource.
@@ -823,6 +826,55 @@ while a predecessor is open; they do not close missing integration.
 - **Gate 3:** Merge resolver/indexes with distinct change postures, independent
   reconstruction, one slot relation, and non-authoritative preview.
 
+### Remaining closure sequence
+
+The sequence below governs execution across Gates 4–6. It does not replace or
+reduce the technical acceptance requirements in 4a–4e. A prerequisite exposed
+by a slice belongs to that slice's causal scope; after fixing it, work returns
+immediately to the same production scenario. Focused evidence must pass before
+broad verification. Existing passing proofs remain fixed unless the production
+contract they protect changes.
+
+1. **Replacement geometry transaction.** Close the first-successor path from
+   admitted replacement through occurrence geometry, exact surface-local bounds,
+   clipping, seam ownership, order, damage, host acceptance, and commit. Rejection
+   preserves predecessor geometry and paint; retry and reconstruction consume the
+   same prepared geometry evidence. This slice closes the replacement-dependent
+   requirements of 4a without reopening unrelated locality fixtures.
+2. **Content publication transaction.** Drive one discriminating production
+   sequence: publish `AB` on surfaces A and B; replace it with `CD`; accept A and
+   reject B; prove A shows `CD`, B still shows `AB`, and the exact revision remains
+   incomplete; retry B and prove `CD` appears immediately and that revision alone
+   settles. Repeat with a new mounted occurrence between acceptances so stale
+   coverage cannot count, then return to an omitted surface and reconstruct its
+   current text. Ordinary content, authored-content succession, detached retry or
+   rebase, and reconstruction must all consume exact publication evidence. This
+   slice closes the replacement-dependent requirements of 4b.
+3. **Owner-state and live-theme succession.** Through the same replacement and
+   recovery boundary, publish the first correct successor pixels for Pressed,
+   pending Operability, and live theme changes. Appearance preparation must use
+   current successor geometry, theme authority, and owner-issued lifecycle
+   results; acceptance commits those same results, while rejection preserves the
+   predecessor state and pixels. This slice closes stateful and live-switching
+   requirements that span 4a, 4b, and 6.
+4. **Motion and overlay succession.** Carry accepted Motion samples and relational
+   Portal/Backdrop order through replacement, rejection, retry, reconstruction,
+   and cleanup. Appearance and Motion compose exactly once. Portal/Backdrop order
+   remains issued by the sealed relational owner; raw z-index, source order,
+   identity order, or arbitrary component ranks cannot decide it. This slice
+   closes the production-path requirements of 4c and 4d.
+5. **Integrated closure.** Exercise the real Pulse source-edit journey and one
+   representative native/headless cross-mechanic world. Use the split `AP-07`
+   journeys for hostility, Portal/Motion/modality, and focused locality instead of
+   forcing every condition into that world. Verify the Gate 5 protocol/deletion
+   baseline, then complete Gate 6 design, DX, performance, warning, three-document,
+   and shutdown qualification. The milestone closes on that production evidence
+   and the required independent review.
+
+A slice is a reviewable completion boundary, not a new runtime phase or a status
+ledger. Neighboring passing tests, helper-level success, or a published receipt
+without the required visible result cannot close it.
+
 ### Gate 4: mounting, text, and headless integration
 
 Before further integration, check Query/Signal propagation against UI target and
@@ -831,12 +883,11 @@ as parts compose; do not build a reactive framework or postpone locality to clos
 
 Each section closes through its production handoff and acceptance together.
 Typed denial cannot substitute for required supported success. Gate 4 permits
-unpublished mechanics, headless transport, and reference raster; Gate 5 owns live
-cutover and Gate 6 owns native executable/design qualification.
+unpublished mechanics, headless transport, and reference raster, but remaining
+corrections must also survive the current live Gate 5 protocol and Gate 6 native
+executable path. Do not reintroduce a dual runtime while repairing them.
 
 #### Gate 4a — Mounted geometry
-
-**Status: Open.**
 
 **Result and ownership.** Surface and outline mechanics consume exact mounted
 allocation, layer/order, ancestor coverage, device-scale qualification, and
@@ -920,8 +971,6 @@ clip. This section supplies the geometry and attribution consumed by 4b–4d.
   checks would detect allocation-clipped outlines or a missing/duplicate seam.
 
 #### Gate 4b — Text foreground
-
-**Status: Open.**
 
 **Result and ownership.** Appearance changes paint on explicitly adopted original
 UTF-8 ranges while the existing semantic-text owner retains span identity and
@@ -1027,8 +1076,6 @@ boundary; no semantic-span-slot replacement or broader font profile is introduce
 
 #### Gate 4c — Motion composition
 
-**Status: Open.**
-
 **Result and ownership.** Appearance's raw opacity and Motion's exact accepted
 presentation sample remain distinct inputs. Runtime presentation composes them
 once into `UiMountedPresentationOpacity`. Motion owns tracks, timing, retargeting,
@@ -1081,8 +1128,6 @@ used by authored backdrop Motion in 4d.
 
 #### Gate 4d — Backdrop and Portal
 
-**Status: Open.**
-
 **Result and ownership.** Authored backdrop instances and Portal surfaces lower
 from their distinct owners into the issued total overlay order. This section
 consumes 4a geometry, 4b Portal-child text, and 4c opacity composition. Portal
@@ -1128,34 +1173,35 @@ backdrops remain paint-only authored participants.
 
 #### Gate 4e — Integrated closure
 
-**Status: Open.**
-
 **Result and ownership.** The combined production mounting path satisfies 4a–4d
 at one coherent boundary. This is Gate 4's acceptance decision, not a sixth
-implementation lane or a substitute for the later live cutover.
+implementation lane. Its mechanics must agree with the current live cutover.
 
 **Plan.**
 
-1. Extend the existing shared authored certification world to exercise surface,
-   outline, original-range text foreground, Motion, independent pointer output,
-   backdrops, and Portal content together on multiple semantic surfaces. Reach
-   unpublished mechanics through ordinary declaration, owner, and mounting
-   entry points; reuse the same world for headless transport/reference raster.
+1. Exercise one representative cross-mechanic authored world containing surface,
+   outline, original-range text foreground, Motion, and relational Portal/backdrop
+   composition on multiple semantic surfaces. Reach unpublished mechanics through
+   ordinary declaration, owner, and mounting entry points. Keep independent
+   pointer authority and focused authoritative proofs for mechanics that do not
+   belong in that representative raster.
 2. Drive initial -> appearance-only -> Motion-only -> mixed change -> unchanged
    -> removal -> reconstruction. Include rejection/retry and legal in-flight
    ordering at the boundaries changed by 4a–4d. Compare exact predecessors,
    successor identities, damage, retained resources, and output equivalence.
-3. Run focused owner and affected integration/host-contract/headless/native
-   contract tests, the relevant compile-time denials, formatting, scoped limits,
+3. Run focused owner and affected integration/host-contract tests, semantic
+   headless/native parity with selected native pixel proofs, the one required
+   compile-fail boundary and valid counterpart, formatting, scoped limits,
    boundary/context checks, and removal/version guards. Review the final causal
-   diff independently and reconcile the status in this spec and the roadmap.
+   diff independently and update the three continuing documents.
 
 **Acceptance.**
 
 - All 4a–4d acceptance requirements pass on the final shared implementation.
   Every new mechanic family is field-for-field attributable to current mounted
-  facts, and the combined reference raster agrees with independently stated
-  spatial/color expectations. A collection of isolated mechanic constructors,
+  facts. One representative cross-mechanic reference raster must agree with
+  independently stated spatial/color expectations; focused production-path proofs
+  cover the remaining mechanics and hostile cases. Isolated constructors,
   screenshots, or passing test counts cannot establish this result.
 - Multiple neighborhoods and surfaces preserve exact consumer scope, including
   copies of one declaration. Existing Query/Signal and consumed-fact boundaries
@@ -1180,16 +1226,16 @@ implementation lane or a substitute for the later live cutover.
   `python scripts/quality/scrutinize_rust_functions.py --dirty .`, together with
   affected workspace formatting/build/test commands. Review advisory findings by
   causal scope under the coding guidelines; do not absorb unrelated worktree debt.
-- Appearance still emits zero live host commands, the static-paint publisher and
-  live version constants remain in place, and the Gate 5 atomic cutover is the
-  explicit next handoff. Gate 6 retains full live switching/recovery, native
-  executable pixels and design adjudication, AP-07/AP-10 closure qualification,
-  Pulse migration completion, and milestone-wide documentation/shutdown closure.
-  Passing 4e closes Gate 4 only.
+- The current Gate 5 live protocol remains the only presentation lane and all
+  static-paint symbols remain absent. Gate 6 retains full live
+  switching/recovery, native executable pixels and design adjudication,
+  split AP-07 and scheduled AP-10 qualification, Pulse migration completion, the
+  three continuing documents, and shutdown closure. Passing 4e closes Gate 4's
+  mechanics but does not waive those integrated requirements.
 
-### Gate 5: one atomic live cutover
+### Gate 5: final live protocol and deletion invariant
 
-No branch may merge between Gate 4 and Gate 5. One commit across
+The final live baseline is consistent across
 `worth-ui-host-contract`, `worth-ui-host-headless`, `worth-ui-host-native`,
 `worth-ui-runtime`, `worth-ui-native-platform`, certification/retained-order,
 and Platform Pulse:
@@ -1203,35 +1249,39 @@ and Platform Pulse:
 - wires one host-neutral certification world and the mechanical Platform Pulse
   migration to roles/themes in the same spine.
 
-The first new host emission and last old host emission are the same cutover.
-There is no unpublished dual-runtime window. Protocol/version and deletion
-manifests must be green in that commit.
+The final source tree exposes only the new host emission and contains no live or
+fallback path to the old emission. Protocol/version and deletion manifests must be
+green on the final milestone state; historical commit shape is not an acceptance
+requirement.
 
 ### Gate 6: integration and parallel closeout
 
-First finish live switching, source-edit rebind, exact predecessor/CAS checks,
-multi-surface scope, cancellation, in-flight/indeterminate settlement,
-reconstruction, and Pulse migration with zero `ComponentStaticPaintContract`
-or Unicode icon substitute. Pulse migration is an integration consumer, not a
-late documentation task.
+Slices 2–4 close live switching, source-edit rebind, exact predecessor/CAS
+checks, multi-surface scope, cancellation, in-flight/indeterminate settlement,
+and reconstruction through their production scenarios. Slice 5 completes the
+Pulse migration with zero `ComponentStaticPaintContract` or Unicode icon
+substitute. Pulse migration is an integration consumer, not a late
+documentation task.
 
-Only then parallelize the independent closeout lanes: public-DX compile
-fixtures, `AP-07`, `AP-10` plus saturation/CI qualification, `AP-01` stacked-
-modal visual polish and adjudication, enforcement/deletion verification, and
-continuing documentation. The milestone closes only after native/headless
-parity, contrast/containment/state/locality proofs, exact-zero shutdown, and the
-independent design review all pass.
-
-The real Pulse must be aesthetically excellent and mechanically honest. A
-green test suite does not waive the design judgment; a beautiful screenshot
-does not waive the contracts.
+Only after those production scenarios pass may the independent closeout lanes run
+in parallel: one public-DX compile-fail boundary with its valid counterpart,
+`AP-07`, scheduled `AP-10` and owner-level saturation qualification, bounded
+`AP-01` visual review, enforcement/deletion verification, and the three continuing
+documents below. The milestone closes after semantic native/headless parity,
+selected native pixel proofs, contrast/containment/state/locality evidence,
+exact-zero shutdown, and resolution of material defects from the bounded design
+review.
 
 ## Verification and Documentation Deliverables
 
-Use focused owner tests, affected integration/headless/native contracts, Rust/DSL
-equivalence and valuable compiler denials in existing targets. Cover partitions,
-kinds, forged/wrong-world authority, preview promotion, support, aliases/revisions,
-geometry, exact damage, text reuse, lifecycle, and saturation at actual boundaries.
+Use focused owner tests, affected integration contracts, Rust/DSL equivalence, and
+one meaningful compile-fail boundary in an existing target proving that incomplete
+preparation cannot reach presentation, with a valid counterpart. Require semantic
+native/headless parity and selected native pixel proofs; do not replay every
+scenario independently through both hosts. Cover partitions, kinds,
+forged/wrong-world authority, preview promotion, support, aliases/revisions,
+geometry, exact damage, text reuse, lifecycle, and each saturation boundary once
+at its owner.
 
 Required boundary-relevant implementation checks:
 
@@ -1243,7 +1293,8 @@ python scripts/quality/scrutinize_rust_functions.py --dirty .
 ```
 
 Also run affected formatting/build/tests, protocol/deletion manifests, docs/link
-checks, feature/profile matrix, and required closure-stress. Enforcement includes
+checks, feature/profile matrix, and scheduled closure-stress after affected
+machinery stabilizes. Enforcement includes
 Worth UI apps, concrete authority/private constructors, exhaustive families/census,
 dependency direction, and no forbidden fallback/legacy lane. Preserve exact-count
 legacy deletion, intended/live version, documentation/link, and feature-matrix
@@ -1251,65 +1302,25 @@ gates. Dirty line caps do not prove broader CI coverage; review advisory finding
 by causal scope. Source scans support, not replace, compiler/runtime evidence.
 No new executable/test target, progress ledger, or test-count quota is required.
 
-The implementation must revise these continuing documents rather than create
-milestone residue:
+Keep three authoritative continuing documents current:
 
-- `workspaces/worth-ui/docs/application-lifecycle.md` for the cumulative Pulse
-  appearance/theme journey, external event fields, design evidence, switch
-  behavior, and cleanup;
-- `workspaces/worth-ui/docs/authored-composition.md` for Rust/DSL role and theme
-  lowering, invalid edit preservation, and source provenance;
-- `workspaces/worth-ui/docs/hot-rebind.md` for appearance/theme observation
-  families, indexes, evidence-only succession, affected-scope cost, switch
-  failure, and reconstruction boundaries;
-- `workspaces/worth-ui/docs/interaction-and-intents.md` for hover/pressed/
-  operability adapters and the explicit non-authority of visual state;
-- `workspaces/worth-ui/docs/runtime-services.md` for exported Focus/Selection/
-  Motion state consumed by appearance, Portal-issued total stack order,
-  backdrop presence as a non-authoritative Portal consumer, and the prohibition
-  on callbacks;
-- `workspaces/worth-ui/docs/runtime-subsystems.md` for the new coherent owner
-  snapshot, standing operability/validation facts, existing consumed-fact index
-  ownership, and owner-table changes. Its existing “`BodyDefault` appearance
-  role” wording becomes `UiSemanticTextProfile::BodyDefault`; no 3.16 role may
-  be named `BodyDefault`;
-- `workspaces/worth-ui/docs/text-platform.md` for role-driven foreground,
-  paint-span preservation, alpha-layout reuse, intrinsic-color exclusion, and
-  opacity composition;
-- `workspaces/worth-ui/docs/native-host-platform.md` for protocol floor/current
-  7, mounted/presentation 6, text schema 4, surface/outline/cursor mechanics,
-  ordered authored-backdrop source-over, anti-aliasing, damage, reconstruction,
-  and v2 qualification;
-- `workspaces/worth-ui/docs/inspection.md` for `why_appearance`, theme-switch
-  summaries, relevance/expiry, and non-authority;
-- `workspaces/worth-ui/docs/visual-inspection.md` for appearance attribution,
-  rounded/outline visual bounds, state/theme comparison, stacked-modal visual
-  adjudication, and the continued secondary status of pixels; and
-- `workspaces/worth-ui/AI_README.md` for the stable appearance/theme/state
-  mental model, exact owners, public facade, current support, and successor
-  boundaries.
+- `workspaces/worth-ui/docs/appearance-and-themes.md` is the app-author API guide:
+  roles versus components, slots and themes, state partitions, Rust/DSL examples,
+  backdrop and Portal semantics, switching, text, inspection, performance, limits,
+  and anti-patterns. Examples compile or lower through the real public facade.
+- `workspaces/worth-ui/docs/runtime-subsystems.md` is the runtime architecture
+  guide: coherent owner snapshots, standing facts, consumed-fact indexes,
+  replacement/recovery, Motion/Portal ownership, and lifecycle cleanup.
+- `workspaces/worth-ui/docs/native-host-platform.md` is the host/presentation
+  contract: protocol 7, mounted/presentation 6, text schema 4, mechanics,
+  relational overlay order, anti-aliasing, damage, reconstruction, native/headless
+  semantics, and Windows v2 qualification.
 
-Create one continuing developer-facing document:
-
-- `workspaces/worth-ui/docs/appearance-and-themes.md`, for app authors. It must
-  explain roles versus components, slot catalogs versus theme definitions,
-  explicit surface bindings, aspect coverage, finite state partitions, Rust
-  and DSL examples, independent backdrop declaration/presence/placement and
-  accumulation, live switching,
-  typed denials, text behavior, inspection, performance, current limits, and
-  anti-patterns. Its examples must be compiled
-  or semantically lowered against the real public facade in existing test
-  matrices.
-
-The docs state that `worth-cert-ui` is not a workspace crate or certification
-owner, that mounted preview is the one preview lane, that
-`worth-ui-global-text-v2` remains staged/out of scope, and that icons await the
-Milestone 9 host mechanic rather than being represented by text glyphs.
-
-Revise `_docs/worth-ui/worth_ui_roadmap.md` to link this governing spec and keep
-the 3.17, 3.19, 3.20, 3.22, and Milestone 9 handoffs accurate. Remove or correct
-any text that still presents private static paint as the current appearance
-contract after cutover.
+These documents state the mounted preview boundary, that `worth-cert-ui` is not a
+workspace crate or certification owner, that `worth-ui-global-text-v2` remains
+staged, and that icons await the Milestone 9 host mechanic. Other documentation
+needs correction only when it directly contradicts these final contracts; it is
+not a milestone-wide rewrite requirement.
 
 No phase closeout, duplicate architecture summary, test-count ledger, or
 speculative theme cookbook is a deliverable.
@@ -1317,9 +1328,10 @@ speculative theme cookbook is a deliverable.
 ## Acceptance and Successor Handoff
 
 The milestone closes when its locked contracts, Gates 4–6, decisive proofs,
-required checks, continuing docs, native/headless parity, and exact shutdown census
-are verified on the final implementation. No static-paint or parallel appearance/
-theme/preview/index/presentation authority survives.
+required checks, three continuing documents, semantic native/headless parity,
+selected native pixel proofs, and exact shutdown census are verified on the final
+implementation. No static-paint or parallel appearance/theme/preview/index/
+presentation authority survives.
 
 - **3.17/3.18:** pure typed, aspect-tracked expressions/modules; no hidden resolver.
 - **3.19/3.20:** richer diagnostic projections and mounted visual invariants;

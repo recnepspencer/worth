@@ -1,6 +1,7 @@
 use super::UiMountedPresentationCoordinator;
 
 impl UiMountedPresentationCoordinator {
+    #[cfg(feature = "certification-support")]
     pub(crate) fn require_raster_cache_reconstruction(
         &mut self,
         requirement: worth_ui_host_contract::UiMountedSurfaceBindingRequirement,

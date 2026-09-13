@@ -259,9 +259,6 @@ fn command_with_identity(
     identity: worth_ui_host_contract::UiMountedPaintCommandIdentity,
 ) -> UiMountedPaintCommand {
     match command {
-        UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-            UiMountedPaintCommand::FilledRect { identity, mechanic }
-        }
         UiMountedPaintCommand::SemanticText { mechanic, .. } => {
             UiMountedPaintCommand::SemanticText { identity, mechanic }
         }
@@ -276,10 +273,6 @@ fn command_with_payload(
     donor: UiMountedPaintCommand,
 ) -> UiMountedPaintCommand {
     match (command, donor) {
-        (
-            UiMountedPaintCommand::FilledRect { identity, .. },
-            UiMountedPaintCommand::FilledRect { mechanic, .. },
-        ) => UiMountedPaintCommand::FilledRect { identity, mechanic },
         (
             UiMountedPaintCommand::SemanticText { identity, .. },
             UiMountedPaintCommand::SemanticText { mechanic, .. },

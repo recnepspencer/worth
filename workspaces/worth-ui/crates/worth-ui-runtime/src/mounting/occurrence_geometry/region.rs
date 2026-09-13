@@ -13,30 +13,36 @@ pub struct UiMountedMosaicRegionGeometry {
     bounds: UiMountedCanonicalBox,
 }
 
+/// Completed region rectangles grouped by executed region declaration.
+pub(super) type UiMountedCompletedRegionsByDeclaration = BTreeMap<
+    UiMosaicRegionDeclarationIdentity,
+    Vec<(
+        UiMountedInstanceIdentity,
+        worth_ui_host_contract::UiMountIncarnation,
+        UiMountedCanonicalBox,
+    )>,
+>;
+
+/// Completed region rectangles keyed by their exact owner occurrence.
+pub(super) type UiMountedExactRegionBounds =
+    BTreeMap<(UiMountedInstanceIdentity, UiMosaicRegionDeclarationIdentity), UiMountedCanonicalBox>;
+
+/// Everything region completion establishes for one surface batch: grouped
+/// and exact rectangles, surface paint postures, seam index rows, and the
+/// seam adjacencies visited while completing them.
+pub(super) type UiMountedCompletedRegions = (
+    UiMountedCompletedRegionsByDeclaration,
+    UiMountedExactRegionBounds,
+    BTreeMap<UiMountedInstanceIdentity, super::UiMountedSurfacePaintPosture>,
+    usize,
+    usize,
+);
+
 pub(super) fn complete_regions(
     batch: &super::UiMountedSurfaceGeometryBatch,
     resolved: &BTreeMap<UiMountedInstanceIdentity, UiMountedCanonicalBox>,
     identity: &crate::mounting::UiMountedIdentityState,
-) -> Result<
-    (
-        BTreeMap<
-            UiMosaicRegionDeclarationIdentity,
-            Vec<(
-                UiMountedInstanceIdentity,
-                worth_ui_host_contract::UiMountIncarnation,
-                UiMountedCanonicalBox,
-            )>,
-        >,
-        BTreeMap<
-            (UiMountedInstanceIdentity, UiMosaicRegionDeclarationIdentity),
-            UiMountedCanonicalBox,
-        >,
-        BTreeMap<UiMountedInstanceIdentity, super::UiMountedSurfacePaintPosture>,
-        usize,
-        usize,
-    ),
-    super::UiMountedOccurrenceGeometryDenial,
-> {
+) -> Result<UiMountedCompletedRegions, super::UiMountedOccurrenceGeometryDenial> {
     use super::UiMountedOccurrenceGeometryDenial as Denial;
     use worth_ui_host_contract::{UiMountedCanonicalBoxInput, UiMountedCoordinateSpace};
     let mut seen = BTreeSet::new();

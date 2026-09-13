@@ -1,7 +1,6 @@
 use super::appearance_publication_support::{establish_geometry, open_portal};
-use super::appearance_surface_scope::publish;
 use super::test_support::portal_target;
-use crate::mounting::UiMountedFrameRequest;
+use crate::mounting::{UiMountedFrameOutcome, UiMountedFrameRequest};
 use worth_ui_host_contract::UiUnpublishedAppearanceFragmentIdentity;
 
 #[test]
@@ -10,52 +9,13 @@ fn portal_only_publication_needs_no_backdrop_appearance_owner() {
         super::appearance_publication_support::appearance_overlay_session_with_source(
             super::test_support::AUTHORED_PORTAL_SOURCE,
         );
-    verify_structural_portal(
-        &mut session,
-        &host,
-        false,
-        super::test_support::AUTHORED_PORTAL_SOURCE,
-    );
-    let _ = session.shutdown();
-}
-
-#[test]
-fn attached_opacity_only_portal_keeps_structural_order_without_surface_paint() {
-    use worth_ui_dsl::*;
-    let source = super::test_support::AUTHORED_PORTAL_SOURCE.replace(
-        "component workspace.component.overlay {",
-        "appearance role overlay.content applies_to workspace.component.overlay { opacity use token(overlay.scrim.opacity) }\ncomponent workspace.component.overlay { appearance { role overlay.content }",
-    );
-    let role =
-        UiAppearanceRole::authoring(UiAppearanceRoleIdentity::new("overlay.content").unwrap())
-            .applies_to_component(
-                UiDslComponentReference::new("workspace.component.overlay").unwrap(),
-            )
-            .cover(
-                UiAppearanceAspect::Opacity,
-                UiAppearancePartitionAuthoring::new([]).with_cell(
-                    UiAppearanceCell::when([]).uses_slot(
-                        UiThemeSlotIdentity::new("overlay.scrim.opacity").unwrap(),
-                        UiThemeValueKind::Opacity,
-                    ),
-                ),
-            )
-            .unwrap()
-            .build()
-            .unwrap();
-    let (mut session, host) =
-        super::appearance_publication_support::appearance_overlay_session_with_component_role(
-            &source, role,
-        );
-    verify_structural_portal(&mut session, &host, true, &source);
+    verify_structural_portal(&mut session, &host);
     let _ = session.shutdown();
 }
 
 fn verify_structural_portal(
     session: &mut crate::facade::WorthUiActiveApplicationSession,
     host: &crate::certification_support::ScriptedPresentationHost,
-    attached: bool,
-    source: &str,
 ) {
     let bindings = session
         .application
@@ -80,7 +40,10 @@ fn verify_structural_portal(
     establish_geometry(session, surface);
     assert!(session.appearance_owner_snapshot.is_none());
     publish(session, host, &[surface], true);
-    super::appearance_publication_support::close_source_with(session, source);
+    super::appearance_publication_support::close_source_with(
+        session,
+        super::test_support::AUTHORED_PORTAL_SOURCE,
+    );
     drop(
         session
             .prepare_mounted_frame_with_application_presentation(
@@ -92,15 +55,16 @@ fn verify_structural_portal(
     let identity = open_portal(session, surface, graph, mounted, portal, 1);
     crate::facade::entry::mounted_occurrence_geometry_test_support::
         refresh_nonoverlapping_surface_geometry(session, surface);
+    assert_missing_order_denied_before_host(session, host, surface);
     publish(session, host, &[surface], false);
-    assert_eq!(session.appearance_owner_snapshot.is_some(), attached);
+    assert!(session.appearance_owner_snapshot.is_none());
     assert_eq!(
         session
             .mounted
             .current_projection_rc_for_test()
             .unwrap()
             .portal_has_appearance_attachment(mounted, surface),
-        Ok(attached),
+        Ok(false),
         "the exact published mount carries the graph-authored attachment; successful attached publication consumed its retained projection"
     );
     let snapshot = session
@@ -139,7 +103,40 @@ fn verify_structural_portal(
         fragment.work().successor().overlay_order().bottom_to_top(),
         &[worth_ui_host_contract::UiOverlayParticipantIdentity::Portal(mounted)]
     );
-    worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+    worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
+    let previous_extent = snapshot.extent_revision();
+    crate::facade::entry::mounted_occurrence_geometry_test_support::
+        refresh_nonoverlapping_surface_geometry(session, surface);
+    publish(session, host, &[surface], false);
+    let refreshed = session
+        .overlay_composition_owners
+        .current_for_test(surface)
+        .unwrap()
+        .current()
+        .unwrap();
+    assert!(refreshed.extent_revision() > previous_extent);
+    assert_eq!(
+        refreshed.extent_revision(),
+        session
+            .mounted
+            .current_surface_viewport(surface)
+            .unwrap()
+            .0
+            .get()
+    );
+    assert_eq!(
+        refreshed.participants().len(),
+        1,
+        "an extent revision preserves the one issued Portal without inventing a Backdrop"
+    );
+    assert_eq!(
+        session
+            .overlay_composition_owners
+            .backdrop_work_for_test(surface)
+            .unwrap()
+            .roles_resolved,
+        0
+    );
     let close = crate::runtime::portal::UiPortalServiceRequest::close(
         identity,
         crate::runtime::intent_execution::UiIntentExecutionIdempotencyIdentity::issued(
@@ -189,5 +186,75 @@ fn verify_structural_portal(
         &[worth_ui_host_contract::UiOverlayParticipantIdentity::Portal(mounted)]
     );
     assert!(removed.work().damage().is_empty());
-    worth_ui_host_headless::translate_unpublished_appearance_for_certification(output).unwrap();
+    worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
+}
+
+fn publish(
+    session: &mut crate::facade::WorthUiActiveApplicationSession,
+    host: &crate::certification_support::ScriptedPresentationHost,
+    surfaces: &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+    initial: bool,
+) {
+    let frame = session
+        .prepare_mounted_frame_with_application_presentation(
+            UiMountedFrameRequest::exact_surfaces(surfaces.to_vec()),
+            |_| {},
+        )
+        .unwrap_or_else(|_| panic!("exact surface frame must prepare"));
+    for _ in surfaces {
+        if initial {
+            host.push_native_display_presented();
+        } else {
+            host.push_native_display_settled_without_effects();
+        }
+    }
+    assert!(matches!(
+        session.present_prepared_mounted_frame_internal(
+            frame,
+            worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
+            10,
+        ),
+        UiMountedFrameOutcome::Published(_) | UiMountedFrameOutcome::Unchanged(_)
+    ));
+}
+
+fn assert_missing_order_denied_before_host(
+    session: &mut crate::facade::WorthUiActiveApplicationSession,
+    host: &crate::certification_support::ScriptedPresentationHost,
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+) {
+    let predecessor = session.current_mounted_publication().unwrap().frame();
+    let calls = host.presentation_calls();
+    let request = session.mounted_frame_request();
+    assert!(request
+        .portal_overlays()
+        .iter()
+        .any(|portal| portal.surface() == surface));
+    let frame = session
+        .prepare_mounted_frame_with_application_presentation(request, |_| {})
+        .unwrap_or_else(|_| panic!("the actual open Portal frame must prepare"));
+    // Exercise the production presentation boundary with the required composition omitted.
+    let (outcome, _, _, _) = session
+        .mounted
+        .present_prepared_frame_with_overlays(
+            &session.host_session,
+            frame,
+            None,
+            worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
+            10,
+            |_, _, _| Ok(Vec::new()),
+        )
+        .into_parts();
+    let crate::mounting::UiMountedFrameOutcome::AdmissionDenied(rejection) = outcome else {
+        panic!("a mounted Portal without relational order must deny before presentation");
+    };
+    assert!(matches!(
+        rejection.denial(),
+        crate::mounting::UiMountedPresentationAdmissionDenial::AppearanceOutputUnavailable
+    ));
+    assert_eq!(host.presentation_calls(), calls);
+    assert_eq!(
+        session.current_mounted_publication().unwrap().frame(),
+        predecessor
+    );
 }

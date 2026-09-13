@@ -26,16 +26,13 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             self.allocation_source
                 .projection(instance.graph_node_identity()),
         )?;
-        let static_paint = super::super::static_paint::lower_static_paint_seed(
-            self.plan,
-            self.theme_values,
-            plan_index,
-        )?;
         let predecessor = self
             .predecessor
             .and_then(|semantic| semantic.node(instance.identity()))
             .and_then(|node| node.semantic_text.as_ref());
-        let semantic_input = self.semantic_content.get(instance.graph_node_identity());
+        let (semantic_input, text_source_lookups) = self
+            .semantic_content
+            .text_for_lowering(instance.graph_node_identity(), predecessor.is_some());
         let semantic_text_formatting = super::super::semantic_text::lower_semantic_text_formatting(
             self.plan,
             self.theme_values,
@@ -108,7 +105,7 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             .map_or((None, None, None), |(component, owner, order)| (Some(component), owner, order));
         let participation = super::lower_participation(
             graph_node.participation_posture(),
-            static_paint.is_some() || semantic_text.is_some(),
+            semantic_text.is_some() || graph_node.has_appearance_attachment(),
             hit_test.is_some(),
         );
         let (appearance_clip, clip_ancestry_entries) =
@@ -135,8 +132,8 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             surface_paint_order,
             has_appearance_attachment: graph_node.has_appearance_attachment(),
             clip_ancestry_entries,
+            text_source_lookups,
             plan_index,
-            static_paint,
             semantic_text,
             hit_test,
             focus_support,

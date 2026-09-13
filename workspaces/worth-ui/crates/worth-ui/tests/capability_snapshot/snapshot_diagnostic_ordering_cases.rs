@@ -7,7 +7,12 @@ use super::snapshot_fixtures::{command, command_id, component, theme_token_id};
 fn snapshot_diagnostics_stable_under_invalid_input_permutation() {
     let component_with_missing_references = component("component.editor")
         .with_command_binding_slot(command_id("command.missing"))
-        .with_theme_token_dependency(theme_token_id("theme.missing"));
+        .with_semantic_text(
+            worth_ui::facade::declaration::ComponentSemanticTextContract::body_default(
+                theme_token_id("theme.missing"),
+                0,
+            ),
+        );
     let duplicate_command = command("command.duplicate", "Duplicate");
 
     let first = WorthUi::app()

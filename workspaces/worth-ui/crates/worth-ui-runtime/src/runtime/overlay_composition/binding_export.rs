@@ -41,25 +41,6 @@ impl UiOverlayPortalBindingExport {
         })
     }
 
-    #[cfg(test)]
-    pub(super) fn from_prepared(
-        generation: crate::facade::prepared_application_authority::
-            WorthUiPreparedApplicationGenerationIdentity,
-        runtime_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        portal_revision: u64,
-        bindings: impl IntoIterator<Item = UiOverlayPortalBinding>,
-    ) -> Result<Self, UiOverlayBindingExportDenial> {
-        let generation = UiOverlayApplicationGeneration::from_prepared(generation);
-        let rows = bindings.into_iter().collect::<Vec<_>>();
-        reject_duplicate_runtime_portals(&rows)?;
-        Ok(Self {
-            generation,
-            runtime_surface,
-            portal_revision,
-            rows: rows.into_boxed_slice(),
-        })
-    }
-
     pub(super) fn generation(&self) -> &UiOverlayApplicationGeneration {
         &self.generation
     }

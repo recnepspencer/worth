@@ -4,30 +4,21 @@ use worth_ui_host_contract::{
 };
 
 use super::{
-    UiMountedFramePreparationDenial, UiMountedFrameReceipt, UiMountedSurfaceReceipt,
-    UiPreparedMountedFrame, UiPreparedMountedFrameAdmission,
+    UiAssembledMountedFrame, UiMountedFramePreparationDenial, UiMountedFrameReceipt,
+    UiMountedSurfaceReceipt, UiPreparedMountedFrameAdmission,
 };
 
 #[path = "prepared_frame/appearance_binding.rs"]
 mod appearance_binding;
 
-impl UiPreparedMountedFrame {
-    pub(crate) fn set_application_text_publication(
-        &mut self,
-        publication: crate::runtime::presentation_state::UiApplicationTextPublication,
-        mounted: &super::super::WorthUiMountedSessionState,
-    ) {
-        let publication = publication.retain_complete_graphs(|graph| {
-            mounted.text_publication_covers_all_mounts(graph, self.manifest.surfaces())
-        });
-        self.candidate.owner.application_text_publication = Some(std::rc::Rc::new(publication));
-    }
-
-    pub(crate) fn admit(
+impl UiAssembledMountedFrame {
+    pub(in crate::mounting) fn admit(
         admission: UiPreparedMountedFrameAdmission,
     ) -> Result<Self, UiMountedFramePreparationDenial> {
         let UiPreparedMountedFrameAdmission {
-            candidate,
+            mut candidate,
+            text_publication,
+            text_publication_work,
             generation,
             manifest,
             graph_world,
@@ -61,10 +52,19 @@ impl UiPreparedMountedFrame {
         if !integrity.verifies(canonical_core, &manifest) {
             return Err(UiMountedFramePreparationDenial::IntegrityMismatch);
         }
-        let cost = candidate.frame().cost_report();
+        let mut cost = candidate.frame().cost_report();
+        cost.record_text_publication_coverage_work(text_publication_work)
+            .map_err(|_| {
+                UiMountedFramePreparationDenial::Projection(
+                    crate::mounting::UiMountedProjectionDenial::CostCounterOverflow,
+                )
+            })?;
+        candidate.owner.application_text_publication = text_publication;
         let identity_trace_basis = candidate.frame().identity_trace_basis(trace_source);
         Ok(Self {
             candidate,
+            appearance_retry_basis: None,
+            prepared_theme_binding: None,
             generation,
             manifest,
             canonical_core,
@@ -179,13 +179,15 @@ impl UiPreparedMountedFrame {
     pub(crate) fn appearance_motion_targets(
         &self,
         overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
-    ) -> Vec<(
-        worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        worth_ui_host_contract::UiMountedInstanceIdentity,
-    )> {
+    ) -> Result<
+        Vec<(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+        )>,
+        crate::mounting::projection::UiMountedAppearanceOutputDenial,
+    > {
         self.candidate
             .appearance_motion_targets(self.manifest.surfaces(), overlays)
-            .unwrap_or_default()
     }
 
     pub(crate) fn record_accepted_motion_commands_visited(&mut self, count: usize) {
@@ -199,26 +201,11 @@ impl UiPreparedMountedFrame {
         self.candidate.projection_rc()
     }
 
-    pub(crate) fn appearance_node_inputs_for_reconstruction(
-        &self,
-    ) -> Result<
-        Vec<super::super::projection::UiMountedAppearanceNodeInputContext>,
-        super::super::projection::UiMountedProjectionDenial,
-    > {
-        self.candidate
-            .frame()
-            .appearance_node_inputs_for_reconstruction()
-    }
-
     pub(crate) fn set_appearance_invalidation_batch(
         &mut self,
         batch: crate::runtime::appearance::UiAppearanceInvalidationBatch,
     ) {
         self.candidate.set_appearance_invalidation_batch(batch);
-    }
-
-    pub(crate) fn clear_appearance_invalidation_batch(&mut self) {
-        self.candidate.clear_appearance_invalidation_batch();
     }
 
     pub(crate) fn appearance_invalidation_batch(
@@ -247,6 +234,7 @@ impl UiPreparedMountedFrame {
         self.candidate.stage_appearance_projection(attempt)
     }
 
+    #[cfg(test)]
     pub(crate) fn lower_appearance(
         &mut self,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
@@ -259,23 +247,7 @@ impl UiPreparedMountedFrame {
         crate::runtime::appearance::UiAppearanceInspectionAttemptBatch::new(invalidation, records)
     }
 
-    pub(crate) fn lower_appearance_with_motion(
-        &mut self,
-        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
-        motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
-    ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
-        let invalidation = self.appearance_invalidation_batch();
-        let records = self.candidate.lower_appearance_with_motion(
-            presentation,
-            self.manifest.surfaces(),
-            profile,
-            motion,
-        );
-        crate::runtime::appearance::UiAppearanceInspectionAttemptBatch::new(invalidation, records)
-    }
-
-    pub(crate) fn lower_appearance_with_motion_and_overlays(
+    pub(in crate::mounting::assembly) fn lower_appearance_with_motion_and_overlays(
         &mut self,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
@@ -319,20 +291,24 @@ impl UiPreparedMountedFrame {
             canonical_core: self.canonical_core,
             integrity: self.integrity,
             surface_count: self.surfaces.len(),
-            cost: self.cost,
+            cost: self.cost_report(),
         }
     }
 
     pub fn cost_report(&self) -> crate::mounting::UiMountCostReport {
-        self.cost
+        // Appearance and pointer admission finish after structural assembly.
+        // Snapshot their completed measurements when issuing the receipt.
+        self.cost.with_projection_work(
+            self.candidate.appearance_selection_cost_report(),
+            self.candidate
+                .owner
+                .projection()
+                .hit_index_maintenance_work(),
+        )
     }
 
     pub fn reuse_contract(&self) -> &crate::mounting::UiMountedFrameReuseContract {
         &self.reuse_contract
-    }
-
-    pub(crate) fn visual_region_basis(&self) -> crate::mounting::UiMountedVisualRegionBasis {
-        self.candidate.frame().visual_region_basis()
     }
 
     pub(in crate::mounting) fn diagnostic_source(
@@ -349,12 +325,20 @@ impl UiPreparedMountedFrame {
         self.candidate.presented_receipt_basis()
     }
 
-    pub(crate) fn focus_participation_snapshot(
+    pub(in crate::mounting) fn focus_participation_snapshot(
         &self,
+        mounted: &crate::mounting::UiMountedIdentityState,
     ) -> crate::mounting::UiMountedFocusParticipationSnapshot {
-        crate::mounting::UiMountedFocusParticipationSnapshot::from_projection(
+        let surfaces = self
+            .manifest
+            .surfaces()
+            .iter()
+            .map(|surface| surface.semantic_surface())
+            .collect::<Vec<_>>();
+        mounted.project_focus_participation(
             self.candidate.frame(),
             self.presented_receipt_basis(),
+            &surfaces,
         )
     }
 

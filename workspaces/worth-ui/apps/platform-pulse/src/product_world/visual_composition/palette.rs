@@ -1,6 +1,6 @@
 use worth_ui::facade::declaration::{
-    ThemeColorValue, ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId,
-    ThemeTokenSource, ThemeTokenValue,
+    ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
+    ThemeTokenValue, UiThemeColor,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -15,6 +15,7 @@ pub enum PlatformPulsePaletteRole {
     PrimaryText,
     SecondaryText,
     PrincipalAccent,
+    ActionFill,
     ActionText,
     Positive,
     Caution,
@@ -27,7 +28,7 @@ pub enum PlatformPulseSourceSignalRole {
 }
 
 impl PlatformPulsePaletteRole {
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 11] = [
         Self::Canvas,
         Self::RaisedSurface,
         Self::ElevatedSurface,
@@ -35,6 +36,7 @@ impl PlatformPulsePaletteRole {
         Self::PrimaryText,
         Self::SecondaryText,
         Self::PrincipalAccent,
+        Self::ActionFill,
         Self::ActionText,
         Self::Positive,
         Self::Caution,
@@ -49,6 +51,7 @@ impl PlatformPulsePaletteRole {
             Self::PrimaryText => [0xF2, 0xF4, 0xF7, 0xFF],
             Self::SecondaryText => [0xA1, 0xA9, 0xB4, 0xFF],
             Self::PrincipalAccent => [0xAC, 0x67, 0xF2, 0xFF],
+            Self::ActionFill => [0x94, 0x40, 0xD4, 0xFF],
             Self::ActionText => [0xFA, 0xFB, 0xFC, 0xFF],
             Self::Positive => [0x5C, 0xC9, 0x78, 0xFF],
             Self::Caution => [0xE0, 0xAD, 0x62, 0xFF],
@@ -64,6 +67,7 @@ impl PlatformPulsePaletteRole {
             Self::PrimaryText => "primary-text",
             Self::SecondaryText => "secondary-text",
             Self::PrincipalAccent => "principal-accent",
+            Self::ActionFill => "action-fill",
             Self::ActionText => "action-text",
             Self::Positive => "positive",
             Self::Caution => "caution",
@@ -79,6 +83,7 @@ impl PlatformPulsePaletteRole {
             Self::PrimaryText => "#F2F4F7",
             Self::SecondaryText => "#A1A9B4",
             Self::PrincipalAccent => "#AC67F2",
+            Self::ActionFill => "#9440D4",
             Self::ActionText => "#FAFBFC",
             Self::Positive => "#5CC978",
             Self::Caution => "#E0AD62",
@@ -94,6 +99,7 @@ impl PlatformPulsePaletteRole {
             Self::PrimaryText => "primary_text",
             Self::SecondaryText => "secondary_text",
             Self::PrincipalAccent => "principal_accent",
+            Self::ActionFill => "action_fill",
             Self::ActionText => "action_text",
             Self::Positive => "positive",
             Self::Caution => "caution",
@@ -119,7 +125,7 @@ impl PlatformPulsePaletteRole {
             ThemeTokenFamily::surface(),
             ThemeTokenSource::application(),
             ThemeTokenValue::color(
-                ThemeColorValue::hex(self.authored_hex())
+                UiThemeColor::parse(self.authored_hex())
                     .expect("Pulse palette values are valid authored colors"),
             ),
         )
@@ -150,6 +156,30 @@ impl PlatformPulseSourceSignalRole {
             Self::SourceSignalBlue => "source-signal-blue",
             Self::SourceSignalGreen => "source-signal-green",
         }
+    }
+
+    pub fn token_id(self) -> ThemeTokenId {
+        let segment = match self {
+            Self::SourceSignalBlue => "blue",
+            Self::SourceSignalGreen => "green",
+        };
+        ThemeTokenId::new(format!("theme.platform_pulse.{segment}"))
+            .expect("Pulse source-signal roles are valid token identities")
+    }
+
+    pub fn token_descriptor(self) -> ThemeTokenDescriptor {
+        ThemeTokenDescriptor::define(
+            self.token_id(),
+            ThemeTokenFamily::surface(),
+            ThemeTokenSource::application(),
+            ThemeTokenValue::color(
+                UiThemeColor::parse(match self {
+                    Self::SourceSignalBlue => "#2F81F7",
+                    Self::SourceSignalGreen => "#3FB950",
+                })
+                .expect("Pulse source-signal values are valid authored colors"),
+            ),
+        )
     }
 }
 

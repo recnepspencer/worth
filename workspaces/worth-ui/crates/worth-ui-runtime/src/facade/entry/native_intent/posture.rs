@@ -31,6 +31,11 @@ impl WorthUiNativeIntentPosture {
     pub const fn kind(&self) -> WorthUiNativeIntentPostureKind {
         self.kind
     }
+
+    /// The observed target identifies product feedback; it grants no interaction authority.
+    pub const fn mounted_instance(&self) -> worth_ui_host_contract::UiMountedInstanceIdentity {
+        self.observation.mounted_instance()
+    }
 }
 
 impl From<crate::fact_contract::UiIntentPostureKind> for WorthUiNativeIntentPostureKind {

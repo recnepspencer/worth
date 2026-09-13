@@ -142,6 +142,7 @@ impl super::UiFocusRuntimeState {
         ))
     }
 
+    #[cfg(test)]
     pub(super) fn first_in_scope(
         &self,
         scope: super::UiFocusScopeIdentity,

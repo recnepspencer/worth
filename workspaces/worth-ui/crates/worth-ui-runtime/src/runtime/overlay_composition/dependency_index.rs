@@ -6,22 +6,9 @@ use worth_ui_dsl::{
 };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(crate) enum UiOverlayDependencyKind {
-    Scope,
-    Presence,
-    Placement,
-    Motion,
-    Extent,
-}
-
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) enum UiOverlayChangedBasis {
     Portal(UiPortalDeclarationId),
-    PortalScope(UiPortalDeclarationId),
-    PortalPresence(UiPortalDeclarationId),
-    PortalPlacement(UiPortalDeclarationId),
     PortalMotion(UiPortalDeclarationId),
-    Backdrop(UiBackdropIdentity),
     SurfaceExtent(UiSemanticSurfaceDeclarationIdentity),
     RegionExtent(UiMosaicRegionDeclarationIdentity),
 }
@@ -46,16 +33,9 @@ impl UiOverlayChangeSet {
     }
 
     pub(crate) fn has_structural_change(&self) -> bool {
-        self.changes.iter().any(|change| {
-            matches!(
-                change,
-                UiOverlayChangedBasis::Portal(_)
-                    | UiOverlayChangedBasis::PortalScope(_)
-                    | UiOverlayChangedBasis::PortalPresence(_)
-                    | UiOverlayChangedBasis::PortalPlacement(_)
-                    | UiOverlayChangedBasis::Backdrop(_)
-            )
-        })
+        self.changes
+            .iter()
+            .any(|change| matches!(change, UiOverlayChangedBasis::Portal(_)))
     }
 
     pub(crate) fn has_motion_change(&self) -> bool {
@@ -72,53 +52,27 @@ impl UiOverlayChangeSet {
             )
         })
     }
-
-    pub(crate) fn has_declaration_change(&self) -> bool {
-        self.changes
-            .iter()
-            .any(|change| matches!(change, UiOverlayChangedBasis::Backdrop(_)))
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiOverlayAffectedBackdrop {
     identity: UiBackdropIdentity,
-    reasons: Box<[UiOverlayDependencyKind]>,
 }
 
 impl UiOverlayAffectedBackdrop {
     pub(crate) const fn identity(&self) -> UiBackdropIdentity {
         self.identity
     }
-
-    pub(crate) fn reasons(&self) -> &[UiOverlayDependencyKind] {
-        &self.reasons
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiOverlayAffectedScope {
     backdrops: Box<[UiOverlayAffectedBackdrop]>,
-    portals: Box<[UiPortalDeclarationId]>,
-    surfaces: Box<[UiSemanticSurfaceDeclarationIdentity]>,
-    regions: Box<[UiMosaicRegionDeclarationIdentity]>,
 }
 
 impl UiOverlayAffectedScope {
     pub(crate) fn backdrops(&self) -> &[UiOverlayAffectedBackdrop] {
         &self.backdrops
-    }
-
-    pub(crate) fn portals(&self) -> &[UiPortalDeclarationId] {
-        &self.portals
-    }
-
-    pub(crate) fn surfaces(&self) -> &[UiSemanticSurfaceDeclarationIdentity] {
-        &self.surfaces
-    }
-
-    pub(crate) fn regions(&self) -> &[UiMosaicRegionDeclarationIdentity] {
-        &self.regions
     }
 }
 
@@ -246,143 +200,62 @@ impl UiOverlayDependencyIndex {
     }
 
     pub(crate) fn affected_scope(&self, changes: &UiOverlayChangeSet) -> UiOverlayAffectedScope {
-        let mut selected = BTreeMap::<UiBackdropIdentity, BTreeSet<UiOverlayDependencyKind>>::new();
-        let mut portals = BTreeSet::new();
-        let mut surfaces = BTreeSet::new();
-        let mut regions = BTreeSet::new();
-        let close_relations = changes.changes().iter().any(|change| {
-            matches!(
-                change,
-                UiOverlayChangedBasis::Portal(_)
-                    | UiOverlayChangedBasis::PortalScope(_)
-                    | UiOverlayChangedBasis::PortalPresence(_)
-                    | UiOverlayChangedBasis::PortalPlacement(_)
-                    | UiOverlayChangedBasis::Backdrop(_)
-            )
-        });
+        let mut selected = BTreeSet::<UiBackdropIdentity>::new();
+        let close_relations = changes
+            .changes()
+            .iter()
+            .any(|change| matches!(change, UiOverlayChangedBasis::Portal(_)));
         for change in changes.changes() {
             match *change {
                 UiOverlayChangedBasis::Portal(portal) => {
-                    portals.insert(portal);
-                    add(
-                        &mut selected,
-                        self.scope_dependents(portal),
-                        UiOverlayDependencyKind::Scope,
-                    );
-                    add(
-                        &mut selected,
-                        self.presence_dependents(portal),
-                        UiOverlayDependencyKind::Presence,
-                    );
-                    add(
-                        &mut selected,
-                        self.placement_dependents(portal),
-                        UiOverlayDependencyKind::Placement,
-                    );
-                    add(
-                        &mut selected,
-                        self.motion_dependents(portal),
-                        UiOverlayDependencyKind::Motion,
-                    );
-                }
-                UiOverlayChangedBasis::PortalScope(portal) => {
-                    portals.insert(portal);
-                    add(
-                        &mut selected,
-                        self.scope_dependents(portal),
-                        UiOverlayDependencyKind::Scope,
-                    );
-                }
-                UiOverlayChangedBasis::PortalPresence(portal) => {
-                    portals.insert(portal);
-                    add(
-                        &mut selected,
-                        self.presence_dependents(portal),
-                        UiOverlayDependencyKind::Presence,
-                    );
-                }
-                UiOverlayChangedBasis::PortalPlacement(portal) => {
-                    portals.insert(portal);
-                    add(
-                        &mut selected,
-                        self.placement_dependents(portal),
-                        UiOverlayDependencyKind::Placement,
-                    );
+                    add(&mut selected, self.scope_dependents(portal));
+                    add(&mut selected, self.presence_dependents(portal));
+                    add(&mut selected, self.placement_dependents(portal));
+                    add(&mut selected, self.motion_dependents(portal));
                 }
                 UiOverlayChangedBasis::PortalMotion(portal) => {
-                    portals.insert(portal);
-                    add(
-                        &mut selected,
-                        self.motion_dependents(portal),
-                        UiOverlayDependencyKind::Motion,
-                    );
-                }
-                UiOverlayChangedBasis::Backdrop(identity) => {
-                    add(
-                        &mut selected,
-                        &[identity],
-                        UiOverlayDependencyKind::Placement,
-                    );
+                    add(&mut selected, self.motion_dependents(portal));
                 }
                 UiOverlayChangedBasis::SurfaceExtent(surface) => {
-                    surfaces.insert(surface);
                     add(
                         &mut selected,
                         self.by_surface_extent
                             .get(&surface)
                             .map_or(&[], Box::as_ref),
-                        UiOverlayDependencyKind::Extent,
                     );
                 }
                 UiOverlayChangedBasis::RegionExtent(region) => {
-                    regions.insert(region);
                     add(
                         &mut selected,
                         self.by_region_extent.get(&region).map_or(&[], Box::as_ref),
-                        UiOverlayDependencyKind::Extent,
                     );
                 }
             }
         }
         if close_relations {
-            let mut pending = selected.keys().copied().collect::<Vec<_>>();
+            let mut pending = selected.iter().copied().collect::<Vec<_>>();
             let mut visited = BTreeSet::new();
             while let Some(identity) = pending.pop() {
                 if !visited.insert(identity) {
                     continue;
                 }
                 for dependent in self.relation_dependents(identity) {
-                    selected
-                        .entry(*dependent)
-                        .or_default()
-                        .insert(UiOverlayDependencyKind::Placement);
+                    selected.insert(*dependent);
                     pending.push(*dependent);
                 }
             }
         }
         let backdrops = selected
             .into_iter()
-            .map(|(identity, reasons)| UiOverlayAffectedBackdrop {
-                identity,
-                reasons: reasons.into_iter().collect(),
-            })
+            .map(|identity| UiOverlayAffectedBackdrop { identity })
             .collect();
-        UiOverlayAffectedScope {
-            backdrops,
-            portals: portals.into_iter().collect(),
-            surfaces: surfaces.into_iter().collect(),
-            regions: regions.into_iter().collect(),
-        }
+        UiOverlayAffectedScope { backdrops }
     }
 }
 
-fn add(
-    selected: &mut BTreeMap<UiBackdropIdentity, BTreeSet<UiOverlayDependencyKind>>,
-    identities: &[UiBackdropIdentity],
-    reason: UiOverlayDependencyKind,
-) {
+fn add(selected: &mut BTreeSet<UiBackdropIdentity>, identities: &[UiBackdropIdentity]) {
     for identity in identities {
-        selected.entry(*identity).or_default().insert(reason);
+        selected.insert(*identity);
     }
 }
 

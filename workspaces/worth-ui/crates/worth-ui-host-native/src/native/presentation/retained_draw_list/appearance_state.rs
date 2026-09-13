@@ -13,19 +13,6 @@ impl UiNativeRetainedDrawList {
         self.staged_appearance.is_some()
     }
 
-    pub(in crate::native::presentation) fn appearance_surface_operation(
-        &self,
-        node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
-        extent: [u32; 2],
-    ) -> Result<Option<crate::native::presentation::UiNativeRasterOperation>, Denial> {
-        self.appearance_surface_operation_for_identity(
-            crate::native::presentation::appearance::UiNativeAppearanceCommandIdentity::Surface(
-                node_receipt.mounted_instance(),
-            ),
-            extent,
-        )
-    }
-
     pub(in crate::native::presentation) fn appearance_portal_surface_operation(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -86,7 +73,6 @@ impl UiNativeRetainedDrawList {
             UiNativeAppearanceScale::qualified(scale).map_err(|_| Denial::AffinityMismatch)?;
         let mut retained = UiNativeAppearanceRetained::new(scale);
         let mut predecessor = None;
-        let mut overlay: Option<UiMountedOverlayOrderMechanic> = None;
 
         for fragment in work.fragments() {
             if fragment.surface_binding() != work.requirement()
@@ -100,13 +86,6 @@ impl UiNativeRetainedDrawList {
             let successor = fragment.work().successor();
             if successor.frame() != self.frame || successor.semantic_surface() != self.surface {
                 return Err(Denial::AffinityMismatch);
-            }
-            match &overlay {
-                Some(current) if current != successor.overlay_order() => {
-                    return Err(Denial::CommandMismatch)
-                }
-                None => overlay = Some(successor.overlay_order().clone()),
-                Some(_) => {}
             }
             for mechanic in successor.mechanics() {
                 let command = match mechanic {
@@ -131,7 +110,7 @@ impl UiNativeRetainedDrawList {
                         UiNativeAppearanceCommand::Backdrop(value.clone())
                     }
                     UiMountedAppearanceMechanic::Pointer(value) => {
-                        UiNativeAppearanceCommand::PointerAffordance(value.clone())
+                        UiNativeAppearanceCommand::PointerAffordance(*value)
                     }
                 };
                 predecessor = Some(
@@ -141,7 +120,17 @@ impl UiNativeRetainedDrawList {
                 );
             }
         }
-        let overlay = overlay.ok_or(Denial::CommandMismatch)?;
+        let overlay = match work.overlay_order_update() {
+            Some(overlay) => overlay.clone(),
+            None => UiMountedOverlayOrderMechanic::complete_from_runtime_overlay_order(
+                self.surface,
+                view.attempt(),
+                0,
+                0,
+                [],
+            )
+            .map_err(|_| Denial::CommandMismatch)?,
+        };
         retained
             .insert(
                 UiNativeAppearanceCommand::OverlayOrder(overlay),

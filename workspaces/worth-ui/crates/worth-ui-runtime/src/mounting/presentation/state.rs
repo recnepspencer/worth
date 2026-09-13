@@ -15,6 +15,9 @@ pub struct UiMountedPresentationAdmission {
     lease: UiPresentationAdmissionLease,
 }
 
+#[path = "state/appearance_admission.rs"]
+mod appearance_admission;
+
 struct UiPresentationAdmissionLease {
     active: Rc<RefCell<BTreeSet<UiMountedPresentationAttemptIdentity>>>,
     attempt: UiMountedPresentationAttemptIdentity,
@@ -29,6 +32,7 @@ pub struct UiMountedPresentationAdmissionRejection {
     denial: UiMountedPresentationAdmissionDenial,
     attempt: Option<UiMountedPresentationAttemptIdentity>,
     frame: Box<UiPreparedMountedFrame>,
+    cost: Box<crate::mounting::UiMountCostReport>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -90,6 +94,7 @@ pub enum UiMountedPresentationAdmissionDenial {
     SupersedingPredecessorUnavailable,
     CandidatePreparation(worth_ui_host_contract::UiHostSurfacePresentationDenial),
     AppearanceOutputUnavailable,
+    RetainedVisualBasisUnavailable,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -105,7 +110,8 @@ impl UiMountedPresentationAdmission {
         active: Rc<RefCell<BTreeSet<UiMountedPresentationAttemptIdentity>>>,
         candidates: super::coordinator::UiPreparedFrameCandidates,
     ) -> Self {
-        let (frame, retention) = prepared.into_parts();
+        let (mut frame, retention) = prepared.into_parts();
+        frame.reserve_appearance_retry_basis();
         Self {
             frame,
             candidates,
@@ -132,58 +138,6 @@ impl UiMountedPresentationAdmission {
         &self.frame
     }
 
-    pub(crate) fn lower_appearance(
-        &mut self,
-        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
-    ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
-        let requires_complete = self.candidates.requires_complete_appearance_projection();
-        if requires_complete && self.frame.prepare_appearance_reconstruction().is_err() {
-            return self.frame.deny_appearance_output();
-        }
-        let targets = self.frame.appearance_motion_targets(&[]);
-        let motion = self.candidates.accepted_appearance_motion(&targets);
-        self.frame
-            .record_accepted_motion_commands_visited(motion.commands_visited());
-        let result = self
-            .frame
-            .lower_appearance_with_motion(self.attempt, profile, motion);
-        self.candidates.bind_appearance_opacity(&self.frame);
-        result
-    }
-
-    pub(crate) fn lower_appearance_with_overlays(
-        &mut self,
-        profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
-        overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
-    ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
-        let requires_complete = self.candidates.requires_complete_appearance_projection();
-        if requires_complete && self.frame.prepare_appearance_reconstruction().is_err() {
-            return self.frame.deny_appearance_output();
-        }
-        let targets = self.frame.appearance_motion_targets(overlays);
-        let motion = self.candidates.accepted_appearance_motion(&targets);
-        self.frame
-            .record_accepted_motion_commands_visited(motion.commands_visited());
-        let result = self.frame.lower_appearance_with_motion_and_overlays(
-            self.attempt,
-            profile,
-            motion,
-            overlays,
-        );
-        self.candidates.bind_appearance_opacity(&self.frame);
-        result
-    }
-
-    pub(crate) fn deny_appearance_output(
-        &mut self,
-    ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
-        self.frame.deny_appearance_output()
-    }
-
-    pub(crate) fn appearance_output_available(&self) -> bool {
-        self.frame.appearance_output_available()
-    }
-
     pub(crate) fn reject_appearance_output(self) -> UiMountedPresentationAdmissionRejection {
         let attempt = self.attempt;
         let frame = self.frame;
@@ -195,8 +149,18 @@ impl UiMountedPresentationAdmission {
         )
     }
 
-    pub fn into_attempt(self) -> UiMountedPresentationAttempt {
-        UiMountedPresentationAttempt { admission: self }
+    pub(crate) fn reject_retained_visual_basis(
+        self,
+        _denial: super::super::retention::UiMountedRetentionRefreshDenial,
+    ) -> UiMountedPresentationAdmissionRejection {
+        let attempt = self.attempt;
+        let frame = self.frame;
+        drop(self.retention);
+        UiMountedPresentationAdmissionRejection::new_with_attempt(
+            frame,
+            UiMountedPresentationAdmissionDenial::RetainedVisualBasisUnavailable,
+            attempt,
+        )
     }
 }
 
@@ -208,24 +172,32 @@ impl UiMountedPresentationAdmissionRejection {
         Self {
             denial,
             attempt: None,
+            cost: Box::new(frame.cost_report()),
             frame: Box::new(frame),
         }
     }
 
     fn new_with_attempt(
-        frame: UiPreparedMountedFrame,
+        mut frame: UiPreparedMountedFrame,
         denial: UiMountedPresentationAdmissionDenial,
         attempt: UiMountedPresentationAttemptIdentity,
     ) -> Self {
+        let cost = frame.cost_report();
+        frame.restore_rejected_appearance();
         Self {
             denial,
             attempt: Some(attempt),
+            cost: Box::new(cost),
             frame: Box::new(frame),
         }
     }
 
     pub fn denial(&self) -> UiMountedPresentationAdmissionDenial {
         self.denial
+    }
+
+    pub fn cost_report(&self) -> crate::mounting::UiMountCostReport {
+        *self.cost
     }
 
     pub fn frame(&self) -> &UiPreparedMountedFrame {
@@ -251,6 +223,14 @@ impl std::fmt::Debug for UiMountedPresentationAdmissionRejection {
 }
 
 impl UiMountedPresentationAttempt {
+    pub fn frame(&self) -> &UiPreparedMountedFrame {
+        &self.admission.frame
+    }
+
+    pub fn attempt(&self) -> UiMountedPresentationAttemptIdentity {
+        self.admission.attempt
+    }
+
     pub(super) fn into_parts(
         mut self,
     ) -> (

@@ -130,7 +130,13 @@ fn prepare_delta_plan_with_appearance(
         .stage_delta(delta, glyph_runs)
         .map_err(|_| before_effects(UiHostSurfacePresentationDenial::MalformedProjection))?;
     let effects = super::UiNativePresentationEffects::new(
-        !delta.changes().is_empty() || !delta.order().is_empty() || !delta.damage().is_empty(),
+        !delta.changes().is_empty()
+            || !delta.order().is_empty()
+            || !delta.damage().is_empty()
+            || work.fragments().iter().any(|fragment| {
+                !fragment.work().damage().is_empty()
+                    || fragment.work().text_damage_requirements().next().is_some()
+            }),
         replay.identity_overlay_effect,
     );
     let staged = (|| {
@@ -152,15 +158,10 @@ fn prepare_delta_plan_with_appearance(
                 undo.retain_appearance_command(staged);
             }
         }
-        let overlay = work
-            .fragments()
-            .first()
-            .ok_or(super::retained_draw_list::UiNativeRetainedDrawListDenial::CommandMismatch)?
-            .work()
-            .successor()
-            .overlay_order();
-        undo.retain_appearance_command(retained.stage_appearance_overlay(overlay)?);
-        let samples = retained.stage_appearance_sample_overrides(work.sample_overrides())?;
+        if let Some(overlay) = work.overlay_order_update() {
+            undo.retain_appearance_command(retained.stage_appearance_overlay(overlay)?);
+        }
+        let samples = retained.stage_appearance_work_sample_overrides(work)?;
         undo.retain_appearance_samples(samples);
         replay.staged_appearance_regions = retained.prepare_appearance_replay()?;
         build_plan(basis, retained, replay, delta.nodes().len(), atlas)
@@ -234,8 +235,7 @@ pub(super) fn changed_text_foregrounds(
                     crate::native::presentation::appearance::text_foreground::UiNativeTextForegroundFinalizationDenial::MissingRasterWork
                     | crate::native::presentation::appearance::text_foreground::UiNativeTextForegroundFinalizationDenial::UnauthenticatedDemand,
                 ) => retained
-                    .inherit_text_foreground_replacement(fragment, view, mechanic, atlas)
-                    .map_err(|denial| denial),
+                    .inherit_text_foreground_replacement(fragment, view, mechanic, atlas),
                 Err(_) => {
                     Err(super::retained_draw_list::UiNativeRetainedDrawListDenial::CommandMismatch)
                 }

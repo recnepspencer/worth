@@ -59,6 +59,7 @@ impl UiInteractionRuntimeState {
         });
     }
 
+    #[cfg(test)]
     pub(crate) const fn presentation_refresh_snapshot(
         &self,
     ) -> Option<super::super::UiInteractionPresentationRefreshSnapshot> {

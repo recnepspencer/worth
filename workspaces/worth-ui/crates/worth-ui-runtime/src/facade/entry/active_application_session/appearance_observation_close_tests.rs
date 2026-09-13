@@ -1,13 +1,30 @@
 use crate::runtime::tests::active_application_session_test_support::admit_candidate_catalog;
-use crate::runtime::tests::appearance_component_session_test_support::source_backed_static_paint_consumer_session;
+use crate::runtime::tests::appearance_component_session_test_support::source_backed_appearance_consumer_session;
 use crate::runtime::tests::appearance_component_session_test_support::{
     appearance_candidate_submission, attached_appearance_candidate_submission,
-    source_backed_static_paint_role_capable_session, validation_background_role,
+    source_backed_appearance_role_capable_session, validation_background_role,
 };
 
 #[test]
+fn appearance_consumers_make_an_owner_snapshot_only_turn_meaningful() {
+    let mut session = source_backed_appearance_consumer_session();
+
+    let admitted = session
+        .begin_observation_turn()
+        .unwrap()
+        .seal()
+        .expect("appearance owner state is meaningful turn output");
+
+    assert!(admitted.carries_appearance_owner_snapshot_for_test());
+    assert!(admitted.observations().is_empty());
+    session.classify_observations(admitted).unwrap();
+    assert!(session.has_appearance_owner_snapshot_for_test());
+    let _ = session.shutdown();
+}
+
+#[test]
 fn sealed_turn_carries_pre_interleaving_owner_state_into_classification() {
-    let mut session = source_backed_static_paint_consumer_session();
+    let mut session = source_backed_appearance_consumer_session();
     let first_candidate = attached_appearance_candidate_submission(
         &session,
         "appearance-close-first",
@@ -47,7 +64,7 @@ fn sealed_turn_carries_pre_interleaving_owner_state_into_classification() {
 #[test]
 fn cutover_reconciles_validation_owner_only_while_the_axis_is_consumed() {
     let role = validation_background_role("theme.appearance_consumer");
-    let mut session = source_backed_static_paint_role_capable_session(&role);
+    let mut session = source_backed_appearance_role_capable_session(&role);
     assert!(!session.has_appearance_owner_snapshot_for_test());
 
     let enable = appearance_candidate_submission(&session, "appearance-enable", Some(&role));
@@ -76,7 +93,7 @@ fn cutover_reconciles_validation_owner_only_while_the_axis_is_consumed() {
 
 #[test]
 fn validation_fact_receipt_succession_is_current_and_unmount_removes_the_row() {
-    let mut session = source_backed_static_paint_consumer_session();
+    let mut session = source_backed_appearance_consumer_session();
     let (graph_node, instance, first_receipt) = mount_appearance_consumer(&mut session);
     let first_target = crate::runtime::intent::UiAdmittedValidationAppearanceTarget::admit(
         &session,
@@ -181,7 +198,7 @@ fn validation_fact_receipt_succession_is_current_and_unmount_removes_the_row() {
 
 #[test]
 fn rejected_foreign_turn_preserves_the_predecessor_owner_snapshot() {
-    let mut first = source_backed_static_paint_consumer_session();
+    let mut first = source_backed_appearance_consumer_session();
     let foreign_candidate = attached_appearance_candidate_submission(
         &first,
         "appearance-close-foreign",
@@ -191,7 +208,7 @@ fn rejected_foreign_turn_preserves_the_predecessor_owner_snapshot() {
     foreign_turn.admit_source(foreign_candidate).unwrap();
     let foreign = foreign_turn.seal().unwrap();
 
-    let mut second = source_backed_static_paint_consumer_session();
+    let mut second = source_backed_appearance_consumer_session();
     let local_candidate = attached_appearance_candidate_submission(
         &second,
         "appearance-close-local",
@@ -221,7 +238,7 @@ fn theme_switch_origin_requires_exact_family_and_session() {
         UiThemeSwitchOriginAdmissionDenial, UiThemeSwitchOriginFamily,
     };
 
-    let mut first = source_backed_static_paint_consumer_session();
+    let mut first = source_backed_appearance_consumer_session();
     let candidate = attached_appearance_candidate_submission(
         &first,
         "appearance-origin-source",
@@ -241,7 +258,7 @@ fn theme_switch_origin_requires_exact_family_and_session() {
         Err(UiThemeSwitchOriginAdmissionDenial::MissingRequiredObservationFamily)
     );
 
-    let foreign = source_backed_static_paint_consumer_session();
+    let foreign = source_backed_appearance_consumer_session();
     assert_eq!(
         foreign.issue_theme_switch_origin(
             &admitted,
@@ -255,7 +272,7 @@ fn theme_switch_origin_requires_exact_family_and_session() {
 
 #[test]
 fn sealed_turn_cannot_be_classified_after_application_cutover() {
-    let mut session = source_backed_static_paint_consumer_session();
+    let mut session = source_backed_appearance_consumer_session();
     let candidate = attached_appearance_candidate_submission(
         &session,
         "appearance-close-before-cutover",

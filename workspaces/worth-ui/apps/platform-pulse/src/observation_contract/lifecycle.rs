@@ -5,6 +5,7 @@ use super::launch::PlatformPulseLaunchConfigurationDenialKind;
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", content = "payload")]
 pub enum PlatformPulseLifecycleObservation {
+    ThemeSwitchSettled(super::theme::PlatformPulseThemeSwitchSettled),
     ProcessStarted(PlatformPulseProcessStarted),
     FirstFramePublished(PlatformPulseFirstFramePublished),
     NativeInputReached(super::native_input::PlatformPulseNativeInputReached),
@@ -110,6 +111,7 @@ pub struct PlatformPulseShutdownCompleted {
     pub(super) pending_query_observation_count: u64,
     pub(super) intent_watcher_joined: bool,
     pub(super) pending_intent_input_count: u64,
+    pub(super) theme_watch_released: bool,
     pub(super) intent_resources_empty: bool,
     pub(super) query_close_complete: bool,
     pub(super) query_owner_terminal: bool,
@@ -193,9 +195,13 @@ pub enum PlatformPulseNativeRebindPreparationDenial {
     FrameBoundaryUnavailable,
     ContentMountedPreparation,
     CandidateMountedPreparation,
+    CandidateOccurrenceGeometry,
     CandidateCutoverPreparation,
     PlannedChangeBecameSemanticNoOp,
     UnsupportedNonSourcePlan,
+    ThemeSwitch,
+    ConsequenceFrameMismatch,
+    StaleConsequenceOwnerSnapshot,
     InvalidSemanticProof,
 }
 
@@ -291,6 +297,7 @@ accessors!(
     pending_query_observation_count: u64,
     intent_watcher_joined: bool,
     pending_intent_input_count: u64,
+    theme_watch_released: bool,
     intent_resources_empty: bool,
     query_close_complete: bool,
     query_owner_terminal: bool,

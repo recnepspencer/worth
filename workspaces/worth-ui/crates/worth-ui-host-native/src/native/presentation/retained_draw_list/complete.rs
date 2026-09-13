@@ -168,8 +168,7 @@ impl UiNativeRetainedDrawList {
             .iter()
             .filter_map(|command| match command {
                 UiMountedPaintCommand::SemanticText { identity, .. } => Some(*identity),
-                UiMountedPaintCommand::FilledRect { .. }
-                | UiMountedPaintCommand::PortalOverlay { .. } => None,
+                UiMountedPaintCommand::PortalOverlay { .. } => None,
             })
             .collect::<std::collections::HashSet<_>>();
         if source_glyph_runs
@@ -200,7 +199,7 @@ impl UiNativeRetainedDrawList {
         if sample_overrides.len() != source_sample_overrides.len()
             || sample_overrides
                 .keys()
-                .any(|identity| !commands.contains(identity))
+                .any(|identity| !identity.is_appearance_surface() && !commands.contains(identity))
         {
             return Err(UiNativeRetainedDrawListDenial::CommandMismatch);
         }

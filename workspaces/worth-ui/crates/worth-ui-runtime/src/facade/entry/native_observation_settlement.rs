@@ -16,6 +16,32 @@ pub(crate) struct UiNativeObservationDrainReport {
 }
 
 impl UiNativeObservationIngressSettlement {
+    pub(crate) fn focus_publications(
+        &self,
+    ) -> impl Iterator<
+        Item = &Result<
+            (
+                super::UiSemanticFocusPublicationReceipt,
+                crate::mounting::UiMountedFramePublicationReceipt,
+            ),
+            super::UiFocusPlacementExecutionDenial,
+        >,
+    > {
+        let outcomes = match self {
+            Self::Drained(report) => report.outcomes.as_ref(),
+            Self::DrainDenied(_) => &[],
+        };
+        outcomes
+            .iter()
+            .filter_map(|outcome| match outcome {
+                UiHostInteractionIngressOutcome::Applied(receipt) => {
+                    Some(receipt.focus_publications())
+                }
+                _ => None,
+            })
+            .flatten()
+    }
+
     pub(crate) fn from_outcomes(
         outcomes: Box<[UiHostInteractionIngressOutcome]>,
         reachability: worth_ui_host_native::UiNativeInputReachability,

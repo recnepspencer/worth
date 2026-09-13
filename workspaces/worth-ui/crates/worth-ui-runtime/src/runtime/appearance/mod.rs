@@ -2,10 +2,6 @@ mod inspection;
 mod invalidation;
 mod projection;
 mod state;
-#[allow(
-    dead_code,
-    reason = "Gate 0 freezes theme switching without making it live"
-)]
 mod theme;
 
 #[cfg(test)]
@@ -24,37 +20,29 @@ pub(crate) use invalidation_input::UiAppearanceInvalidationInput;
 pub(crate) use projection::projection_test_inputs;
 #[cfg(test)]
 pub(crate) use projection::projection_test_inputs_from_session;
-#[allow(
-    unused_imports,
-    reason = "Gate 1 retains sealed appearance projection re-exports for later mounting consumers"
-)]
 pub(crate) use projection::{
     UiAppearanceAttemptContext, UiAppearanceChangeReceipt, UiAppearanceMountAffinity,
-    UiAppearanceMountAffinityDenial, UiAppearanceProjection, UiAppearanceProjectionAttempt,
-    UiAppearanceResolutionDenial, UiAppearanceResolver, UiAppearanceSupportPosture,
-    UiBackdropAppearanceProjection, UiOverlayStackSnapshot,
+    UiAppearanceProjection, UiAppearanceProjectionAttempt, UiAppearanceResolver,
+    UiAppearanceSupportPosture, UiBackdropAppearanceProjection, UiOverlayStackSnapshot,
 };
 #[cfg(test)]
 pub(crate) use state::validate_presentation_for_test;
 pub use state::UiAppearanceOwnerSnapshot;
-#[allow(
-    unused_imports,
-    reason = "Gate 1 retains sealed appearance state re-exports for later interaction consumers"
-)]
+pub(crate) use state::UiPreparedRetainedAppearanceOwnerSuccession;
 pub(crate) use state::{
     UiAppearanceCoherentBasis, UiAppearanceCoherentBasisDenial, UiAppearanceCoherentBasisInput,
     UiAppearanceNodeRoleBinding, UiAppearanceSelectionSelector, UiAppearanceStateAdapterDenial,
-    UiAppearanceStateAxisDemand, UiAppearanceStateConsumer, UiAppearanceStateConsumerSelection,
-    UiAppearanceStateConsumerSelectionCost, UiAppearanceStateVector, UiAppearanceStateVectorDenial,
-    UiAppearanceTarget, UiBackdropAppearanceStateVector, UiFocusAppearanceState,
-    UiHoverAppearanceState, UiOperabilityAppearanceState, UiPressedAppearanceState,
-    UiSelectionAppearanceState, UiValidationAppearanceState,
+    UiAppearanceStateAxisDemand, UiAppearanceStateConsumer, UiAppearanceStateVector,
+    UiAppearanceStateVectorDenial, UiAppearanceTarget, UiBackdropAppearanceStateVector,
 };
 pub(crate) use theme::{
-    prepare_theme_generation_rebinding, UiActiveThemeBinding, UiAppearanceThemeState,
-    UiPreparedThemeBindingAdmission, UiPreparedThemeGenerationRebinding, UiPreparedThemeSwitch,
-    UiThemeCapabilityAdmission, UiThemeCapabilityReceipt, UiThemeCapabilityReceiptDenial,
-    UiThemeInitialBindingDenial, UiThemeResolutionDenial, UiThemeResolutionView,
+    prepare_theme_generation_rebinding, UiAppearanceThemeState, UiPreparedThemeBindingAdmission,
+    UiPreparedThemeGenerationRebinding, UiPreparedThemeSwitch, UiThemeCapabilityAdmission,
+    UiThemeInitialBindingDenial, UiThemeResolutionView, UiThemeSwitchChange,
+};
+pub use theme::{
+    UiActiveThemeBinding, UiThemeCapabilityReceipt, UiThemeCapabilityReceiptDenial,
     UiThemeSwitchDenial, UiThemeSwitchOrigin, UiThemeSwitchOriginAdmissionDenial,
     UiThemeSwitchOriginFamily, UiThemeSwitchRequest,
 };
+pub use theme::{UiThemeResolutionDenial, UiThemeSwitchOutcome, UiThemeSwitchSelectionDenial};

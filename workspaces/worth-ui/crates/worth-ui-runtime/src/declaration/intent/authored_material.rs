@@ -66,8 +66,7 @@ pub(crate) fn prepare_authored_intent_material(
                         component
                             .structure()
                             .interaction_routes()
-                        .iter()
-                        .cloned()
+                            .iter()
                             .map(|route| {
                                 let portal_declaration = route
                                     .opened_portal_identity()
@@ -85,7 +84,7 @@ pub(crate) fn prepare_authored_intent_material(
                                 portal_declaration.map(|portal_declaration| {
                                     WorthUiAuthoredIntentRoute {
                                         target_provenance_digest,
-                                        route,
+                                        route: route.clone(),
                                         portal_declaration,
                                     }
                                 })

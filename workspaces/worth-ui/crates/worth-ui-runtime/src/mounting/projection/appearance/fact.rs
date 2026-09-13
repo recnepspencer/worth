@@ -18,6 +18,7 @@ pub(crate) struct UiMountedAppearanceNodeInput {
     pub(super) bounds: UiAppearanceAllocationBounds,
     pub(super) clip: super::UiMountedAppearanceClip,
     pub(super) surface_paint_order: Option<u32>,
+    pub(super) portal_group: Option<UiMountedInstanceIdentity>,
     pub(super) radii: worth_ui_host_contract::UiAppearanceNormalizedLogicalRadii,
     pub(super) surface_border_edges: worth_ui_host_contract::UiMountedSurfaceBorderEdges,
     pub(super) surface_border_omissions:
@@ -138,7 +139,7 @@ impl UiMountedAppearanceVisualBounds {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) struct UiMountedAppearanceFact {
+pub(in crate::mounting::projection) struct UiMountedAppearanceFact {
     identity: UiMountedAppearanceMechanicIdentity,
     semantic_surface: UiSemanticSurfaceIdentity,
     node_receipt: Option<UiMountedNodeReceiptIdentity>,
@@ -226,8 +227,16 @@ impl UiMountedAppearanceFact {
     pub(super) const fn projection(&self) -> Option<UiMountedNodeAppearanceAttribution> {
         self.projection
     }
-    pub(super) fn mechanic(&self) -> &UiMountedAppearanceMechanic {
+    pub(in crate::mounting::projection) fn mechanic(&self) -> &UiMountedAppearanceMechanic {
         &self.mechanic
+    }
+    pub(in crate::mounting::projection) const fn semantic_surface(
+        &self,
+    ) -> UiSemanticSurfaceIdentity {
+        self.semantic_surface
+    }
+    pub(in crate::mounting::projection) const fn semantic_digest(&self) -> u64 {
+        self.semantic_digest
     }
     pub(super) const fn damage(&self) -> &UiMountedAppearanceDamageShape {
         &self.damage
@@ -312,7 +321,7 @@ impl UiMountedAppearanceFacts {
     pub(super) const fn frame(&self) -> &UiMountedAppearanceFrame {
         &self.frame
     }
-    pub(super) fn records(&self) -> &[UiMountedAppearanceFact] {
+    pub(in crate::mounting::projection) fn records(&self) -> &[UiMountedAppearanceFact] {
         &self.records
     }
     pub(super) fn record(

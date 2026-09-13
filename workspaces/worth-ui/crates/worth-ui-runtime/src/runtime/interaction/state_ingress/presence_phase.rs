@@ -15,6 +15,7 @@ pub(super) fn process(
     report: &UiHostObservationReport,
     mounted: &crate::mounting::WorthUiMountedSessionState,
     generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    work: &mut crate::mounting::UiHitTestSpatialWork,
 ) -> Result<Option<UiPointerPresenceTargetTransition>, UiPointerPresenceAdmissionDenial> {
     if admission.denied() {
         return Ok(None);
@@ -25,7 +26,7 @@ pub(super) fn process(
             Some(kind),
             UiHostObservationPayload::PointerMotion { .. }
             | UiHostObservationPayload::PointerButton { .. },
-        ) => owner.process_pointer_report(core, report, kind, mounted, generation),
+        ) => owner.process_pointer_report(core, report, kind, mounted, generation, work),
         _ => Ok(None),
     }
 }

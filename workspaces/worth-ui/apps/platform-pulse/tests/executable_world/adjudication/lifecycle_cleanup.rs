@@ -47,6 +47,7 @@ pub(crate) enum ExecutableLifecycleCleanupFailure {
     QueryWatcherNotJoined,
     PendingQueryObservations(u64),
     IntentWatcherNotJoined,
+    ThemeWatchNotReleased,
     PendingIntentInputs(u64),
     IntentResourcesNotEmpty,
     QueryCloseIncomplete,
@@ -78,6 +79,7 @@ pub(crate) enum ExecutableLifecycleCleanupFailure {
 impl fmt::Display for ExecutableLifecycleCleanupFailure {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::ThemeWatchNotReleased => formatter.write_str("theme preference watch was not released"),
             Self::MissingShutdownCompletion => {
                 formatter.write_str("terminal lifecycle event was not shutdown completion")
             }
@@ -164,6 +166,9 @@ pub(crate) fn adjudicate_lifecycle_cleanup(
     }
     if !shutdown.host_session_released() {
         return Err(ExecutableLifecycleCleanupFailure::HostSessionNotReleased);
+    }
+    if !shutdown.theme_watch_released() {
+        return Err(ExecutableLifecycleCleanupFailure::ThemeWatchNotReleased);
     }
     require_zero_intent_residue(shutdown)?;
     require_zero_query_residue(shutdown)?;

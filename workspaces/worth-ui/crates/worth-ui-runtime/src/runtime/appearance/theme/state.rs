@@ -1,4 +1,6 @@
+use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 const UI_PREPARED_THEME_SWITCH_CAPACITY: usize = 4;
@@ -6,16 +8,24 @@ const UI_PREPARED_THEME_SWITCH_CAPACITY: usize = 4;
 pub(crate) struct UiAppearanceThemeState {
     bindings:
         BTreeMap<worth_ui_host_contract::UiSemanticSurfaceIdentity, super::UiActiveThemeBinding>,
-    prepared: BTreeMap<u64, UiPreparedThemeReservation>,
+    prepared: Rc<RefCell<BTreeMap<u64, UiPreparedThemeReservation>>>,
     next_reservation: u64,
     owner_affinity: u64,
+    consumed_origins: BTreeMap<
+        (
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            super::UiThemeSwitchOriginFamily,
+        ),
+        crate::runtime::observation::UiObservationTurnIdentity,
+    >,
 }
 
-struct UiPreparedThemeReservation {
+#[derive(Debug)]
+pub(super) struct UiPreparedThemeReservation {
     surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     application: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     predecessor_generation: u64,
-    owner_affinity: u64,
+    pub(super) owner_affinity: u64,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -24,7 +34,7 @@ pub(crate) enum UiThemeInitialBindingDenial {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum UiThemeSwitchDenial {
+pub enum UiThemeSwitchDenial {
     MissingActiveBinding,
     StaleBinding,
     WrongSurfaceCapability,
@@ -34,6 +44,9 @@ pub(crate) enum UiThemeSwitchDenial {
     PreparedSwitchCapacityExceeded,
     PreparedReservationExhausted,
     UnknownPreparedSwitch,
+    DuplicateOrigin,
+    SupersededOrigin,
+    ChangedBinding,
 }
 
 impl UiAppearanceThemeState {
@@ -51,7 +64,7 @@ impl UiAppearanceThemeState {
     }
 
     pub(crate) fn has_prepared_switches(&self) -> bool {
-        !self.prepared.is_empty()
+        !self.prepared.borrow().is_empty()
     }
 
     pub(crate) fn replace_carried_bindings(
@@ -62,6 +75,8 @@ impl UiAppearanceThemeState {
             .into_iter()
             .map(|binding| (binding.surface(), binding))
             .collect();
+        self.consumed_origins
+            .retain(|(surface, _), _| self.bindings.contains_key(surface));
     }
 
     pub(crate) fn install_initial(
@@ -149,6 +164,76 @@ impl UiAppearanceThemeState {
         &mut self,
         request: super::UiThemeSwitchRequest,
     ) -> Result<super::UiPreparedThemeSwitch, UiThemeSwitchDenial> {
+        let predecessor = self.validate_request(&request)?;
+        let predecessor_generation = predecessor.binding_generation;
+        let binding_generation = predecessor_generation
+            .checked_add(1)
+            .ok_or(UiThemeSwitchDenial::BindingGenerationExhausted)?;
+        if self.prepared.borrow().len() >= UI_PREPARED_THEME_SWITCH_CAPACITY {
+            return Err(UiThemeSwitchDenial::PreparedSwitchCapacityExceeded);
+        }
+        let reservation = self
+            .next_reservation
+            .checked_add(1)
+            .ok_or(UiThemeSwitchDenial::PreparedReservationExhausted)?;
+        self.consume_origin(&request)?;
+        self.next_reservation = reservation;
+        self.prepared.borrow_mut().insert(
+            reservation,
+            UiPreparedThemeReservation {
+                surface: request.surface,
+                application: request.capability.application().clone(),
+                predecessor_generation,
+                owner_affinity: self.owner_affinity,
+            },
+        );
+        Ok(super::UiPreparedThemeSwitch {
+            reservation,
+            predecessor_generation,
+            successor: super::UiActiveThemeBinding {
+                surface: request.surface,
+                binding_generation,
+                capability: request.capability,
+            },
+            origin: request.origin,
+            owner_affinity: self.owner_affinity,
+            reservations: Rc::downgrade(&self.prepared),
+        })
+    }
+
+    pub(crate) fn settle_unchanged_switch(
+        &mut self,
+        request: super::UiThemeSwitchRequest,
+    ) -> Result<(), UiThemeSwitchDenial> {
+        if self.validate_request(&request)?.capability() != request.capability() {
+            return Err(UiThemeSwitchDenial::ChangedBinding);
+        }
+        self.consume_origin(&request)
+    }
+
+    fn consume_origin(
+        &mut self,
+        request: &super::UiThemeSwitchRequest,
+    ) -> Result<(), UiThemeSwitchDenial> {
+        let key = (request.surface, request.origin.family());
+        if let Some(turn) = self.consumed_origins.get(&key) {
+            if *turn == request.origin.turn() {
+                return Err(UiThemeSwitchDenial::DuplicateOrigin);
+            }
+            if turn.as_u64() > request.origin.turn().as_u64() {
+                return Err(UiThemeSwitchDenial::SupersededOrigin);
+            }
+        }
+        // One watermark per bound surface/family. Retries retain the reservation;
+        // cancellation frees capacity but cannot authorize a second use of an event.
+        self.consumed_origins.insert(key, request.origin.turn());
+        Ok(())
+    }
+
+    fn validate_request(
+        &self,
+        request: &super::UiThemeSwitchRequest,
+    ) -> Result<&super::UiActiveThemeBinding, UiThemeSwitchDenial> {
         if request.capability.surface() != request.surface {
             return Err(UiThemeSwitchDenial::WrongSurfaceCapability);
         }
@@ -168,45 +253,15 @@ impl UiAppearanceThemeState {
         if predecessor.capability.application() != request.capability.application() {
             return Err(UiThemeSwitchDenial::WrongApplicationCapability);
         }
-        let binding_generation = predecessor
-            .binding_generation
-            .checked_add(1)
-            .ok_or(UiThemeSwitchDenial::BindingGenerationExhausted)?;
-        if self.prepared.len() >= UI_PREPARED_THEME_SWITCH_CAPACITY {
-            return Err(UiThemeSwitchDenial::PreparedSwitchCapacityExceeded);
-        }
-        let reservation = self
-            .next_reservation
-            .checked_add(1)
-            .ok_or(UiThemeSwitchDenial::PreparedReservationExhausted)?;
-        self.next_reservation = reservation;
-        self.prepared.insert(
-            reservation,
-            UiPreparedThemeReservation {
-                surface: request.surface,
-                application: request.capability.application().clone(),
-                predecessor_generation: predecessor.binding_generation,
-                owner_affinity: self.owner_affinity,
-            },
-        );
-        Ok(super::UiPreparedThemeSwitch {
-            reservation,
-            predecessor_generation: predecessor.binding_generation,
-            successor: super::UiActiveThemeBinding {
-                surface: request.surface,
-                binding_generation,
-                capability: request.capability,
-            },
-            origin: request.origin,
-            owner_affinity: self.owner_affinity,
-        })
+        Ok(predecessor)
     }
 
-    pub(crate) fn commit_published_switch(
-        &mut self,
-        prepared: super::UiPreparedThemeSwitch,
+    pub(crate) fn validate_prepared_switch(
+        &self,
+        prepared: &super::UiPreparedThemeSwitch,
     ) -> Result<(), UiThemeSwitchDenial> {
-        let Some(reservation) = self.prepared.get(&prepared.reservation) else {
+        let reservations = self.prepared.borrow();
+        let Some(reservation) = reservations.get(&prepared.reservation) else {
             return Err(UiThemeSwitchDenial::UnknownPreparedSwitch);
         };
         if reservation.surface != prepared.successor.surface
@@ -223,39 +278,30 @@ impl UiAppearanceThemeState {
         if current.binding_generation != prepared.predecessor_generation {
             return Err(UiThemeSwitchDenial::StaleBinding);
         }
+        Ok(())
+    }
+
+    pub(crate) fn commit_published_switch(
+        &mut self,
+        prepared: super::UiPreparedThemeSwitch,
+    ) -> Result<(), UiThemeSwitchDenial> {
+        self.validate_prepared_switch(&prepared)?;
         let committed_surface = prepared.successor.surface;
         let committed_application = prepared.successor.capability.application().clone();
         let committed_predecessor = prepared.predecessor_generation;
-        self.prepared.retain(|_, competing| {
+        self.prepared.borrow_mut().retain(|_, competing| {
             competing.surface != committed_surface
                 || competing.application != committed_application
                 || competing.predecessor_generation != committed_predecessor
         });
         self.bindings
-            .insert(prepared.successor.surface, prepared.successor);
+            .insert(prepared.successor.surface, prepared.successor.clone());
         Ok(())
     }
 
-    pub(crate) fn cancel_prepared_switch(
-        &mut self,
-        prepared: super::UiPreparedThemeSwitch,
-    ) -> Result<(), UiThemeSwitchDenial> {
-        let Some(reservation) = self.prepared.get(&prepared.reservation) else {
-            return Err(UiThemeSwitchDenial::UnknownPreparedSwitch);
-        };
-        if reservation.surface != prepared.successor.surface
-            || reservation.application != *prepared.successor.capability.application()
-            || reservation.predecessor_generation != prepared.predecessor_generation
-            || reservation.owner_affinity != prepared.owner_affinity
-        {
-            return Err(UiThemeSwitchDenial::UnknownPreparedSwitch);
-        }
-        self.prepared.remove(&prepared.reservation);
-        Ok(())
-    }
-
+    #[cfg(test)]
     pub(crate) fn prepared_switch_count(&self) -> usize {
-        self.prepared.len()
+        self.prepared.borrow().len()
     }
 }
 
@@ -266,9 +312,16 @@ impl Default for UiAppearanceThemeState {
         assert!(owner_affinity != 0, "theme owner affinity exhausted");
         Self {
             bindings: BTreeMap::new(),
-            prepared: BTreeMap::new(),
+            prepared: Rc::new(RefCell::new(BTreeMap::new())),
             next_reservation: 0,
             owner_affinity,
+            consumed_origins: BTreeMap::new(),
         }
+    }
+}
+
+impl Drop for UiAppearanceThemeState {
+    fn drop(&mut self) {
+        self.prepared.borrow_mut().clear();
     }
 }

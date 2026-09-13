@@ -1,7 +1,7 @@
 use super::UiActiveThemeBinding;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct UiThemeCapabilityReceipt {
+pub struct UiThemeCapabilityReceipt {
     definition: super::UiThemeDefinitionIdentity,
     definition_revision: u64,
     slot_catalog_revision: u64,

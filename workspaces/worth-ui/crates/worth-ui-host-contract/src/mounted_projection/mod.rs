@@ -1,4 +1,5 @@
 mod appearance;
+mod color;
 mod geometry;
 mod headless_cache;
 mod headless_observation;
@@ -13,7 +14,6 @@ mod portal_presentation;
 mod preview;
 mod resource;
 mod semantic_text;
-mod static_paint;
 mod tables;
 mod view;
 
@@ -53,6 +53,7 @@ pub use appearance::{
     SRGB_SCALE_DENOMINATOR, SRGB_SCALE_NUMERATOR, UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT,
     UI_HOST_APPEARANCE_GEOMETRY_ROW_CAPACITY, UI_UNPUBLISHED_APPEARANCE_FRAGMENT_CAPACITY,
 };
+pub use color::UiMountedRgba8;
 pub use geometry::{
     UiMountedAllocationBasis, UiMountedAllocationProjection, UiMountedCanonicalBox,
     UiMountedCanonicalBoxInput, UiMountedCoordinateSpace, UiMountedGeometryDenial,
@@ -99,11 +100,6 @@ pub use semantic_text::{
     UiMountedSemanticTextTableDenial, UiMountedTextForegroundSpan, UiMountedTextPaintSpanIdentity,
     UiMountedTextSchemaVersion, UiSemanticTextBaselinePosture, UiSemanticTextProfile,
     UiSemanticTextSlot, UiSemanticTextWrapPosture,
-};
-pub use static_paint::{
-    UiMountedFilledRectCompletionDenial, UiMountedFilledRectCompletionInput,
-    UiMountedFilledRectMechanic, UiMountedFilledRectReference, UiMountedFilledRectTable,
-    UiMountedFilledRectTableDenial, UiMountedRgba8, UiMountedStaticPaintSchemaVersion,
 };
 pub use tables::{
     UiMountedClipProjection, UiMountedClipReference, UiMountedClipRow, UiMountedClipTable,

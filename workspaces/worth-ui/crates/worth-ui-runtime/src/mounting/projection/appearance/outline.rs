@@ -23,6 +23,7 @@ pub(super) fn lower(
             surface_paint_order: input
                 .surface_paint_order
                 .ok_or(UiMountedAppearanceLoweringDenial::SurfacePaintOrderUnavailable)?,
+            portal_group: input.portal_group,
             clip: input
                 .clip
                 .for_visual_bounds(outline.geometry.visual_bounds())?,

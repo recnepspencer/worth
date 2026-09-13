@@ -19,15 +19,6 @@ pub(crate) fn install_nonoverlapping_surface_geometry(
     )
 }
 
-pub(crate) fn install_surface_geometry_with_viewport(
-    session: &mut super::WorthUiActiveApplicationSession,
-    surface: UiSemanticSurfaceIdentity,
-    layout_revision: u64,
-    viewport: UiMountedCanonicalBox,
-) -> Vec<(UiMountedInstanceIdentity, UiMountedCanonicalBox)> {
-    install_surface_geometry(session, surface, layout_revision, &[], None, viewport)
-}
-
 pub(crate) fn refresh_nonoverlapping_surface_geometry(
     session: &mut super::WorthUiActiveApplicationSession,
     surface: UiSemanticSurfaceIdentity,

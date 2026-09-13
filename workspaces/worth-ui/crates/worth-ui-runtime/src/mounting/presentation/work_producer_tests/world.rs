@@ -1,10 +1,11 @@
 use worth_ui_host_contract::{
     UiHostSurfaceIdentity, UiHostSurfacePresentationMode, UiMountedAllocationBasis,
     UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedClipTable,
-    UiMountedContentGeneration, UiMountedCoordinateSpace, UiMountedFilledRectCompletionInput,
-    UiMountedFilledRectMechanic, UiMountedFilledRectTable, UiMountedFrameIdentity,
+    UiMountedContentGeneration, UiMountedCoordinateSpace, UiMountedFrameIdentity,
     UiMountedHitTestTable, UiMountedInstanceIdentity, UiMountedLayerTable,
-    UiMountedNodeReceiptIssuer, UiMountedPaintBatchTable, UiMountedProjectionView,
+    UiMountedNodeReceiptIssuer, UiMountedPaintBatchTable, UiMountedPortalInputShielding,
+    UiMountedPortalOverlayCompletionInput, UiMountedPortalOverlayLifecyclePosture,
+    UiMountedPortalOverlayMechanic, UiMountedPortalOverlayTable, UiMountedProjectionView,
     UiMountedProjectionViewInput, UiMountedResourceTable, UiMountedRgba8,
     UiMountedSemanticTextTable, UiMountedSpatialBatchTable, UiMountedSurfaceBindingRequirement,
     UiMountedTransformProjection, UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
@@ -98,7 +99,7 @@ impl MountedPresentationWorld {
             .map(|(index, row)| rect_node(index, row))
             .collect::<Vec<_>>();
         let (authored_paint_commands, authored_paint_order) =
-            crate::mounting::compile_presentation_sources(&nodes, &rows, &[], &[]);
+            crate::mounting::compile_presentation_sources(&nodes, &rows, &[]);
         UiMountedProjectionView::new(UiMountedProjectionViewInput {
             frame,
             surface: self.surface,
@@ -107,8 +108,7 @@ impl MountedPresentationWorld {
             nodes,
             clips: UiMountedClipTable::produced(Vec::new()),
             layers: UiMountedLayerTable::produced(Vec::new()),
-            filled_rects: UiMountedFilledRectTable::from_runtime_mounting(rows).unwrap(),
-            portal_overlays: worth_ui_host_contract::UiMountedPortalOverlayTable::empty(),
+            portal_overlays: UiMountedPortalOverlayTable::from_runtime_mounting(rows).unwrap(),
             semantic_text: UiMountedSemanticTextTable::empty(),
             hit_tests: UiMountedHitTestTable::empty(),
             paint_batches: UiMountedPaintBatchTable::new(Vec::new()),
@@ -127,7 +127,7 @@ impl MountedPresentationWorld {
         changed_index: Option<usize>,
         text_layout: worth_ui_host_contract::UiQualifiedTextLayoutView<'_>,
     ) -> UiMountedProjectionView {
-        let split = instances.len() / 2;
+        let split = (instances.len() / 2).min(UiMountedPortalOverlayTable::MAX_ROWS);
         let rects = instances[..split]
             .iter()
             .enumerate()
@@ -164,7 +164,7 @@ impl MountedPresentationWorld {
             )
             .collect::<Vec<_>>();
         let (authored_paint_commands, authored_paint_order) =
-            crate::mounting::compile_presentation_sources(&nodes, &rects, &[], &texts);
+            crate::mounting::compile_presentation_sources(&nodes, &rects, &texts);
         UiMountedProjectionView::new(UiMountedProjectionViewInput {
             frame,
             surface: self.surface,
@@ -173,8 +173,7 @@ impl MountedPresentationWorld {
             nodes,
             clips: UiMountedClipTable::produced(Vec::new()),
             layers: UiMountedLayerTable::produced(Vec::new()),
-            filled_rects: UiMountedFilledRectTable::from_runtime_mounting(rects).unwrap(),
-            portal_overlays: worth_ui_host_contract::UiMountedPortalOverlayTable::empty(),
+            portal_overlays: UiMountedPortalOverlayTable::from_runtime_mounting(rects).unwrap(),
             semantic_text: UiMountedSemanticTextTable::from_runtime_mounting(texts).unwrap(),
             hit_tests: UiMountedHitTestTable::empty(),
             paint_batches: UiMountedPaintBatchTable::new(Vec::new()),
@@ -212,7 +211,7 @@ impl MountedPresentationWorld {
             .map(|(index, row)| text_node(index, row))
             .collect::<Vec<_>>();
         let (authored_paint_commands, authored_paint_order) =
-            crate::mounting::compile_presentation_sources(&nodes, &[], &[], &texts);
+            crate::mounting::compile_presentation_sources(&nodes, &[], &texts);
         UiMountedProjectionView::new(UiMountedProjectionViewInput {
             frame,
             surface: self.surface,
@@ -221,7 +220,6 @@ impl MountedPresentationWorld {
             nodes,
             clips: UiMountedClipTable::produced(Vec::new()),
             layers: UiMountedLayerTable::produced(Vec::new()),
-            filled_rects: UiMountedFilledRectTable::empty(),
             portal_overlays: worth_ui_host_contract::UiMountedPortalOverlayTable::empty(),
             semantic_text: UiMountedSemanticTextTable::from_runtime_mounting(texts).unwrap(),
             hit_tests: UiMountedHitTestTable::empty(),
@@ -234,27 +232,37 @@ impl MountedPresentationWorld {
         })
     }
 
-    fn rect(&self, frame: UiMountedFrameIdentity, spec: RectSpec) -> UiMountedFilledRectMechanic {
+    fn rect(
+        &self,
+        frame: UiMountedFrameIdentity,
+        spec: RectSpec,
+    ) -> UiMountedPortalOverlayMechanic {
         let bounds = canonical_box(spec.x, 0.0, 32.0, 24.0);
-        UiMountedFilledRectMechanic::complete_from_runtime_mounting(
-            UiMountedFilledRectCompletionInput {
+        UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(
+            UiMountedPortalOverlayCompletionInput {
                 frame,
                 surface: self.surface,
                 binding: self.binding,
-                mounted_instance: spec.instance,
-                node_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
+                owner: spec.instance,
+                owner_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
                     .unwrap()
                     .receipt_for(spec.instance),
-                allocation_basis: UiMountedAllocationBasis::new(
-                    1,
-                    2,
-                    3,
-                    UiMountedTransformProjection::Identity,
-                ),
+                portal_identity: spec.instance.diagnostic_value(),
+                anchor_presentation:
+                    worth_ui_host_contract::UiHostObservationPresentationBasis::new(
+                        self.requirement.host_surface(),
+                        frame,
+                        self.binding,
+                        worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(1),
+                    ),
+                anchor_bounds: bounds,
                 bounds,
                 color: spec.color,
                 layer_semantic_order: (spec.x as u32) / 40,
+                layer_depth: 0,
                 clip_bounds: canonical_box(spec.clip_x, 0.0, spec.clip_width, 24.0),
+                lifecycle: UiMountedPortalOverlayLifecyclePosture::Visible,
+                shielding: UiMountedPortalInputShielding::ContentBounds,
             },
         )
         .unwrap()
@@ -277,6 +285,7 @@ impl MountedPresentationWorld {
                 surface: self.surface,
                 binding: self.binding,
                 mounted_instance: instance,
+                portal_group: None,
                 node_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
                     .unwrap()
                     .receipt_for(instance),
@@ -324,7 +333,7 @@ fn canonical_box(x: f32, y: f32, width: f32, height: f32) -> UiMountedCanonicalB
         y,
         width,
         height,
-        coordinate_space: UiMountedCoordinateSpace::HostSurface,
+        coordinate_space: UiMountedCoordinateSpace::Viewport,
     })
     .unwrap()
 }

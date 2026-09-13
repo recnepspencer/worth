@@ -17,7 +17,6 @@ impl UiMountedIdentityState {
             crate::mounting::UiMountedProjectionFrameOwner::new(
                 std::rc::Rc::new(successor),
                 current.appearance().clone(),
-                current.theme_revision(),
                 current.pointer.clone(),
             ),
         ));
@@ -43,7 +42,6 @@ impl UiMountedIdentityState {
             crate::mounting::UiMountedProjectionFrameOwner::new(
                 std::rc::Rc::new(successor),
                 current.appearance().clone(),
-                current.theme_revision(),
                 current.pointer.clone(),
             ),
         ));

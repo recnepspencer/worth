@@ -1,8 +1,8 @@
-use super::super::platform_pulse_control_points::PlatformPulseControlPointManifestFailure;
+use super::super::visual_contract_manifest::PlatformPulseVisualContractFailure;
 
 #[derive(Debug)]
 pub(crate) enum PlatformPulsePortalPixelFailure {
-    Manifest(PlatformPulseControlPointManifestFailure),
+    Manifest(PlatformPulseVisualContractFailure),
     CaptureMismatch,
     OverlayMissing {
         changed: usize,
@@ -28,6 +28,10 @@ pub(crate) enum PlatformPulsePortalPixelFailure {
         sampled: usize,
     },
     FallbackActionChanged {
+        differing: usize,
+        sampled: usize,
+    },
+    SurvivingPortalChanged {
         differing: usize,
         sampled: usize,
     },
@@ -72,6 +76,10 @@ impl std::fmt::Display for PlatformPulsePortalPixelFailure {
             Self::FallbackActionChanged { differing, sampled } => write!(
                 formatter,
                 "fallback action changed: {differing} differing of {sampled} sampled",
+            ),
+            Self::SurvivingPortalChanged { differing, sampled } => write!(
+                formatter,
+                "surviving Portal changed: {differing} differing of {sampled} sampled",
             ),
         }
     }

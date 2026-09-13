@@ -76,48 +76,14 @@ impl SupplyChainSemanticHandles {
             [&super::semantic_key::EntityKey::new(super::semantic_key::EntityKind::Voyage, 0)]
     }
 
-    pub(crate) fn aurora_port_call(&self) -> &EntityHandle {
-        &self.entities
-            [&super::semantic_key::EntityKey::new(super::semantic_key::EntityKind::PortCall, 1)]
-    }
-
-    pub(crate) fn atlas_berth(&self) -> &EntityHandle {
-        &self.entities
-            [&super::semantic_key::EntityKey::new(super::semantic_key::EntityKind::Berth, 0)]
-    }
-
-    pub(crate) fn maintenance_berth(&self) -> &EntityHandle {
-        &self.entities
-            [&super::semantic_key::EntityKey::new(super::semantic_key::EntityKind::Berth, 1)]
-    }
-
     pub(crate) fn medical_cargo(&self) -> &EntityHandle {
         &self.entities
             [&super::semantic_key::EntityKey::new(super::semantic_key::EntityKind::CargoLot, 0)]
     }
 
-    pub(crate) fn reroute_port(&self) -> &EntityHandle {
-        &self.entities
-            [&super::semantic_key::EntityKey::new(super::semantic_key::EntityKind::Port, 2)]
-    }
-
     pub(crate) fn rewire_port(&self) -> &EntityHandle {
         &self.entities
             [&super::semantic_key::EntityKey::new(super::semantic_key::EntityKind::Port, 3)]
-    }
-
-    pub(crate) fn aurora_call_at_port(&self) -> &RelationHandle {
-        &self.relations[&super::semantic_key::RelationKey::new(
-            super::semantic_key::RelationKind::CallAtPort,
-            1,
-        )]
-    }
-
-    pub(crate) fn atlas_berth_assignment(&self) -> &RelationHandle {
-        &self.relations[&super::semantic_key::RelationKey::new(
-            super::semantic_key::RelationKind::VesselAssignedToBerth,
-            0,
-        )]
     }
 
     pub(crate) fn bind(

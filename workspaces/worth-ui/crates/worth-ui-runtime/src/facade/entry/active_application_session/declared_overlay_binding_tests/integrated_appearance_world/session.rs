@@ -7,6 +7,10 @@ use crate::mounting::{UiMountedFrameOutcome, UiPreparedMountedFrame};
 use crate::mounting::{UiSurfaceBindingCoordinatePosture, UiSurfaceBindingProfile};
 use worth_ui_host_contract::*;
 
+#[path = "application_capabilities.rs"]
+mod application_capabilities;
+use application_capabilities::builder;
+
 pub(super) struct World {
     pub(super) session: WorthUiActiveApplicationSession,
     pub(super) host: ScriptedPresentationHost,
@@ -18,6 +22,21 @@ pub(super) struct World {
 impl World {
     pub(super) fn launch() -> Self {
         Self::launch_with_seam(false)
+    }
+
+    pub(super) fn launch_ap07(
+        registration: worth_ui_query_binding::UiCollectionProjectionRegistration,
+        source: String,
+    ) -> Self {
+        Self::launch_with_projection_budget(
+            false,
+            false,
+            source,
+            None,
+            Some(registration),
+            Default::default(),
+            None,
+        )
     }
 
     pub(super) fn launch_seam() -> Self {
@@ -37,8 +56,89 @@ impl World {
         Self::launch_with_source(seam, false, source)
     }
 
-    fn launch_with_source(seam: bool, multi_region_owner: bool, source: String) -> Self {
-        let snapshot = builder(seam, multi_region_owner).freeze()
+    pub(super) fn launch_with_source(seam: bool, multi_region_owner: bool, source: String) -> Self {
+        Self::launch_with_projection(seam, multi_region_owner, source, None)
+    }
+
+    pub(super) fn launch_with_projection(
+        seam: bool,
+        multi_region_owner: bool,
+        source: String,
+        scalar: Option<(
+            ComponentDescriptor,
+            worth_ui_query_binding::UiScalarProjectionRegistration,
+        )>,
+    ) -> Self {
+        Self::launch_with_projection_budget(
+            seam,
+            multi_region_owner,
+            source,
+            scalar,
+            None,
+            Default::default(),
+            None,
+        )
+    }
+
+    pub(super) fn launch_with_retention_budget(
+        budget: crate::mounting::UiMountedFrameRetentionBudget,
+    ) -> Self {
+        Self::launch_with_projection_budget(
+            false,
+            false,
+            authored::source(),
+            None,
+            None,
+            budget,
+            None,
+        )
+    }
+
+    pub(super) fn launch_with_appearance_role(
+        source: String,
+        role: worth_ui_dsl::UiAppearanceRoleDeclaration,
+    ) -> Self {
+        Self::launch_with_projection_budget(
+            false,
+            false,
+            source,
+            None,
+            None,
+            Default::default(),
+            Some(role),
+        )
+    }
+
+    fn launch_with_projection_budget(
+        seam: bool,
+        multi_region_owner: bool,
+        source: String,
+        scalar: Option<(
+            ComponentDescriptor,
+            worth_ui_query_binding::UiScalarProjectionRegistration,
+        )>,
+        collection: Option<worth_ui_query_binding::UiCollectionProjectionRegistration>,
+        budget: crate::mounting::UiMountedFrameRetentionBudget,
+        role: Option<worth_ui_dsl::UiAppearanceRoleDeclaration>,
+    ) -> Self {
+        let configured = || {
+            let builder = builder(seam, multi_region_owner, role.as_ref())
+                .with_mounted_frame_retention_budget(budget);
+            let builder = match &scalar {
+                Some((component, registration)) => builder
+                    .register_component(component.clone())
+                    .register_scalar_projection(registration.clone())
+                    .unwrap(),
+                None => builder,
+            };
+            match &collection {
+                Some(registration) => {
+                    super::hostile_protocol::configure_builder(builder, registration.clone())
+                }
+                None => builder,
+            }
+        };
+        let snapshot = configured().freeze()
             .map(crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host).unwrap();
         let submission =
             crate::runtime::tests::source_ingress_boundary_test_support::lower_file_submission(
@@ -52,7 +152,7 @@ impl World {
         let host = ScriptedPresentationHost::native_display();
         host.set_capabilities(worth_ui_host_native::appearance_capability_report());
         let observer = host.clone();
-        let mut session = builder(seam, multi_region_owner).with_candidate_submission(submission).freeze().map(|app| {
+        let mut session = configured().with_candidate_submission(submission).freeze().map(|app| {
             let mut app = crate::facade::entry::WorthUiCertificationApplicationTransition::activate_test_host(app, host);
             let installation = worth_ui_query_binding::WorthUiPresentationAsyncHostPlan::prepare()
                 .unwrap()
@@ -208,12 +308,15 @@ impl World {
         match outcome {
             UiMountedFrameOutcome::Published(_) => {}
             UiMountedFrameOutcome::AdmissionDenied(denial) => {
-                panic!("shared publication: {:?}", denial.denial())
+                panic!("shared publication at {now}: {:?}", denial.denial())
             }
             UiMountedFrameOutcome::RejectedBeforeEffects(denial) => {
                 panic!("shared publication: {:?}", denial.rejections())
             }
-            other => panic!("shared publication: {:?}", std::mem::discriminant(&other)),
+            other => panic!(
+                "shared publication at {now}: {:?}",
+                std::mem::discriminant(&other)
+            ),
         }
     }
 
@@ -284,57 +387,4 @@ impl World {
             ),
         }
     }
-}
-
-fn builder(
-    seam: bool,
-    multi_region_owner: bool,
-) -> crate::facade::entry::WorthUiCertificationApplicationBuilder {
-    let mut builder = test_support::authored_overlay_builder_with_component(authored::component(0))
-        .with_focus_policy_defaults(crate::declaration::UiFocusPolicy::workbench())
-        .with_motion_policy_defaults(crate::declaration::UiMotionPolicy::system_respecting())
-        .with_scroll_policy_defaults(crate::declaration::UiScrollPolicy::nested_region())
-        .register_surface(SurfaceDescriptor::new(SurfaceId::new("workspace.surface.secondary").unwrap(),
-            SurfaceKind::overlay_content(), ComponentId::new(authored::COMPONENTS[0]).unwrap(),
-            SurfacePlacementClass::overlay_layer(), SurfaceStateClass::restorable()))
-        .register_theme_token(crate::runtime::tests::appearance_component_session_test_support::appearance_theme_token(ThemeTokenId::new(palette::TEXT_TOKEN).unwrap()));
-    if seam {
-        let primary = MosaicRegionKindId::new("workspace.region.primary").unwrap();
-        let secondary = MosaicRegionKindId::new("workspace.region.secondary").unwrap();
-        let edge = MosaicSharedEdge::new(primary.clone(), secondary.clone()).unwrap();
-        let contract = MosaicSeamPaintContract::admit(
-            [primary.clone(), secondary.clone()],
-            [edge.clone()],
-            [MosaicSeamPaintOwner::new(edge, primary.clone()).unwrap()],
-            [
-                MosaicExteriorCorner::new(primary.clone(), MosaicExteriorCornerPosture::TopLeft),
-                MosaicExteriorCorner::new(primary, MosaicExteriorCornerPosture::BottomLeft),
-                MosaicExteriorCorner::new(secondary.clone(), MosaicExteriorCornerPosture::TopRight),
-                MosaicExteriorCorner::new(secondary, MosaicExteriorCornerPosture::BottomRight),
-            ],
-        )
-        .unwrap();
-        let secondary_region = if multi_region_owner {
-            authored::secondary_region_allowing_escape()
-        } else {
-            authored::secondary_region()
-        };
-        builder = builder
-            .register_mosaic_region_kind(secondary_region)
-            .register_mosaic_seam_paint_contract(contract)
-            .unwrap();
-    }
-    for index in 0..authored::COMPONENTS.len() {
-        if index != 0 {
-            builder = builder.register_component(authored::component(index));
-        }
-        builder = builder
-            .register_appearance_role(authored::role(index))
-            .unwrap();
-    }
-    builder
-        .register_appearance_role(overlay::backdrop_role())
-        .unwrap()
-        .register_appearance_theme_bundle(palette::theme())
-        .unwrap()
 }

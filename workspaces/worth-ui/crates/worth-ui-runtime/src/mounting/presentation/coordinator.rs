@@ -338,7 +338,7 @@ impl UiMountedPresentationCoordinator {
                 {
                     self.host_truth.block_presentation(requirement);
                 }
-                self.presentation_states.remove(&rejection.binding());
+                self.reconstruction_bindings.insert(rejection.binding());
             }
         }
         rejected_outcome(
@@ -380,7 +380,8 @@ impl UiMountedPresentationCoordinator {
         }
         self.active.borrow_mut().remove(&attempt);
         for binding in &affected {
-            self.presentation_states.remove(binding);
+            // Retain accepted commands and Motion for reconstruction while host truth is blocked.
+            self.reconstruction_bindings.insert(*binding);
             let requirement = frame
                 .surfaces()
                 .iter()

@@ -26,6 +26,37 @@ pub(crate) enum UiAppearanceInspectionDenial {
 }
 
 impl UiAppearanceInspectionDenial {
+    pub(crate) fn from_resolution(
+        failure: super::super::projection::UiAppearanceResolutionFailure,
+    ) -> Self {
+        use super::super::projection::UiAppearanceResolutionDenial as Cause;
+        match failure.denial() {
+            Cause::WrongSurface
+            | Cause::WrongApplicationGeneration
+            | Cause::WrongTarget
+            | Cause::NodeRoleBinding(_)
+            | Cause::VectorRoleBindingMismatch => Self::Basis,
+            Cause::MissingRoleCapability
+            | Cause::WrongRoleApplicability
+            | Cause::MissingStateAxis(_)
+            | Cause::MissingDecisionCell(_)
+            | Cause::ThemeResolution(_)
+            | Cause::OverlayParticipantMissing
+            | Cause::OverlaySurfaceMismatch
+            | Cause::OverlayApplicationMismatch => Self::Resolution,
+        }
+    }
+
+    pub(crate) const fn retires_owner_dependent_paint(self) -> bool {
+        matches!(
+            self,
+            Self::MissingOperabilityRoute
+                | Self::AmbiguousOperabilityRoute { .. }
+                | Self::OperabilitySourceUnavailable
+                | Self::InteractionSourceUnavailable(_)
+        )
+    }
+
     pub(crate) const fn blocks_mounted_output(self) -> bool {
         !matches!(
             self,

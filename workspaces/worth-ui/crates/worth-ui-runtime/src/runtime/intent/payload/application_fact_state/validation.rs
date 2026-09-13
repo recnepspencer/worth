@@ -61,6 +61,7 @@ pub(crate) enum UiValidationAppearanceTargetAdmissionDenial {
     InstanceDoesNotBelongToGraphNode,
 }
 
+#[derive(Clone)]
 pub(super) struct UiValidationAppearanceOwner {
     facts: ValidationFacts,
     #[allow(
@@ -69,6 +70,11 @@ pub(super) struct UiValidationAppearanceOwner {
     )]
     next_identity: u64,
     revision: u64,
+}
+
+pub(crate) struct UiPreparedValidationAppearanceReceiptSuccession {
+    predecessor: Option<UiValidationAppearanceFactSnapshot>,
+    successor: Option<UiValidationAppearanceOwner>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -84,6 +90,53 @@ pub(crate) enum UiValidationAppearanceFactDenial {
 }
 
 impl super::UiIntentApplicationFactState {
+    pub(crate) fn prepare_validation_receipt_succession(
+        &self,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        successor: &crate::mounting::UiMountedNodeReceiptBasis,
+    ) -> UiPreparedValidationAppearanceReceiptSuccession {
+        let prepared_owner = match self.validation_owner.as_ref() {
+            Some(owner) => {
+                let mut prepared = owner.clone();
+                for (instance, (graph, fact)) in owner.facts.iter() {
+                    let Some(successor_receipt) = successor.receipt_for(*instance) else {
+                        continue;
+                    };
+                    if mounted
+                        .validate_owner_receipt_source(*instance, fact.node_receipt)
+                        .is_err()
+                    {
+                        continue;
+                    }
+                    let mut rebound = *fact;
+                    rebound.node_receipt = successor_receipt;
+                    prepared.facts.insert(*instance, (*graph, rebound));
+                }
+                Some(prepared)
+            }
+            None => None,
+        };
+        UiPreparedValidationAppearanceReceiptSuccession {
+            predecessor: self.validation_appearance_snapshot(),
+            successor: prepared_owner,
+        }
+    }
+
+    pub(crate) fn admits_validation_receipt_succession(
+        &self,
+        prepared: &UiPreparedValidationAppearanceReceiptSuccession,
+    ) -> bool {
+        self.validation_appearance_snapshot() == prepared.predecessor
+    }
+
+    pub(crate) fn commit_validation_receipt_succession(
+        &mut self,
+        prepared: UiPreparedValidationAppearanceReceiptSuccession,
+    ) {
+        assert!(self.admits_validation_receipt_succession(&prepared));
+        self.validation_owner = prepared.successor;
+    }
+
     #[allow(
         dead_code,
         reason = "Gate 0 exercises validation publication only in certification"

@@ -19,6 +19,13 @@ impl super::super::WorthUiNativeApplicationShell {
         I3: crate::facade::intent::UiIntent,
         D3: crate::facade::intent::UiIntentDefinitionDestination,
     {
+        if self.pending_managed_rebind.is_some() {
+            return WorthUiNativeIntentIngress::deferred(
+                super::WorthUiNativeInteractionIngressStop::ManagedObservationProgressPending(
+                    progress,
+                ),
+            );
+        }
         let outcomes = progress.into_settlement().into_outcomes().into_vec();
         let mut transitions = Vec::new();
         let mut dismissals = Vec::new();
@@ -171,6 +178,13 @@ impl super::super::WorthUiNativeApplicationShell {
         I2: crate::facade::intent::UiIntent,
         D2: crate::facade::intent::UiIntentDefinitionDestination,
     {
+        if self.pending_managed_rebind.is_some() {
+            return WorthUiNativeIntentIngress::deferred(
+                super::WorthUiNativeInteractionIngressStop::ManagedObservationProgressPending(
+                    progress,
+                ),
+            );
+        }
         let outcomes = progress.into_settlement().into_outcomes().into_vec();
         let mut transitions = Vec::new();
         let mut dismissals = Vec::new();

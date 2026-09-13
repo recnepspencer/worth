@@ -165,7 +165,12 @@ fn container_world(
         )
     };
     (
-        crate::mounting::UiMountedFocusParticipationSnapshot::new(frame, participants, 4),
+        crate::mounting::UiMountedFocusParticipationSnapshot::new(
+            frame,
+            participants,
+            4,
+            Vec::new(),
+        ),
         UiFocusScopeIdentity::for_surface(surface),
         identity(0),
         [identity(1), identity(2)],

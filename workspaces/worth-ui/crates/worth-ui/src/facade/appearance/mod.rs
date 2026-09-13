@@ -32,3 +32,11 @@ pub use worth_ui_runtime::facade::registry::descriptor::{
 pub use worth_ui_runtime::facade::{
     AppearanceRoleRegistrationDenial, UiAppearanceInspectionGenerationSuccessionDenial,
 };
+
+pub use worth_ui_runtime::facade::{
+    UiActiveThemeBinding, UiNativeThemeSwitchDenial, UiProgrammaticThemeSwitchPreparationDenial,
+    UiThemeCapabilityReceipt, UiThemeCapabilityReceiptDenial, UiThemeResolutionDenial,
+    UiThemeSwitchDenial, UiThemeSwitchOrigin, UiThemeSwitchOriginAdmissionDenial,
+    UiThemeSwitchOriginFamily, UiThemeSwitchOutcome, UiThemeSwitchPreparationDenial,
+    UiThemeSwitchRequest, UiThemeSwitchSelectionDenial,
+};

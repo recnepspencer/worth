@@ -57,7 +57,7 @@ impl WorthUiMountedSessionState {
             appearance_inspection,
             deadline,
             now,
-            |_, _| Ok(Vec::new()),
+            |_, _, _| Ok(Vec::new()),
         )
     }
 
@@ -73,6 +73,7 @@ impl WorthUiMountedSessionState {
         prepare_overlays: impl FnOnce(
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+            Option<&crate::runtime::appearance::UiActiveThemeBinding>,
         ) -> Result<
             Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
             (),
@@ -111,28 +112,6 @@ impl WorthUiMountedSessionState {
         )
     }
 
-    pub(crate) fn present_prepared_superseding_frame(
-        &mut self,
-        host: &crate::facade::WorthUiHostSessionAuthority,
-        frame: crate::mounting::UiPreparedMountedFrame,
-        predecessor: crate::mounting::UiMountedSupersedingPresentationBasis,
-        appearance_inspection: Option<
-            &mut crate::runtime::appearance::UiAppearanceInspectionProducer,
-        >,
-        deadline: worth_ui_host_contract::UiPresentationDeadline,
-        now: u64,
-    ) -> UiMountedPublicationTransition {
-        self.present_prepared_superseding_frame_with_overlays(
-            host,
-            frame,
-            predecessor,
-            appearance_inspection,
-            deadline,
-            now,
-            |_, _| Ok(Vec::new()),
-        )
-    }
-
     pub(crate) fn present_prepared_superseding_frame_with_overlays(
         &mut self,
         host: &crate::facade::WorthUiHostSessionAuthority,
@@ -146,6 +125,7 @@ impl WorthUiMountedSessionState {
         prepare_overlays: impl FnOnce(
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+            Option<&crate::runtime::appearance::UiActiveThemeBinding>,
         ) -> Result<
             Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
             (),
@@ -215,12 +195,13 @@ impl WorthUiMountedSessionState {
         prepare_overlays: impl FnOnce(
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+            Option<&crate::runtime::appearance::UiActiveThemeBinding>,
         ) -> Result<
             Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
             (),
         >,
     ) -> UiMountedPublicationTransition {
-        let mut admission =
+        let admission =
             match self
                 .presentation
                 .admit_current(retained, &capability_report, deadline, now)
@@ -240,20 +221,27 @@ impl WorthUiMountedSessionState {
             .iter()
             .map(|surface| surface.requirement().semantic_surface())
             .collect::<Vec<_>>();
-        let appearance_batch = match prepare_overlays(admission.attempt(), &surfaces) {
+        let appearance = match prepare_overlays(
+            admission.attempt(),
+            &surfaces,
+            admission.frame().prepared_theme_binding(),
+        ) {
             Ok(overlays) => admission
                 .lower_appearance_with_overlays(capability_report.appearance_profile(), &overlays),
             Err(()) => admission.deny_appearance_output(),
         };
-        if !admission.appearance_output_available() {
-            let frame = admission.frame().canonical_core().frame();
-            let rejection = admission.reject_appearance_output();
-            return UiMountedPublicationTransition::with_observation_and_appearance(
-                UiMountedFrameOutcome::AdmissionDenied(rejection),
-                UiMountedHostObservationTransition::NeverPresented(frame),
-                appearance_batch,
-            );
-        }
+        let (admission, appearance_batch) = match appearance.admit_appearance_retention() {
+            Ok(admission) => admission,
+            Err(rejected) => {
+                let (rejection, appearance_batch) = *rejected;
+                let frame = rejection.frame().canonical_core().frame();
+                return UiMountedPublicationTransition::with_observation_and_appearance(
+                    UiMountedFrameOutcome::AdmissionDenied(rejection),
+                    UiMountedHostObservationTransition::NeverPresented(frame),
+                    appearance_batch,
+                );
+            }
+        };
         let reservation =
             UiMountedFramePublicationCandidate::reserve(&admission, publication_predecessor);
         let attempt = admission.attempt();
@@ -265,7 +253,7 @@ impl WorthUiMountedSessionState {
             "runtime-minted presentation attempts must be unique"
         );
         let outcome = self.presentation.present(
-            admission.into_attempt(),
+            admission,
             host.effect_port(),
             mounted_host_authority(host, &capability_report),
             now,

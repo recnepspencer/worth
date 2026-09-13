@@ -21,6 +21,7 @@ fn opacity_sample_is_issued_for_text_with_only_overhanging_visible_coverage() {
             surface: world.requirement.semantic_surface(),
             binding: world.requirement.binding(),
             mounted_instance: world.first_instance,
+            portal_group: None,
             node_receipt: original.node_receipt(),
             allocation_basis: original.allocation_basis(),
             bounds: box_at(0.0, 1.0),

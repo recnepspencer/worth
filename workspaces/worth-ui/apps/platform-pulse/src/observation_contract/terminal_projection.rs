@@ -63,6 +63,7 @@ impl PlatformPulseLifecycleObservationStream {
         watcher: &WorthUiFilesystemWatcherShutdownReceipt,
         query: super::query::PlatformPulseQueryShutdownEvidence,
         intent: super::intent::PlatformPulseIntentWatcherShutdownEvidence,
+        theme_watch_released: bool,
         application: &WorthUiNativeApplicationShutdownReceipt,
     ) -> Result<
         PlatformPulseLifecycleObservationEnvelope,
@@ -82,6 +83,7 @@ impl PlatformPulseLifecycleObservationStream {
                 pending_query_observation_count: query_watcher.pending_observation_count(),
                 intent_watcher_joined: intent.worker_joined(),
                 pending_intent_input_count: intent.pending_input_count(),
+                theme_watch_released,
                 intent_resources_empty: application.intent_resources_empty(),
                 query_close_complete: application.query_close_complete(),
                 query_owner_terminal: query.owner_terminal(),
@@ -326,6 +328,9 @@ fn project_rebind_preparation_denial(
         UiRebindPreparationDenial::CandidateMountedPreparation(_) => {
             Projected::CandidateMountedPreparation
         }
+        UiRebindPreparationDenial::CandidateOccurrenceGeometry(_) => {
+            Projected::CandidateOccurrenceGeometry
+        }
         UiRebindPreparationDenial::CandidateCutoverPreparation => {
             Projected::CandidateCutoverPreparation
         }
@@ -333,6 +338,11 @@ fn project_rebind_preparation_denial(
             Projected::PlannedChangeBecameSemanticNoOp
         }
         UiRebindPreparationDenial::UnsupportedNonSourcePlan => Projected::UnsupportedNonSourcePlan,
+        UiRebindPreparationDenial::ThemeSwitch(_) => Projected::ThemeSwitch,
+        UiRebindPreparationDenial::ConsequenceFrameMismatch => Projected::ConsequenceFrameMismatch,
+        UiRebindPreparationDenial::StaleConsequenceOwnerSnapshot => {
+            Projected::StaleConsequenceOwnerSnapshot
+        }
         UiRebindPreparationDenial::InvalidSemanticProof => Projected::InvalidSemanticProof,
         UiRebindPreparationDenial::AppearanceThemeSuccession(_) => {
             Projected::CandidateCutoverPreparation

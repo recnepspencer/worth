@@ -21,6 +21,29 @@ enum PointerTarget {
 }
 
 impl UiPointerAffordanceProjection {
+    pub(super) fn observe_successor(
+        &self,
+        observe: &mut impl FnMut(
+            crate::runtime::interaction::UiPresentedInteractionTargetView,
+        ) -> Result<
+            UiIntentStandingOperabilityObservation,
+            UiIntentStandingOperabilityUnavailable,
+        >,
+    ) -> Self {
+        let target = match &self.target {
+            PointerTarget::Outside => PointerTarget::Outside,
+            PointerTarget::Inside { target, .. } => PointerTarget::Inside {
+                target: *target,
+                operability: observe(*target),
+            },
+        };
+        Self {
+            surface: self.surface,
+            pointer: self.pointer,
+            target,
+        }
+    }
+
     pub(super) fn from_primary(
         surface: UiSemanticSurfaceIdentity,
         posture: crate::runtime::interaction::UiPointerPresenceAppearancePosture,
@@ -88,6 +111,7 @@ impl UiPointerAffordanceProjection {
         self.operability()?.ok()?.confirmation_deadline()
     }
 
+    #[cfg(test)]
     pub(super) fn same_mechanic(&self, other: &Self) -> bool {
         self.surface == other.surface
             && self.pointer == other.pointer

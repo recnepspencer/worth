@@ -10,9 +10,31 @@ impl PlatformPulseApplicationRuntime {
             self.terminal_error.is_some(),
             self.pending_managed_rebind.is_some(),
         ) {
+            if !self
+                .source_watch
+                .as_mut()
+                .is_some_and(PlatformPulseSourceWatch::has_pending)
+            {
+                return;
+            }
+            let Some(shell) = self.shell.as_mut() else {
+                return;
+            };
+            match self.visual_identity.prepare_source_rebind(
+                shell,
+                self.presentation_tick,
+                std::time::Instant::now(),
+            ) {
+                Ok(true) => {}
+                Ok(false) => return,
+                Err(denial) => {
+                    self.fail_visual_identity(denial);
+                    return;
+                }
+            }
             let Some(event) = self
                 .source_watch
-                .as_ref()
+                .as_mut()
                 .and_then(PlatformPulseSourceWatch::try_next)
             else {
                 return;

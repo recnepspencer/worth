@@ -8,13 +8,10 @@ use worth_ui_dsl::{
 
 use super::super::state::UiBackdropAppearanceStateVector;
 use super::super::theme::UiThemeResolutionView;
-use super::{
-    UiAppearanceResolver, UiBackdropAppearanceProjection, UiBackdropInstanceIdentity,
-    UiOverlayStackSnapshot,
-};
+use super::{UiAppearanceResolver, UiBackdropAppearanceProjection, UiOverlayStackSnapshot};
 use crate::runtime::overlay_composition::{
-    UiOverlayApplicationGeneration, UiOverlayBackdropRow, UiOverlayExtent,
-    UiOverlayStackParticipant,
+    UiBackdropInstanceIdentity, UiOverlayApplicationGeneration, UiOverlayBackdropRow,
+    UiOverlayExtent, UiOverlayStackParticipant,
 };
 
 pub(super) fn inputs() -> (
@@ -81,6 +78,21 @@ pub(super) fn backdrop_theme_view(
     role: &UiAppearanceRoleDeclaration,
     surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
 ) -> UiThemeResolutionView {
+    backdrop_theme_view_with_opacity(
+        session,
+        role,
+        surface,
+        UiThemeValue::Opacity(worth_ui_dsl::UiThemeOpacity::from_ratio(1, 2).unwrap()),
+    )
+    .unwrap()
+}
+
+pub(super) fn backdrop_theme_view_with_opacity(
+    session: &crate::facade::WorthUiActiveApplicationSession,
+    role: &UiAppearanceRoleDeclaration,
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    opacity_value: UiThemeValue,
+) -> Result<UiThemeResolutionView, crate::capability::UiThemeDefinitionDenial> {
     let color = crate::capability::ThemeTokenId::new("backdrop.background").unwrap();
     let opacity = crate::capability::ThemeTokenId::new("backdrop.opacity").unwrap();
     let catalog = crate::capability::UiThemeSlotCatalog::admit(
@@ -102,13 +114,9 @@ pub(super) fn backdrop_theme_view(
                 color,
                 UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels([16, 32, 48, 255])),
             ),
-            (
-                opacity,
-                UiThemeValue::Opacity(worth_ui_dsl::UiThemeOpacity::from_ratio(1, 2).unwrap()),
-            ),
+            (opacity, opacity_value),
         ],
-    )
-    .unwrap();
+    )?;
     let bundle = crate::capability::FrozenAppearanceThemeCapabilities::admit(
         catalog,
         definition_identity.clone(),
@@ -157,7 +165,7 @@ pub(super) fn backdrop_theme_view(
             session.active_generation_identity(),
         )
         .unwrap();
-    UiThemeResolutionView::from_capability(&capability, &bundle).unwrap()
+    Ok(UiThemeResolutionView::from_capability(&capability, &bundle).unwrap())
 }
 
 pub(super) fn slot(
@@ -313,8 +321,5 @@ pub(super) fn current_value(
     session: &crate::facade::WorthUiActiveApplicationSession,
 ) -> Option<crate::capability::ThemeTokenValue> {
     let token = crate::capability::ThemeTokenId::new("theme.appearance_consumer").unwrap();
-    session
-        .complete_application_theme_values_source()
-        .current_value(&token)
-        .cloned()
+    session.observed_theme_value_for_test(&token)
 }

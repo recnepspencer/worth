@@ -91,16 +91,7 @@ fn new_instance_has_no_presented_owner_while_existing_instance_keeps_its_receipt
         )
         .is_ok()
     );
-    assert_eq!(
-        crate::runtime::appearance::UiAppearanceCoherentBasis::admit_current(
-            snapshot,
-            &consumer,
-            &fixture.session.mounted,
-            themes,
-            input,
-        ),
-        Err(crate::runtime::appearance::UiAppearanceCoherentBasisDenial::MountedTargetNotCurrent)
-    );
+
     assert_eq!(
         fixture.session.mounted.seal_appearance_receipt_basis(
             instance,
@@ -166,11 +157,11 @@ fn mounted_appearance_basis_separates_owner_and_successor_authority() {
         )
         .unwrap()
     };
-    let successor = candidate_basis(instance);
+    let successor = frame.presented_receipt_basis();
     let receipt_basis = fixture
         .session
         .mounted
-        .seal_appearance_receipt_basis(instance, incarnation, &successor)
+        .seal_appearance_receipt_basis(instance, incarnation, successor)
         .unwrap();
     assert_ne!(
         receipt_basis.owner_node_receipt(),
@@ -233,6 +224,48 @@ fn mounted_appearance_basis_separates_owner_and_successor_authority() {
     assert_eq!(
         admitted.node_receipt(),
         receipt_basis.successor_node_receipt()
+    );
+    let unrelated_frame = fixture
+        .session
+        .prepare_mounted_frame_with_application_presentation(
+            crate::mounting::UiMountedFrameRequest::all_bound_surfaces(),
+            |_| {},
+        )
+        .unwrap_or_else(|_| panic!("independent candidate frame prepares"));
+    let mut unrelated_input = input.clone();
+    assert_ne!(
+        unrelated_frame
+            .presented_receipt_basis()
+            .receipt_for(instance),
+        frame.presented_receipt_basis().receipt_for(instance),
+        "the denial must distinguish two candidate frames for the same mounted occurrence"
+    );
+    unrelated_input.receipt_basis = fixture
+        .session
+        .mounted
+        .seal_appearance_receipt_basis(
+            instance,
+            incarnation,
+            unrelated_frame.presented_receipt_basis(),
+        )
+        .unwrap();
+    assert_eq!(
+        crate::runtime::appearance::UiAppearanceCoherentBasis::admit_prepared(
+            &frame,
+            fixture
+                .session
+                .appearance_owner_snapshot_for_test()
+                .unwrap(),
+            &consumer,
+            &fixture.session.mounted,
+            fixture
+                .session
+                .presentation
+                .appearance_theme_state()
+                .unwrap(),
+            unrelated_input,
+        ),
+        Err(crate::runtime::appearance::UiAppearanceCoherentBasisDenial::MountedTargetNotCurrent)
     );
     let foreign_instance =
         worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap();

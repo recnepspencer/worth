@@ -5,6 +5,8 @@ pub enum PlatformPulseMosaicRegion {
     EvidenceRail,
     ServiceStage,
     StatusBand,
+    ServiceTile,
+    NativeTile,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -25,12 +27,14 @@ pub enum PlatformPulseMosaicSizing {
 }
 
 impl PlatformPulseMosaicRegion {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 7] = [
         Self::Viewport,
         Self::Masthead,
         Self::EvidenceRail,
         Self::ServiceStage,
         Self::StatusBand,
+        Self::ServiceTile,
+        Self::NativeTile,
     ];
 
     pub const fn id(self) -> &'static str {
@@ -40,6 +44,8 @@ impl PlatformPulseMosaicRegion {
             Self::EvidenceRail => "platform.pulse.mosaic.region.evidence_rail",
             Self::ServiceStage => "platform.pulse.mosaic.region.service_stage",
             Self::StatusBand => "platform.pulse.mosaic.region.status_band",
+            Self::ServiceTile => "platform.pulse.mosaic.region.service_tile",
+            Self::NativeTile => "platform.pulse.mosaic.region.native_tile",
         }
     }
 }

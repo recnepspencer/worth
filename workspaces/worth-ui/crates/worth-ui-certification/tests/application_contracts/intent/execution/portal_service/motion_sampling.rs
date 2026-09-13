@@ -226,10 +226,10 @@ fn validated_tick_observations_sample_motion_without_new_semantic_frames() {
         "Portal motion content",
     )
     .expect("the authored Portal child accepts semantic text");
-    let mut world = AdmissionWorld::launch_application_with_target_and_semantic_text(
+    let mut world = AdmissionWorld::launch_application_on_declared_surface_with_semantic_text(
         application,
         facts,
-        1,
+        "visual.identity.surface.main",
         2,
         [18, 20],
         &[semantic_text],
@@ -275,12 +275,9 @@ fn validated_tick_observations_sample_motion_without_new_semantic_frames() {
     let portal = open_transcript.portal_overlays()[0];
     let trigger = portal.owner();
     let portal_child = open_transcript
-        .filled_rects()
+        .semantic_text()
         .iter()
-        .find(|fill| {
-            fill.mounted_instance() != trigger
-                && fill.layer_semantic_order() > portal.layer_semantic_order()
-        })
+        .find(|text| text.mounted_instance() != trigger && text.text() == "Portal motion content")
         .expect("the real Portal fixture publishes its authored child above the overlay")
         .mounted_instance();
     assert_ne!(portal_child, trigger);

@@ -330,6 +330,7 @@ impl LifecycleFailureSnapshot {
 impl LifecycleTraceEntry {
     fn from_envelope(envelope: &PlatformPulseLifecycleObservationEnvelope) -> Self {
         let outcome = match envelope.outcome() {
+            PlatformPulseLifecycleObservation::ThemeSwitchSettled(_) => "theme_switch_settled",
             PlatformPulseLifecycleObservation::ProcessStarted(_) => "process_started",
             PlatformPulseLifecycleObservation::FirstFramePublished(_) => "first_frame_published",
             PlatformPulseLifecycleObservation::NativeInputReached(_) => "native_input_reached",

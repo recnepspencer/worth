@@ -9,6 +9,19 @@ pub(crate) struct UiMountedPaintAttribution {
 }
 
 impl WorthUiMountedSessionState {
+    pub(crate) fn admits_retained_appearance_generation(
+        &self,
+        owners: &crate::runtime::appearance::UiPreparedRetainedAppearanceOwnerSuccession,
+    ) -> bool {
+        self.identity.admits_retained_appearance_generation(owners)
+    }
+
+    pub(crate) fn commit_retained_appearance_generation(
+        &mut self,
+        owners: &crate::runtime::appearance::UiPreparedRetainedAppearanceOwnerSuccession,
+    ) {
+        self.identity.commit_retained_appearance_generation(owners);
+    }
     pub(crate) fn layout_basis(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
@@ -18,28 +31,6 @@ impl WorthUiMountedSessionState {
         crate::mounting::UiMountedOccurrenceGeometryDenial,
     > {
         self.identity.layout_basis(surface, generation)
-    }
-
-    pub(crate) fn text_publication_covers_all_mounts(
-        &self,
-        graph: crate::graph::UiGraphNodeIdentity,
-        surfaces: &[worth_ui_host_contract::UiMountedSurfaceBindingRequirement],
-    ) -> bool {
-        self.identity
-            .try_projection_instances_for_graph_nodes(&[graph])
-            .is_some_and(|affected| {
-                !affected.instances().is_empty()
-                    && affected.instances().iter().all(|instance| {
-                        self.identity
-                            .projection_instance(*instance)
-                            .is_some_and(|view| {
-                                surfaces.iter().any(|surface| {
-                                    surface.semantic_surface()
-                                        == view.basis().semantic_surface_identity()
-                                })
-                            })
-                    })
-            })
     }
 
     pub(crate) fn current_text_publication_for_frame(
@@ -80,6 +71,7 @@ impl WorthUiMountedSessionState {
         )
     }
 
+    #[cfg(test)]
     pub(crate) fn current_unpublished_appearance(
         &self,
     ) -> Result<
@@ -89,16 +81,6 @@ impl WorthUiMountedSessionState {
         self.identity
             .current_projection_owner()
             .map_or(Ok(None), |owner| owner.unpublished_appearance())
-    }
-
-    pub(crate) fn current_theme_revision_for_frame(
-        &self,
-        frame: worth_ui_host_contract::UiMountedFrameIdentity,
-    ) -> Option<u64> {
-        let owner = self.identity.current_projection_owner()?;
-        (owner.projection().frame_identity() == frame)
-            .then_some(owner.theme_revision())
-            .flatten()
     }
 
     #[cfg(test)]
@@ -132,6 +114,7 @@ impl WorthUiMountedSessionState {
             .map(|view| view.basis().clone())
     }
 
+    #[cfg(test)]
     pub(crate) fn current_region_extent(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
@@ -219,53 +202,34 @@ impl WorthUiMountedSessionState {
             .portal_owner_for_child(instance)
     }
 
-    pub(crate) fn native_paint_attribution(
+    pub(crate) fn native_observed_paint_attribution(
         &self,
         frame: worth_ui_host_contract::UiMountedFrameIdentity,
         binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
+        observed_surface: u64,
+        observed_instance: u64,
+        observed_receipt: u64,
     ) -> Option<UiMountedPaintAttribution> {
         let view = self.identity.current_projection()?.view_for(binding).ok()?;
-        if view.frame() != frame {
+        if view.frame() != frame || view.surface().diagnostic_value() != observed_surface {
             return None;
         }
-        for order in view.authored_paint_order().iter().rev() {
-            let command = order.command();
-            let identity = view
-                .filled_rects()
-                .rows()
-                .iter()
-                .find(|mechanic| {
-                    worth_ui_host_contract::UiMountedPaintCommandIdentity::filled_rect(mechanic)
-                        == command
-                })
-                .map(|mechanic| (mechanic.mounted_instance(), mechanic.node_receipt()))
-                .or_else(|| {
-                    view.semantic_text()
-                        .rows()
-                        .iter()
-                        .find(|mechanic| {
-                            worth_ui_host_contract::UiMountedPaintCommandIdentity::semantic_text(
-                                mechanic,
-                            ) == command
-                        })
-                        .map(|mechanic| (mechanic.mounted_instance(), mechanic.node_receipt()))
-                });
-            let Some((mounted_instance, node_receipt)) = identity else {
-                continue;
-            };
-            let Some(authored) = self.identity.current_authored_attribution(mounted_instance)
-            else {
-                continue;
-            };
-            return Some(UiMountedPaintAttribution {
-                surface: view.surface(),
-                mounted_instance,
-                node_receipt,
-                authored_provenance_digest: authored.source_provenance_digest,
-                authored_semantic_identity_digest: authored.semantic_identity_digest,
-            });
-        }
-        None
+        // Host observations identify what was drawn; only accepted mounting can
+        // attach authored provenance. No paint ordering is reconstructed here.
+        let node = view.nodes().iter().find(|node| {
+            node.mounted_instance().diagnostic_value() == observed_instance
+                && node.node_receipt().diagnostic_value() == observed_receipt
+        })?;
+        let authored = self
+            .identity
+            .current_authored_attribution(node.mounted_instance())?;
+        Some(UiMountedPaintAttribution {
+            surface: view.surface(),
+            mounted_instance: node.mounted_instance(),
+            node_receipt: node.node_receipt(),
+            authored_provenance_digest: authored.source_provenance_digest,
+            authored_semantic_identity_digest: authored.semantic_identity_digest,
+        })
     }
 
     pub(crate) fn classify_frame_reuse(
@@ -275,7 +239,7 @@ impl WorthUiMountedSessionState {
         self.identity.classify_reuse(contract)
     }
 
-    pub(in crate::mounting) fn pointer_projection_is_current(
+    pub(crate) fn pointer_projection_is_current(
         &self,
         snapshot: &crate::runtime::pointer_affordance::UiPointerAffordanceSnapshot,
         projection: &crate::runtime::pointer_affordance::UiPointerAffordanceProjection,
@@ -350,6 +314,17 @@ impl WorthUiMountedSessionState {
             &self.occurrence_geometry,
             input,
         )
+    }
+
+    pub(crate) fn begin_frame_assembly_with_occurrence_geometry<'state>(
+        &'state self,
+        occurrence_geometry: &'state crate::mounting::UiMountedOccurrenceGeometryState,
+        input: crate::mounting::UiMountedFrameAssemblyInput<'_, '_>,
+    ) -> Result<
+        crate::mounting::UiMountedFrameAssembler<'state>,
+        crate::mounting::UiMountedFramePreparationDenial,
+    > {
+        crate::mounting::UiMountedFrameAssembler::begin(&self.identity, occurrence_geometry, input)
     }
 
     pub(crate) fn begin_superseding_frame_assembly<'state>(

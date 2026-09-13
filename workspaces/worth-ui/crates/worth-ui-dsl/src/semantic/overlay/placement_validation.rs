@@ -44,18 +44,77 @@ pub(super) fn ensure_unambiguous(
         Option<super::super::UiSemanticSurfaceDeclarationIdentity>,
     )],
     edges: &BTreeMap<UiOverlayAnchor, BTreeSet<UiOverlayAnchor>>,
+    relations: &[UiOverlayRelation],
 ) -> Result<(), UiOverlayRelationAdmissionDenial> {
+    let portal_chains = portal_anchored_chains(relations);
     for (index, (left, left_surface)) in backdrops.iter().enumerate() {
         for (right, right_surface) in backdrops.iter().skip(index + 1) {
             if left_surface != right_surface {
                 continue;
             }
             if !reachable(*left, *right, edges) && !reachable(*right, *left, edges) {
-                return Err(UiOverlayRelationAdmissionDenial::AmbiguousOrder);
+                // Distinct Portal groups acquire their order from the live,
+                // owner-issued stack. Declaration identity supplies no order.
+                let distinct_portal_groups = portal_chains
+                    .get(left)
+                    .zip(portal_chains.get(right))
+                    .is_some_and(|(left, right)| left != right);
+                if !distinct_portal_groups {
+                    return Err(UiOverlayRelationAdmissionDenial::AmbiguousOrder);
+                }
             }
         }
     }
     Ok(())
+}
+
+fn portal_anchored_chains(
+    relations: &[UiOverlayRelation],
+) -> BTreeMap<UiOverlayAnchor, UiOverlayAnchor> {
+    let mut adjacent = BTreeMap::<_, BTreeSet<_>>::new();
+    let mut portals = BTreeSet::new();
+    for relation in relations
+        .iter()
+        .filter(|relation| relation.kind == super::UiOverlayRelationKind::ImmediatelyPrecedes)
+    {
+        adjacent
+            .entry(relation.lower)
+            .or_default()
+            .insert(relation.upper);
+        adjacent
+            .entry(relation.upper)
+            .or_default()
+            .insert(relation.lower);
+        for anchor in [relation.lower, relation.upper] {
+            if matches!(anchor, UiOverlayAnchor::Portal(_)) {
+                portals.insert(anchor);
+            }
+        }
+    }
+    let mut owners = BTreeMap::new();
+    let mut visited = BTreeSet::new();
+    for portal in portals {
+        let mut pending = vec![portal];
+        let mut component = Vec::new();
+        while let Some(anchor) = pending.pop() {
+            if !visited.insert(anchor) {
+                continue;
+            }
+            component.push(anchor);
+            if let Some(neighbors) = adjacent.get(&anchor) {
+                pending.extend(neighbors.iter().copied());
+            }
+        }
+        if component
+            .iter()
+            .filter(|anchor| matches!(anchor, UiOverlayAnchor::Portal(_)))
+            .count()
+            == 1
+        {
+            owners.extend(component.into_iter().map(|anchor| (anchor, portal)));
+        }
+    }
+    owners
 }
 
 pub(super) fn ensure_acyclic(

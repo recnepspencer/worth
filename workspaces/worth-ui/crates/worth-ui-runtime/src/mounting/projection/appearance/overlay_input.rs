@@ -123,7 +123,7 @@ fn backdrop_input(
     let attribution = UiMountedBackdropAppearanceAttribution::from_runtime_transport(
         snapshot.runtime_surface(),
         placement,
-        u64::from(row.declaration().value()).max(1),
+        row.declaration().value().max(1),
         snapshot.backdrop_declaration_revision(),
     )
     .ok_or(UiMountedAppearanceLoweringDenial::WorkConstruction)?;

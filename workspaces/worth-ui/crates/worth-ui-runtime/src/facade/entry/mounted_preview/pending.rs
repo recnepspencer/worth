@@ -23,11 +23,15 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             host_session,
             host_exchange,
             focus,
+            selection,
             portal,
             overlay_composition_owners,
             interaction,
             presentation,
             appearance_owner_snapshot,
+            intent_admission,
+            intent_application_facts,
+            mounted_owner_receipt_successions,
             pointer_affordance_snapshot,
             appearance_inspection,
             overlay_appearance,
@@ -43,6 +47,11 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 plan_digest: active_plan_digest,
                 transition,
                 planning_counters,
+                consumed_facts,
+                capabilities,
+                intent_catalog,
+                presentation,
+                appearance_owner_snapshot,
                 preview_theme_observation,
                 ports: WorthUiMountedPreviewPorts {
                     application_session_identity,
@@ -71,11 +80,15 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 host_session,
                 host_exchange,
                 focus,
+                selection,
                 portal,
                 overlay_composition_owners,
                 interaction,
                 presentation,
                 appearance_owner_snapshot,
+                intent_admission,
+                intent_application_facts,
+                mounted_owner_receipt_successions,
                 pointer_affordance_snapshot,
                 appearance_inspection,
                 overlay_appearance,
@@ -176,27 +189,47 @@ impl<'session> WorthUiPendingMountedPreview<'session> {
                 allocation_truth_revision: allocation_revision,
                 request,
                 lanes,
-                preview: Some(crate::mounting::UiMountedPreviewProjectionInput {
-                    mounted_instance,
-                    graph_node: preview.target(),
-                    frame_epoch: preview.frame_epoch().as_u64(),
-                    extent_subpixels: preview.extent().subpixels(),
-                    candidate_count: preview.candidate_count(),
-                    all_candidates_admitted: preview.all_candidates_admitted(),
-                }),
+                application_presentation: crate::mounting::UiMountedFrameContentSource::Preview(
+                    crate::mounting::UiMountedPreviewProjectionInput {
+                        mounted_instance,
+                        graph_node: preview.target(),
+                        frame_epoch: preview.frame_epoch().as_u64(),
+                        extent_subpixels: preview.extent().subpixels(),
+                        candidate_count: preview.candidate_count(),
+                        all_candidates_admitted: preview.all_candidates_admitted(),
+                    },
+                ),
                 visual_overlay: None,
                 portal_overlays: std::rc::Rc::from([]),
                 semantic_content: crate::mounting::UiMountedSemanticContentInput::empty(),
                 theme_values: crate::mounting::UiMountedThemeValueSource::preview_only(
                     self.preview_theme_observation.bind_surface(surface),
                 ),
-                appearance_invalidation: None,
+                appearance_invalidation: Some(
+                    crate::runtime::appearance::UiAppearanceInvalidationInput {
+                        index: self.consumed_facts,
+                        pending: self.presentation.appearance_invalidation_batch(),
+                    },
+                ),
                 font_collection: std::sync::Arc::clone(&self.font_collection),
                 reuse_contract,
             })
             .map_err(WorthUiMountedPreviewPreparationDenial::Frame)?;
-        assembler
-            .finish()
+        assembler.finish()
+            .and_then(|frame| frame.resolve_appearance(
+                crate::facade::entry::appearance_projection::UiAppearanceFrameProjection {
+                    application_session_identity: self.ports.application_session_identity,
+                    generation_identity: self.generation.clone(),
+                    graph: self.graph,
+                    capabilities: self.capabilities,
+                    consumed_facts: self.consumed_facts,
+                    intent_catalog: self.intent_catalog,
+                    mounted: self.ports.mounted,
+                    presentation: self.presentation,
+                    appearance_owner_snapshot: self.appearance_owner_snapshot.as_ref(),
+                    phase: crate::facade::entry::appearance_projection::UiAppearanceProjectionPhase::Current,
+                },
+            ))
             .map_err(WorthUiMountedPreviewPreparationDenial::Frame)
     }
 }

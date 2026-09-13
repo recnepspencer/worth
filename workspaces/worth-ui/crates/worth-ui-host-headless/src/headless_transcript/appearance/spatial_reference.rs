@@ -254,6 +254,7 @@ mod tests {
                 bounds,
                 clip: UiAppearanceClip::new(0, 0, 10_000, 10_000).unwrap(),
                 surface_paint_order: 0,
+                portal_group: None,
                 radii: UiAppearanceNormalizedLogicalRadii::normalize(
                     bounds,
                     [UiAppearanceLogicalLength::ZERO; 4],

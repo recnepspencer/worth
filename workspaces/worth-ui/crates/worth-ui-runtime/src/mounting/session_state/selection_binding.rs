@@ -128,7 +128,7 @@ impl WorthUiMountedSessionState {
     pub(crate) fn selection_mapping_for_prepared_item(
         &self,
         item: UiMountedInstanceIdentity,
-        frame: &crate::mounting::UiPreparedMountedFrame,
+        frame: &crate::mounting::UiAssembledMountedFrame,
     ) -> Result<UiSelectionProjectionMapping, UiMountedSelectionBindingDenial> {
         let binding = self
             .selection_bindings
@@ -172,7 +172,7 @@ impl WorthUiMountedSessionState {
     pub(crate) fn selection_projection_changed_instances(
         &self,
         content: &crate::mounting::UiMountedSemanticContentInput,
-        predecessor: Option<&crate::mounting::UiPreparedMountedFrame>,
+        predecessor: Option<&crate::mounting::UiAssembledMountedFrame>,
     ) -> Vec<UiMountedInstanceIdentity> {
         use crate::mounting::semantic_content::UiMountedProjectionInputTransition as Transition;
         let transition = content.projection_input_transition();

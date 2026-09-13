@@ -52,9 +52,12 @@ impl UiNativeApplicationProgramProgress {
             }
             crate::mounting::UiMountedFrameOutcome::Published(_)
             | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
-            | crate::mounting::UiMountedFrameOutcome::Reconciled(_) => {
-                self.settle_attribution(shell, source, reconstruction_authority.is_some())
-            }
+            | crate::mounting::UiMountedFrameOutcome::Reconciled(_) => self.settle_attribution(
+                shell,
+                source,
+                #[cfg(feature = "certification-support")]
+                reconstruction_authority.is_some(),
+            ),
             crate::mounting::UiMountedFrameOutcome::Superseded(_) => Ok(FrameProgress::Settled),
             crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
             | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
@@ -136,15 +139,16 @@ impl UiNativeApplicationProgramProgress {
         self.retain_or_attribute(shell, recovery, source, None, None, false)
     }
 
-    fn settle_attribution(
+    pub(super) fn settle_attribution(
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
         source: UiNativePresentationSource,
-        reconstructed: bool,
+        #[cfg(feature = "certification-support")] reconstructed: bool,
     ) -> Result<FrameProgress, ()> {
         let UiNativePresentationSource::Program(source) = source else {
             return Ok(FrameProgress::Settled);
         };
+        #[cfg(feature = "certification-support")]
         self.runtime_qualification
             .observe_settled_presentation(shell, reconstructed)?;
         if self.program.frames()[source].captures_presented_source_pixels() {

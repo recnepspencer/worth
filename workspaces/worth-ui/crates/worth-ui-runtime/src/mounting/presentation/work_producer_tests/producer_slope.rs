@@ -7,6 +7,10 @@ use worth_ui_host_contract::{
 use super::super::work_producer::UiMountedPresentationState;
 use super::world::{rect_spec, MountedPresentationWorld};
 
+/// Retained sizes up to this fit the Portal overlay table alone; larger cases
+/// mix overlays with qualified text so the fixture stays within every table cap.
+const OVERLAY_ONLY_RETAINED: usize = worth_ui_host_contract::UiMountedPortalOverlayTable::MAX_ROWS;
+
 #[test]
 fn admitted_sources_leave_only_local_work_inside_delta_issuance() {
     run_locality_cases(&[(1, 0), (32, 16), (2_048, 1_024), (4_096, 2_048)]);
@@ -24,7 +28,7 @@ fn run_locality_cases(cases: &[(usize, usize)]) {
     let fixture_started = Instant::now();
     let text_layout = cases
         .iter()
-        .any(|(retained, _)| *retained > 2_048)
+        .any(|(retained, _)| *retained > OVERLAY_ONLY_RETAINED)
         .then(|| {
             crate::mounting::qualified_text_test_support::UiQualifiedTextTestFixture::new()
                 .layout("WORTH")
@@ -41,7 +45,7 @@ fn run_locality_cases(cases: &[(usize, usize)]) {
             text_layout.as_ref().map(|layout| layout.view()),
             ProducerPath::Ordinary,
         );
-        assert!(is_local_cost(actual, retained));
+        assert_eq!(actual, expected_local_cost(retained), "retained={retained}");
         report_timing(retained, changed_index, timing);
     }
 }
@@ -84,7 +88,7 @@ fn exercise_one_change(
     let predecessor_frame = UiMountedFrameIdentity::mint_unbound().unwrap();
     let successor_frame = UiMountedFrameIdentity::mint_unbound().unwrap();
     let predecessor_started = Instant::now();
-    let predecessor = if retained > 2_048 {
+    let predecessor = if retained > OVERLAY_ONLY_RETAINED {
         world.mixed_projection(
             predecessor_frame,
             &instances,
@@ -102,7 +106,7 @@ fn exercise_one_change(
     };
     let predecessor_projection = predecessor_started.elapsed();
     let successor_started = Instant::now();
-    let successor = if retained > 2_048 {
+    let successor = if retained > OVERLAY_ONLY_RETAINED {
         world.mixed_projection(
             successor_frame,
             &instances,

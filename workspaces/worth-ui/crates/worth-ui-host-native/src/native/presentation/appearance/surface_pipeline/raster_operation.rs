@@ -19,7 +19,7 @@ impl UiNativeSurfaceRasterOperation {
         let [left, top, width, height] = rect.physical_bounds();
         let right = left + width;
         let bottom = top + height;
-        self.storage[4..8].copy_from_slice(&[left as f32, top as f32, right as f32, bottom as f32]);
+        self.storage[4..8].copy_from_slice(&[left, top, right, bottom]);
         self.rect = rect;
         Some(self)
     }
@@ -183,8 +183,10 @@ mod tests {
             .unwrap()
         };
         let sample = UiMountedPresentationSampleChange::from_runtime_sampling(
-            UiMountedPaintCommandIdentity::filled_rect_from_correspondence(
+            UiMountedPaintCommandIdentity::semantic_text_from_correspondence(
                 surface.node_receipt().mounted_instance(),
+                0,
+                None,
             ),
             Some(
                 UiMountedPresentationTransform::from_runtime_sampling(bounds(120.0), bounds(20.0))

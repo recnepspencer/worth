@@ -1,19 +1,17 @@
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor, ComponentId,
-    ComponentPropSchema, ComponentStateOwnership, ComponentStaticPaintContract,
-    ComponentStaticPaintOrder, ComponentViewportInset, ThemeColorValue, ThemeTokenDescriptor,
-    ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    ComponentPropSchema, ComponentStateOwnership, ComponentViewportInset, ThemeTokenDescriptor,
+    ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue, UiThemeColor,
     WorthUiRustAuthoredArtifactInput, WorthUiRustAuthoredArtifactInputModule,
 };
 use worth_ui_native_platform::{
     UiNativeApplicationDefinition, UiNativeApplicationFrame, UiNativeApplicationPreparation,
     UiNativeApplicationPreparationOutcome, UiNativeApplicationProgram,
-    UiNativeThemeTokenValueChange,
 };
 
 const COMPONENT: &str = "platform.pulse.native_seed.rectangle";
 const TOKEN: &str = "theme.platform_pulse.native_seed.blue";
-const POST_RESTORE_COLOR: &str = "#3fb950";
+mod appearance;
 
 /// Phase 2's text-free public-composition seed.
 ///
@@ -60,16 +58,24 @@ impl UiNativeApplicationDefinition for PlatformPulseNativeSeedApplication {
         mut preparation: UiNativeApplicationPreparation,
     ) -> UiNativeApplicationPreparationOutcome {
         let result = (|| {
-            let mut builder = preparation.builder();
-            builder
-                .with_change_profile(worth_ui::facade::rebind::UiChangeProfile::platform_pulse())?;
+            let role = appearance::role();
+            let mut builder = worth_ui::facade::app::WorthUi::app()
+                .with_change_profile(worth_ui::facade::rebind::UiChangeProfile::platform_pulse())
+                .register_theme_token(theme_token())
+                .register_component(
+                    component()
+                        .with_appearance_aspect_contract(role.aspect_contract().clone())
+                        .expect("native seed component accepts its background role"),
+                )
+                .register_appearance_role(role.clone())
+                .expect("native seed role is unique")
+                .register_appearance_theme_bundle(appearance::theme())
+                .expect("native seed theme is complete")
+                .with_rust_authored_input(authored_input(role));
             if !matches!(self.program, NativeSeedProgram::Ordinary) {
-                builder.with_visual_inspection_policy(visual_inspection_policy())?;
+                builder = builder.with_visual_inspection_policy(visual_inspection_policy());
             }
-            builder.register_theme_token(theme_token())?;
-            builder.register_component(component())?;
-            builder.with_rust_authored_input(authored_input())?;
-            drop(builder);
+            preparation.install_application_composition(builder)?;
             let program = match self.program {
                 NativeSeedProgram::Ordinary => UiNativeApplicationProgram::single_frame(),
                 NativeSeedProgram::CaptureInitial => {
@@ -83,7 +89,13 @@ impl UiNativeApplicationDefinition for PlatformPulseNativeSeedApplication {
                         UiNativeApplicationFrame::present_current()
                             .after_host_surface_basis_successor()
                             .capture_presented_source_pixels(),
-                        post_restore_frame(),
+                        UiNativeApplicationFrame::switch_theme(
+                            worth_ui::facade::appearance::UiThemeDefinitionIdentity::new(
+                                appearance::GREEN,
+                            )
+                            .expect("native seed Green theme is declared"),
+                        )
+                        .after_host_surface_basis_successor(),
                     ])
                     .expect("the seed admits one capture across two surface successors")
                 }
@@ -95,18 +107,6 @@ impl UiNativeApplicationDefinition for PlatformPulseNativeSeedApplication {
             Err(cause) => preparation.deny(cause),
         }
     }
-}
-
-fn post_restore_frame() -> UiNativeApplicationFrame {
-    UiNativeApplicationFrame::with_theme_token_values([UiNativeThemeTokenValueChange::new(
-        ThemeTokenId::new(TOKEN).expect("valid native seed token"),
-        ThemeTokenValue::color(
-            ThemeColorValue::hex(POST_RESTORE_COLOR).expect("qualified post-restore color"),
-        ),
-    )
-    .expect("the post-restore theme successor is valid")])
-    .expect("the seed admits one bounded post-restore theme change")
-    .after_host_surface_basis_successor()
 }
 
 fn visual_inspection_policy() -> worth_ui::facade::inspection::UiVisualInspectionPolicy {
@@ -129,7 +129,7 @@ fn theme_token() -> ThemeTokenDescriptor {
         ThemeTokenId::new(TOKEN).expect("valid native seed token"),
         ThemeTokenFamily::surface(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex("#2f81f7").expect("qualified blue")),
+        ThemeTokenValue::color(UiThemeColor::parse("#2f81f7").expect("qualified blue")),
     )
 }
 
@@ -140,21 +140,25 @@ fn component() -> ComponentDescriptor {
         ComponentChildPolicy::no_children(),
         ComponentStateOwnership::runtime_owned(),
     )
-    .with_static_paint(
-        ComponentStaticPaintContract::opaque_fill(
-            ThemeTokenId::new(TOKEN).expect("valid native seed token"),
-            ComponentStaticPaintOrder::back_to_front(0),
-        ),
-        ComponentAllocationMeasurementContract::viewport_inset(ComponentViewportInset::symmetric(
-            16, 12,
-        )),
-    )
+    .with_allocation_measurement_contract(ComponentAllocationMeasurementContract::viewport_inset(
+        ComponentViewportInset::symmetric(16, 12),
+    ))
+    .with_surface_paint_order(0)
 }
 
-fn authored_input() -> WorthUiRustAuthoredArtifactInput {
+fn authored_input(
+    role: worth_ui::facade::appearance::UiAppearanceRoleDeclaration,
+) -> WorthUiRustAuthoredArtifactInput {
+    let attachment = worth_ui::facade::appearance::UiAppearanceRoleAttachmentDeclaration::new(
+        role.role().clone(),
+        role.revision(),
+    );
     WorthUiRustAuthoredArtifactInput::from_modules([WorthUiRustAuthoredArtifactInputModule::new(
         "app/native_seed.wui",
     )
     .with_token(TOKEN, "#2f81f7")
-    .with_component_authored_identity(COMPONENT, "platform-pulse-native-seed")])
+    .with_component_authored_identity(COMPONENT, "platform-pulse-native-seed")
+    .with_appearance_role(role)
+    .with_component_appearance_role(COMPONENT, attachment)
+    .expect("native seed component has one role attachment")])
 }

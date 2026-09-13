@@ -76,43 +76,19 @@ impl UiMountedPreviewThemeBinding {
 
 #[derive(Clone)]
 pub(crate) enum UiMountedThemeValueSource {
-    ActiveCurrent {
+    Admitted {
         values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
-        changed_tokens: Arc<std::collections::BTreeSet<crate::capability::ThemeTokenId>>,
-        theme_revision: u64,
     },
-    ReplacementCandidateFrozenPlan,
     PreviewOnly {
         binding: UiMountedPreviewThemeBinding,
     },
 }
 
 impl UiMountedThemeValueSource {
-    pub(crate) fn from_current(
+    pub(crate) fn from_admitted(
         values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
-        theme_revision: u64,
     ) -> Self {
-        Self::ActiveCurrent {
-            values,
-            changed_tokens: Arc::new(std::collections::BTreeSet::new()),
-            theme_revision,
-        }
-    }
-
-    pub(crate) fn from_current_with_changes(
-        values: Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
-        changed_tokens: std::collections::BTreeSet<crate::capability::ThemeTokenId>,
-        theme_revision: u64,
-    ) -> Self {
-        Self::ActiveCurrent {
-            values,
-            changed_tokens: Arc::new(changed_tokens),
-            theme_revision,
-        }
-    }
-
-    pub(crate) const fn replacement_candidate_frozen_plan() -> Self {
-        Self::ReplacementCandidateFrozenPlan
+        Self::Admitted { values }
     }
 
     pub(crate) fn preview_only(binding: UiMountedPreviewThemeBinding) -> Self {
@@ -124,27 +100,8 @@ impl UiMountedThemeValueSource {
         token: &crate::capability::ThemeTokenId,
     ) -> Option<&crate::capability::ThemeTokenValue> {
         match self {
-            Self::ActiveCurrent { values, .. } => values.get(token),
+            Self::Admitted { values, .. } => values.get(token),
             Self::PreviewOnly { binding } => binding.current_value(token),
-            Self::ReplacementCandidateFrozenPlan => None,
-        }
-    }
-
-    pub(crate) const fn active_theme_revision(&self) -> Option<u64> {
-        match self {
-            Self::ActiveCurrent { theme_revision, .. } => Some(*theme_revision),
-            Self::ReplacementCandidateFrozenPlan | Self::PreviewOnly { .. } => None,
-        }
-    }
-
-    pub(crate) const fn uses_frozen_plan(&self) -> bool {
-        matches!(self, Self::ReplacementCandidateFrozenPlan)
-    }
-
-    pub(crate) fn has_theme_changes(&self) -> bool {
-        match self {
-            Self::ActiveCurrent { changed_tokens, .. } => !changed_tokens.is_empty(),
-            Self::ReplacementCandidateFrozenPlan | Self::PreviewOnly { .. } => false,
         }
     }
 }
@@ -158,7 +115,7 @@ mod tests {
         let surface = worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap();
         let token = crate::capability::ThemeTokenId::new("preview.surface").unwrap();
         let value = crate::capability::ThemeTokenValue::color(
-            crate::capability::ThemeColorValue::hex("#112233").unwrap(),
+            crate::capability::UiThemeColor::parse("#112233").unwrap(),
         );
         let binding = UiMountedPreviewThemeObservation::admit_from_presentation(
             4,
@@ -170,23 +127,20 @@ mod tests {
         assert_eq!(binding.surface(), surface);
         assert_eq!(binding.theme_revision(), 4);
         assert_eq!(source.current_value(&token), Some(&value));
-        assert!(!source.uses_frozen_plan());
     }
 
     #[test]
     fn active_values_carry_values_without_consumer_selection() {
         let token = crate::capability::ThemeTokenId::new("theme.current").unwrap();
         let value = crate::capability::ThemeTokenValue::color(
-            crate::capability::ThemeColorValue::hex("#112233").unwrap(),
+            crate::capability::UiThemeColor::parse("#112233").unwrap(),
         );
-        let source = UiMountedThemeValueSource::from_current(
-            Arc::new(BTreeMap::from([(token.clone(), value.clone())])),
-            9,
-        );
+        let source = UiMountedThemeValueSource::from_admitted(Arc::new(BTreeMap::from([(
+            token.clone(),
+            value.clone(),
+        )])));
 
         assert_eq!(source.current_value(&token), Some(&value));
-        assert!(!source.has_theme_changes());
-        assert_eq!(source.active_theme_revision(), Some(9));
     }
 
     #[test]
@@ -194,7 +148,7 @@ mod tests {
         let surface = worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap();
         let token = crate::capability::ThemeTokenId::new("preview.observed").unwrap();
         let value = crate::capability::ThemeTokenValue::color(
-            crate::capability::ThemeColorValue::hex("#445566").unwrap(),
+            crate::capability::UiThemeColor::parse("#445566").unwrap(),
         );
         let source = UiMountedThemeValueSource::preview_only(
             UiMountedPreviewThemeObservation::admit_from_presentation(
@@ -207,8 +161,6 @@ mod tests {
             &source,
             UiMountedThemeValueSource::PreviewOnly { .. }
         ));
-        assert!(!source.has_theme_changes());
-        assert!(!source.uses_frozen_plan());
         assert!(source.current_value(&token).is_some());
     }
 }

@@ -5,7 +5,7 @@ pub(crate) fn resolve(
     theme: &super::super::super::theme::UiThemeResolutionView,
 ) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionFailure> {
     let lookup = super::cell_lookup::lookup(partition, vector, aspect)
-        .map_err(|denial| super::UiAppearanceResolutionFailure::without_theme_work(denial))?;
+        .map_err(super::UiAppearanceResolutionFailure::without_theme_work)?;
     finish(aspect, lookup, theme)
 }
 
@@ -15,7 +15,7 @@ pub(crate) fn resolve_backdrop(
     theme: &super::super::super::theme::UiThemeResolutionView,
 ) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionFailure> {
     let lookup = super::cell_lookup::lookup_without_state(partition, aspect)
-        .map_err(|denial| super::UiAppearanceResolutionFailure::without_theme_work(denial))?;
+        .map_err(super::UiAppearanceResolutionFailure::without_theme_work)?;
     finish(aspect, lookup, theme)
 }
 

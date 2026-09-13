@@ -35,9 +35,7 @@ impl UiPresentedHitTestBasis {
         }
     }
 
-    pub(in crate::mounting) const fn query_work(
-        &self,
-    ) -> crate::mounting::hit_test_work::UiHitTestSpatialWork {
+    pub(crate) const fn query_work(&self) -> crate::mounting::hit_test_work::UiHitTestSpatialWork {
         self.query_work
     }
     pub(crate) fn new(

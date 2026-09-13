@@ -7,6 +7,8 @@ mod fixture;
 mod locality_tests;
 #[path = "appearance_pointer_presentation_owner_tests.rs"]
 mod presentation_owner_tests;
+#[path = "appearance_pointer_replacement_tests.rs"]
+mod replacement_tests;
 
 #[test]
 fn pointer_owner_state_reaches_unpublished_appearance_on_observation_close() {
@@ -35,8 +37,6 @@ fn pointer_owner_state_reaches_unpublished_appearance_on_observation_close() {
         .iter()
         .find(|row| row.mounted_instance() == instance)
         .expect("appearance target is hit-testable");
-    let bounds = row.bounds();
-    let clip = row.clip_bounds();
     let captured_incarnation = crate::mounting::UiMountedIncarnationAffinityInput {
         surface,
         binding: initial.binding(),
@@ -48,12 +48,7 @@ fn pointer_owner_state_reaches_unpublished_appearance_on_observation_close() {
             .current_presented_incarnation_receipt(captured_incarnation, initial),
         Ok(row.node_receipt()),
     );
-    let inside = UiHostSurfacePosition::viewport_logical(
-        ((bounds.x().max(clip.x()) + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))
-            * 500.0) as i64,
-        ((bounds.y().max(clip.y()) + (bounds.y() + bounds.height()).min(clip.y() + clip.height()))
-            * 500.0) as i64,
-    );
+    let inside = inside_position(&session, initial, instance);
     let outside = UiHostSurfacePosition::viewport_logical(-1_000, -1_000);
     for (sequence, position, button, held, expected_red, expected_pressed, pointer_output) in [
         (1, inside, None, false, 20, None, Some(true)),
@@ -160,10 +155,11 @@ fn pointer_owner_state_reaches_unpublished_appearance_on_observation_close() {
             panic!("pointer appearance must retain mounted attribution");
         };
         assert_eq!(receipt.mounted_instance(), instance);
-        assert!(host
-            .last_filled_rect_colors()
+        let colors = host.last_surface_colors();
+        assert!(!colors.is_empty());
+        assert!(colors
             .iter()
-            .all(|color| color.channels() == [17, 34, 51, 255]));
+            .all(|color| color.channels() == [expected_red, 0, 0, 255]));
     }
     let _ = session.shutdown();
 }
@@ -289,4 +285,30 @@ pub(super) fn pointer_batch(
         .unwrap()],
     })
     .unwrap()
+}
+
+/// The midpoint of the target's current hit row: pointer positions come from
+/// the runtime's published hit truth, never from declared fixture regions.
+fn inside_position(
+    session: &crate::facade::WorthUiActiveApplicationSession,
+    presentation: UiHostObservationPresentationBasis,
+    instance: UiMountedInstanceIdentity,
+) -> UiHostSurfacePosition {
+    let hit_test = session
+        .mounted
+        .interaction_hit_test_basis(presentation)
+        .unwrap();
+    let row = hit_test
+        .rows()
+        .iter()
+        .find(|row| row.mounted_instance() == instance)
+        .expect("appearance target is hit-testable");
+    let bounds = row.bounds();
+    let clip = row.clip_bounds();
+    UiHostSurfacePosition::viewport_logical(
+        ((bounds.x().max(clip.x()) + (bounds.x() + bounds.width()).min(clip.x() + clip.width()))
+            * 500.0) as i64,
+        ((bounds.y().max(clip.y()) + (bounds.y() + bounds.height()).min(clip.y() + clip.height()))
+            * 500.0) as i64,
+    )
 }

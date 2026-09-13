@@ -13,9 +13,6 @@ impl UiMountedAppearanceFrameState {
         &mut self,
         presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
         geometry: &UiMountedAppearanceGeometryScope,
-        portal_instances: &std::collections::BTreeSet<
-            worth_ui_host_contract::UiMountedInstanceIdentity,
-        >,
         nodes: &[super::super::UiMountedAppearanceNodeInputContext],
         complete: bool,
     ) -> Result<Vec<UiAppearanceInspectionRecord>, UiMountedAppearanceOutputDenial> {
@@ -44,7 +41,6 @@ impl UiMountedAppearanceFrameState {
         let mut records = self.lower_pending(
             presentation,
             geometry,
-            portal_instances,
             AppearanceLoweringPosture::Reconstruction,
         )?;
         // A denied semantic refresh restores its accepted physical predecessor.
@@ -116,7 +112,7 @@ impl UiMountedAppearanceFrameState {
                 self.restore_entry(entry);
                 continue;
             };
-            let mut input = match node.lower_retained_projection(
+            let mut input = match node.lower_resolved_projection(
                 &entry.projection,
                 presentation,
                 geometry.outline_fringe(node.semantic_surface),
@@ -142,7 +138,6 @@ impl UiMountedAppearanceFrameState {
                 self.restore_entry(entry);
                 continue;
             }
-            input.retain_node_owned_families(portal_instances);
             let predecessor_receipt = entry.sidecar.current_node_receipt();
             let work = match entry.sidecar.reconstruct(input) {
                 Ok(work) => work,

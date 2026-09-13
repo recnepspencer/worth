@@ -1,16 +1,16 @@
 use std::collections::HashSet;
 
 use worth_ui_host_contract::{
-    UiHostSurfacePresentationDenial, UiMountedInstanceIdentity, UiMountedPaintCommand,
-    UiMountedPaintCommandChange, UiMountedPresentationAuxiliaryState,
-    UiMountedPresentationNodeChange, UiMountedPresentationNodePaint,
+    UiHostSurfacePresentationDenial, UiMountedInstanceIdentity, UiMountedPaintCommandChange,
+    UiMountedPresentationAuxiliaryState, UiMountedPresentationNodeChange,
+    UiMountedPresentationNodePaint,
 };
 
 use super::super::UiHeadlessRetainedPresentation;
 
 pub(super) struct UiHeadlessNodeMutation {
-    before: Vec<(UiMountedInstanceIdentity, u64)>,
-    after: Vec<(UiMountedInstanceIdentity, Option<u64>)>,
+    rows: Vec<(UiMountedInstanceIdentity, Option<u64>, Option<u64>)>,
+    final_count: usize,
 }
 
 impl UiHeadlessNodeMutation {
@@ -21,30 +21,25 @@ impl UiHeadlessNodeMutation {
         auxiliary: &UiMountedPresentationAuxiliaryState,
         capacity: usize,
     ) -> Result<Self, UiHostSurfacePresentationDenial> {
-        let mut seen = HashSet::with_capacity(changes.len());
         let mut target_positions = HashSet::with_capacity(changes.len());
         let affected = changes
             .iter()
             .map(|change| change.mounted_instance())
             .collect::<HashSet<_>>();
-        let mut before = Vec::with_capacity(changes.len());
-        let mut after = Vec::with_capacity(changes.len());
+        if affected.len() != changes.len() {
+            return Err(malformed());
+        }
+        let mut rows = Vec::with_capacity(changes.len());
         let mut inserted = 0usize;
         let mut removed = 0usize;
         for change in changes {
             let instance = change.mounted_instance();
-            if !seen.insert(instance) {
-                return Err(malformed());
-            }
             let existing = current.node_positions.get(&instance).copied();
-            if let Some(position) = existing {
-                before.push((instance, position));
-            }
-            match change {
+            let successor = match change {
                 UiMountedPresentationNodeChange::Remove(_) => {
                     existing.ok_or_else(malformed)?;
                     removed += 1;
-                    after.push((instance, None));
+                    None
                 }
                 UiMountedPresentationNodeChange::Upsert(state) => {
                     validate_paint(current, command_changes, auxiliary, state.paint())?;
@@ -58,9 +53,10 @@ impl UiHeadlessNodeMutation {
                     {
                         return Err(malformed());
                     }
-                    after.push((instance, Some(position)));
+                    Some(position)
                 }
-            }
+            };
+            rows.push((instance, existing, successor));
         }
         let count = current
             .node_positions
@@ -71,15 +67,24 @@ impl UiHeadlessNodeMutation {
         if count > capacity {
             return Err(UiHostSurfacePresentationDenial::CapacityExceeded);
         }
-        Ok(Self { before, after })
+        Ok(Self {
+            rows,
+            final_count: count,
+        })
+    }
+
+    pub(super) const fn final_count(&self) -> usize {
+        self.final_count
     }
 
     pub(super) fn apply(&self, current: &mut UiHeadlessRetainedPresentation) {
-        for (instance, position) in &self.before {
+        for (instance, before, _) in &self.rows {
             current.node_positions.remove(instance);
-            current.node_by_position.remove(position);
+            if let Some(position) = before {
+                current.node_by_position.remove(position);
+            }
         }
-        for (instance, position) in &self.after {
+        for (instance, _, position) in &self.rows {
             if let Some(position) = position {
                 current.node_positions.insert(*instance, *position);
                 current.node_by_position.insert(*position, *instance);
@@ -88,15 +93,17 @@ impl UiHeadlessNodeMutation {
     }
 
     pub(super) fn restore(self, current: &mut UiHeadlessRetainedPresentation) {
-        for (instance, position) in &self.after {
+        for (instance, _, position) in &self.rows {
             current.node_positions.remove(instance);
             if let Some(position) = position {
                 current.node_by_position.remove(position);
             }
         }
-        for (instance, position) in self.before {
-            current.node_positions.insert(instance, position);
-            current.node_by_position.insert(position, instance);
+        for (instance, position, _) in self.rows {
+            if let Some(position) = position {
+                current.node_positions.insert(instance, position);
+                current.node_by_position.insert(position, instance);
+            }
         }
     }
 }
@@ -109,22 +116,8 @@ fn validate_paint(
 ) -> Result<(), UiHostSurfacePresentationDenial> {
     match paint {
         UiMountedPresentationNodePaint::Command(identity) => {
-            let changed = changes.iter().find_map(|change| match change {
-                UiMountedPaintCommandChange::Insert(command)
-                | UiMountedPaintCommandChange::Replace {
-                    successor: command, ..
-                } if command.identity() == identity => Some(Some(command)),
-                UiMountedPaintCommandChange::Remove(removed) if *removed == identity => Some(None),
-                _ => None,
-            });
-            let command = match changed {
-                Some(Some(command)) => Some(command),
-                Some(None) => None,
-                None => current.commands.get(&identity),
-            };
-            if !matches!(command, Some(UiMountedPaintCommand::FilledRect { .. })) {
-                return Err(malformed());
-            }
+            let _ = (current, changes, identity);
+            return Err(malformed());
         }
         UiMountedPresentationNodePaint::CountOnlyBatch(index)
             if usize::from(index) >= auxiliary.paint_batch_count() =>

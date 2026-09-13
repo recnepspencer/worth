@@ -19,6 +19,7 @@ use super::{
 };
 
 pub(super) struct PlatformPulsePortalRebindEvidence {
+    focused_before_edit: PlatformPulseSemanticFocusPublished,
     replacement_sequence: u64,
     focus_transition: PlatformPulseFocusTransitionInspection,
     pixels: PlatformPulsePortalFocusFallbackPixelEvidence,
@@ -46,8 +47,9 @@ pub(super) fn exercise(
         ));
     }
     let (replacement_sequence, focus_transition) = await_replacement(world, opened_focus)?;
-    let pixels = await_fallback_pixels(world, before)?;
+    let pixels = await_fallback_pixels(world, before, [1_120, 700])?;
     Ok(PlatformPulsePortalRebindEvidence {
+        focused_before_edit: opened_focus,
         replacement_sequence,
         focus_transition,
         pixels,
@@ -70,6 +72,7 @@ fn await_replacement(
                 if replacement.actual_native_effect_count() == 0
                     || replacement.schema_transition().is_some()
                     || focus.cause() != PlatformPulseSemanticFocusCause::RebindFallback
+                    || focus.previous_mounted_instance().is_none()
                     || focus.previous_mounted_instance()
                         != opened
                             .current()
@@ -95,15 +98,18 @@ fn await_replacement(
 fn await_fallback_pixels(
     world: &mut NativeBoundExecutableWorld,
     before: &crate::external_observation::NativeClientPixelCapture,
+    logical_client_extent: [u32; 2],
 ) -> Result<PlatformPulsePortalFocusFallbackPixelEvidence, PlatformPulsePortalJourneyFailure> {
     let deadline = Instant::now() + TRANSITION_DEADLINE;
     loop {
         let after = capture(world)?;
-        if let Ok(evidence) = adjudicate_focus_fallback_portal_pixels(before, &after) {
+        if let Ok(evidence) =
+            adjudicate_focus_fallback_portal_pixels(before, &after, logical_client_extent)
+        {
             return Ok(evidence);
         }
         if Instant::now() >= deadline {
-            return adjudicate_focus_fallback_portal_pixels(before, &after)
+            return adjudicate_focus_fallback_portal_pixels(before, &after, logical_client_extent)
                 .map_err(PlatformPulsePortalJourneyFailure::Pixels);
         }
         std::thread::sleep(PIXEL_POLL_SLICE);
@@ -111,6 +117,10 @@ fn await_fallback_pixels(
 }
 
 impl PlatformPulsePortalRebindEvidence {
+    pub(crate) const fn focused_before_edit(&self) -> PlatformPulseSemanticFocusPublished {
+        self.focused_before_edit
+    }
+
     pub(crate) const fn replacement_sequence(&self) -> u64 {
         self.replacement_sequence
     }

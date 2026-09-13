@@ -49,7 +49,7 @@ impl UiNativeHostState {
             LossClass::PresentationAffinity => {
                 self.presentation_epochs.contains_key(&binding)
                     || self
-                        .last_presentation
+                        .last_retained_frame
                         .as_ref()
                         .is_some_and(|presentation| presentation.binding_generation() == binding)
             }
@@ -71,11 +71,11 @@ impl UiNativeHostState {
             LossClass::PresentationAffinity => {
                 self.presentation_epochs.remove(&binding);
                 if self
-                    .last_presentation
+                    .last_retained_frame
                     .as_ref()
                     .is_some_and(|presentation| presentation.binding_generation() == binding)
                 {
-                    self.last_presentation = None;
+                    self.last_retained_frame = None;
                 }
                 BTreeSet::from([binding])
             }
@@ -199,7 +199,7 @@ impl UiNativeHostState {
     fn presentation_affinity_is_live_for(&self, binding: u64) -> bool {
         self.presentation_epochs.contains_key(&binding)
             && self
-                .last_presentation
+                .last_retained_frame
                 .as_ref()
                 .is_some_and(|presentation| presentation.binding_generation() == binding)
     }

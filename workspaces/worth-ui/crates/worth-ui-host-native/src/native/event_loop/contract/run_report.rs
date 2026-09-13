@@ -6,8 +6,12 @@ use super::{
 };
 
 impl UiNativeEventLoopRunReport {
-    pub fn presentation(&self) -> &UiNativePresentationObservation {
-        &self.presentation
+    pub fn presentation(&self) -> Option<&UiNativePresentationObservation> {
+        self.final_frame.presentation()
+    }
+
+    pub fn final_frame(&self) -> &UiNativeRetainedFrameObservation {
+        &self.final_frame
     }
 
     pub const fn terminal_census(&self) -> UiNativeResourceCensus {
@@ -30,7 +34,7 @@ impl UiNativeEventLoopRunReport {
         self.event_loop_thread_posture
     }
 
-    pub const fn client_attribution(&self) -> UiNativeClientPresentationAttribution {
+    pub const fn client_attribution(&self) -> Option<UiNativeClientPresentationAttribution> {
         self.client_attribution
     }
 
