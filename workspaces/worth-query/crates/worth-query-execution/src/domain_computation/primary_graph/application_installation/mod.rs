@@ -47,10 +47,12 @@ where
         Schema::OWNER,
         Schema::MAJOR,
         Schema::MINOR,
-    ))
-    .application_schema(declaration.clone())
-    .validate()
-    .map_err(Denial::Package)?;
+    ));
+    let contracts = Schema::Contributions::contracts().map_err(Denial::Contributions)?;
+    let package = contracts
+        .compose_package(package.application_schema(declaration.clone()))
+        .validate()
+        .map_err(Denial::Package)?;
     let admitted = WorthQueryInstallationAdmissionProfile::new(
         "primary-graph-in-memory",
         "application-contributions",
@@ -70,15 +72,39 @@ where
     let configured = WorthQueryConfiguredApplicationContributions::<Schema>::configure(
         &installed,
         configuration,
+        contracts,
     )
     .map_err(Denial::Contributions)?;
-    let (invariants, handlers) = configured.into_parts();
+    let (invariants, handlers, producers, conditionals) =
+        configured.into_parts().map_err(Denial::Contributions)?;
     let mut graph = authority
         .prepare_primary_graph_with_invariants(&runtime, &installed, limits.world, invariants)
         .map_err(Denial::Graph)?;
     graph.mutation_handlers = handlers;
     initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
-    graph
-        .publish_application_runtime(runtime, authority, installed, limits.conditionals)
-        .map_err(Denial::Publication)
+    let (mut application, installed_conditionals) = if conditionals.is_empty() {
+        let application = graph
+            .publish_application_runtime(runtime, authority, installed, limits.conditionals)
+            .map_err(Denial::Publication)?;
+        (application, Default::default())
+    } else {
+        let mut publication = graph
+            .conditional_application_runtime_installation(
+                runtime,
+                authority,
+                installed,
+                limits.conditionals,
+            )
+            .map_err(Denial::ConditionalPublication)?;
+        let installed_conditionals = conditionals
+            .install_all(&producers, &mut publication)
+            .map_err(Denial::ConditionalPublication)?;
+        let application = publication
+            .publish()
+            .map_err(Denial::ConditionalPublication)?;
+        (application, installed_conditionals)
+    };
+    application.installed_producers = producers;
+    application.installed_conditionals = installed_conditionals;
+    Ok(application)
 }

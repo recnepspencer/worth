@@ -9,6 +9,10 @@ use super::super::{
     WorthQueryApplicationInvariantFactories, WorthQueryPrimaryGraphInstallationDenial,
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
+use super::conditional::PendingConditionalRegistry;
+use super::contracts::WorthQueryApplicationContractCatalog;
+use super::producer::WorthQueryInstalledApplicationProducerRegistry;
+use super::WorthQueryApplicationContributionContracts;
 use super::WorthQueryApplicationContributionSetup;
 
 /// Entry-owned configuration for the members declared by one contribution.
@@ -17,6 +21,12 @@ where
     Schema: ApplicationSchema,
 {
     type Configuration;
+
+    fn contracts(
+        _contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        Ok(())
+    }
 
     fn configure(
         configuration: Self::Configuration,
@@ -39,16 +49,28 @@ where
     fn configure(
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         configuration: Self::Configuration,
+        contracts: WorthQueryApplicationContractCatalog<Schema>,
     ) -> Result<
         WorthQueryConfiguredApplicationContributions<Schema>,
+        WorthQueryPrimaryGraphInstallationDenial,
+    >;
+
+    #[doc(hidden)]
+    fn contracts() -> Result<
+        WorthQueryApplicationContractCatalog<Schema>,
         WorthQueryPrimaryGraphInstallationDenial,
     >;
 }
 
 /// Move-only pending handlers and factories validated against an installed root.
-pub struct WorthQueryConfiguredApplicationContributions<Schema> {
+pub struct WorthQueryConfiguredApplicationContributions<Schema>
+where
+    Schema: ApplicationSchema,
+{
     factories: WorthQueryApplicationInvariantFactories<Schema>,
     handlers: PendingMutationHandlerRegistry<Schema>,
+    producers: super::producer::PendingProducerRegistry<Schema>,
+    conditionals: PendingConditionalRegistry<Schema>,
 }
 
 impl<Schema> WorthQueryConfiguredApplicationContributions<Schema>
@@ -59,19 +81,33 @@ where
     pub fn configure(
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+        contracts: WorthQueryApplicationContractCatalog<Schema>,
     ) -> Result<Self, WorthQueryPrimaryGraphInstallationDenial> {
-        Schema::Contributions::configure(installed_schema, configuration)
+        Schema::Contributions::configure(installed_schema, configuration, contracts)
     }
 }
 
-impl<Schema> WorthQueryConfiguredApplicationContributions<Schema> {
+impl<Schema> WorthQueryConfiguredApplicationContributions<Schema>
+where
+    Schema: ApplicationSchema,
+{
     pub(in crate::domain_computation::primary_graph) fn into_parts(
         self,
-    ) -> (
-        WorthQueryApplicationInvariantFactories<Schema>,
-        PendingMutationHandlerRegistry<Schema>,
-    ) {
-        (self.factories, self.handlers)
+    ) -> Result<
+        (
+            WorthQueryApplicationInvariantFactories<Schema>,
+            PendingMutationHandlerRegistry<Schema>,
+            WorthQueryInstalledApplicationProducerRegistry<Schema>,
+            PendingConditionalRegistry<Schema>,
+        ),
+        WorthQueryPrimaryGraphInstallationDenial,
+    > {
+        Ok((
+            self.factories,
+            self.handlers,
+            self.producers.seal()?,
+            self.conditionals,
+        ))
     }
 }
 
@@ -109,11 +145,15 @@ macro_rules! contribution_tuple {
             fn configure(
                 installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
                 configuration: Self::Configuration,
+                contracts: WorthQueryApplicationContractCatalog<Schema>,
             ) -> Result<WorthQueryConfiguredApplicationContributions<Schema>, WorthQueryPrimaryGraphInstallationDenial> {
                 validate_inventory(installed_schema, vec![$($Contribution::IDENTITY,)+])?;
+                let (producers, conditionals) = contracts.into_pending();
                 let mut configured = WorthQueryConfiguredApplicationContributions {
                     factories: WorthQueryApplicationInvariantFactories::for_installed_schema(installed_schema),
                     handlers: PendingMutationHandlerRegistry::default(),
+                    producers,
+                    conditionals,
                 };
                 let ($($configuration,)+) = configuration;
                 $(
@@ -121,11 +161,28 @@ macro_rules! contribution_tuple {
                         .expect("exact contribution inventory validated before callbacks");
                     let mut setup = WorthQueryApplicationContributionSetup::new(
                         installed_schema, contribution, &mut configured.handlers, &mut configured.factories,
+                        &mut configured.producers,
+                        &mut configured.conditionals,
                     );
                     $Contribution::configure($configuration, &mut setup)?;
                 )+
                 configured.handlers.seal(installed_schema, &installed_schema.binding_identity())?;
+                configured.producers.validate_complete()?;
+                configured.conditionals.validate_complete()?;
                 Ok(configured)
+            }
+
+            fn contracts() -> Result<WorthQueryApplicationContractCatalog<Schema>, WorthQueryPrimaryGraphInstallationDenial> {
+                let mut catalog = WorthQueryApplicationContractCatalog::default();
+                $(
+                    let mut contribution = WorthQueryApplicationContributionContracts::for_contribution(
+                        $Contribution::IDENTITY.as_str(),
+                    );
+                    $Contribution::contracts(&mut contribution)?;
+                    contribution.append_to(&mut catalog)?;
+                )+
+                catalog.validate()?;
+                Ok(catalog)
             }
         }
     };

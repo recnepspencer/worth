@@ -6,8 +6,16 @@ pub use crate::domain_computation::{
 mod application_attempt;
 mod application_contribution;
 pub use application_contribution::{
-    WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
-    WorthQueryApplicationContributionTuple, WorthQueryConfiguredApplicationContributions,
+    WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
+    WorthQueryApplicationConditionalProducerAccess, WorthQueryApplicationContractCatalog,
+    WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
+    WorthQueryApplicationContributionSetup, WorthQueryApplicationContributionTuple,
+    WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
+    WorthQueryConfiguredApplicationContributions,
+    WorthQueryInstalledApplicationConditionalRegistry,
+    WorthQueryInstalledApplicationProducerRegistry, WorthQueryProducerApplicability,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily,
 };
 mod application_branch;
 pub(crate) mod application_discovery;

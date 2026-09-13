@@ -3,11 +3,11 @@
 pub use worth_query_admission::facade as admission;
 pub use worth_query_declaration::facade as declaration;
 pub use worth_query_declaration::{
-    worth_query_application_query, worth_query_application_schema, worth_query_aspect,
-    worth_query_effect, worth_query_entity, worth_query_field, worth_query_operation,
-    worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_portable_type, worth_query_principal_binding, worth_query_relation,
-    worth_query_structured_value_binding,
+    worth_query_application, worth_query_application_contribution, worth_query_application_query,
+    worth_query_application_schema, worth_query_aspect, worth_query_effect, worth_query_entity,
+    worth_query_field, worth_query_operation, worth_query_operation_emits,
+    worth_query_operation_reads, worth_query_operation_writes, worth_query_portable_type,
+    worth_query_principal_binding, worth_query_relation, worth_query_structured_value_binding,
 };
 pub use worth_query_execution::facade::application_contribution;
 pub use worth_query_execution::facade::application_discovery;

@@ -15,6 +15,9 @@ pub enum WorthQueryInMemoryApplicationDenial {
     Graph(WorthQueryPrimaryGraphInstallationDenial),
     InitialState(WorthQueryPrimaryGraphInstallationDenial),
     Publication(WorthQueryPrimaryGraphInstallationDenial),
+    ConditionalPublication(
+        super::super::conditional_operation::WorthQueryConditionalRuntimeInstallationDenial,
+    ),
 }
 
 impl std::fmt::Display for WorthQueryInMemoryApplicationDenial {
@@ -36,6 +39,7 @@ impl std::error::Error for WorthQueryInMemoryApplicationDenial {
             | Self::Graph(error)
             | Self::InitialState(error)
             | Self::Publication(error) => Some(error),
+            Self::ConditionalPublication(_) => None,
         }
     }
 }

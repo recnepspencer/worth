@@ -394,5 +394,7 @@ where
         recovery_handles,
         mutation_handlers,
         mutation_projection,
+        installed_producers: Default::default(),
+        installed_conditionals: Default::default(),
     })
 }

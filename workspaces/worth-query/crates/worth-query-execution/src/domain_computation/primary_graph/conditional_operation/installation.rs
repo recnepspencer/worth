@@ -5,7 +5,8 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 use worth_query_installation::facade::{
     ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
     WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
-    WorthQueryNamedClock, WorthQueryNamedClockSource, WorthQueryTemporalIntentProjector,
+    WorthQueryNamedClock, WorthQueryNamedClockSource,
+    WorthQueryPortableApplicationConditionalOperationBinding, WorthQueryTemporalIntentProjector,
     WritableCapability, WritePosture,
 };
 
@@ -26,11 +27,19 @@ pub use denial::{
 };
 mod pending_operation;
 pub(in crate::domain_computation::primary_graph) use pending_operation::WorthQueryPendingConditionalOperation;
+mod application_binding_scope;
+
+struct ApplicationConditionalBindingScope {
+    binding: WorthQueryPortableApplicationConditionalOperationBinding,
+    node_identity: String,
+    initial_binding_count: usize,
+}
 
 pub struct WorthQueryConditionalApplicationRuntimeInstallation<Schema> {
     publication: ApplicationRuntimePublication<Schema>,
     binding_identities: BTreeSet<Arc<str>>,
     bindings: Vec<Box<dyn WorthQueryPendingConditionalOperation<Schema>>>,
+    application_binding_scope: Option<ApplicationConditionalBindingScope>,
 }
 
 impl<Schema> WorthQueryConditionalApplicationRuntimeInstallation<Schema>
@@ -54,6 +63,7 @@ where
             publication,
             binding_identities: BTreeSet::new(),
             bindings: Vec::new(),
+            application_binding_scope: None,
         })
     }
 
@@ -258,6 +268,7 @@ where
         F: 'static,
         Node: 'static,
     {
+        self.validate_application_binding_scope(&binding)?;
         self.validate_temporal_binding(&binding)?;
         super::access_validation::validate_reconstruction_access(
             &self.publication,

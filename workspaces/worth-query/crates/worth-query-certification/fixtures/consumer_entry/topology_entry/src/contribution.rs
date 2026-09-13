@@ -1,6 +1,6 @@
 use super::{
     PlanarHandler, PlanarMutationBinding, PositivePlanarTurn, TopologyContribution,
-    TopologySchemaBinding,
+    TopologySchemaBinding, InitialPlanarProducer, PreservePlanarProducer,
 };
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -11,7 +11,8 @@ use worth_query_decl::facade::application_schema::{
 };
 use worth_query_host::facade::{
     application_contribution::{
-        WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
+        WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
+        WorthQueryApplicationContributionSetup,
     },
     primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 };
@@ -26,6 +27,15 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
     for TopologyContribution
 {
     type Configuration = TopologyConfiguration;
+
+    fn contracts(
+        contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        contracts
+            .producer::<InitialPlanarProducer<Schema>>()?
+            .producer::<PreservePlanarProducer<Schema>>()?;
+        Ok(())
+    }
 
     fn configure(
         configuration: Self::Configuration,
@@ -44,6 +54,8 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
             },
         )?;
         setup.handler::<PlanarMutationBinding<Schema>, _>(PlanarHandler)?;
+        setup.producer::<InitialPlanarProducer<Schema>>(super::InitialPlanarProvider)?;
+        setup.producer::<PreservePlanarProducer<Schema>>(super::PreservePlanarProvider)?;
         setup.handler::<super::VertexReplacementBinding<Schema>, _>(super::VertexReplacementHandler)
     }
 }

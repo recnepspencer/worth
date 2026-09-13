@@ -110,6 +110,8 @@ exports = [
     "provisional_aftermath",
     "publication",
     "runtime",
+    "worth_query_application",
+    "worth_query_application_contribution",
     "worth_query_application_query",
     "worth_query_application_schema",
     "worth_query_aspect",

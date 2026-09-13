@@ -2,6 +2,8 @@
 mod adapters;
 #[path = "temporal_conditional_operation/contract.rs"]
 mod contract;
+#[path = "temporal_conditional_operation/contribution_installation.rs"]
+mod contribution_installation;
 #[path = "temporal_conditional_operation/courtroom.rs"]
 mod courtroom;
 #[path = "temporal_conditional_operation/courtroom_lifecycle.rs"]
@@ -167,6 +169,16 @@ fn reconstruction_panic_restores_runtime_owners_for_retry() {
 #[test]
 fn host_installs_and_executes_a_due_temporal_application_operation() {
     courtroom::host_installs_and_executes_due_operation();
+}
+
+#[test]
+fn contribution_installation_publishes_delivers_and_executes_the_temporal_route() {
+    contribution_installation::publishes_delivers_and_executes();
+}
+
+#[test]
+fn contribution_installation_rejects_a_zero_route_callback() {
+    contribution_installation::zero_route_installation_is_denied();
 }
 
 #[test]

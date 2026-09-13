@@ -1,3 +1,6 @@
+mod producer_denials;
+mod producer_contract_denials;
+
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -33,6 +36,8 @@ pub(super) fn run() {
     inventory_drift_precedes_callbacks();
     missing_handler_precedes_initializer();
     foreign_member_registration_is_denied();
+    producer_denials::run();
+    producer_contract_denials::run();
 }
 
 // The same real entry declarations are retained while each fixture varies only

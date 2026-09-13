@@ -106,6 +106,10 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) mutation_handlers: super::handler::InstalledMutationHandlerRegistry<Schema>,
     pub(super) mutation_projection:
         super::WorthQueryApplicationInvariantProjectionAuthority<Schema>,
+    pub(super) installed_producers:
+        super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>,
+    pub(super) installed_conditionals:
+        super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
 }
 
 impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
@@ -254,8 +258,22 @@ impl<Schema> Drop for WorthQueryPrimaryGraphApplicationRuntime<Schema> {
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
-    Schema: ApplicationSchema,
+    Schema: ApplicationSchema + 'static,
 {
+    pub fn producer<Binding>(&self) -> Option<Arc<Binding::Provider>>
+    where
+        Binding: super::application_contribution::WorthQueryApplicationProducerBinding<Schema>,
+    {
+        self.installed_producers.provider::<Binding>()
+    }
+
+    pub fn conditional<Binding>(&self) -> Option<Arc<Binding::Installed>>
+    where
+        Binding: super::application_contribution::WorthQueryApplicationConditionalBinding<Schema>,
+    {
+        self.installed_conditionals.binding::<Binding>()
+    }
+
     /// Schedules one failure at the generic Query index-publication boundary.
     #[doc(hidden)]
     #[cfg(feature = "test-primary-graph-faults")]

@@ -20,12 +20,14 @@ mod amendment;
 mod combined_amendment;
 #[path = "world/resources.rs"]
 mod resources;
+pub(super) use resources::product_world_resources;
 #[path = "world/scaled_amendment.rs"]
 mod scaled_amendment;
 #[path = "world/security.rs"]
 mod security;
 #[path = "world/seed.rs"]
 mod seed;
+pub(super) use seed::seed_graph;
 
 #[allow(dead_code)] // Test targets use different subsets of the shared world fixture.
 pub struct CourtroomWorld {
@@ -255,7 +257,7 @@ impl CourtroomWorld {
                 query.into_query(),
                 ApplicationQueryParameterSet::new(),
                 IntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 8, 8).unwrap(),
+                domain::WorthQueryTemporalIntentBounds::new(8, 9, 8).unwrap(),
             )
             .unwrap();
 

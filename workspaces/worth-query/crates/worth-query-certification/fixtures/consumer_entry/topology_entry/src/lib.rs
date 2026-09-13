@@ -16,6 +16,7 @@ mod planar_invariant;
 mod planar_read;
 mod planar_topology;
 mod principal;
+mod producer;
 mod vertex_replacement;
 pub use vertex_replacement::*;
 
@@ -25,6 +26,7 @@ pub use planar_invariant::*;
 pub use planar_read::*;
 pub use planar_topology::*;
 pub use principal::*;
+pub use producer::*;
 
 pub trait TopologySchemaBinding: ApplicationSchema {}
 

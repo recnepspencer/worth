@@ -2,7 +2,7 @@ use worth_query_host::facade::{declaration, domain, primary_graph};
 
 use super::super::schema::*;
 
-pub(super) fn seed_graph(
+pub(crate) fn seed_graph(
     graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<TemporalHostSchema>,
     principal_binding: &domain::WorthQueryInstalledPrincipalBinding<
         TemporalHostSchema,

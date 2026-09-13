@@ -6,7 +6,7 @@ use worth_query_host::facade::runtime::{
     WorthQueryProductWorldClock, WorthQueryProductWorldResources,
 };
 
-pub(super) fn product_world_resources(
+pub(crate) fn product_world_resources(
     retained_composite_commits: u64,
 ) -> WorthQueryProductWorldResources {
     WorthQueryProductWorldResources::install(

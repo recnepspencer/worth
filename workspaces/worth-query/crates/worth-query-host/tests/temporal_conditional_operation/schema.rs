@@ -6,11 +6,11 @@ use worth_query_host::facade::declaration::application_query::{
 };
 use worth_query_host::facade::{declaration, primary_graph};
 use worth_query_host::facade::{
-    worth_query_application_query, worth_query_application_schema, worth_query_aspect,
-    worth_query_effect, worth_query_entity, worth_query_field, worth_query_operation,
-    worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_portable_type, worth_query_principal_binding, worth_query_relation,
-    worth_query_structured_value_binding,
+    worth_query_application, worth_query_application_contribution, worth_query_application_query,
+    worth_query_aspect, worth_query_effect, worth_query_entity, worth_query_field,
+    worth_query_operation, worth_query_operation_emits, worth_query_operation_reads,
+    worth_query_operation_writes, worth_query_portable_type, worth_query_principal_binding,
+    worth_query_relation, worth_query_structured_value_binding,
 };
 
 const SCALED_AMENDMENT_DECISION_FACT_BUDGET: usize = 128;
@@ -24,10 +24,9 @@ pub use live_intent_query::{
     TemporalIntentLiveCause, TemporalIntentLiveQuery,
 };
 
-worth_query_application_schema! {
-    pub schema TemporalHostSchema {
-        owner: temporal_host_courtroom,
-        version: (1, 0),
+worth_query_application_contribution! {
+    pub contribution TemporalHostContribution in TemporalHostSchema {
+        identity: "worth.query.host.courtroom.temporal.v1",
         members: |schema| {
             schema
                 .entity(ExternalMapping::reference())
@@ -131,6 +130,14 @@ worth_query_application_schema! {
                 .application_query_binding::<TemporalIntentCurrentReadBinding>()
                 .application_query(temporal_intent_live_query_definition())
         }
+    }
+}
+
+worth_query_application! {
+    pub TemporalHostSchema {
+        owner: "temporal_host_courtroom",
+        version: (1, 0),
+        contributions: [TemporalHostContribution],
     }
 }
 
