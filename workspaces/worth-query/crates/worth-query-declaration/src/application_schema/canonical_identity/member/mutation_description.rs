@@ -46,4 +46,18 @@ pub(super) fn append(
             },
         );
     }
+    basis.usize(
+        format!("{prefix}.output-role-family-count"),
+        description.output_role_families().len(),
+    );
+    for (index, family) in description.output_role_families().iter().enumerate() {
+        let prefix = format!("{prefix}.output-role-family[{index}]");
+        basis.text(format!("{prefix}.prefix"), &family.prefix);
+        basis.text(format!("{prefix}.entity"), &family.entity);
+        basis.usize(
+            format!("{prefix}.postures"),
+            usize::from(family.postures.bits()),
+        );
+        basis.usize(format!("{prefix}.minimum"), family.minimum);
+    }
 }

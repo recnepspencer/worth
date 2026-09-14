@@ -1,6 +1,9 @@
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
-use super::{ApplicationMutationOutputPosture, ApplicationMutationScopeResolutionMode};
+use super::{
+    ApplicationMutationOutputPosture, ApplicationMutationOutputPostureSet,
+    ApplicationMutationScopeResolutionMode,
+};
 
 /// Portable descriptive meaning. It carries no native binding or execution authority.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -18,6 +21,7 @@ pub struct ApplicationMutationDescriptionParts {
     pub denial_identity: WorthQueryPortableTypeIdentity,
     pub scope: ApplicationMutationScopeDescription,
     pub output_roles: Vec<ApplicationMutationOutputRoleDescription>,
+    pub output_role_families: Vec<ApplicationMutationOutputRoleFamilyDescription>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -33,6 +37,14 @@ pub struct ApplicationMutationOutputRoleDescription {
     pub name: String,
     pub entity: String,
     pub posture: ApplicationMutationOutputPosture,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct ApplicationMutationOutputRoleFamilyDescription {
+    pub prefix: String,
+    pub entity: String,
+    pub postures: ApplicationMutationOutputPostureSet,
+    pub minimum: usize,
 }
 
 impl ApplicationMutationDescription {
@@ -74,5 +86,9 @@ impl ApplicationMutationDescription {
 
     pub fn output_roles(&self) -> &[ApplicationMutationOutputRoleDescription] {
         &self.parts.output_roles
+    }
+
+    pub fn output_role_families(&self) -> &[ApplicationMutationOutputRoleFamilyDescription] {
+        &self.parts.output_role_families
     }
 }

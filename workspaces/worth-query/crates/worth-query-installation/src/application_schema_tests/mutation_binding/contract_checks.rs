@@ -124,6 +124,14 @@ fn typed_mutation_lookup_denies_each_changed_contract_axis() {
             .kind(),
         DenialKind::MutationBindingResultMeaningChanged
     );
+    assert_eq!(
+        schema
+            .installed_mutation_binding::<ChangedOutputMutationBinding>()
+            .err()
+            .unwrap()
+            .kind(),
+        DenialKind::MutationBindingOutputMeaningChanged
+    );
 }
 
 fn installed_mutation_index() -> WorthQueryInstalledPackageIndex {

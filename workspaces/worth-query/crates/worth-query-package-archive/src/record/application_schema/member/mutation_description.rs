@@ -13,7 +13,8 @@ use crate::{
 use worth_query_declaration::facade::{
     application_operation::{
         ApplicationMutationDescription, ApplicationMutationDescriptionParts,
-        ApplicationMutationOutputPosture as Posture, ApplicationMutationOutputRoleDescription,
+        ApplicationMutationOutputPosture as Posture, ApplicationMutationOutputPostureSet,
+        ApplicationMutationOutputRoleDescription, ApplicationMutationOutputRoleFamilyDescription,
         ApplicationMutationScopeDescription, ApplicationMutationScopeResolutionMode as Resolution,
     },
     application_schema::ApplicationSchemaMember,
@@ -44,7 +45,20 @@ pub(super) fn write(
             Posture::Create => 2,
             Posture::Retire => 3,
         })
-    })
+    })?;
+    write_sequence(
+        output,
+        description.output_role_families(),
+        |output, family| {
+            output.text(&family.prefix)?;
+            output.text(&family.entity)?;
+            output.u16(u16::from(family.postures.bits()))?;
+            output.u64(
+                u64::try_from(family.minimum)
+                    .map_err(|_| Denial::new(Kind::NumericWidthExceeded))?,
+            )
+        },
+    )
 }
 
 pub(super) fn decode(
@@ -79,6 +93,22 @@ pub(super) fn decode(
             },
         })
     })?;
+    let output_role_families = decode_sequence(input, budget, 10, |input, _| {
+        let prefix = input.text()?.to_owned();
+        let entity = input.text()?.to_owned();
+        let posture_bits = u8::try_from(input.u16()?)
+            .map_err(|_| Denial::new(Kind::UnsupportedRecordVariant))?;
+        let postures = ApplicationMutationOutputPostureSet::from_bits(posture_bits)
+            .ok_or_else(|| Denial::new(Kind::UnsupportedRecordVariant))?;
+        let minimum = usize::try_from(input.u64()?)
+            .map_err(|_| Denial::new(Kind::NumericWidthExceeded))?;
+        Ok(ApplicationMutationOutputRoleFamilyDescription {
+            prefix,
+            entity,
+            postures,
+            minimum,
+        })
+    })?;
     Ok(ApplicationSchemaMember::ApplicationMutation {
         description: ApplicationMutationDescription::from_untrusted_parts(
             ApplicationMutationDescriptionParts {
@@ -89,6 +119,7 @@ pub(super) fn decode(
                 denial_identity,
                 scope,
                 output_roles,
+                output_role_families,
             },
         ),
     })

@@ -89,16 +89,16 @@ fn bind_correspondence<Schema: TopologySchemaBinding>(
     retired: &WorthQueryApplicationEffectEntity<Schema, Body>,
 ) -> Result<(), HandlerExecutionDenial> {
     writer
-        .preserve_output(WorthQueryApplicationOutputRole::new("anchor"), anchor)
+        .preserve_output(WorthQueryApplicationOutputRole::from_static("anchor"), anchor)
         .map_err(HandlerExecutionDenial::new)?;
     writer
         .create_output(
-            WorthQueryApplicationOutputRole::new("replacement"),
+            WorthQueryApplicationOutputRole::from_static("replacement"),
             replacement,
         )
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .retire_output(WorthQueryApplicationOutputRole::new("retired"), retired)
+        .retire_output(WorthQueryApplicationOutputRole::from_static("retired"), retired)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(())
 }

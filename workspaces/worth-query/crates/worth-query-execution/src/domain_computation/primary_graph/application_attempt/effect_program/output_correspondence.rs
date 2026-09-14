@@ -9,65 +9,14 @@ pub use worth_query_declaration::facade::application_operation::ApplicationMutat
 mod candidate;
 pub(in crate::domain_computation::primary_graph::application_attempt) use candidate::WorthQueryApplicationOutputCorrespondenceCandidate;
 
+mod role;
+pub use role::{
+    Create, Preserve, Retire, WorthQueryApplicationOutputAction, WorthQueryApplicationOutputRole,
+    WorthQueryApplicationOutputRoleNameDenial,
+};
+
 #[cfg(test)]
 mod tests;
-
-pub(in crate::domain_computation::primary_graph) mod action {
-    pub trait Sealed {}
-}
-
-pub struct Preserve;
-pub struct Create;
-pub struct Retire;
-
-/// Marker implemented by Query's sealed output postures.
-pub trait WorthQueryApplicationOutputAction: action::Sealed {
-    const POSTURE: WorthQueryApplicationOutputPosture;
-}
-
-impl action::Sealed for Preserve {}
-impl WorthQueryApplicationOutputAction for Preserve {
-    const POSTURE: WorthQueryApplicationOutputPosture =
-        WorthQueryApplicationOutputPosture::Preserve;
-}
-
-impl action::Sealed for Create {}
-impl WorthQueryApplicationOutputAction for Create {
-    const POSTURE: WorthQueryApplicationOutputPosture = WorthQueryApplicationOutputPosture::Create;
-}
-
-impl action::Sealed for Retire {}
-impl WorthQueryApplicationOutputAction for Retire {
-    const POSTURE: WorthQueryApplicationOutputPosture = WorthQueryApplicationOutputPosture::Retire;
-}
-
-/// A binding-owned semantic result role. The name describes correspondence;
-/// it never supplies or reconstructs an entity identity.
-pub struct WorthQueryApplicationOutputRole<Binding, Entity, Action> {
-    name: &'static str,
-    _marker: PhantomData<fn() -> (Binding, Entity, Action)>,
-}
-
-impl<Binding, Entity, Action> Copy for WorthQueryApplicationOutputRole<Binding, Entity, Action> {}
-
-impl<Binding, Entity, Action> Clone for WorthQueryApplicationOutputRole<Binding, Entity, Action> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<Binding, Entity, Action> WorthQueryApplicationOutputRole<Binding, Entity, Action> {
-    pub const fn new(name: &'static str) -> Self {
-        Self {
-            name,
-            _marker: PhantomData,
-        }
-    }
-
-    pub const fn name(self) -> &'static str {
-        self.name
-    }
-}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct CommittedOutputBinding {
@@ -107,7 +56,7 @@ impl WorthQueryApplicationOutputCorrespondence {
         }
         let binding = self
             .roles
-            .get(role.name)
+            .get(role.name())
             .ok_or(WorthQueryApplicationOutputProjectionDenial::MissingRole)?;
         if binding.posture != Action::POSTURE {
             return Err(WorthQueryApplicationOutputProjectionDenial::ActionMismatch);

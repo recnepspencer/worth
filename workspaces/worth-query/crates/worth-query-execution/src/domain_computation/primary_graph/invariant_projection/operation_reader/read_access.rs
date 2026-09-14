@@ -94,13 +94,14 @@ where
         }
         self.reader.work_budget.consume(1);
         self.reader.work.record_output_lineage_role_lookup();
+        let role_name = role.name().to_owned();
         let resolution = self
             .reader
             .prior_output_bindings
             .get(&binding_type)
             .expect("prior output binding was selected")
             .entity(role)
-            .map_err(|denial| WorthQueryPriorOutputDenial::projection(role.name(), denial))?;
+            .map_err(|denial| WorthQueryPriorOutputDenial::projection(&role_name, denial))?;
         let record = self
             .reader
             .runtime
@@ -109,7 +110,7 @@ where
             .ok_or_else(|| {
                 WorthQueryPriorOutputDenial::new(
                     WorthQueryPriorOutputDenialKind::OutputUnavailable,
-                    role.name(),
+                    &role_name,
                 )
             })?;
         let entity = self
@@ -119,13 +120,13 @@ where
             .ok_or_else(|| {
                 WorthQueryPriorOutputDenial::new(
                     WorthQueryPriorOutputDenialKind::EntityMismatch,
-                    role.name(),
+                    &role_name,
                 )
             })?;
         if entity != Entity::IDENTIFIER {
             return Err(WorthQueryPriorOutputDenial::new(
                 WorthQueryPriorOutputDenialKind::EntityMismatch,
-                role.name(),
+                &role_name,
             ));
         }
         self.reader.realized_scope.record(resolution.entity_id());
@@ -143,7 +144,7 @@ where
         .map_err(|_| {
             WorthQueryPriorOutputDenial::new(
                 WorthQueryPriorOutputDenialKind::Unavailable,
-                role.name(),
+                &role_name,
             )
         })?;
         Ok(identity)

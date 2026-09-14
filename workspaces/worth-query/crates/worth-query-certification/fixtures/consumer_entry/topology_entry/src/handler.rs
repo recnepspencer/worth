@@ -3,7 +3,7 @@ use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, 
 use worth_query_decl::facade::application_operation::ApplicationCandidateRequirements;
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryApplicationEntityKey,
+    WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
 };
 
 pub struct PlanarHandler;
@@ -120,7 +120,7 @@ fn author<Schema: TopologySchemaBinding>(
         .map_err(HandlerExecutionDenial::new)?;
     writer
         .preserve_output(
-            worth_query_host::facade::primary_graph::WorthQueryApplicationOutputRole::new("anchor"),
+            worth_query_host::facade::primary_graph::WorthQueryApplicationOutputRole::from_static("anchor"),
             &anchor,
         )
         .map_err(HandlerExecutionDenial::new)?;
@@ -148,6 +148,15 @@ fn author<Schema: TopologySchemaBinding>(
                         Length::reference(),
                         worth_query_consumer_values::PositiveLength::new(1).unwrap(),
                     )
+                    .map_err(HandlerExecutionDenial::new)?;
+                let role = WorthQueryApplicationOutputRole::<
+                    PlanarMutationBinding<Schema>,
+                    Body,
+                    WorthQueryCreateOutput,
+                >::try_new(format!("created.{}", vertex.body_key))
+                .map_err(HandlerExecutionDenial::new)?;
+                writer
+                    .create_output(role, &entity)
                     .map_err(HandlerExecutionDenial::new)?;
                 allocated.push(entity);
             }

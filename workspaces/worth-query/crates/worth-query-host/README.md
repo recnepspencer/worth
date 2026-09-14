@@ -101,6 +101,16 @@ different entity marker even when the binding, name and action match; foreign
 bindings, missing roles and action mismatches have their own typed denials.
 Role names describe correspondence; the platform resolves persistent identity.
 
+Bindings with a finite result shape declare exact roles in `ROLES`. Bindings
+whose result cardinality follows the authored topology declare typed namespaces
+in `ROLE_FAMILIES`, including the entity marker, allowed action postures and
+minimum member count. A handler constructs each source-derived member with
+`WorthQueryApplicationOutputRole::try_new(format!(...))` and passes that token
+directly to `create_output`, `preserve_output` or `retire_output`. Query rejects
+empty, ambiguous and oversized runtime names, validates each member against the
+installed family, and seals the resolved identity in the same correspondence.
+`from_static` remains the constructor for exact compile-time role names.
+
 `committed_changes()` provides the exact `commit_reference()`, an
 `entity_changes()` iterator of `(EntityId, RecordStructuralChange)`, and native
 `lineage_events()`. Its constructor and canonical artifact are private; the view
@@ -110,6 +120,9 @@ demonstrates preserve/create/retire roles, exact entity-affinity denial,
 same-commit lineage, readback, rejection, and receipt recovery. Receipt clones
 and idempotent recovery retain the observations without recreating the single-use
 performed product-change capability.
+The [cycle publication journey](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/publication.rs)
+demonstrates variable source-derived create roles through the installed public
+contract and typed post-commit projection.
 
 The executable configuration and resource setup live in
 [consumer installation](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/installation.rs),

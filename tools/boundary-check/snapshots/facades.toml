@@ -233,6 +233,7 @@ exports = [
     "WorthQueryApplicationOutputPosture",
     "WorthQueryApplicationOutputProjectionDenial",
     "WorthQueryApplicationOutputRole",
+    "WorthQueryApplicationOutputRoleNameDenial",
     "WorthQueryApplicationPrincipalIdentity",
     "WorthQueryApplicationPrincipalKey",
     "WorthQueryApplicationPrincipalKeyDenial",

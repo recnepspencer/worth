@@ -5,7 +5,7 @@ use worth_query_host::facade::{
     },
     primary_graph::{
         WorthQueryApplicationOutputRole, WorthQueryEntityResolutionDenialKind,
-        WorthQueryPreserveOutput,
+        WorthQueryCreateOutput, WorthQueryPreserveOutput,
     },
 };
 use worth_query_topology_entry::{Body, PlanarMutation, PlanarMutationBinding, PlanarRead};
@@ -50,8 +50,26 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>) {
         };
         assert_eq!(result.changed_vertices, vertices.len());
         receipt.output_correspondence().entity(
-            WorthQueryApplicationOutputRole::<PlanarMutationBinding<crate::ConsumerSchema>, Body, WorthQueryPreserveOutput>::new("anchor"),
+            WorthQueryApplicationOutputRole::<PlanarMutationBinding<crate::ConsumerSchema>, Body, WorthQueryPreserveOutput>::from_static("anchor"),
         ).expect("the committed group preserves its declared anchor through owner identity correspondence");
+        let created = vertices
+            .iter()
+            .map(|vertex| {
+                receipt
+                    .output_correspondence()
+                    .entity(
+                        WorthQueryApplicationOutputRole::<
+                            PlanarMutationBinding<crate::ConsumerSchema>,
+                            Body,
+                            WorthQueryCreateOutput,
+                        >::try_new(format!("created.{}", vertex.body_key))
+                        .expect("fixture keys form valid source-derived role names"),
+                    )
+                    .expect("every created cycle member is sealed under its source-derived role")
+                    .entity_id()
+            })
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(created.len(), vertices.len());
         let work = receipt
             .mutation_work()
             .expect("the real primary mutation carries work evidence");

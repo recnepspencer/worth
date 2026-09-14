@@ -329,6 +329,33 @@ where
             worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Preserve => {}
         }
     }
+    let mut family_prefixes = Vec::new();
+    for family in descriptor.output_role_families() {
+        if !valid_family_prefix(family.prefix())
+            || family.postures().is_empty()
+            || names.iter().any(|name| name.starts_with(family.prefix()))
+            || family_prefixes.iter().any(|existing: &&str| {
+                existing.starts_with(family.prefix()) || family.prefix().starts_with(*existing)
+            })
+        {
+            return Err(denial(
+                DenialKind::InvalidMutationOutputRole,
+                descriptor.identity(),
+            ));
+        }
+        let entity_exists = schema
+            .installed_declaration()
+            .members()
+            .iter()
+            .any(|member| matches!(member, ApplicationSchemaMember::Entity { entity } if entity == family.entity()));
+        if !entity_exists {
+            return Err(denial(
+                DenialKind::MutationOutputEntityNotInstalled,
+                descriptor.identity(),
+            ));
+        }
+        family_prefixes.push(family.prefix());
+    }
     let candidates = descriptor.candidates().cardinality();
     if creates > candidates.maximum_creates() || retires > candidates.maximum_deletes() {
         return Err(denial(
@@ -337,6 +364,14 @@ where
         ));
     }
     Ok(())
+}
+
+fn valid_family_prefix(prefix: &str) -> bool {
+    prefix.ends_with('.')
+        && prefix.len() > 1
+        && valid_identity(prefix)
+        && !prefix.starts_with('.')
+        && !prefix.contains("..")
 }
 
 fn denial(kind: DenialKind, subject: &str) -> WorthQueryApplicationOperationInstallationDenial {

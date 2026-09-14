@@ -185,6 +185,7 @@ fn validate_requested_meaning(
     }
     if installed.output_contract_type() != requested.output_contract_type()
         || installed.output_roles() != requested.output_roles()
+        || installed.output_role_families() != requested.output_role_families()
     {
         return Err(denial(
             DenialKind::MutationBindingOutputMeaningChanged,
