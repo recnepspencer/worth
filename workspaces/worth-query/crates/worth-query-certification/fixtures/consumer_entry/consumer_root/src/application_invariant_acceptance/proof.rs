@@ -22,6 +22,7 @@ use crate::ConsumerSchema;
 
 mod output_correspondence;
 mod publication;
+mod prior_output_family;
 mod resource_profile;
 
 type Request<'a> = WorthQueryApplicationRequest<'a, 'a, 'a, ConsumerSchema>;
@@ -55,6 +56,11 @@ pub(crate) fn run(
     typed_domain_denial_has_no_publication(&request, &world);
     insufficient_work_is_denied_before_owner(&request, &world);
     publication::create_and_reject_cycles(&request);
+    prior_output_family::branch_local_inventory_drives_real_publications(
+        &world.application,
+        &principal,
+        &scope,
+    );
     actual_candidate_checks_untouched_neighbors(&request, &world);
     let foreign_world = installation::install(foreign);
     let foreign_scope = authentication::request_scope();
@@ -275,7 +281,9 @@ fn read_y(request: &Request<'_>, key: &str) -> u64 {
             body_key: key.to_owned(),
         })
         .execute()
-        .expect("the published vertex is readable through its typed query");
+        .unwrap_or_else(|denial| {
+            panic!("the published vertex {key} is readable through its typed query: {denial:?}")
+        });
     assert_eq!(result.rows().len(), 1);
     worth_query_consumer_values::PositiveLength::get(&result.rows()[0].y)
 }

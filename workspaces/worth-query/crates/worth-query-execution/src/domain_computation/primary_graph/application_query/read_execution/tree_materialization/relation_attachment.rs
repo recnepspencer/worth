@@ -93,22 +93,10 @@ pub(super) fn attach_relation(
         | ActiveResultTreeCollectionSelection::Targeted(_) => {}
     }
     let read = match relation.direction() {
-        ApplicationQueryResultTraversalDirection::Forward => runtime
-            .read_truth()
-            .bounded_outgoing_relations_for_frontier_at_version(
-                &frontier,
-                layout.kind,
-                projection.version_id(),
-                work.remaining_work(),
-            ),
-        ApplicationQueryResultTraversalDirection::Reverse => runtime
-            .read_truth()
-            .bounded_incoming_relations_for_frontier_at_version(
-                &frontier,
-                layout.kind,
-                projection.version_id(),
-                work.remaining_work(),
-            ),
+        ApplicationQueryResultTraversalDirection::Forward => projection
+            .bounded_outgoing_relations_for_frontier(&frontier, layout.kind, work.remaining_work()),
+        ApplicationQueryResultTraversalDirection::Reverse => projection
+            .bounded_incoming_relations_for_frontier(&frontier, layout.kind, work.remaining_work()),
     }
     .map_err(|_| work_limit_denial(relation.result_path()))?;
     work.charge_adjacency(
@@ -267,22 +255,10 @@ fn attach_targeted_relation(
         .ok_or_else(|| traversal_denial(relation.result_path()))?;
     let frontier = BTreeSet::from([target.child_entity_id]);
     let read = match relation.direction() {
-        ApplicationQueryResultTraversalDirection::Forward => runtime
-            .read_truth()
-            .bounded_incoming_relations_for_frontier_at_version(
-                &frontier,
-                layout.kind,
-                projection.version_id(),
-                work.remaining_work(),
-            ),
-        ApplicationQueryResultTraversalDirection::Reverse => runtime
-            .read_truth()
-            .bounded_outgoing_relations_for_frontier_at_version(
-                &frontier,
-                layout.kind,
-                projection.version_id(),
-                work.remaining_work(),
-            ),
+        ApplicationQueryResultTraversalDirection::Forward => projection
+            .bounded_incoming_relations_for_frontier(&frontier, layout.kind, work.remaining_work()),
+        ApplicationQueryResultTraversalDirection::Reverse => projection
+            .bounded_outgoing_relations_for_frontier(&frontier, layout.kind, work.remaining_work()),
     }
     .map_err(|_| work_limit_denial(relation.result_path()))?;
     work.charge_adjacency(

@@ -11,10 +11,12 @@ use worth_query_installation::facade::{
 };
 
 mod decision_plan;
+mod prior_output;
 
 pub use decision_plan::{
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
 };
+pub use prior_output::WorthQueryPriorOutputFamilyMember;
 
 use super::{
     WorthQueryApplicationInvariantProjectionAuthority,

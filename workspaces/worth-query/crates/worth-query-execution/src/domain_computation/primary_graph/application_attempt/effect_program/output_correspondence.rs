@@ -12,7 +12,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use candid
 mod role;
 pub use role::{
     Create, Preserve, Retire, WorthQueryApplicationOutputAction, WorthQueryApplicationOutputRole,
-    WorthQueryApplicationOutputRoleNameDenial,
+    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
 };
 
 #[cfg(test)]
@@ -83,6 +83,43 @@ impl WorthQueryApplicationOutputCorrespondence {
             .get(role)
             .map(|binding| binding.entity)
             .ok_or(WorthQueryApplicationOutputProjectionDenial::MissingRole)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn binding_family_entries<
+        'correspondence,
+        Binding: 'static,
+        Entity: 'static,
+    >(
+        &'correspondence self,
+        prefix: &'correspondence str,
+    ) -> Result<
+        impl Iterator<
+                Item = Result<
+                    (
+                        &'correspondence str,
+                        WorthQueryApplicationOutputPosture,
+                        EntityId,
+                    ),
+                    WorthQueryApplicationOutputProjectionDenial,
+                >,
+            > + 'correspondence,
+        WorthQueryApplicationOutputProjectionDenial,
+    > {
+        use std::ops::Bound::{Excluded, Unbounded};
+
+        if self.binding_type != Some(TypeId::of::<Binding>()) {
+            return Err(WorthQueryApplicationOutputProjectionDenial::ForeignBinding);
+        }
+        Ok(self
+            .roles
+            .range::<str, _>((Excluded(prefix), Unbounded))
+            .take_while(move |(role, _)| role.starts_with(prefix))
+            .map(|(role, binding)| {
+                if binding.entity_type != TypeId::of::<Entity>() {
+                    return Err(WorthQueryApplicationOutputProjectionDenial::EntityMismatch);
+                }
+                Ok((role.as_str(), binding.posture, binding.entity))
+            }))
     }
 }
 

@@ -191,13 +191,20 @@ substitute for those invariant receipts. Checkpoints preserve cancellation and
 deadline outcomes; denied, cancelled, or invalid candidates do not publish.
 
 `DecisionReader` exposes tracked typed field and relation reads, including exact
-single-related-target checks. `CandidateWriter` exposes the declared create,
-initialize, write, link, unlink, delete, emit, and output-role verbs directly over
-the one reserved effect program. Installed invariant factories resolve typed field
-and relation bindings once; their proposed and committed views enforce binding,
-view, declared-access, prepared-scope, entity-kind, value, and finite-work rules.
-Application code never decodes native aspect payloads or constructs lower-runtime
-effect programs to use these paths.
+single-related-target checks. A mutation that regenerates a variable output set
+can declare an output-role family and call `DecisionReader::prior_output_family`
+inside its installed handler. Query returns the currently live members in semantic
+role order with their declared posture and typed identities. The read resolves the
+selected product branch and selected product generation, consumes the ordinary decision
+work budget, and records every returned identity in the decision scope. An
+undeclared family, mismatched entity marker, exhausted budget, or correspondence
+whose live identity cannot be resolved returns `WorthQueryPriorOutputDenial`.
+`CandidateWriter` exposes the declared create, initialize, write, link, unlink,
+delete, emit, and output-role verbs directly over the one reserved effect program.
+Installed invariant factories resolve typed field and relation bindings once; their
+proposed and committed views enforce binding, view, declared-access, prepared-scope,
+entity-kind, value, and finite-work rules. Application code never decodes native
+aspect payloads or constructs lower-runtime effect programs to use these paths.
 
 ### Output correspondence and committed observations
 
@@ -216,6 +223,13 @@ and create action with a different entity marker returns `EntityMismatch`;
 callers cannot relabel a committed identity by changing a generic argument.
 The projected entity identity is inspection evidence and still requires fresh
 admission for a later operation.
+
+For regeneration, `WorthQueryApplicationOutputRoleFamily<Binding, Entity>` names
+one family already declared by `Binding::Output::ROLE_FAMILIES`. It does not create
+a second lineage store. `DecisionReader::prior_output_family` reads the existing
+committed output correspondence for the selected branch occurrence and product generation;
+retired members are omitted, and a create/preserve member that is absent from the
+selected live snapshot is denied as inconsistent correspondence.
 
 The receipt's `committed_changes()` exposes an immutable
 `WorthQueryApplicationCommittedChanges` view: `commit_reference()` identifies

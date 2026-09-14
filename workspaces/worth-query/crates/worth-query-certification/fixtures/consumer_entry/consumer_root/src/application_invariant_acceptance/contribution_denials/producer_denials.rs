@@ -298,6 +298,9 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
         },
     )?;
     setup.handler::<PlanarMutationBinding<Schema>, _>(PlanarHandler)?;
+    setup.handler::<worth_query_topology_entry::PriorCycleAdjustmentBinding<Schema>, _>(
+        worth_query_topology_entry::PriorCycleAdjustmentHandler,
+    )?;
     setup.handler::<worth_query_topology_entry::VertexReplacementBinding<Schema>, _>(
         worth_query_topology_entry::VertexReplacementHandler,
     )

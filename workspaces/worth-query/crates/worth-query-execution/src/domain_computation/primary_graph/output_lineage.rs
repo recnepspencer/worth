@@ -51,6 +51,7 @@ pub(super) struct WorthQueryPriorOutputBindingResolution {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPriorOutputDenialKind {
     Unavailable,
+    UndeclaredFamily,
     MissingRole,
     ActionMismatch,
     EntityMismatch,

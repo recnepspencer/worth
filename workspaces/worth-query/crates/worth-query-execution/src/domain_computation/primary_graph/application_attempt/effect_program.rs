@@ -59,7 +59,8 @@ pub use output_correspondence::{
     Retire as WorthQueryRetireOutput, WorthQueryApplicationOutputAction,
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
     WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
-    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleNameDenial,
+    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
+    WorthQueryApplicationOutputRoleNameDenial,
 };
 use target_admission::installed_contract_admits_program_target;
 use worth_query_declaration::facade::{

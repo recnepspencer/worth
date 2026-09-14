@@ -53,6 +53,9 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
             },
         )?;
         setup.handler::<PlanarMutationBinding<Schema>, _>(PlanarHandler)?;
+        setup.handler::<super::PriorCycleAdjustmentBinding<Schema>, _>(
+            super::PriorCycleAdjustmentHandler,
+        )?;
         setup.producer::<InitialPlanarProducer<Schema>>(super::InitialPlanarProvider)?;
         setup.conditional::<InitialPlanarReadiness<Schema>>(())?;
         setup.handler::<super::VertexReplacementBinding<Schema>, _>(super::VertexReplacementHandler)

@@ -10,6 +10,8 @@ use crate::domain_computation::primary_graph::application_attempt::effect_progra
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind;
 
+mod family;
+
 struct Schema;
 struct Binding;
 struct ForeignBinding;
@@ -204,73 +206,6 @@ fn owner_resolved_creation_projects_the_exact_typed_identity() {
             >::from_static("created"))
             .err(),
         Some(WorthQueryApplicationOutputProjectionDenial::EntityMismatch)
-    );
-}
-
-#[test]
-fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
-    use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPostureSet;
-
-    let program = Arc::new(());
-    let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
-    candidate.prepare_test_family::<Binding>(
-        "face.",
-        ApplicationMutationOutputPostureSet::CREATE,
-        "entity",
-        2,
-    );
-    let negative = created_handle("face-negative", 20, &program);
-    let positive = created_handle("face-positive", 21, &program);
-    let negative_role = WorthQueryApplicationOutputRole::<Binding, Entity, Create>::from_static(
-        "face.negative.inherited.wall",
-    );
-    let positive_role = WorthQueryApplicationOutputRole::<Binding, Entity, Create>::from_static(
-        "face.positive.cap",
-    );
-    candidate.bind(negative_role, &negative, &program).unwrap();
-    assert_eq!(
-        candidate.validate_effects(&[]).unwrap_err().kind(),
-        WorthQueryApplicationAttemptDenialKind::MissingOutputRole
-    );
-    candidate.bind(positive_role, &positive, &program).unwrap();
-    candidate
-        .validate_effects(&[
-            create_effect("face-negative", 20),
-            create_effect("face-positive", 21),
-        ])
-        .unwrap();
-
-    let undeclared =
-        WorthQueryApplicationOutputRole::<Binding, Entity, Create>::from_static("edge.0");
-    let extra = created_handle("edge", 22, &program);
-    assert_eq!(
-        candidate
-            .bind(undeclared, &extra, &program)
-            .unwrap_err()
-            .kind(),
-        WorthQueryApplicationAttemptDenialKind::UndeclaredOutputRole
-    );
-    let empty_member = created_handle("empty-member", 24, &program);
-    assert_eq!(
-        candidate
-            .bind(
-                WorthQueryApplicationOutputRole::<Binding, Entity, Create>::from_static("face."),
-                &empty_member,
-                &program,
-            )
-            .unwrap_err()
-            .kind(),
-        WorthQueryApplicationAttemptDenialKind::UndeclaredOutputRole
-    );
-    let wrong_posture =
-        WorthQueryApplicationOutputRole::<Binding, Entity, Preserve>::from_static("face.retained");
-    let existing = existing_handle(EntityId::new(PartitionId::main(), 23, 0), &program);
-    assert_eq!(
-        candidate
-            .bind(wrong_posture, &existing, &program)
-            .unwrap_err()
-            .kind(),
-        WorthQueryApplicationAttemptDenialKind::OutputRoleActionMismatch
     );
 }
 

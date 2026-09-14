@@ -139,7 +139,8 @@ pub use application_attempt::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
     WorthQueryApplicationOutputAction, WorthQueryApplicationOutputPosture,
     WorthQueryApplicationOutputProjectionDenial,
-    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleNameDenial,
+    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
+    WorthQueryApplicationOutputRoleNameDenial,
     WorthQueryCreateOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationReadAttempt,
@@ -283,6 +284,7 @@ pub use invariant_projection::{
     WorthQueryInvariantProjectionTraversalDenial,
     WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryInvariantProjectionWork,
     WorthQueryInvariantRelation, WorthQueryOperationProjectionDenial,
+    WorthQueryPriorOutputFamilyMember,
     WorthQueryOperationProjectionDenialKind,
 };
 pub use ordinary_read::{

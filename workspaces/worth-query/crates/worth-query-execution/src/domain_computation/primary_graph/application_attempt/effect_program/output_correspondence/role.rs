@@ -75,6 +75,29 @@ pub struct WorthQueryApplicationOutputRole<Binding, Entity, Action> {
     _marker: PhantomData<fn() -> (Binding, Entity, Action)>,
 }
 
+/// One declared generated-role family from a prior mutation binding.
+///
+/// The prefix selects installed correspondence meaning. Query validates it
+/// against `Binding::Output` before exposing any prior identities.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WorthQueryApplicationOutputRoleFamily<Binding, Entity> {
+    prefix: &'static str,
+    _marker: PhantomData<fn() -> (Binding, Entity)>,
+}
+
+impl<Binding, Entity> WorthQueryApplicationOutputRoleFamily<Binding, Entity> {
+    pub const fn from_static(prefix: &'static str) -> Self {
+        Self {
+            prefix,
+            _marker: PhantomData,
+        }
+    }
+
+    pub const fn prefix(&self) -> &'static str {
+        self.prefix
+    }
+}
+
 impl<Binding, Entity, Action> WorthQueryApplicationOutputRole<Binding, Entity, Action> {
     /// Construct a statically named exact role. Query validates it against the
     /// installed binding before candidate effects can be admitted.

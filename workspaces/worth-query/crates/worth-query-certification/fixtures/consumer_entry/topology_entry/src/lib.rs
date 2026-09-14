@@ -16,6 +16,7 @@ mod planar_invariant;
 mod planar_read;
 mod planar_topology;
 mod principal;
+mod prior_cycle_adjustment;
 mod producer;
 mod readiness;
 mod vertex_replacement;
@@ -27,6 +28,7 @@ pub use planar_invariant::*;
 pub use planar_read::*;
 pub use planar_topology::*;
 pub use principal::*;
+pub use prior_cycle_adjustment::*;
 pub use producer::*;
 pub use readiness::InitialPlanarReadiness;
 
@@ -60,6 +62,7 @@ worth_query_application_contribution! {
         identity: "worth.query.certification.topology.v1",
         members: |schema| {
             let schema = vertex_replacement::declare_vertex_replacement(schema);
+            let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);
             schema
                 .entity(Body::reference::<Schema>())
                 .unit(Metre::reference::<Schema>())

@@ -121,6 +121,14 @@ Invariant factories resolve typed field and relation bindings once and evaluate
 the actual proposed overlay and committed before-image inside a declared prepared
 scope and finite work budget.
 
+Regenerating handlers declare variable semantic roles through
+`ApplicationMutationOutputContract::ROLE_FAMILIES` and read a prior family with
+`DecisionReader::prior_output_family`. Query returns live members in deterministic
+role order from the selected branch occurrence and product generation. The
+resulting typed identities are normal tracked decision reads; undeclared families,
+wrong entity markers, stale correspondence and exhausted work fail through
+`WorthQueryPriorOutputDenial`.
+
 Committed receipts expose `output_correspondence()` for preserve/create/retire
 roles and `committed_changes()` for immutable structural and lineage
 observations from the same commit. Projecting `entity(role)` requires the exact
