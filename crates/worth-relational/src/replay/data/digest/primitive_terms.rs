@@ -201,6 +201,8 @@ impl ReplayDigestBuilder {
             RecordStructuralChange::Updated => self.tag(2),
             RecordStructuralChange::Deleted => self.tag(3),
             RecordStructuralChange::RetainedForAudit => self.tag(4),
+            RecordStructuralChange::MaterializationSuspended => self.tag(5),
+            RecordStructuralChange::Rematerialized => self.tag(6),
         }
     }
 

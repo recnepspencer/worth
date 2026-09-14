@@ -80,6 +80,7 @@ pub(super) fn validate_relation_intent(
         MutationIntent::Create(CreateIntent::Entity(_))
         | MutationIntent::Create(CreateIntent::EntityAspects(_))
         | MutationIntent::Create(CreateIntent::BulkEntities(_))
-        | MutationIntent::Entity(_) => Ok(()),
+        | MutationIntent::Entity(_)
+        | MutationIntent::Materialization(_) => Ok(()),
     }
 }

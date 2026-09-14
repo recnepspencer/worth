@@ -6,6 +6,8 @@ pub(super) enum EntityPatchDetailKind {
     Created,
     Updated,
     Deleted,
+    MaterializationSuspended,
+    Rematerialized,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -14,6 +16,8 @@ pub(super) enum RelationPatchDetailKind {
     Updated,
     Deleted,
     RetainedForAudit,
+    MaterializationSuspended,
+    Rematerialized,
 }
 
 pub(super) fn patch_detail_for_entity(
@@ -51,6 +55,8 @@ fn entity_patch_kind_code(kind: EntityPatchDetailKind) -> u64 {
         EntityPatchDetailKind::Created => 1,
         EntityPatchDetailKind::Updated => 2,
         EntityPatchDetailKind::Deleted => 3,
+        EntityPatchDetailKind::MaterializationSuspended => 8,
+        EntityPatchDetailKind::Rematerialized => 9,
     }
 }
 
@@ -60,6 +66,8 @@ fn relation_patch_kind_code(kind: RelationPatchDetailKind) -> u64 {
         RelationPatchDetailKind::Updated => 5,
         RelationPatchDetailKind::Deleted => 6,
         RelationPatchDetailKind::RetainedForAudit => 7,
+        RelationPatchDetailKind::MaterializationSuspended => 10,
+        RelationPatchDetailKind::Rematerialized => 11,
     }
 }
 

@@ -165,6 +165,10 @@ pub(crate) struct AdmittedRelationalBranchBasisInner {
 }
 
 impl AdmittedRelationalBranchBasis {
+    pub fn materialization_is_complete(&self) -> bool {
+        !self.inner.root.has_materialization_unavailable()
+    }
+
     /// Identity issued by the Relational owner for this exact admission.
     ///
     /// The identity is descriptive binding for later composition; it is not

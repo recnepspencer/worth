@@ -6,7 +6,7 @@ use worth_foundational::facade::PortableRecordAspectPatch;
 
 use super::super::AspectFieldPatch;
 
-use super::super::{EntityReference, EntitySpec, RelationSpec};
+use super::super::{EntityReference, EntitySpec, MaterializationMutationIntent, RelationSpec};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BulkEntityCreateIntent {
@@ -115,6 +115,7 @@ pub enum MutationIntent {
     Create(CreateIntent),
     Entity(EntityMutationIntent),
     Relation(RelationMutationIntent),
+    Materialization(MaterializationMutationIntent),
 }
 
 impl MutationIntent {
@@ -123,6 +124,17 @@ impl MutationIntent {
             Self::Create(intent) => intent.owned_allocation_capacity_bytes(),
             Self::Entity(intent) => intent.owned_allocation_capacity_bytes(),
             Self::Relation(intent) => intent.owned_allocation_capacity_bytes(),
+            Self::Materialization(intent) => intent.owned_allocation_capacity_bytes(),
+        }
+    }
+}
+
+impl MaterializationMutationIntent {
+    fn owned_allocation_capacity_bytes(&self) -> u64 {
+        match self {
+            Self::SuspendEntity(_) | Self::SuspendRelation(_) => 0,
+            Self::RematerializeEntity(intent) => intent.fields.owned_allocation_capacity_bytes(),
+            Self::RematerializeRelation(intent) => intent.fields.owned_allocation_capacity_bytes(),
         }
     }
 }

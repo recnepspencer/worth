@@ -52,6 +52,7 @@ impl MutationIntent {
                 collect_entity_reference_raw_client_key(&spec.target, raw_values);
             }
             Self::Entity(_)
+            | Self::Materialization(_)
             | Self::Relation(RelationMutationIntent::ApplyAspectPatch(_))
             | Self::Relation(RelationMutationIntent::Delete(_)) => {}
         }
@@ -98,6 +99,7 @@ impl MutationIntent {
                 normalize_entity_reference_client_key(&mut spec.target, interner, policy);
             }
             Self::Entity(_)
+            | Self::Materialization(_)
             | Self::Relation(RelationMutationIntent::ApplyAspectPatch(_))
             | Self::Relation(RelationMutationIntent::Delete(_)) => {}
         }

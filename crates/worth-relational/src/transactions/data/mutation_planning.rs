@@ -80,6 +80,9 @@ impl MutationIntent {
             Self::Relation(RelationMutationIntent::Delete(spec)) => {
                 touched.insert(spec.relation_id.partition_id);
             }
+            Self::Materialization(intent) => {
+                touched.insert(intent.partition_id());
+            }
         }
     }
 
@@ -135,6 +138,12 @@ impl MutationIntent {
             Self::Relation(RelationMutationIntent::Delete(spec)) => {
                 RollbackEffect::RestoredRelation(spec.relation_id)
             }
+            Self::Materialization(intent) => match intent.record() {
+                super::RecordRef::Entity(entity_id) => RollbackEffect::RestoredEntity(entity_id),
+                super::RecordRef::Relation(relation_id) => {
+                    RollbackEffect::RestoredRelation(relation_id)
+                }
+            },
         }
     }
 
@@ -161,6 +170,12 @@ impl MutationIntent {
             Self::Relation(RelationMutationIntent::Delete(spec)) => {
                 Some(ExistingRecordTarget::Relation(spec.relation_id))
             }
+            Self::Materialization(intent) => Some(match intent.record() {
+                super::RecordRef::Entity(entity_id) => ExistingRecordTarget::Entity(entity_id),
+                super::RecordRef::Relation(relation_id) => {
+                    ExistingRecordTarget::Relation(relation_id)
+                }
+            }),
             Self::Create(_) => None,
         }
     }

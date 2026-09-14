@@ -3,6 +3,7 @@ use crate::identity::data::{EntityId, KindId, LineageId, StructuralFingerprint, 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(crate) struct LifecycleCounts {
     pub(crate) live: usize,
+    pub(crate) unavailable: usize,
     pub(crate) deleted: usize,
     pub(crate) reusable: usize,
 }

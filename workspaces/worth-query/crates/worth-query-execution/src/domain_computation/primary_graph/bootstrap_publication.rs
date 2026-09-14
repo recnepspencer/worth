@@ -134,6 +134,9 @@ fn map_bootstrap_staging_denial(
         Denial::SavepointIdentityExhausted => {
             WorthQueryPrimaryGraphInstallationDenialKind::SavepointIdentityExhausted
         }
+        Denial::MaterializationAuthorityRequired | Denial::MaterializationModeMismatch => {
+            WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected
+        }
     };
     primary_graph_denial(
         kind,

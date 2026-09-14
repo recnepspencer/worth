@@ -83,6 +83,9 @@ fn staged_write_loci(batch: &WorkerIntentBatch) -> BTreeSet<RelationalTransactio
                 ));
             }
             MutationIntent::Create(create) => collect_created_write_loci(create, &mut loci),
+            MutationIntent::Materialization(intent) => {
+                loci.insert(RelationalTransactionWriteLocus::Existing(intent.record()));
+            }
         }
     }
     loci

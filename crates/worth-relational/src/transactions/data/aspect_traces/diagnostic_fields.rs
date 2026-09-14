@@ -254,6 +254,12 @@ fn structural_change_value(change: RecordStructuralChange) -> RelationalDiagnost
         RecordStructuralChange::RetainedForAudit => {
             RelationalDiagnosticValue::string("retained_for_audit")
         }
+        RecordStructuralChange::MaterializationSuspended => {
+            RelationalDiagnosticValue::string("materialization_suspended")
+        }
+        RecordStructuralChange::Rematerialized => {
+            RelationalDiagnosticValue::string("rematerialized")
+        }
     }
 }
 

@@ -160,6 +160,11 @@ fn targets_for_intent(intent: &MutationIntent) -> Vec<ValidatedFieldMutationTarg
         MutationIntent::Create(_) => Vec::new(),
         MutationIntent::Entity(intent) => entity_targets(intent),
         MutationIntent::Relation(intent) => relation_targets(intent),
+        MutationIntent::Materialization(intent) => {
+            vec![ValidatedFieldMutationTarget::WholeRecord {
+                record: intent.record(),
+            }]
+        }
     }
 }
 

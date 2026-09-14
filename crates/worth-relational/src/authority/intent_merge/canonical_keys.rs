@@ -32,6 +32,10 @@ pub(crate) enum CanonicalIntentKey {
     },
     UpdateRelationEndpoints(RelationId),
     DeleteEntity(EntityId),
+    Materialization {
+        record: crate::transactions::data::RecordRef,
+        suspension: bool,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -116,6 +120,10 @@ pub(crate) fn canonical_intent_key(intent: &MutationIntent) -> CanonicalIntentKe
         MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
             CanonicalIntentKey::DeleteRelation(spec.relation_id)
         }
+        MutationIntent::Materialization(intent) => CanonicalIntentKey::Materialization {
+            record: intent.record(),
+            suspension: intent.is_suspension(),
+        },
     }
 }
 

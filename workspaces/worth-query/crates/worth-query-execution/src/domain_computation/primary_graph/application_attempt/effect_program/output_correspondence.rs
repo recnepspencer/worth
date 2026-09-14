@@ -92,6 +92,15 @@ impl WorthQueryApplicationOutputCorrespondence {
         self.binding_type
     }
 
+    pub(in crate::domain_computation::primary_graph) fn created_entity_ids(
+        &self,
+    ) -> impl Iterator<Item = EntityId> + '_ {
+        self.roles.values().filter_map(|binding| {
+            (binding.posture == WorthQueryApplicationOutputPosture::Create)
+                .then_some(binding.entity)
+        })
+    }
+
     pub fn entity<Binding, Entity, Action>(
         &self,
         role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,

@@ -7,4 +7,6 @@ pub enum RecordStructuralChange {
     Updated,
     Deleted,
     RetainedForAudit,
+    MaterializationSuspended,
+    Rematerialized,
 }

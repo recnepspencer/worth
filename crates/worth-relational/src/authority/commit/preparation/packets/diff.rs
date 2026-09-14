@@ -7,6 +7,8 @@ pub(crate) enum DiffFragmentKind {
     Updated,
     Deleted,
     RetainedForAudit,
+    MaterializationSuspended,
+    Rematerialized,
 }
 
 impl From<RecordStructuralChange> for DiffFragmentKind {
@@ -16,6 +18,8 @@ impl From<RecordStructuralChange> for DiffFragmentKind {
             RecordStructuralChange::Updated => Self::Updated,
             RecordStructuralChange::Deleted => Self::Deleted,
             RecordStructuralChange::RetainedForAudit => Self::RetainedForAudit,
+            RecordStructuralChange::MaterializationSuspended => Self::MaterializationSuspended,
+            RecordStructuralChange::Rematerialized => Self::Rematerialized,
         }
     }
 }

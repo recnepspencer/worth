@@ -68,12 +68,19 @@ pub use product_operation::{
     WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,
     WorthQueryApplicationProductBranchCleanupFailure,
     WorthQueryApplicationProductBranchCloseDenial, WorthQueryApplicationProductBranches,
-    WorthQueryAppliedProductTransaction, WorthQueryConditionalDefinitionPublicationDenial,
-    WorthQueryConditionalDefinitionPublicationOutcome,
+    WorthQueryAppliedProductTransaction, WorthQueryCompletedGeneratedOutputReconstruction,
+    WorthQueryConditionalDefinitionPublicationDenial,
+    WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryGeneratedEntity,
+    WorthQueryGeneratedOutputReconstruction, WorthQueryGeneratedOutputReconstructionDenial,
+    WorthQueryGeneratedOutputReconstructionFailure, WorthQueryGeneratedOutputRestorationFailure,
+    WorthQueryGeneratedOutputRestorationFailureCause, WorthQueryGeneratedOutputSuspensionDenial,
+    WorthQueryGeneratedOutputSuspensionFailure,
     WorthQueryPerformedConditionalDefinitionPublication, WorthQueryProductEntry,
     WorthQueryProductHistory, WorthQueryProductHistoryEntry, WorthQueryProductQueryControls,
     WorthQueryProductTransaction, WorthQueryProductTransactionCommitError,
-    WorthQuerySelectedProductOperation,
+    WorthQueryRestoredGeneratedOutput, WorthQuerySelectedProductOperation,
+    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedGeneratedOutputRestoration,
+    WorthQueryUnpublishedGeneratedOutputSuspension,
 };
 mod provider;
 mod resolution;

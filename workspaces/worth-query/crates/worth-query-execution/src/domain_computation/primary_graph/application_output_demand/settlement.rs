@@ -128,10 +128,24 @@ where
     let committed = receipt.committed_product_publication();
     let selected = runtime.on_branch(receipt.product_branch()).select().ok()?;
     let observation = selected.product().observation();
-    (observation.lifecycle_incarnation() == committed.product_incarnation()
+    let original_publication_is_current = observation.lifecycle_incarnation()
+        == committed.product_incarnation()
         && observation.reference_generation() == committed.product_generation()
-        && observation.selected_commit() == committed.composite_commit())
-    .then(|| selected.product().read_lease())
+        && observation.selected_commit() == committed.composite_commit();
+    let exact_restoration_is_current = runtime
+        .primary_provider
+        .graph
+        .output_lineage
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .current_restoration_matches_receipt(
+            runtime.runtime.authority_identity().as_u64(),
+            &runtime.installed_schema.binding_identity(),
+            observation,
+            receipt,
+        );
+    (original_publication_is_current || exact_restoration_is_current)
+        .then(|| selected.product().read_lease())
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>

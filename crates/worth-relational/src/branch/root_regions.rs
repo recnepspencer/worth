@@ -16,6 +16,7 @@ pub(crate) struct RelationalPersistentRegionSet {
     set_id: u64,
     index_root: Option<Arc<RelationalPersistentRegionNode>>,
     count: usize,
+    materialization_unavailable_records: usize,
 }
 #[derive(Debug)]
 struct RelationalPersistentRegionNode {
@@ -42,6 +43,10 @@ impl RelationalPersistentRegionSet {
         issuer: &RelationalBranchRootIdentityIssuer,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         let count = regions.len();
+        let materialization_unavailable_records = regions
+            .values()
+            .map(|region| region.materialization_unavailable_records())
+            .sum();
         let mut index_root = None;
         for (partition_id, region) in regions {
             index_root = Some(insert_leaf(
@@ -58,6 +63,7 @@ impl RelationalPersistentRegionSet {
             set_id,
             index_root,
             count,
+            materialization_unavailable_records,
         }))
     }
 
@@ -70,10 +76,16 @@ impl RelationalPersistentRegionSet {
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         let mut index_root = parent.index_root.clone();
         let mut count = parent.count;
+        let mut materialization_unavailable_records = parent.materialization_unavailable_records;
         for (partition_id, region) in replacements {
-            if get_region(index_root.as_ref(), partition_id).is_none() {
+            if let Some(previous) = get_region(index_root.as_ref(), partition_id) {
+                materialization_unavailable_records = materialization_unavailable_records
+                    .saturating_sub(previous.materialization_unavailable_records());
+            } else {
                 count = count.saturating_add(1);
             }
+            materialization_unavailable_records = materialization_unavailable_records
+                .saturating_add(region.materialization_unavailable_records());
             index_root = Some(insert_leaf(
                 index_root.as_ref(),
                 partition_id,
@@ -85,8 +97,10 @@ impl RelationalPersistentRegionSet {
             )?);
         }
         for partition_id in removed {
-            if get_region(index_root.as_ref(), partition_id).is_some() {
+            if let Some(previous) = get_region(index_root.as_ref(), partition_id) {
                 count = count.saturating_sub(1);
+                materialization_unavailable_records = materialization_unavailable_records
+                    .saturating_sub(previous.materialization_unavailable_records());
             }
             index_root = Some(insert_leaf(
                 index_root.as_ref(),
@@ -102,6 +116,7 @@ impl RelationalPersistentRegionSet {
             set_id,
             index_root,
             count,
+            materialization_unavailable_records,
         }))
     }
 
@@ -120,6 +135,9 @@ impl RelationalPersistentRegionSet {
 
     pub(crate) fn len(&self) -> usize {
         self.count
+    }
+    pub(crate) fn materialization_unavailable_records(&self) -> usize {
+        self.materialization_unavailable_records
     }
     pub(crate) fn commitment(&self) -> [u8; 32] {
         self.index_root

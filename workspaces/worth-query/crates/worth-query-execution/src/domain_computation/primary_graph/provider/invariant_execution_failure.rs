@@ -54,6 +54,9 @@ pub(super) fn map_transaction_staging_failure(
         Denial::SavepointIdentityExhausted => {
             WorthQueryInvariantExecutionDenialKind::SavepointIdentityExhausted
         }
+        Denial::MaterializationAuthorityRequired | Denial::MaterializationModeMismatch => {
+            WorthQueryInvariantExecutionDenialKind::ProviderRejected
+        }
     };
     exhausted_failure(
         kind,

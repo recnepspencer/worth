@@ -14,6 +14,7 @@ pub(crate) struct RelationalRootRegion {
     pub(super) allocation_inventory:
         crate::storage::overlay::RelationalPartitionAllocationInventory,
     pub(super) content_digest: [u8; 32],
+    materialization_unavailable_records: usize,
 }
 
 impl RelationalRootRegion {
@@ -32,14 +33,24 @@ impl RelationalRootRegion {
                 ) => RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(symbol),
             })?;
         let allocation_inventory = partition.allocation_inventory();
+        let materialization_unavailable_records = partition
+            .entity_arena
+            .lifecycle_counts()
+            .unavailable
+            .saturating_add(partition.relation_arena.lifecycle_counts().unavailable);
         Ok(Self {
             creation_root_id,
             id,
             partition_id: partition.partition_id,
             allocation_inventory,
             content_digest,
+            materialization_unavailable_records,
             partition: Arc::new(partition),
         })
+    }
+
+    pub(super) fn materialization_unavailable_records(&self) -> usize {
+        self.materialization_unavailable_records
     }
 
     pub(super) fn observation(&self) -> RelationalRootRegionObservation {

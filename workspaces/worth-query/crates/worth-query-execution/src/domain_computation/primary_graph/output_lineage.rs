@@ -39,6 +39,17 @@ struct RecordedOutput {
     observed_source_facts: Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
 }
 
+pub(super) struct WorthQueryExactRecordedOutput {
+    pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    pub(super) source_identity: [u8; 32],
+    pub(super) runtime_authority: u64,
+    pub(super) schema: ApplicationSchemaBindingIdentity,
+    pub(super) scope:
+        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    pub(super) observed_source_facts:
+        Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
+}
+
 #[derive(Clone, Copy)]
 struct ProductCoordinate {
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
@@ -81,6 +92,106 @@ pub struct WorthQueryPriorOutputDenial {
 }
 
 impl WorthQueryApplicationOutputLineage {
+    pub(super) fn current_restoration_matches_receipt(
+        &self,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        receipt: &super::WorthQueryApplicationCommitReceipt,
+    ) -> bool {
+        let Some(output_binding) = receipt.output_correspondence().binding_type() else {
+            return false;
+        };
+        let Some(source_identity) = receipt.idempotency_binding().source_identity() else {
+            return false;
+        };
+        let source = SemanticSource {
+            runtime_authority,
+            schema: schema.clone(),
+            scope: receipt.principal_scope().scope(),
+            output_binding,
+        };
+        self.by_source
+            .get(&source)
+            .and_then(|versions| versions.get(&observation.lifecycle_incarnation()))
+            .and_then(|history| history.get(&observation.reference_generation().get()))
+            .is_some_and(|recorded| {
+                recorded.source_identity == Some(source_identity)
+                    && std::ptr::eq(
+                        recorded.correspondence.as_ref(),
+                        receipt.output_correspondence(),
+                    )
+            })
+    }
+
+    pub(super) fn exact_output<Binding: 'static>(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        generation: u64,
+    ) -> Option<WorthQueryExactRecordedOutput> {
+        let mut matching = self.by_source.iter().filter_map(|(source, versions)| {
+            (source.output_binding == TypeId::of::<Binding>()).then(|| {
+                versions
+                    .get(&occurrence)?
+                    .get(&generation)
+                    .map(|recorded| (source, recorded))
+            })?
+        });
+        let (source, recorded) = matching.next()?;
+        assert!(
+            matching.next().is_none(),
+            "one product generation has one output binding"
+        );
+        Some(WorthQueryExactRecordedOutput {
+            correspondence: Arc::clone(&recorded.correspondence),
+            source_identity: recorded.source_identity?,
+            runtime_authority: source.runtime_authority,
+            schema: source.schema.clone(),
+            scope: source.scope,
+            observed_source_facts: Arc::clone(&recorded.observed_source_facts),
+        })
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn record_restoration(
+        &mut self,
+        output_binding: TypeId,
+        runtime_authority: u64,
+        schema: ApplicationSchemaBindingIdentity,
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+        source_identity: [u8; 32],
+        observed_source_facts: Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
+    ) {
+        let source = SemanticSource {
+            runtime_authority,
+            schema,
+            scope,
+            output_binding,
+        };
+        let replaced = self
+            .by_source
+            .entry(source)
+            .or_default()
+            .entry(observation.lifecycle_incarnation())
+            .or_default()
+            .insert(
+                observation.reference_generation().get(),
+                RecordedOutput {
+                    correspondence,
+                    source_identity: Some(source_identity),
+                    observed_source_facts,
+                },
+            );
+        assert!(
+            replaced.is_none(),
+            "one product generation may restore one output binding once"
+        );
+        self.live_occurrences
+            .insert(observation.lifecycle_incarnation());
+    }
+
     pub(super) fn install_output_families(&mut self, families: BTreeMap<String, Vec<TypeId>>) {
         assert!(self.output_families.is_empty());
         self.output_families.extend(families);
