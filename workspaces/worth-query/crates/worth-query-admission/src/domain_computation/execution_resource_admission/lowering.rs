@@ -132,10 +132,36 @@ fn support_mismatch(
     } else {
         (
             Kind::Backpressured,
-            format!("{subject} capacity is currently below the strategy envelope"),
+            capacity_mismatch_detail(&subject, strategy, actual),
         )
     };
     WorthQueryExecutionResourceAdmissionDenial::new(kind, detail, counters)
+}
+
+fn capacity_mismatch_detail(
+    subject: &str,
+    strategy: &WorthQueryExecutionStrategyContract,
+    actual: &super::WorthQueryExecutionResourceSupport,
+) -> String {
+    for axis in WorthQuerySemanticScaleAxis::ALL {
+        let supported = actual.envelope().scale_ceiling(axis);
+        let required = strategy.envelope().scale_ceiling(axis);
+        if supported < required {
+            return format!(
+                "{subject} supports {axis:?}={supported}, below the required {required}"
+            );
+        }
+    }
+    for dimension in WorthQueryResourceDimension::ALL {
+        let supported = actual.envelope().resource_ceiling(dimension);
+        let required = strategy.envelope().resource_ceiling(dimension);
+        if supported < required {
+            return format!(
+                "{subject} supports {dimension:?}={supported}, below the required {required}"
+            );
+        }
+    }
+    format!("{subject} capacity changed during resource admission")
 }
 
 fn classify_request_mismatch(
