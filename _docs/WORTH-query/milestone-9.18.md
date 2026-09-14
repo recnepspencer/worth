@@ -5,17 +5,22 @@
 Replace Milestone 9.16's provisional linear current-head undo/redo experiment
 with an accepted tree-based correction product over the composite runtime-world
 history governed by [Milestone 9.17](./milestone-9.17.md) and completed through
-[Milestone 9.17.3](./milestone-9.17.3.md), using the application contract hardened
-by [Milestone 9.17.4](./milestone-9.17.4.md) and its unified semantic authoring
-compiler in [Milestone 9.17.4.1](./milestone-9.17.4.1.md). Undo and redo
-select exact committed occurrences and publish newly admitted composite commits
+[Milestone 9.17.3](./milestone-9.17.3.md), using the application contract established
+by [9.17.4 graph authoring](./milestone-9.17.4.md),
+[9.17.5 branch program evolution](./milestone-9.17.5.md), and
+[9.17.6 dynamic workflows](./milestone-9.17.6.md). Their validated contracts
+preserve scoped rules, exact selected interpretation and admitted workflow custody.
+Undo and redo select exact committed occurrences and publish newly admitted composite commits
 on an exact product branch. They never erase history, move a hidden stack
 cursor, replay old authority, reinterpret a receipt as permission, or assume
 that reversing Relational truth alone restores the selected Signal world.
 Semantic revision adoption cannot discard an already-performed occurrence's
 recovery obligation: the obligation remains exact-occurrence-bound and is
-usable only through current correction or recovery authority, without
-re-exposing the historical application API.
+usable only through current correction or recovery authority. Correction binds the
+exact source program/component meaning and the target branch's admitted program;
+a revision current on another branch is not automatically callable in this target.
+Supported branch revisions may coexist, without reinstating an old API from a receipt
+or invalidating siblings through a global program-generation change.
 
 One correction may advance Relational while retaining the exact Signal basis,
 advance or reconcile Signal while retaining Relational, or coordinate changes
@@ -36,7 +41,9 @@ branch-local MVCC; 9.17.2 supplies the product branch, composite single-parent
 history, and coordinated target-head authority; 9.17.3 supplies complete Query
 carriage and public branch/history authority. Milestone 9.17.4 then supplies
 entry-owned bindings, fresh request execution, installed domain handlers, and
-the retained-history/recovery experience this milestone extends. Correction
+the retained-history/recovery experience this milestone extends. 9.17.5 adds exact
+branch-local program adoption and 9.17.6 adds dynamic definition/instance lifecycle.
+All three close before this milestone; correction does not finish their migrations. Correction
 must use that same application entry, not restore caller-owned phase plumbing
 or the provisional API.
 
