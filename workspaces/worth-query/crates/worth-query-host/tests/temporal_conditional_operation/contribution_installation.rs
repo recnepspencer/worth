@@ -18,7 +18,9 @@ use super::adapters::{
 use super::contract::{self, TemporalReadyNode};
 use super::schema::current_read::TemporalIntentCurrentReadBinding;
 use super::schema::*;
-use super::world::{admit_identity_adapter, product_world_resources, request_scope, seed_graph};
+use super::world::{
+    admit_identity_adapter, request_scope, resources::product_world_resources, seed::seed_graph,
+};
 
 pub struct TemporalContributionConfiguration {
     installation_predicate: Predicate,

@@ -89,6 +89,12 @@ pub(super) fn transaction_staging(
                 message: format!("{denial:?}"),
             };
         }
+        Denial::MaterializationAuthorityRequired => {
+            EffectExecutionDenialKind::TransactionMaterializationAuthorityRequired
+        }
+        Denial::MaterializationModeMismatch => {
+            EffectExecutionDenialKind::TransactionMaterializationModeMismatch
+        }
     };
     RelationalEffectExecutionFailure::Denied {
         kind,

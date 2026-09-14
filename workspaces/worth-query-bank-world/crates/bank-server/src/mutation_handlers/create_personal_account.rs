@@ -139,7 +139,7 @@ fn author_candidate(
                 CreatePersonalAccountMutationBinding,
                 Account,
                 WorthQueryCreateOutput,
-            >::new(CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT),
+            >::from_static(CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT),
             &created,
         )
         .map_err(HandlerExecutionDenial::new)?;

@@ -4,6 +4,7 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
     ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
 };
+use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 use worth_query_declaration::{
     worth_query_application_query, worth_query_application_schema, worth_query_aspect,
     worth_query_entity, worth_query_field,
@@ -35,7 +36,7 @@ worth_query_entity!(pub Record for HostileConsumerSchema);
 worth_query_aspect!(pub RecordFacts for HostileConsumerSchema, Record; identity = AspectIdentity(0x91611041), revision = AspectContractRevision(1),);
 worth_query_field!(
     pub RecordIdentity for HostileConsumerSchema, Record, RecordFacts:
-    u64, read_only, equality
+    u64 => U64ApplicationValueBinding, read_only, equality
 );
 
 struct RecordQueryParameters;

@@ -11,7 +11,7 @@ use worth_query_admission::facade::{
     application_query::{admit_application_query_parameters, WorthQueryApplicationQueryLane},
     graph_read_access::{
         WorthQueryGraphReadAccessRequirementRow, WorthQueryGraphReadOrderingPosture,
-        WorthQueryGraphReadResultPressure,
+        WorthQueryGraphReadResultPressure, WorthQueryGraphReadTraversalOperator,
     },
 };
 use worth_query_admission::integration::derive_graph_read_access_requirements_for_contract;
@@ -22,7 +22,7 @@ use worth_query_installation::facade::{
 use crate::runtime::graph_read_access::explain_graph_read_access_requirements_for_family;
 
 #[test]
-fn real_mature_and_application_graphs_share_requirement_semantics() {
+fn equivalent_graphs_share_semantics_and_retain_their_traversal_mechanisms() {
     let mature = support::mature_family();
     let application = support::installed_application_query();
     let parameters =
@@ -103,9 +103,28 @@ fn real_mature_and_application_graphs_share_requirement_semantics() {
         Some(&WorthQueryGraphReadOrderingPosture::BoundedProjectedCollection)
     );
     assert_eq!(
-        requirement_semantics(mature_requirements.rows()),
-        requirement_semantics(application_requirements.rows())
+        shared_requirement_semantics(mature_requirements.rows()),
+        shared_requirement_semantics(application_requirements.rows())
     );
+    assert_eq!(
+        requirement_row(mature_requirements.rows(), "directional_adjacency").traversal_operator(),
+        Some(&WorthQueryGraphReadTraversalOperator::DeclarationTraversal)
+    );
+    assert_eq!(
+        requirement_row(application_requirements.rows(), "directional_adjacency")
+            .traversal_operator(),
+        Some(&WorthQueryGraphReadTraversalOperator::DirectEdge)
+    );
+    for kind in ["traversal_workset", "visited_set"] {
+        assert!(mature_requirements
+            .rows()
+            .iter()
+            .any(|row| row.kind().as_str() == kind));
+        assert!(application_requirements
+            .rows()
+            .iter()
+            .all(|row| row.kind().as_str() != kind));
+    }
     assert_eq!(
         requirement_row(application_requirements.rows(), "result_buffer").result_pressure(),
         Some(&WorthQueryGraphReadResultPressure::CollectionWide)
@@ -270,6 +289,21 @@ fn requirement_semantics(rows: &[WorthQueryGraphReadAccessRequirementRow]) -> Ve
         .collect::<Vec<_>>();
     rows.sort();
     rows
+}
+
+fn shared_requirement_semantics(rows: &[WorthQueryGraphReadAccessRequirementRow]) -> Vec<String> {
+    requirement_semantics(
+        &rows
+            .iter()
+            .filter(|row| {
+                !matches!(
+                    row.kind().as_str(),
+                    "directional_adjacency" | "traversal_workset" | "visited_set"
+                )
+            })
+            .cloned()
+            .collect::<Vec<_>>(),
+    )
 }
 
 fn requirement_row<'a>(

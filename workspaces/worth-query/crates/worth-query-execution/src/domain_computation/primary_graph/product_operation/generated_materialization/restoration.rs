@@ -94,11 +94,13 @@ where
     where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
-        let gate = match self
-            .product_runtime
-            .activations
-            .gate(completed.suspended.publication.observation().branch_identity())
-        {
+        let gate = match self.product_runtime.activations.gate(
+            completed
+                .suspended
+                .publication
+                .observation()
+                .branch_identity(),
+        ) {
             Ok(gate) => gate,
             Err(_) => {
                 return Err(restoration_failure(
@@ -269,18 +271,20 @@ where
             )),
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 let product = self.unpublished_materialization_from_binding(effects, &publication);
-                Err(WorthQueryGeneratedOutputRestorationFailure::ProductUnpublished(
-                    WorthQueryUnpublishedGeneratedOutputRestoration {
-                        suspended: suspended_from_completion(
-                        publication,
-                        branch,
-                        correspondence,
-                        producer,
-                        completion,
-                        ),
-                        product,
-                    },
-                ))
+                Err(
+                    WorthQueryGeneratedOutputRestorationFailure::ProductUnpublished(
+                        WorthQueryUnpublishedGeneratedOutputRestoration {
+                            suspended: suspended_from_completion(
+                                publication,
+                                branch,
+                                correspondence,
+                                producer,
+                                completion,
+                            ),
+                            product,
+                        },
+                    ),
+                )
             }
         }
     }

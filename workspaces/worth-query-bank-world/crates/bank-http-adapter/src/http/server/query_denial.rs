@@ -227,7 +227,9 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         | Settlement::ForeignSettlement
         | Settlement::RetainedBasisUnavailable
         | Settlement::Closed => stale(),
-        Settlement::WorkBudgetExceeded | Settlement::RetentionBudgetExceeded => exhausted(),
+        Settlement::WorkBudgetExceeded
+        | Settlement::RetentionBudgetExceeded
+        | Settlement::PublicationCapacityExceeded => exhausted(),
         Settlement::MissingApplicableProducer
         | Settlement::AmbiguousApplicableProducer
         | Settlement::ProducerUnavailable

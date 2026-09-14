@@ -17,6 +17,7 @@ use worth_query_decl::facade::{
     worth_query_operation_reads, worth_query_operation_unlinks, worth_query_operation_writes,
     worth_query_relation,
 };
+use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 use worth_query_host::facade::domain::{
     InstalledCorrectionAuthority, WorthQueryInstallationAdmissionProfile,
     WorthQueryInstallationGeneration, WorthQueryInstallationRuntimeIdentity,
@@ -91,10 +92,10 @@ worth_query_application_schema! {
 worth_query_entity!(pub Account for ContractInspectionSchema);
 worth_query_aspect!(pub AccountState for ContractInspectionSchema, Account; identity = AspectIdentity(0x9161_1051), revision = AspectContractRevision(2),);
 worth_query_aspect!(pub AccountAudit for ContractInspectionSchema, Account; identity = AspectIdentity(0x9161_1052), revision = AspectContractRevision(1),);
-worth_query_field!(pub AccountStatus for ContractInspectionSchema, Account, AccountState: u64, read_only, equality);
-worth_query_field!(pub AccountBalance for ContractInspectionSchema, Account, AccountState: u64, read_write, equality);
-worth_query_field!(pub AccountLimit for ContractInspectionSchema, Account, AccountState: u64, read_only, equality);
-worth_query_field!(pub AuditSequence for ContractInspectionSchema, Account, AccountAudit: u64, read_only, equality);
+worth_query_field!(pub AccountStatus for ContractInspectionSchema, Account, AccountState: u64 => U64ApplicationValueBinding, read_only, equality);
+worth_query_field!(pub AccountBalance for ContractInspectionSchema, Account, AccountState: u64 => U64ApplicationValueBinding, read_write, equality);
+worth_query_field!(pub AccountLimit for ContractInspectionSchema, Account, AccountState: u64 => U64ApplicationValueBinding, read_only, equality);
+worth_query_field!(pub AuditSequence for ContractInspectionSchema, Account, AccountAudit: u64 => U64ApplicationValueBinding, read_only, equality);
 worth_query_relation!(pub ObservedAccount in ContractInspectionSchema, Account => Account; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub ChangedAccount in ContractInspectionSchema, Account => Account; integrity = same_context_unbounded_retain_dangling);
 

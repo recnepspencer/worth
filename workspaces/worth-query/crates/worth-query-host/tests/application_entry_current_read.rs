@@ -31,7 +31,9 @@ fn reusable_request_executes_fresh_published_reads_through_installed_principal_b
 
     let before_widening = basis.observe();
     let widening_denial = match request
-        .query(TemporalIntentReadRequest::new("intent-1"))
+        .query(TemporalIntentReadRequest {
+            identity: "intent-1".into(),
+        })
         .limits(
             NonZeroUsize::new(2).unwrap(),
             NonZeroUsize::new(64).unwrap(),
@@ -52,7 +54,9 @@ fn reusable_request_executes_fresh_published_reads_through_installed_principal_b
     );
 
     let first = request
-        .query(TemporalIntentReadRequest::new("intent-1"))
+        .query(TemporalIntentReadRequest {
+            identity: "intent-1".into(),
+        })
         .execute()
         .unwrap();
     assert_eq!(first.rows()[0].input, "payload");
@@ -70,7 +74,9 @@ fn reusable_request_executes_fresh_published_reads_through_installed_principal_b
         .require_committed()
         .expect("the intervening publication must commit");
     let second = request
-        .query(TemporalIntentReadRequest::new("intent-1"))
+        .query(TemporalIntentReadRequest {
+            identity: "intent-1".into(),
+        })
         .execute()
         .unwrap();
     assert_eq!(second.rows()[0].input, "fresh-payload");
@@ -81,7 +87,9 @@ fn reusable_request_executes_fresh_published_reads_through_installed_principal_b
 
     world.revoke_principal_on_default_product();
     let principal_denial = match request
-        .query(TemporalIntentReadRequest::new("intent-1"))
+        .query(TemporalIntentReadRequest {
+            identity: "intent-1".into(),
+        })
         .execute()
     {
         Ok(_) => panic!("revoked installed principal binding must deny the next attempt"),
@@ -118,7 +126,9 @@ fn request_targets_the_selected_product_occurrence() {
         .application
         .request(&external, &scope)
         .on_branch(child)
-        .query(TemporalIntentReadRequest::new("intent-1"))
+        .query(TemporalIntentReadRequest {
+            identity: "intent-1".into(),
+        })
         .execute()
         .expect("the request selects the exact child occurrence");
     assert_eq!(inherited.rows()[0].input, "payload");

@@ -37,17 +37,15 @@ fn current_reader_profile_is_derived_from_every_public_version_constant() {
 
 #[test]
 fn zero_and_future_versions_report_the_exact_protocol_layer_and_posture() {
-    for (observed, posture) in [
-        (
-            0_u16,
-            WorthQueryPackageArchiveCompatibilityPosture::InvalidZero,
-        ),
-        (
-            2_u16,
-            WorthQueryPackageArchiveCompatibilityPosture::ExceedsWindow,
-        ),
-    ] {
+    for zero in [true, false] {
+        let posture = if zero {
+            WorthQueryPackageArchiveCompatibilityPosture::InvalidZero
+        } else {
+            WorthQueryPackageArchiveCompatibilityPosture::ExceedsWindow
+        };
+        let observed = |current: u16| if zero { 0 } else { current + 1 };
         let mut envelope = release_envelope_bytes();
+        let observed = observed(WORTH_QUERY_PACKAGE_RELEASE_ENVELOPE_PROTOCOL_VERSION);
         put_u16(&mut envelope, ENVELOPE_VERSION_OFFSET, observed);
         assert_compatibility(
             decode_package_release_envelope(&envelope, WorthQueryPackageEnvelopeLimits::DEFAULT)
@@ -59,6 +57,11 @@ fn zero_and_future_versions_report_the_exact_protocol_layer_and_posture() {
         );
 
         let mut archive = package_archive_bytes();
+        let observed = if zero {
+            0
+        } else {
+            WORTH_QUERY_PACKAGE_ARCHIVE_PROTOCOL_VERSION + 1
+        };
         put_u16(&mut archive, ARCHIVE_VERSION_OFFSET, observed);
         assert_compatibility(
             decode_package_archive(&archive, WorthQueryPackageArchiveLimits::DEFAULT).unwrap_err(),
@@ -69,6 +72,11 @@ fn zero_and_future_versions_report_the_exact_protocol_layer_and_posture() {
         );
 
         let mut manifest = package_archive_bytes();
+        let observed = if zero {
+            0
+        } else {
+            WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION.get() + 1
+        };
         put_u16(&mut manifest, MANIFEST_VERSION_OFFSET, observed);
         assert_compatibility(
             decode_package_archive(&manifest, WorthQueryPackageArchiveLimits::DEFAULT).unwrap_err(),
@@ -79,6 +87,11 @@ fn zero_and_future_versions_report_the_exact_protocol_layer_and_posture() {
         );
 
         let mut record = package_archive_bytes();
+        let observed = if zero {
+            0
+        } else {
+            WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION + 1
+        };
         put_u16(&mut record, MANIFEST_FRAME_BYTES, observed);
         assert_compatibility(
             decode_package_archive(&record, WorthQueryPackageArchiveLimits::DEFAULT).unwrap_err(),
@@ -93,7 +106,11 @@ fn zero_and_future_versions_report_the_exact_protocol_layer_and_posture() {
 #[test]
 fn unsupported_headers_win_before_hostile_body_claims() {
     let mut envelope = release_envelope_bytes();
-    put_u16(&mut envelope, ENVELOPE_VERSION_OFFSET, 2);
+    put_u16(
+        &mut envelope,
+        ENVELOPE_VERSION_OFFSET,
+        WORTH_QUERY_PACKAGE_RELEASE_ENVELOPE_PROTOCOL_VERSION + 1,
+    );
     put_u64(&mut envelope, ENVELOPE_BODY_LENGTH_OFFSET, u64::MAX);
     assert_layer(
         decode_package_release_envelope(&envelope, WorthQueryPackageEnvelopeLimits::DEFAULT)
@@ -102,7 +119,11 @@ fn unsupported_headers_win_before_hostile_body_claims() {
     );
 
     let mut archive = package_archive_bytes();
-    put_u16(&mut archive, ARCHIVE_VERSION_OFFSET, 2);
+    put_u16(
+        &mut archive,
+        ARCHIVE_VERSION_OFFSET,
+        WORTH_QUERY_PACKAGE_ARCHIVE_PROTOCOL_VERSION + 1,
+    );
     put_u32(&mut archive, MANIFEST_PAYLOAD_LENGTH_OFFSET, u32::MAX);
     assert_layer(
         decode_package_archive(&archive, WorthQueryPackageArchiveLimits::DEFAULT).unwrap_err(),
@@ -110,7 +131,11 @@ fn unsupported_headers_win_before_hostile_body_claims() {
     );
 
     let mut manifest = package_archive_bytes();
-    put_u16(&mut manifest, MANIFEST_VERSION_OFFSET, 2);
+    put_u16(
+        &mut manifest,
+        MANIFEST_VERSION_OFFSET,
+        WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION.get() + 1,
+    );
     put_u32(&mut manifest, MANIFEST_RECORD_COUNT_OFFSET, u32::MAX);
     assert_layer(
         decode_package_archive(&manifest, WorthQueryPackageArchiveLimits::DEFAULT).unwrap_err(),
@@ -118,7 +143,11 @@ fn unsupported_headers_win_before_hostile_body_claims() {
     );
 
     let mut record = package_archive_bytes();
-    put_u16(&mut record, MANIFEST_FRAME_BYTES, 2);
+    put_u16(
+        &mut record,
+        MANIFEST_FRAME_BYTES,
+        WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION + 1,
+    );
     put_u32(&mut record, RECORD_PAYLOAD_LENGTH_OFFSET, u32::MAX);
     assert_layer(
         decode_package_archive(&record, WorthQueryPackageArchiveLimits::DEFAULT).unwrap_err(),
@@ -144,7 +173,27 @@ fn assert_compatibility(
     assert_eq!(compatibility.layer(), expected_layer);
     assert_eq!(compatibility.observed_version(), expected_version);
     assert_eq!(compatibility.posture(), expected_posture);
-    assert_exact_window(compatibility.supported_window(), 1);
+    assert_exact_window(
+        compatibility.supported_window(),
+        supported_version(expected_layer),
+    );
+}
+
+fn supported_version(layer: WorthQueryPackageArchiveProtocolLayer) -> u16 {
+    match layer {
+        WorthQueryPackageArchiveProtocolLayer::ReleaseEnvelope => {
+            WORTH_QUERY_PACKAGE_RELEASE_ENVELOPE_PROTOCOL_VERSION
+        }
+        WorthQueryPackageArchiveProtocolLayer::Archive => {
+            WORTH_QUERY_PACKAGE_ARCHIVE_PROTOCOL_VERSION
+        }
+        WorthQueryPackageArchiveProtocolLayer::Manifest => {
+            WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION.get()
+        }
+        WorthQueryPackageArchiveProtocolLayer::RecordFrame => {
+            WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION
+        }
+    }
 }
 
 fn assert_layer(

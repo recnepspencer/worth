@@ -54,13 +54,23 @@ impl WorthServerQueryWorkspaceProvider for StreamingDatasetWorkspaceProvider {
             .request_context()
             .workspace_target()
             .workspace_id();
+        let (product_source, product_bridge) =
+            worth_query::facade::consumer_kit::in_memory_test_product_world_installation()
+                .map_err(|error| {
+                    WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
+                })?;
         let mut workspace = WorthQueryRuntime::builder(
             worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
         )
         .backend(StreamingDatasetRuntimeBackend::new(
             self.row_count,
             self.payload_width,
+            product_source,
         ))
+        .installed_product_bridge(
+            product_bridge,
+            worth_query::facade::runtime::WorthQueryConditionalExecutionResources::development(),
+        )
         .build()
         .map_err(|error| {
             WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
@@ -74,17 +84,23 @@ impl WorthServerQueryWorkspaceProvider for StreamingDatasetWorkspaceProvider {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 struct StreamingDatasetRuntimeBackend {
     row_count: usize,
     payload_width: usize,
+    product_source: worth_query::facade::runtime::WorthQueryRelationalSourceOwner,
 }
 
 impl StreamingDatasetRuntimeBackend {
-    fn new(row_count: usize, payload_width: usize) -> Self {
+    fn new(
+        row_count: usize,
+        payload_width: usize,
+        product_source: worth_query::facade::runtime::WorthQueryRelationalSourceOwner,
+    ) -> Self {
         Self {
             row_count,
             payload_width,
+            product_source,
         }
     }
 }
@@ -97,6 +113,20 @@ impl worth_query::facade::runtime::WorthQuerySettlementRecoveryBackend
 impl worth_query::facade::runtime::WorthQueryMergeSnapshotOwner for StreamingDatasetRuntimeBackend {}
 
 impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
+    fn prepare_product_source(
+        &self,
+    ) -> Result<
+        worth_query::facade::runtime::WorthQueryProductRelationalInstallation,
+        worth_query::facade::runtime::WorthQueryProductSourceDenial,
+    > {
+        let branch = self
+            .product_source
+            .with_runtime(|runtime| runtime.main_branch_identity());
+        self.product_source
+            .prepare_product_source(&branch)
+            .map_err(worth_query::facade::runtime::WorthQueryProductSourceDenial::Basis)
+    }
+
     fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {
         WorthQueryRuntimeSupportProfile::scaffold_backend_profile()
     }

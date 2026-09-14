@@ -11,16 +11,16 @@ use worth_query_package_archive::facade::*;
 
 const MANIFEST_FRAME_BYTES: usize = 118;
 const RECORD_FRAME_HEADER_BYTES: usize = 12;
-const VERSION_ONE_MINIMAL_ARCHIVE_HEX: &str = include_str!("archive_stream/archive_v1.hex");
+const VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str = include_str!("archive_stream/archive_v2.hex");
 
 #[test]
-fn version_one_minimal_archive_is_deterministic_and_frozen() {
+fn version_two_minimal_archive_is_deterministic_and_frozen() {
     let export = fixture::minimal_package().export_typed_records().unwrap();
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
     let first = encode_package_archive(&export, limits).unwrap();
     assert_eq!(encode_package_archive(&export, limits).unwrap(), first);
-    assert_eq!(encode_hex(&first), VERSION_ONE_MINIMAL_ARCHIVE_HEX.trim());
-    let frozen = decode_hex(VERSION_ONE_MINIMAL_ARCHIVE_HEX.trim());
+    assert_eq!(encode_hex(&first), VERSION_TWO_MINIMAL_ARCHIVE_HEX.trim());
+    let frozen = decode_hex(VERSION_TWO_MINIMAL_ARCHIVE_HEX.trim());
     let decoded = decode_package_archive(&frozen, limits).unwrap();
     assert_eq!(decoded.manifest(), export.manifest());
     assert_eq!(decoded.frames().len(), 1);
@@ -157,14 +157,15 @@ fn aggregate_versions_truncation_trailing_and_semantic_tamper_fail_closed() {
     trailing.push(0);
     assert_decode_kind(&trailing, WorthQueryPackageArchiveDenialKind::TrailingBytes);
     let mut archive_version = bytes.clone();
-    archive_version[8..10].copy_from_slice(&2_u16.to_be_bytes());
+    archive_version[8..10]
+        .copy_from_slice(&(WORTH_QUERY_PACKAGE_ARCHIVE_PROTOCOL_VERSION + 1).to_be_bytes());
     assert_decode_kind(
         &archive_version,
         WorthQueryPackageArchiveDenialKind::UnsupportedArchiveVersion,
     );
     let mut record_version = bytes.clone();
     record_version[MANIFEST_FRAME_BYTES..MANIFEST_FRAME_BYTES + 2]
-        .copy_from_slice(&2_u16.to_be_bytes());
+        .copy_from_slice(&(WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION - 1).to_be_bytes());
     assert_decode_kind(
         &record_version,
         WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion,

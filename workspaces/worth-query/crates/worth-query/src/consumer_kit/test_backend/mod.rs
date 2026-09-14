@@ -22,6 +22,7 @@ pub use equivalence_report::{
 };
 pub use error::{WorthQueryTestBackendError, WorthQueryTestBackendErrorKind};
 pub use installation_generation::advance_test_workspace_domain_installation_generation;
+pub use product_bridge::in_memory_test_product_world_installation;
 pub use product_world_resources::in_memory_test_product_world_resources;
 pub use schema::WorthQueryTestBackendSchema;
 pub use seed::{WorthQueryTestSeedReceipt, WorthQueryTestSeedRow};

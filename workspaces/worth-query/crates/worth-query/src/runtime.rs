@@ -82,8 +82,8 @@ pub use worth_query_execution::facade::integration::{
     RuntimeWorldBudgets, RuntimeWorldCustodyBudgetInstallation,
     RuntimeWorldHistoryBudgetInstallation, RuntimeWorldObservationBudgetInstallation,
     RuntimeWorldPublicationBudgetInstallation, RuntimeWorldRecoveryBudgetInstallation,
-    RuntimeWorldRetentionBudgetInstallation, WorthQueryProductWorldClock,
-    WorthQueryProductWorldResources,
+    RuntimeWorldRetentionBudgetInstallation, WorthQueryProductRelationalInstallation,
+    WorthQueryProductWorldClock, WorthQueryProductWorldResources, WorthQueryRelationalSourceOwner,
 };
 mod facade_contract;
 mod installed_live_routing;
