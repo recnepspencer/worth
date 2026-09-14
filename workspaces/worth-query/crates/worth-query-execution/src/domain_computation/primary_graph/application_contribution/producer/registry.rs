@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationOutputContract,
+    ApplicationMutationOutputRoleFamilyDescriptor,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_installation::facade::ApplicationSchema;
@@ -33,6 +34,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
         String,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_roles:
         Vec<String>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) output_role_families:
+        Vec<ApplicationMutationOutputRoleFamilyDescriptor>,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_role: String,
     pub(in crate::domain_computation::primary_graph::application_contribution) operation: String,
     pub(in crate::domain_computation::primary_graph::application_contribution) provider_identity:
@@ -76,6 +79,9 @@ impl DeclaredProducerBinding {
                 .iter()
                 .map(|role| role.name().to_owned())
                 .collect(),
+            output_role_families:
+                <Binding::Operation as ApplicationMutationBinding<Schema>>::Output::ROLE_FAMILIES
+                    .to_vec(),
             output_role: Binding::OUTPUT_ROLE.to_owned(),
             operation: Binding::Operation::IDENTITY.to_owned(),
             provider_identity: Binding::Provider::SEMANTIC_IDENTITY.to_owned(),
@@ -112,6 +118,7 @@ impl DeclaredProducerBinding {
             && self.source_selector == expected.source_selector
             && self.output_family == expected.output_family
             && self.output_roles == expected.output_roles
+            && self.output_role_families == expected.output_role_families
             && self.output_role == expected.output_role
             && self.operation == expected.operation
             && self.provider_identity == expected.provider_identity

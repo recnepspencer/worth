@@ -96,12 +96,12 @@ pub(super) fn decode(
     let output_role_families = decode_sequence(input, budget, 10, |input, _| {
         let prefix = input.text()?.to_owned();
         let entity = input.text()?.to_owned();
-        let posture_bits = u8::try_from(input.u16()?)
-            .map_err(|_| Denial::new(Kind::UnsupportedRecordVariant))?;
+        let posture_bits =
+            u8::try_from(input.u16()?).map_err(|_| Denial::new(Kind::UnsupportedRecordVariant))?;
         let postures = ApplicationMutationOutputPostureSet::from_bits(posture_bits)
             .ok_or_else(|| Denial::new(Kind::UnsupportedRecordVariant))?;
-        let minimum = usize::try_from(input.u64()?)
-            .map_err(|_| Denial::new(Kind::NumericWidthExceeded))?;
+        let minimum =
+            usize::try_from(input.u64()?).map_err(|_| Denial::new(Kind::NumericWidthExceeded))?;
         Ok(ApplicationMutationOutputRoleFamilyDescription {
             prefix,
             entity,
