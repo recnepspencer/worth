@@ -18,7 +18,11 @@ use super::{
 };
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 
-#[cfg(any(test, feature = "test-primary-graph-faults"))]
+#[cfg(any(
+    test,
+    feature = "test-primary-graph-faults",
+    feature = "test-durability-faults"
+))]
 mod certification_controls;
 mod certification_cost;
 mod external_dispatch_attempt;

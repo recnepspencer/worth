@@ -74,6 +74,13 @@ impl RuntimeWorldClockSource for FixedClock {
 }
 
 fn bootstrap_budgets() -> RuntimeWorldBudgets {
+    bootstrap_budgets_with_retention(6, 4)
+}
+
+fn bootstrap_budgets_with_retention(
+    unique_exact_component_pins: u64,
+    in_flight_pin_acquisition_reservations: u64,
+) -> RuntimeWorldBudgets {
     RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
         branches: RuntimeWorldBranchBudgetInstallation {
             live_product_branches: 1,
@@ -98,8 +105,8 @@ fn bootstrap_budgets() -> RuntimeWorldBudgets {
         retention: RuntimeWorldRetentionBudgetInstallation {
             // Two bootstrap pins plus two pessimistic pin reservations for
             // each of the two concurrently admitted publication attempts.
-            unique_exact_component_pins: 6,
-            in_flight_pin_acquisition_reservations: 4,
+            unique_exact_component_pins,
+            in_flight_pin_acquisition_reservations,
         },
         custody: RuntimeWorldCustodyBudgetInstallation {
             owner_created_component_custody_records: 1,

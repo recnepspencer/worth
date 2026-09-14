@@ -9,6 +9,7 @@ publish = false
 [features]
 test-output-delivery-faults = ["worth-query-execution/test-primary-graph-faults"]
 test-world-operation-control = ["worth-query-execution/test-world-operation-control"]
+test-durability-faults = ["worth-query-execution/test-durability-faults"]
 
 [dependencies]
 worth-query-admission = { path = "../worth-query-admission" }

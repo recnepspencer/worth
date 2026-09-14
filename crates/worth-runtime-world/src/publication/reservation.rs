@@ -162,6 +162,12 @@ impl ReservedCompositePublicationAttempt {
         self.plan.take_relational_candidate()
     }
 
+    pub(crate) fn take_settled_relational_adoption(
+        &mut self,
+    ) -> Option<super::SettledRelationalPublicationAdoption> {
+        self.plan.take_settled_relational_adoption()
+    }
+
     /// Consume a still-pre-effect reservation into the only no-effect
     /// cancellation terminal. Dropping the attempt releases every capacity.
     pub fn cancel(self) -> NoEffectCompositePublication {

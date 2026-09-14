@@ -366,6 +366,8 @@ pub enum WorthQueryWorkspaceErrorKind {
         required_loci: usize,
     },
     SavepointIdentityExhausted,
+    MaterializationAuthorityRequired,
+    MaterializationModeMismatch,
     CandidateCapacityExhausted {
         maximum_candidates: usize,
     },

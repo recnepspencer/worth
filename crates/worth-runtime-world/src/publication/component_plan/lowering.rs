@@ -27,6 +27,7 @@ use crate::publication::{
 pub(crate) fn lower_component_plans(
     expected: ResolvedExpectedProductHead,
     prepared_candidate: Option<PreparedRelationalCommitCandidate>,
+    settled_adoption: Option<crate::publication::SettledRelationalPublicationAdoption>,
 ) -> Result<LoweredOwnerComponentPlan, NoEffectCompositePublication> {
     let intent = expected.intent().clone();
     let expected_head = expected.expected().clone();
@@ -35,6 +36,7 @@ pub(crate) fn lower_component_plans(
         basis.relational_basis().clone(),
         intent.changes_relational(),
         prepared_candidate,
+        settled_adoption,
         &expected_head,
     )?;
     let signal = lower_signal_plan(basis.signal_basis().clone(), intent.changes_signal());
@@ -45,26 +47,34 @@ fn lower_relational_plan(
     expected: AdmittedRelationalBranchBasis,
     changes: bool,
     prepared_candidate: Option<PreparedRelationalCommitCandidate>,
+    settled_adoption: Option<crate::publication::SettledRelationalPublicationAdoption>,
     expected_head: &ProductBranchObservation,
 ) -> Result<RelationalComponentPlan, NoEffectCompositePublication> {
     if !changes {
-        return match prepared_candidate {
-            None => Ok(RelationalComponentPlan::retain_exact(expected)),
-            Some(candidate) => {
+        return match (prepared_candidate, settled_adoption) {
+            (None, None) => Ok(RelationalComponentPlan::retain_exact(expected)),
+            (candidate, adoption) => {
                 drop(candidate);
+                drop(adoption);
                 Err(lowering_denied(expected_head))
             }
         };
     }
-    match prepared_candidate {
-        Some(candidate) if candidate.branch() == expected.identity().branch_id() => Ok(
+    match (prepared_candidate, settled_adoption) {
+        (Some(candidate), None) if candidate.branch() == expected.identity().branch_id() => Ok(
             RelationalComponentPlan::publish_prepared(expected, candidate),
         ),
-        Some(candidate) => {
+        (None, Some(adoption))
+            if adoption.successor_basis().identity().branch_id()
+                == expected.identity().branch_id() =>
+        {
+            Ok(RelationalComponentPlan::adopt_settled(expected, adoption))
+        }
+        (candidate, adoption) => {
             drop(candidate);
+            drop(adoption);
             Err(lowering_denied(expected_head))
         }
-        None => Err(lowering_denied(expected_head)),
     }
 }
 

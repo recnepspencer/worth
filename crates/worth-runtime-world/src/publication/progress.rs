@@ -125,6 +125,23 @@ impl RelationalAttemptProgress {
         }
     }
 
+    pub(crate) fn settled_arc(
+        commit_identity: RelationalCommitIdentity,
+        successor_basis: AdmittedRelationalBranchBasis,
+        result: std::sync::Arc<CommitResult>,
+    ) -> Self {
+        Self {
+            posture: RelationalAttemptProgressPosture::Settled,
+            evidence: Some(RelationalProgressEvidence::Settled {
+                commit_identity,
+                successor_basis,
+                result,
+            }),
+            fork: None,
+            fork_successor_basis: None,
+        }
+    }
+
     pub const fn posture(&self) -> RelationalAttemptProgressPosture {
         self.posture
     }

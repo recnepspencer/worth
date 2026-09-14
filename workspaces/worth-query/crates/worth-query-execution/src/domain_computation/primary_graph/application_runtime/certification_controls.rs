@@ -53,8 +53,9 @@ where
         })
     }
 
-    #[cfg(test)]
-    pub(crate) fn fail_next_durable_append_for_test(&self) {
+    #[doc(hidden)]
+    #[cfg(any(test, feature = "test-durability-faults"))]
+    pub fn fail_next_durable_append_for_test(&self) {
         self.primary_provider
             .graph
             .with_runtime_mut(|runtime| runtime.fail_next_durable_append_for_test());

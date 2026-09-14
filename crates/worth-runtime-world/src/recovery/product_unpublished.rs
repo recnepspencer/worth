@@ -89,6 +89,33 @@ impl std::fmt::Debug for ProductUnpublishedOwnerEffects {
 }
 
 impl ProductUnpublishedOwnerEffects {
+    pub(crate) fn settled_relational_adoption(
+        &self,
+    ) -> Option<crate::publication::SettledRelationalPublicationAdoption> {
+        if self.record.progress.relational_requires_settlement()
+            || self.record.component_results.signal_posture()
+                != crate::history::CompositeComponentChangePosture::RetainExact
+        {
+            return None;
+        }
+        let successor = self.record.successor_basis.as_ref()?;
+        let (commit_identity, relational_basis, result) =
+            self.record.component_results.settled_relational_parts()?;
+        if relational_basis.admission_identity()
+            != successor.relational_basis().admission_identity()
+            || result.outcome().commit.commit_id != commit_identity.commit_id()
+        {
+            return None;
+        }
+        Some(
+            crate::publication::SettledRelationalPublicationAdoption::new(
+                commit_identity,
+                relational_basis,
+                result,
+            ),
+        )
+    }
+
     /// Reservation charge for the larger record representation plus its bounded
     /// conditional-definition custody. Every attempt reserves that maximum before
     /// execution, so installing definition custody cannot exceed the admitted slot.

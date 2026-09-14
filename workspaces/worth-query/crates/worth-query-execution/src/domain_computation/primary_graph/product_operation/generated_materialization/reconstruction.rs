@@ -30,6 +30,12 @@ pub struct WorthQueryGeneratedEntity<Schema, Entity> {
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
+pub struct WorthQueryRetainedGeneratedOutputEntity<Schema, Entity> {
+    identity: EntityId,
+    session: Arc<()>,
+    _marker: PhantomData<fn() -> (Schema, Entity)>,
+}
+
 impl<Schema, Entity> Clone for WorthQueryGeneratedEntity<Schema, Entity> {
     fn clone(&self) -> Self {
         Self {
@@ -74,6 +80,9 @@ pub enum WorthQueryGeneratedOutputReconstructionDenial {
     EntityKindMismatch,
     DuplicateEntityClaim,
     ForeignEntityHandle,
+    RetainedEntityKindMismatch,
+    RetainedEntityGenerated,
+    ForeignRetainedEntityHandle,
     UnknownField,
     DuplicateField,
     InvalidFieldValue,
@@ -158,6 +167,10 @@ where
     Schema: ApplicationSchema,
     Producer: WorthQueryApplicationProducerBinding<Schema>,
 {
+    pub fn abort(self) -> WorthQuerySuspendedGeneratedOutput {
+        self.suspended
+    }
+
     fn new(
         layout: &'runtime WorthQueryPrimaryGraphLayout,
         suspended: WorthQuerySuspendedGeneratedOutput,
@@ -265,9 +278,10 @@ where
             .entities
             .get_mut(&entity.identity)
             .ok_or(WorthQueryGeneratedOutputReconstructionDenial::MissingEntity)?;
-        if reconstructed.fields.insert(locator, encoded).is_some() {
+        if reconstructed.fields.contains_key(&locator) {
             return Err(WorthQueryGeneratedOutputReconstructionDenial::DuplicateField);
         }
+        reconstructed.fields.insert(locator, encoded);
         Ok(())
     }
 
@@ -277,6 +291,16 @@ where
     ) -> Result<(), WorthQueryGeneratedOutputReconstructionDenial> {
         if !Arc::ptr_eq(&self.session, &entity.session) {
             return Err(WorthQueryGeneratedOutputReconstructionDenial::ForeignEntityHandle);
+        }
+        Ok(())
+    }
+
+    fn validate_retained_handle<Entity>(
+        &self,
+        entity: &WorthQueryRetainedGeneratedOutputEntity<Schema, Entity>,
+    ) -> Result<(), WorthQueryGeneratedOutputReconstructionDenial> {
+        if !Arc::ptr_eq(&self.session, &entity.session) {
+            return Err(WorthQueryGeneratedOutputReconstructionDenial::ForeignRetainedEntityHandle);
         }
         Ok(())
     }

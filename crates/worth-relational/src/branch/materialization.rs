@@ -133,6 +133,7 @@ impl RelationalMaterializationSuspensionCompletion {
 pub struct PreparedRelationalRematerialization {
     pub(crate) candidate: crate::mvcc::PreparedRelationalCommitCandidate,
     pub(crate) completion: RelationalRematerializationCompletion,
+    pub(crate) invariant_evidence: crate::mvcc::RelationalMutationInvariantEvidence,
 }
 
 impl PreparedRelationalRematerialization {
@@ -141,8 +142,9 @@ impl PreparedRelationalRematerialization {
     ) -> (
         crate::mvcc::PreparedRelationalCommitCandidate,
         RelationalRematerializationCompletion,
+        crate::mvcc::RelationalMutationInvariantEvidence,
     ) {
-        (self.candidate, self.completion)
+        (self.candidate, self.completion, self.invariant_evidence)
     }
 }
 

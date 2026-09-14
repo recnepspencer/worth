@@ -89,6 +89,12 @@ pub(super) fn transaction_staging(
                 message: format!("{denial:?}"),
             };
         }
+        Denial::MaterializationAuthorityRequired => {
+            EffectExecutionDenialKind::MaterializationAuthorityRequired
+        }
+        Denial::MaterializationModeMismatch => {
+            EffectExecutionDenialKind::MaterializationModeMismatch
+        }
     };
     RelationalEffectExecutionFailure::Denied {
         kind,
@@ -239,6 +245,26 @@ mod tests {
             transaction_admission(RelationalBranchTransactionAdmissionDenial::Cancelled),
             RelationalEffectExecutionFailure::ControlStopped {
                 kind: crate::effect_lifecycle::EffectExecutionControlStopKind::Cancelled,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn materialization_staging_denials_preserve_authority_meaning() {
+        assert!(matches!(
+            transaction_staging(
+                RelationalTransactionStagingDenial::MaterializationAuthorityRequired
+            ),
+            RelationalEffectExecutionFailure::Denied {
+                kind: EffectExecutionDenialKind::MaterializationAuthorityRequired,
+                ..
+            }
+        ));
+        assert!(matches!(
+            transaction_staging(RelationalTransactionStagingDenial::MaterializationModeMismatch),
+            RelationalEffectExecutionFailure::Denied {
+                kind: EffectExecutionDenialKind::MaterializationModeMismatch,
                 ..
             }
         ));

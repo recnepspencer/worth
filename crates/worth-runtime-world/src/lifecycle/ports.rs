@@ -242,6 +242,16 @@ pub(crate) trait RuntimeWorldProductPublicationService {
 pub(crate) trait RuntimeWorldRecoveryService:
     super::availability::RuntimeWorldAvailability
 {
+    fn prepare_settled_relational_adoption(
+        &self,
+        effects: &ProductUnpublishedOwnerEffects,
+        cancellation: &crate::publication::RuntimeWorldCancellationToken,
+        deadline: Option<RuntimeWorldInstant>,
+    ) -> Result<
+        crate::publication::PreparedCompositePublicationWithoutSignal,
+        crate::recovery::RuntimeWorldSettledRelationalAdoptionDenial,
+    >;
+
     fn inspect_effects(
         &self,
         handle: &crate::recovery::ProductUnpublishedRecoveryHandle,

@@ -39,7 +39,7 @@ impl WorthQueryOutputDemandSettlement {
             .ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                    "authoritative output occurrence is no longer the current World head",
+                    "authoritative output is not current in the selected product occurrence",
                 )
             })?;
         Ok(Arc::new(Self {
@@ -132,19 +132,19 @@ where
         == committed.product_incarnation()
         && observation.reference_generation() == committed.product_generation()
         && observation.selected_commit() == committed.composite_commit();
-    let exact_restoration_is_current = runtime
+    let retained_output_is_current = runtime
         .primary_provider
         .graph
         .output_lineage
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .current_restoration_matches_receipt(
+        .current_output_matches_receipt(
             runtime.runtime.authority_identity().as_u64(),
             &runtime.installed_schema.binding_identity(),
             observation,
             receipt,
         );
-    (original_publication_is_current || exact_restoration_is_current)
+    (original_publication_is_current || retained_output_is_current)
         .then(|| selected.product().read_lease())
 }
 

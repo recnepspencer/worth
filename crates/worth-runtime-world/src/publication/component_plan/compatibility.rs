@@ -38,6 +38,15 @@ fn relational_plan_is_compatible(plan: &RelationalComponentPlan, changes: bool) 
                 && plan.prepared_candidate().is_some_and(|candidate| {
                     candidate.branch() == plan.expected().identity().branch_id()
                 })
+                && plan.settled_adoption().is_none()
+        }
+        RelationalComponentPlanPosture::AdoptSettled => {
+            changes
+                && plan.prepared_candidate().is_none()
+                && plan.settled_adoption().is_some_and(|adoption| {
+                    adoption.successor_basis().identity().branch_id()
+                        == plan.expected().identity().branch_id()
+                })
         }
     }
 }

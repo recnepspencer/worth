@@ -28,10 +28,37 @@ pub(super) fn setup() -> (
     Arc<TestOwner>,
     ProductBranchObservation,
 ) {
-    let mut fixture = reference_test_fixture::real_fixture(8, 8);
+    setup_with_budgets(8, 8, super::bootstrap_budgets())
+}
+
+pub(super) fn setup_with_retention_capacity(
+    unique_pin_limit: u64,
+    reservation_limit: u64,
+) -> (
+    RealReferenceFixture,
+    Arc<TestOwner>,
+    ProductBranchObservation,
+) {
+    setup_with_budgets(
+        unique_pin_limit,
+        reservation_limit,
+        super::bootstrap_budgets_with_retention(unique_pin_limit, reservation_limit),
+    )
+}
+
+fn setup_with_budgets(
+    unique_pin_limit: u64,
+    reservation_limit: u64,
+    budgets: crate::budget::RuntimeWorldBudgets,
+) -> (
+    RealReferenceFixture,
+    Arc<TestOwner>,
+    ProductBranchObservation,
+) {
+    let mut fixture = reference_test_fixture::real_fixture(unique_pin_limit, reservation_limit);
     let owner = Arc::new(
         TestOwner::new(fixture.owner_inputs(
-            super::bootstrap_budgets(),
+            budgets,
             crate::lifecycle::RuntimeWorldClock::from_source(super::FixedClock),
         ))
         .expect("managed owner construction"),

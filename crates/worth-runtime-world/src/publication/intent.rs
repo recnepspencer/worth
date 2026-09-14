@@ -4,6 +4,8 @@ use worth_relational::facade::mvcc::{
     PreparedRelationalCommitCandidate, RelationalTransactionIntent,
 };
 
+use super::SettledRelationalPublicationAdoption;
+
 #[path = "intent/prepared.rs"]
 mod prepared;
 
@@ -59,6 +61,7 @@ impl CompositeComponentIntent {
 pub struct CompositePublicationIntent<S> {
     change: CompositeComponentIntent,
     prepared_relational_candidate: Option<PreparedRelationalCommitCandidate>,
+    settled_relational_adoption: Option<SettledRelationalPublicationAdoption>,
     successor_observation_requested: bool,
     _stage: PhantomData<S>,
 }
@@ -71,6 +74,7 @@ impl CompositePublicationIntent<WithoutSignal> {
         Self {
             change: CompositeComponentIntent::RelationalOnly(change),
             prepared_relational_candidate: None,
+            settled_relational_adoption: None,
             successor_observation_requested: false,
             _stage: PhantomData,
         }
@@ -88,6 +92,7 @@ impl CompositePublicationIntent<WithSignal> {
         Self {
             change,
             prepared_relational_candidate: None,
+            settled_relational_adoption: None,
             successor_observation_requested: false,
             _stage: PhantomData,
         }
@@ -114,6 +119,14 @@ impl<S> CompositePublicationIntent<S> {
         self
     }
 
+    pub(crate) fn with_settled_relational_adoption(
+        mut self,
+        adoption: SettledRelationalPublicationAdoption,
+    ) -> Self {
+        self.settled_relational_adoption = Some(adoption);
+        self
+    }
+
     pub fn component_intent(&self) -> &CompositeComponentIntent {
         &self.change
     }
@@ -123,11 +136,13 @@ impl<S> CompositePublicationIntent<S> {
     ) -> (
         CompositeComponentIntent,
         Option<PreparedRelationalCommitCandidate>,
+        Option<SettledRelationalPublicationAdoption>,
         bool,
     ) {
         (
             self.change,
             self.prepared_relational_candidate,
+            self.settled_relational_adoption,
             self.successor_observation_requested,
         )
     }

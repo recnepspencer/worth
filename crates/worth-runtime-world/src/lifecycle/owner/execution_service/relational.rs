@@ -35,6 +35,10 @@ where
                 attempt.counters_mut().record_relational_owner_contact();
                 self.publish_relational_candidate(attempt, candidate)
             }
+            crate::publication::RelationalComponentPlanPosture::AdoptSettled => attempt
+                .take_settled_relational_adoption()
+                .map(|adoption| adoption.into_progress())
+                .ok_or_else(|| pre_effect_failure(NoEffectCause::PreEffectFailure)),
         }
     }
 
