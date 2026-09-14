@@ -22,8 +22,8 @@ use crate::domain_computation::primary_graph::{
     HandlerResult, MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
-    WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationNoEffectCause, WorthQueryObservedSource,
+    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
 };
 
 use super::demand::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
@@ -362,6 +362,14 @@ where
             WorthQueryOutputDemandDenialKind::TimedOut,
             Binding::IDENTITY,
         )),
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect)
+            if no_effect.cause() == WorthQueryApplicationNoEffectCause::CapacityExhausted =>
+        {
+            Err(denial(
+                WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded,
+                Binding::IDENTITY,
+            ))
+        }
         outcome => Err(failed(Binding::IDENTITY, outcome)),
     }
 }
