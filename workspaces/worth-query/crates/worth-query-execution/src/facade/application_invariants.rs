@@ -12,5 +12,5 @@ pub use crate::domain_computation::primary_graph::application_invariant::{
 pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationInvariantFactories, WorthQueryApplicationInvariantSchemaResolver,
 };
-pub use worth_foundational::facade::{AspectFieldLocator, AspectValue};
-pub use worth_relational::facade::identity::{EntityId, KindId, RelationId};
+pub use worth_foundational::facade::AspectValue;
+pub use worth_relational::facade::identity::{EntityId, RelationId};

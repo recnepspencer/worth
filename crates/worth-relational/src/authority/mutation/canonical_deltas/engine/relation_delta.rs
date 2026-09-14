@@ -18,6 +18,7 @@ pub(super) fn evaluate_relation_lifecycle_delta(
     source: EntityId,
     target: EntityId,
     authoritative_patch: Option<&worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+    structural_change: RecordStructuralChange,
 ) -> Result<CanonicalRecordAspectDelta, CanonicalDeltaError> {
     match authoritative_patch {
         Some(authoritative_patch) => {
@@ -28,7 +29,7 @@ pub(super) fn evaluate_relation_lifecycle_delta(
                 RecordRef::Relation(relation_id),
                 kind_id,
                 plan,
-                RecordStructuralChange::Created,
+                structural_change,
                 authoritative_patch,
             ))
         }
@@ -46,7 +47,7 @@ pub(super) fn evaluate_relation_lifecycle_delta(
                 target: Some(target),
                 authoritative_state: None,
             },
-            RecordStructuralChange::Created,
+            structural_change,
         ),
     }
 }

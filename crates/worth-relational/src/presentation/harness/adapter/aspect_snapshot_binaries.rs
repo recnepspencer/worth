@@ -140,6 +140,7 @@ impl AspectSnapshotBinaryEncoder {
             RecordLifecycleState::PinnedByReplayRetention => 6,
             RecordLifecycleState::Reclaimable => 7,
             RecordLifecycleState::Reusable => 8,
+            RecordLifecycleState::MaterializationUnavailable => 9,
         });
     }
 

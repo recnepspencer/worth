@@ -24,6 +24,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     >,
     operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
+    observed_source_facts: std::sync::Arc<
+        [crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact],
+    >,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCommitSeal {
@@ -57,6 +60,7 @@ pub(super) fn seal(
         committed_dispatch_outbox,
         output_correspondence: std::sync::Arc::new(output_correspondence),
         operation_scope: committed.attempt().affinity().operation_scope().clone(),
+        observed_source_facts: committed.attempt().observed_source_facts().into(),
         committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
     }
 }
@@ -136,5 +140,13 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         &self,
     ) -> &crate::domain_computation::authorization::WorthQueryOperationScopeBinding {
         &self.operation_scope
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retain_observed_source_facts(
+        &self,
+    ) -> std::sync::Arc<
+        [crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact],
+    >{
+        std::sync::Arc::clone(&self.observed_source_facts)
     }
 }

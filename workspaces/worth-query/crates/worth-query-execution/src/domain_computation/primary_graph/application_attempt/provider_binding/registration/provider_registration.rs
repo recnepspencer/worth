@@ -66,6 +66,16 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.decision_facts.facts()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn observed_source_facts(
+        &self,
+    ) -> Vec<super::super::super::WorthQueryApplicationObservedFact> {
+        self.decision_facts
+            .facts()
+            .values()
+            .filter_map(|fact| fact.observed_source_fact().cloned())
+            .collect()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn expected_steps(
         &self,
     ) -> Vec<crate::domain_computation::WorthQueryProvisionalEffectStep> {

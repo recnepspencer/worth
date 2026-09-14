@@ -32,6 +32,28 @@ pub(super) fn validate_identifiers(
             return Err(Denial::InvalidApplicationMutationDescription);
         }
     }
+    let mut prefixes = Vec::new();
+    for family in description.output_role_families() {
+        if !family.prefix.ends_with('.')
+            || family.postures.is_empty()
+            || super::identifier_validation::validate_portable_type_identifier(&format!(
+                "{}member",
+                family.prefix
+            ))
+            .is_err()
+        {
+            return Err(Denial::InvalidApplicationMutationDescription);
+        }
+        super::identifier_validation::validate_simple_identifier(&family.entity)?;
+        if names.iter().any(|name| name.starts_with(&family.prefix))
+            || prefixes.iter().any(|existing: &&String| {
+                existing.starts_with(&family.prefix) || family.prefix.starts_with(*existing)
+            })
+        {
+            return Err(Denial::InvalidApplicationMutationDescription);
+        }
+        prefixes.push(&family.prefix);
+    }
     Ok(())
 }
 
@@ -49,9 +71,19 @@ pub(super) fn validate_dependencies(members: &[ApplicationSchemaMember]) -> Resu
             ApplicationSchemaMember::Field { entity, aspect, field, equality_queryable: true, .. }
                 if entity == &scope.entity && aspect == &scope.aspect && field == &scope.field)
         });
-        let outputs_exist = description.output_roles().iter().all(|role| {
+        let outputs_exist = description
+            .output_roles()
+            .iter()
+            .map(|role| &role.entity)
+            .chain(
+                description
+                    .output_role_families()
+                    .iter()
+                    .map(|family| &family.entity),
+            )
+            .all(|entity| {
             members.iter().any(|member|
-            matches!(member, ApplicationSchemaMember::Entity { entity } if entity == &role.entity))
+            matches!(member, ApplicationSchemaMember::Entity { entity: installed } if installed == entity))
         });
         if !operation_exists || !scope_exists || !outputs_exist {
             return Err(Denial::MissingApplicationMutationDependency);

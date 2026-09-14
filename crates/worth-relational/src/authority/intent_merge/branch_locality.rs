@@ -72,7 +72,8 @@ pub(crate) fn validate_branch_locality(
             }
             MutationIntent::Create(CreateIntent::Entity(_))
             | MutationIntent::Create(CreateIntent::EntityAspects(_))
-            | MutationIntent::Create(CreateIntent::BulkEntities(_)) => {}
+            | MutationIntent::Create(CreateIntent::BulkEntities(_))
+            | MutationIntent::Materialization(_) => {}
         }
     }
     Ok(())

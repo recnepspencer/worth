@@ -40,6 +40,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map_basis
         | worth_relational::facade::branch::RelationalBranchBasisDenial::ArchivedBranch(_)
         | worth_relational::facade::branch::RelationalBranchBasisDenial::DeletingBranch(_)
         | worth_relational::facade::branch::RelationalBranchBasisDenial::UnavailableRetainedTarget
+        | worth_relational::facade::branch::RelationalBranchBasisDenial::MaterializationUnavailable
         | worth_relational::facade::branch::RelationalBranchBasisDenial::OwnerFailure
         | worth_relational::facade::branch::RelationalBranchBasisDenial::OwnerUnavailable => {
             WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable

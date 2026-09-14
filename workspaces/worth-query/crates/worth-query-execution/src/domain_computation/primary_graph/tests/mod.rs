@@ -3,6 +3,7 @@ mod application_outcome_identity;
 mod application_query;
 mod authorization;
 mod committed_publication;
+mod current_output_selection;
 pub(in crate::domain_computation::primary_graph) mod fault_controller;
 pub(in crate::domain_computation) mod fixture;
 mod handler_registry_authority;

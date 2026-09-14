@@ -128,5 +128,6 @@ fn encode_record_lifecycle_state(bytes: &mut Vec<u8>, state: RecordLifecycleStat
         RecordLifecycleState::PinnedByReplayRetention => 5,
         RecordLifecycleState::Reclaimable => 6,
         RecordLifecycleState::Reusable => 7,
+        RecordLifecycleState::MaterializationUnavailable => 8,
     });
 }

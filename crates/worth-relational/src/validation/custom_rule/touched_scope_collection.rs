@@ -142,6 +142,14 @@ pub(crate) fn collect_touched_structural_set(
                     visible_relations.insert(spec.relation_id);
                     planned_relation_deletes.push(spec.relation_id);
                 }
+                MutationIntent::Materialization(intent) => match intent.record() {
+                    crate::transactions::data::RecordRef::Entity(entity_id) => {
+                        visible_entities.insert(entity_id);
+                    }
+                    crate::transactions::data::RecordRef::Relation(relation_id) => {
+                        visible_relations.insert(relation_id);
+                    }
+                },
             }
         }
     }

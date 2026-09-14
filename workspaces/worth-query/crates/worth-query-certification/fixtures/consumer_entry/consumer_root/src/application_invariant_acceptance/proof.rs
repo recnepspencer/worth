@@ -22,6 +22,8 @@ use crate::ConsumerSchema;
 
 mod output_correspondence;
 mod publication;
+mod current_output_selector;
+mod prior_output_family;
 mod resource_profile;
 
 type Request<'a> = WorthQueryApplicationRequest<'a, 'a, 'a, ConsumerSchema>;
@@ -55,6 +57,12 @@ pub(crate) fn run(
     typed_domain_denial_has_no_publication(&request, &world);
     insufficient_work_is_denied_before_owner(&request, &world);
     publication::create_and_reject_cycles(&request);
+    prior_output_family::branch_local_inventory_drives_real_publications(
+        &world.application,
+        &principal,
+        &scope,
+    );
+    current_output_selector::producer_qualified_selection_is_current(&request);
     actual_candidate_checks_untouched_neighbors(&request, &world);
     let foreign_world = installation::install(foreign);
     let foreign_scope = authentication::request_scope();
@@ -72,7 +80,7 @@ pub(crate) fn run(
         output_correspondence::observed_source(&foreign_request, "anchor-a"),
     );
     output_correspondence::run(&request);
-    println!("Pre-M0 public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, early work exhaustion, and idempotency");
+    println!("Public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, producer-qualified current-output selection, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, early work exhaustion, and idempotency");
 }
 
 fn typed_invariant_access_is_bounded(request: &Request<'_>, world: &installation::ConsumerWorld) {
@@ -275,7 +283,9 @@ fn read_y(request: &Request<'_>, key: &str) -> u64 {
             body_key: key.to_owned(),
         })
         .execute()
-        .expect("the published vertex is readable through its typed query");
+        .unwrap_or_else(|denial| {
+            panic!("the published vertex {key} is readable through its typed query: {denial:?}")
+        });
     assert_eq!(result.rows().len(), 1);
     worth_query_consumer_values::PositiveLength::get(&result.rows()[0].y)
 }

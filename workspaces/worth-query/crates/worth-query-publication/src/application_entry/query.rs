@@ -232,7 +232,8 @@ where
             ),
             None => None,
         };
-        let principal = selected
+        let resolution_basis = retained.as_ref().unwrap_or(&selected);
+        let principal = resolution_basis
             .resolve_authenticated_principal(
                 binding.principal_binding(),
                 self.principal,
@@ -242,7 +243,7 @@ where
             .map_err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution)?;
         let (scope_field, scope_value) =
             scope_binding.into_field_parts(principal.principal_identity());
-        let scope = selected
+        let scope = resolution_basis
             .resolve_entity(
                 scope_field,
                 scope_value,

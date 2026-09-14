@@ -59,7 +59,7 @@ pub(super) fn run(request: &Request<'_>) {
             VertexReplacementBinding<ConsumerSchema>,
             Body,
             WorthQueryPreserveOutput,
-        >::new("anchor"))
+        >::from_static("anchor"))
         .unwrap()
         .entity_id();
     let created = correspondence
@@ -67,7 +67,7 @@ pub(super) fn run(request: &Request<'_>) {
             VertexReplacementBinding<ConsumerSchema>,
             Body,
             WorthQueryCreateOutput,
-        >::new("replacement"))
+        >::from_static("replacement"))
         .unwrap()
         .entity_id();
     assert_eq!(
@@ -76,7 +76,7 @@ pub(super) fn run(request: &Request<'_>) {
                 VertexReplacementBinding<ConsumerSchema>,
                 (),
                 WorthQueryCreateOutput,
-            >::new("replacement"))
+            >::from_static("replacement"))
             .err(),
         Some(WorthQueryApplicationOutputProjectionDenial::EntityMismatch)
     );
@@ -85,7 +85,7 @@ pub(super) fn run(request: &Request<'_>) {
             VertexReplacementBinding<ConsumerSchema>,
             Body,
             WorthQueryRetireOutput,
-        >::new("retired"))
+        >::from_static("retired"))
         .unwrap()
         .entity_id();
     assert_eq!(preserved, anchor);
@@ -247,7 +247,7 @@ fn preserved_identity(request: &Request<'_>, key: &str, y: u64, command: u64) ->
             PlanarMutationBinding<ConsumerSchema>,
             Body,
             WorthQueryPreserveOutput,
-        >::new("anchor"))
+        >::from_static("anchor"))
         .unwrap()
         .entity_id()
 }

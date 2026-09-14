@@ -257,7 +257,7 @@ worth_query_operation_emits!(
 );
 worth_query_operation_emits!(ExactStatusRetentionOperation => [RetainedStatusEffect]);
 worth_query_operation_emits!(MutationFreeEmitOperation => [MutationFreeExternalEffect]);
-worth_query_operation_reads!(TouchAccountOperation => [AccountStatus, AccountLabel, AccountOwner]);
+worth_query_operation_reads!(TouchAccountOperation => [Account, AccountStatus, AccountLabel, AccountOwner]);
 worth_query_operation_reads!(WrongFieldRetentionOperation => [AccountStatus, AccountLabel]);
 worth_query_operation_reads!(ExactStatusRetentionOperation => [AccountStatus, AccountLabel]);
 worth_query_operation_reads!(MultiFieldRetentionOperation => [AccountStatus, AccountLabel]);

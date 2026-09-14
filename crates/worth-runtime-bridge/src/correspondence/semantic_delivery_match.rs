@@ -219,6 +219,18 @@ pub(crate) fn structural_change_kind(
             | AspectBinding::StructuralFacet,
             BridgeCommittedRecordChangeKind::RetainedForAudit,
         ) => Some(Change::StructuralRetainForAudit),
+        (
+            AspectBinding::StructuralRegion
+            | AspectBinding::StructuralPartition
+            | AspectBinding::StructuralFacet,
+            BridgeCommittedRecordChangeKind::MaterializationSuspended,
+        ) => Some(Change::StructuralMaterializationSuspended),
+        (
+            AspectBinding::StructuralRegion
+            | AspectBinding::StructuralPartition
+            | AspectBinding::StructuralFacet,
+            BridgeCommittedRecordChangeKind::Rematerialized,
+        ) => Some(Change::StructuralRematerialized),
         (AspectBinding::LifecycleTransition, BridgeCommittedRecordChangeKind::Created) => {
             Some(Change::LifecycleCreate)
         }

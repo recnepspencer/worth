@@ -83,7 +83,12 @@ pub(super) fn progress_invariant_candidate<'run>(
                             required_work,
                         ),
                     ),
-                    _ => progression_denied(DenialStage::InvariantExecution),
+                    _ => WorthQueryProviderProgressionOutcome::Denied(
+                        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                            DenialStage::InvariantExecution,
+                            failure.detail().to_owned(),
+                        ),
+                    ),
                 });
         }
     };

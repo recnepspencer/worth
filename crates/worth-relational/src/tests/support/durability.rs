@@ -17,6 +17,16 @@ where
     F: FnOnce() -> RelationalRuntime,
 {
     runtime.durability_authority().checkpoint().unwrap();
+    recover_with(runtime, recovered_factory)
+}
+
+pub(crate) fn recover_with<F>(
+    runtime: &RelationalRuntime,
+    recovered_factory: F,
+) -> (crate::runtime::RecoveryOutcome, RelationalRuntime)
+where
+    F: FnOnce() -> RelationalRuntime,
+{
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );

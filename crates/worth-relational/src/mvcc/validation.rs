@@ -123,6 +123,14 @@ impl RelationalTransactionValidationInput {
         self
     }
 
+    pub(crate) fn with_materialization_mode(
+        mut self,
+        mode: crate::mvcc::RelationalMaterializationTransactionMode,
+    ) -> Self {
+        self.intent = crate::mvcc::RelationalTransactionIntent::materialization(mode);
+        self
+    }
+
     pub(crate) fn proposed_schema_transition(&self) -> Option<&ProposedSchemaTransition> {
         self.intent.proposed_schema_transition()
     }

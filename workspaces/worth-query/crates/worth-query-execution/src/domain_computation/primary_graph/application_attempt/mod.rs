@@ -66,9 +66,10 @@ pub use effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOutputAction,
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
-    WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryPreserveOutput,
-    WorthQueryRetireOutput,
+    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
+    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
+    WorthQueryCreateOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
 };
 pub(super) use elevation_approval_outcome::approved_outcome;
 pub use elevation_approval_outcome::{
@@ -91,6 +92,7 @@ pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
+    WorthQuerySourceCurrentnessFailure,
 };
 pub use idempotency::WorthQueryApplicationIdempotencyBinding;
 pub use idempotency_resolution::{

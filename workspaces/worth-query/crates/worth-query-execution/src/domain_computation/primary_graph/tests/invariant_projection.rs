@@ -52,6 +52,25 @@ fn independently_installed_graphs_mint_distinct_projection_identities() {
 }
 
 #[test]
+fn invariant_entity_identity_exposes_the_resolved_instance() {
+    let world = installed_authorization_world(true);
+    let completed = world
+        .invariant
+        .project(|reader| {
+            let open = reader
+                .resolve_entity(AccountStatus::reference(), "open".to_string())
+                .unwrap();
+            let unrelated = reader
+                .resolve_entity(AccountStatus::reference(), "unrelated".to_string())
+                .unwrap();
+            (open.entity_id(), unrelated.entity_id())
+        })
+        .expect("invariant projection");
+
+    assert_ne!(completed.output().0, completed.output().1);
+}
+
+#[test]
 fn locked_projection_uses_indexes_and_directional_adjacency_without_graph_scans() {
     let world = installed_authorization_world(true);
     let completed = world

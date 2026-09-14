@@ -33,8 +33,8 @@ pub mod identity_authority {
 pub mod consumer_kit {
     pub use crate::consumer_kit::{
         advance_test_workspace_domain_installation_generation, compare_test_backend_write_receipts,
-        in_memory_test_product_world_resources, in_memory_test_runtime,
-        load_support_pin_contract_terminal_json_document,
+        in_memory_test_product_world_installation, in_memory_test_product_world_resources,
+        in_memory_test_runtime, load_support_pin_contract_terminal_json_document,
         load_support_snapshot_terminal_json_document, project_support_snapshot,
         project_workspace_support_snapshot, support_pinning_contract, EvidenceReport,
         EvidenceReportDeclaration, EvidenceReportError, EvidenceReportErrorKind,

@@ -22,6 +22,8 @@ pub enum BankInvariantProjectionTraversalDenial {
     CardinalityContractMismatch,
     MissingTarget,
     MultipleTargets,
+    MissingSource,
+    MultipleSources,
     WorkBudgetExceeded,
 }
 
@@ -54,6 +56,8 @@ impl BankInvariantProjectionTraversalDenial {
             Self::CardinalityContractMismatch => "cardinality-contract-mismatch",
             Self::MissingTarget => "missing-target",
             Self::MultipleTargets => "multiple-targets",
+            Self::MissingSource => "missing-source",
+            Self::MultipleSources => "multiple-sources",
             Self::WorkBudgetExceeded => "work-budget-exceeded",
         }
     }
@@ -68,6 +72,8 @@ impl BankInvariantProjectionTraversalDenial {
             QueryTraversal::CardinalityContractMismatch => Self::CardinalityContractMismatch,
             QueryTraversal::MissingTarget => Self::MissingTarget,
             QueryTraversal::MultipleTargets => Self::MultipleTargets,
+            QueryTraversal::MissingSource => Self::MissingSource,
+            QueryTraversal::MultipleSources => Self::MultipleSources,
             QueryTraversal::WorkBudgetExceeded => Self::WorkBudgetExceeded,
         }
     }

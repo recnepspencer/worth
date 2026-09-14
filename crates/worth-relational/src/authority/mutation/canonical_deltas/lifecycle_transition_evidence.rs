@@ -10,5 +10,7 @@ pub(super) fn lifecycle_transition(
         RecordStructuralChange::Updated => LifecycleTransitionClass::NoTransition,
         RecordStructuralChange::Deleted => LifecycleTransitionClass::Delete,
         RecordStructuralChange::RetainedForAudit => LifecycleTransitionClass::RetainForAudit,
+        RecordStructuralChange::MaterializationSuspended
+        | RecordStructuralChange::Rematerialized => LifecycleTransitionClass::NoTransition,
     }
 }

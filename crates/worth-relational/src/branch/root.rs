@@ -290,6 +290,10 @@ impl RelationalBranchRoot {
         self.regions.len()
     }
 
+    pub(crate) fn has_materialization_unavailable(&self) -> bool {
+        self.regions.materialization_unavailable_records() > 0
+    }
+
     pub(crate) fn partition_state(&self, partition_id: PartitionId) -> Option<&PartitionState> {
         self.regions
             .get(partition_id)

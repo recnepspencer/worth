@@ -29,12 +29,12 @@ fn clean(court: &CompositeSupplyChainCourt, outcome: RuntimeWorldPublicationOutc
         RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
             let handle = effects.recovery_handle();
             drop(effects);
-            assert!(court
+            let cleanup = court
                 .world
                 .recovery_port()
                 .release_effects(&handle, 0)
-                .unwrap()
-                .is_empty());
+                .unwrap();
+            assert!(cleanup.owner_retirement_work().is_empty());
         }
         RuntimeWorldPublicationOutcome::NoEffect(no) => drop(no),
     }

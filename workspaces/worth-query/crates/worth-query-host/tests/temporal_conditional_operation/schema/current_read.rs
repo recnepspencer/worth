@@ -11,16 +11,10 @@ use super::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TemporalIntentReadRequest {
-    identity: String,
+    pub(crate) identity: String,
 }
 
 impl TemporalIntentReadRequest {
-    pub fn new(identity: impl Into<String>) -> Self {
-        Self {
-            identity: identity.into(),
-        }
-    }
-
     fn into_identity(self) -> String {
         self.identity
     }

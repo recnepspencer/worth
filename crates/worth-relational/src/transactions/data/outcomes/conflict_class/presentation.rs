@@ -38,7 +38,9 @@ impl ConflictClass {
             | Self::TransactionOverlayBudgetExceeded { .. }
             | Self::TransactionSavepointBudgetExceeded { .. }
             | Self::TransactionSavepointFootprintBudgetExceeded { .. }
-            | Self::TransactionSavepointIdentityExhausted => DiagnosticCode::PreparationFailure,
+            | Self::TransactionSavepointIdentityExhausted
+            | Self::MaterializationAuthorityRequired
+            | Self::MaterializationModeMismatch => DiagnosticCode::PreparationFailure,
             Self::MergeConflictOverlap { .. } => DiagnosticCode::MergeConflictOverlap,
             Self::MissingMergeBase { .. } => DiagnosticCode::MissingMergeBase,
             Self::UndeclaredSchemaTransition { .. }
@@ -103,6 +105,12 @@ impl ConflictClass {
             ),
             Self::TransactionSavepointIdentityExhausted => {
                 "transaction savepoint identity space exhausted".to_owned()
+            }
+            Self::MaterializationAuthorityRequired => {
+                "materialization transition requires the Relational owner's sealed port".to_owned()
+            }
+            Self::MaterializationModeMismatch => {
+                "materialization transaction contains an intent outside its sealed mode".to_owned()
             }
             Self::RecordAllocationDenied { denial } => denial.detail(),
             Self::InvariantViolation { detail, .. } => detail.clone(),

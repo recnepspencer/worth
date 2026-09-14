@@ -38,6 +38,12 @@ fn mutation_archive_retains_typed_failure_scope_and_output_postures_without_nati
                     },
                 )
                 .collect(),
+                output_role_families: vec![ApplicationMutationOutputRoleFamilyDescription {
+                    prefix: "face.".to_owned(),
+                    entity: "Body".to_owned(),
+                    postures: ApplicationMutationOutputPostureSet::ALL,
+                    minimum: 2,
+                }],
             },
         );
         let member = ApplicationSchemaMember::ApplicationMutation { description };

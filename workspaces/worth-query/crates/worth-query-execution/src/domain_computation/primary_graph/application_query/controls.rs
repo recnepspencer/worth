@@ -91,7 +91,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
     }
 
     pub(in crate::domain_computation::primary_graph) fn retained_product_one_shot(
-        security: crate::basis::WorthQueryProductBranchLease,
+        security: crate::basis::WorthQueryProductObservationLease,
         product: crate::basis::WorthQueryProductBranchLease,
         application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
         maximum_result_count: NonZeroUsize,
@@ -103,7 +103,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
                 product: product.into_read_lease(),
                 application_basis,
             },
-            security_product: security.into_read_lease(),
+            security_product: security,
             publication_product: None,
             lane: WorthQueryApplicationQueryLane::OneShot,
             maximum_result_count,

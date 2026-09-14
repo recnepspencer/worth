@@ -173,7 +173,7 @@ fn host_installs_and_executes_a_due_temporal_application_operation() {
 
 #[test]
 fn projected_mutation_target_cannot_cross_operation_admissions() {
-    world::projection_target_is_bound_to_exact_admission();
+    world::security::projection_target_is_bound_to_exact_admission();
 }
 
 #[test]

@@ -14,6 +14,12 @@ pub struct PlanarVertex {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PlanarCurrentOutputExpectation {
+    pub producer_key: String,
+    pub output_key: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PlanarOperation {
     CreateCycle(Vec<PlanarVertex>),
     Adjust(Vec<PlanarAdjustment>),
@@ -22,6 +28,7 @@ pub enum PlanarOperation {
         previous_target_key: String,
         replacement_target_key: String,
     },
+    VerifyCurrentOutputs(Vec<PlanarCurrentOutputExpectation>),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -34,4 +41,8 @@ pub enum PlanarMutationDenial {
     CycleNeedsThreeVertices,
     MissingCoordinate,
     UnexpectedSuccessor,
+    CurrentOutputMissing,
+    CurrentOutputAmbiguous,
+    CurrentOutputObsolete,
+    UnexpectedCurrentOutput,
 }

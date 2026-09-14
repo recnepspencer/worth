@@ -105,6 +105,7 @@ impl InvariantPlanContract {
                     .union(InvariantGroupSet::of(InvariantGroup::PublicationCoherence))
                     .union(InvariantGroupSet::of(InvariantGroup::VersionVisibility))
             }
+            MutationIntent::Materialization(_) => InvariantGroupSet::all(),
         };
         self.may_invalidate = self.may_invalidate.union(groups);
     }

@@ -4,10 +4,12 @@ mod locked_reader;
 mod operation_projection_denial;
 mod operation_reader;
 mod realized_scope;
+mod relation_identity;
 mod traversal;
 mod work;
 
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -25,6 +27,7 @@ use super::{
     WorthQueryPrimaryGraphIntegrationHandle,
 };
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::primary_graph::application_attempt;
 
 pub use admission_denial::{
     WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionDenialKind,
@@ -43,9 +46,11 @@ pub use operation_projection_denial::{
 pub use operation_reader::{
     WorthQueryApplicationOperationInvariantProjectionReader,
     WorthQueryApplicationOperationInvariantProjectionSnapshot,
-    WorthQueryCompletedOperationInvariantProjection,
-    WorthQueryInspectedOperationInvariantProjection, WorthQueryInvariantDecisionPlanDenial,
-    WorthQueryInvariantDecisionPlanDenialKind,
+    WorthQueryCompletedOperationInvariantProjection, WorthQueryCurrentOutputDenial,
+    WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputRole,
+    WorthQueryCurrentOutputSelection, WorthQueryInspectedOperationInvariantProjection,
+    WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
+    WorthQueryPriorOutputFamilyMember,
 };
 pub(in crate::domain_computation::primary_graph) use realized_scope::WorthQueryRealizedProjectionScope;
 pub use work::WorthQueryInvariantProjectionWork;
@@ -77,6 +82,8 @@ pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
     binding_identity: ApplicationSchemaBindingIdentity,
     authority_identity: u64,
     realized_scope: WorthQueryRealizedProjectionScope,
+    dependent_source_facts:
+        BTreeMap<String, application_attempt::WorthQueryApplicationObservedFact>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -176,6 +183,7 @@ where
             binding_identity: self.binding_identity.clone(),
             authority_identity: self.authority_identity,
             realized_scope: WorthQueryRealizedProjectionScope::default(),
+            dependent_source_facts: BTreeMap::new(),
             _schema: PhantomData,
         })
     }
@@ -316,9 +324,17 @@ where
     ) -> (
         super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         WorthQueryRealizedProjectionScope,
+        Vec<application_attempt::WorthQueryApplicationObservedFact>,
     ) {
         let realized_scope = std::mem::take(&mut self.realized_scope);
-        (self.into_lease(product), realized_scope)
+        let dependent_source_facts = std::mem::take(&mut self.dependent_source_facts)
+            .into_values()
+            .collect();
+        (
+            self.into_lease(product),
+            realized_scope,
+            dependent_source_facts,
+        )
     }
 
     fn snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
@@ -329,6 +345,10 @@ where
 }
 
 impl<Schema, Entity> WorthQueryInvariantEntityIdentity<Schema, Entity> {
+    pub const fn entity_id(&self) -> EntityId {
+        self.entity_id
+    }
+
     pub fn entity_name(&self) -> &str {
         &self.entity
     }
@@ -365,24 +385,6 @@ impl<Schema, Entity> Ord for WorthQueryInvariantEntityIdentity<Schema, Entity> {
                 other.kind,
                 other.entity.as_ref(),
             ))
-    }
-}
-
-impl<Schema, Relation, From, To> WorthQueryInvariantRelation<Schema, Relation, From, To> {
-    pub const fn from(&self) -> &WorthQueryInvariantEntityIdentity<Schema, From> {
-        &self.from
-    }
-
-    pub const fn to(&self) -> &WorthQueryInvariantEntityIdentity<Schema, To> {
-        &self.to
-    }
-
-    pub fn into_to(self) -> WorthQueryInvariantEntityIdentity<Schema, To> {
-        self.to
-    }
-
-    pub const fn relation_id(&self) -> RelationId {
-        self.relation_id
     }
 }
 

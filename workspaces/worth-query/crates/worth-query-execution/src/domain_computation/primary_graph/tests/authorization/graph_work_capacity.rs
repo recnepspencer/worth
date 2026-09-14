@@ -58,6 +58,7 @@ fn operation_graph_capacity_denial_and_drop_return_exact_reservations() {
         denial.kind(),
         WorthQueryOperationAuthorizationDenialKind::GraphWorkAdmissionUnavailable
     );
+    assert!(denial.subject().contains("CapacityUnavailable"));
     drop(retained.pop());
     retained.push(authorize().expect("dropping one session returns its provider reservations"));
     drop(retained);

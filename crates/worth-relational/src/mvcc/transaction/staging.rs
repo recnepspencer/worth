@@ -16,6 +16,8 @@ pub enum RelationalTransactionStagingDenial {
         required_loci: usize,
     },
     SavepointIdentityExhausted,
+    MaterializationAuthorityRequired,
+    MaterializationModeMismatch,
 }
 
 impl RelationalTransactionStagingDenial {
@@ -49,6 +51,12 @@ impl RelationalTransactionStagingDenial {
             },
             Self::SavepointIdentityExhausted => {
                 crate::transactions::data::ConflictClass::TransactionSavepointIdentityExhausted
+            }
+            Self::MaterializationAuthorityRequired => {
+                crate::transactions::data::ConflictClass::MaterializationAuthorityRequired
+            }
+            Self::MaterializationModeMismatch => {
+                crate::transactions::data::ConflictClass::MaterializationModeMismatch
             }
         };
         crate::transactions::data::CommitConflict::new(class)

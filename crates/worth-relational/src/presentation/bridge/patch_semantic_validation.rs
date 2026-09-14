@@ -313,6 +313,8 @@ fn lifecycle_kind(change: RecordStructuralChange) -> Option<AuthoritativeAspectC
             Some(AuthoritativeAspectChangeKind::LifecycleRetainForAudit)
         }
         RecordStructuralChange::Updated => None,
+        RecordStructuralChange::MaterializationSuspended
+        | RecordStructuralChange::Rematerialized => None,
     }
 }
 
@@ -323,6 +325,12 @@ fn structural_kind(change: RecordStructuralChange) -> AuthoritativeAspectChangeK
         RecordStructuralChange::Deleted => AuthoritativeAspectChangeKind::StructuralDelete,
         RecordStructuralChange::RetainedForAudit => {
             AuthoritativeAspectChangeKind::StructuralRetainForAudit
+        }
+        RecordStructuralChange::MaterializationSuspended => {
+            AuthoritativeAspectChangeKind::StructuralMaterializationSuspended
+        }
+        RecordStructuralChange::Rematerialized => {
+            AuthoritativeAspectChangeKind::StructuralRematerialized
         }
     }
 }
@@ -366,7 +374,9 @@ fn retain_emitted_target_counters(
                 Kind::StructuralCreate
                 | Kind::StructuralUpdate
                 | Kind::StructuralDelete
-                | Kind::StructuralRetainForAudit => {}
+                | Kind::StructuralRetainForAudit
+                | Kind::StructuralMaterializationSuspended
+                | Kind::StructuralRematerialized => {}
             }
         }
     }

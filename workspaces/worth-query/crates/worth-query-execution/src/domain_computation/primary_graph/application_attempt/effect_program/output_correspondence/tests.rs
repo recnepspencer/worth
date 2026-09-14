@@ -6,9 +6,12 @@ use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::effect_program::{
-    WorthQueryApplicationEffectEntity, WorthQueryApplicationRealizedEffect,
+    WorthQueryApplicationCreationPartition, WorthQueryApplicationEffectEntity,
+    WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind;
+
+mod family;
 
 struct Schema;
 struct Binding;
@@ -17,11 +20,32 @@ struct Entity;
 struct WrongEntity;
 
 const PRESERVED: WorthQueryApplicationOutputRole<Binding, Entity, Preserve> =
-    WorthQueryApplicationOutputRole::new("preserved");
+    WorthQueryApplicationOutputRole::from_static("preserved");
 const CREATED: WorthQueryApplicationOutputRole<Binding, Entity, Create> =
-    WorthQueryApplicationOutputRole::new("created");
+    WorthQueryApplicationOutputRole::from_static("created");
 const RETIRED: WorthQueryApplicationOutputRole<Binding, Entity, Retire> =
-    WorthQueryApplicationOutputRole::new("retired");
+    WorthQueryApplicationOutputRole::from_static("retired");
+
+#[test]
+fn runtime_role_names_reject_ambiguous_or_unbounded_representations() {
+    assert!(matches!(
+        WorthQueryApplicationOutputRole::<Binding, Entity, Create>::try_new(" role"),
+        Err(WorthQueryApplicationOutputRoleNameDenial::SurroundingWhitespace)
+    ));
+    assert!(matches!(
+        WorthQueryApplicationOutputRole::<Binding, Entity, Create>::try_new("role\nmember"),
+        Err(WorthQueryApplicationOutputRoleNameDenial::ControlCharacter)
+    ));
+    assert!(matches!(
+        WorthQueryApplicationOutputRole::<Binding, Entity, Create>::try_new("x".repeat(257)),
+        Err(
+            WorthQueryApplicationOutputRoleNameDenial::RepresentationTooLarge {
+                maximum_bytes: 256,
+                required_bytes: 257,
+            }
+        )
+    ));
+}
 
 #[test]
 fn duplicate_and_foreign_binding_roles_are_denied_before_commit() {
@@ -40,7 +64,7 @@ fn duplicate_and_foreign_binding_roles_are_denied_before_commit() {
         WorthQueryApplicationAttemptDenialKind::DuplicateOutputRole
     );
     let foreign =
-        WorthQueryApplicationOutputRole::<ForeignBinding, Entity, Preserve>::new("foreign");
+        WorthQueryApplicationOutputRole::<ForeignBinding, Entity, Preserve>::from_static("foreign");
     assert_eq!(
         candidate
             .bind(foreign, &existing, &program)
@@ -81,7 +105,8 @@ fn declaration_inventory_denies_undeclared_missing_and_wrong_entity_roles() {
     let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
     candidate.prepare_test_role(PRESERVED, "entity");
 
-    let undeclared = WorthQueryApplicationOutputRole::<Binding, Entity, Preserve>::new("other");
+    let undeclared =
+        WorthQueryApplicationOutputRole::<Binding, Entity, Preserve>::from_static("other");
     assert_eq!(
         candidate
             .bind(undeclared, &existing, &program)
@@ -154,6 +179,35 @@ fn created_role_must_name_an_actual_create_effect_before_commit() {
 }
 
 #[test]
+fn created_role_accepts_a_create_effect_in_an_existing_context_partition() {
+    let program = Arc::new(());
+    let context_partition = PartitionId::new(7);
+    let created = WorthQueryApplicationEffectEntity::<Schema, Entity> {
+        reference: EntityReference::Created(CreatedEntityRef {
+            partition_id: context_partition,
+            kind_id: KindId::new(9),
+            client_key: ClientKey::raw("context-created-output"),
+        }),
+        entity: "entity".to_owned(),
+        created_effect: Some(0),
+        program: Arc::clone(&program),
+        _marker: PhantomData,
+    };
+    let effect = WorthQueryApplicationRealizedEffect::CreateEntity {
+        kind: KindId::new(9),
+        key: "context-created-output".to_owned(),
+        fields: BTreeMap::new(),
+        partition: WorthQueryApplicationCreationPartition::Context(context_partition),
+    };
+    let mut candidate = prepared_create_candidate();
+    candidate.bind(CREATED, &created, &program).unwrap();
+
+    candidate
+        .validate_effects(&[effect])
+        .expect("context-partition creation is the declared created output");
+}
+
+#[test]
 fn owner_resolved_creation_projects_the_exact_typed_identity() {
     let program = Arc::new(());
     let created = WorthQueryApplicationEffectEntity::<Schema, Entity> {
@@ -179,7 +233,7 @@ fn owner_resolved_creation_projects_the_exact_typed_identity() {
                 Binding,
                 WrongEntity,
                 Create,
-            >::new("created"))
+            >::from_static("created"))
             .err(),
         Some(WorthQueryApplicationOutputProjectionDenial::EntityMismatch)
     );
@@ -195,6 +249,33 @@ fn existing_handle(
         created_effect: None,
         program: Arc::clone(program),
         _marker: PhantomData,
+    }
+}
+
+fn created_handle(
+    key: &'static str,
+    kind: u32,
+    program: &Arc<()>,
+) -> WorthQueryApplicationEffectEntity<Schema, Entity> {
+    WorthQueryApplicationEffectEntity {
+        reference: EntityReference::Created(CreatedEntityRef {
+            partition_id: PartitionId::main(),
+            kind_id: KindId::new(kind),
+            client_key: ClientKey::raw(key),
+        }),
+        entity: "entity".to_owned(),
+        created_effect: Some(0),
+        program: Arc::clone(program),
+        _marker: PhantomData,
+    }
+}
+
+fn create_effect(key: &'static str, kind: u32) -> WorthQueryApplicationRealizedEffect {
+    WorthQueryApplicationRealizedEffect::CreateEntity {
+        kind: KindId::new(kind),
+        key: key.to_owned(),
+        fields: BTreeMap::new(),
+        partition: super::super::WorthQueryApplicationCreationPartition::Issued,
     }
 }
 

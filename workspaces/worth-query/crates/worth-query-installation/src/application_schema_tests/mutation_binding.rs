@@ -3,7 +3,9 @@ use worth_query_declaration::facade::{
     application_operation::{
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
         ApplicationCandidateResourceCeiling, ApplicationMutationBinding,
-        ApplicationMutationFieldScope, NoApplicationMutationOutputs, NoApplicationMutationSource,
+        ApplicationMutationFieldScope, ApplicationMutationOutputContract,
+        ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputRoleFamilyDescriptor, NoApplicationMutationSource,
     },
     application_schema::{
         ApplicationFieldMarkerIdentity, ApplicationFieldPresence,
@@ -22,6 +24,32 @@ worth_query_declaration::worth_query_structured_value_binding!(MutationDenialBin
 struct ChangedResult;
 struct ChangedOperation;
 struct ChangedScopeField;
+struct MutationOutputFamilies;
+struct ChangedMutationOutputFamilies;
+
+impl ApplicationMutationOutputContract<MutationSchema> for MutationOutputFamilies {
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[];
+    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
+        &[ApplicationMutationOutputRoleFamilyDescriptor::for_entity::<
+            MutationSchema,
+            FixtureEntity<MutationSchema>,
+        >(
+            "output.", ApplicationMutationOutputPostureSet::ALL, 1
+        )];
+}
+
+impl ApplicationMutationOutputContract<MutationSchema> for ChangedMutationOutputFamilies {
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[];
+    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
+        &[ApplicationMutationOutputRoleFamilyDescriptor::for_entity::<
+            MutationSchema,
+            FixtureEntity<MutationSchema>,
+        >(
+            "changed-output.",
+            ApplicationMutationOutputPostureSet::ALL,
+            1,
+        )];
+}
 
 impl ApplicationSchema for MutationSchema {
     const OWNER: &'static str = TestSchema::OWNER;
@@ -77,7 +105,7 @@ type MutationScope<Field> = ApplicationMutationFieldScope<
 >;
 
 macro_rules! mutation_binding {
-    ($binding:ident, $identity:literal, $operation:ty, $result:ty, $result_binding:ty, $decision:ty, $denial_binding:ty, $handler_identity:literal, $field:ty, $principal:expr, $bytes:expr) => {
+    ($binding:ident, $identity:literal, $operation:ty, $result:ty, $result_binding:ty, $decision:ty, $denial_binding:ty, $handler_identity:literal, $field:ty, $principal:expr, $bytes:expr, $output:ty) => {
         struct $binding;
 
         impl ApplicationMutationBinding<MutationSchema> for $binding {
@@ -90,7 +118,7 @@ macro_rules! mutation_binding {
             type Decision = $decision;
             type Denial = <$denial_binding as ApplicationStructuredValueBinding>::Value;
             type DenialBinding = $denial_binding;
-            type Output = NoApplicationMutationOutputs;
+            type Output = $output;
             type ScopeBinding = MutationScope<$field>;
             type PrincipalBinding = PrincipalBinding;
             type Mapping = FixtureEntity<MutationSchema>;
@@ -157,7 +185,8 @@ mutation_binding!(
     "worth.query.installation-test.mutation-handler.v1",
     FixturePrincipalIdentityField<MutationSchema>,
     test_principal_binding::<MutationSchema>(),
-    128
+    128,
+    MutationOutputFamilies
 );
 mutation_binding!(
     ChangedOperationBinding,
@@ -170,7 +199,8 @@ mutation_binding!(
     "worth.query.installation-test.mutation-handler.v1",
     FixturePrincipalIdentityField<MutationSchema>,
     test_principal_binding::<MutationSchema>(),
-    128
+    128,
+    MutationOutputFamilies
 );
 mutation_binding!(
     ChangedHandlerBinding,
@@ -183,7 +213,8 @@ mutation_binding!(
     "worth.query.installation-test.changed-handler.v1",
     FixturePrincipalIdentityField<MutationSchema>,
     test_principal_binding::<MutationSchema>(),
-    128
+    128,
+    MutationOutputFamilies
 );
 mutation_binding!(
     ChangedScopeBinding,
@@ -196,7 +227,8 @@ mutation_binding!(
     "worth.query.installation-test.mutation-handler.v1",
     ChangedScopeField,
     test_principal_binding::<MutationSchema>(),
-    128
+    128,
+    MutationOutputFamilies
 );
 mutation_binding!(
     ChangedCandidateBinding,
@@ -209,7 +241,8 @@ mutation_binding!(
     "worth.query.installation-test.mutation-handler.v1",
     FixturePrincipalIdentityField<MutationSchema>,
     test_principal_binding::<MutationSchema>(),
-    129
+    129,
+    MutationOutputFamilies
 );
 mutation_binding!(
     ChangedPrincipalMutationBinding,
@@ -222,7 +255,8 @@ mutation_binding!(
     "worth.query.installation-test.mutation-handler.v1",
     FixturePrincipalIdentityField<MutationSchema>,
     changed_principal_binding(),
-    128
+    128,
+    MutationOutputFamilies
 );
 mutation_binding!(
     ChangedResultMutationBinding,
@@ -235,7 +269,8 @@ mutation_binding!(
     "worth.query.installation-test.mutation-handler.v1",
     FixturePrincipalIdentityField<MutationSchema>,
     test_principal_binding::<MutationSchema>(),
-    128
+    128,
+    MutationOutputFamilies
 );
 mutation_binding!(
     MissingMutationBinding,
@@ -248,7 +283,8 @@ mutation_binding!(
     "worth.query.installation-test.mutation-handler.v1",
     FixturePrincipalIdentityField<MutationSchema>,
     test_principal_binding::<MutationSchema>(),
-    128
+    128,
+    MutationOutputFamilies
 );
 
 worth_query_declaration::worth_query_structured_value_binding!(ChangedDenialBinding for MutationDenial {
@@ -265,7 +301,23 @@ mutation_binding!(
     "worth.query.installation-test.mutation-handler.v1",
     FixturePrincipalIdentityField<MutationSchema>,
     test_principal_binding::<MutationSchema>(),
-    128
+    128,
+    MutationOutputFamilies
+);
+
+mutation_binding!(
+    ChangedOutputMutationBinding,
+    "worth.query.installation-test.mutation-binding.v1",
+    TestOperation<MutationSchema>,
+    TestInput,
+    TestInputBinding,
+    MutationDecision,
+    MutationDenialBinding,
+    "worth.query.installation-test.mutation-handler.v1",
+    FixturePrincipalIdentityField<MutationSchema>,
+    test_principal_binding::<MutationSchema>(),
+    128,
+    ChangedMutationOutputFamilies
 );
 
 fn changed_principal_binding() -> ApplicationPrincipalBindingRef<

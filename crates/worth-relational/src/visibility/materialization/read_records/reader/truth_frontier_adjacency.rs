@@ -7,9 +7,9 @@ use crate::storage::partition::{AdjacencyDirection, AdjacencyKindBasis};
 
 #[derive(Debug)]
 pub struct BoundedFrontierAdjacencyTruthRead {
-    records: Vec<RelationReadRecord>,
-    adjacency_lists_read: usize,
-    relation_records_examined: usize,
+    pub(crate) records: Vec<RelationReadRecord>,
+    pub(crate) adjacency_lists_read: usize,
+    pub(crate) relation_records_examined: usize,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -162,7 +162,7 @@ impl BoundedFrontierAdjacencyTruthRead {
 }
 
 impl FrontierAdjacencyTruthReadLimitExceeded {
-    const fn new(
+    pub(crate) const fn new(
         adjacency_lists_read: usize,
         relation_records_examined: usize,
         endpoint_records_reserved: usize,

@@ -200,6 +200,8 @@ pub enum ConflictClass {
         required_loci: usize,
     },
     TransactionSavepointIdentityExhausted,
+    MaterializationAuthorityRequired,
+    MaterializationModeMismatch,
     MergeConflictOverlap {
         detail: String,
     },

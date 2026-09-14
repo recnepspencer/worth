@@ -49,6 +49,7 @@ impl BranchBoundRelationalTransaction {
         &mut self,
         batch: WorkerIntentBatch,
     ) -> Result<(), super::RelationalTransactionStagingDenial> {
+        self.admit_materialization_batch(&batch)?;
         let required_bytes = self
             .overlay_bytes
             .saturating_add(batch.resident_capacity_bytes());
@@ -65,6 +66,38 @@ impl BranchBoundRelationalTransaction {
         self.overlay.stage(batch, &mut self.footprint);
         self.overlay_bytes = required_bytes;
         self.last_merged_plan = None;
+        Ok(())
+    }
+
+    fn admit_materialization_batch(
+        &self,
+        batch: &WorkerIntentBatch,
+    ) -> Result<(), super::RelationalTransactionStagingDenial> {
+        let mode = self.intent.materialization_mode();
+        for intent in &batch.intents {
+            let crate::transactions::data::MutationIntent::Materialization(intent) = intent else {
+                if mode.is_some() {
+                    return Err(
+                        super::RelationalTransactionStagingDenial::MaterializationModeMismatch,
+                    );
+                }
+                continue;
+            };
+            let Some(mode) = mode else {
+                return Err(
+                    super::RelationalTransactionStagingDenial::MaterializationAuthorityRequired,
+                );
+            };
+            let matches_mode = match mode {
+                super::RelationalMaterializationTransactionMode::Suspend => intent.is_suspension(),
+                super::RelationalMaterializationTransactionMode::Rematerialize => {
+                    intent.is_rematerialization()
+                }
+            };
+            if !matches_mode {
+                return Err(super::RelationalTransactionStagingDenial::MaterializationModeMismatch);
+            }
+        }
         Ok(())
     }
 

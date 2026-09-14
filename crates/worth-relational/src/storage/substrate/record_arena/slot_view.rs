@@ -32,6 +32,9 @@ impl<'a, K: RecordKind> SlotView<'a, K> {
     pub(crate) fn is_live(&self) -> bool {
         self.lifecycle() == RecordLifecycleState::Live
     }
+    pub(crate) fn is_materialization_unavailable(&self) -> bool {
+        self.lifecycle() == RecordLifecycleState::MaterializationUnavailable
+    }
     pub(crate) fn kind_id(&self) -> Option<KindId> {
         self.arena.kind_ids[self.physical]
     }

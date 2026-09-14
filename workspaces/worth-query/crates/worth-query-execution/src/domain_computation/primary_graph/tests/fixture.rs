@@ -58,12 +58,15 @@ pub(super) use capability::{
 pub(in crate::domain_computation::primary_graph) use capability_status_mutation::revoke_current_capability;
 #[path = "fixture/application_queries.rs"]
 mod application_queries;
+#[path = "fixture/current_output_source.rs"]
+mod current_output_source;
 pub(in crate::domain_computation::primary_graph) use application_queries::AccountSummaryParameters;
 pub(super) use application_queries::{
     cross_root_definition, status_parameter, AccountSummaryQuery, AccountSummaryResult,
     CrossRootQuery, GovernedAccountSummaryQuery, OrderedAccountSummaryQuery,
     ScopedAccountSummaryQuery,
 };
+pub(super) use current_output_source::TestAccountSourceBinding;
 #[path = "fixture/optional_account_field_query.rs"]
 mod optional_account_field_query;
 pub(super) use optional_account_field_query::{

@@ -1,1676 +1,947 @@
-# Milestone 9.17.4: Application API Hardening
+# Milestone 9.17.4: Application Graph Authoring And Execution
 
-> **Status:** Phase 1 was certified on 2026-09-11. Phases 2-6 remain open.
-> The focused Pre-M0 application foundation was certified on 2026-09-12. It implements entry-local
-> value bindings, same-schema contribution configuration, complete in-memory
-> installation, borrowed typed requests and handlers, bounded actual candidate
-> validation, descriptive discovery, output correspondence, and committed
-> change observations. Its public consumer publishes cyclic planar groups and
-> replaces a vertex with preserve/create/retire roles and same-commit lineage.
-> Committed output projection also certifies exact entity-marker affinity:
-> a matching binding, role name, and action with the wrong entity is denied.
-> Destination examples below also include wider APIs whose phase remains open.
->
-> **Product posture:** One typed application experience over the certified
-> in-memory Query/Relational/Bridge/Signal/World runtime.
+> **Status:** Planned. Former 9.17.4 Phase 1 and Pre-M0 certification remain
+> historical evidence. This spec owns graph authoring and the complete migration
+> of existing ordinary consumers. [9.17.5](./milestone-9.17.5.md) owns branch-scoped
+> program evolution; [9.17.6](./milestone-9.17.6.md) owns runtime-authored workflows.
+> These three specs replace the former combined plan without reducing its contracts.
 
-> **Planned post-M0 authoring correction:**
-> [Milestone 9.17.4.1](./milestone-9.17.4.1.md) begins after the proprietary CAD
-> M0 demo closes, using the certified Phase 1 and Pre-M0 foundation plus M0's
-> real geometry evidence. It ships a high-level semantic language for truth,
-> actions, lifecycle, authority, derived truth, and guarantees above one public
-> core application IR. Both lower into the runtime contracts specified here.
+## Goal, Entry And Completion
 
-The Pre-M0 public consumer uses a Query-free value package, two independently
-compiled contribution packages, and one application root. It exercises bounded
-cyclic allocation, actual candidate and untouched-neighbor validation, atomic
-publication/readback, preserve/create/retire output roles, native committed
-entity changes and same-commit lineage, exact denials, and idempotent recovery.
-The corrective public revision `31ad82c285ef933e946e012aa3f4decd1c122911`
-retains the entity marker through candidate binding and commit sealing. Both
-the owner proof and public replacement journey require the exact
-`WorthQueryApplicationOutputProjectionDenial::EntityMismatch` for a wrong
-entity marker with the correct binding, role name, and action.
-The external wrong-schema build fails at its schema-binding trait boundary;
-owner proofs retain installation, stale-source, capacity, and authority checks.
-The affected Bank public create/read/recovery journey passes with ordinary and
-maximum-length names. Persistent Astra review cleared the final source and tests;
-normal boundary/context checks, scoped formatting and dirty line caps pass.
+Authors define one typed application composition: shared domain meaning, reusable
+features, connections, scoped rules, existing workflow bindings and publication
+policy. Query derives installed contracts and carries owner-issued evidence through
+execution, performed publication, delivery, dependent admission and settlement.
+A graph picture or convenient macro over manual orchestration does not satisfy this.
 
-Warm incremental builds measured on 2026-09-12 with the consumer workspace's
-shared Query target took 9.90s after touching the declaration crate, 3.22s after
-touching the topology entry, and 2.89s after touching the consumer root. Each
-measurement changed only the source timestamp; these measure invalidation and
-relink cost with compiled dependencies, not arbitrary semantic API changes.
-The entry touch rebuilt that entry and the root; the consumer touch rebuilt only
-the root. No Query dependency or generic bound enters the pure value package.
+Entry is the certified 9.17.3 runtime and focused binding/publication foundation,
+with real CAD extrusion/split and Bank behavior available as independent consumer
+evidence. Do not recertify completed prerequisites or wait for the whole house.
+Reach the complete CAD endpoint in Phase 1; harden and extend it, rather than
+building a language for several phases before publishing a real result.
 
-## Goal And Roadmap Placement
+Closure includes CAD fixed/generated output, nested/multiple feature instances,
+local and cross-feature integrity, transitive demand, Bank's existing operation/
+read/workflow/recovery families and real process paths, UI Query binding, server
+adoption, and deletion of their copied Query pipelines. No existing consumer is
+left on an old ordinary execution API pending 9.17.5 or 9.17.6.
 
-Make application intent the ordinary Query interface. An application declares
-its meaning and explicitly registers its contributions; Query supplies the
-binding, installation, request execution, publication, and managed lifecycle.
-Bank, the existing UI/server consumers, and a cross-crate geometry-shaped
-consumer must use that interface without sequencing Query's admission pipeline
-in application glue. Query already owns admission truth; this removes repeated
-consumer orchestration rather than inventing its authority for the first time.
+This milestone installs static application compositions and preserves inherited
+branch/composite semantics. It does not introduce user-authored workflow definitions
+or program adoption/migration. Existing fixed workflow and conditional behavior is
+migrated, not disabled or renamed as future work. 9.17.5 extends this same program;
+9.17.6 publishes workflow definitions under it. There is no second root.
 
-[9.17.3](./milestone-9.17.3.md) remains certified: it establishes exact product
-selection, carried authority, coordinated publication, conditional execution,
-retained reads, independent branch progress, and cleanup. This milestone is
-the post-closure application hardening prerequisite to
-[9.18](./milestone-9.18.md); it does not reopen the historical certification of
-the 9.17 branching umbrella. 9.18 adds semantic correction through this API.
+## Required Successor Boundaries
 
-The central claim is falsified if a new query or operation still needs an
-application-owned select/resolve/admit/execute/publish pipeline; a pure value
-crate must import Query; a convenient call loses occurrence, security, cost,
-or recovery semantics; or Bank passes only through a parallel compatibility
-path. Shorter names and forwarding wrappers alone do not close the milestone.
+| Contract established here | 9.17.5 may add | 9.17.6 may add |
+| --- | --- | --- |
+| Stable canonical program, owner-installed component affinity | Branch-local program revision adoption and compatibility | Workflow vocabulary/definition interpretation under the selected program |
+| Typed operations, conditions, scopes, rule/effect contracts | State and continuation disposition across program change | Admitted dynamic composition of those operations and conditions |
+| Managed owner resources and exact performed/delivery evidence | Adoption preparation, publication and incomplete-transition custody | Definition/instance/proposal/approval custody |
+| Required inventory independent of suppliers | Validation when rules/suppliers change | Assessment joins and user-authored approval/application workflows |
+| Exact composite selection and retained interpretation | Different supported programs current on sibling branches | Branch-local definitions and running instances |
 
-The Pre-M0 CAD adoption exposed a second form of application-owned plumbing:
-authors must currently repeat operation authority, schema registration,
-bindings, output roles and counts, producer/readiness wiring, invariant
-dependencies, and module installation. The Bank world repeats the same semantic
-payment contract across operations, preconditions, abilities, proposal logic,
-derived projections, and contribution installation. 9.17.4.1 corrects both
-boundaries with a semantic feature language and one advanced core IR after M0
-has shipped its first real CAD demo and before this milestone resumes broader
-consumer migration. Runtime contracts remain explicit as installed
-consequences.
+These are additive responsibilities at named owners, not permission to leave weak
+constructors, raw-ID consumers or incomplete lifecycle propagation here.
 
-### Scope decision
+## Current Boundary
 
-Ship declaration bindings, coherent installation, request-bound reads and
-mutations, history/paging/live use, existing workflow and conditional binding,
-typed recovery, discovery, and complete Bank, `worth-ui-query-binding`, and
-`crates/worth-server` adoption. Also ship the primary
-relation-integrity, candidate-invariant, and runtime-cardinality contracts
-needed to prove that a bounded geometry-shaped operation is a real consumer.
-Those are necessary cross-crate foundations, not application prechecks.
+The host facade documents contribution-composed installation, entry-local
+pure-value bindings, request execution, handler/producer/invariant setup and
+exact output correspondence. Existing generated-materialization custody and
+restoration are owner contracts to preserve, not work to recreate.
 
-Do not build the proprietary geometry kernel, engineering methods, renderer,
-or AI agent here. Ship bounded Query-managed demand for the small synchronous
-output group required by house M0. House M2.5 extends that same contract to
-transitive synchronous bridge assessment; M3 adds deferred numerical completion.
-Native project Save/Open remains the house M7E Query/Store handoff. Unsupported producer
-strategies deny explicitly; no placeholder completion methods ship. Advanced
-access/footprints and correlated execution remain 9.19/9.20.
+Concrete inspected boundaries:
 
-## Inspected Boundary
+- Query declaration application schema/query/operation families own typed meaning;
+  entry contributions still repeat related wiring.
+- Query execution's primary_graph owns installation, decision reads, candidates,
+  output demand, conditionals and product-operation progression. Publication's
+  request builders expose that owner.
+- The host README and certification consumer_entry/consumer_root demonstrate
+  separately compiled contributions and Query-free values.
+- In ../worth-proprietary, CAD dependent split queries and
+  worthy-house-application/src/session/model_thread/dependent_split_execution.rs
+  explicitly discover and settle downstream splits. Closed-solid invariants are
+  installed independently across topology. These are the first composition seams.
+- The house plan separates immutable component definitions, occurrences and
+  upgrades; required engineering inventory survives removal of its implementation.
+  These plans inform contracts, not claims of implemented engineering.
+- Bank payments distribute actions, approval transitions, capability rules,
+  balanced postings, projections and installation across declarations and glue.
 
-Evidence baseline: public `73c6019677b959fc6fe9299abf5d23d7b9719a3d`.
-The private house plans were inspected at
-`c93b18e8277546d434d334abb1b1cb5406f69b2c`; their platform dependency still pins
-`dcf0fd70162f489c2e6380525fe40fa25e63b451`. A future private adoption must select
-the certified public revision explicitly; it cannot mix Git and path copies of
-authority crates. These revisions are provenance, not compatibility promises.
+Macros over those inventories do not solve the defect. Authored composition,
+installed dependencies, actual validation and publication must agree through
+existing owners. This specification does not assume all current runtime paths
+are correct or all predecessor tests currently pass.
 
-The material current boundaries are:
 
-| Evidence | Current responsibility or defect |
+## Decisive Proof
+
+The false implementation retains consumer traversal or a weak lower entry behind a
+typed front door, validates a domain buffer instead of the actual owner candidate,
+drops locality or publication evidence, or loses recovery after returning success.
+The following journeys use the installed production roots. Fixtures may not create
+authority, bypass candidate validation or replace effect boundaries under test.
+
+### CAD composition and extension
+
+Use the real CAD entry to create an extrusion and dependent split, replace its
+source, and select the exact settled result. A public independently compiled
+planar consumer proves the platform contract without depending on private CAD.
+
+1. Declare extrusion, split, their typed source/output connection, a local parameter
+   rule and shared topology integrity through one composition. Query derives routing
+   and transitive required-output settlement. Delete the ordinary application loop
+   that discovers and invokes dependent splits for this slice.
+2. Add a second output consumer and a cross-feature consistency rule through public
+   bindings without editing existing feature internals. A local rule also reads its
+   shared tolerance policy: another feature's policy edit must trigger that rule.
+3. Use independent coordinates, incidence and volume expectations. A valid numeric
+   result mislowered into an invalid owner candidate must deny. Validate affected
+   untouched neighbors, created entities and deleted endpoints, not just outputs.
+4. Delay the actual source patch, supersede source during settlement, reject a
+   candidate and retry with fresh evidence. Source publication, derived completion
+   and engineering satisfaction remain distinct. A committed source followed by
+   failed realization is not falsely rolled back. Interrupt delivery after performed
+   source publication, dispose the caller result and resume from owner custody. Deliver
+   a duplicate and foreign-branch/program carrier: no duplicate dependent effects or
+   cross-occurrence routing. A losing source publication schedules no dependent work.
+   Revocation before dependent execution denies freshly; source success remains true.
+   Observe actual delivery/producer contacts and exact settled output, not event logs.
+5. Nest an extrusion/split composition with exported ports and instantiate it twice
+   with distinct declaration identities. Exercise 1, 10 and 100 independent occurrence
+   neighborhoods across those instances. Deny accidental cross-instance bindings and
+   prove intentional exported connections. Hold one at a
+   deterministic rendezvous while another advances. A local edit visits only its
+   dependency/validation closure and honest physical granules. Count actual discovery,
+   gathers, invariant visits, producer contacts and publications.
+6. Preserve retained predecessor output, typed role identity, preserve/create/retire
+   lineage, source-local ABA denial and generated-output reconstruction. Cancel one
+   of two shared interests; the other still settles. Close releases disposable
+   resources without losing unpublished/performed recovery custody.
+
+Fixed triangle/rectangle/pentagon profiles and a genuinely generated split result
+use the same output contract. Adding a fixed profile must not require another
+manual role/count manifest or producer/readiness/authority inventory. Generated
+output rejects undeclared kinds/roles, foreign program handles, ambiguous lineage,
+underestimated bytes/work and missing output. Test each resource maximum and
+maximum-plus-one at its owner rather than in every integrated fixture.
+
+
+### Inherited branch and component behavior
+
+Run the first endpoint on two forks of one selected composite occurrence. Preserve
+exact Relational/Signal/Bridge admission evidence, the selected program interpretation
+and independently retained predecessor reads. A model-only change contacts no unchanged
+Signal mutation owner. An existing explicit conditional-definition extension keeps
+9.17.3's branch-local performed-publication behavior; it cannot globally replace the
+meaning retained by the sibling. Foreign branch/component evidence denies.
+
+Keep current owner definition-extension paths intact while cutting their application
+glue to generated bindings. The new semantic diff/adoption product is 9.17.5; it must
+not be needed to make these inherited branch guarantees true.
+
+### Bank and existing audiences
+
+Use real Bank initiation, approval/rejection, balanced postings and readback.
+Transfer 30 from 100/0 to 70/30 under an independent posting oracle. Illegal
+transitions, self-approval and stale authority deny before effects. Same-key/
+same-intent replay adds no posting or external contact; changed intent conflicts
+before handler execution.
+
+Retain old data, page it and subscribe. Publish a successor and revoke access
+before continuation/live delivery: fresh denial exposes no protected payload.
+Foreign branch/install/query/attempt artifacts with equal visible ordinals deny.
+Preserve losing-outbox behavior: an owner row whose composite publication lost
+cannot dispatch, even in a descendant inheriting it. Recover exact effects,
+never rerun the financial action. Observe actual rail contacts and response-loss
+recovery through real Bank HTTP/user-node/process roots and authentication.
+
+Reuse the Bridge/Signal court for matching/nonmatching/duplicate patches, conditional
+fresh admission, independent branches and cleanup. UI Query projections retain
+granular invalidation, snapshot isolation and view retirement. Server direct/HTTP
+roots preserve fresh authorization. In-process substitutes cannot certify external
+transport or authentication.
+
+
+## Authoritative Meaning And Compilation
+
+### Composition, features and shared meaning
+
+ApplicationCompositionSpec replaces membership-only ApplicationModuleSpec as the
+explicit root. It names shared model bindings, feature/composition instances, typed
+connections, scoped rules, existing declared workflow bindings and publication policy. Reusable
+compositions expose ports and encapsulate membership; nesting expands into this same
+program without installing another runtime.
+
+ApplicationFeatureSpec owns a contribution: authored facts/relations, actions,
+domain lifecycle, derived facts, local rules, output contracts and public ports.
+It can reference shared entities without owning all their facts. Each authored
+fact/relation has one semantic owner; multiple authorized operations may mutate it
+under that contract. Each derived fact has one producer contract with validated,
+nonoverlapping applicability alternatives.
+
+Installation adds capability. Creating/upgrading model instances is a separately
+admitted operation, never a silent installation side effect. Explicit stable feature
+instance identities permit multiple instances of a reusable definition. Qualified
+declaration identities and schema/value/unit/frame contracts are portable and versioned;
+Rust spelling, traversal order and registration ordinal cannot supply identity.
+Reordering unordered declarations canonicalizes equally; meaningful ordering remains.
+Duplicate identities, dangling bindings, incompatible ports and competing ownership
+reject before installation.
+
+Ordinary and advanced contributions converge on one canonical application program.
+The advanced representation retains operation, output protocol, materialization and
+invariant contracts for custom computations, not a competing root. Generated facts
+cannot be overridden or duplicated by direct declarations. Algorithms explicitly
+declare what cannot be inferred. Reuse Query expressions, predicates, paths,
+aggregates and planner analysis; no second expression evaluator or arbitrary Rust
+dependency inference. Entry bindings preserve Query-free domain vocabulary.
+
+### Typed relationships
+
+| Relationship | Contract and consequence |
 | --- | --- |
-| `worth-query-bank-world/crates/bank-server/src/ordinary/` | Bank already offers `query/mutate -> as_principal -> controls -> execute`; its application glue implements that experience |
-| `bank-server/src/application_query/execution.rs` and `ordinary/read/query/application_execution.rs` | Generic invocation plumbing and repeated per-query scope, identity-field, parameter, installation, execution, and publication binding |
-| `bank-server/src/operation_commit/` and `estate_progression/` | Domain computation is interleaved with repeated Query progression and terminal adaptation |
-| `worth-query-declaration/src/application_schema/values.rs` | `TypedApplicationValue: WorthQueryPortableType` attaches Query integration directly to domain values; a separate entry crate cannot implement these foreign traits for a foreign pure value |
-| Declaration schema/query/operation macros and Bank manifests | Useful typed references already exist, but binding and membership/program information are repeatedly authored |
-| `worth-query-execution/src/domain_computation/primary_graph/product_operation/` | Real selected-product admission and transaction progression; `transaction()` belongs to product entry, not the consumed selected read object |
-| Primary `schema_layout/registry_lowering.rs` | Relation lowering installs default integrity, cross-context prohibition, and retained dangling audit posture; it does not install a domain's closed-loop integrity contract |
-| Installation `application_operation/contracts/compilation.rs` and primary `provider/resource_support.rs` | Fixed primary invariant slot and declaration-width-derived resources, including a fixed retained-byte envelope; repeated creates alone do not prove admitted variable-cardinality construction |
-| `worth-query/docs/capabilities/declarative-query-experience.md` versus `foundations/ordinary-application-front-door.md` | Competing ordinary-workflow explanations; the workspace string declaration language is not a substitute for the authenticated application product |
+| Membership | Explicit feature/composition identity; membership grants no authority |
+| Ownership/reference | Semantic owner, endpoint type, multiplicity, scope, deletion and repair posture; reference alone implies no execution order |
+| Data dependency | Typed input/output, source identity, completeness, freshness, scope mapping and resource bound; derives invalidation/readiness |
+| Workflow precedence | Typed result/condition, enabled successor and failure continuation; grants no reads/writes |
+| Obligation/evidence | Applicability over required subjects, accepted evidence type/version/source and coverage; missing supplier never deletes the requirement |
 
-Paths in this table are relative to the named workspace's `crates` directory
-unless a workspace is explicit. The recorded Bank compile failure is dominated
-by portable-type bound cascades. It is evidence of a broken consumer, not a
-count of independent architectural defects or proof that later server paths
-compile. `compare_and_commit_application` currently exists; this milestone
-internalizes its ordinary orchestration rather than claiming it was removed.
+Connections bind typed ports and occurrence scope mappings, not arbitrary callbacks.
+Cross-feature access uses exported contracts. Unbound required ports or ambiguous
+required suppliers reject validation. Optional ports declare absent behavior.
+Assessment suppliers may be absent only where the application permits an unmet
+obligation; absence cannot fabricate passing evidence or waive hard integrity.
 
-Bank has no green compile baseline at this revision. Phase 1 repairs its value
-bindings directly into the destination contract; Phases 2/3 repair and migrate
-the dependent read/operation paths. Do not first restore the superseded API.
-Use certified 9.17.3 owner/public oracles and Bank's accepted product contracts
-as independent expectations. Record existing diagnostics separately from new
-failures; a cleared declaration target does not imply the server is green.
+Ports own value/unit/frame type, cardinality, completeness and freshness contracts.
+The input's authored relation identifies source attachments. A connection binding
+maps that relation's concrete occurrences to an exported producer port and declares
+any additional bounded scope transform; it does not repeat the relation path.
+Installation checks that mapping against both ports and derives source identity,
+dependency/impact routes and the combined resource ceiling. Ambiguous or unbounded
+mappings deny; a dependency edge alone cannot authorize source mutation.
 
-## Adversarial Constraint And Decisive Proof
+Model topology may contain legal cycles. Reusable-definition nesting is acyclic and
+bounded. Computation cycles reject unless an explicitly installed bounded coupled-solve
+producer owns the island and its atomic outputs. Workflow back edges are explicit
+bounded retry/revision transitions with progress/cancellation, not peer scheduler
+recursion.
 
-The plausible false implementation is a friendly facade which caches authority
-or latest state, moves the old pipeline into a product helper, generates
-unstable identities, validates only an algorithm's buffer, or flattens partial
-effects into an error that invites retry. The following worlds must convict it.
-All actions enter through declaration and host audience facades and the actual
-primary application composition root. Certification sidecars observe lower
-owners; they do not create the action's authority.
+### Scoped rules and coverage
 
-### Bank: one consumer across time, permission, and effect boundaries
+Every rule declares **owner, governed scope, dependencies, applicability, enforcement
+and budget**. Owners may be a feature, component definition/instance scope, reusable
+composition, domain or application. Scope is typed and parameterized by concrete
+occurrences; local does not mean every instance of that feature. Overlapping rules
+conjoin; child rules cannot override ancestor hard rules.
 
-Install the existing Bank schema and real principal/capability bindings.
-Use ordinary account creation/funding and immutable journal postings to give A
-100 currency units and B zero. A transfer of 30 yields 70 and 30 under the
-independent accounting oracle; balance is derived from authoritative postings.
-Use the actual approved business-payment and estate journeys as additional
-operation families, including distinct-approver and elevation restrictions.
+Declarative rules derive impact from Query predicate/path/aggregate IR, including
+reverse dependencies and absence reads. Custom rules bind pure code with explicit
+bounded dependencies and prepared scope. A feature-local rule consuming a shared
+host reacts when another feature edits it. Missing required data, truncated traversal
+and exhausted scope are typed failures, not passing empty views. Closure includes
+affected untouched neighbors. Rule inspection cannot widen disclosure authority.
 
-1. Retain an account-activity read, open a paged read and live subscription,
-   and prepare two mutations against the same selected source. Publish one.
-   The retained read remains old, a new current request sees the successor,
-   the competing attempt is stale before effects, and pages remain bound to
-   their original ordering and occurrence.
-2. Revoke the observer's access before delivering its queued live update and
-   before resuming its continuation. Fresh delivery/readmission denies access
-   with no protected payload. Retaining old data does not retain permission.
-3. Substitute another account, branch, installation, request attempt, cursor,
-   or bound query at the next applicable boundary. Equal visible ordinals do
-   not make genuine foreign artifacts interchangeable. Include valid twins
-   reaching the disputed provider or publication boundary.
-4. Duplicate the transfer request with its stable idempotency key. No second
-   journal or external transport contact occurs. Reuse that key with different
-   intent: preserve the existing typed conflict, never silently replay it.
-5. Exercise cancellation before effects, retained owner effects before product
-   publication, and deferred settlement after performed publication. Recovery
-   resumes the exact obligation and never executes the transfer again.
-6. Preserve the 9.17.3 losing-outbox scenario: the owner row really exists,
-   its composite publication lost, and neither initial dispatch nor redispatch
-   becomes eligible, including after a later descendant inherits the row.
-7. Hold A at a deterministic owner rendezvous while B completes unrelated
-   branch work. The API introduces no global session lock. The shared Query
-   Signal court below supplies the conditional proof; do not pretend Bank
-   already installs that producer graph.
-8. Exhaust installed subscription/retention capacity, close clients, retire the
-   branch, settle retained obligations, and close the application. Counts
-   plateau; cleanup neither evicts protected reads nor loses recovery custody.
+Distinguish hard integrity, readiness and assessment:
 
-The real Bank HTTP/user-node boundary must also run current read, mutation,
-continuation, live revocation, and recovery adaptation. An in-process imitation
-does not certify wire adaptation. Authentik and external-rail observations use
-their existing honest lanes; a unit fixture's principal is not process proof.
-Phase 3 explicitly adds Bank lifecycle forwarding to the public owner close/
-retirement routes and installs the real external-rail transport in the process
-composition used to certify rail recovery. Existing unit-only rail installation
-is insufficient. Exercise response loss and owner recovery with independently
-observed rail contacts; preserve the process court's real authentication lane.
+- Hard integrity checks the actual proposed owner view and blocks publication.
+- Readiness requires complete exact-source outputs. A numeric return or locally
+  fresh child cannot establish transitive completion.
+- Assessment can be complete but failing. Required inventory comes from authored
+  requirements/applicability independently of installed suppliers or existing outputs.
+  Deleting a required subject must be checked against the requirements that required
+  it, rather than shrinking the population until coverage passes.
 
-### Shared Query Signal court
+A domain-owned rule is defined once by its domain entry package; an application or
+composition explicitly installs it at a typed scope. Installation location does not
+transfer semantic ownership. A composition-owned cross-feature rule has its own
+qualified identity and references exported contracts. Semantic diff preserves both
+rule identity/owner and every installation scope; scope changes cannot disappear
+behind unchanged rule code.
 
-Reuse the certified primary composition with actual installed Bridge/Signal
-bindings. Through the new public entry, select/read a branch, perform a World
-publication, deliver its actual patch, and run the matching conditional under
-fresh admission. Nonmatching patches invoke no producer; duplicate delivery
-does not duplicate effects. Hold one branch at the owner rendezvous while its
-sibling advances, preserve a retained predecessor read, then close all resources.
-Observe real producer contacts and owner retention. Bank's prohibition on raw
-`SignalGraph`/local scheduling is preserved; it does not prohibit Query-managed
-Signal. No new Bank business rule is invented to host this shared proof.
+Removing rules, changing applicability or transferring fact ownership requires
+[9.17.5 program adoption](./milestone-9.17.5.md). Before that product ships, this
+static authoring entry exposes no live program-edit shortcut; existing owner
+conditional-definition behavior remains governed by 9.17.3, not a rule-removal toggle.
 
-### Geometry-shaped consumer: independent values and actual graph effects
 
-Use a small public certification domain, not a dependency on proprietary code.
-A separate pure value crate defines finite lengths and local numeric values
-without Query. Two entry contributions bind modeled topology and a parameter
-operation to one application schema. Register them explicitly at one root.
+### Exact feature and action contracts
 
-Construct 1, 10, and 100 independently placed box-shaped topology groups in one
-bounded operation per requested group batch. Use explicit vertices, edge uses,
-ordered cyclic incidence, face ownership, and model identity. The domain's
-scope is the fixture's declared planar topology contract, not a certified B-rep
-kernel or a building-safety claim. A simple independent combinatorial oracle
-predicts counts, incidence, and coordinates from dimensions and placement.
+An installed feature instance is identified by root identity plus its explicit
+composition-instance path and declared semantic identity/revision. A domain occurrence
+is separately identified by native model/entity generation. Instantiating a feature
+twice does not allocate domain occurrences; creating two domain occurrences does not
+create two declarations. Port scope mappings bind these dimensions explicitly.
 
-- Reserve requested counts and bytes before allocating candidate identities.
-  Allocate handles first, then populate fields and cyclic relations. One
-  successful operation produces one World publication with a complete group;
-  no per-vertex commit, subscription, or provider session is permitted.
-- Inject zero required links, two links in a single-successor relation, a
-  broken cycle, foreign-model endpoint, wrong unit/frame binding, and deletion
-  with an untouched inbound neighbor. The
-  primary owner's actual candidate validator rejects before publication.
-  A valid algorithm result followed by a mislowered candidate must still fail.
-- Change a tracked source after preparation and cancel a second attempt after
-  allocation but before publication. Both leave the source graph unchanged,
-  publish nothing, and release reservations; valid twins reach publication.
-- Replace or delete a group while holding an old read. A fresh read sees the
-  complete successor; the retained read sees the complete predecessor. No
-  dangling live incidence is legalized by an audit tombstone.
-- Admit a batch at the declared maximum and deny maximum-plus-one before
-  allocation. Exhaust candidate bytes and validator work independently.
-  There is no fake declaration widening to obtain more resources.
-- Edit a Rust module or local marker name while retaining the declared semantic
-  identity. Portable meaning remains identical. Change a representation/unit
-  contract without the required identity/revision change and reject binding.
-- Feed a contribution from another schema or installation into the root's
-  binding. Compiler denial or installation rejection occurs before execution;
-  no public generic marker supplies authority.
+ApplicationActionSpec owns the following facts once:
 
-For demand, install a real producer deriving a bounded body summary from the
-published group. A committed group alone cannot satisfy its demand. Delay its
-patch, change the source, exhaust demand capacity, and cancel one of two shared
-interests. Require exact-source `Superseded`, bounded custody, surviving sibling
-interest, and settled output only after the actual producer publication and
-required closure evidence. Missing required output is never vacuous success.
+| Authored fact | Expansion and consumer |
+| --- | --- |
+| Input/result/domain denial and value bindings | Generated intent/result types and checked codecs; transport remains descriptive |
+| Target scope and required observed source | Installed source selector and mutation builder requiring its expectation |
+| Preconditions and lifecycle transition | Query expressions/reads and candidate before/after checks; illegal transitions deny before effects |
+| Capability, purpose and disclosure | Existing fresh admission route; a semantic capability name grants no authority |
+| Declarative changes or custom compute binding | Permitted effect ceiling and bounded reader/writer implementation slots |
+| Output/lineage and emissions | One output protocol and candidate program; no second role or event inventory |
+| Resource and interruption policy | Installed ceilings plus actual pre-allocation reservation/checkpoints |
+| Idempotency, publication and aftermath posture | Required request refinements and exact legal terminal/recovery actions |
 
-Retain 9.17.3's independent cost/occurrence observations. Instrument actual
-sessions, selections, allocations, candidate touches, validator visits, World
-publications, matching producer visits, and retained bytes. An oracle must not
-call production lowering to compute its expected answer. Repeated create calls
-passing isolated owner tests are supporting evidence, not this journey.
+Required clauses cannot be silently defaulted. Explicit NoExternalEffect and
+NoAftermath are decisions, not omitted fields. Domain transitions such as
+ApprovalRequired -> Committed or Rejected remain distinct from materialization
+Create/Preserve/Replace/Retire. A transition action compares the admitted before-state,
+checks its permission, writes through the candidate, and validates the actual after-state.
+Changing handler code cannot add a state, read, effect, transition or capability.
 
-### Existing UI and server consumers
+Query expressions derive dependency paths for predicates, projections and aggregates.
+A custom numerical or domain algorithm supplies a typed compute binding, declared
+bounded input footprint, effect/output ceiling and actual resource request; Query
+does not inspect arbitrary Rust to infer its behavior. Complete posting membership,
+absence reads and dependency completion remain owner-checked, not cached business facts.
 
-`workspaces/worth-ui/crates/worth-ui-query-binding` must derive and refresh its
-real projections from the application entry, retain snapshot isolation, deliver
-bounded granular invalidation, and release live resources on view retirement.
-`crates/worth-server/src/worth_native/direct` must register its actual product
-adapters and execute reads/projections through the same entry. Run affected
-direct and HTTP adapter integration journeys, including stale projection and
-fresh authorization denial, against their real roots. These are mandatory
-consumer migrations, not examples covered by Bank's success. Source/export
-deletion checks support these runtime proofs; they cannot replace them.
+The canonical program contains explicit qualified membership, typed port bindings,
+operation/rule/materialization contracts and authored-clause provenance. Canonicalization
+resolves references and expands reusable compositions deterministically. Validation
+checks declaration completeness, duplicate/ambiguous ownership, compatible bindings,
+legal cycles, exact required suppliers, resource policies and provider requirements.
+Native schema compatibility and actual factory availability are installation checks;
+live scope/currentness and authority are execution checks. Each phase consumes the
+previous result instead of re-deriving it.
 
-## Product Decision Lock
+### Declaration-to-owner disposition
 
-1. One application runtime and one admitted execution spine. Product adapters
-   supply vocabulary, domain handlers, and external transport; they do not
-   implement admission, selection, disclosure, publication, or recovery policy.
-2. Explicit contribution registration owns membership. A declaration owns
-   meaning once; code generation derives wiring. No filesystem scan, linker
-   registry, reflection, or global registration order is semantic authority.
-3. Pure meaning and numeric crates remain Query-agnostic. Entry-owned binding
-   markers associate pure Rust values with Query contracts without requiring
-   foreign-trait implementations on those values or wrapper values in solvers.
-4. Portable identity is explicit, stable, and versioned. Rust spelling, process
-   addresses, type names, numeric registration order, and ad hoc hashes do not
-   define portable meaning. Existing aspect identity remains domain-owned.
-5. App lifetime, request context, selected attempt, and retained resource are
-   distinct. A long-lived app or request builder is not cached admission.
-6. Each execution selects exactly once before admission and carries the
-   occurrence. Explicit retained reads can reuse exact data; they readmit the
-   request's current security. No later phase resolves latest.
-7. Query internally owns the ordinary phase pipeline. Installed handlers see
-   only the exact bounded read/candidate capabilities needed for their role.
-   Typestate remains at meaningful read/effect and authority boundaries.
-8. Declarations state the permitted effect ceiling. Actual effects are produced
-   by the executed handler and owner candidate. Neither substitutes for the
-   other. Generate duplicate wiring, never invent the effects of an algorithm.
-9. Primary graph integrity is mandatory and declaration-owned. Engineering
-   findings can describe a lawful but unsatisfactory design; they cannot waive
-   hard graph validity or manufacture a complete-house assessment.
-10. Every variable-cardinality mutation has a pre-allocation resource envelope.
-    Complete atomic groups never become a series of visible scalar commits.
-11. Local mutation, performed composite publication, durability settlement,
-    external completion, and derived-output completion remain different facts.
-    No ordinary `Result<(), String>` or success boolean erases their posture.
-12. Ordinary current reads, pages, retained reads, and live views use one typed
-    query binding. Their resource and security lifecycles remain distinct.
-13. The default is bounded current-branch execution under installed policy.
-    Branch choice, pinning, wider scope, special disclosure, external effects,
-    retries, and changed guarantees require typed explicit choices.
-14. Existing `worth-proof` carriers and Foundational vocabulary are reused.
-    A new legality witness belongs in `worth-proof`; portable cross-runtime
-    meaning in Foundational; counters, leases, tables, and Drop in the owner.
-15. All migrated ordinary consumers cut over. No deprecated aliases, forwarding
-    legacy methods, dual authority lanes, or Bank-only compatibility helpers.
-    Historical specifications remain historical records, not current guides.
+| Product | Constructor and contents | Consumer and limit |
+| --- | --- | --- |
+| Completed static composition | Generated typed builder/macro with every required binding | Declaration canonicalization; not installation authority |
+| Canonical application program | Declaration owner; stable identities, expanded contracts and provenance | Structural validation and explanation; immutable descriptive meaning |
+| ValidatedApplicationProgram | Declaration validation owner; completed structural constraints and required slots | Installation with exact native contracts/providers; cannot execute by itself |
+| Installed application | Existing installation/execution owners; complete schema, provider and component bindings | Fresh requests; not cached principal or selected branch authority |
+| Selected/admitted attempt | Existing Query/World/proof owners | Exact bounded read/candidate lifecycle; cannot reselect latest |
+| Validated owner candidate | Actual Relational/provider progression | Coordinated World publication; no numerical-buffer substitute |
+| Performed result/change | World performed artifact projected by existing terminal/delivery owners | Exact caller result, delivery and recovery; no second commit or unrestricted mutation |
+| Settled required output | Existing demand/Signal/World owners with exact closure and retained output | Fresh exact read; not a success claim from a receipt or local child alone |
 
-## Required API Experience
+The runtime type names already owned below these semantic products remain canonical.
+Do not introduce one marker wrapper per row to pretend the progression is enforced.
 
-The namespaces and call shapes below are normative targets. Implementation
-planning may refine private names and layout within the destination boundaries;
-changing the caller semantics or responsibility split requires a spec revision.
-Examples become executable public-facade examples when their phase ships.
+### Compilation and authority
 
-### Audiences and discoverability
+~~~text
+ApplicationCompositionSpec + declared advanced contributions
+  -> canonical application program
+  -> ValidatedApplicationProgram
+  -> installed program support and branch-affine activation evidence
+  -> fresh request / exact selected composite occurrence and program
+  -> completed reads and admitted reservation
+  -> protocol-validated proposed delta
+  -> actual owner candidate and required invariant evidence
+  -> owner preparation / coordinated World publication
+  -> performed publication evidence
+       -> caller result / retained observation / recovery custody
+       -> governed change delivery through installed graph connections
+       -> Signal eligibility and fresh Query admission for dependent work
+       -> dependent publication when needed / required-output settlement
+~~~
 
-`worth-query-decl::facade` exposes declaration families: value bindings,
-application contributions, queries, operations, invariants, capabilities,
-effects, and existing conditional/workflow meaning. It executes no request.
+Canonical definitions/reports describe meaning; they authorize no mutation.
+Installation consumes validated meaning plus complete provider/resource bindings,
+checking native schema, applicability and invariant closure before publishing a usable
+root. The execution handoff consumes substantive completed owner evidence, not assembly
+or caller flags. Ordinary callers cannot skip required validation and compile publication.
+Generations, current security, geometry and actual capacity remain runtime checks.
 
-`worth-query-host::facade` reexports owner-defined `application`, `installation`,
-`handlers`, `resources`, and `inspection` entry namespaces. The host crate adds
-no implementation, history, dispatch policy, or wrapper runtime. `application`
-exposes the real hardened primary runtime and its request entry. Handler
-contracts are a deliberate integration audience, not an alternate application
-executor. `worth-query-replay` remains certification-only.
+Pure schema/domain/math packages stay Query-agnostic. Entry-local bindings associate
+codecs, units/frames and portable identity. Query declaration/install/execution owners
+compile and coordinate; Relational validates candidates, Bridge routes actual changes,
+Signal manages eligibility, World owns occurrences/publication/retention.
+New legality evidence belongs in worth-proof; cross-runtime immutable meaning in
+Foundational; leases/tables/counters in their owners. Reuse concrete carriers.
+Audience facades re-export, not implement. Roles, explanations and serialized intents
+cannot mint authority.
 
-Only domain entry/composition code needs the host binding types. HTTP handlers,
-UI actions, and agent tools consume generated typed intents and application
-results. Numeric algorithms receive their specialized packed values, not
-`HouseSchema`, field-reference generic tuples, runtime handles, or Query plans.
+Handlers get bounded decision readers and protocol-bound writers. Complete tracked
+field/adjacency/aggregate/absence reads precede reservation. Single-target reads reject
+wrong declared cardinality; bounded reads never return successful prefixes. Numerical
+work receives pure values and scratch/checkpoints, not runtime/publication handles.
+Resource requests are bounded metadata arithmetic, not another solve.
 
-### Value binding and explicit composition
+### Compiler-enforced contracts from authoring to owners
 
-This destination declaration creates a local marker, not an implementation on
-the `AccountId` value. The same contract works when the value is owned by a
-separate crate, as the pure-value certification consumer must demonstrate:
+The application graph is an enforcement boundary, not only descriptive metadata.
+Static feature inputs/outputs, connection contracts, rule requirements and lifecycle
+transitions use generated typed references and associated contracts. Required bindings
+must be supplied before a static composition can produce its completed declaration;
+wrong value/unit/role/truth-status connections fail compilation where their distinction
+is statically known. Optional input means an explicitly declared absent posture, not
+an empty default that skips preparation. Runtime-authored definitions in 9.17.6
+must consume these same contracts through validation; no erased input path may bypass them.
 
-```rust,ignore
-worth_query_value_binding! {
-    pub AccountIdBinding for crate::model::AccountId {
-        identity: "worth.bank.account-id.v1",
-        scalar: UInt64,
-        encode: crate::model::AccountId::get,
-        decode: crate::model::AccountId::new,
+Declarations specify required authority; they never issue it. Each runtime boundary
+consumes the concrete canonical evidence supplied by its rightful owner, narrows the
+available capabilities to the declared operation, and carries the resulting evidence
+into the next phase. Validation returns a substantively stronger phase; returning Self
+while publication was already callable is insufficient. Evidence includes the relevant
+source, branch/composite/component/program affinity, completed dependencies, resource
+reservation and actual validation results. Recheck only facts whose owner/trust/currentness
+boundary requires it; never reconstruct lost proof from identity or repeat completed
+work merely because a lower layer failed to carry the result.
+
+Compiler-total construction applies to feature installation and initial execution,
+fork/adoption, replacement, retry, reconstruction and cleanup. A newly required input,
+proof or managed lifecycle responsibility must break incomplete owner construction and
+handoff sites until they propagate it or return a typed owner-approved disposition.
+No Default, empty Option, catch-all outcome handling or public constructor may silently
+supply required evidence or discard recovery custody. Drop can release disposable
+interest; preserving performed obligations remains an explicit owner lifecycle, proved
+through real rejection/cleanup tests rather than claimed from typestate alone.
+
+Governed signatures accept the canonical semantic owner's types through its facade.
+Consumer-defined lookalikes, generic AuthorityMarker bounds, raw internal IDs, strings
+and serde-decoded descriptions cannot substitute for those types. Constructors and
+representation access are private to the responsible owner; no public From/raw-parts
+conversion may recreate authority. Distinct types remain necessary for genuinely
+different meaning, authority or phase. Do not invent a second type for the same
+contract just to bridge crates; use its owner and lawful dependency direction.
+
+Labels, diagnostic formatting, transport and portable archives legitimately use strings
+and bytes. Decoding yields untrusted intent/description followed by fresh owner admission,
+not a deserialized lease or validation witness. Private runtime lowering may use compact
+IDs/erased storage only behind the owning boundary with the original typed evidence and
+checked affinity still governing consumption. Pure algorithms receive domain values,
+not Query authority. The compiler cannot detect every internal string conversion or
+semantic duplicate; private representation, sealed construction, concrete consuming
+signatures and existing dependency enforcement prevent their use as bypasses.
+
+During each vertical cutover, strengthen the real consuming signatures and remove their
+weaker alternatives. Use compiler errors to repair the affected producers and sibling
+lifecycle paths all the way to the relevant lower owners. A typed front door over an
+ordinary string/raw-ID/forged-wrapper back door does not pass. Do not add wrappers at
+every layer or absorb unrelated internals; correct the complete causal handoff for the
+migrated contract and prove it through the production endpoint.
+
+Keep compile-time structure proportional: feature contracts and legal phase progression
+are static; occurrence populations, native generations, branch movement, permissions,
+capacity and successor user-authored graph structure are runtime facts. Do not encode the entire
+live graph or every revision as a giant generic type. Entry-local monomorphization,
+associated contracts and owner-managed dynamic admission preserve compile cost and
+Query-free domain packages. Compiler checks enforce obtaining the validation result;
+owner checks establish its truth for the selected runtime facts.
+
+
+### Concrete providers and validation products
+
+Feature/composition declarations generate contribution membership, required handler/
+producer/rule slots and their installation calls. The root supplies a typed tuple
+of concrete implementations keyed by those generated slots: custom domain handlers,
+invariant factories, producer implementations, authentication, clocks and external
+adapters. Declarative predicates use compiler-owned evaluators. A custom rule's entry
+binding names its factory once; root configuration supplies its domain configuration,
+not a second target/read/registration inventory. Missing, duplicate, foreign or
+meaning-incompatible providers deny before bootstrap. The existing contribution/setup
+traits become internal lowering contracts for migrated definitions; ordinary authors
+cannot use them to augment or override generated meaning. Advanced core contributions
+enter the same validator and generate the same required implementation slots.
+
+Declaration constructs canonical/structurally validated program products with private
+constructors; installation alone constructs complete installed products. None is a
+public boolean marker or deserializable validation claim. Concrete legality witnesses remain owner-issued worth-proof types;
+validation products cannot independently grant execution authority.
+
+A validated program binds its canonical revision and exact schema/provider contract
+identities. Initial installation checks them before minting owner activation evidence.
+Program revision is descriptive content identity; selected owner evidence establishes
+which meaning applies. Branch adoption and runtime workflow publication consume stronger
+live validation in 9.17.5 and 9.17.6, respectively; they cannot reinterpret this product
+as fresh authority. Serialized authored programs must validate again.
+
+Existing initial-state seeding survives only at the governed unpublished bootstrap
+boundary: once per new root, after complete contracts/providers are admitted, under
+bounded candidate integrity and before any usable root escapes. It is not a feature
+installation callback for editing an existing world. Failure releases staging; later
+creation, adoption and instance upgrades use ordinary admitted operations.
+
+
+### Outputs, publication and ordinary lifecycles
+
+Fixed protocols derive exact manifests/cardinality. Generated protocols declare
+structural grammar, roles, lineage, envelope and bounded custom validation.
+The writer records effects and role/lineage metadata together; the immutable manifest
+projects that same program. Preserve/create/replace/retire are materialization
+postures, distinct from domain lifecycle states. Program-affine handles cannot become
+published identity. Correspondence checks binding, role, entity marker and action.
+
+Reserve counts/bytes/work before allocation; allocate then populate cyclic groups.
+Created targets initialize; existing targets resolve from completed reads before
+write/delete. Failed verbs add no partial logical effect. Proposed views overlay the
+actual candidate on its basis, including untouched admitted neighbors; committed
+views are that basis, not latest. Protocol checks never replace domain integrity
+or validate only an algorithm's buffer.
+
+Materialization declarations derive variant/posture routes, applicability, producers,
+readiness and required closure. Missing/overlapping applicability denies rather than
+selecting registration order. Dataflow grants no authority over another feature's
+authored inputs. Automatic source mutation, proposal and approval-gated mutation are
+explicit policies with distinct admission.
+
+Publication policy chooses source publication with subsequent managed settlement or
+required prepared results within a supported coordinated operation. The latter needs
+one admitted atomic candidate/owner transaction. Separate committed steps cannot claim
+rollback of the whole composition. No global graph transaction or request lock.
+Numerical completion, owner effects, composite publication, external settlement and
+engineering satisfaction remain distinct.
+
+Ordinary execute for source-then-settlement returns the actual source publication
+outcome; it does not block until derived geometry settles or report geometry success.
+The generated result exposes start_required_outputs under explicit demand controls.
+That managed interest performs the complete transitive work; consumers may await its
+notifications but may not traverse dependencies. Synchronous describes the supported
+producer strategy, not an implicit unbounded wait by execute. Source and demand have
+separate visible deadline/cancellation budgets; cancelling demand cannot undo source.
+A prepared-results atomic policy returns publication only after its required validation
+inside the admitted attempt's budget, or the existing typed failure/custody outcome.
+SettlementDeferred continues to describe actual owner settlement, not missing derived
+outputs. The CAD endpoint observes source commit and the first exact Settled output.
+
+Bounded demand fixes source, transitive inventory/applicability, producer versions
+and resource/disclosure contracts. Pull forward synchronous transitive closure needed
+by extrusion/split. Pending carries owner notifications; source drift is Superseded;
+Settled carries exact retained selectable output and required closure evidence.
+Missing output is incomplete; completed failing assessment can be settled.
+No polling latest, manual downstream calls or synthetic patches establish completion.
+Coalescing requires validated source/closure/policy equivalence and independent release.
+
+### Publication evidence returning to runtime
+
+Type enforcement continues after publication. World-issued performed evidence and
+its owner-derived change carriers feed governed delivery, invalidation, conditional
+eligibility, materialization, settlement and recovery. A descriptive receipt, commit
+ID, serialized event or caller-created success marker cannot replace them. Reuse the
+existing performed-product-change and delivery contracts; do not add a publication
+wrapper, second commit fact or parallel event authority.
+
+Graph connections derive routing through the existing Query/Bridge/Signal owners.
+Ordinary application code neither selects dependency ordinals nor rebroadcasts receipts,
+invokes downstream producers, or reparses emitted strings to decide what runs. The
+canonical performed artifact supplies all projections. Each effectful consumption
+uses its owner's bounded custody and duplicate-delivery rules; sharing descriptive
+metadata does not duplicate publication or dispatch authority.
+
+Delivery preserves exact branch/composite occurrence, component bases, program and
+installed route affinity through the owner-defined carrier. Delayed work cannot be
+retagged as current or routed under another branch's program. Delivery/readmission
+must use compatible exact evidence or return typed stale/superseded/recovery outcomes.
+Eligibility permits fresh Query admission, not another mutation by itself; source
+publication cannot carry the caller's old permission into dependent work. Pure
+invalidation/evaluation need not publish a new authoritative occurrence. Work that
+mutates authoritative state returns through the same candidate/invariant/World path.
+
+A failed product publication cannot emit a successful performed-change carrier or
+trigger ordinary dependent effects. After successful publication, delivery failure,
+backpressure, cancellation or caller-result disposal cannot undo source publication
+or discard required pending custody. Required delivery/recovery remains with its
+existing owner until completed or lawfully retired; dropping one client interest
+releases only that interest. Fresh authorization and effect-specific recovery rules
+still apply. Typed lifecycle handoffs must survive this entire return path.
+
+Preserve these ordinary contracts through migration:
+
+| Boundary | Required behavior |
+| --- | --- |
+| Request | Concrete authenticated principal/scope; each execution selects once and freshly admits; explicit branch choice, no late latest selection |
+| Source expectation | Required edits cannot execute without owner-projected source description; compare schema/install/model/branch incarnation, entity generation, contract and native aspect/adjacency versions through publication; ABA denies, unrelated sibling movement does not |
+| Authority | Existing all/any capabilities, purpose/disclosure, delegation, expiry, revocation, elevation request/approval and distinct approver; pending elevation is not approval |
+| Reads | One query for current/retained/history/page/live/saved views; exact source/order, fresh resume/delivery security; transport tokens never authorize; granular invalidation remains granular |
+| Retention | Default zero client publication pins; opt-in reserves one bounded lease before effects; performed lease carrier alone opens exact read-after with fresh security; descriptive receipts cannot reconstruct leases |
+| Idempotency | Key required before execute; same intent replays before handler/allocation/external contact; different intent conflicts; unavailable replay retention preserves AlreadyCommitted |
+| Outcomes | Preserve Committed, AlreadyCommitted, Stale/ProductStale, NoEffect, Denied, Cancelled, TimedOut, Deferred, Aborted, ProductUnpublished, SettlementDeferred and Indeterminate with typed causes/custody |
+| Recovery | Separate unpublished cleanup, provider uncertainty, settlement and external dispatch; exact recovery, not generic retry; mandatory cleanup remains reachable after capability loss |
+| Concurrency | Shareable installed root; owner-confined attempts/readers/writers/live handles; value-only worker handoff; no global lock, unsafe auto-trait fiction or transferred lease authority |
+| Cleanup | Bounded queues/interests/retention/checkpoints/backpressure; close fences new admission and releases disposable work without dropping unresolved effects |
+
+Source stamps exclude derived output from authored-source dependencies; they preserve
+native adjacency revisions even for empty results and include consumed target fields.
+Malformed/incomplete stamps cannot become absent expectations. Descriptions grant no
+authority. Preserve precise source/resource denials, optional-field clearing and
+exact codecs. External effects use outbox/recovery contracts; candidate emissions
+become deliverable only after performed publication, never through direct peer calls.
+
+
+### Reconstruction
+
+Reconstruction uses authoritative model/definition revisions, lineage and owner custody.
+Destroying derived materializations cannot lose authored truth, requirements or recovery.
+Existing generated-output suspension/completion/restoration preserves version/lineage
+denial and unpublished restoration custody. Production restoration uses actual owner
+surfaces; replay/certification stays cert-only. In-memory reconstruction cannot claim
+durable restart or native Save/Open, which belong to Store/house milestones.
+
+
+### Inspection
+
+Inspection explains ownership, membership, typed connections, scoped rules/dependencies,
+definition versus instance, selected branch/composite/component/program affinity,
+exact evidence, pending causes, resources and installed contract provenance.
+9.17.5 adds adoption impact and 9.17.6 adds dynamic definition/instance inspection.
+Generated contracts retain provenance to authored clauses. This projects validated
+meaning and owner evidence, not a second truth graph. Disclosure/retention applies;
+rich explanation is on demand, never mandatory per-edit work. Discovery grants no
+execution authority.
+
+
+## Required Authoring Experience
+
+These Rust macro shapes are destination contracts, not current API claims. Turn them
+into compiled public examples when their phase ships. Private mechanics may vary;
+authored facts, typed boundaries and absence of repeated wiring may not.
+
+~~~rust,ignore
+worth_application_composition! {
+    pub CadApplication {
+        identity: "worth.cad.application.v1",
+        model: CadSchema,
+        features: {
+            extrusion: ExtrusionFeature,
+            split: SplitFeature,
+            summary: BodySummaryFeature,
+        },
+        connections: {
+            split.source <- extrusion.body_set via SplitSourceBinding,
+            summary.source <- split.body_set via SummarySourceBinding,
+        },
+        invariants: {
+            SolidIntegrity on CadSchema::affected_solids,
+            SplitVolumeConservation on split.scope,
+        },
+        publication: SourceThenRequiredGeometry,
     }
 }
-```
+~~~
 
-Bindings carry representation, exact conversion, unit/frame identity where
-applicable, validation, and portable contract identity. Decode failure is typed;
-it is never truncation or a permissive default. Generic `Money<Currency>` binds
-currency meaning explicitly; distinct currencies cannot share an accidental
-identity. Composite inputs/results declare structured bindings; a field or
-empty role marker obtains its identity from the owning declared contract instead
-of requiring an unrelated manual portable-type census.
-
-Existing `PORTABLE_TYPE_NAME` strings, explicit slot-role identities, native
-aspect identities, and package archive encodings remain byte-stable where the
-semantic contract is unchanged. Moving an implementation to a local marker
-does not rename its portable protocol. Changed meaning needs an explicit
-revision; do not rewrite archive goldens to bless incidental codegen churn.
-Optional-field bindings preserve clearing as distinct from zero or an empty
-value. A unit/frame binding describes representation; frame relationships and
-cross-model transform validity still require graph-carried context evidence.
-
-The value binding authorizes nothing. Installation checks it against the sealed
-native aspect/field contract. Field/query/operation binding internals change
-together so consumers do not manually bridge old value traits to new bindings.
-Foundational-native codecs remain in their semantic owner; Query-specific
-binding identity remains in declaration. Do not move Query contracts into
-Foundational merely to make an orphan implementation legal.
-
-```rust,ignore
-worth_query_query_binding! {
-    pub AccountSummary in BankSchema {
-        identity: "worth.bank.account-summary.v1",
-        input: AccountSummaryInput via AccountSummaryInputBinding,
-        scope: AccountIdentity <- input.account,
-        result: AccountSummaryResult via AccountSummaryResultBinding,
-        definition: account_summary_definition,
+~~~rust,ignore
+worth_feature! {
+    pub SplitFeature {
+        identity: "worth.cad.split.v1",
+        scope: SplitOccurrence,
+        truth: [CuttingPlane, SourceAttachment],
+        inputs: { source: BodySet at SourceAttachment },
+        actions: [CreateSplit, ReplacePlane, RemoveSplit],
+        derived: {
+            body_set: SplitGeometry {
+                compute: SplitGeometryHandler,
+                output: GeneratedSplitProtocol,
+                materialization: ManagedOnDemand,
+            },
+        },
+        invariants: [ValidCuttingPlane, ValidToleranceBinding],
     }
 }
+~~~
 
-worth_query_application! {
-    pub BankSchema {
-        owner: "worth.bank",
-        version: (1, 0),
-        contributions: [BankAccounts, BankPayments, BankEstate],
-    }
-}
-```
+Bindings map concrete source occurrences, not every extrusion to every split.
+Custom handler/protocol/rule definitions provide bounded facts not inferable from
+Rust; declarative dependency paths are not repeated in connection bindings.
+Cross-feature rules belong at their composition owner; local rules remain on their
+feature even with external dependencies. Nested compositions export typed ports
+in the same syntax/identity space.
 
-`definition` supplies the existing typed graph/query semantics, including
-projection and disclosure. Binding associates input fields, scope resolution,
-and result shape once. Generated constructors such as
-`queries::account_summary(account)` return that typed intent; handwritten
-product names may delegate to the same constructor without reimplementing it.
 
-The value-marker example shows identity syntax, not a proposed rename for an
-existing Bank wire type. Phase 1 uses the type's established identity where one
-exists; currently unbound values receive explicit domain-owned identities.
+### Runtime endpoint from the authored graph
 
-Each contribution explicitly registers its definitions once; the root registers
-contributions once. It does not repeat every child member. Cross-domain entry
-contributions target one schema through an entry-owned typed binding contract
-implemented by the root. Required entity/field/relation references are concrete
-schema-derived types; installation verifies exact ownership and generation.
-Do not introduce a universal runtime schema-fragment merger or a registry of
-untyped references. Bank estate and the geometry-shaped fixture prove modular
-composition before the proprietary house adds CAD/building/MEP contributors.
+The public compiling example must show the complete caller experience, with actual
+typed outcomes rather than assuming every call succeeds:
 
-### Current foundation reference
-
-The current host constructor is
-`application_installation::in_memory(Schema::declaration()?, configuration,
-limits, initial_state)`. Its configuration is the tuple derived from the root's
-`ApplicationSchemaComposition::Contributions`; each entry configures only its
-installed members through `WorthQueryApplicationContributionSetup`. It validates
-contribution inventory before callbacks and handler/invariant completeness
-before initial state. Current limits compose World, candidate, query, and
-conditional resource profiles. The broader resource families in the destination
-contract below retain their phase obligations.
-
-The [host reference](../../workspaces/worth-query/crates/worth-query-host/README.md#contribution-composed-applications)
-and [two-entry public consumer](../../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/main.rs)
-show the implemented call shape. That consumer covers the focused foundation;
-it does not establish completion of Bank, UI/server, history/paging/live,
-workflow, recovery, or every remaining 9.17.4 obligation.
-
-### Installation
-
-```rust,ignore
-let app = installation::in_memory(
-    BankSchema::definition()?,
-    bank_bindings,
-    bank_limits,
-    initial_state,
+~~~rust,ignore
+let application = installation::in_memory(
+    CadApplication::validated_program()?,
+    implementations,
+    limits,
+    bootstrap,
 )?;
-```
-
-`bank_bindings` explicitly supplies authentication/principal mapping, installed
-domain handlers, required invariant providers, clocks, and declared external
-adapters. `initial_state` uses the existing governed bootstrap boundary and is
-unavailable after publication. The constructor publishes a usable runtime only
-after complete validation; it does not return a half-installed application.
-
-Named typed resource profiles bind operation, read, page, live, retained-read,
-history, recovery, and candidate limits. Different resource families retain
-their dimensions; there is no giant options bag or universal scalar budget.
-Absent required providers, incompatible schema contributions, identity clashes,
-unsupported modes, and contradictory bounds return precise installation denials.
-Installation derives canonical contracts once. Requests use generation-bound
-installed references; they do not enumerate the schema or reinstall handlers.
-Package signature verification and host trust selection remain explicit.
-
-### Current requests and selected attempts
-
-```rust,ignore
-let request = app.request(&principal, &request_scope);
-
-let summary = request
-    .query(queries::account_summary(account))
-    .execute()?;
-
-let outcome = request
-    .mutate(mutations::send_money(input))
-    .idempotency(key)
+let request = application.request(&principal, &scope).on_branch(branch);
+let source = request.query(queries::extrusion_source(extrusion)).execute()?;
+let outcome = request.mutate(actions::replace_extrusion(input))
+    .expect_source(source.observed_source())
+    .idempotency(command_key)
     .execute();
-```
-
-`request` borrows `WorthQueryAuthenticatedExternalPrincipal<Schema>` and
-`WorthQueryRequestScope` from the existing admission facade. Its construction
-neither admits an operation nor pins a world. Principal input is proof from the
-existing authentication/binding route,
-never a principal ID, role string, or caller-defined authority marker. The
-installed binding resolves and checks the request principal for each execution.
-
-`execute`, `page`, and `subscribe` select one exact product observation when
-they begin admission. Reusing the request builder starts a fresh attempt;
-two calls are not implicitly a snapshot transaction. Queries return governed
-published results with occurrence, ordering, disclosure, and cost evidence.
-Idempotency is required by the mutation builder before `execute` is available.
-Operation-specific preconditions remain typed refinements on that builder.
-
-The application has one installed default branch. `request.on_branch(branch)`
-chooses another Query-issued branch occurrence before execution; it performs no
-component selection. `query.controls(read_limits)` and
-`mutate.controls(mutation_limits)` narrow installed bounds. Defaults are visible
-through inspection and retain the strongest ordinary guarantees. Retry is not
-implicit; a stale candidate is never replayed under fresh authority unnoticed.
-
-### Capability, delegation, and elevation admission
-
-Capability definitions bind scope/action, all/any composition, purpose, and
-disclosure to the intent once. Ordinary intent execution derives the exact
-installed capability route; consumers do not repeat registry lookup or call
-`admit_capability_access` themselves. If a caller chooses a narrower capability
-or delegation, `.using_capability(&grant)` accepts the existing concrete,
-owner-issued grant only. Current activation, revocation, scope, expiry, and
-installation affinity are checked during the same single selected attempt.
-
-```rust,ignore
-let requested = request
-    .request_elevation(elevations::estate_emergency_access(action))
-    .idempotency(request_key).execute();
-let preview = request.query(queries::estate_preview(estate))
-    .with_elevation(&approved_elevation).execute()?;
-let outcome = request.mutate(mutations::estate_action(input))
-    .with_elevation(&approved_elevation).idempotency(action_key).execute();
-```
-
-`request_elevation` is a distinct declared intent binding to the existing
-elevation-request admission/program/commit owner. It requests authority; it
-does not grant elevated execution. Approval, revocation, and mandatory review
-are separately bound workflow intents preserving distinct-approver rules.
-`with_elevation` consumes the existing approved, scope-bound artifact as fresh
-admission evidence; a request receipt, transport token, or boolean cannot fill
-that role. Only bindings declaring elevation support expose this refinement.
-Retained preview, page resume, and live delivery readmit the same requirements
-under current authority. Query retains typed expiry, revoked, foreign-scope,
-wrong-purpose, and pending-approval denials without a generic authority bag.
-
-### Retention, paging, history, and live reads
-
-```rust,ignore
-let pinned = request.retain_read()?;
-let old = request.at(&pinned)
-    .query(queries::account_summary(account)).execute()?;
-
-let page = request.query(queries::account_activity(account))
-    .page(page_limits)?;
-let next = fresh_request.resume(page.continuation(), page_limits)?;
-
-let live = request.query(queries::account_activity(account))
-    .subscribe(live_limits)?;
-```
-
-`retain_read` selects and retains an exact owner-issued occurrence under its
-installed resource bound. `at` is read-only and does not cache authorization.
-The retained read is not an operation permit. Joining several reads at one
-occurrence uses this explicit read context. No mutation method exists on it.
-
-`request.history(branch).page(history_limits)` uses World-owned bounded ancestry.
-A protected entry's `retain_read()` asks the owner to issue its exact retained
-observation. It does not construct authority from a commit identifier.
-Mutation publication retention is explicit and reserved before owner effects:
-
-```rust,ignore
-let outcome = request.mutate(mutations::send_money(input))
-    .idempotency(key).retain_publication(retention_limits).execute();
-// Only a performed terminal carrying the admitted lease exposes this read.
-let old = fresh_request.read_after(&retained_publication)
-    .query(queries::account_summary(account)).execute()?;
-```
-
-`retained_publication` is the move-only lease-bearing projection of the
-performed terminal, with its canonical receipt; it is not another commit fact.
-The ordinary descriptive receipt cannot type-check as `read_after` input.
-The default mutation adds zero client publication pins. Opt-in reserves one
-bounded lease before effects, transfers custody on publication, and releases
-unused capacity on pre-effect failure or `NoEffect`. Post-effect failures preserve owner
-recovery and any still-required retention together. Cloning descriptive metadata
-never clones a lease. Dropping/closing the read interest releases its pin, not
-an unsettled recovery obligation. Foreign or retired owner affinity denies.
-
-Idempotent replay cannot recover a lease from an ID: opt-in replay asks World
-for bounded, exact retained-publication readmission. If unavailable, preserve
-`AlreadyCommitted` and report typed retention unavailability separately; never
-rerun the operation or relabel its effect as failure. History uses its existing
-bounded protection route. No per-commit hidden pin or ancestry reconstruction
-is permitted. Prove default zero/opt-in one client pin and capacity denial
-before effects, independently of World's existing internal history retention.
-
-Continuation state binds the installed query, input, scope, order, occurrence,
-and disclosure. Resume takes a fresh request; authority never comes from the
-cursor. A live resource accepts fresh delivery request evidence through
-`live.next(&fresh_request)` and exposes bounded progress, overflow, cancellation,
-and close. Transport adapters may retain an opaque cursor/lease token in their
-bounded registry; it cannot authorize a later request.
-Entity, region, and collection subscription selections remain declaration-bound
-query modes. Preserve existing mixed-cause and granular invalidation semantics;
-do not replace them with an application-wide refresh. Saved views bind the same
-query/input/order contract and are readmitted rather than storing permission.
-
-Dropping ordinary read resources releases their leases. Explicit `close()`
-returns completed or pending cleanup with the existing typed custody. Neither
-Drop nor a convenience method discards unsettled owner effects. Product close
-fences new admission, releases disposable resources, and preserves the exact
-recovery actions needed before owner retirement can finish.
-
-### Operations and domain handlers
-
-Each operation binds typed input/scope, the decision-read contract, effect
-ceiling, invariant requirements, resource profile, and its domain handler once.
-External-effect and aftermath choices stay explicit at declaration time:
-`no_external_effect()` is a decision, not omission; so is `no_aftermath()`.
-A macro may generate the existing typestate completion from explicit clauses.
-
-Query drives principal/capability admission, operation projection, tracked
-reads, completed dependencies, candidate construction, invariant execution,
-owner preparation, World publication, settlement, and terminal publication.
-An installed handler supplies domain calculations and candidate effects, not
-an executor callback which receives the whole runtime.
-
-The handler contract has two meaningful capabilities:
-
-- **Decision reader:** exact projected source and bounded field/relation/
-  aggregate/absence reads. Completion consumes the reader and seals actual
-  dependencies. Domain data retained beyond it is value-only.
-- **Candidate writer:** available only after completed reads and admitted
-  candidate reservation. It exposes operation-permitted create, initialize,
-  write, link, unlink, delete, and emit actions with program-affine handles.
-  It cannot commit, select another source, execute an external effect, or
-  disable required validators.
-
-**Required first-use relation reader (house M0).** Extend the existing public
-`worth_query_host::facade::primary_graph::DecisionReader` directly with
-`relations_from(relation, source)` and `related_one(relation, source)`.
-These names specify new API work; Pre-M0 certification does not claim they exist.
-The first method reads typed outgoing relations and records the whole adjacency
-dependency, including an empty result. The second requires exactly one target,
-returns its owner-observed schema-typed identity, and reports typed missing,
-multiplicity or read-admission failures. It honors declared cardinality, operation
-read permissions, owner/basis affinity and existing finite traversal budgets.
-Cardinality checking cannot justify unbounded materialization.
-
-Reuse the primary graph projection's existing `decision_relations_from` dependency
-capture and stale-comparison owner. Retain `DecisionReader::field` for tracked
-policy fields. The public reader composes both without consumer calls to
-`reader()`, manual fact registration, a domain wrapper or a private revision/hash
-registry. Implement in the existing primary-graph handler responsibility; expose
-through the current host audience facade. Extend its normal API documentation and
-compiling consumer example. No new package or basis-property framework is needed.
-
-The first consumer follows `ExtrusionFeature.tolerance_policy`, reads declared
-policy fields, and supplies a pure tolerance value to numerical work. Certify field
-change and equal-value policy retargeting between gather and publication: stale
-publication must be rejected, fresh consumption must observe the new policy, and
-retained reads must preserve the earlier occurrence. Deny malformed candidate
-cardinality through real integrity validation; use focused owner cases to exercise
-reader errors without manufacturing an invalid published World. Include unrelated
-policy progress and bounded work. Deleting either adjacency or field tracking must
-break its corresponding proof. This focused 9.17.4 piece ships and is pinned at
-house M0 first use; it does not wait for completion of every 9.17.4 phase.
-
-The binding-selected `OperationHandler<Binding>` contract has these required
-roles; associated types carry the operation's input, decision, and domain denial
-so an author does not repeat schema/scope/field generic tuples:
-
-```rust,ignore
-fn decide(
-    &self,
-    input: &Binding::Input,
-    reader: &mut OperationReader<Binding>,
-) -> HandlerResult<Self::Decision, Self::Denial>;
-
-fn candidate_requirements(
-    &self,
-    input: &Binding::Input,
-    decision: &Self::Decision,
-) -> CandidateRequirements;
-
-fn build_candidate(
-    &self,
-    input: &Binding::Input,
-    decision: Self::Decision,
-    candidate: &mut OperationCandidate<Binding>,
-) -> HandlerResult<(), Self::Denial>;
-```
-
-These are trait-signature fragments, not standalone functions. Query calls
-`decide`, ends the borrow, completes the reader's actual dependencies, checks
-and reserves `candidate_requirements` under the installed ceiling, and only
-then calls `build_candidate`. The requirement report is a request, never proof
-of adequate resources. Candidates cannot exceed it. Decisions contain domain
-values and checked local references; neither handler role receives publication
-authority. Domain denial before owner effects discards the local candidate;
-failure after owner effects retains the real terminal. Fixed-shape operations
-generate the requirement method from their explicit contract. `decide` runs
-under admitted decision/read/scratch bounds; it cannot allocate an unreserved
-variable-sized output and ask for permission afterward. Numerical output
-construction runs during `build_candidate` under the reservation. Numerical
-helpers receive only values and their bounded work/scratch interface, whichever
-handler phase invokes them.
-
-`&self` is the explicitly installed handler instance; immutable domain
-configuration belongs there, never in a global registry. Binding lookup is
-once per attempt. After fresh admission and key/intent conflict checks, a
-known idempotent result short-circuits before `decide`, handler decision projection,
-candidate allocation, or external contact. Replay retention is a separate
-bounded owner action as specified above.
-
-Readers and writers expose an admitted work context with cancellation/deadline
-checkpoints and scratch/work limits. `HandlerResult` preserves interruption
-separately from domain denial. Query checks before each owner contact, between
-declared work granules, and before publication; loops and numeric helpers check
-the same context. The requirements method is bounded metadata arithmetic, not
-another solve. Profiles bound records/bytes and maximum non-yielding work per
-granule; unsupported uninterruptible algorithms deny installation/admission.
-House defaults are 1,024 gather records and 4 MiB per contact, with a 4 ms
-cooperative target to measure, not a preemption guarantee. M0 proves bounded
-synchronous checkpoints; M3 adds owner-managed yielding/deferred completion.
-Cancellation after effects retains the actual outcome and cleanup custody.
-
-Fixed-shape declared programs may generate candidate-writing code. Dynamic
-algorithms produce value-only candidate deltas which this same writer checks.
-The effect ceiling and the executed effect set remain distinct inspectable
-contracts. Bank's double-entry, sufficient-funds, and distinct-approver logic
-remains domain code. Query owns complete tracked posting aggregates and rejects
-incomplete membership evidence; the host cannot substitute a cached balance.
-
-An expert may request an admitted preparation through
-`request.mutate(intent).idempotency(key).prepare()` and execute that returned
-attempt. It carries one selection and exposes explanation/cost, cancellation,
-and execution only. It does not expose constructors for intermediate authority
-or widen the operation. Ordinary `execute()` calls the same preparation path.
-
-### M0 required API closure
-
-The house's first-use slice requires all contracts in this section, including the
-writer and invariant ergonomics. Extend the existing owners rather than requiring
-CAD to recreate selection, tracking, installation or delivery. These are additional
-9.17.4 requirements beyond the certified Pre-M0 pin. Ship them in three coherent
-batches: typed operation access/source expectations; producer/conditional
-installation; demand/exact observation/cleanup and certification observations.
-Each public batch is certified and pushed before the house advances its pin and
-consumes it. Numerical domain work may proceed against frozen pure contracts.
-Full 9.17.4 audience migration is not a prerequisite for this first-use cut.
-
-**Relation result and denial contract.** The host `primary_graph` facade exposes
-these exact destination signatures (generic declaration/reference arguments retain
-their existing schema and operation-read bounds):
-
-| Method | Result |
-|---|---|
-| `DecisionReader::relations_from(relation, source)` | `Result<Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>>, WorthQueryInvariantProjectionTraversalDenial>` |
-| `DecisionReader::related_one(relation, source)` | `Result<WorthQueryInvariantEntityIdentity<Schema, To>, WorthQueryInvariantProjectionTraversalDenial>` |
-
-Reuse the existing traversal denial type and its `RelationNotInstalled`,
-`UndeclaredDecisionTarget`, `ForeignIdentity`, `EndpointUnavailable` and
-`WorkBudgetExceeded` kinds. Add `CardinalityContractMismatch`, `MissingTarget`
-and `MultipleTargets` kinds. `related_one` requires declared exactly-one outgoing
-cardinality; a multivalued declaration with one current edge is not equivalent.
-Zero edges yields `MissingTarget`; two or more yields `MultipleTargets`; an edge
-whose target is not available at the selected basis yields `EndpointUnavailable`.
-Schema/operation mismatch remains a compiler denial where the existing typed
-references express it. Runtime affinity failures never degrade into an empty list.
-`relations_from` returns only a complete bounded result; exhaustion never returns
-a successful prefix. Empty success still records the adjacency dependency.
-`related_one` does not materialize unbounded adjacency to count it. Existing
-`checkpoint`/`HandlerInterruption` cancellation remains explicit in handler loops.
-Observed rows/identities retain read-basis affinity and grant no candidate or
-publication authority. Implement through the existing decision-read owner, then
-remove the ordinary CAD need to call `reader().decision_relations_from(...)`.
-
-**Observed-source edits.** Add typed source expectations to the ordinary mutation
-request/binding. Proposed caller form is `.expect_source(observed_source)` after
-`.mutate(intent)`; a binding that requires this input cannot execute without it.
-The value is an owner-projected, non-authoritative transport description of exact
-source identity and native generations. Query validates schema/install/model/branch
-and scope affinity, compares the relevant native source under fresh admission,
-and carries that expectation into the same compare-and-publish boundary as tracked
-execution reads. Bind the expectation into request/idempotency meaning. No local
-version counter, private source hash, equality-only comparison or whole-World head
-comparison may replace the declared source-local contract. A receipt/readiness
-summary alone is not retained read authority. Reuse native version/occurrence and
-precondition owners; fill their actual source-granularity gap if needed.
-
-At the Pre-M0 pin the ordinary mutation entry passes empty typed preconditions;
-forwarding an empty default does not satisfy this contract. A fresh execution read
-does not prove that the caller observed that version. Stale input, native-generation
-ABA, missing required expectation and foreign affinity have typed denial outcomes.
-An unrelated sibling edit must not fail the source-local expectation merely because
-the World head moved. Ordinary authorization and candidate validation still apply.
-
-**Source stamp contents and outcomes.** Add
-`WorthQueryObservedSource<Query>` as a non-authoritative, bounded observation
-value returned by the installed source projection; `Query` identifies the
-installed source binding whose declaration owns the footprint. It carries:
-
-- application instance/installation generation and schema/source-contract identity;
-- model-root and source-entity native identities, including allocation generations;
-- World product branch identity and lifecycle incarnation, plus the exact selected
-  occurrence as provenance, not an expected-current-head comparison;
-- for each declared source aspect, its aspect identity/contract revision and the
-  native last-write version at that selected occurrence;
-- for each declared relation adjacency, its anchor/relation-kind/direction,
-  native structural-change revision and exact endpoint identities/generations;
-  declared target aspects carry their own native last-write versions.
-
-For extrusion this footprint contains parameters, frame/policy relations and their
-consumed values. Derived `realization` links and body output are excluded from the
-authored source stamp so publishing output does not invalidate its own source.
-Aspect contract revision describes schema meaning; it is not the last-write version.
-Entity allocation generation detects retirement/reuse; it is not an edit version.
-Adjacency revision must detect empty-to-nonempty-to-empty and retarget-and-back
-changes even when the current membership compares equal. Native aspect/structural
-versions must be read at the retained selected basis, never mixed with current
-owner counters. Where a versioned structural observation is missing, add it in the
-Relational owner and expose it through Query; no CAD counter or replay scan supplies it.
-
-Compare this complete source footprint at fresh admission and preserve it through
-publication's stale check. A transport may round-trip the observation, but parsing
-it grants no authority and cannot bypass owner comparison. Expose
-`WorthQuerySourceExpectationDenial` with a
-`WorthQuerySourceExpectationDenialKind` discriminator: `MissingExpectation`,
-`ForeignApplication`, `ForeignInstallation`, `ForeignSchema`, `ForeignModel`,
-`ForeignBranch`, `SourceRetired`, `SourceChanged`, `IncompleteFootprint`,
-`SourceContractMismatch` and `WorkBudgetExceeded` kinds. Invalid or incomplete
-payloads cannot be treated as an absent optional expectation. The installed edit
-binding requires an expectation before execute; preserve typed admission/commit
-outcomes for later authorization loss or concurrent publication conflict. Equal
-value ABA yields `SourceChanged`; an unrelated sibling-only edit does not.
-
-**Candidate writer.** Expose `create_entity`, `initialize_field`, `write_field`,
-`link`, `delete_entity` and `emit` directly on the existing `CandidateWriter`,
-alongside existing tracked-target resolution, unlink and output-role methods.
-Delegate to the single reserved effect-program owner. Preserve operation permission
-traits, program-affine handles, complete output roles, allocation/byte bounds and
-checkpoints. Query retains finish/publication control. The CAD consumer must not
-call `candidate()` for these ordinary construction verbs or introduce another
-builder. Prove rectangle/triangle cyclic construction and same-kind replacement,
-plus wrong-program handles, undeclared effects and over-capacity denial. This
-improves the caller surface; it does not replace the admitted candidate engine.
-
-**Candidate result, lifetime and emission contract.** Reuse
-`WorthQueryApplicationEffectEntity<Schema, Entity>` as the created/resolved target
-handle. `create_entity` returns `Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>`;
-`initialize_field`, `write_field`, `link`, `unlink`, `delete_entity`, `emit` and
-output-role binding return `Result<(), WorthQueryApplicationAttemptDenial>`.
-Arguments retain the existing typed entity/field/relation/effect references and
-operation permission bounds. `link` accepts the existing program-local relation
-key and both target handles; this key does not assign persistent identity.
-`initialize_field` accepts only a created target of this candidate;
-`write_field` accepts only an existing target resolved from completed decision
-reads and a field with `WritableCapability`; a created target is initialized through
-`initialize_field`. `delete_entity` also requires an existing target. Existing
-`checkpoint` returns `Result<(), HandlerInterruption>` for cancellation/deadline.
-
-These are owned program-affine handles, not newly promised borrow-lifetime brands.
-They are usable only during construction of their originating live candidate;
-retaining their Rust value after return, denial, finish or cancellation grants no
-usable authority. Consumers cannot construct/deserialize them. Every verb checks
-program identity and target kind; another candidate's handle returns
-`ForeignEffectTarget`, even in the same schema and process. Published entity
-references come from committed output correspondence, never from a created handle.
-Verb failure adds no partial logical effect; accounting may conservatively retain
-already charged work. Preserve `DuplicateEffectKey`, `UndeclaredEffect`,
-`InvalidEffectValue`, `CandidateCapacityExceeded`, `CandidateReservationExceeded`
-and `RetainedEffectBytesExceeded` distinctions, plus existing output-role denials.
-All candidate effects remain invisible until the whole admitted publication succeeds.
-
-`emit(effect_ref, payload)` stages one declared typed application effect payload in
-that same candidate. It requires `OperationEmits` and the installed retained-payload
-binding; validation and byte admission occur before retention. It neither calls
-subscribers nor changes graph truth by itself, and it performs no file/network
-operation or direct Signal invocation. Successful publication makes the emission
-available through the existing governed delivery owner; denial/cancellation emits
-nothing. Idempotent replay does not emit it again. Pending post-publication delivery
-retains its existing custody. External dispatch continues through its separately
-declared outbox/effect route; ordinary `emit` cannot claim external completion.
-
-**Typed invariant access.** Provide installed typed field/relation handles through
-`WorthQueryApplicationInvariantSchemaResolver::typed_field` and `typed_relation`.
-The Query-owned planner/context exposes typed `field` and
-`relations_from`/`relations_to` access using those handles and existing value-binding
-decoders. It checks owner affinity, declared access, native entity/relation kinds,
-work budgets and the selected proposed/committed view. Replace the public bare
-lower-context aliases where required with the owning Query adapter and migrate
-affected public consumers in that batch; retain the existing Relational scope and
-validation engines. No ordinary snapshot can masquerade as a candidate view.
-B-rep rules receive actual proposed fields/incidence and affected untouched
-neighbors. They do not repeat raw `AspectValue` decoding, field-path construction
-or relation-kind filtering. Foreign handles, undeclared reads, invalid candidate
-values and exhausted traversal deny through typed outcomes; numerical rules remain
-pure domain code. Demonstrate that mislowering the numerical candidate is detected
-by the actual installed rule and that omitting the rule changes acceptance.
-
-**Invariant view contract.** Installed handles retain exact schema installation,
-entity/relation kind, field locator, decoder and declared access contract internally.
-The Query-owned planner/context exposes `proposed()` and `committed()` read views.
-`proposed()` is the complete owner candidate overlay on its committed basis: it
-includes created/changed records, excludes candidate deletions, and includes the
-unchanged neighbors admitted by scope planning. `committed()` is the immutable
-before-image of that same candidate, not a fresh current read. A new candidate
-record is absent from the committed view. Neither view can be substituted with a
-constructor buffer or arbitrary ordinary snapshot.
-
-Typed `field(handle, entity)` returns `Result<Option<Binding::Value>,
-WorthQueryInvariantAccessDenial>`; `None` means a legally absent optional field.
-Missing required fields and unavailable entities are distinct denials. Typed
-`relations_from`/`relations_to` return complete bounded vectors of schema-typed
-read-only relation views, carrying endpoint and candidate/view affinity. Planner
-traversal admits the declared affected closure before evaluate; evaluation cannot
-silently extend that closure. New `WorthQueryInvariantAccessDenialKind` discriminates `WorthQueryInvariantAccessDenial`
-as
-`ForeignBinding`, `ForeignView`, `OutsideDeclaredAccess`, `OutsidePreparedScope`,
-`WrongEntityKind`, `EntityUnavailable`, `MissingRequiredField`, `InvalidValue`,
-`RelationNotInstalled` and `WorkBudgetExceeded`. A missing required datum, bad decode
-or truncated traversal is never an empty successful view or a passed invariant.
-
-Keep the existing `WorthQueryApplicationInvariantRule::prepare_scope`/`evaluate`
-progression and Relational enforcement. Query adapts its actual owner context and
-installed codecs once; migrate affected rule consumers from the bare lower-context
-aliases. Prove an unchanged neighbor invalidated by a local edit, deleted endpoints,
-created records, foreign handles, scope denial and exhausted work. Numerical rules
-consume admitted values/topology and return their domain verdict; they cannot mint
-a validation receipt or change which proposed graph was checked.
-
-**Producer and conditional installation.** Extend contribution configuration and
-`installation::in_memory` to admit producer/output-family bindings, installed
-applicability and required conditional bindings before exposing the runtime.
-The current no-conditional publication path cannot serve this installation.
-A producer binding associates a source selector, tracked dependencies/effects,
-complete output role, applicable operation bindings, resource/reuse policy and
-required invariant closure. For M0, owner admission selects exactly one of
-rectangle/triangle and initial/preserve variants. Missing or overlapping applicable
-variants deny; the application cannot choose an executor by inspecting the profile.
-Signal schedules the installed operation, Query admits its handler and World
-publishes its complete candidate. Reuse current predicate, conditional, Bridge
-routing and scheduling owners, with no host callback registry or parallel graph.
-
-The readiness conditional must observe body completion after derived publication.
-Source success alone leaves it pending. Installation registers the exact dependency
-routes once; Query/Bridge route the actual performed patch and retain pending
-work/recovery on interrupted delivery. No CAD dependency ordinal selection, receipt
-rebroadcast loop, synthetic clock advance or manual downstream invocation substitutes
-for real causal routing. Prove missing registration, ambiguous applicability,
-delayed delivery, sibling progress and both source/realization publications.
-
-**Registration results and selection failures.** Contribution setup adds typed
-`producer::<Binding>(provider)` and `conditional::<Binding>(configuration)` methods,
-returning `Result<(), WorthQueryPrimaryGraphInstallationDenial>`. Bindings own
-source/output contracts, applicability and associated provider types; configuration
-supplies implementations only for members of that exact contribution. Extend the
-existing denial kind with `MissingProducerBinding`, `DuplicateProducerBinding`,
-`MissingProducerProvider`, `ForeignProducerBinding`, `ProducerBindingMeaningMismatch`,
-`MissingConditionalBinding` and `DuplicateConditionalBinding`. Preserve existing
-missing/foreign handler and invariant denials rather than flattening them to strings.
-The in-memory constructor returns these through its existing `Contributions`
-terminal before `initial_state` and before runtime publication. Validation failures
-leave no published root or registered live routes; staged resources are released.
-
-M0 applicability is a finite declared table over profile kind and lifecycle posture,
-with exactly one required operation for every supported combination. Installation
-rejects uncovered supported cases as `MissingApplicableProducer` and overlapping
-cases as `AmbiguousApplicableProducer` in the same installation denial family.
-Dynamic demand selection returns those corresponding kinds through
-`WorthQueryOutputDemandDenial` if its admitted source has no unique applicable
-producer; it does not pick the first registration. A no-longer-admitted provider
-returns `ProducerUnavailable`. Unsupported source kinds retain their distinct
-domain unsupported outcome. Source drift after selection follows demand's
-`Superseded` contract. These errors cannot trigger caller-side executor selection,
-conditional omission, another installation path or a substitute local scheduler.
-
-**Exact observation and cleanup.** Finish the bounded demand contract below together
-with request-bound exact retained/live reads. The shipped entry APIs are
-`request.retain_read()`, `request.at(&observation).query(intent)`, and
-`request.query(intent).subscribe(controls)`. They reuse existing selection,
-disclosure, retention, and live owners; they do not introduce competing `query.at`
-or `query.live` variants. A fresh source edit may instead start from an explicitly
-current request; choosing current must never silently replace an exact selection.
-The demand terminal carries a usable owner-retained selectable output occurrence
-for its fixed authored source; the read-only `request.at` context consumes that
-exact basis and fresh authorization. General mutation-result retention remains a
-later 9.17.4 lifecycle concern and must reuse this owner. Display values remain
-non-authoritative.
-
-Return typed retention/resource denial, pending, superseded, overflow, cancellation
-and post-publication recovery states. Use the existing managed handle close outcomes
-and owner notifications for progress. Closing one interest preserves shared work
-needed by another. Shutdown stops admission, cancels uncommitted work, retains or
-settles performed publication custody, closes interests/read leases/conditionals
-and releases the runtime. The ordinary consumer never walks dependencies or polls
-latest to decide completeness. Prove a later source edit cannot alter the retained
-scene, an old pick cannot resolve to a coincidental new entity, and closing with
-queued commands/live reads leaves no unowned work.
-
-**Certification observations.** Expose the missing read-only M0 observations through
-the existing certification audience (`worth-query-replay`), using actual owner
-counters and scoped observations. Cover gathered rows/adjacency, candidate cardinality/
-bytes, invariant work, MVCC copied physical granules, index work, producer/delivery
-work and retained resources for 1/10/100 bodies and 0/1/2 readers. Diagnostics grant
-no mutation, selection or retention authority. Avoid private provider access from
-consumer tests and any CAD metrics registry. For each required metric, first identify and reuse its existing owner counter and
-scoped observation. Add a narrow observation only when that specific M0 measurement
-is otherwise impossible through the certification audience; no metrics framework,
-registry or duplicate counter series. Reuse compiled test binaries. Measured failures
-justify actual storage/index fixes; the spec does not prescribe a new storage engine.
-
-**Documentation and source homes.** Update the host README, Query AI_README,
-ordinary front door, graph-access/invariant guides and a compiling public consumer
-example with these calls, typed failures and cleanup. Public entry wrappers remain
-in `worth-query-publication/src/application_entry`; execution and authority remain
-in existing execution/installation owners. The destination additions below locate
-source expectations, registration, typed invariant access and certification. No
-new crate, generic basis-property framework or package-governance tooling is required.
-
-### Actual candidate integrity and bulk construction
-
-Relations declare endpoint types, context/model scope, cardinality, live
-reference requirements, and deletion posture. Required domain validators
-declare identity/revision, applicability, complete affected-neighborhood reads,
-enforcement, resource bounds, and typed diagnostics. Installation lowers these
-contracts into the real primary provider and Relational registry.
-
-Validation consumes the owner-sealed proposed graph combined with the selected
-source and untouched affected neighbors. An algorithm's success return or
-mutable candidate buffer is insufficient evidence. Carried proof and gathered
-data may be reused within the same validated boundary; do not double an
-expensive gather solely for ceremony. An operator cannot opt out of a required
-rule or authorize a smaller closure by reporting fewer touched objects.
-
-After tracked reads, a handler requests its actual entity/relation/field counts,
-candidate bytes, validator work, and retained-output pressure under installed
-ceilings. Admission reserves before allocation; allocation produces local
-program-affine handles; population can then form cycles. Publication rechecks
-actual consumption. Exhaustion never buys capacity through fake field width,
-duplicate operation declarations, or a hidden unbounded candidate buffer.
-
-This contract includes a bounded already-known affected neighborhood; it does
-not claim 9.19 verified arbitrary search completeness or 9.20 correlated
-set-oriented execution. Those add strategies through the same reader/writer
-boundary. Existing graph/index/copy-on-write owners are extended where this
-journey exposes a defect; the application may not build a parallel graph.
-
-Producer-supplied output roles name correspondence, not identities. The writer
-binds preserve/create/retire actions to actual source identities and allocated
-handles, with explicit ambiguous/unmatched outcomes. Identity correspondence
-and retirement co-commit with the candidate under platform lineage ownership;
-no coordinate hash or UI side table defines identity. Phase 4 proves simple
-replace/delete correspondence. House M2 supplies feature-specific split/merge
-policies and ambiguity resolution through that contract. Sparse promotion
-still requires the existing carried publication authority.
-
-### Bounded output demand and settlement
-
-```rust,ignore
-let demand = request.demand(outputs::body_group(body))
-    .controls(demand_limits).start()?;
+// Match a performed source outcome; it is not geometry completion.
+let demand = performed.start_required_outputs(&request, demand_limits)?;
 let progress = demand.advance(&fresh_request)?;
-```
+// Pending: await owner notification. Settled: use its retained observation
+// with fresh_request.at(...).query(...). No dependency loop in the caller.
+~~~
 
-`start` admits a bounded managed interest, fixing the selected authored source,
-required output inventory/applicability, installed producer versions, disclosure,
-deadline, cancellation, work, memory, and retention. `advance` drives an admitted
-owner contact, never application traversal or producer polling. `Pending` owns
-the continuation and owner wake/progress subscription; consumers wait on that
-notification before another contact. No busy-loop `Continue` adapter ships.
-The notification stream is `demand.notifications()`; it emits payload-free wake
-signals. Protected progress/results require fresh delivery admission through
-`advance`, including for a completed handle; reading its terminal resumes no
-work, and `close()` releases interest through the existing managed owner.
+These are target call shapes; shipping examples must compile with real owner carriers.
+NoResult/NoEffect, denial, stale source, performed-but-unsettled and recovery outcomes
+remain distinguishable. No helper may unwrap publication success in the ordinary API.
+The same root supports Bank actions and its already-declared approval workflows.
 
-Phase 4 supports a declared bounded output group produced by installed
-synchronous producers from complete tracked authored inputs. It reuses real
-Signal eligibility, patch delivery, managed-run capacity, and World publication.
-All required members must have owner-validated completion evidence for the fixed
-source. An unsupported dependency strategy denies; excluding an applicable
-ancestor to fit this scope is forbidden. House M2.5 first extends these handles/
-terminals to synchronous component/physical/response/check closure; M3 adds sketch
-regeneration and deferred workers. Any earlier real consumer pulls its prerequisite
-forward; CAD uses the intended facade rather than temporary lower-level plumbing.
+## Destination Topology
 
-`Settled` carries one retained, selectable output occurrence and required-closure
-evidence. It is a descendant publication for those inputs, not a mutation of
-the selected historical world. Source drift before settlement is `Superseded`,
-never automatic latest selection. Required missing output is `Incomplete`;
-pending, dependency failure, denial, cancellation, timeout, exhaustion, and
-owner recovery remain distinct. A completed failing domain finding can be
-settled; completion does not mean a passing design. An ordinary committed
-receipt or locally Fresh child cannot manufacture this terminal.
+Paths are under workspaces/worth-query/crates unless explicitly qualified.
+E existing; R refactor within owner; N new responsibility; D delete superseded
+ordinary surface; S committed successor, not an empty placeholder.
+Use existing expression/compiler/generation machinery. No new runtime, generic
+compiler framework, proc-macro package or generated-source registry.
 
-Demand coalesces only identical installed closure/source requirements and
-compatible policy/budgets. Each interest retains fresh disclosure and independent
-release; closing one must not cancel another's needed producer. Reservation,
-queued progress, retained roots, and cleanup are bounded by actual owners.
-Historical recomputation requires an explicit branch and fresh admission;
-reading an already retained result does not schedule new work. M0 must use this
-route before claiming body-derived output settled. No off-thread numerical
-completion is implied by this first synchronous producer strategy.
-
-### Outcomes, recovery, conditionals, and inspection
-
-Mutation outcomes preserve the existing concrete variants and custody:
-`Committed`, `AlreadyCommitted`, `Stale`, `ProductStale`, `NoEffect`, `Denied`,
-`Cancelled`, `TimedOut`, `Deferred`, `Aborted`, `ProductUnpublished`,
-`SettlementDeferred`, and `Indeterminate`, wherever the operation supports
-them. Product/domain denial detail remains typed. An outer adapter cannot
-translate a performed or unpublished effect into ordinary pre-effect failure.
-
-`Committed` means composite publication, not external completion or completed
-derived computation. Recovery enters from the exact carrier, e.g.
-`app.recovery().resume_settlement(deferred, &fresh_request)`. Unpublished-owner
-cleanup, indeterminate provider recovery, and external-dispatch inspection
-retain separate methods and legal successors. `Indeterminate` provider state
-must not be assumed to mean an external effect happened; external dispatch also
-has its own unresolved posture. Readmission rules remain those of the existing recovery owner;
-no new permission check may strand mandatory cleanup after capability loss.
-Generic `retry()` is not a replacement for these distinctions.
-
-Temporal and conditional definitions bind predicates, clocks, tracked source
-projections, and typed operation intents once. Signal remains the eligibility/
-scheduling owner. Query turns eligible evidence into fresh operation admission.
-Committed patch delivery uses installed Bridge correspondence, not per-handler
-dirty calls. Existing workflow continuations resume through fresh requests with
-their own typed artifacts; this milestone adds no workflow language or scheduler.
-
-`app.inspect()` supplies installation/support and resource information;
-`request.inspect()` supplies governed query/operation discovery. Installed
-declarations generate input schemas, units, scopes, effects, and availability
-for UI/AI/transport bindings. Discovery is descriptive, not an executable
-authority token. A decoded intent still validates its values and goes through
-the ordinary fresh request. This is not an arbitrary string-query endpoint.
-Result explanations retain domain-level causes and lazy, policy-controlled
-details; diagnostics and replay do not become ordinary execution dependencies.
-
-Aftermath discovery preserves reversible, compensatable, reconcilable, and
-irreversible classifications, plus explicit absence of an aftermath contract.
-It preserves the installed mechanism/authority distinction and legal actions; it
-does not advertise unsupported correction. Consumer-kit compatibility is
-validated at installation by schema/binding versions and required capabilities,
-including the exact producer/consumer pair. Projection sharing also requires
-matching source occurrence, input/order and disclosure contracts with separately
-admitted consumer interest; sharing bytes never shares permission. Existing readiness tokens remain bound to
-the exact installed query/source and causal evidence; inspection exposes
-bounded explanations. Readiness cannot stand in for the demand closure above.
-9.19/9.20 strengthen access/explanation strategies behind these same contracts.
-
-### Bank provisional correction transition
-
-9.16 explicitly treats linear undo/redo as experiments, excluded from Bank's
-accepted closure. Phase 3 retires their Bank server commands, HTTP routes,
-user-node actions, token variants, and provisional-only tests with the ordinary
-`provisional_aftermath` export. No compatibility adapter, disabled command stub,
-or success-shaped substitute survives. Preserve accepted aftermath inspection,
-settlement, provider/external recovery, and mandatory estate review tests; split
-mixed tests so removing an experiment cannot delete independent obligations.
-Current product guides must state only available capabilities. Historical 9.16
-evidence remains historical. 9.18 introduces accepted tree correction through
-new typed intents, HTTP/user-node journeys, and independent correction proofs;
-it cannot count the retired experiment as its implementation.
-
-## Replacement And Abstraction Contract
-
-| Existing surface or repeated responsibility | Destination | Treatment |
-| --- | --- | --- |
-| Value-owned Query conversion/portable bounds in application binding | Entry-local binding with associated pure value and explicit identity | Replace application binding requirements coherently; remove superseded public trait requirements after all affected consumers migrate |
-| Empty role-marker identity declarations and redundant parameter plumbing | Owning query/operation declaration generates its binding | Delete duplicate declarations; keep distinct semantic roles typed |
-| Root manifest re-listing child members | Explicit registered contributions owning their members | Replace repeated membership, not explicit registration |
-| Eight-parameter field refs/nine-parameter invocation glue in handlers | Associated binding types inferred through typed intent | Internalize generic wiring; retain exact static affinity |
-| Bank `execute_one_shot`/preview helpers and per-query execute clones | Query request/query execution | Delete application-owned progression; keep product intent constructors |
-| Per-operation authorize/prepare/commit orchestration | Installed domain handler under Query execution | Move framework orchestration to its owner; preserve domain rules and real effects |
-| Capability-scoped admission and operation authorization | Intent-bound capability plus optional concrete grant refinement | Internalize lookup/admission; preserve scope, all/any composition, delegation and fresh revocation |
-| `authorize_elevation_request` / `compare_and_commit_elevation_request` | `request_elevation` typed workflow intent | Preserve request-only authority, idempotency and the existing specialized owner program |
-| Elevated preview and approved-elevation mutation | Binding-gated `with_elevation` refinement | Freshly validate the approved artifact on execution and retained/live delivery |
-| Caller select/resolve/access-context/admit/execute/publish chain | Request-bound execution and explicit retained reads | Remove from ordinary exports; handler-facing capability access only where needed |
-| Direct ordinary `compare_and_commit_application` or manual `AdmittedChange` assembly | Mutation execution / admitted prepared attempt | Internal implementation consumes these mechanisms; no second ordinary commit route |
-| Separate historical/preview query grammars and controls selecting another basis | Same query intent on explicit read context | Replace; current and retained semantics remain distinct |
-| Receipt-to-history reconstruction and ad hoc ancestry search | Opt-in `retain_publication`, lease-only `read_after`, bounded history | Replace; descriptive IDs never mint observations or hide per-commit retention |
-| Per-query page/live wrappers and transport-owned permission decisions | Query-owned page/live resources, thin bounded transport adapters | Replace lifecycle/security duplication; preserve wire types and actual fresh admission |
-| Numeric controls recreated in every handler | Installed typed profiles with caller narrowing | Abstract repetitive defaults; preserve every actual bound |
-| Manual conditional patch routing and domain wake orchestration | Installed Bridge/Signal binding to typed operations | Abstract framework wiring; preserve actual cause and owner service |
-| Application terminal flattening and generic retry helpers | Exact outcome carriers and action-specific recovery | Delete lossy adaptation; domain presentation may classify without consuming custody |
-| Public workspace string API taught as the ordinary application route | Typed application declarations and request execution | Remove competing ordinary exports/docs; required provider/cert mechanisms remain internal or cert-only |
-| `provisional_aftermath` and Bank's experimental undo/redo product routes | Accepted aftermath/recovery now; explicit retirement, then 9.18 tree correction | Remove exports, commands and provisional-only consumers together; no replacement stub |
-| Hardcoded primary invariant/default relation policy for all domains | Installed candidate integrity and domain validators | Extend actual primary/Relational owners; delete bypassing substitutes |
-| Declaration-width capacity masquerading as runtime batch size | Actual admitted cardinality/resource reservation | Replace the insufficient contract; retain independently valid fixed-shape bounds |
-
-The mandatory cutover includes Bank, Query examples/courts,
-`workspaces/worth-ui/crates/worth-ui-query-binding`, and `crates/worth-server`,
-including direct runtime/projection and affected HTTP adapter consumers.
-Follow their actual dependencies to close every affected ordinary call site.
-It is ordinary implementation planning, not a new persistent tracking system.
-Do not delete unrelated lower-level provider capability solely because a name
-resembles an old application API. Anything retained must have a named internal,
-handler, or certification audience and no competing ordinary route.
-
-## Authority And Lifecycle Ownership
-
-The application root is shareable (`Send + Sync`) with thread-safe installed
-owner adapters/handler configuration, as required by Bank's HTTP application
-boundary. It adds no global request lock. Request contexts are lexical borrows;
-selected attempts, readers/writers, and managed read/page/live/demand handles
-are owner-thread confined and do not implement `Send` or `Sync`. Create those
-handles on the servicing thread; sharing the root does not transfer a lease.
-Transport tokens and immutable result DTOs may cross threads but authorize
-nothing. Compile-pass root sharing and compile-fail resource transfer enforce
-the destination contract; do not infer it merely from current Arc/Mutex fields
-or add unsafe auto-trait implementations. House's dedicated model thread is a
-product custody choice, compatible with this shareable root. Deferred workers
-receive bounded values only; M3 returns completion to the authority owner.
-
-| Product | Constructor / truth owner | Permits and consumer | Cannot establish |
-| --- | --- | --- | --- |
-| Value/query/operation binding | Domain entry declaration; installation validates | Describes portable meaning and associated Rust types | Authentication, graph truth, or execution authority |
-| Installed contribution and handler binding | Query installation, exact schema/provider generation | Request executor binds supported declared work | Membership in another schema or generation |
-| Request context | Query runtime borrowing concrete principal proof and request scope | Starts fresh attempts or readmits managed delivery | Cached capability, selected world, or transport-token authority |
-| Selected/admitted attempt | Query execution consuming owner-issued observation and concrete proof carriers | Exact read or operation progression | Reselection, branch substitution, or new effect permissions |
-| Read snapshot/history protection | World retention composed through Query | Exact read-only observation under fresh request security | Mutation or permission preservation |
-| Opt-in publication read | World lease reserved through Query before effects | Retained exact published occurrence, fresh `read_after` admission | Retention from a descriptive receipt or a second commit fact |
-| Demand interest / settled output | Query managed custody, Signal closure/readiness, World publication and retention | Bounded fixed-source progress and exact output read | Completion from a numerical return, local Fresh child, or absent required output |
-| Completed dependencies / candidate reservation | Query/provider progression with concrete `worth-proof` carriers | Permitted candidate construction under exact bounds | Commit, broader footprint, or unchecked allocation |
-| Candidate and invariant evidence | Actual provider/Relational proposed state and installed validators | Owner preparation and World publication | Performed publication from numerical success |
-| Published result / committed carrier | Query consuming real performed publication/disclosure | Governed consumption and exact legal next actions | External completion, current engineering pass, or new admission |
-| Live/page/recovery resource | Existing owning runtime lifecycle | Bounded continuation, delivery, recovery, close | Unbounded retention, reconstructed authority, or silent lost effects |
-
-Place genuinely new legality witnesses in `worth-proof`, not a generic
-`AuthorityMarker` contract. Keep live custody in execution and immutable
-cross-runtime vocabulary in Foundational where it has that meaning. Verify
-manifest dependencies before duplicating existing substrate vocabulary.
-No new application/session wrapper owns another World or Signal runtime.
-
-## Destination Directory And Module Skeleton
-
-Paths below are under `workspaces/worth-query/crates/` unless stated otherwise.
-`E` existing, `N` new, `R` replaced/refactored responsibility, `D` removed
-ordinary surface, `S` committed successor destination, not an empty placeholder.
-Every code/test file remains at most 400 lines absent an explicit exemption;
-this specification grants none. Facades are exports only.
-
-```text
+~~~text
 worth-query-declaration/src/
-  application_schema/                         E/R: existing schema meaning
-    values.rs                                 R: binding-associated pure values
-    value_binding/{identity,scalar,unit,decode}.rs N: distinct binding contracts
-    contribution/{definition,membership,schema_binding}.rs N
-    relation_integrity/{endpoints,cardinality,deletion}.rs N
-  application_query/
-    binding/{definition,input,scope,result}.rs N: one query's typed association
-  application_operation/
-    binding/{definition,input,handler}.rs       N: operation association
-    binding/source_expectation.rs              N M0: required native-source contract
-    candidate/{cardinality,resources}.rs        N: declared ceilings
-    invariant/{definition,neighborhood,enforcement}.rs N
-  application_schema_macro.rs                 R: existing typed declaration lowering
-  application_query_macro.rs                  R: binding generation
-  application_operation_macro.rs              R: binding/effect-contract generation
-  value_binding_macro.rs                     N: local binding, never foreign impl
-  application_contribution_macro.rs           N: explicit contribution generation
-  portable_identity/                         E: canonical declared identities
-worth-query-admission/src/                    E/R: authenticated/admitted read contracts
-  authenticated_principal/                   E: principal and request-scope owner
-  graph_read_access/                          E/R: capability-bound admitted read contract
-worth-query-package-archive/                  E/R: binding codecs; unchanged-meaning goldens
-worth-query-installation/src/
-  application_schema/
-    contribution/{closure,ownership}.rs         N: root composition validation
-    value_binding/{validation,native_contract}.rs N
-    relation_integrity/lowering.rs             N: exact registry contract
-  application_query/binding/{compilation,lookup}.rs N
-  application_operation/
-    binding/{compilation,handler_installation}.rs N
-    contracts/compilation.rs                  R: preserve one compiled contract
-    invariant/{installation,closure}.rs         N
-    candidate/resource_contract.rs            N
-  application_resources/profiles.rs           N: typed installed profile meanings
+  application_program/                                      N
+    composition/{authored,ports,connections,canonical}.rs
+    feature/{authored,actions,lifecycle,derived_truth}.rs
+    rules/{scope,dependencies,invariant,obligation}.rs
+    workflow/{vocabulary,definition,connection,validation}/   S 9.17.6 detailed tree there
+    expression/{binding,dependency_extraction}.rs             existing IR adapters
+    core/{operation,output_protocol,materialization}.rs
+    program/{expansion,validation,explanation}.rs
+    evolution/revision.rs                                  N immutable program identity
+    evolution/diff/{features,connections,rules,operations,outputs}.rs S 9.17.5
+    evolution/adoption/{impact,migration_requirement}.rs       S 9.17.5
+  application_schema/                                       E/R existing value/contribution bindings
+  application_operation/ application_query/                  E/R consumed core contracts
+  authoring/ canonicalization/                               E/R existing expression owners
+worth-query-installation/src/application_program/            N
+  composition/{closure,ownership,connection_validation}.rs
+  rules/{impact,coverage}.rs
+  workflow/{vocabulary,adapters,definition_contract}.rs       S 9.17.6
+  installation/{validation,lowering}.rs
+  support/{admission,compatibility,retirement}.rs             S 9.17.5
+  adoption/{branch_binding,requirements,scope_validation}.rs  S 9.17.5
+  inspection/{program,impact}.rs
 worth-query-execution/src/domain_computation/primary_graph/
-  application_entry/
-    mutation/{execution,preparation,outcome}.rs N/R: one operation executor
-    mutation/publication_retention.rs          N: explicit pre-effect lease reservation
-    history/{page,publication_read}.rs          N/R: bounded owner retention
-    recovery/{settlement,unpublished,provider,external}.rs N/R: separate custody
-    lifecycle/{close,inventory}.rs             R: delegate to existing owners
-    inspection/{catalog,support}.rs            N/R: governed derived discovery
-    demand/{request,closure,settlement,interest}.rs N: M0 bounded synchronous group
-    demand/transitive_closure.rs              S: house M2.5 bridge
-    demand/deferred_progress.rs               S: house M3 workers
-  application_contribution/{setup,producer,conditional}.rs E/R/N M0: complete registration
-  application_installation/                   E/R M0: conditional-capable composed root
-  application_attempt/source_expectation.rs   N M0: native source compare/admission
-  application_attempt/source_expectation/{observation,comparison,denial}.rs N M0
-  application_invariant/{typed_binding,typed_view}.rs N M0: owner-checked candidate access
-  handler/
-    decision/{reader,completion}.rs             N/R: projected reads and proof
-    decision_reads.rs                         E/R M0: direct relations and exact cardinality
-    decision_relation_denial.rs                N/R M0: existing traversal-denial extension
-    candidate/{reservation,allocation,population}.rs N/R
-    candidate/identity_correspondence.rs        N/R: co-committed output roles
-    work/{budget,checkpoint}.rs                N/R: bounded cooperative work
-    invariant/{candidate_view,execution}.rs     N/R
-    compute/{prepare,worker_completion}.rs      S: house M3; owner-thread return
-  product_operation/                          E/R: internal exact World progression
-  application_query/                         E/R: existing planner/read machinery
-  schema_layout/registry_lowering.rs          R: installed relation integrity
-  provider/                                  E/R: actual candidate and resource owners
-  live_delivery/                             E/R: real publication/revocation path
-  conditional_operation/                     E/R: installed causal reentry, no new scheduler
-worth-query-execution/src/domain_computation/authorization/
-  capability_registry/{delegation,elevation,elevation_lifecycle}.rs E/R
-  {operation_admission,elevation_progression}.rs E/R: existing authorization owners
-worth-query-publication/src/                  E/R: existing result/terminal owners
-  application_entry/request.rs               E/R: borrowed context, no cached admission
-  application_entry/{query,mutation}/         E/R: current and exact audience requests
-  application_entry/mutation/source_expectation.rs N M0: required expectation input
-  application_entry/mutation/retention.rs     N M0: pre-effect owner retention request
-  application_entry/query/{retained,live}.rs  N M0: exact selected and managed read entry
-  application_entry/request/{capability,elevation}.rs N/R: typed refinements
-worth-query-decl/src/facade.rs                 R: declaration reexports
-worth-query-host/src/facade.rs                 R: semantic audience reexports
-  [ordinary phase-constructor and provisional exports] D
-worth-query-replay/                           E/R: certification-only audience
-  src/application_cost.rs                    N M0: read-only scoped owner observations
+  application_installation/ application_contribution/        E/R existing lower owners
+  application_entry/ application_output_demand/               E/R execution/transitive demand
+  application_attempt/ handler/ application_invariant/       E/R exact read/candidate boundaries
+  product_operation/generated_materialization/               E/R custody/restoration
+  product_operation/program_adoption/                        S 9.17.5
+    {preparation,publication,scope,custody}/                   S detailed 9.17.5 tree; World owns activation
+  workflow/                                                 S 9.17.6 model definition/instance custody
+    definition/{admission,publication,revision,retirement}.rs S 9.17.6
+    instance/{start,observation,transition,migration,retirement}.rs S 9.17.6
+    proposal/{source,revision,application}.rs                 S 9.17.6
+    evidence/{inventory,assessment,approval,currentness}.rs    S 9.17.6
+    adoption/{inventory,dispositions}.rs                      S 9.17.6 participant in 9.17.5
+    recovery/{continuation,disposition}.rs                    S 9.17.6
+  conditional_operation/ live_delivery/                      E/R no second scheduler
+  application_discovery/                                    E/R governed inspection
+worth-query-publication/src/application_entry/               E/R request/result builders
+worth-query-decl/src/facade.rs                               E/R declaration reexports
+worth-query-host/src/facade.rs                               E/R installed/entry reexports
+worth-query-package-archive/                                 E/R versioned program/definition codecs
+worth-query-replay/                                          E/R cert-only observations
 worth-query-certification/
-  examples/{ordinary_application,retained_application,application_recovery}.rs N
-  examples/ordinary_product_workflow.rs        R: migrated public experience
-  examples/advanced_product_branching.rs       R: same owner path, advanced choices
-  tests/application_api.rs                     N: one integration target
-  tests/application_api/{bank_affinity,candidate_integrity,resource_cost,demand}.rs N
-  tests/application_api/{source_expectation,typed_invariant,producer_installation,exact_observation}.rs N M0
-  fixtures/consumer_values/                   N: one tiny Query-free value crate
-  fixtures/consumer_entry/                    N: separately compiled contribution
-  [existing cumulative World/Signal courts]   E/R: reuse valid evidence
-```
+  fixtures/consumer_values/ consumer_entry/                  E/R existing cross-crate fixtures
+  tests/application_graph.rs                                 N one grouped public target
+  tests/application_graph/{composition,scoped_rules,output_delivery}.rs N
+  tests/application_graph/adoption/                            S 9.17.5
+  tests/application_graph/workflow/                            S 9.17.6
+  [existing World/Signal/resource/compile-fail targets]       E/R independent evidence
+~~~
 
-The dominant axes are declaration meaning, installation validation, runtime
-custody, and domain-specific handler capabilities. Their direction is
-declaration -> installation -> admitted execution -> owner-backed publication.
-Query application entry does not own a graph registry; candidate validation
-does not own numerical geometry; inspection does not own authority. Refining a
-large listed responsibility must retain these axes, not create `common.rs`,
-`helpers.rs`, a catch-all `session.rs`, or a cross-owner `manager`.
+Meaning, installation validation and live custody are separate structural axes.
+Declarations have no leases/clocks; installation compiles closure, not geometry;
+successor execution holds workflow custody, not another graph truth store. Workflow facts
+use admitted model storage and owner progression; Signal owns scheduling.
+New concrete legality evidence goes in the existing semantic family in
+crates/worth-proof. Existing crates/worth-relational candidate/invariant and
+crates/worth-runtime-world publication/retention owners receive necessary
+extensions through facades, never consumer emulation.
 
-The integration root includes its case modules in one binary. The two fixture
-crates establish the required foreign-value boundary, not one crate per case.
-9.19/9.20 extend these same values and entry contributions; their
-`reference_domains/{geometry,bank_compliance}` modules own advanced court
-orchestration only, never a second schema/value definition for the same fixture.
+~~~text
+workspaces/worth-query-bank-world/crates/bank-server/src/
+  application_definition/                                   N/R entry-owned meaning
+    composition.rs
+    payment/{feature,actions,lifecycle}.rs
+    rules/{posting_integrity,approval,coverage}.rs
+    workflows/{payment_review,estate}.rs                  R existing fixed bindings
+  mutation_handlers/ estate_progression/                     E/R domain behavior
+  ordinary/ application_query/ operation_commit/              R/D copied Query sequencing
+  identity_runtime/                                          E/R real installation/adapters
+workspaces/worth-query-bank-world/crates/
+  bank-http-adapter/ bank-user-node/ bank-courtroom/           E/R transport/proofs
+../worth-proprietary/crates/worth-cad-entry/src/
+  application/{composition,connections}.rs                   N root/occurrence mappings
+  families/{extrusion,split}/                                 E/R feature/output contracts
+  invariants/                                                E/R shared domain rule bindings
+../worth-proprietary/crates/worthy-house-application/src/session/model_thread/
+  dependent_split_execution.rs                               D ordinary manual settlement
+  [command and exact scene consumers]                        E/R managed entry
+workspaces/worth-ui/crates/worth-ui-query-binding/src/         E/R Query integration only
+crates/worth-server/src/worth_native/direct/                  E/R real request/projection root
+~~~
 
-The lower-owner extension destinations, relative to the repository root, are:
+Cross-feature orchestration lives above domains. Pure CAD/Bank algorithms stay in
+their semantic packages; only Query bindings move to entry. M3 deferred computation
+extends existing handler/compute custody (S); 9.19 access and 9.20 correlated
+strategies extend existing reader/planner boundaries (S), without moving the facade.
+No generic graph_manager, common, helpers or catch-all application/session file.
+All code/test files remain within 400 lines; this spec grants no exemption.
 
-```text
-crates/worth-relational/src/
-  schema/                                    E/R: relation registration/meaning
-  mvcc/validation/{proposal_invariants,invariant_plan}.rs E/R
-  validation/invariant_access/{metadata,execution}.rs E/R: actual candidate access
-  validation/invariant_authority/             E/R: owner evidence/diagnostics
-crates/worth-runtime-world/src/
-  history/{catalog,retention,publication}.rs   E/R: exact publication read retention
-  retention/registry/owner/                   E/R: actual bounded retention custody
-```
 
-These owners receive required integrity or publication-read extensions through
-their existing facades. Query may not emulate them. The existing Signal/Bridge
-declaration binding and execution owners remain responsible for conditional
-and temporal mechanisms; this milestone changes their Query binding, not their
-truth or scheduling ownership.
+## Ordered Implementation And Deletion
 
-Bank placement, relative to `workspaces/worth-query-bank-world/crates/`:
+A phase begins with the bounded producer/consumer trace for its endpoint. It includes
+ordinary execution, rejection, retry, reconstruction and cleanup. Strengthen actual
+signatures and follow the compiler through affected sibling paths; do not make separate
+destinations out of each exposed omission. No language-only or marker-only phase.
 
-```text
-bank-domain/src/
-  schema/{values,manifest,program_manifest}.rs R: binding + contribution meaning
-  queries/                                   R: typed input/query/result bindings
-  proposals/                                 E/R: domain computation only
-bank-server/src/
-  identity_runtime/installation.rs            R: explicit root/adapters/profiles
-  ordinary/{read,mutation}/                   R: thin product naming/presentation
-  application_query/                         D/R: remove Query pipeline copies
-  operation_commit/                          D/R: move domain effects to handlers
-  estate_progression/                        R: rules + installed handlers/continuations
-  estate_progression/{undo,redo,undo_admission,redo_admission}.rs D
-  query_binding/{handlers,profiles,transport_outcomes}/ N/R: Bank integration only
-bank-http-adapter/                            R: fresh request + bounded wire adaptation
-bank-user-node/                               R: real client contracts
-bank-estate-certification/                    R: real product journeys
-bank-external-rail/                           E/R: actual external-effect ownership
-bank-courtroom/                               R: process evidence through the new API
-```
+### Phase 1: Extrusion to split to first exact result
 
-`D/R` requires inspecting each file's real contents: delete framework glue,
-move still-needed domain rules, and remove the emptied surface. It is not
-permission to delete domain behavior. No product-local facade may keep the old
-pipeline alive. The pure fixture crate and separate contribution prove the
-cross-crate boundary without creating production CAD packages or imposing
-Query dependencies on existing numerical crates.
+Consume the existing value bindings, candidate/resource/proof owners and real CAD
+before-behavior. Implement the smallest complete static composition with extrusion,
+split, typed occurrence connection, local parameter rule and shared topology rule.
+Generate handler/factory/producer/readiness slots and install the complete root.
+Use admitted source replacement, typed performed delivery, transitive demand and
+exact retained output through the real command/scene entry.
 
-Existing ordinary consumer destinations, relative to the repository root:
+Interrupt after source publication and recover delivery after disposing the caller
+result. Deny foreign/duplicate carriers and preserve source success on derived failure.
+Exercise two forks and retained predecessor output. Add focused compile-fail twins
+at the same public target for missing binding/proof and string/lookalike substitution.
+Delete the ordinary dependent_split_execution loop and migrated manual declarations
+once the replacement path works. The next phase can trust an actual typed graph
+through publication and its return path, not just declaration expansion.
 
-```text
-workspaces/worth-ui/crates/worth-ui-query-binding/src/
-  operation_live/{resource,retention,retirement}.rs R: public managed resources
-  projection_invalidation/                     R: governed granular delivery
-  [existing snapshot projection owners]        R: request-bound reads and isolation
-crates/worth-server/src/worth_native/direct/
-  {state,read}.rs                               R: real app installation/request ownership
-  projection/request.rs                         R: typed query/projection intent
-crates/worth-server/tests/                      R: affected direct/HTTP adapter courts
-```
+### Phase 2: Reuse, scoped rules and generated geometry
 
-Preserve UI presentation, server protocol, and product adapter registration
-semantics while replacing their ordinary Query calls. Query owns selection,
-readmission and managed resources; UI owns projections/view interest, and
-server owns authentication and transport adaptation. No replacement facade in
-either consumer may reproduce the phase pipeline. Committed successors add
-new view or adapter families under these existing semantic owners.
+Consume the Phase 1 entry without creating another fixture root. Add an exported
+summary consumer and cross-feature consistency rule without editing existing feature
+internals. Nest the composition, install it twice and populate 1/10/100 neighborhoods.
+Change shared tolerance through another feature and observe only the correct local rules.
 
-## Ordered Phase Plan
+Complete triangle/rectangle/pentagon fixed protocol expansion and generated split
+grammar, reservation, correspondence, lineage and candidate validation. Inject
+mislowered valid numeric output, missing roles, foreign handles and capacity excess.
+Suspend/reconstruct generated output through existing custody; cleanup must preserve
+unpublished restoration. Delete duplicate role/count/route/dependency inventories
+for these families. The next phase trusts extensible composition and honest output.
 
-Each phase begins with `plan-implementation`, including the current owner
-boundary, concrete DX, and directory population. Use `implementation-batch`
-for coherent slices. Reapply planning at a repeatedly failing architectural
-boundary; replace its design completely instead of patching symptoms.
+### Phase 3: Bank feature lifecycle and complete ordinary resources
 
-The persistent reviewer applies `qa-loop`, `qa-tests`, and `code-quality-qa`
-to substantial completed batches. Distinguish certification blockers from
-optional suggestions. Preserve cleared findings and unaffected test evidence.
-Certify the current phase, commit and push it, then begin the next phase.
-Phase plans are inline decisions; do not create another proof ledger.
+Bind Bank payment initiation/approval/rejection, posting invariants, balances, purpose,
+capability, elevation and distinct-approver meaning through the same declarations.
+Complete account/estate/other existing operation families and fixed workflow bindings.
+Use existing domain handlers and managed workflow owners, not a new dynamic engine.
+Remove their copied select/admit/prepare/commit and per-query read pipelines.
 
-### Phase 1: Declaration Binding And Explicit Composition
+Finish retained/history/page/live/saved-view delivery, opt-in publication retention,
+idempotent replay and exact external/unpublished/provider recovery in the same entry.
+Real HTTP/user-node/authentication/rail response-loss journeys must observe real
+effects and recovery. Preserve losing-outbox denial and unrelated branch progress.
+The next phase trusts the new API for a non-CAD domain and all existing read/effect
+postures; dynamic authoring is not a prerequisite.
 
-> **Certified 2026-09-11.** Pure-value bindings, generic field/unit affinity,
-> explicit contribution composition, root installation, canonical identity,
-> archive round trips, historical relation semantics, hostile foreign-schema
-> denial, and Bank declaration adoption pass through their production owners.
-> Bank read, live, mutation, proposal, continuation, capability, and product-
-> currentness regressions are green after the declaration cutover.
+### Phase 4: Remaining consumers and static authoring closure
 
-Make pure value binding and one-root contribution composition real. Replace
-application value/query/operation binding contracts across declaration,
-canonicalization, and installation as one coherent cutover. Generate mechanical
-identity/parameter wiring from explicit contracts; preserve aspect truth.
-Include admission and package-archive binding dependencies in the causal scope;
-unchanged portable-meaning goldens must pass without regeneration.
+Migrate UI Query binding's actual projections/live retirement, server direct/HTTP
+adapters, examples and remaining public ordinary call sites. Keep presentation and
+protocol ownership in their consumers. Finish Bank process/resource close coverage.
+Remove weaker ordinary exports, old authoring aliases, duplicate registries and
+workspace-string execution alternatives. Retire only explicitly provisional Bank
+linear correction commands/routes/tests; preserve accepted aftermath/recovery.
 
-Evidence is public compilation of the pure-value/separate-entry consumer,
-Bank declaration adoption, exact portable contract round trips, and hostile
-foreign-schema/unit/identity cases. No hidden Query dependency or wrapper-value
-escape passes. Root-installed references, not a generic marker, open subsequent
-work. The next phase may trust installed binding identity and closure.
-Migrate mechanically affected declarations in UI/server and public courts in
-this phase if their bindings change. Later consumer phases own their execution
-cutover, not permission to leave new compile failures behind. Scope the known
-Bank baseline explicitly; do not excuse a new dependency break as existing debt.
+Each migrated identity uses only the new root immediately. Until its phase completes,
+an unmigrated consumer may use its pre-existing installation under existing audience
+enforcement; it cannot be newly adopted or mixed with generated meaning for the same
+identity. All such ordinary migration exceptions end here, not in 9.17.6.
 
-### Phase 2: Requests And All Existing Read Lifecycles
+Run the decisive CAD/Bank/Signal/public-compiler and affected adapter evidence on
+the final source. The next milestone receives a usable static graph authoring and
+execution product, exact branch interpretation and typed owner lifecycles.
 
-Ship installation entry, request context, fresh selection, typed query
-execution, retained reads, bounded history/publication reads, paging, live
-delivery, profiles, and relevant inspection. Migrate Bank ordinary and estate
-read paths together, including special-purpose/elevation admission, HTTP
-continuation, and live revocation. Remove their copied Query read pipelines.
-Certify capability composition/delegation revocation and approved-elevation
-preview versus pending request artifacts; preserve granular region/collection
-delivery and saved-view readmission. Prove root sharing and handle confinement.
+## Acceptance, QA And Cost
 
-The read courtroom proves old/new separation, fresh security over old data,
-foreign-artifact denial, bounded lifecycle, and exact publication retention.
-Here publication reads use World history protection; mutation-side opt-in
-retention and its terminal carrier are certified with Phase 3's effect boundary.
-No long-lived session freezes current state or permissions. The next phase
-inherits a usable public read experience, not just owner tests.
+Closure requires the authored graph to determine actual installed relationships,
+authority ceilings, affected rules and publication/settlement for CAD, Bank,
+existing fixed workflows and migrated ordinary consumers. Dynamic authoring and
+program adoption have their own acceptance in 9.17.6 and 9.17.5. There is one
+semantic root
+and execution path. No ordinary caller may skip required preparation or commit
+state different from what its validation/evidence describes.
 
-### Phase 3: Operation Execution And Complete Bank Adoption
+Existing grouped compile-pass/fail targets use the public composition and actual
+owner entry with valid counterparts. Negative twins replace a required typed port
+with a wrong-role/value port, omit a required binding/preparation result, or supply a
+string, raw ID, consumer-defined lookalike or decoded description where canonical
+evidence is required, including a descriptive receipt supplied to performed-change
+delivery or recovery. They must fail at the disputed boundary, not fixture setup.
+Preserve foreign-schema, forged-authority and owner-confined-resource cases; consolidate
+overlaps instead of adding a compiler session for every intermediate phase.
 
-The [M0 required API closure](#m0-required-api-closure) fixes the consumed operation,
-writer, invariant and installation contracts. Its first-use batches may ship before
-this full Bank phase closes; existing certification remains scoped to shipped work.
+Runtime counterparts use genuinely issued evidence from a different occurrence/branch
+or wrong installed meaning, and exercise rejection, retry, reconstruction and exact custody cleanup. Static type correctness is not proof
+of live affinity, fresh permission or legal disposal. Existing facade/dependency checks
+prevent internal-ID access and weaker ordinary exports; source scanners do not replace
+compiler or runtime evidence. Review the complete signature migration for remaining
+weak consumers rather than building a registry of string conversions or duplicate types.
 
-Bind installed domain handlers and drive the complete mutation spine through
-request execution. Install relation integrity and domain invariants against the
-actual primary candidate, including complete affected neighborhoods, before
-claiming Bank's exclusive posting relations or domain rules are enforced.
-Fixed-shape handlers reserve their declared candidate requirements before
-allocation. Move Bank's domain rules/effects behind these handlers;
-delete its authorize/prepare/commit framework duplication. Migrate every
-existing ordinary mutation family, estate transitions, workflows, conditional/
-temporal invocations, external rail, and exact recovery adaptation.
-Retire the provisional correction consumers described above in this same
-cutover. Prove request/approve/use/revoke elevation, required review, and
-capability-scoped estate actions through the typed bindings. Install the rail
-in the real process court and add public lifecycle forwarding. Prove opt-in
-publication retention, including replay and post-effect custody, and that
-idempotent replay never invokes a domain handler.
+Retain independent predecessor oracles, native source versions, exact role/entity
+affinity, generated custody, portable codec compatibility, complete candidate scopes,
+allocation/resource denials and branch progress. Changed meaning needs versioned
+codecs and deterministic compatibility handling. Unchanged meaning cannot change
+bytes because a Rust module/macro changed. Archives are descriptive definitions
+requiring fresh validation, not installed authority.
 
-Prove the accounting, approval, stale-attempt, cancellation, unpublished-outbox,
-settlement, process-transport, and unrelated-branch journeys. No half-performed
-state is flattened and no recovery reruns the operation. Bank must actually
-pass through its public product and process paths before moving on; CAD demand
-or off-thread workers are not prerequisites for this acceptance checkpoint.
+Measure cold/warm owner and consumer compilation, declaration-only/domain-only
+rebuilds, dependency/adjacency visits, candidate effects/bytes, invariant work,
+MVCC granules, producer/delivery contacts, publications and retained resources.
+Ordinary work is admitted reads/effects plus required closure and measured physical
+amplification. No per-edit whole-program compilation, rich explanation, reconstruction
+or unrelated-occurrence scan. Count source and derived publications separately;
+claim no constant time for shell-wide rules. Queued work retains explicit bounds.
 
-### Phase 4: Bounded Graph Construction And Output Settlement
+Use focused, ordinary CI and scheduled qualification lanes from
+[test-requirements.md](./test-requirements.md). Inspect failures, reuse valid
+binaries/results, never restart a live process because a poll timed out.
+Required builds are warning-free without suppressing meaningful checks.
+For boundary-relevant implementation phases run:
 
-Consume the [M0 required API closure](#m0-required-api-closure), including exact
-observation/retention and certification costs. A demand-only helper cannot certify
-this phase while its installation, source or read lifecycle still needs CAD plumbing.
-
-Extend the certified primary candidate/invariant boundary with actual runtime-
-cardinality reservation/allocation/population and cyclic geometry-shaped
-construction. Domain-specific topology rules use the installed invariant route
-from Phase 3. Extend required lower-owner seams directly.
-Use the already certified handler/runtime experience for the geometry-shaped
-consumer; do not invent a special geometry executor.
-
-Certify valid cyclic construction, hostile mislowering, foreign model, inbound
-reference deletion, stale source, independent retained reads, and independent
-resource exhaustion. Report structural amplification for 1/10/100 groups.
-Prove output-role correspondence and retirement in the same publication.
-Ship the bounded synchronous group-demand contract and its real producer court:
-source drift, missing output, delayed patch, capacity, cancellation, shared
-interest release, and exact selectable settled output. Reuse the shared Query
-Signal court for conditional/sibling/retention evidence through the new entry.
-This establishes the public foundation for house M0, not a geometry-kernel or
-engineering certification. Bank affected integrity cases run as regression
-evidence where the provider changes its shared boundary.
-
-No phase may defer a prerequisite it actually needs to a later phase because
-of these labels. Phase 3 must pull forward any candidate-resource machinery
-needed for its honest fixed-shape admission; Phase 4 owns the additional
-variable-cardinality and geometry consumer proof, not permission to leave Bank
-integrity incomplete. Phase 2 may use the existing certified 9.17.3 mutation
-entry to establish real read/revocation fixtures until Phase 3 replaces that
-entry; this is internal staged implementation, not a compatibility export.
-
-### Phase 5: UI And Server Consumer Cutover
-
-Migrate `worth-ui-query-binding` and `crates/worth-server`, their actual product
-adapter registrations, direct read/projection roots, live resource ownership,
-and affected HTTP integration paths. Consume the certified request/handler/
-resource contracts without product-local orchestration. UI source isolation,
-granular invalidation and view retirement, plus server fresh authorization and
-projection behavior, must pass through the real roots before this phase closes.
-Dependency and compiler checks deny their superseded ordinary imports. This is
-an implementation phase with its own runtime evidence, not final cleanup debt.
-
-### Phase 6: Complete Audience Closure And Certification
-
-Migrate every remaining affected ordinary export, in-repo entry consumer,
-example, and guide. Close the compiled facade so raw phase construction,
-workspace-string application execution, and provisional correction cannot be
-selected as ordinary alternatives. Preserve internal/certification mechanisms
-only with their proper audiences. Finalize discovery and domain-level errors.
-
-The final public journeys exercise one sealed graph, real patch delivery and
-conditional execution, sibling progress, retained data, honest outcomes,
-recovery, and cleanup through the new experience. Reuse predecessor oracles
-and binaries when valid; rerun affected boundaries after the final changes.
-9.18 may then depend on this application contract rather than another facade
-redesign. No phase claims milestone closure while an affected consumer is
-broken or a replacement remains a forwarding compatibility shim.
-
-## Documentation Deliverables
-
-Documentation ships with each public capability, not only during final cleanup.
-
-| Continuing audience | Authoritative document | Required change and evidence |
-| --- | --- | --- |
-| Query application integrators | `workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md` | Define contributions, installation, requests, handlers, controls, result semantics, read lifetimes, and recovery using executable examples |
-| All Query readers | `workspaces/worth-query/crates/worth-query/docs/AI_README.md` | Normal current reference for owners and actual public workflows; no migration narrative or statements such as "legacy surfaces are removed" |
-| Declaration authors | `worth-query-decl/README.md` and existing schema/declaration guides | Cross-crate binding, explicit identity/registration, generated intent, units, handler and invariant contracts |
-| Host authors | `worth-query-host/README.md` | Semantic namespace map, installation adapters, controls, advanced preparation, lifecycle, typed outcomes |
-| Query users choosing an API | `worth-query/docs/capabilities/declarative-query-experience.md` | Rewrite around the accepted typed application path; remove competing workspace-based ordinary examples |
-| History/live/recovery consumers | Existing `foundations/branches-and-previews.md`, `capabilities/historical-diff-and-basis.md`, and domain/aftermath guides | Same query binding, exact retention, fresh security, overflow, performed versus settled, owner-bound legal next actions |
-| Bank product/transport authors | `workspaces/worth-query-bank-world/docs/public-consumer-contract.md`, `banking-product-contract.md`, `process-transport.md` | Real current APIs, all operation families, continuation/live/recovery wire behavior, honest process evidence |
-| UI adapter authors | `workspaces/worth-ui/docs/query-binding.md`, `application-lifecycle.md`, and `workspaces/worth-ui/AI_README.md` | Current root/request ownership, projection isolation and live disposal, checked with real UI binding tests; AI reference stays free of migration narrative |
-| Server adapter authors | `crates/worth-server/docs/read-data.md`, `write-data.md`, `stream-results.md`, and `connect-another-backend.md` | Current typed product registration and transport adaptation, checked with affected direct/HTTP integration targets |
-| House platform consumers | Private `docs/house/query-platform.md`, `milestones.md`, `rust-ui-architecture.md` | Required M0 operation/source/writer/invariant, producer/conditional, exact observation/demand/cleanup and cost APIs; M2.5 transitive settlement; M3 deferred extension; distinguish shipped pin from proposed methods |
-| Milestone implementers | This specification and `WORTH_query_roadmap.md`; 9.18 handoff | Replacement obligations and ordering; no claim that proposed APIs are already implemented |
-
-Guide snippets are included from or compiled alongside owning examples/tests.
-Documentation-only edits do not trigger a full runtime rebuild. Keep the
-historical requirements and valuable operator catalog; they are not obsolete
-API reference. Do not create a second feature guide, migration tracker, or
-closeout ledger merely to summarize this milestone.
-
-## Acceptance, Cost, And Verification Discipline
-
-Acceptance requires the full consumer journeys, public compiler boundaries,
-exact outcomes, real candidate rules, and absence of competing ordinary lanes.
-Compilation alone and isolated owner success do not close a phase.
-
-The API adds no schema-wide lookup, history scan, graph reconstruction, or
-canonical re-encoding to each ordinary request. Installed binding lookup is
-direct or bounded indexed lookup; principal/security checks retain their real
-cost. Query execution remains O(admitted graph work + output); candidate work
-is O(materialized effects + required invariant closure + actual owner index/
-copy-on-write work). Do not claim constant time for a shell-wide invariant.
-Continuation/history work is charged for examined entries, including vacancies,
-not only returned rows. Closure, not superficial line count, determines the
-needed graph gather. The framework does not do a second numerical solve.
-
-Structural observations separate selections, authority checks, provider reads,
-candidate allocation, validation, publication, delivery, retention, and
-reconstructive work. Each accepted mutation batch has one selected attempt/provider
-session and one successful product publication; subsequent derived producer
-publications are counted separately, never hidden inside that claim. A denied pre-allocation batch
-has zero candidate allocations and zero publication contacts. Unrelated
-branches and producer routes retain the predecessor's independent progress and
-bounded matching-work guarantees.
-
-Measure cold/warm compile and focused rerun costs for the relevant public
-examples and Bank target. Reuse one compiled fixture crate per responsibility
-and shared existing test support; do not make a new crate/test binary for each
-negative case. Pure algorithms and ordinary UI code must not instantiate the
-application schema's generic graph. Public compiler tests and manifest
-boundaries, not source-text approximations, enforce that separation.
-
-Keep execution ownership in `worth-query-execution`; this milestone does not
-create a speculative wrapper/application runtime crate. Generate small binding
-adapters and hand off to existing runtime owners, limiting schema-wide generic
-instantiation to entry code. Measure the execution/host/consumer rebuild chain
-explicitly; locating entry code inside execution does not isolate its rebuild.
-If measured iteration cost requires a physical crate split, reapply planning to
-that demonstrated boundary and revise this topology before implementation;
-never split authority merely to improve a stopwatch. Bank's first green target
-is the new-binding baseline; its current failed build is not a valid before
-timing for functional or runtime performance comparisons.
-
-Finish verification of a frozen batch before expanding it. Build the affected
-targets once, reuse their binaries, and rerun only checks invalidated by later
-changes. Reuse existing independent oracles and cleared review findings.
-Expensive process, scale, and scheduled lanes run when their actual boundary
-changes or final certification requires them, not after every local edit.
-Use deterministic synchronization for races; time spent compiling is not proof.
-
-For boundary-relevant implementation, run the governing repository tools:
-
-```text
+~~~text
 cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .
 cargo run --manifest-path tools/agent-context/Cargo.toml -- check
 scripts/ci/check_workspace_rust_line_caps.sh dirty
-```
+~~~
 
-Also run affected owner/public integration tests, formatting, specification-
-required lint and process proofs. Preserve the currently requested quick
-line-check CI; this milestone does not restore the old CI pipeline. Required
-local certification still applies. Generated `AGENT_CONTEXT.md` files are tool
-outputs, never hand-edited. Report unrelated untouched debt separately; scoped
-constitutional failures block completion. Follow
-[test-requirements.md](./test-requirements.md) rather than creating evidence
-inventories or tests which only certify other tests.
+Also run affected formatting, lint, owner and real integration lanes.
+The historical broad CI workflow is not reinstated. Documentation-only changes
+require reference/consistency review, not runtime builds. Completed certification
+stays historical; unrelated untouched debt does not expand the milestone.
 
-## Complete Feature Adoption And Successor Handoff
+QA challenges feature-boundary dependency loss, optional-supplier vacuous success,
+ambiguous writers, authority forgery, stale evidence, lifecycle custody,
+buffer-only validation and hidden ordinary scans. Reviewers answer:
+"Can an ordinary caller omit required preparation and still reach publication, or
+commit state different from what its validation and evidence describe? Can strings,
+raw IDs, lookalike types or decoded descriptions still satisfy a governed handoff?"
+Review ends on material findings and adequate evidence, not new ledgers/tests for tests.
 
-This is the consumer-facing disposition of the house Query adoption matrix.
-It is not a second implementation tracker or a promise that every future
-capability ships in 9.17.4.
 
-| Requirement family | 9.17.4 destination | Remaining governed handoff |
-| --- | --- | --- |
-| Entities, aspects, fields, units, relations, optional values, typed identities | Entry-owned bindings, explicit composition, complete native contracts | Domain schema additions remain domain work |
-| Queries, projections, operations, effects, aggregates | Typed intent, installed handlers, real tracked reads and candidates | 9.19/9.20 add advanced strategies/correlated execution |
-| Packages, archives, signatures, adapters, policy, catalog, support | Coherent installation and descriptive discovery; current trust required | Store persistence does not come from portable definitions |
-| Principal, capability, purpose, disclosure, delegation, elevation | Fresh request/attempt/delivery admission under installed contracts | Domain rules and actual identity-provider evidence remain mandatory |
-| Traversal, ordering, paging, collections, saved views, scopes | Same installed query binding with explicit mode/resource lifetime | Search completeness and verified footprints remain 9.19 |
-| Invariants, relation integrity, atomic output groups, cardinality | Actual primary candidate validation and reservation | Private kernel supplies geometry/body-class predicates; no manifold-only platform default |
-| World occurrence, publication, branches, retained reads, ancestry, cleanup | Query request/resources over the existing owners | Semantic multi-parent merge remains a later cross-runtime contract |
-| Idempotency, external effects, outbox, recovery, aftermath | Exact terminals and custody through ordinary execution | 9.18 tree correction; house M3B source correction consumes accepted semantics |
-| Signal dependencies, producers, conditional/temporal/workflow work | Installed bindings, causal delivery and bounded synchronous group demand; existing scheduling owner | House M2.5 extends synchronous transitive settlement; M3 adds deferred-compute integration |
-| Output freshness, demand, off-thread numeric work | M0 fixed-source bounded group handle, exact settled occurrence, Superseded and independent shared-interest custody | M2.5 extends required-output closure for bridge assessment; M3 adds value-only workers with owner-thread revalidation/publication; no placeholder deferred strategy |
-| UI, AI, regions, inspection, explanation, consumer kits, lineage | Governed typed discovery/results/resources; one entry experience | House UI/AI consumes the facade; durable identity lineage remains platform truth |
-| Native Save/Open, durable restart, replay | Accepted package APIs remain definition-only; replay cert-only | House M7E Query/Store snapshot/restore with fresh authority; broader durability M10 |
+## Documentation And Successor Handoff
 
-The M2.5 bridge handoff extends M0's distinction between immutable selected source
-and a settled descendant output occurrence; M3 carries this into deferred work.
-It must preserve required inventory/applicability, method versions, complete dependencies, freshness, cancellation, and consumer
-release without introducing another scheduler. Settled does not mean passing.
-M2.5 extends `application_entry/demand`; M3 also extends `handler/compute`. Neither
-may move ordinary declarations into solvers or replace the application entry again.
+Query authors/integrators use
+worth-query/docs/foundations/ordinary-application-front-door.md as the authoritative
+composition/feature/action/rule/output guide. Its examples compile through decl/host
+facades. Update their READMEs and the existing declarative-query guide to describe
+one entry, required provider slots, typed failures, retained reads and managed demand.
+Query AI_README.md names current owners; existing history/aftermath/resource guides
+retain their complete operator contracts.
 
-9.18 consumes typed intents, exact retained source selection, installed
-operation/aftermath bindings, and fresh mutation/recovery entry. An accepted
-correction creates a new World occurrence; it does not re-export the provisional
-API. 9.19-9.22 attach their stronger access, footprint, evidence, and reuse
-products behind the same binding and handler boundaries, with their own real
-proofs. They must not introduce another ordinary consumer language.
+Update Bank public-consumer, banking-product and process-transport references;
+UI Query-binding/lifecycle and server read/write/stream/adapter documentation;
+private CAD Query-platform/milestones references when that consumer adopts. Their
+examples must reach the real roots they claim. Do not copy this spec into a new guide.
+
+[9.17.5](./milestone-9.17.5.md) consumes this canonical program, component-affine
+installation, effect/delivery and resource boundaries to introduce program adoption.
+[9.17.6](./milestone-9.17.6.md) consumes both milestones to add runtime-authored
+definitions/instances. Existing fixed workflows remain working throughout.
+[9.18](./milestone-9.18.md) follows all three and introduces accepted tree correction.
+No successor may revive old ordinary APIs, invent authority from IDs or create
+another scheduler, branch registry or expression language.
+
+House M2.5 adds engineering inventory/assessment to the transitive synchronous
+mechanism established here; M3 adds deferred numerical computation at the owner;
+M7E adds native Save/Open with Store. Their domain algorithms are not this milestone.
+Branch divergence and future merge meaning are explicitly governed by 9.17.5.

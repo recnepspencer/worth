@@ -1,3 +1,6 @@
+use worth_query_declaration::facade::application_schema::{
+    StringApplicationValueBinding, U64ApplicationValueBinding,
+};
 use worth_query_declaration::{
     worth_query_application_schema, worth_query_aspect, worth_query_entity, worth_query_field,
     worth_query_principal_binding, worth_query_relation,
@@ -6,7 +9,8 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 use worth_query_host::facade::declaration::authentication::{
-    WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
+    WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
+    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
 use worth_query_host::facade::domain::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
@@ -51,16 +55,16 @@ worth_query_entity!(pub Account for HostIdentitySchema);
 worth_query_aspect!(pub ExternalIdentity for HostIdentitySchema, ExternalMapping; identity = AspectIdentity(0x9161103e), revision = AspectContractRevision(1),);
 worth_query_field!(
     pub ExternalIdentityField for HostIdentitySchema, ExternalMapping, ExternalIdentity:
-    WorthQueryExternalPrincipalIdentity, read_only, equality
+    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality
 );
 worth_query_aspect!(pub PrincipalIdentity for HostIdentitySchema, Principal; identity = AspectIdentity(0x9161103f), revision = AspectContractRevision(1),);
 worth_query_field!(
     pub PrincipalIdentityField for HostIdentitySchema, Principal, PrincipalIdentity:
-    u64, read_only, equality
+    u64 => U64ApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
     pub MappingStatusField for HostIdentitySchema, ExternalMapping, ExternalIdentity:
-    WorthQueryPrincipalMappingStatus, read_write, equality
+    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality
 );
 worth_query_relation!(
     pub MappingTarget in HostIdentitySchema,
@@ -77,7 +81,7 @@ worth_query_principal_binding!(
 worth_query_aspect!(pub AccountIdentity for HostIdentitySchema, Account; identity = AspectIdentity(0x91611040), revision = AspectContractRevision(1),);
 worth_query_field!(
     pub AccountNumber for HostIdentitySchema, Account, AccountIdentity:
-    String, read_only, equality
+    String => StringApplicationValueBinding, read_only, equality
 );
 
 #[test]

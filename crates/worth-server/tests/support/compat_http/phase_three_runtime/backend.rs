@@ -11,6 +11,20 @@ impl worth_query::facade::runtime::WorthQueryMergeSnapshotOwner
 }
 
 impl WorthQueryRuntimeBackend for StatefulCountingMutationRuntimeBackend {
+    fn prepare_product_source(
+        &self,
+    ) -> Result<
+        worth_query::facade::runtime::WorthQueryProductRelationalInstallation,
+        worth_query::facade::runtime::WorthQueryProductSourceDenial,
+    > {
+        let branch = self
+            .product_source
+            .with_runtime(|runtime| runtime.main_branch_identity());
+        self.product_source
+            .prepare_product_source(&branch)
+            .map_err(worth_query::facade::runtime::WorthQueryProductSourceDenial::Basis)
+    }
+
     fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {
         self.support_profile.clone()
     }

@@ -138,7 +138,40 @@ fn project_intent(
         }
         MutationIntent::Entity(intent) => project_entity(intent, state, touches, work),
         MutationIntent::Relation(intent) => project_relation(intent, state, touches, work),
+        MutationIntent::Materialization(intent) => {
+            project_materialization(intent, state, touches, work)
+        }
     }
+}
+
+fn project_materialization(
+    intent: &crate::transactions::data::MaterializationMutationIntent,
+    state: &crate::storage::overlay::WorkingState,
+    touches: &mut BTreeSet<ValidatedMutationTouch>,
+    work: &mut ValidatedMutationTouchProjectionWork,
+) -> Result<(), ValidatedMutationTouchProjectionError> {
+    use crate::transactions::data::MaterializationMutationIntent as Intent;
+    match intent {
+        Intent::SuspendEntity(spec) => {
+            let kind = entity_kind(state, spec.entity_id, work)?;
+            touches.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });
+        }
+        Intent::SuspendRelation(spec) => {
+            let kind = relation_kind(state, spec.relation_id, work)?;
+            touches.insert(ValidatedMutationTouch::UnlinkRelation { kind });
+        }
+        Intent::RematerializeEntity(spec) => {
+            touches.insert(ValidatedMutationTouch::UnrepresentableEntityMutation {
+                kind: spec.kind_id,
+            });
+            project_fields(spec.kind_id, &spec.fields, touches);
+        }
+        Intent::RematerializeRelation(spec) => {
+            touches.insert(ValidatedMutationTouch::LinkRelation { kind: spec.kind_id });
+            project_relation_fields(spec.kind_id, &spec.fields, touches);
+        }
+    }
+    Ok(())
 }
 
 fn project_create(intent: &CreateIntent, touches: &mut BTreeSet<ValidatedMutationTouch>) {

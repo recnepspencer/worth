@@ -18,7 +18,7 @@ fn installed_clock(
     crate::facade::BridgeManagedClockBinding,
     Arc<crate::facade::BridgeInstalledConditionalLowering>,
 ) {
-    let (mut owner, lowering) = install(always_eligible_contract("query:one"), "managed-time");
+    let (owner, lowering) = install(always_eligible_contract("query:one"), "managed-time");
     let binding = owner
         .install_managed_clock(BridgeManagedClockInstallationParts {
             lowering: &lowering,
@@ -51,7 +51,7 @@ fn active<'a>(
 
 #[test]
 fn intent_reconciliation_is_revisioned_capacity_bounded_and_effect_safe() {
-    let (mut owner, binding, _) = installed_clock(2, 2);
+    let (owner, binding, _) = installed_clock(2, 2);
     assert_eq!(
         owner
             .reconcile_managed_temporal_intent(active(&binding, "intent:a", 1, 5))
@@ -96,7 +96,7 @@ fn intent_reconciliation_is_revisioned_capacity_bounded_and_effect_safe() {
 
 #[test]
 fn duplicate_observation_drains_only_the_remaining_bounded_due_frontier() {
-    let (mut owner, binding, _) = installed_clock(3, 1);
+    let (owner, binding, _) = installed_clock(3, 1);
     owner
         .reconcile_managed_temporal_intent(active(&binding, "intent:a", 1, 5))
         .unwrap();
@@ -136,7 +136,7 @@ fn duplicate_observation_drains_only_the_remaining_bounded_due_frontier() {
 
 #[test]
 fn observation_affinity_and_ordering_fail_without_due_progress() {
-    let (mut owner, binding, _) = installed_clock(1, 1);
+    let (owner, binding, _) = installed_clock(1, 1);
     owner
         .reconcile_managed_temporal_intent(active(&binding, "intent:a", 1, 5))
         .unwrap();
@@ -194,7 +194,7 @@ fn observation_affinity_and_ordering_fail_without_due_progress() {
 
 #[test]
 fn managed_due_wake_executes_only_its_exact_conditional_lowering() {
-    let (mut owner, binding, lowering) = installed_clock(1, 1);
+    let (owner, binding, lowering) = installed_clock(1, 1);
     let signal_basis = owner
         .admit_conditional_signal_basis(&lowering, owner.admitted_signal_basis())
         .unwrap();
