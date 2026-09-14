@@ -75,6 +75,15 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn observed_source_fact(
+        &self,
+    ) -> Option<&super::super::application_attempt::WorthQueryApplicationObservedFact> {
+        match self {
+            Self::ObservedSource { fact } => Some(fact),
+            _ => None,
+        }
+    }
+
     pub(super) fn remains_equal_in(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,

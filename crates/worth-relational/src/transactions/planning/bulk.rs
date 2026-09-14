@@ -53,6 +53,9 @@ pub(crate) fn bulk_mutation_scope(intents: &[MutationIntent]) -> BulkMutationSco
             MutationIntent::Entity(EntityMutationIntent::UpdateFields(_))
             | MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(_))
             | MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(_)) => {}
+            MutationIntent::Materialization(_) => {
+                saw_topology_rewrite = true;
+            }
         }
     }
 
@@ -112,6 +115,10 @@ pub(crate) fn bulk_mutation_locality(intents: &[MutationIntent]) -> BulkMutation
             | MutationIntent::Relation(RelationMutationIntent::Delete(_)) => {
                 relation_target_count += 1;
             }
+            MutationIntent::Materialization(intent) => match intent.record() {
+                crate::transactions::data::RecordRef::Entity(_) => entity_target_count += 1,
+                crate::transactions::data::RecordRef::Relation(_) => relation_target_count += 1,
+            },
         }
     }
 
@@ -154,6 +161,7 @@ pub(crate) fn bulk_mutation_naming(intents: &[MutationIntent]) -> BulkMutationNa
             | MutationIntent::Entity(EntityMutationIntent::Delete(_))
             | MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(_))
             | MutationIntent::Relation(RelationMutationIntent::Delete(_)) => {}
+            MutationIntent::Materialization(_) => {}
         }
     }
     normalized_client_keys.sort();
@@ -249,7 +257,8 @@ pub(crate) fn bulk_mutation_lineage(intents: &[MutationIntent]) -> BulkMutationL
             }
             MutationIntent::Entity(EntityMutationIntent::UpdateFields(_))
             | MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(_))
-            | MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(_)) => {}
+            | MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(_))
+            | MutationIntent::Materialization(_) => {}
         }
     }
 

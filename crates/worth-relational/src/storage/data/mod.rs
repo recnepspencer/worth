@@ -18,6 +18,9 @@ pub use authoritative_field_comparison_key::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RecordLifecycleState {
     Live,
+    /// The record identity and semantic lineage remain live, while its
+    /// reproducible payload is absent from this exact branch root.
+    MaterializationUnavailable,
     DeletedRetained,
     RetainedDanglingForAudit,
     PinnedBySnapshot,

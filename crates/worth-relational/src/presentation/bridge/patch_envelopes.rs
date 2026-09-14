@@ -207,6 +207,12 @@ fn bridge_record_changes(
                 RecordStructuralChange::RetainedForAudit => {
                     BridgeCommittedRecordChangeKind::RetainedForAudit
                 }
+                RecordStructuralChange::MaterializationSuspended => {
+                    BridgeCommittedRecordChangeKind::MaterializationSuspended
+                }
+                RecordStructuralChange::Rematerialized => {
+                    BridgeCommittedRecordChangeKind::Rematerialized
+                }
             };
             BridgeCommittedRecordChange::from_relational_publication(
                 record_ref_identity(&record.target),

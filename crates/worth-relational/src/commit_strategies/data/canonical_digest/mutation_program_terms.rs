@@ -7,9 +7,9 @@ use crate::transactions::data::{
     ApplyEntityAspectPatchIntent, ApplyRelationAspectPatchIntent, AspectFieldPatch,
     BulkEntityCreateIntent, BulkRelationCreateIntent, CreateIntent, DeleteEntityIntent,
     DeleteRelationIntent, EntityAspectCreateIntent, EntityMutationIntent, EntityReference,
-    EntitySpec, MutationIntent, RelationAspectCreateIntent, RelationMutationIntent, RelationSpec,
-    ReplaceEntityIntent, UpdateEntityFieldsIntent, UpdateRelationEndpointsIntent,
-    WorkerIntentBatch,
+    EntitySpec, MaterializationMutationIntent, MutationIntent, RelationAspectCreateIntent,
+    RelationMutationIntent, RelationSpec, ReplaceEntityIntent, UpdateEntityFieldsIntent,
+    UpdateRelationEndpointsIntent, WorkerIntentBatch,
 };
 
 pub(crate) fn strategy_mutation_program_digest(
@@ -51,6 +51,40 @@ fn write_mutation_intent(bytes: &mut StrategyDigestBytes, intent: &MutationInten
         MutationIntent::Relation(intent) => {
             bytes.tag(3);
             write_relation_mutation_intent(bytes, intent);
+        }
+        MutationIntent::Materialization(intent) => {
+            bytes.tag(4);
+            write_materialization_intent(bytes, intent);
+        }
+    }
+}
+
+fn write_materialization_intent(
+    bytes: &mut StrategyDigestBytes,
+    intent: &MaterializationMutationIntent,
+) {
+    match intent {
+        MaterializationMutationIntent::SuspendEntity(intent) => {
+            bytes.tag(1);
+            bytes.entity_id(intent.entity_id);
+        }
+        MaterializationMutationIntent::SuspendRelation(intent) => {
+            bytes.tag(2);
+            bytes.relation_id(intent.relation_id);
+        }
+        MaterializationMutationIntent::RematerializeEntity(intent) => {
+            bytes.tag(3);
+            bytes.entity_id(intent.entity_id);
+            bytes.kind_id(intent.kind_id);
+            write_aspect_field_patch(bytes, &intent.fields);
+        }
+        MaterializationMutationIntent::RematerializeRelation(intent) => {
+            bytes.tag(4);
+            bytes.relation_id(intent.relation_id);
+            bytes.kind_id(intent.kind_id);
+            bytes.entity_id(intent.source);
+            bytes.entity_id(intent.target);
+            write_aspect_field_patch(bytes, &intent.fields);
         }
     }
 }

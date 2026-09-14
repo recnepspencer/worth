@@ -1,3 +1,4 @@
+mod capacity_diagnostics;
 use worth_query_declaration::facade::domain_computation::{
     WorthQueryCancellationSafePointFamily, WorthQueryExecutionDegradation, WorthQueryExecutionMode,
     WorthQueryExecutionResourceRequest, WorthQueryPartialEffectPosture,

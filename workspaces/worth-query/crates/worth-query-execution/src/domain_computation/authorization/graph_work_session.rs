@@ -61,7 +61,7 @@ where
     let obligations = operation.retain_graph_obligations_for_admission();
     let obligation_identity = obligations.identity().clone();
     let selected = select_installed_graph_obligations(obligations, intent)
-        .map_err(|_| graph_work_denial(operation.operation()))?;
+        .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))?;
     let request = application_resource_request(operation.contracts())
         .ok_or_else(|| graph_work_denial(operation.operation()))?;
     let plan = admit_application_operation_graph_work(
@@ -70,7 +70,7 @@ where
         &request,
         runtime.graph_work_resource_support(),
     )
-    .map_err(|_| graph_work_denial(operation.operation()))?;
+    .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))?;
     WorthQueryManagedGraphWorkSession::start_mutation(
         plan,
         runtime.runtime.authority_identity(),
@@ -82,7 +82,7 @@ where
         lease,
         runtime.graph_work_provider_identity(),
     )
-    .map_err(|_| graph_work_denial(operation.operation()))
+    .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))
 }
 
 pub(super) fn start_capability_graph_work<Schema, Operation, Input>(
@@ -122,10 +122,10 @@ where
     let obligations = operation.retain_graph_obligations_for_admission();
     let obligation_identity = obligations.identity().clone();
     let selected = select_installed_graph_obligations(obligations, intent)
-        .map_err(|_| graph_work_denial(operation.operation()))?;
+        .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))?;
     let support = runtime.graph_work_resource_support();
     let plan = admit_application_operation_read_graph_work(selected, &support)
-        .map_err(|_| graph_work_denial(operation.operation()))?;
+        .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))?;
     WorthQueryManagedGraphWorkSession::start_mutation(
         plan,
         runtime.runtime.authority_identity(),
@@ -137,7 +137,7 @@ where
         lease,
         runtime.graph_work_provider_identity(),
     )
-    .map_err(|_| graph_work_denial(operation.operation()))
+    .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))
 }
 
 pub(super) fn transition_capability_to_operation_graph_work<Schema, Operation, Input>(
@@ -174,6 +174,13 @@ fn graph_work_denial(subject: impl Into<String>) -> WorthQueryOperationAuthoriza
         WorthQueryOperationAuthorizationDenialKind::GraphWorkAdmissionUnavailable,
         subject,
     )
+}
+
+fn graph_work_denial_with_cause(
+    subject: impl Into<String>,
+    cause: impl std::fmt::Debug,
+) -> WorthQueryOperationAuthorizationDenial {
+    graph_work_denial(format!("{}: {cause:?}", subject.into()))
 }
 
 fn snapshot_lease_denial(

@@ -128,7 +128,17 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        let (application, security, _) = self.into_parts();
+        let security = self
+            .application()
+            .product_runtime
+            .security_observation_for(self.product())
+            .map_err(|_| {
+                WorthQueryApplicationQueryAdmissionDenial::new(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
+                    query.name(),
+                )
+            })?;
+        let (application, _current_security, _) = self.into_parts();
         let (retained_application, product, application_basis) = retained.into_parts();
         if !std::ptr::eq(application, retained_application) {
             return Err(WorthQueryApplicationQueryAdmissionDenial::new(

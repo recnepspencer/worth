@@ -15,7 +15,12 @@ const INITIAL: WorthQueryProducerApplicability =
     WorthQueryProducerApplicability::new("planar", WorthQueryProducerLifecyclePosture::Initial);
 const PRESERVE: WorthQueryProducerApplicability =
     WorthQueryProducerApplicability::new("planar", WorthQueryProducerLifecyclePosture::Preserve);
-const SUPPORTED: &[WorthQueryProducerApplicability] = &[INITIAL, PRESERVE];
+const PRIMARY: &[WorthQueryProducerApplicability] = &[INITIAL, PRESERVE];
+const SUPPORTED: &[WorthQueryProducerApplicability] = &[
+    INITIAL,
+    PRESERVE,
+    super::alternate_output::ALTERNATE_OUTPUT_APPLICABILITY,
+];
 
 pub struct PlanarOutputFamily;
 
@@ -62,7 +67,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
 
     const IDENTITY: &'static str = "worth.query.certification.planar-initial.v1";
     const OUTPUT_ROLE: &'static str = "anchor";
-    const APPLICABILITY: &'static [WorthQueryProducerApplicability] = SUPPORTED;
+    const APPLICABILITY: &'static [WorthQueryProducerApplicability] = PRIMARY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] =
         &[WorthQueryProducerInvariantRequirement::new(
             "PositivePlanarTurn",

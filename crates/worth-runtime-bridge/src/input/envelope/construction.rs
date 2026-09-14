@@ -229,7 +229,9 @@ fn validate_semantic_target(item: &BridgeCommittedPatchItem) -> Result<(), Bridg
         Kind::StructuralCreate
         | Kind::StructuralUpdate
         | Kind::StructuralDelete
-        | Kind::StructuralRetainForAudit => {
+        | Kind::StructuralRetainForAudit
+        | Kind::StructuralMaterializationSuspended
+        | Kind::StructuralRematerialized => {
             matches!(
                 (change.binding(), item.surface_kind()),
                 (

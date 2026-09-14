@@ -15,11 +15,13 @@ pub use descriptor::{
 pub use intent::{ApplicationMutationBinding, ApplicationMutationIntent};
 pub use output::{
     ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-    ApplicationMutationOutputRoleDescriptor, NoApplicationMutationOutputs,
+    ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleDescriptor,
+    ApplicationMutationOutputRoleFamilyDescriptor, NoApplicationMutationOutputs,
 };
 pub use portable_description::{
     ApplicationMutationDescription, ApplicationMutationDescriptionParts,
-    ApplicationMutationOutputRoleDescription, ApplicationMutationScopeDescription,
+    ApplicationMutationOutputRoleDescription, ApplicationMutationOutputRoleFamilyDescription,
+    ApplicationMutationScopeDescription,
 };
 pub use principal_contract::ApplicationMutationPrincipalBindingContract;
 pub use scope::{

@@ -84,6 +84,10 @@ fn append_semantic_changes(
                 RecordStructuralChange::Updated => Kind::StructuralUpdate,
                 RecordStructuralChange::Deleted => Kind::StructuralDelete,
                 RecordStructuralChange::RetainedForAudit => Kind::StructuralRetainForAudit,
+                RecordStructuralChange::MaterializationSuspended => {
+                    Kind::StructuralMaterializationSuspended
+                }
+                RecordStructuralChange::Rematerialized => Kind::StructuralRematerialized,
             };
             push(kind, None, changes);
         }

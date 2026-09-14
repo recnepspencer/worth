@@ -77,7 +77,8 @@ pub(crate) fn collect_created_entity_refs<'a>(
             | MutationIntent::Create(CreateIntent::RelationAspects(_))
             | MutationIntent::Create(CreateIntent::BulkRelations(_))
             | MutationIntent::Entity(_)
-            | MutationIntent::Relation(_) => {}
+            | MutationIntent::Relation(_)
+            | MutationIntent::Materialization(_) => {}
         }
     }
     created

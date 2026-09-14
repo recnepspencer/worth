@@ -106,7 +106,7 @@ fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
     .expect("planar readiness declaration is canonical")
 }
 
-fn body_key_dependency() -> domain::WorthQuerySemanticTruthDependency {
+pub(super) fn body_key_dependency() -> domain::WorthQuerySemanticTruthDependency {
     domain::WorthQuerySemanticTruthDependency::new(
         domain::WorthQueryConditionalGraphReadRole::new("primary").unwrap(),
         body_key_contract(),
@@ -150,12 +150,12 @@ fn body_key_mask() -> domain::AspectMask<domain::ProjectionMask> {
     )])
 }
 
-fn body_key_projection() -> domain::WorthQueryOperationNativeProjectionContract {
+pub(super) fn body_key_projection() -> domain::WorthQueryOperationNativeProjectionContract {
     domain::WorthQueryOperationNativeProjectionContract::new(body_key_contract(), body_key_mask())
         .unwrap()
 }
 
-fn canonical_query() -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle
+pub(super) fn canonical_query() -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle
 {
     let query = DetailQueryBuilder::new(RootEntityKey::new("Body").unwrap())
         .project(AspectFieldSelector::new("PlanarPosition", "BodyKey").unwrap())

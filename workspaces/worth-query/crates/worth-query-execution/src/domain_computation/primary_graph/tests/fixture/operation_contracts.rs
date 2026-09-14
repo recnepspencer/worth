@@ -17,6 +17,7 @@ pub(super) fn install(
         )
         .operation_decision_fact_budget(TouchAccountOperation::reference(), 2)
         .operation_projection_work_budget(TouchAccountOperation::reference(), 32)
+        .operation_read_entity(TouchAccountOperation::reference(), Account::reference())
         .operation_requires_ability(TouchAccountOperation::reference(), ViewAccount::reference())
         .operation_write(
             TouchAccountOperation::reference(),

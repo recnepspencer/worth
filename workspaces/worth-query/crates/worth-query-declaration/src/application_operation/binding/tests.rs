@@ -67,6 +67,13 @@ impl super::ApplicationMutationOutputContract<MutationSchema> for RenameOutputs 
             super::ApplicationMutationOutputPosture::Preserve,
         ),
     ];
+    const ROLE_FAMILIES: &'static [super::ApplicationMutationOutputRoleFamilyDescriptor] = &[
+        super::ApplicationMutationOutputRoleFamilyDescriptor::for_entity::<MutationSchema, Account>(
+            "changed.",
+            super::ApplicationMutationOutputPostureSet::ALL,
+            1,
+        ),
+    ];
 }
 crate::worth_query_field!(
     MappingStatusField for MutationSchema, ExternalMapping, ExternalIdentity:
@@ -205,6 +212,10 @@ fn mutation_binding_registers_exact_handler_scope_and_candidate_metadata() {
         descriptor.output_roles(),
         <RenameOutputs as super::ApplicationMutationOutputContract<MutationSchema>>::ROLES
     );
+    assert_eq!(
+        descriptor.output_role_families(),
+        <RenameOutputs as super::ApplicationMutationOutputContract<MutationSchema>>::ROLE_FAMILIES
+    );
     assert_eq!(descriptor.scope_entity(), "Account");
     assert_eq!(descriptor.scope().field().locus().field(), "AccountIdField");
     assert_eq!(descriptor.candidates().cardinality().maximum_writes(), 1);
@@ -281,6 +292,7 @@ fn declaration_description_survives_portable_readmission_and_binds_denial_identi
     );
     assert_eq!(description.scope().field, "AccountIdField");
     assert_eq!(description.output_roles()[0].name, "renamed-account");
+    assert_eq!(description.output_role_families()[0].prefix, "changed.");
 
     let mut changed = portable.into_parts();
     for member in &mut changed.members {

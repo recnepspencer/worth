@@ -1,5 +1,6 @@
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
+    application_query::{ApplicationQueryBinding, ApplicationQueryScopeBinding},
     application_schema::ApplicationEntityMarkerIdentity,
 };
 use worth_query_installation::facade::{
@@ -19,6 +20,30 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
+    /// Resolve one producer's current generated output through Query-owned lineage.
+    pub fn current_output<Family, Producer, Entity>(
+        &mut self,
+        producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
+        role: super::super::WorthQueryCurrentOutputRole<Family, Entity>,
+    ) -> Result<
+        super::super::WorthQueryCurrentOutputSelection<Schema, Entity>,
+        HandlerExecutionDenial,
+    >
+    where
+        Family: super::super::WorthQueryProducerOutputFamily<Schema>,
+        Family::Source: ApplicationQueryBinding<Schema>,
+        <Family::Source as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeBinding<Schema, Scope = Producer>,
+        Producer:
+            ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
+        Entity:
+            ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
+    {
+        self.reader()
+            .current_output(producer, role)
+            .map_err(HandlerExecutionDenial::new)
+    }
+
     /// Resolve a prior committed semantic output for this exact admitted scope.
     pub fn prior_output<PriorBinding, Entity, Action>(
         &mut self,
@@ -32,6 +57,42 @@ where
     {
         self.reader()
             .prior_output(role)
+            .map_err(HandlerExecutionDenial::new)
+    }
+
+    /// Resolve the complete live inventory of one declared prior output family.
+    pub fn prior_output_family<PriorBinding, Entity>(
+        &mut self,
+        family: super::super::WorthQueryApplicationOutputRoleFamily<PriorBinding, Entity>,
+    ) -> Result<
+        Vec<super::super::WorthQueryPriorOutputFamilyMember<Schema, PriorBinding, Entity>>,
+        HandlerExecutionDenial,
+    >
+    where
+        PriorBinding: ApplicationMutationBinding<Schema>,
+        Entity:
+            ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
+    {
+        self.reader()
+            .prior_output_family(family)
+            .map_err(HandlerExecutionDenial::new)
+    }
+
+    /// Resolve a complete prior family when this exact binding has correspondence.
+    pub fn prior_output_family_if_present<PriorBinding, Entity>(
+        &mut self,
+        family: super::super::WorthQueryApplicationOutputRoleFamily<PriorBinding, Entity>,
+    ) -> Result<
+        Option<Vec<super::super::WorthQueryPriorOutputFamilyMember<Schema, PriorBinding, Entity>>>,
+        HandlerExecutionDenial,
+    >
+    where
+        PriorBinding: ApplicationMutationBinding<Schema>,
+        Entity:
+            ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
+    {
+        self.reader()
+            .prior_output_family_if_present(family)
             .map_err(HandlerExecutionDenial::new)
     }
 
@@ -100,6 +161,22 @@ where
         self.reader().decision_relations_from(relation, source)
     }
 
+    /// Read the complete admitted incoming adjacency and retain absence as a
+    /// source dependency for publication-time comparison.
+    pub fn relations_to<Relation, From, To>(
+        &mut self,
+        relation: ApplicationRelationRef<Schema, Relation, From, To>,
+        target: &WorthQueryInvariantEntityIdentity<Schema, To>,
+    ) -> Result<
+        Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>>,
+        WorthQueryInvariantProjectionTraversalDenial,
+    >
+    where
+        Relation: OperationReads<Binding::Operation>,
+    {
+        self.reader().decision_relations_to(relation, target)
+    }
+
     /// Read the one target promised by an exactly-one outgoing cardinality
     /// declaration without allowing observed data to substitute for the contract.
     pub fn related_one<Relation, From, To>(
@@ -130,6 +207,40 @@ where
                 .into_to()),
             _ => {
                 Err(WorthQueryInvariantProjectionTraversalDenial::multiple_targets(relation.name()))
+            }
+        }
+    }
+
+    /// Read the one source promised by an exactly-one incoming cardinality
+    /// declaration without allowing observed data to substitute for the contract.
+    pub fn related_one_incoming<Relation, From, To>(
+        &mut self,
+        relation: ApplicationRelationRef<Schema, Relation, From, To>,
+        target: &WorthQueryInvariantEntityIdentity<Schema, To>,
+    ) -> Result<
+        WorthQueryInvariantEntityIdentity<Schema, From>,
+        WorthQueryInvariantProjectionTraversalDenial,
+    >
+    where
+        Relation: OperationReads<Binding::Operation>,
+    {
+        let cardinality = relation.integrity().cardinality;
+        if (cardinality.target_min, cardinality.target_max) != (Some(1), Some(1)) {
+            return Err(
+                WorthQueryInvariantProjectionTraversalDenial::cardinality_contract_mismatch(
+                    relation.name(),
+                ),
+            );
+        }
+        let mut relations = self.relations_to(relation, target)?;
+        match relations.len() {
+            0 => Err(WorthQueryInvariantProjectionTraversalDenial::missing_source(relation.name())),
+            1 => Ok(relations
+                .pop()
+                .expect("one relation remains after exact length check")
+                .into_from()),
+            _ => {
+                Err(WorthQueryInvariantProjectionTraversalDenial::multiple_sources(relation.name()))
             }
         }
     }

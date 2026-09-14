@@ -2,14 +2,15 @@ use std::any::TypeId;
 
 use super::{
     ApplicationMutationDescription, ApplicationMutationDescriptionParts,
-    ApplicationMutationOutputRoleDescription, ApplicationMutationPrincipalBindingContract,
-    ApplicationMutationScopeContract, ApplicationMutationScopeDescription,
+    ApplicationMutationOutputRoleDescription, ApplicationMutationOutputRoleFamilyDescription,
+    ApplicationMutationPrincipalBindingContract, ApplicationMutationScopeContract,
+    ApplicationMutationScopeDescription,
 };
 
 use crate::{
     application_operation::{
         ApplicationCandidateRequirements, ApplicationMutationOutputContract,
-        ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputRoleDescriptor, ApplicationMutationOutputRoleFamilyDescriptor,
     },
     application_schema::ApplicationStructuredValueBinding,
     portable_identity::WorthQueryPortableTypeIdentity,
@@ -83,6 +84,7 @@ pub struct ApplicationMutationBindingDescriptor {
     handler: ApplicationMutationHandlerMetadata,
     output_contract_type: TypeId,
     output_roles: Vec<ApplicationMutationOutputRoleDescriptor>,
+    output_role_families: Vec<ApplicationMutationOutputRoleFamilyDescriptor>,
     idempotency: ApplicationMutationIdempotencyMetadata,
     scope_entity: String,
     scope: ApplicationMutationScopeContract,
@@ -145,6 +147,15 @@ impl ApplicationMutationBindingDescriptor {
                         posture: role.posture(),
                     })
                     .collect(),
+                output_role_families: Output::ROLE_FAMILIES
+                    .iter()
+                    .map(|family| ApplicationMutationOutputRoleFamilyDescription {
+                        prefix: family.prefix().to_owned(),
+                        entity: family.entity().to_owned(),
+                        postures: family.postures(),
+                        minimum: family.minimum(),
+                    })
+                    .collect(),
             },
         );
         Self {
@@ -164,6 +175,7 @@ impl ApplicationMutationBindingDescriptor {
             ),
             output_contract_type: TypeId::of::<Output>(),
             output_roles: Output::ROLES.to_vec(),
+            output_role_families: Output::ROLE_FAMILIES.to_vec(),
             idempotency: ApplicationMutationIdempotencyMetadata::of::<IdempotencyKey>(
                 idempotency_identity,
             ),
@@ -229,6 +241,10 @@ impl ApplicationMutationBindingDescriptor {
 
     pub fn output_roles(&self) -> &[ApplicationMutationOutputRoleDescriptor] {
         &self.output_roles
+    }
+
+    pub fn output_role_families(&self) -> &[ApplicationMutationOutputRoleFamilyDescriptor] {
+        &self.output_role_families
     }
 
     pub fn idempotency(&self) -> &ApplicationMutationIdempotencyMetadata {

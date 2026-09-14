@@ -4,6 +4,57 @@ use crate::storage::data::RecordLifecycleState;
 use super::{RecordArena, RecordKind, SlotInit};
 
 impl<K: RecordKind> RecordArena<K> {
+    pub(crate) fn suspend_materialization(&mut self, slot: usize) -> Result<(), &'static str> {
+        let physical = self
+            .physical_index(slot)
+            .ok_or("materialization suspension requires an existing slot")?;
+        if self.lifecycle[physical] != RecordLifecycleState::Live {
+            return Err("materialization suspension requires a live record");
+        }
+        self.lifecycle[physical] = RecordLifecycleState::MaterializationUnavailable;
+        self.extra[physical] = K::unavailable_extra(&self.extra[physical]);
+        self.metadata_history[physical].clear();
+        self.aspect_versions[physical].clear();
+        self.diagnostics_enrichment[physical].clear();
+        self.live_bitset.set(slot, false);
+        self.reclaimable_bitset.set(slot, false);
+        Ok(())
+    }
+
+    pub(crate) fn rematerialize(
+        &mut self,
+        id: &crate::identity::data::RecordId<K::Domain>,
+        kind_id: crate::identity::data::KindId,
+        version_id: VersionId,
+        extra: K::Extra,
+    ) -> Result<(), &'static str> {
+        let slot = crate::storage::substrate::slot_of::<K>(id);
+        let physical = self
+            .physical_index(slot)
+            .ok_or("rematerialization requires an existing slot")?;
+        if self.lifecycle[physical] != RecordLifecycleState::MaterializationUnavailable {
+            return Err("rematerialization requires an unavailable record");
+        }
+        if self.generations[physical] != crate::storage::substrate::generation_of::<K>(id)
+            || self.partition_ids[physical] != crate::storage::substrate::partition_of::<K>(id)
+            || self.kind_ids[physical] != Some(kind_id)
+        {
+            return Err("rematerialization identity or kind does not match retained metadata");
+        }
+        self.extra[physical] = extra.clone();
+        self.metadata_history[physical].push(K::metadata_for_create(
+            kind_id,
+            self.generations[physical],
+            version_id,
+            &extra,
+        ));
+        self.lifecycle[physical] = RecordLifecycleState::Live;
+        self.retired_at[physical] = None;
+        self.live_bitset.set(slot, true);
+        self.reclaimable_bitset.set(slot, false);
+        Ok(())
+    }
+
     pub(crate) fn apply_extra_update(
         &mut self,
         slot: usize,

@@ -60,7 +60,9 @@ pub(crate) fn branch_local_delete_allowance_for_plan(
                     relation_ids.insert(relation_id);
                 }
             }
-            MutationIntent::Create(_) | MutationIntent::Entity(_) => {}
+            MutationIntent::Create(_)
+            | MutationIntent::Entity(_)
+            | MutationIntent::Materialization(_) => {}
         }
     }
 

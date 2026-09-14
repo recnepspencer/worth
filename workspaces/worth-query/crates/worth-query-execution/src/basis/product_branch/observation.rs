@@ -14,21 +14,44 @@ pub struct WorthQueryProductBranchLease {
 /// no Bridge mutation source and therefore cannot enter a publication lane.
 pub struct WorthQueryProductObservationLease {
     observation: worth_runtime_world::facade::ProductBranchObservation,
+    current_security_guard: Option<worth_runtime_world::facade::ProductBranchObservation>,
 }
 
 impl WorthQueryProductObservationLease {
     pub(crate) fn new(observation: worth_runtime_world::facade::ProductBranchObservation) -> Self {
-        Self { observation }
+        Self {
+            observation,
+            current_security_guard: None,
+        }
+    }
+
+    pub(crate) fn suspended_security(
+        observation: worth_runtime_world::facade::ProductBranchObservation,
+        current_security_guard: worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Self {
+        Self {
+            observation,
+            current_security_guard: Some(current_security_guard),
+        }
     }
 
     pub(crate) fn retained_clone(&self) -> Self {
-        Self::new(self.observation.clone())
+        Self {
+            observation: self.observation.clone(),
+            current_security_guard: self.current_security_guard.clone(),
+        }
     }
 
     pub(crate) const fn observation(
         &self,
     ) -> &worth_runtime_world::facade::ProductBranchObservation {
         &self.observation
+    }
+
+    pub(crate) const fn current_security_guard(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::ProductBranchObservation> {
+        self.current_security_guard.as_ref()
     }
 
     pub(crate) fn relational_basis(

@@ -58,8 +58,9 @@ pub use output_correspondence::{
     Create as WorthQueryCreateOutput, Preserve as WorthQueryPreserveOutput,
     Retire as WorthQueryRetireOutput, WorthQueryApplicationOutputAction,
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
-    WorthQueryApplicationOutputRole,
+    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
+    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
 };
 use target_admission::installed_contract_admits_program_target;
 use worth_query_declaration::facade::{

@@ -2,6 +2,9 @@ use worth_foundational::facade::AspectKey;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 
+mod source_currentness;
+pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation) enum WorthQueryApplicationAdjacencyDirection {
     Outgoing,

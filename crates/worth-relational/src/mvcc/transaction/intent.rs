@@ -7,6 +7,13 @@ pub struct RelationalTransactionIntent {
     pub(crate) allow_nested_savepoints: bool,
     pub(crate) proposed_schema_transition: Option<ProposedSchemaTransition>,
     pub(crate) schema_reconciliation_policy: Option<SchemaReconciliationPolicy>,
+    pub(crate) materialization_mode: Option<RelationalMaterializationTransactionMode>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RelationalMaterializationTransactionMode {
+    Suspend,
+    Rematerialize,
 }
 
 impl RelationalTransactionIntent {
@@ -15,7 +22,23 @@ impl RelationalTransactionIntent {
             allow_nested_savepoints: true,
             proposed_schema_transition: None,
             schema_reconciliation_policy: None,
+            materialization_mode: None,
         }
+    }
+
+    pub(crate) fn materialization(mode: RelationalMaterializationTransactionMode) -> Self {
+        Self {
+            allow_nested_savepoints: false,
+            proposed_schema_transition: None,
+            schema_reconciliation_policy: None,
+            materialization_mode: Some(mode),
+        }
+    }
+
+    pub(crate) const fn materialization_mode(
+        &self,
+    ) -> Option<RelationalMaterializationTransactionMode> {
+        self.materialization_mode
     }
 
     pub(crate) const fn allow_nested_savepoints(&self) -> bool {

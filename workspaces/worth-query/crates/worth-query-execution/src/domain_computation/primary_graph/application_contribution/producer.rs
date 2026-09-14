@@ -185,6 +185,7 @@ where
             Schema,
             <Self::Operation as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
+    <Self::Operation as ApplicationMutationBinding<Schema>>::Denial: std::fmt::Debug,
 {
     type Operation: ApplicationMutationBinding<Schema>;
     type OutputFamily: WorthQueryProducerOutputFamily<Schema>;

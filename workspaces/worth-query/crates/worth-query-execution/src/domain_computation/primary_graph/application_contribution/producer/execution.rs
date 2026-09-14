@@ -20,8 +20,9 @@ use super::{
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::{
     HandlerResult, MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationNoEffectCause,
     WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode,
 };
@@ -321,10 +322,13 @@ where
         .map_err(|error| execution_failed(Binding::IDENTITY, error))?
     {
         HandlerResult::Completed(completed) => completed,
-        HandlerResult::DomainDenied(_) => {
+        HandlerResult::DomainDenied(domain_denial) => {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                format!("{}: producer domain denial", Binding::IDENTITY),
+                format!(
+                    "{}: producer domain denial: {domain_denial:?}",
+                    Binding::IDENTITY
+                ),
             ))
         }
         HandlerResult::ExecutionDenied(error) => return Err(failed(Binding::IDENTITY, error)),
@@ -359,6 +363,22 @@ where
             WorthQueryOutputDemandDenialKind::TimedOut,
             Binding::IDENTITY,
         )),
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect)
+            if no_effect.cause() == WorthQueryApplicationNoEffectCause::CapacityExhausted =>
+        {
+            Err(denial(
+                WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded,
+                Binding::IDENTITY,
+            ))
+        }
+        WorthQueryApplicationCommitOutcome::Denied(commit_denial)
+            if commit_denial.kind() == WorthQueryApplicationCommitDenialKind::ProductBasisStale =>
+        {
+            Err(denial(
+                WorthQueryOutputDemandDenialKind::Superseded,
+                Binding::IDENTITY,
+            ))
+        }
         outcome => Err(failed(Binding::IDENTITY, outcome)),
     }
 }

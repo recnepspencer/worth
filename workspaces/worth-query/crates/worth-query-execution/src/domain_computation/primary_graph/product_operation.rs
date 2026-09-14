@@ -4,6 +4,7 @@ mod cleanup;
 mod close;
 mod conditional_definition;
 mod context;
+mod generated_materialization;
 mod history;
 mod operation;
 mod query;
@@ -27,6 +28,15 @@ pub use conditional_definition::{
     WorthQueryPerformedConditionalDefinitionPublication,
 };
 pub use context::{WorthQueryProductEntry, WorthQuerySelectedProductOperation};
+pub use generated_materialization::{
+    WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryGeneratedEntity,
+    WorthQueryGeneratedOutputReconstruction, WorthQueryGeneratedOutputReconstructionDenial,
+    WorthQueryGeneratedOutputReconstructionFailure, WorthQueryGeneratedOutputRestorationFailure,
+    WorthQueryGeneratedOutputRestorationFailureCause, WorthQueryGeneratedOutputSuspensionDenial,
+    WorthQueryGeneratedOutputSuspensionFailure, WorthQueryRestoredGeneratedOutput,
+    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedGeneratedOutputRestoration,
+    WorthQueryUnpublishedGeneratedOutputSuspension,
+};
 pub use history::{WorthQueryProductHistory, WorthQueryProductHistoryEntry};
 pub use query::WorthQueryProductQueryControls;
 pub use transaction::{

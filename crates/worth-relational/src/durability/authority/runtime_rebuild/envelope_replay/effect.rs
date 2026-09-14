@@ -124,6 +124,7 @@ pub(super) fn replay_ordinary_commit(
         &envelope.merge_parent_branches,
     )?);
     let options = schema_basis.apply(options);
+    let options = apply_materialization_replay_mode(options, envelope)?;
     let mut txn = restored
         .begin_branch_transaction_with_owner_inputs(options)
         .map_err(|error| {
@@ -163,6 +164,45 @@ pub(super) fn replay_ordinary_commit(
     };
     release_replayed_snapshot(restored, &outcome.snapshot)?;
     validation
+}
+
+fn apply_materialization_replay_mode(
+    options: crate::mvcc::RelationalTransactionValidationInput,
+    envelope: &CanonicalCommitEnvelope,
+) -> Result<crate::mvcc::RelationalTransactionValidationInput, DurabilityError> {
+    let materialization = envelope
+        .merged_plan
+        .merged_intents
+        .iter()
+        .filter_map(|intent| match intent {
+            crate::transactions::data::MutationIntent::Materialization(intent) => Some(intent),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    if materialization.is_empty() {
+        return Ok(options);
+    }
+    if materialization.len() != envelope.merged_plan.merged_intents.len() {
+        return Err(DurabilityError::new(
+            RecoveryFailureClass::ReplayFailure,
+            "durable materialization commit mixed owner and ordinary intents",
+        ));
+    }
+    let all_suspend = materialization.iter().all(|intent| intent.is_suspension());
+    let all_restore = materialization
+        .iter()
+        .all(|intent| intent.is_rematerialization());
+    let mode = match (all_suspend, all_restore) {
+        (true, false) => crate::mvcc::RelationalMaterializationTransactionMode::Suspend,
+        (false, true) => crate::mvcc::RelationalMaterializationTransactionMode::Rematerialize,
+        _ => {
+            return Err(DurabilityError::new(
+                RecoveryFailureClass::ReplayFailure,
+                "durable materialization commit has no single reconstruction mode",
+            ))
+        }
+    };
+    Ok(options.with_materialization_mode(mode))
 }
 
 pub(super) fn replay_merge_commit(

@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) struct RetentionOutputBinding;
 
 pub(in crate::domain_computation::primary_graph) const RETAINED_ACCOUNT_OUTPUT:
     WorthQueryApplicationOutputRole<RetentionOutputBinding, Account, WorthQueryPreserveOutput> =
-    WorthQueryApplicationOutputRole::new("retained-account");
+    WorthQueryApplicationOutputRole::from_static("retained-account");
 
 #[test]
 fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {

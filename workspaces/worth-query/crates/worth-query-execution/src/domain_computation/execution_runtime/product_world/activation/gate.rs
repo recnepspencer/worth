@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use super::WorthQueryProductActivationDenial;
 
@@ -44,10 +44,9 @@ impl WorthQueryProductActivationGate {
         inspect()
     }
 
-    pub(crate) fn publish<R>(
-        &self,
-        publish: impl FnOnce() -> R,
-    ) -> Result<R, WorthQueryProductActivationDenial> {
+    pub(crate) fn begin_publication(
+        self: &Arc<Self>,
+    ) -> Result<WorthQueryProductPublicationAdmission, WorthQueryProductActivationDenial> {
         {
             let mut active = self
                 .active
@@ -58,7 +57,16 @@ impl WorthQueryProductActivationGate {
             }
             active.publishing = true;
         }
-        let _publication = ProductDefinitionPublication { gate: self };
+        Ok(WorthQueryProductPublicationAdmission {
+            gate: Arc::clone(self),
+        })
+    }
+
+    pub(crate) fn publish<R>(
+        self: &Arc<Self>,
+        publish: impl FnOnce() -> R,
+    ) -> Result<R, WorthQueryProductActivationDenial> {
+        let _publication = self.begin_publication()?;
         Ok(publish())
     }
 }
@@ -77,11 +85,11 @@ impl Drop for ProductReadAdmission<'_> {
     }
 }
 
-struct ProductDefinitionPublication<'a> {
-    gate: &'a WorthQueryProductActivationGate,
+pub(crate) struct WorthQueryProductPublicationAdmission {
+    gate: Arc<WorthQueryProductActivationGate>,
 }
 
-impl Drop for ProductDefinitionPublication<'_> {
+impl Drop for WorthQueryProductPublicationAdmission {
     fn drop(&mut self) {
         self.gate
             .active

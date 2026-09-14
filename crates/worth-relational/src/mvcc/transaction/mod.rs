@@ -19,6 +19,7 @@ pub use bound::BranchBoundRelationalTransaction;
 pub use footprint::{
     RelationalTransactionFootprint, RelationalTransactionReadLocus, RelationalTransactionWriteLocus,
 };
+pub(crate) use intent::RelationalMaterializationTransactionMode;
 pub use intent::RelationalTransactionIntent;
 pub use preparation_port::RelationalPreparationPort;
 pub use read_projection::RelationalTransactionRelationValue;

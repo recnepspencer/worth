@@ -147,11 +147,8 @@ where
             validate_identity(&binding.reuse_policy)?;
             if binding.applicability.is_empty()
                 || binding.supported.is_empty()
-                || binding.output_roles.is_empty()
-                || !binding
-                    .output_roles
-                    .iter()
-                    .any(|role| role == &binding.output_role)
+                || (binding.output_roles.is_empty() && binding.output_role_families.is_empty())
+                || !producer_output_role_is_declared(binding)
             {
                 return Err(denial(
                     DenialKind::ProducerBindingMeaningMismatch,
@@ -162,6 +159,17 @@ where
             for role in &binding.output_roles {
                 validate_identity(role)?;
                 if !roles.insert(role) {
+                    return Err(denial(
+                        DenialKind::ProducerBindingMeaningMismatch,
+                        &binding.output_family,
+                    ));
+                }
+            }
+            let mut role_families = BTreeSet::new();
+            for role_family in &binding.output_role_families {
+                validate_identity(role_family.prefix())?;
+                validate_identity(role_family.entity())?;
+                if role_family.postures().is_empty() || !role_families.insert(*role_family) {
                     return Err(denial(
                         DenialKind::ProducerBindingMeaningMismatch,
                         &binding.output_family,
@@ -254,6 +262,19 @@ where
     }
 }
 
+fn producer_output_role_is_declared(binding: &DeclaredProducerBinding) -> bool {
+    binding
+        .output_roles
+        .iter()
+        .any(|role| role == &binding.output_role)
+        || binding.output_role_families.iter().any(|family| {
+            binding
+                .output_role
+                .strip_prefix(family.prefix())
+                .is_some_and(|member| !member.is_empty())
+        })
+}
+
 fn validate_identity(identity: &str) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     if identity.is_empty()
         || identity.trim() != identity
@@ -273,79 +294,4 @@ fn denial(
 }
 
 #[cfg(test)]
-mod tests {
-    use std::any::TypeId;
-
-    use super::{DeclaredProducerBinding, DenialKind, WorthQueryApplicationContractCatalog};
-    use crate::domain_computation::primary_graph::application_contribution::{
-        WorthQueryProducerApplicability, WorthQueryProducerLifecyclePosture,
-    };
-
-    const INITIAL: WorthQueryProducerApplicability = WorthQueryProducerApplicability::new(
-        "rectangle",
-        WorthQueryProducerLifecyclePosture::Initial,
-    );
-    const PRESERVE: WorthQueryProducerApplicability = WorthQueryProducerApplicability::new(
-        "rectangle",
-        WorthQueryProducerLifecyclePosture::Preserve,
-    );
-
-    #[test]
-    fn output_family_meaning_cannot_change_with_source_binding() {
-        let mut catalog = WorthQueryApplicationContractCatalog::<TestSchema>::default();
-        catalog.producers.insert(
-            "initial".to_owned(),
-            producer("initial", "create-source", &[INITIAL]),
-        );
-        catalog.producers.insert(
-            "preserve".to_owned(),
-            producer("preserve", "edit-source", &[PRESERVE]),
-        );
-
-        let denial = catalog.validate().unwrap_err();
-        assert_eq!(denial.kind(), DenialKind::ProducerBindingMeaningMismatch);
-        assert_eq!(denial.subject(), "family");
-    }
-
-    fn producer(
-        identity: &str,
-        source: &str,
-        supported: &[WorthQueryProducerApplicability],
-    ) -> DeclaredProducerBinding {
-        DeclaredProducerBinding {
-            owner: "owner".to_owned(),
-            identity: identity.to_owned(),
-            source_selector: source.to_owned(),
-            output_family: "family".to_owned(),
-            output_roles: vec!["output".to_owned()],
-            output_role: "output".to_owned(),
-            operation: "operation".to_owned(),
-            provider_identity: format!("{identity}-provider"),
-            applicability: supported.to_vec(),
-            supported: supported.to_vec(),
-            required_invariants: Vec::new(),
-            resource_policy: "bounded".to_owned(),
-            reuse_policy: "exact-source".to_owned(),
-            binding_type: TypeId::of::<()>(),
-            source_type: TypeId::of::<()>(),
-            provider_type: TypeId::of::<()>(),
-            operation_binding_type: TypeId::of::<()>(),
-        }
-    }
-
-    struct TestSchema;
-
-    impl worth_query_installation::facade::ApplicationSchema for TestSchema {
-        const OWNER: &'static str = "owner";
-        const NAME: &'static str = "schema";
-        const MAJOR: u32 = 1;
-        const MINOR: u32 = 0;
-
-        fn declaration() -> Result<
-            worth_query_declaration::facade::application_schema::ApplicationSchemaDeclaration<Self>,
-            worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
-        > {
-            unreachable!()
-        }
-    }
-}
+mod tests;

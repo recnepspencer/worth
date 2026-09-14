@@ -31,6 +31,7 @@ pub enum WorthQueryOutputDemandDenialKind {
     TimedOut,
     WorkBudgetExceeded,
     RetentionBudgetExceeded,
+    PublicationCapacityExceeded,
     ForeignDemand,
     ForeignSettlement,
     RetainedBasisUnavailable,

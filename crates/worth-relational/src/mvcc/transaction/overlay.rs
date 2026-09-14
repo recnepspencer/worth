@@ -249,6 +249,20 @@ fn index_intent(
             created_relations,
             footprint,
         ),
+        MutationIntent::Materialization(intent) => match intent.record() {
+            crate::transactions::data::RecordRef::Entity(id) => {
+                entity_mutations.entry(id).or_default().push(location);
+                footprint.record_write(RelationalTransactionWriteLocus::Existing(
+                    crate::transactions::data::RecordRef::Entity(id),
+                ));
+            }
+            crate::transactions::data::RecordRef::Relation(id) => {
+                relation_mutations.entry(id).or_default().push(location);
+                footprint.record_write(RelationalTransactionWriteLocus::Existing(
+                    crate::transactions::data::RecordRef::Relation(id),
+                ));
+            }
+        },
     }
 }
 

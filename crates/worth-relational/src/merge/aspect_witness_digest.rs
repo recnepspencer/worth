@@ -77,6 +77,7 @@ fn lifecycle_state_tag(state: RecordLifecycleState) -> u8 {
         RecordLifecycleState::PinnedByReplayRetention => 5,
         RecordLifecycleState::Reclaimable => 6,
         RecordLifecycleState::Reusable => 7,
+        RecordLifecycleState::MaterializationUnavailable => 8,
     }
 }
 

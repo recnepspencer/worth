@@ -66,6 +66,26 @@ pub(crate) fn record_publication_effect_for_mutation(
             entity_id,
             authoritative_patch,
         ),
+        RecordMutation::EntityMaterializationSuspended { entity_id, .. } => {
+            record_entity_publication_fragment(
+                effect,
+                canonical_delta,
+                EntityPatchDetailKind::MaterializationSuspended,
+                entity_id,
+                None,
+            )
+        }
+        RecordMutation::EntityRematerialized {
+            entity_id,
+            authoritative_patch,
+            ..
+        } => record_entity_publication_fragment(
+            effect,
+            canonical_delta,
+            EntityPatchDetailKind::Rematerialized,
+            entity_id,
+            authoritative_patch,
+        ),
         RecordMutation::RelationCreated {
             relation_id,
             kind_id,
@@ -139,6 +159,43 @@ pub(crate) fn record_publication_effect_for_mutation(
             target,
             None,
         ),
+        RecordMutation::RelationMaterializationSuspended {
+            relation_id,
+            kind_id,
+            source,
+            target,
+            ..
+        } => {
+            record_deleted_adjacency(effect, relation_id, kind_id, source, target);
+            record_relation_publication_fragment(
+                effect,
+                canonical_delta,
+                RelationPatchDetailKind::MaterializationSuspended,
+                relation_id,
+                source,
+                target,
+                None,
+            )
+        }
+        RecordMutation::RelationRematerialized {
+            relation_id,
+            kind_id,
+            source,
+            target,
+            authoritative_patch,
+            ..
+        } => {
+            record_created_adjacency(effect, relation_id, kind_id, source, target);
+            record_relation_publication_fragment(
+                effect,
+                canonical_delta,
+                RelationPatchDetailKind::Rematerialized,
+                relation_id,
+                source,
+                target,
+                authoritative_patch,
+            )
+        }
     }
 }
 

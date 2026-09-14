@@ -40,7 +40,8 @@ pub(super) fn validate_entity_intent(
         MutationIntent::Create(CreateIntent::Relation(_))
         | MutationIntent::Create(CreateIntent::RelationAspects(_))
         | MutationIntent::Create(CreateIntent::BulkRelations(_))
-        | MutationIntent::Relation(_) => Ok(()),
+        | MutationIntent::Relation(_)
+        | MutationIntent::Materialization(_) => Ok(()),
     }
 }
 
@@ -68,6 +69,7 @@ fn validate_existing_entity_intent(
         MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(_)) => Ok(()),
         MutationIntent::Create(_)
         | MutationIntent::Entity(EntityMutationIntent::Delete(_))
-        | MutationIntent::Relation(_) => Ok(()),
+        | MutationIntent::Relation(_)
+        | MutationIntent::Materialization(_) => Ok(()),
     }
 }
