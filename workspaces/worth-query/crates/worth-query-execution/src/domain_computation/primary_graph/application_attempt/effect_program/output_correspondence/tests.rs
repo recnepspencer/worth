@@ -6,7 +6,8 @@ use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::effect_program::{
-    WorthQueryApplicationEffectEntity, WorthQueryApplicationRealizedEffect,
+    WorthQueryApplicationCreationPartition, WorthQueryApplicationEffectEntity,
+    WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind;
 
@@ -175,6 +176,35 @@ fn created_role_must_name_an_actual_create_effect_before_commit() {
         candidate.validate_effects(&[]).unwrap_err().kind(),
         WorthQueryApplicationAttemptDenialKind::OutputRoleActionMismatch
     );
+}
+
+#[test]
+fn created_role_accepts_a_create_effect_in_an_existing_context_partition() {
+    let program = Arc::new(());
+    let context_partition = PartitionId::new(7);
+    let created = WorthQueryApplicationEffectEntity::<Schema, Entity> {
+        reference: EntityReference::Created(CreatedEntityRef {
+            partition_id: context_partition,
+            kind_id: KindId::new(9),
+            client_key: ClientKey::raw("context-created-output"),
+        }),
+        entity: "entity".to_owned(),
+        created_effect: Some(0),
+        program: Arc::clone(&program),
+        _marker: PhantomData,
+    };
+    let effect = WorthQueryApplicationRealizedEffect::CreateEntity {
+        kind: KindId::new(9),
+        key: "context-created-output".to_owned(),
+        fields: BTreeMap::new(),
+        partition: WorthQueryApplicationCreationPartition::Context(context_partition),
+    };
+    let mut candidate = prepared_create_candidate();
+    candidate.bind(CREATED, &created, &program).unwrap();
+
+    candidate
+        .validate_effects(&[effect])
+        .expect("context-partition creation is the declared created output");
 }
 
 #[test]

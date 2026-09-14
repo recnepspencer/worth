@@ -32,6 +32,59 @@ pub struct WorthQueryApplicationOutputCorrespondence {
     roles: BTreeMap<String, CommittedOutputBinding>,
 }
 
+/// One typed member of a sealed output-role family.
+pub struct WorthQueryApplicationOutputFamilyEntry<'correspondence, Binding, Entity> {
+    role: &'correspondence str,
+    posture: WorthQueryApplicationOutputPosture,
+    entity_id: EntityId,
+    _marker: PhantomData<fn() -> (Binding, Entity)>,
+}
+
+impl<Binding, Entity> Copy for WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity> {}
+
+impl<Binding, Entity> Clone for WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<Binding, Entity> std::fmt::Debug
+    for WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity>
+{
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorthQueryApplicationOutputFamilyEntry")
+            .field("role", &self.role)
+            .field("posture", &self.posture)
+            .field("entity_id", &self.entity_id)
+            .finish()
+    }
+}
+
+impl<Binding, Entity> PartialEq for WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity> {
+    fn eq(&self, other: &Self) -> bool {
+        self.role == other.role
+            && self.posture == other.posture
+            && self.entity_id == other.entity_id
+    }
+}
+
+impl<Binding, Entity> Eq for WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity> {}
+
+impl<Binding, Entity> WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity> {
+    pub const fn role(&self) -> &str {
+        self.role
+    }
+
+    pub const fn posture(&self) -> WorthQueryApplicationOutputPosture {
+        self.posture
+    }
+
+    pub const fn entity_id(&self) -> EntityId {
+        self.entity_id
+    }
+}
+
 impl WorthQueryApplicationOutputCorrespondence {
     pub(in crate::domain_computation::primary_graph) const fn binding_type(
         &self,
@@ -68,6 +121,29 @@ impl WorthQueryApplicationOutputCorrespondence {
             entity_id: binding.entity,
             _marker: PhantomData,
         })
+    }
+
+    /// Projects every member matching one typed role-family prefix from this
+    /// exact committed correspondence, preserving Query's authoritative posture.
+    pub fn family_entries<Binding: 'static, Entity: 'static>(
+        &self,
+        family: WorthQueryApplicationOutputRoleFamily<Binding, Entity>,
+    ) -> Result<
+        Vec<WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity>>,
+        WorthQueryApplicationOutputProjectionDenial,
+    > {
+        self.binding_family_entries::<Binding, Entity>(family.prefix())?
+            .map(|entry| {
+                entry.map(
+                    |(role, posture, entity_id)| WorthQueryApplicationOutputFamilyEntry {
+                        role,
+                        posture,
+                        entity_id,
+                        _marker: PhantomData,
+                    },
+                )
+            })
+            .collect()
     }
 
     pub(in crate::domain_computation::primary_graph) fn entity_for_binding_role<

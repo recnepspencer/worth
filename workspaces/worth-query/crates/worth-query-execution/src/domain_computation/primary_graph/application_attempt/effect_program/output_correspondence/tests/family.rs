@@ -70,11 +70,15 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
             key => panic!("unexpected created output: {key:?}"),
         })
     });
-    let family = family_entries::<Entity>(&committed, "face.").unwrap();
+    let family = committed
+        .family_entries(
+            WorthQueryApplicationOutputRoleFamily::<Binding, Entity>::from_static("face."),
+        )
+        .unwrap();
     assert_eq!(
         family
             .iter()
-            .map(|(role, posture, _)| (*role, *posture))
+            .map(|entry| (entry.role(), entry.posture()))
             .collect::<Vec<_>>(),
         vec![
             (
@@ -88,7 +92,11 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
         ]
     );
     assert_eq!(
-        family_entries::<WrongEntity>(&committed, "face.").unwrap_err(),
+        committed
+            .family_entries(
+                WorthQueryApplicationOutputRoleFamily::<Binding, WrongEntity>::from_static("face.",)
+            )
+            .unwrap_err(),
         WorthQueryApplicationOutputProjectionDenial::EntityMismatch
     );
 }
@@ -144,11 +152,15 @@ fn family_range_is_deterministic_and_exposes_mixed_postures_only_within_prefix()
         .unwrap();
     let committed = candidate.seal_with(|_| Some(EntityId::new(PartitionId::main(), 41, 1)));
 
-    let entries = family_entries::<Entity>(&committed, "family.").unwrap();
+    let entries = committed
+        .family_entries(
+            WorthQueryApplicationOutputRoleFamily::<Binding, Entity>::from_static("family."),
+        )
+        .unwrap();
     assert_eq!(
         entries
             .iter()
-            .map(|(role, posture, _)| (*role, *posture))
+            .map(|entry| (entry.role(), entry.posture()))
             .collect::<Vec<_>>(),
         vec![
             ("family.create", WorthQueryApplicationOutputPosture::Create),
@@ -162,20 +174,8 @@ fn family_range_is_deterministic_and_exposes_mixed_postures_only_within_prefix()
     assert_eq!(
         entries
             .iter()
-            .filter(|(_, posture, _)| *posture != WorthQueryApplicationOutputPosture::Retire)
+            .filter(|entry| entry.posture() != WorthQueryApplicationOutputPosture::Retire)
             .count(),
         2
     );
-}
-
-fn family_entries<'family, EntityType: 'static>(
-    correspondence: &'family WorthQueryApplicationOutputCorrespondence,
-    prefix: &'family str,
-) -> Result<
-    Vec<(&'family str, WorthQueryApplicationOutputPosture, EntityId)>,
-    WorthQueryApplicationOutputProjectionDenial,
-> {
-    correspondence
-        .binding_family_entries::<Binding, EntityType>(prefix)?
-        .collect()
 }

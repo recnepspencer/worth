@@ -52,6 +52,7 @@ pub enum WorthQueryApplicationCommitDenialStage {
 pub struct WorthQueryApplicationCommitDenial {
     kind: WorthQueryApplicationCommitDenialKind,
     stage: WorthQueryApplicationCommitDenialStage,
+    detail: Option<std::sync::Arc<str>>,
     custom_invariant: Option<crate::domain_computation::WorthQueryCustomInvariantDenial>,
 }
 
@@ -62,6 +63,12 @@ impl WorthQueryApplicationCommitDenial {
 
     pub const fn stage(&self) -> WorthQueryApplicationCommitDenialStage {
         self.stage
+    }
+
+    /// Returns provider-owned diagnostic detail when the rejection boundary
+    /// supplies a concrete cause.
+    pub fn detail(&self) -> Option<&str> {
+        self.detail.as_deref()
     }
 
     pub fn custom_invariant_denial(
@@ -105,6 +112,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::CustomInvariantDenied,
             stage,
+            detail: None,
             custom_invariant: Some(custom_invariant),
         }
     }
@@ -115,6 +123,19 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ProviderRejected,
             stage,
+            detail: None,
+            custom_invariant: None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn provider_rejected_with_detail(
+        stage: WorthQueryApplicationCommitDenialStage,
+        detail: impl Into<std::sync::Arc<str>>,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::ProviderRejected,
+            stage,
+            detail: Some(detail.into()),
             custom_invariant: None,
         }
     }
@@ -130,6 +151,7 @@ impl WorthQueryApplicationCommitDenial {
                 required_work,
             },
             stage,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -140,6 +162,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ProductBasisStale,
             stage,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -153,6 +176,7 @@ impl WorthQueryApplicationCommitDenial {
                 maximum_active_snapshots,
             },
             stage,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -163,6 +187,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::RetentionCapacityExhausted,
             stage,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -173,6 +198,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::SnapshotIdentityExhausted,
             stage,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -183,6 +209,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::RetentionIdentityExhausted,
             stage,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -193,6 +220,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::CandidateIdentityExhausted,
             stage,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -208,6 +236,7 @@ impl WorthQueryApplicationCommitDenial {
                 required_bytes,
             },
             stage,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -217,6 +246,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -226,6 +256,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ElevationTransitionRequired,
             stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -235,6 +266,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::DelegationActivationRequired,
             stage: WorthQueryApplicationCommitDenialStage::DelegationTransition,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -244,6 +276,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::CapabilityRevocationRequired,
             stage: WorthQueryApplicationCommitDenialStage::DelegationTransition,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -253,6 +286,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ElevationRequestProgramMismatch,
             stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -262,6 +296,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ElevationApprovalProgramMismatch,
             stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -271,6 +306,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ElevationCloseProgramMismatch,
             stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
+            detail: None,
             custom_invariant: None,
         }
     }
@@ -280,6 +316,7 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::MandatoryReviewProgramMismatch,
             stage: WorthQueryApplicationCommitDenialStage::ElevationTransition,
+            detail: None,
             custom_invariant: None,
         }
     }

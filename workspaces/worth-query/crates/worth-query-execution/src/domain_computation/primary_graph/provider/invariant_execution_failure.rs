@@ -72,10 +72,11 @@ pub(super) fn map_validation_failure(
     use worth_relational::facade::transactions::ConflictClass;
     let kind = match failure {
         Error::Conflict { error, .. } => {
+            let relational_detail = error.detail();
             let ConflictClass::InvariantViolation { fields, detail, .. } = error.class else {
-                return owner_failure();
+                return provider_failure(relational_detail);
             };
-            return map_custom_invariant_failure(fields, detail).unwrap_or_else(owner_failure);
+            return map_invariant_failure(fields, detail);
         }
         Error::PublicationDeferred { deferred, .. } => match deferred {
             Deferred::RetentionBackpressure => return retention_capacity_failure(),
@@ -126,6 +127,18 @@ pub(super) fn map_validation_failure(
     )
 }
 
+fn map_invariant_failure(
+    fields: worth_relational::facade::transactions::InvariantViolationFields,
+    detail: String,
+) -> WorthQueryInvariantExecutionFailure {
+    map_custom_invariant_failure(fields, detail.clone()).unwrap_or_else(|| {
+        WorthQueryInvariantExecutionFailure::new(
+            WorthQueryInvariantExecutionDenialKind::ProviderRejected,
+            detail,
+        )
+    })
+}
+
 fn map_custom_invariant_failure(
     fields: worth_relational::facade::transactions::InvariantViolationFields,
     detail: String,
@@ -169,15 +182,19 @@ fn exhausted_failure(
 }
 
 fn owner_failure() -> WorthQueryInvariantExecutionFailure {
+    provider_failure("Relational rejected the installed proposed-state invariant")
+}
+
+fn provider_failure(detail: impl Into<std::sync::Arc<str>>) -> WorthQueryInvariantExecutionFailure {
     WorthQueryInvariantExecutionFailure::new(
         WorthQueryInvariantExecutionDenialKind::ProviderRejected,
-        "Relational rejected the installed proposed-state invariant",
+        detail,
     )
 }
 
 #[cfg(test)]
 mod tests {
-    use super::map_custom_invariant_failure;
+    use super::{map_custom_invariant_failure, map_invariant_failure};
     use crate::domain_computation::WorthQueryCustomInvariantDenial;
     use worth_relational::facade::transactions::{
         CustomInvariantFailureIdentity, CustomInvariantFailurePhase, CustomInvariantRuleId,
@@ -231,6 +248,23 @@ mod tests {
                 phase: CustomInvariantFailurePhase::Execution,
                 failure: ResultCustomInvariantFailureKind::Panic,
             })
+        );
+    }
+
+    #[test]
+    fn built_in_invariant_preserves_relational_detail() {
+        let failure = map_invariant_failure(
+            InvariantViolationFields::None,
+            "relation endpoint deletion leaves an incident edge".to_owned(),
+        );
+
+        assert_eq!(
+            failure.kind(),
+            crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProviderRejected
+        );
+        assert_eq!(
+            failure.detail(),
+            "relation endpoint deletion leaves an incident edge"
         );
     }
 

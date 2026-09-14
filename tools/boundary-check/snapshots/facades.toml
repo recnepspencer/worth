@@ -230,6 +230,7 @@ exports = [
     "WorthQueryApplicationOutputCorrespondence",
     "WorthQueryApplicationOutputDemandDisclosure",
     "WorthQueryApplicationOutputEntity",
+    "WorthQueryApplicationOutputFamilyEntry",
     "WorthQueryApplicationOutputPosture",
     "WorthQueryApplicationOutputProjectionDenial",
     "WorthQueryApplicationOutputRole",

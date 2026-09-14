@@ -310,8 +310,14 @@ fn created_reference_matches_effect(
 ) -> bool {
     matches!(
         effect,
-        WorthQueryApplicationRealizedEffect::CreateEntity { kind, key, .. }
-            if created.partition_id == worth_relational::facade::identity::PartitionId::main()
+        WorthQueryApplicationRealizedEffect::CreateEntity {
+            kind,
+            key,
+            partition,
+            ..
+        }
+            if created.partition_id
+                == partition.resolve(worth_relational::facade::identity::PartitionId::main())
                 && created.kind_id == *kind
                 && created.client_key == worth_relational::facade::symbols::ClientKey::raw(key)
     )
