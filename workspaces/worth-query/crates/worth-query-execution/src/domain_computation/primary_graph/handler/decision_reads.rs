@@ -1,5 +1,6 @@
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
+    application_query::{ApplicationQueryBinding, ApplicationQueryScopeBinding},
     application_schema::ApplicationEntityMarkerIdentity,
 };
 use worth_query_installation::facade::{
@@ -19,6 +20,30 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
+    /// Resolve one producer's current generated output through Query-owned lineage.
+    pub fn current_output<Family, Producer, Entity>(
+        &mut self,
+        producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
+        role: super::super::WorthQueryCurrentOutputRole<Family, Entity>,
+    ) -> Result<
+        super::super::WorthQueryCurrentOutputSelection<Schema, Entity>,
+        HandlerExecutionDenial,
+    >
+    where
+        Family: super::super::WorthQueryProducerOutputFamily<Schema>,
+        Family::Source: ApplicationQueryBinding<Schema>,
+        <Family::Source as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeBinding<Schema, Scope = Producer>,
+        Producer:
+            ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
+        Entity:
+            ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
+    {
+        self.reader()
+            .current_output(producer, role)
+            .map_err(HandlerExecutionDenial::new)
+    }
+
     /// Resolve a prior committed semantic output for this exact admitted scope.
     pub fn prior_output<PriorBinding, Entity, Action>(
         &mut self,

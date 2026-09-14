@@ -284,7 +284,9 @@ fn declare_planar_producers<Schema: TopologySchemaBinding>(
     &mut WorthQueryApplicationContributionContracts<Schema>,
     WorthQueryPrimaryGraphInstallationDenial,
 > {
-    contracts.producer::<InitialPlanarProducer<Schema>>()
+    contracts
+        .producer::<InitialPlanarProducer<Schema>>()?
+        .producer::<worth_query_topology_entry::AlternatePlanarOutputProducer<Schema>>()
 }
 
 fn install_topology_behavior<Schema: TopologySchemaBinding>(
@@ -298,10 +300,19 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
         },
     )?;
     setup.handler::<PlanarMutationBinding<Schema>, _>(PlanarHandler)?;
+    setup.handler::<worth_query_topology_entry::AlternatePlanarOutputBinding<Schema>, _>(
+        worth_query_topology_entry::AlternatePlanarOutputHandler,
+    )?;
     setup.handler::<worth_query_topology_entry::PriorCycleAdjustmentBinding<Schema>, _>(
         worth_query_topology_entry::PriorCycleAdjustmentHandler,
     )?;
+    setup.handler::<worth_query_topology_entry::PlanarSourceAdjustmentBinding<Schema>, _>(
+        worth_query_topology_entry::PlanarSourceAdjustmentHandler,
+    )?;
     setup.handler::<worth_query_topology_entry::VertexReplacementBinding<Schema>, _>(
         worth_query_topology_entry::VertexReplacementHandler,
+    )?;
+    setup.producer::<worth_query_topology_entry::AlternatePlanarOutputProducer<Schema>>(
+        worth_query_topology_entry::AlternatePlanarOutputProvider,
     )
 }

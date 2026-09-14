@@ -30,11 +30,13 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
     >,
     origins: HashMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
     live_occurrences: HashSet<worth_runtime_world::facade::ProductBranchIncarnation>,
+    output_families: HashMap<String, Vec<TypeId>>,
 }
 
 struct RecordedOutput {
     correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     source_identity: Option<[u8; 32]>,
+    observed_source_facts: Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
 }
 
 #[derive(Clone, Copy)]
@@ -45,6 +47,18 @@ struct ProductCoordinate {
 
 pub(super) struct WorthQueryPriorOutputBindingResolution {
     pub(super) correspondence: Option<Arc<WorthQueryApplicationOutputCorrespondence>>,
+    pub(super) source_lookups: usize,
+}
+
+pub(super) struct WorthQueryCurrentOutputCandidate {
+    pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    pub(super) observed_source_facts:
+        Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
+}
+
+pub(super) struct WorthQueryCurrentOutputFamilyResolution {
+    pub(super) family_installed: bool,
+    pub(super) candidates: Vec<WorthQueryCurrentOutputCandidate>,
     pub(super) source_lookups: usize,
 }
 
@@ -67,6 +81,11 @@ pub struct WorthQueryPriorOutputDenial {
 }
 
 impl WorthQueryApplicationOutputLineage {
+    pub(super) fn install_output_families(&mut self, families: BTreeMap<String, Vec<TypeId>>) {
+        assert!(self.output_families.is_empty());
+        self.output_families.extend(families);
+    }
+
     pub(super) fn source_posture_for_any_output_binding(
         &self,
         runtime_authority: u64,
@@ -170,12 +189,79 @@ impl WorthQueryApplicationOutputLineage {
                 RecordedOutput {
                     correspondence: evidence.retain_output_correspondence(),
                     source_identity: evidence.idempotency().source_identity(),
+                    observed_source_facts: evidence.retain_observed_source_facts(),
                 },
             );
         assert!(
             replaced.is_none(),
             "one product generation may publish one output binding once"
         );
+    }
+
+    pub(super) fn resolve_current_family(
+        &self,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        family: &str,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        generation: u64,
+        maximum_source_lookups: usize,
+    ) -> Result<WorthQueryCurrentOutputFamilyResolution, ()> {
+        let Some(bindings) = self.output_families.get(family) else {
+            return Ok(WorthQueryCurrentOutputFamilyResolution {
+                family_installed: false,
+                candidates: Vec::new(),
+                source_lookups: 1,
+            });
+        };
+        let mut candidates = Vec::new();
+        let mut source_lookups = 0_usize;
+        for output_binding in bindings {
+            let source = SemanticSource {
+                runtime_authority,
+                schema: schema.clone(),
+                scope,
+                output_binding: *output_binding,
+            };
+            source_lookups = source_lookups.saturating_add(1);
+            if source_lookups > maximum_source_lookups {
+                return Err(());
+            }
+            let Some(versions) = self.by_source.get(&source) else {
+                continue;
+            };
+            let mut coordinate = ProductCoordinate {
+                occurrence,
+                generation,
+            };
+            loop {
+                source_lookups = source_lookups.saturating_add(1);
+                if source_lookups > maximum_source_lookups {
+                    return Err(());
+                }
+                if let Some(recorded) = versions
+                    .get(&coordinate.occurrence)
+                    .and_then(|history| history.range(..=coordinate.generation).next_back())
+                    .map(|(_, recorded)| recorded)
+                {
+                    candidates.push(WorthQueryCurrentOutputCandidate {
+                        correspondence: Arc::clone(&recorded.correspondence),
+                        observed_source_facts: Arc::clone(&recorded.observed_source_facts),
+                    });
+                    break;
+                }
+                let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
+                    break;
+                };
+                coordinate = parent;
+            }
+        }
+        Ok(WorthQueryCurrentOutputFamilyResolution {
+            family_installed: true,
+            candidates,
+            source_lookups,
+        })
     }
 
     pub(super) fn resolve_binding<Binding: 'static>(

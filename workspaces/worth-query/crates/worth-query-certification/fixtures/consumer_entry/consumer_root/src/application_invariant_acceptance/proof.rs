@@ -22,6 +22,7 @@ use crate::ConsumerSchema;
 
 mod output_correspondence;
 mod publication;
+mod current_output_selector;
 mod prior_output_family;
 mod resource_profile;
 
@@ -61,6 +62,7 @@ pub(crate) fn run(
         &principal,
         &scope,
     );
+    current_output_selector::producer_qualified_selection_is_current(&request);
     actual_candidate_checks_untouched_neighbors(&request, &world);
     let foreign_world = installation::install(foreign);
     let foreign_scope = authentication::request_scope();
@@ -78,7 +80,7 @@ pub(crate) fn run(
         output_correspondence::observed_source(&foreign_request, "anchor-a"),
     );
     output_correspondence::run(&request);
-    println!("Pre-M0 public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, early work exhaustion, and idempotency");
+    println!("Public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, producer-qualified current-output selection, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, early work exhaustion, and idempotency");
 }
 
 fn typed_invariant_access_is_bounded(request: &Request<'_>, world: &installation::ConsumerWorld) {

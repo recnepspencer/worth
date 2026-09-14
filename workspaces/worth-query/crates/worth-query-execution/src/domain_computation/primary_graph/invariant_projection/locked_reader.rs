@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::Arc;
@@ -45,6 +45,15 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) selected_product_generation: Option<u64>,
     pub(super) prior_output_bindings:
         HashMap<std::any::TypeId, Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
+    pub(super) current_output_families: HashMap<
+        (
+            std::any::TypeId,
+            worth_relational::facade::identity::EntityId,
+        ),
+        Vec<Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
+    >,
+    pub(super) dependent_source_facts:
+        BTreeMap<String, super::super::application_attempt::WorthQueryApplicationObservedFact>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -132,6 +141,8 @@ where
                     selected_product_occurrence: None,
                     selected_product_generation: None,
                     prior_output_bindings: HashMap::new(),
+                    current_output_families: HashMap::new(),
+                    dependent_source_facts: BTreeMap::new(),
                     _schema: PhantomData,
                 };
                 let output = projection(&mut reader);
@@ -139,11 +150,12 @@ where
                     output,
                     reader.work,
                     reader.realized_scope,
+                    reader.dependent_source_facts,
                     reader.work_budget.exceeded(),
                 )
             }))
         });
-        let (output, work, realized_scope, exceeded) = match projected {
+        let (output, work, realized_scope, dependent_source_facts, exceeded) = match projected {
             Ok(completed) => completed,
             Err(payload) => {
                 self.graph.with_runtime_mut(|runtime| {
@@ -169,6 +181,7 @@ where
                 binding_identity: self.binding_identity.clone(),
                 authority_identity: self.authority_identity,
                 realized_scope,
+                dependent_source_facts,
                 _schema: PhantomData,
             },
             work,

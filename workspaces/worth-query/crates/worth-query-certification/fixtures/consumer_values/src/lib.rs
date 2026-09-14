@@ -7,7 +7,8 @@ pub use planar_replacement::{
 };
 
 pub use planar_operation::{
-    PlanarAdjustment, PlanarAdjustmentResult, PlanarMutationDenial, PlanarOperation, PlanarVertex,
+    PlanarAdjustment, PlanarAdjustmentResult, PlanarCurrentOutputExpectation,
+    PlanarMutationDenial, PlanarOperation, PlanarVertex,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

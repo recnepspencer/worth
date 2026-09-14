@@ -26,6 +26,9 @@ mod observation_admission;
 mod observations;
 mod projected_completion;
 mod relation_observation;
+mod source_facts;
+
+use source_facts::{merge_source_facts, validate_source_facts};
 
 pub struct WorthQueryApplicationReadAttempt<
     Schema,
@@ -208,9 +211,14 @@ where
             )
         })?;
         let root = admission.scope_entity_id();
-        let (lease, projected_scope, expected_facts) = projection.into_lease_and_realized_scope();
+        let (lease, projected_scope, expected_facts, dependent_source_facts) =
+            projection.into_lease_and_realized_scope();
         let mut admission = admission;
-        let source_facts = validate_source_facts(&mut admission, &lease)?;
+        let source_facts = merge_source_facts(
+            validate_source_facts(&mut admission, &lease)?,
+            dependent_source_facts,
+            admission.operation(),
+        )?;
         let layout = Arc::clone(&lease.layout);
         Ok(WorthQueryApplicationReadAttempt {
             admission,
@@ -366,27 +374,6 @@ impl<Schema, Operation, Input, Scope, Phase>
             _phase: PhantomData,
         })
     }
-}
-
-fn validate_source_facts<Schema, Operation, Input, Scope>(
-    admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-    lease: &WorthQueryApplicationSnapshotLease,
-) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
-    let facts = admission.take_source_facts();
-    for fact in &facts {
-        let fresh = lease
-            .handle()
-            .with_runtime(|runtime| fact.remains_equal_in(runtime, lease.snapshot()));
-        if !fresh {
-            let kind = if matches!(fact, WorthQueryApplicationObservedFact::SourceEntity { .. }) {
-                WorthQueryApplicationAttemptDenialKind::SourceRetired
-            } else {
-                WorthQueryApplicationAttemptDenialKind::SourceChanged
-            };
-            return Err(denial(kind, admission.operation()));
-        }
-    }
-    Ok(facts)
 }
 
 fn denial(

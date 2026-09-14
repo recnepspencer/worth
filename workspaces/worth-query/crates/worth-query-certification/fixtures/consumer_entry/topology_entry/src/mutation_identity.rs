@@ -43,6 +43,14 @@ pub fn input_identity(input: &PlanarMutation) -> [u8; 32] {
             text(&mut bytes, previous_target_key);
             text(&mut bytes, replacement_target_key);
         }
+        PlanarOperation::VerifyCurrentOutputs(expectations) => {
+            bytes.push(3);
+            bytes.extend_from_slice(&(expectations.len() as u64).to_be_bytes());
+            for expectation in expectations {
+                text(&mut bytes, &expectation.producer_key);
+                text(&mut bytes, &expectation.output_key);
+            }
+        }
     }
     digest("input", bytes)
 }

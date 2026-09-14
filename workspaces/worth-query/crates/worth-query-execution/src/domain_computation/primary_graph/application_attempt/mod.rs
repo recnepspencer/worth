@@ -92,6 +92,7 @@ pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
+    WorthQuerySourceCurrentnessFailure,
 };
 pub use idempotency::WorthQueryApplicationIdempotencyBinding;
 pub use idempotency_resolution::{

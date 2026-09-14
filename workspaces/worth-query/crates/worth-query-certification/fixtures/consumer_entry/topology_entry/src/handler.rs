@@ -3,7 +3,8 @@ use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, 
 use worth_query_decl::facade::application_operation::ApplicationCandidateRequirements;
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
+    WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole,
+    WorthQueryCreateOutput, WorthQueryCurrentOutputRole, WorthQueryCurrentOutputSelection,
 };
 
 pub struct PlanarHandler;
@@ -88,6 +89,48 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarMutationBindi
                     }
                 }
             }
+            PlanarOperation::VerifyCurrentOutputs(expectations) => {
+                for expectation in expectations {
+                    let producer = match reader.resolve_entity(
+                        BodyKey::reference(),
+                        expectation.producer_key.clone(),
+                    ) {
+                        Ok(entity) => entity,
+                        Err(error) => return HandlerResult::ExecutionDenied(error),
+                    };
+                    let output = match reader.current_output::<PlanarOutputFamily, Body, Body>(
+                        &producer,
+                        WorthQueryCurrentOutputRole::new("anchor"),
+                    ) {
+                        Ok(WorthQueryCurrentOutputSelection::Unique(output)) => output,
+                        Ok(WorthQueryCurrentOutputSelection::Missing) => {
+                            return HandlerResult::DomainDenied(
+                                PlanarMutationDenial::CurrentOutputMissing,
+                            )
+                        }
+                        Ok(WorthQueryCurrentOutputSelection::Ambiguous(_)) => {
+                            return HandlerResult::DomainDenied(
+                                PlanarMutationDenial::CurrentOutputAmbiguous,
+                            )
+                        }
+                        Ok(WorthQueryCurrentOutputSelection::ObsoleteSource) => {
+                            return HandlerResult::DomainDenied(
+                                PlanarMutationDenial::CurrentOutputObsolete,
+                            )
+                        }
+                        Err(error) => return HandlerResult::ExecutionDenied(error),
+                    };
+                    match reader.field(&output, BodyKey::reference()) {
+                        Ok(Some(key)) if key == expectation.output_key => {}
+                        Ok(_) => {
+                            return HandlerResult::DomainDenied(
+                                PlanarMutationDenial::UnexpectedCurrentOutput,
+                            )
+                        }
+                        Err(error) => return HandlerResult::ExecutionDenied(error),
+                    }
+                }
+            }
         }
         HandlerResult::Completed(())
     }
@@ -105,6 +148,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarMutationBindi
             ),
             PlanarOperation::Adjust(adjustments) => (0, 0, 0, adjustments.len()),
             PlanarOperation::RetargetSuccessor { .. } => (0, 1, 1, 0),
+            PlanarOperation::VerifyCurrentOutputs(_) => (0, 0, 0, 0),
         };
         requirements(creates, links, unlinks, writes, 8192, input.validator_work)
     }
@@ -221,5 +265,6 @@ fn author<Schema: TopologySchemaBinding>(
                 .map_err(HandlerExecutionDenial::new)?;
             Ok(0)
         }
+        PlanarOperation::VerifyCurrentOutputs(_) => Ok(0),
     }
 }

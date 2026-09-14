@@ -10,9 +10,14 @@ use worth_query_installation::facade::{
     WorthQueryOperationGraphReadContract, WritePosture,
 };
 
+mod current_output;
 mod decision_plan;
 mod prior_output;
 
+pub use current_output::{
+    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputRole,
+    WorthQueryCurrentOutputSelection,
+};
 pub use decision_plan::{
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
 };
@@ -29,8 +34,8 @@ use super::{
 };
 use crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity;
 use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationFactKey, WorthQueryAdmittedApplicationOperation,
-    WorthQueryEntityResolutionDenial,
+    application_attempt::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact},
+    WorthQueryAdmittedApplicationOperation, WorthQueryEntityResolutionDenial,
 };
 
 pub struct WorthQueryApplicationOperationInvariantProjectionReader<
@@ -312,8 +317,10 @@ where
         super::super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         super::WorthQueryRealizedProjectionScope,
         BTreeSet<WorthQueryApplicationFactKey>,
+        Vec<WorthQueryApplicationObservedFact>,
     ) {
-        let (lease, scope) = self.snapshot.into_lease_and_realized_scope(self.product);
-        (lease, scope, self.decision_facts)
+        let (lease, scope, dependent_source_facts) =
+            self.snapshot.into_lease_and_realized_scope(self.product);
+        (lease, scope, self.decision_facts, dependent_source_facts)
     }
 }

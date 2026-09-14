@@ -32,7 +32,9 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         contracts.producer::<InitialPlanarProducer<Schema>>()?;
+        contracts.producer::<super::AlternatePlanarOutputProducer<Schema>>()?;
         contracts.conditional::<InitialPlanarReadiness<Schema>>()?;
+        contracts.conditional::<super::AlternatePlanarReadiness<Schema>>()?;
         Ok(())
     }
 
@@ -53,11 +55,21 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
             },
         )?;
         setup.handler::<PlanarMutationBinding<Schema>, _>(PlanarHandler)?;
+        setup.handler::<super::AlternatePlanarOutputBinding<Schema>, _>(
+            super::AlternatePlanarOutputHandler,
+        )?;
         setup.handler::<super::PriorCycleAdjustmentBinding<Schema>, _>(
             super::PriorCycleAdjustmentHandler,
         )?;
+        setup.handler::<super::PlanarSourceAdjustmentBinding<Schema>, _>(
+            super::PlanarSourceAdjustmentHandler,
+        )?;
         setup.producer::<InitialPlanarProducer<Schema>>(super::InitialPlanarProvider)?;
+        setup.producer::<super::AlternatePlanarOutputProducer<Schema>>(
+            super::AlternatePlanarOutputProvider,
+        )?;
         setup.conditional::<InitialPlanarReadiness<Schema>>(())?;
+        setup.conditional::<super::AlternatePlanarReadiness<Schema>>(())?;
         setup.handler::<super::VertexReplacementBinding<Schema>, _>(super::VertexReplacementHandler)
     }
 }

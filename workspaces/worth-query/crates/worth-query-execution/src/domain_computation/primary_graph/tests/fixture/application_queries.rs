@@ -17,7 +17,8 @@ use worth_query_declaration::facade::application_schema::{
 #[path = "application_queries/markers.rs"]
 mod markers;
 pub use markers::{
-    AccountSummaryQuery, CrossRootQuery, CrossRootQueryResultBinding, GovernedAccountSummaryQuery,
+    AccountSummaryQuery, AccountSummaryQueryParametersBinding, AccountSummaryQueryResultBinding,
+    CrossRootQuery, CrossRootQueryResultBinding, GovernedAccountSummaryQuery,
     OrderedAccountSummaryQuery, ScopedAccountSummaryQuery, ScopedAccountSummaryQueryResultBinding,
 };
 

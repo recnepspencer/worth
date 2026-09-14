@@ -276,6 +276,8 @@ pub use invariant_projection::{
     WorthQueryApplicationOperationInvariantProjectionReader,
     WorthQueryApplicationOperationInvariantProjectionSnapshot,
     WorthQueryCompletedInvariantProjection, WorthQueryCompletedOperationInvariantProjection,
+    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
+    WorthQueryCurrentOutputRole, WorthQueryCurrentOutputSelection,
     WorthQueryInspectedOperationInvariantProjection, WorthQueryInvariantAggregate,
     WorthQueryInvariantAggregateDenial, WorthQueryInvariantAggregateDenialKind,
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,

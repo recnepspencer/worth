@@ -161,6 +161,22 @@ impl WorthQueryApplicationOutputCorrespondence {
             .ok_or(WorthQueryApplicationOutputProjectionDenial::MissingRole)
     }
 
+    pub(in crate::domain_computation::primary_graph) fn current_entity_for_role<Entity: 'static>(
+        &self,
+        role: &str,
+    ) -> Result<Option<EntityId>, WorthQueryApplicationOutputProjectionDenial> {
+        let Some(binding) = self.roles.get(role) else {
+            return Ok(None);
+        };
+        if binding.entity_type != TypeId::of::<Entity>() {
+            return Err(WorthQueryApplicationOutputProjectionDenial::EntityMismatch);
+        }
+        Ok(
+            (binding.posture != WorthQueryApplicationOutputPosture::Retire)
+                .then_some(binding.entity),
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph) fn binding_family_entries<
         'correspondence,
         Binding: 'static,

@@ -134,6 +134,7 @@ impl DeclaredProducerBinding {
     }
 }
 
+mod output_family_inventory;
 #[cfg(test)]
 mod tests;
 

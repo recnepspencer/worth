@@ -8,8 +8,10 @@ use worth_query_decl::facade::{
 };
 
 mod contribution;
+mod alternate_output;
 mod handler;
 pub use contribution::TopologyConfiguration;
+pub use alternate_output::*;
 mod mutation;
 mod mutation_identity;
 mod planar_invariant;
@@ -19,6 +21,7 @@ mod principal;
 mod prior_cycle_adjustment;
 mod producer;
 mod readiness;
+mod source_adjustment;
 mod vertex_replacement;
 pub use vertex_replacement::*;
 
@@ -31,6 +34,7 @@ pub use principal::*;
 pub use prior_cycle_adjustment::*;
 pub use producer::*;
 pub use readiness::InitialPlanarReadiness;
+pub use source_adjustment::*;
 
 pub trait TopologySchemaBinding: ApplicationSchema {}
 
@@ -61,8 +65,10 @@ worth_query_application_contribution! {
     pub contribution TopologyContribution for Schema: TopologySchemaBinding {
         identity: "worth.query.certification.topology.v1",
         members: |schema| {
+            let schema = alternate_output::declare_alternate_output(schema);
             let schema = vertex_replacement::declare_vertex_replacement(schema);
             let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);
+            let schema = source_adjustment::declare_planar_source_adjustment(schema);
             schema
                 .entity(Body::reference::<Schema>())
                 .unit(Metre::reference::<Schema>())
@@ -95,6 +101,7 @@ worth_query_application_contribution! {
                 .operation(MutatePlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
                 .operation_decision_fact_budget(MutatePlanar::reference::<Schema>(), 64)
                 .operation_projection_work_budget(MutatePlanar::reference::<Schema>(), 256)
+                .operation_read_entity(MutatePlanar::reference::<Schema>(), Body::reference::<Schema>())
                 .operation_read_field(MutatePlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
                 .operation_read_field(MutatePlanar::reference::<Schema>(), PositionX::reference::<Schema>())
                 .operation_read_field(MutatePlanar::reference::<Schema>(), PositionY::reference::<Schema>())
