@@ -56,13 +56,15 @@ pub(super) fn collect_source_footprints(
             result_buffer,
             &mut footprint,
         )?;
-        normalize_source_footprint(&mut footprint);
+        let released_bytes = normalize_source_footprint(&mut footprint);
+        result_buffer.release_temporary(released_bytes);
         footprints.push(footprint);
     }
     Ok(footprints)
 }
 
-fn normalize_source_footprint(footprint: &mut WorthQueryObservedSourceFootprint) {
+fn normalize_source_footprint(footprint: &mut WorthQueryObservedSourceFootprint) -> usize {
+    let retained_before = footprint.retained_bytes();
     footprint
         .aspects
         .sort_by(|left, right| (left.entity, &left.aspect).cmp(&(right.entity, &right.aspect)));
@@ -77,6 +79,9 @@ fn normalize_source_footprint(footprint: &mut WorthQueryObservedSourceFootprint)
         ))
     });
     footprint.adjacencies.dedup();
+    retained_before
+        .checked_sub(footprint.retained_bytes())
+        .expect("normalizing a source footprint cannot increase retained bytes")
 }
 
 #[derive(Clone, Copy, Default)]
