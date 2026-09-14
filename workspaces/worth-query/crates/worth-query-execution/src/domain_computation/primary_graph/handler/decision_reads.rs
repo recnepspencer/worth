@@ -100,6 +100,22 @@ where
         self.reader().decision_relations_from(relation, source)
     }
 
+    /// Read the complete admitted incoming adjacency and retain absence as a
+    /// source dependency for publication-time comparison.
+    pub fn relations_to<Relation, From, To>(
+        &mut self,
+        relation: ApplicationRelationRef<Schema, Relation, From, To>,
+        target: &WorthQueryInvariantEntityIdentity<Schema, To>,
+    ) -> Result<
+        Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>>,
+        WorthQueryInvariantProjectionTraversalDenial,
+    >
+    where
+        Relation: OperationReads<Binding::Operation>,
+    {
+        self.reader().decision_relations_to(relation, target)
+    }
+
     /// Read the one target promised by an exactly-one outgoing cardinality
     /// declaration without allowing observed data to substitute for the contract.
     pub fn related_one<Relation, From, To>(
@@ -130,6 +146,40 @@ where
                 .into_to()),
             _ => {
                 Err(WorthQueryInvariantProjectionTraversalDenial::multiple_targets(relation.name()))
+            }
+        }
+    }
+
+    /// Read the one source promised by an exactly-one incoming cardinality
+    /// declaration without allowing observed data to substitute for the contract.
+    pub fn related_one_incoming<Relation, From, To>(
+        &mut self,
+        relation: ApplicationRelationRef<Schema, Relation, From, To>,
+        target: &WorthQueryInvariantEntityIdentity<Schema, To>,
+    ) -> Result<
+        WorthQueryInvariantEntityIdentity<Schema, From>,
+        WorthQueryInvariantProjectionTraversalDenial,
+    >
+    where
+        Relation: OperationReads<Binding::Operation>,
+    {
+        let cardinality = relation.integrity().cardinality;
+        if (cardinality.target_min, cardinality.target_max) != (Some(1), Some(1)) {
+            return Err(
+                WorthQueryInvariantProjectionTraversalDenial::cardinality_contract_mismatch(
+                    relation.name(),
+                ),
+            );
+        }
+        let mut relations = self.relations_to(relation, target)?;
+        match relations.len() {
+            0 => Err(WorthQueryInvariantProjectionTraversalDenial::missing_source(relation.name())),
+            1 => Ok(relations
+                .pop()
+                .expect("one relation remains after exact length check")
+                .into_from()),
+            _ => {
+                Err(WorthQueryInvariantProjectionTraversalDenial::multiple_sources(relation.name()))
             }
         }
     }

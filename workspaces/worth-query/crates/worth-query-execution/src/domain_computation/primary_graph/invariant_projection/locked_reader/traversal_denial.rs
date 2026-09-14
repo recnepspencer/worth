@@ -8,6 +8,8 @@ pub enum WorthQueryInvariantProjectionTraversalDenialKind {
     CardinalityContractMismatch,
     MissingTarget,
     MultipleTargets,
+    MissingSource,
+    MultipleSources,
     WorkBudgetExceeded,
 }
 
@@ -59,6 +61,24 @@ impl WorthQueryInvariantProjectionTraversalDenial {
     ) -> Self {
         Self::new(
             WorthQueryInvariantProjectionTraversalDenialKind::MultipleTargets,
+            relation,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn missing_source(
+        relation: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            WorthQueryInvariantProjectionTraversalDenialKind::MissingSource,
+            relation,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn multiple_sources(
+        relation: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            WorthQueryInvariantProjectionTraversalDenialKind::MultipleSources,
             relation,
         )
     }

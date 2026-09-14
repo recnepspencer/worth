@@ -76,6 +76,17 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarMutationBindi
                         return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
                     }
                 }
+                match reader.related_one_incoming(PlanarSuccessor::reference(), &previous) {
+                    Ok(incoming) if incoming == source => {}
+                    Ok(_) => {
+                        return HandlerResult::DomainDenied(
+                            PlanarMutationDenial::UnexpectedSuccessor,
+                        )
+                    }
+                    Err(error) => {
+                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
+                    }
+                }
             }
         }
         HandlerResult::Completed(())

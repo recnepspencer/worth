@@ -4,6 +4,7 @@ mod locked_reader;
 mod operation_projection_denial;
 mod operation_reader;
 mod realized_scope;
+mod relation_identity;
 mod traversal;
 mod work;
 
@@ -365,24 +366,6 @@ impl<Schema, Entity> Ord for WorthQueryInvariantEntityIdentity<Schema, Entity> {
                 other.kind,
                 other.entity.as_ref(),
             ))
-    }
-}
-
-impl<Schema, Relation, From, To> WorthQueryInvariantRelation<Schema, Relation, From, To> {
-    pub const fn from(&self) -> &WorthQueryInvariantEntityIdentity<Schema, From> {
-        &self.from
-    }
-
-    pub const fn to(&self) -> &WorthQueryInvariantEntityIdentity<Schema, To> {
-        &self.to
-    }
-
-    pub fn into_to(self) -> WorthQueryInvariantEntityIdentity<Schema, To> {
-        self.to
-    }
-
-    pub const fn relation_id(&self) -> RelationId {
-        self.relation_id
     }
 }
 
