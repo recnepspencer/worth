@@ -56,21 +56,27 @@ pub(super) fn collect_source_footprints(
             result_buffer,
             &mut footprint,
         )?;
-        footprint
-            .aspects
-            .sort_by(|left, right| (left.entity, &left.aspect).cmp(&(right.entity, &right.aspect)));
-        footprint.entities.sort();
-        footprint.entities.dedup();
-        footprint.adjacencies.sort_by(|left, right| {
-            (left.anchor, left.relation_kind, left.direction as u8).cmp(&(
-                right.anchor,
-                right.relation_kind,
-                right.direction as u8,
-            ))
-        });
+        normalize_source_footprint(&mut footprint);
         footprints.push(footprint);
     }
     Ok(footprints)
+}
+
+fn normalize_source_footprint(footprint: &mut WorthQueryObservedSourceFootprint) {
+    footprint
+        .aspects
+        .sort_by(|left, right| (left.entity, &left.aspect).cmp(&(right.entity, &right.aspect)));
+    footprint.aspects.dedup();
+    footprint.entities.sort();
+    footprint.entities.dedup();
+    footprint.adjacencies.sort_by(|left, right| {
+        (left.anchor, left.relation_kind, left.direction as u8).cmp(&(
+            right.anchor,
+            right.relation_kind,
+            right.direction as u8,
+        ))
+    });
+    footprint.adjacencies.dedup();
 }
 
 #[derive(Clone, Copy, Default)]
@@ -234,3 +240,6 @@ fn unique_source_aspect_count(
         })
         .count()
 }
+
+#[cfg(test)]
+mod tests;
