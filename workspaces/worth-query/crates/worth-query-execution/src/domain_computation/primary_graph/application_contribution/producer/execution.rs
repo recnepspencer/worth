@@ -20,10 +20,11 @@ use super::{
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::{
     HandlerResult, MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
-    WorthQueryApplicationNoEffectCause, WorthQueryObservedSource,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationNoEffectCause,
+    WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryPrincipalResolutionMode,
 };
 
 use super::demand::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
@@ -367,6 +368,14 @@ where
         {
             Err(denial(
                 WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded,
+                Binding::IDENTITY,
+            ))
+        }
+        WorthQueryApplicationCommitOutcome::Denied(commit_denial)
+            if commit_denial.kind() == WorthQueryApplicationCommitDenialKind::ProductBasisStale =>
+        {
+            Err(denial(
+                WorthQueryOutputDemandDenialKind::Superseded,
                 Binding::IDENTITY,
             ))
         }
