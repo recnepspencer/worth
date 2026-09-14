@@ -25,11 +25,16 @@ use crate::domain_computation::primary_graph::{
 
 pub struct WorthQueryRestoredGeneratedOutput {
     branch: crate::basis::WorthQueryProductBranch,
+    commit: worth_relational::facade::history::RelationalCommitReceipt,
 }
 
 impl WorthQueryRestoredGeneratedOutput {
     pub fn product_branch(&self) -> crate::basis::WorthQueryProductBranch {
         self.branch
+    }
+
+    pub fn commit(&self) -> &worth_relational::facade::history::RelationalCommitReceipt {
+        &self.commit
     }
 }
 
@@ -229,7 +234,6 @@ where
         let prepared = match publication.prepare_relational_candidate(candidate, request, true) {
             Ok(prepared) => prepared,
             Err(no_effect) => {
-                drop(no_effect);
                 return Err(restoration_failure(
                     suspended_from_completion(
                         publication,
@@ -238,7 +242,9 @@ where
                         producer,
                         completion,
                     ),
-                    WorthQueryGeneratedOutputRestorationFailureCause::PublicationNoEffect,
+                    WorthQueryGeneratedOutputRestorationFailureCause::PublicationNoEffect(
+                        no_effect,
+                    ),
                 ));
             }
         };
@@ -253,7 +259,7 @@ where
                 let observation = consumed
                     .take_successor_observation()
                     .expect("the requested restoration successor is retained");
-                completion
+                let restored = completion
                     .complete(commit)
                     .expect("World returns the exact prepared relational restoration result");
                 self.primary_provider
@@ -271,21 +277,21 @@ where
                         producer.source_identity,
                         producer.observed_source_facts,
                     );
-                Ok(WorthQueryRestoredGeneratedOutput { branch })
+                Ok(WorthQueryRestoredGeneratedOutput {
+                    branch,
+                    commit: restored.commit.clone(),
+                })
             }
-            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
-                drop(no_effect);
-                Err(restoration_failure(
-                    suspended_from_completion(
-                        publication,
-                        branch,
-                        correspondence,
-                        producer,
-                        completion,
-                    ),
-                    WorthQueryGeneratedOutputRestorationFailureCause::PublicationNoEffect,
-                ))
-            }
+            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => Err(restoration_failure(
+                suspended_from_completion(
+                    publication,
+                    branch,
+                    correspondence,
+                    producer,
+                    completion,
+                ),
+                WorthQueryGeneratedOutputRestorationFailureCause::PublicationNoEffect(no_effect),
+            )),
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 let product = self.unpublished_materialization_from_binding(effects, &publication);
                 Err(

@@ -132,6 +132,8 @@ fn change_tag(value: Change) -> u16 {
         Change::LifecycleDelete => 12,
         Change::LifecycleRetainForAudit => 13,
         Change::Opaque => 14,
+        Change::StructuralMaterializationSuspended => 15,
+        Change::StructuralRematerialized => 16,
     }
 }
 
@@ -151,6 +153,8 @@ fn change(tag: u16) -> Result<Change, Denial> {
         12 => Change::LifecycleDelete,
         13 => Change::LifecycleRetainForAudit,
         14 => Change::Opaque,
+        15 => Change::StructuralMaterializationSuspended,
+        16 => Change::StructuralRematerialized,
         _ => return unsupported(),
     })
 }

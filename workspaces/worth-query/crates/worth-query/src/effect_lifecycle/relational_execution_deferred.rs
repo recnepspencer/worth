@@ -90,10 +90,10 @@ pub(super) fn transaction_staging(
             };
         }
         Denial::MaterializationAuthorityRequired => {
-            EffectExecutionDenialKind::MaterializationAuthorityRequired
+            EffectExecutionDenialKind::TransactionMaterializationAuthorityRequired
         }
         Denial::MaterializationModeMismatch => {
-            EffectExecutionDenialKind::MaterializationModeMismatch
+            EffectExecutionDenialKind::TransactionMaterializationModeMismatch
         }
     };
     RelationalEffectExecutionFailure::Denied {
@@ -257,14 +257,14 @@ mod tests {
                 RelationalTransactionStagingDenial::MaterializationAuthorityRequired
             ),
             RelationalEffectExecutionFailure::Denied {
-                kind: EffectExecutionDenialKind::MaterializationAuthorityRequired,
+                kind: EffectExecutionDenialKind::TransactionMaterializationAuthorityRequired,
                 ..
             }
         ));
         assert!(matches!(
             transaction_staging(RelationalTransactionStagingDenial::MaterializationModeMismatch),
             RelationalEffectExecutionFailure::Denied {
-                kind: EffectExecutionDenialKind::MaterializationModeMismatch,
+                kind: EffectExecutionDenialKind::TransactionMaterializationModeMismatch,
                 ..
             }
         ));

@@ -10,7 +10,7 @@ use bank_domain::proposals::BankIdempotencyKey;
 use super::super::protocol::{
     BankHttpDenial, BankHttpDenialKind, BankHttpEstateNotificationOutcome,
     BankHttpEstateNotificationRequest, BankHttpNextAction, BankHttpRecoveryInspectionOutcome,
-    BankHttpRecoveryRequest, BankHttpUndoAdmissionOutcome,
+    BankHttpRecoveryRequest,
 };
 use super::recovery_executor::{
     AdmittedBankHttpNotificationRequest, AdmittedBankHttpRecoveryRequest,
@@ -49,21 +49,6 @@ pub(super) async fn inspect(
         }
     };
     inspection_response(state.recovery.inspect(admitted).await)
-}
-
-pub(super) async fn admit_undo(
-    State(state): State<BankHttpRouteState>,
-    request: Result<Json<BankHttpRecoveryRequest>, JsonRejection>,
-) -> (StatusCode, Json<BankHttpUndoAdmissionOutcome>) {
-    let request = match request {
-        Ok(Json(request)) => request,
-        Err(_) => return undo_response(undo_denied(None, malformed())),
-    };
-    let admitted = match admit_recovery(request, state.maximum_deadline) {
-        Ok(admitted) => admitted,
-        Err((request_id, denial)) => return undo_response(undo_denied(request_id, denial)),
-    };
-    undo_response(state.recovery.admit_undo(admitted).await)
 }
 
 fn admit_notification(
@@ -138,10 +123,6 @@ fn inspection_denied(
     BankHttpRecoveryInspectionOutcome::Denied { request_id, denial }
 }
 
-fn undo_denied(request_id: Option<String>, denial: BankHttpDenial) -> BankHttpUndoAdmissionOutcome {
-    BankHttpUndoAdmissionOutcome::Denied { request_id, denial }
-}
-
 fn notification_response(
     outcome: BankHttpEstateNotificationOutcome,
 ) -> (StatusCode, Json<BankHttpEstateNotificationOutcome>) {
@@ -158,16 +139,6 @@ fn inspection_response(
     let status = match &outcome {
         BankHttpRecoveryInspectionOutcome::Inspected { .. } => StatusCode::OK,
         BankHttpRecoveryInspectionOutcome::Denied { denial, .. } => response_status(denial.kind),
-    };
-    (status, Json(outcome))
-}
-
-fn undo_response(
-    outcome: BankHttpUndoAdmissionOutcome,
-) -> (StatusCode, Json<BankHttpUndoAdmissionOutcome>) {
-    let status = match &outcome {
-        BankHttpUndoAdmissionOutcome::Admitted { .. } => StatusCode::OK,
-        BankHttpUndoAdmissionOutcome::Denied { denial, .. } => response_status(denial.kind),
     };
     (status, Json(outcome))
 }

@@ -34,7 +34,9 @@ impl BankIdentityRuntime {
         let mut effects = reads
             .complete_projected_dependencies()?
             .begin_effect_program();
-        let created = effects.create_entity(
+        let account = effects.existing_entity(&account)?;
+        let created = effects.create_entity_in_context(
+            &account,
             AccountAuthorization::reference(),
             entity_key(authorization_key(authorization.id()))?,
         )?;
@@ -48,7 +50,6 @@ impl BankIdentityRuntime {
             AuthorizationRole::reference(),
             authorization.role(),
         )?;
-        let account = effects.existing_entity(&account)?;
         let principal = effects.existing_entity(&principal)?;
         effects.link(
             AccountAuthorizedUser::reference(),

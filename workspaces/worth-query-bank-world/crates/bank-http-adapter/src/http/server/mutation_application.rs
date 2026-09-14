@@ -108,6 +108,21 @@ pub(super) fn parse_send_money(
 fn describe_outcome(request_id: String, outcome: BankMutationOutcome) -> BankHttpMutationOutcome {
     let provider_work_units = outcome.metadata().provider_work_units();
     match outcome.into_status() {
+        BankMutationStatus::ProductStale(_) => not_applied(
+            Some(request_id),
+            BankHttpMutationFailureKind::ProductStale,
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        ),
+        BankMutationStatus::ProductUnpublished(_) => not_applied(
+            Some(request_id),
+            BankHttpMutationFailureKind::ProductUnpublished,
+            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
+        ),
+        BankMutationStatus::NoEffect(_) => not_applied(
+            Some(request_id),
+            BankHttpMutationFailureKind::NoEffect,
+            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
+        ),
         BankMutationStatus::Committed(receipt) => applied(
             request_id,
             BankHttpCommitDisposition::Committed,
@@ -130,6 +145,14 @@ fn describe_outcome(request_id: String, outcome: BankMutationOutcome) -> BankHtt
             Some(request_id),
             BankHttpMutationFailureKind::Cancelled,
             BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry),
+        ),
+        BankMutationStatus::TimedOut => not_applied(
+            Some(request_id),
+            BankHttpMutationFailureKind::TimedOut,
+            BankHttpDenial::new(
+                BankHttpDenialKind::DeadlineExceeded,
+                BankHttpNextAction::Retry,
+            ),
         ),
         BankMutationStatus::DeadlineExceeded => not_applied(
             Some(request_id),
@@ -156,8 +179,11 @@ fn describe_outcome(request_id: String, outcome: BankMutationOutcome) -> BankHtt
             BankHttpMutationFailureKind::Aborted,
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
         ),
-        BankMutationStatus::PartialEffect(_) => {
-            recovery_required(request_id, BankHttpMutationFailureKind::PartialEffect)
+        BankMutationStatus::Deferred(_) => {
+            recovery_required(request_id, BankHttpMutationFailureKind::Deferred)
+        }
+        BankMutationStatus::SettlementDeferred(_) => {
+            recovery_required(request_id, BankHttpMutationFailureKind::SettlementDeferred)
         }
         BankMutationStatus::Indeterminate(_) => {
             recovery_required(request_id, BankHttpMutationFailureKind::Indeterminate)
@@ -221,6 +247,9 @@ fn cancelled_or_denied(denial: BankHttpDenial) -> BankHttpMutationFailureKind {
 
 fn mutation_denial(denial: &BankMutationDenial) -> BankHttpDenial {
     match denial {
+        BankMutationDenial::ProductSelection(_) => {
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
+        }
         BankMutationDenial::Scope(_) => BankHttpDenial::new(
             BankHttpDenialKind::NotFound,
             BankHttpNextAction::CorrectRequest,

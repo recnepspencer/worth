@@ -7,8 +7,7 @@ use bank_domain::model::{AccountId, BankPrincipalId};
 
 use super::super::super::protocol::{
     BankHttpDenialKind, BankHttpEstateNotificationOutcome, BankHttpRecoveryInspectionOutcome,
-    BankHttpRecoveryPosture, BankHttpUndoAdmissionOutcome, BankHttpUndoCorrection,
-    BankHttpUndoProgressionOutcome,
+    BankHttpRecoveryPosture,
 };
 use super::fixture::application;
 use super::{bind_application, credential_json, BankHttpServerConfiguration};
@@ -35,7 +34,6 @@ async fn authority_remains_behind_one_opaque_transport_handle() {
         other => panic!("notification did not commit: {other:?}"),
     };
     assert_recovery_inspects(&client, server.local_address(), &action, &recovery).await;
-    assert_undo_consumes_recovery(&client, server.local_address(), &action, &recovery).await;
     server.shutdown().await.expect("server should shut down");
 }
 
@@ -139,35 +137,6 @@ async fn assert_recovery_inspects(
             ..
         }
     ));
-}
-
-async fn assert_undo_consumes_recovery(
-    client: &reqwest::Client,
-    address: std::net::SocketAddr,
-    action: &RecoveryAction,
-    recovery: &str,
-) {
-    let undo = match admit_undo(client, address, action, recovery).await {
-        BankHttpUndoAdmissionOutcome::Admitted {
-            correction: BankHttpUndoCorrection::Reconciliation,
-            undo,
-            ..
-        } => undo,
-        other => panic!("reconciliation undo did not admit: {other:?}"),
-    };
-    let consumed = inspect_recovery(client, address, action, recovery).await;
-    assert!(matches!(
-        consumed,
-        BankHttpRecoveryInspectionOutcome::Denied { denial, .. }
-            if denial.kind == BankHttpDenialKind::Stale
-    ));
-    let progressed = progress_reconciliation(client, address, &undo, 5_000).await;
-    assert!(matches!(
-        progressed,
-        BankHttpUndoProgressionOutcome::Reconciled { .. }
-    ));
-    let replayed = progress_reconciliation(client, address, &undo, 5_000).await;
-    assert_eq!(replayed, progressed);
 }
 
 struct RecoveryAction {
@@ -287,43 +256,6 @@ async fn inspect_recovery(
         address,
         "/v1/recovery/inspect",
         &recovery_request(action, "inspect-recovery-http", recovery),
-    )
-    .await
-}
-
-async fn admit_undo(
-    client: &reqwest::Client,
-    address: std::net::SocketAddr,
-    action: &RecoveryAction,
-    recovery: &str,
-) -> BankHttpUndoAdmissionOutcome {
-    post_typed(
-        client,
-        address,
-        "/v1/recovery/admit-undo",
-        &recovery_request(action, "admit-undo-http", recovery),
-    )
-    .await
-}
-
-async fn progress_reconciliation(
-    client: &reqwest::Client,
-    address: std::net::SocketAddr,
-    undo: &str,
-    deadline_milliseconds: u64,
-) -> BankHttpUndoProgressionOutcome {
-    post_typed(
-        client,
-        address,
-        "/v1/recovery/progress-undo",
-        &serde_json::json!({
-            "protocol": "v1",
-            "request_id": "progress-reconciliation-http",
-            "credential": credential_json(),
-            "controls": { "deadline_milliseconds": deadline_milliseconds },
-            "undo": undo,
-            "idempotency_key": "unused-reconciliation-key"
-        }),
     )
     .await
 }

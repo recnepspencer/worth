@@ -67,7 +67,7 @@ fn assert_public_creation(display_name: &str) {
         CreatePersonalAccountMutationBinding,
         Account,
         WorthQueryCreateOutput,
-    >::new(CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT);
+    >::from_static(CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT);
 
     let first = request
         .mutate(input.clone())
@@ -79,7 +79,7 @@ fn assert_public_creation(display_name: &str) {
         result,
     } = first
     else {
-        panic!("the first mutation must publish an actual World commit");
+        panic!("the first mutation must publish an actual World commit: {first:?}");
     };
     let account = result.account;
     assert!(account.canonical_text().starts_with("operation:"));
@@ -113,6 +113,11 @@ fn assert_public_creation(display_name: &str) {
     let WorthQueryApplicationMutationOutcome::AlreadyCommitted(mut retry_receipt) = retry else {
         panic!("the identical retry must recover the prior commit");
     };
+    let output_role = WorthQueryApplicationOutputRole::<
+        CreatePersonalAccountMutationBinding,
+        Account,
+        WorthQueryCreateOutput,
+    >::from_static(CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT);
     let recovered_entity = retry_receipt
         .output_correspondence()
         .entity(output_role)

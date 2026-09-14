@@ -1,8 +1,8 @@
 use bank_server::{
-    BankApplicationOneShotDenialKind, BankApplicationProjectionDenialKind,
-    BankApplicationQueryAdmissionDenialKind, BankApplicationQueryDenial,
-    BankApplicationQueryParameterDenialKind, BankAuthorizationDenialKind,
-    BankEntityResolutionDenialKind, BankGraphReadPlanReviewDenialKind,
+    BankApplicationOneShotDenialKind, BankApplicationOutputSettlementDenialKind,
+    BankApplicationProjectionDenialKind, BankApplicationQueryAdmissionDenialKind,
+    BankApplicationQueryDenial, BankApplicationQueryParameterDenialKind,
+    BankAuthorizationDenialKind, BankEntityResolutionDenialKind, BankGraphReadPlanReviewDenialKind,
 };
 
 use super::super::protocol::{
@@ -14,14 +14,17 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         BankApplicationQueryDenial::Installation(_)
         | BankApplicationQueryDenial::CapabilityInstallation(_)
         | BankApplicationQueryDenial::PreviewSession(_)
-        | BankApplicationQueryDenial::PreviewExecution(_)
-        | BankApplicationQueryDenial::HistoricalExecution(_)
         | BankApplicationQueryDenial::ContinuationExecution(_)
         | BankApplicationQueryDenial::LiveOpen(_) => unavailable(),
+        BankApplicationQueryDenial::PrincipalResolution(_) => stale(),
+        BankApplicationQueryDenial::Limit(_) => exhausted(),
+        BankApplicationQueryDenial::ProductSelection(_) => stale(),
+        BankApplicationQueryDenial::HistoricalCommitUnavailable => stale(),
         BankApplicationQueryDenial::CapabilityAdmission(denial) => authorization(denial.kind()),
         BankApplicationQueryDenial::ScopeResolution(denial) => entity(denial.kind()),
         BankApplicationQueryDenial::Admission(denial) => admission(denial.kind()),
         BankApplicationQueryDenial::Execution(denial) => execution(denial.kind()),
+        BankApplicationQueryDenial::OutputSettlement(kind) => output_settlement(kind),
     }
 }
 
@@ -35,7 +38,6 @@ fn admission(kind: BankApplicationQueryAdmissionDenialKind) -> BankHttpDenial {
         | Admission::StaleScope
         | Admission::StaleBasis
         | Admission::ExpiredBasis
-        | Admission::StalePreviewSession
         | Admission::StaleContinuation => stale(),
         Admission::ForeignPrincipal
         | Admission::ForeignScope
@@ -43,7 +45,6 @@ fn admission(kind: BankApplicationQueryAdmissionDenialKind) -> BankHttpDenial {
         | Admission::ForeignBasis
         | Admission::WrongProviderBasis
         | Admission::ForeignHistoricalReceipt
-        | Admission::ForeignPreviewSession
         | Admission::ForeignContinuation
         | Admission::ContinuationParameterMismatch
         | Admission::ContinuationScopeMismatch
@@ -58,13 +59,16 @@ fn admission(kind: BankApplicationQueryAdmissionDenialKind) -> BankHttpDenial {
         Admission::InstalledQuery(_)
         | Admission::BasisUnsupported
         | Admission::BasisUnavailable
-        | Admission::TruthViewUnavailable
         | Admission::RuntimeSupportUnavailable
         | Admission::ContinuationPageWidthUnsupported
         | Admission::LaneUnsupported
         | Admission::GraphReadPlan(_)
         | Admission::GraphWorkAdmissionUnavailable
         | Admission::ExecutionShapeUnsupported => unavailable(),
+        Admission::ActiveSnapshotCapacityExhausted { .. }
+        | Admission::SnapshotIdentityExhausted
+        | Admission::RetentionCapacityExhausted
+        | Admission::RetentionIdentityExhausted => exhausted(),
         Admission::DisclosureGovernanceRequired
         | Admission::DisclosureContractInvalid
         | Admission::InternalComputationDenied => internal_denied(),
@@ -84,7 +88,11 @@ fn execution(kind: BankApplicationOneShotDenialKind) -> BankHttpDenial {
         Execution::ResultLimitExceeded
         | Execution::ResultBufferLimitExceeded
         | Execution::WorkLimitExceeded
-        | Execution::PredicateLookupOverflow => exhausted(),
+        | Execution::PredicateLookupOverflow
+        | Execution::ActiveSnapshotCapacityExhausted { .. }
+        | Execution::RetentionCapacityExhausted
+        | Execution::RetentionIdentityExhausted
+        | Execution::SnapshotIdentityExhausted => exhausted(),
         Execution::Projection(kind) => projection(kind),
         Execution::BasisUnavailable
         | Execution::ExpiredBasis
@@ -128,7 +136,12 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
         Entity::Cancelled => cancelled(),
         Entity::DeadlineExceeded => deadline(),
         Entity::UnknownEntity => BankHttpDenial::new(Kind::NotFound, Next::CorrectRequest),
-        Entity::ProjectionWorkBudgetExceeded => exhausted(),
+        Entity::ValueEncodingRejected => malformed(),
+        Entity::ProjectionWorkBudgetExceeded
+        | Entity::ActiveSnapshotCapacityExhausted { .. }
+        | Entity::SnapshotIdentityExhausted
+        | Entity::RetentionCapacityExhausted
+        | Entity::RetentionIdentityExhausted => exhausted(),
         Entity::ForeignResolutionTruth => stale(),
         Entity::PrimaryGraphNotInstalled
         | Entity::FieldNotInstalled
@@ -151,9 +164,13 @@ fn authorization(kind: BankAuthorizationDenialKind) -> BankHttpDenial {
         | Authorization::StaleScope
         | Authorization::StaleAuthorization
         | Authorization::DelegationLineageChanged => stale(),
-        Authorization::CanonicalWorkDenied | Authorization::GrantSelectionLimitExceeded => {
-            exhausted()
-        }
+        Authorization::CanonicalWorkDenied
+        | Authorization::GrantSelectionLimitExceeded
+        | Authorization::ActiveSnapshotCapacityExhausted { .. }
+        | Authorization::SnapshotIdentityExhausted
+        | Authorization::RetentionCapacityExhausted
+        | Authorization::RetentionIdentityExhausted => exhausted(),
+        Authorization::InvalidOperationInput => malformed(),
         Authorization::ForeignRuntime
         | Authorization::MutationPreconditionRejected
         | Authorization::CapabilityGrantMissing
@@ -184,6 +201,7 @@ fn authorization(kind: BankAuthorizationDenialKind) -> BankHttpDenial {
         | Authorization::DelegationDepthExceeded
         | Authorization::DelegationCycle
         | Authorization::ScopeMismatch
+        | Authorization::ProductSecurityBasis(_)
         | Authorization::PermissionDenied => permission_denied(),
         Authorization::TrustedTimeUnavailable
         | Authorization::GraphWorkAdmissionUnavailable
@@ -195,6 +213,27 @@ fn authorization(kind: BankAuthorizationDenialKind) -> BankHttpDenial {
         | Authorization::RelationalObservationRejected
         | Authorization::BridgeEvaluationRejected
         | Authorization::InconsistentDecision => internal_denied(),
+    }
+}
+
+fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
+    use BankApplicationOutputSettlementDenialKind as Settlement;
+    match kind {
+        Settlement::Cancelled => cancelled(),
+        Settlement::TimedOut => deadline(),
+        Settlement::Superseded
+        | Settlement::ForeignSource
+        | Settlement::ForeignDemand
+        | Settlement::ForeignSettlement
+        | Settlement::RetainedBasisUnavailable
+        | Settlement::Closed => stale(),
+        Settlement::WorkBudgetExceeded
+        | Settlement::RetentionBudgetExceeded
+        | Settlement::PublicationCapacityExceeded => exhausted(),
+        Settlement::MissingApplicableProducer
+        | Settlement::AmbiguousApplicableProducer
+        | Settlement::ProducerUnavailable
+        | Settlement::SchedulingRejected => unavailable(),
     }
 }
 

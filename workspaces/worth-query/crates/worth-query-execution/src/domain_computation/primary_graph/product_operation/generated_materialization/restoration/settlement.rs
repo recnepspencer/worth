@@ -23,7 +23,7 @@ impl PublishedRestorationSettlement {
             commit,
             retry,
         } = self;
-        retry
+        let restored = retry
             .completion
             .complete(commit)
             .expect("World returns the exact prepared relational restoration result");
@@ -45,6 +45,7 @@ impl PublishedRestorationSettlement {
             );
         super::WorthQueryRestoredGeneratedOutput {
             branch: retry.branch,
+            commit: restored.commit.clone(),
         }
     }
 }

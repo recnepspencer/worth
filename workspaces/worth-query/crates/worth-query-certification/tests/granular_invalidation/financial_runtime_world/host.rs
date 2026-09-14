@@ -191,7 +191,7 @@ impl FinancialCourtroomWorld {
                 curve_query,
                 ApplicationQueryParameterSet::new(),
                 FinancialIntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 8, 8).unwrap(),
+                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
             )
             .unwrap();
         let quote = installed_runtime
@@ -217,7 +217,7 @@ impl FinancialCourtroomWorld {
                 quote_query,
                 ApplicationQueryParameterSet::new(),
                 FinancialIntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 8, 8).unwrap(),
+                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
             )
             .unwrap();
         let portfolio = installed_runtime
@@ -239,7 +239,7 @@ impl FinancialCourtroomWorld {
                 portfolio_query,
                 ApplicationQueryParameterSet::new(),
                 FinancialIntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 8, 8).unwrap(),
+                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
             )
             .unwrap();
         let sibling_portfolio = installed_runtime
@@ -261,7 +261,7 @@ impl FinancialCourtroomWorld {
                 sibling_portfolio_query,
                 ApplicationQueryParameterSet::new(),
                 FinancialIntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 8, 8).unwrap(),
+                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
             )
             .unwrap();
 

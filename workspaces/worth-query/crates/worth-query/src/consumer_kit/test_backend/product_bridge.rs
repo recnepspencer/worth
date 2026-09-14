@@ -10,6 +10,53 @@ use super::{
     schema::WorthQueryTestBackendSchema,
 };
 
+/// Builds the minimal real Product source and bridge needed by an explicit
+/// test backend. The returned source must be retained by that backend and
+/// supplied from `WorthQueryRuntimeBackend::prepare_product_source`.
+pub fn in_memory_test_product_world_installation() -> Result<
+    (
+        worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner,
+        RuntimeBridge,
+    ),
+    WorthQueryTestBackendError,
+> {
+    use worth_foundational::facade::{AspectKey, FieldKey, ScalarAspectType};
+
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+        .runtime_name("worth-query-explicit-test-backend-product")
+        .build();
+    let source = worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
+        runtime,
+        "worth-query-explicit-test-backend-product",
+    )
+    .map_err(|error| {
+        WorthQueryTestBackendError::new(
+            WorthQueryTestBackendErrorKind::WorkspaceBuildFailed,
+            format!("failed to install test Product source: {error:?}"),
+        )
+    })?;
+    let aspect = AspectKey::new("aspect").expect("static test aspect is valid");
+    let field = FieldKey::new("field").expect("static test field is valid");
+    let bridge = RuntimeBridgeBuilder::new()
+        .with_relational_source(source.bridge_source())
+        .with_signal_sink(WorthQueryTestProductSignalSink)
+        .register_mapping(BridgeMappingRegistration::new(
+            BridgeMappingId::from_stable_name("worth-query-explicit-test-backend-product"),
+            TruthPatchScope::for_entity_field(MappingSelector::any(), aspect.clone(), field),
+            SnapshotReadContract::scalar(aspect, ScalarAspectType::String),
+            SignalInvalidationScope::from_stable_name("worth-query-explicit-test-backend-product"),
+            CoarseRoutingMode::Direct,
+        ))
+        .build()
+        .map_err(|error| {
+            WorthQueryTestBackendError::new(
+                WorthQueryTestBackendErrorKind::WorkspaceBuildFailed,
+                format!("failed to install test Product bridge: {error:?}"),
+            )
+        })?;
+    Ok((source, bridge))
+}
+
 #[derive(Debug)]
 struct WorthQueryTestProductSignalSink;
 

@@ -60,6 +60,7 @@ fn authentication_denial(error: AuthentikBankAuthenticationError) -> BankHttpDen
             BankPrincipalAdmissionError::Authentication(denial) => {
                 authentication_kind(denial.kind())
             }
+            BankPrincipalAdmissionError::ProductSelection(_) => unavailable(),
             BankPrincipalAdmissionError::Resolution(denial) => resolution_kind(denial.kind()),
         },
     }
@@ -102,6 +103,10 @@ fn resolution_kind(kind: WorthQueryPrincipalResolutionDenialKind) -> BankHttpDen
         Resolution::PrimaryGraphNotInstalled
         | Resolution::BindingNotInstalled
         | Resolution::IdentityIndexUnavailable => unavailable(),
+        Resolution::ActiveSnapshotCapacityExhausted { .. }
+        | Resolution::SnapshotIdentityExhausted
+        | Resolution::RetentionCapacityExhausted
+        | Resolution::RetentionIdentityExhausted => unavailable(),
         Resolution::ForeignRuntime
         | Resolution::StaleInstalledSchema
         | Resolution::ExpiredAuthentication

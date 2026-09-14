@@ -24,12 +24,12 @@ use worth_query_host::facade::{
 use super::admission::BankEstateEmergencyAccessActivityAdmission;
 use crate::{
     BankApplicationLiveCauseDenial, BankApplicationLiveCloseOutcome, BankApplicationLiveOverflow,
-    BankApplicationLiveProjectionDenial, BankApplicationQueryDenial, BankAuthorizationDenial,
+    BankApplicationLiveProjectionDenial, BankApplicationQueryDenial, BankAuthenticatedPrincipal,
+    BankAuthorizationDenial,
 };
 
-type ActivityLiveLease<'runtime, 'principal> = WorthQueryApplicationLiveLease<
+type ActivityLiveLease<'runtime> = WorthQueryApplicationLiveLease<
     'runtime,
-    'principal,
     BankSchema,
     EstateEmergencyAccessActivityQuery,
     EstateEmergencyAccessActivityQueryParameters,
@@ -41,8 +41,8 @@ type ActivityLiveLease<'runtime, 'principal> = WorthQueryApplicationLiveLease<
     EstateEmergencyAccessActivityLiveCause,
 >;
 
-pub struct BankEstateEmergencyAccessActivityLiveLease<'runtime, 'principal> {
-    query: ActivityLiveLease<'runtime, 'principal>,
+pub struct BankEstateEmergencyAccessActivityLiveLease<'runtime> {
+    query: ActivityLiveLease<'runtime>,
 }
 
 pub struct BankEstateEmergencyAccessActivityLiveUpdate {
@@ -91,13 +91,17 @@ impl BankEstateEmergencyAccessActivityLiveUpdate {
     }
 }
 
-impl BankEstateEmergencyAccessActivityLiveLease<'_, '_> {
+impl BankEstateEmergencyAccessActivityLiveLease<'_> {
     pub fn buffered_cause_count(&self) -> usize {
         self.query.buffered_cause_count()
     }
 
-    pub fn poll(&mut self) -> BankEstateEmergencyAccessActivityLiveOutcome {
-        match self.query.poll() {
+    pub fn poll(
+        &mut self,
+        principal: &BankAuthenticatedPrincipal,
+        request: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
+    ) -> BankEstateEmergencyAccessActivityLiveOutcome {
+        match self.query.next(principal.query(), request) {
             WorthQueryApplicationLiveOutcome::Delivered(update) => {
                 let (_, admitted) = update.into_admitted_disclosed();
                 BankEstateEmergencyAccessActivityLiveOutcome::Delivered(
@@ -161,10 +165,8 @@ impl<'runtime, 'principal>
     pub(crate) fn subscribe(
         self,
         controls: WorthQueryApplicationLiveControls,
-    ) -> Result<
-        BankEstateEmergencyAccessActivityLiveLease<'runtime, 'principal>,
-        BankApplicationQueryDenial,
-    > {
+    ) -> Result<BankEstateEmergencyAccessActivityLiveLease<'runtime>, BankApplicationQueryDenial>
+    {
         let application = self.runtime.application_runtime();
         let selected = application
             .on_branch(application.current_world())

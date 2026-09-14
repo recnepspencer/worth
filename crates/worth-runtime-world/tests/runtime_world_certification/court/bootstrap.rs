@@ -162,7 +162,7 @@ fn foreign_installed_bridge_witness_cannot_substitute_for_real_graph_corresponde
 
 #[test]
 fn incompatible_correspondence_with_own_components_denies_then_healthy_binding_bootstraps() {
-    let mut court = CompositeSupplyChainCourt::compile();
+    let court = CompositeSupplyChainCourt::compile();
     let other = CompositeSupplyChainCourt::compile();
     let foreign = other.bootstrap();
     let intent = RuntimeWorldBootstrapIntent::new(

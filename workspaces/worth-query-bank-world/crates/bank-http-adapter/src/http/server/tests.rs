@@ -9,7 +9,6 @@ use super::super::protocol::{
 };
 use super::{bind_application, BankHttpServerConfiguration};
 
-mod aftermath;
 mod elevation;
 mod fixture;
 mod mutation;

@@ -70,10 +70,10 @@ pub(super) fn staging(
             WorthQueryWorkspaceErrorKind::SavepointIdentityExhausted
         }
         Denial::MaterializationAuthorityRequired => {
-            WorthQueryWorkspaceErrorKind::MaterializationAuthorityRequired
+            WorthQueryWorkspaceErrorKind::TransactionMaterializationAuthorityRequired
         }
         Denial::MaterializationModeMismatch => {
-            WorthQueryWorkspaceErrorKind::MaterializationModeMismatch
+            WorthQueryWorkspaceErrorKind::TransactionMaterializationModeMismatch
         }
     };
     WorthQueryWorkspaceError::with_kind(kind, format!("workspace staging denied: {denial:?}"))

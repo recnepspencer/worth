@@ -37,7 +37,9 @@ impl BankIdentityRuntime {
         let mut effects = reads
             .complete_projected_dependencies()?
             .begin_effect_program();
-        let payment_entity = effects.create_entity(
+        let business = effects.existing_entity(&business)?;
+        let payment_entity = effects.create_entity_in_context(
+            &business,
             PaymentIntent::reference(),
             entity_key(payment_key(payment.id()))?,
         )?;
@@ -56,7 +58,6 @@ impl BankIdentityRuntime {
             PaymentStatusField::reference(),
             payment.status(),
         )?;
-        let business = effects.existing_entity(&business)?;
         let source = effects.existing_entity(&source)?;
         let destination = effects.existing_entity(&destination)?;
         let initiator = effects.existing_entity(&initiator)?;
@@ -177,7 +178,8 @@ where
 {
     let payment = effects.existing_entity(payment)?;
     let decider = effects.existing_entity(decider)?;
-    let approval = effects.create_entity(
+    let approval = effects.create_entity_in_context(
+        &payment,
         Approval::reference(),
         entity_key(approval_key(replacement.id()))?,
     )?;

@@ -373,15 +373,12 @@ cross-feature proof gates before final certification:
   Relational basis/lifecycle and Signal services, then dedicated Runtime World
   composite history/currentness, then complete Query carriage, facade cutover,
   and hostile certification
-- `Milestone 9.17.4` hardens the application API after that certified foundation:
-  entry-owned value and intent bindings, explicit contributions, request-bound
-  execution, retained/page/live resources, installed domain handlers, exact
-  recovery, full Bank adoption, and primary invariant/bulk-construction proof;
-  after the proprietary CAD M0 demo, `Milestone 9.17.4.1` adds a high-level
-  language for
-  truth, actions, lifecycle, authority, derived truth, and guarantees above one
-  public core application IR, proven by Bank and fixed/generated CAD consumers;
-  together they replace application-owned Query pipelines before 9.18 begins
+- `Milestone 9.17.4` closes typed application graph authoring, scoped rules,
+  fixed/generated output, typed publication return paths and existing consumer migration
+- `Milestone 9.17.5` adds branch-scoped program evolution, exact composite adoption,
+  state migration and recovery while supported sibling programs remain independent
+- `Milestone 9.17.6` adds runtime-authored workflow definitions and instances over
+  those contracts, including approval/evidence, revision, partial effects and cleanup
 - `Milestone 9.18` accepts tree-based semantic undo and redo as freshly
   admitted composite-history operations over exact source world commits and
   target product-branch heads; it replaces the provisional linear Phase 8
@@ -417,8 +414,8 @@ contracts required by physical integration:
   `Milestone 9.17.1` -> `Milestone 9.17.1.1` ->
   `Milestone 9.17.1.2` -> `Milestone 9.17.2` ->
   `Milestone 9.17.3` -> `Milestone 9.17.4` foundation ->
-  proprietary CAD M0 consumer proof -> `Milestone 9.17.4.1` ->
-  remaining `Milestone 9.17.4` ->
+  proprietary CAD M0 consumer proof -> `Milestone 9.17.4` static graph closure ->
+  `Milestone 9.17.5` branch program evolution -> `Milestone 9.17.6` dynamic workflows ->
   `Milestone 9.18` -> `Milestone 9.19` ->
   `Milestone 9.20` -> `Milestone 9.21` -> `Milestone 9.22` ->
   `Milestone 13`
@@ -5136,12 +5133,11 @@ authority boundary into:
   public facade, and end-to-end certification.
 
 The order is strict. The umbrella closes only after 9.17.3. The separate
-post-closure [9.17.4 application API hardening](./milestone-9.17.4.md) now
-follows that foundation before 9.18. Its planned
-[9.17.4.1 authoring correction](./milestone-9.17.4.1.md) begins after the
-proprietary CAD M0 demo, using the certified Phase 1 and Pre-M0 foundation plus
-M0's real consumer evidence before the remaining consumer migrations; neither
-milestone reopens the certified umbrella.
+post-closure [9.17.4 application graph authoring and execution](./milestone-9.17.4.md)
+follows that foundation, preserving certified Phase 1/Pre-M0 and completing static
+graph/consumer cutover. [9.17.5](./milestone-9.17.5.md) then adds branch program
+evolution and [9.17.6](./milestone-9.17.6.md) adds dynamic workflows before 9.18;
+none reopens the certified umbrella.
 
 ### Submilestone Sequence
 
@@ -5367,99 +5363,78 @@ profiles are governed by the individual submilestone specifications;
 [test-requirements.md](./test-requirements.md) governs the shared evidence
 quality rules rather than serving as a suite-name registry.
 
-## Milestone 9.17.4: Application API Hardening
+## Milestone 9.17.4: Application Graph Authoring And Execution
 
-### Goal
+### Goal And Scope
 
-Make typed application intent the ordinary Query experience over the certified
-9.17.3 runtime. Query owns reusable binding and execution; consumers supply
-domain meaning and explicitly registered handlers rather than copying the
-select/resolve/admit/execute/publish pipeline. No legacy compatibility layer
-or competing ordinary application language remains after cutover.
+[milestone-9.17.4.md](./milestone-9.17.4.md) owns static typed application graph
+authoring and complete migration of existing ordinary consumers. Shared model
+meaning, reusable features/compositions, typed occurrence connections, local and
+cross-feature rules, fixed/generated output and required inventory lower into
+one canonical program and the existing owners. Typed phase evidence extends
+through actual publication, delivery, dependent admission, settlement and cleanup;
+strings, raw IDs or consumer lookalikes cannot replace canonical evidence.
 
-### Specification And Scope
+Former Phase 1/Pre-M0 and 9.17.3 certification remain historical evidence. The
+milestone preserves exact inherited branch/component interpretation and current
+security. It does not require dynamic definition authoring or new program adoption
+to finish static authoring. Existing fixed workflows are migrated and kept working.
 
-The governing specification is
-[milestone-9.17.4.md](./milestone-9.17.4.md). It freezes the target call shapes,
-current-to-destination replacement table, owner boundaries, directory skeleton,
-documentation obligations, and six phases requiring certification:
+### Complete Endpoints
 
-1. Pure-value bindings and explicit cross-crate contribution composition.
-2. Requests and current, retained, historical, paged, and live reads.
-3. Installed operation execution, primary candidate/domain integrity, exact
-   recovery, and complete Bank adoption.
-4. Admitted runtime-cardinality construction, geometry-shaped integrity and
-   bounded synchronous output-demand settlement.
-5. Existing `worth-ui-query-binding` and `crates/worth-server` consumer migration.
-6. Remaining audience closure and cumulative certification.
+1. Real CAD extrusion -> split -> exact settled output, including typed return-path
+   delivery, source replacement, rejection/retry and removal of the manual loop.
+2. Nested reusable compositions, multiple instances, scoped rules, 1/10/100 locality,
+   fixed/generated output, lineage and exact reconstruction.
+3. Bank lifecycle, capability/elevation, posting and all existing read/workflow/
+   recovery families through real HTTP/user-node/external-rail boundaries.
+4. UI Query binding, server direct/HTTP, examples, weaker-export deletion and
+   final static authoring closure. No ordinary consumer migration waits for 9.17.6.
 
-The Bank application and real HTTP/user-node journeys complete before the
-geometry-shaped construction phase. The latter proves the public primary
-foundation without implementing the proprietary kernel. House M0 consumes its
-bounded synchronous group-demand contract; M2.5 extends it to synchronous
-transitive bridge geometry/physical/assessment settlement. M3 adds sketch
-regeneration and off-thread numerical completion through the same contract. Native Save/Open remains
-house M7E Query/Store work. No placeholder strategy supplies missing completion.
-Advanced access and correlated execution remain 9.19 and 9.20.
+House M2.5 adds engineering inventory/assessment to transitive synchronous demand;
+M3 adds deferred computation and M7E native Save/Open. These domain successors do
+not replace this authoring foundation. Provisional Bank correction retires while
+accepted aftermath and exact recovery remain for 9.18.
 
-Bank's provisional linear undo/redo commands and transport consumers retire
-in Phase 3 while accepted aftermath and recovery remain. 9.18 supplies the
-accepted tree-correction product. Capability/elevation admission is explicitly
-bound into the new entry; publication retention is an opt-in pre-effect lease,
-never an implicit cost attached to every descriptive commit receipt. Bank's
-broken bindings are repaired directly into the destination API, without a
-preliminary restoration of superseded public contracts.
+## Milestone 9.17.5: Branch-Scoped Application Program Evolution
 
-### Acceptance And Handoff
+[milestone-9.17.5.md](./milestone-9.17.5.md) consumes the completed static program
+and typed execution/resource contracts. It supports different admitted programs on
+sibling composite branches, exact local adoption, semantic impact, state migration,
+continuation/recovery disposition and bounded support retirement. Host support,
+branch activation and current security are distinct authorities.
 
-Use Bank accounting, permission revocation during retained/live/paged reads,
-stale mutations, idempotency, losing-outbox publication, exact settlement,
-process transport, sibling progress, and cleanup to convict a facade which
-caches or reconstructs authority. A separate pure-value/contribution consumer
-proves lawful binding and actual primary cyclic construction, mandatory
-candidate-neighborhood invariants, and pre-allocation resource admission.
-1/10/100 geometry-shaped groups expose per-entity sessions or publications.
+The first endpoint adopts P1 on B and publishes genuinely changed output while A
+continues under P0. Subsequent phases add incompatible-state migration and fixed
+workflow custody, explicit broader adoption with truthful per-branch partial outcomes,
+and real consumer/operator closure. A retained owner effect after lost World
+publication never activates a Query program. Unchanged components retain exact bases
+and unaffected branches keep progressing.
 
-Generation removes duplicate wiring, not explicit semantic identity or
-registration. Retained data does not retain permission. Prepared attempts
-carry one exact selection; mutation outcomes retain all actual effects and
-recovery custody. Preserve existing World/Signal ownership and reuse valid
-certification evidence and compiled binaries. Phase certification, commit, and
-push precede the next phase; the old CI pipeline is not reinstated.
+The cross-runtime merge roadmap receives versioned composition/rules, lineage and
+effect meaning; this milestone adds no merge engine or placeholder parent vectors.
+9.17.6 adds dynamic definition/instance participants to the already-working adoption
+boundary rather than completing its missing mechanics.
 
-9.18 consumes this hardened request/handler/history/aftermath contract.
-9.19-9.22 extend it without another ordinary consumer language. The certified
-9.17 branching umbrella remains a completed predecessor.
+## Milestone 9.17.6: Dynamic Workflow Authoring And Execution
 
-### Milestone 9.17.4.1: Unified Semantic Application Authoring
+[milestone-9.17.6.md](./milestone-9.17.6.md) consumes 9.17.4 and 9.17.5. Authorized
+users publish bounded workflow definitions as branch-local model data and start
+instances through current admission. Typed operations, queries, assessment joins,
+approvals, conditions and bounded back edges lower to existing managed-run,
+readmission, Bridge/Signal and World owners; no second scheduler ships.
 
-[Milestone 9.17.4.1](./milestone-9.17.4.1.md) is a planned post-M0 corrective
-slice inside 9.17.4. It begins after the proprietary CAD M0 demo, using the
-certified Phase 1 and Pre-M0 foundation plus M0's real geometry evidence before
-the remaining consumer migrations.
-Ordinary authors declare truth, actions, lifecycle, semantic authority, derived
-truth, and guarantees. Query reuses its typed expression and query machinery to
-derive dependencies, admission, invalidation, core operations, protocols,
-materialization, invariants, and membership. The public core application IR
-remains an advanced escape hatch, and both routes converge on one canonical
-program and the existing typed runtime.
+The first endpoint authors and runs proposal -> required assessments -> approval ->
+real application. Later phases finish complete control flow and Bank external
+recovery, A/B definition coexistence, branch/fork and program migration, then resource
+and public closure. Required inventory survives supplier removal, approvals bind exact
+proposal/source/evidence, duplicate wakes cannot duplicate effects, and status records
+cannot substitute for performed publication.
 
-The real Bank business-payment journey proves lifecycle, capability admission,
-distinct-approver denial, derived truth, history, and idempotent financial
-effects. Fixed output protocols derive exact manifests and cardinality.
-Generated output protocols admit bounded runtime cardinality through typed roles, lineage,
-resource envelopes, one immutable proposed effect program, structural and
-invariant validation, and the existing candidate/publication owners. The
-milestone adds no package discovery, dynamic registry, generated source tree,
-or parallel mutation runtime. Each migrated manual authoring route is deleted
-within its certified phase.
-
-M0 ships first through the focused foundation and only the additional Query
-surfaces its real journey requires. The remaining 9.17.4 phases later resume
-through this authoring model. Bank and the completed CAD M0 consumer are the
-real adoption proofs; later NURBS/BREP work extends domain protocols and lineage
-without changing Query's authority model. 9.18 consumes the resulting installed
-operation and publication contracts.
+9.18 follows all three completed milestones and consumes their ordinary typed
+operations, exact history, scoped rules and lawful workflow/effect custody. None of
+these specs is a progress ledger for another; each has its own production endpoint,
+owner/type contracts, destination topology, deletion and acceptance requirements.
 
 ## Milestone 9.18: Tree-Based Semantic Undo And Redo
 
@@ -5467,8 +5442,8 @@ operation and publication contracts.
 
 Replace the provisional Milestone 9.16 linear undo/redo experiment with an
 accepted tree-based product over the composite history completed by Milestone
-9.17.3 under the Milestone 9.17 umbrella, through the application API hardened
-in 9.17.4. Every
+9.17.3 under the Milestone 9.17 umbrella, through the graph authoring, branch program evolution and workflow contracts
+completed by 9.17.4-9.17.6. Every
 reversal or reapplication selects an exact source world commit and target
 product branch/head, re-enters current authority and policy, coordinates the
 required component plans, and publishes a new composite commit without
@@ -5896,7 +5871,9 @@ answer is "store-gated" or "shared with another subsystem."
 | Installed graph contract integrity repair | Milestone 9.16.1.1 | Declaration-owned application aspect identity/revision; installed native schema catalog; typed entity/projection/relation reads; typed create/delete/write/link/unlink touches; typed reconciliation and correlation-family inspection | Installed operation inspection, graph-obligation selection, execution lowering, performed-evidence comparison, Host adoption, and successor package export consume one exact typed contract; no empty semantic-read posture, structured touch grammar, application contract reconstruction, or aftermath summary survives | Focused owner, Host-consumer, compile-boundary, and execution integration tests plus required repository checks |
 | Portable Query packages and fresh readmission | Milestone 9.16.2 | Stable identities and declaration-minted references extending the 9.16.1.1 application aspect/correlation identities; complete typed package records; bounded reconstruction and fresh Query validation; deterministic neutral archive; host-owned release envelope and signing boundary | Records, bytes, checksums, signatures, repositories, filenames, and release names remain descriptive; only fresh Query validation against independently expected identity can recover package meaning; no application state, provider, secret, proof, handle, callback, or physical topology enters the archive; warm execution performs no package work | Identity/provenance compiler evidence; exact export/reconstruction equality; record omission/duplication/reorder/cross-splice mutants; archive golden vectors, corruption, compatibility, and budget courts; same-name coexistence; release-tool, facade, docs, boundary, and residue certification |
 | In-memory composite runtime branching and branch-local MVCC | Milestone 9.17 umbrella: 9.17.1 owner bases/MVCC, 9.17.1.1 Relational service/lifecycle correction, 9.17.1.2 final owner-service/Signal-progress correction, 9.17.2 composite history/publication, 9.17.3 Query carriage/outbox gate/facade/certification | Owner-issued Relational/Signal bases; independently borrowable Relational and Signal owner services; lifecycle-total owner settlement and retention; branch-local MVCC; base Bridge-owned correspondence; dedicated Runtime World-owned single-parent composite commits and product-head comparison; Query-carried product-world affinity; live-runtime outbox admission bound to performed composite publication | Branch identities remain distinct; unrelated branches progress without whole-owner or composition locks; lost capabilities do not strand owner state; exact residency is independent of currentness; owner effects without product movement remain bounded and non-current; an owner-local outbox never dispatches after failed composite publication; application worlds remain memory-resident and no temporary physical-runtime abstraction is introduced | 9.17.1 owner-basis and publication-locality courts + 9.17.1.1 preparation/settlement independence, capability-loss recovery, exact-retention, lease-terminal, contention, feature, scheduled-proof, facade, and docs courts + 9.17.1.2 owner-bundle, same-branch, independent-progress, lifecycle, panic, capacity, facade, and scale courts + 9.17.2 identity, product-head comparison, retained-owner-effects, retention, ancestry, contention, and no-mixed-publication courts + 9.17.3 end-to-end shared-basis, component-divergence, same-head-race, substitution, lifecycle, outbox-gating, facade, compiler, docs, residue, and later cross-runtime semantic merge suites |
-| Application API hardening | Milestones 9.17.4 and 9.17.4.1 | High-level feature/action/lifecycle/authority/derived-truth/guarantee language; one advanced operation/output/materialization/invariant/module IR; semantic revision adoption; generated installed contracts; entry-owned bindings/contributions; installed handlers; retained publication; page/live resources; exact recovery; Bank/server adoption; fixed and generated CAD output | No cached permission or hidden pins; stable portable identity; actual owner validation; implementation cannot widen declared meaning; one active semantic revision; no erased partial effects, repeated authored facts, consumer-owned phase pipeline, competing expression engine, or parallel authoring route | Bank payment lifecycle/authority/derived-truth/history courts; fixed and generated CAD protocol/publication courts; server integration; cross-crate values; cyclic candidate/resource/demand courts; semantic adoption proof; preserved 9.17.3 occurrence/Signal/World evidence |
+| Application graph authoring and execution | Milestone 9.17.4 | Shared typed model, reusable features/compositions, scoped rules, fixed/generated output, typed publication delivery, exact resources and existing consumer cutover | No duplicate semantic owner, string/raw-ID authority, skipped preparation, buffer-only validation, manual dependent loop or competing ordinary API | Real CAD/Bank/static workflow/adapter endpoints, scoped locality, role lineage, return-path interruption and compiler/owner affinity |
+| Branch-scoped application program evolution | Milestone 9.17.5 | Exact program/component meaning per selected occurrence; compatible/incompatible local adoption; explicit broader partial progress; retained interpretation and effect custody | No global latest-program override, owner-local-success activation, stale migration, lost recovery or false multi-branch atomicity | A/P0 and B/P1 actual outputs, failed composite publication, target races, state migration, fixed continuation and external custody, A/B/C/D coverage |
+| Dynamic workflow authoring and execution | Milestone 9.17.6 | Admitted branch-local definitions/instances; typed control flow, evidence joins, approvals, revision/fork/migration, real effects and cleanup | No definition-created authority, stale approval reuse, status-as-publication, unbounded retry, duplicate dispatch or second scheduler | User-authored CAD and Bank process journeys, independent required inventory, A/B definitions, branch/program affinity, exact recovery and resource lifecycle |
 | Tree-based semantic undo and redo | Milestone 9.18 | Exact source composite commit and target product branch/head, explicit per-component correction posture, installed inverse/compensation/reconciliation/reapplication contracts, applicability against intervening history, fresh Query admission, owner-local preparation, Runtime World coordinated publication, correction causality, and typed next actions | Reversal and reapplication create new composite commits; unchanged components retain exact bases; Signal reconciliation remains Signal-owned; history and alternatives remain intact; copied receipts and prior authority open no door; stale/conflicting divergence is typed before effects; external effects retain honest compensation/irreversibility posture; Query owns no history head | Milestone 9.18 composite-divergence, stale-head, component-basis, Signal-reconciliation, authority, compensation, external-effect, partial-preparation, zero-ordinary-work, facade, documentation, and residue certification + later cross-runtime merge/rebase/recovery suites |
 | Managed advanced access and verified footprints | Milestone 9.19 | Installed-query-bound search and access products, Milestone 9.10 requirement/inventory/plan extensions, lifecycle products, coverage/membership witnesses, exact refinement, and verified realized footprints | Search preserves capability, purpose, exact composite product-world basis, disclosure, cursor, recovery, and aftermath; membership remains complete under negative-space change; protected candidates do not leak; footprints narrow but never widen authority | Milestone 9.19 bank/geometry search, disclosure, no-N+1, membership, footprint, lifecycle, memory, alternate-provider, facade/docs, and prohibition certification + Milestone 13 parity |
 | Correlated paths and set execution | Milestone 9.20 | Typed heterogeneous path programs, admitted provider lowering, complete path dependencies, installed conflict relations, verified partitions, provider set operations, canonical reductions, and structural-cost evidence | Paths remain bounded and schema-typed; correlated reads consume one admitted graph plan; partitions are complete and conflict-free; bulk work is truly set-oriented; planning is not quadratic; unauthorized members are not processed or leaked | Milestone 9.20 chip/geometry/bank interpreter, no-N+1, partition-parity, slope, authority, facade/docs, and prohibition certification + Milestone 13 parity |
@@ -6010,6 +5987,8 @@ must gain a row in the same patch or the roadmap is incomplete.
 - [milestone-9.17.2.md](./milestone-9.17.2.md)
 - [milestone-9.17.3.md](./milestone-9.17.3.md)
 - [milestone-9.17.4.md](./milestone-9.17.4.md)
+- [milestone-9.17.5.md](./milestone-9.17.5.md)
+- [milestone-9.17.6.md](./milestone-9.17.6.md)
 - [milestone-9.18.md](./milestone-9.18.md)
 - [milestone-9.19.md](./milestone-9.19.md)
 - [milestone-9.20.md](./milestone-9.20.md)

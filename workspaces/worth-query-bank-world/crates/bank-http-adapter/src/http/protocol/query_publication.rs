@@ -10,10 +10,7 @@ pub enum BankHttpQueryCapabilityPurpose {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BankHttpQueryBasisPosture {
-    Current,
-    Pinned,
-    Historical,
-    Preview,
+    SelectedProduct,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

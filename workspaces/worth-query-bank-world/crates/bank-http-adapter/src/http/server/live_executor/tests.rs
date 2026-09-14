@@ -63,7 +63,7 @@ fn test_publication() -> BankHttpQueryPublication {
             branch: "main".to_owned(),
             snapshot: 1,
             version: 1,
-            posture: BankHttpQueryBasisPosture::Current,
+            posture: BankHttpQueryBasisPosture::SelectedProduct,
         },
         capability_purpose: BankHttpQueryCapabilityPurpose::AccountActivityReview,
         disclosure: BankHttpQueryDisclosure {

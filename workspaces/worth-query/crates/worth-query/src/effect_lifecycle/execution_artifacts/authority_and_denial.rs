@@ -23,8 +23,8 @@ pub enum EffectExecutionDenialKind {
     TransactionRetentionIdentityExhausted,
     TransactionRetentionInvariantViolation,
     TransactionSavepointIdentityExhausted,
-    MaterializationAuthorityRequired,
-    MaterializationModeMismatch,
+    TransactionMaterializationAuthorityRequired,
+    TransactionMaterializationModeMismatch,
     TransactionOverlayBudgetExceeded {
         maximum_bytes: u64,
         required_bytes: u64,
@@ -76,8 +76,12 @@ impl EffectExecutionDenialKind {
             Self::TransactionSavepointIdentityExhausted => {
                 "transaction_savepoint_identity_exhausted"
             }
-            Self::MaterializationAuthorityRequired => "materialization_authority_required",
-            Self::MaterializationModeMismatch => "materialization_mode_mismatch",
+            Self::TransactionMaterializationAuthorityRequired => {
+                "transaction_materialization_authority_required"
+            }
+            Self::TransactionMaterializationModeMismatch => {
+                "transaction_materialization_mode_mismatch"
+            }
             Self::TransactionOverlayBudgetExceeded { .. } => "transaction_overlay_budget_exceeded",
             Self::TransactionFootprintBudgetExceeded { .. } => {
                 "transaction_footprint_budget_exceeded"

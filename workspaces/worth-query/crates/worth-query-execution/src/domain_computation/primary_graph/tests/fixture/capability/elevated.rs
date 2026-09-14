@@ -20,8 +20,11 @@ use worth_query_declaration::{
 use super::super::{Account, AccountIdentity, AccountLabel, IdentityExecutionSchema, Principal};
 use super::declaration::*;
 
+#[path = "elevated/relation_integrity.rs"]
+mod relation_integrity;
 #[path = "elevated/value_bindings.rs"]
 mod value_bindings;
+use relation_integrity::issued_lifecycle_relation;
 pub use value_bindings::{
     CapabilityElevationStatusBinding, CapabilityReviewKindBinding, CapabilityReviewStatusBinding,
 };
@@ -57,13 +60,13 @@ worth_query_aspect!(pub CapabilityReviewFacts for IdentityExecutionSchema, Capab
 worth_query_field!(pub CapabilityReviewIdentity for IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub CapabilityReviewKindField for IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: CapabilityReviewKind => CapabilityReviewKindBinding, read_only, equality);
 worth_query_field!(pub CapabilityReviewStatusField for IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: CapabilityReviewStatus => CapabilityReviewStatusBinding, read_write, no_equality);
-worth_query_relation!(pub CapabilityElevationRequester in IdentityExecutionSchema, Principal => CapabilityElevation; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub CapabilityElevationApprover in IdentityExecutionSchema, Principal => CapabilityElevation; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub CapabilityElevationGrant in IdentityExecutionSchema, CapabilityElevation => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub CapabilityElevationResource in IdentityExecutionSchema, CapabilityElevation => Account; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub CapabilityElevationRequester in IdentityExecutionSchema, Principal => CapabilityElevation; integrity = issued_lifecycle_relation());
+worth_query_relation!(pub CapabilityElevationApprover in IdentityExecutionSchema, Principal => CapabilityElevation; integrity = issued_lifecycle_relation());
+worth_query_relation!(pub CapabilityElevationGrant in IdentityExecutionSchema, CapabilityElevation => CapabilityGrant; integrity = issued_lifecycle_relation());
+worth_query_relation!(pub CapabilityElevationResource in IdentityExecutionSchema, CapabilityElevation => Account; integrity = issued_lifecycle_relation());
 worth_query_relation!(pub CapabilityElevationReview in IdentityExecutionSchema, CapabilityElevation => CapabilityReview; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub CapabilityReviewResource in IdentityExecutionSchema, CapabilityReview => Account; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub CapabilityReviewer in IdentityExecutionSchema, Principal => CapabilityReview; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub CapabilityReviewResource in IdentityExecutionSchema, CapabilityReview => Account; integrity = issued_lifecycle_relation());
+worth_query_relation!(pub CapabilityReviewer in IdentityExecutionSchema, Principal => CapabilityReview; integrity = issued_lifecycle_relation());
 worth_query_capability_context_entity_slot!(pub CapabilityElevationSlot in IdentityExecutionSchema, CapabilityRequestContext => CapabilityElevation);
 worth_query_capability_context_entity_slot!(pub CapabilityReviewSlot in IdentityExecutionSchema, CapabilityRequestContext => CapabilityReview);
 worth_query_capability!(pub ElevatedTouchAccountCapability in IdentityExecutionSchema);

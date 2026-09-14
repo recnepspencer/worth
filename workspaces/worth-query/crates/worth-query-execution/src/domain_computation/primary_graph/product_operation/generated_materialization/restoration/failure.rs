@@ -22,7 +22,7 @@ pub enum WorthQueryGeneratedOutputRestorationFailureCause {
         major: u16,
         minor: u16,
     },
-    PublicationNoEffect,
+    PublicationNoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
 }
 
 pub(super) fn preparation_failure_cause(

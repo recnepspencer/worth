@@ -72,7 +72,7 @@ impl ExampleApplication {
                 query,
                 declaration::application_query::ApplicationQueryParameterSet::new(),
                 IntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 8, 8)
+                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8)
                     .expect("the temporal bounds are valid"),
             )
             .expect("the temporal projection must bind");

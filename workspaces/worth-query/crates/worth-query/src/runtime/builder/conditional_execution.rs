@@ -1,7 +1,10 @@
 use super::WorthQueryRuntimeBuilder;
 
 impl WorthQueryRuntimeBuilder {
-    pub(crate) fn installed_product_bridge(
+    /// Supplies the bridge and bounded conditional resources that correspond
+    /// to an explicit backend's `prepare_product_source` implementation.
+    #[doc(hidden)]
+    pub fn installed_product_bridge(
         mut self,
         bridge: worth_runtime_bridge::facade::RuntimeBridge,
         resources: super::super::WorthQueryConditionalExecutionResources,

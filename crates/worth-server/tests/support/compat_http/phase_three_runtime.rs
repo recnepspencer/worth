@@ -228,6 +228,11 @@ impl WorthServerQueryWorkspaceProvider for StatefulCountingMutationWorkspaceProv
             .request_context()
             .workspace_target()
             .workspace_id();
+        let (product_source, product_bridge) =
+            worth_query::facade::consumer_kit::in_memory_test_product_world_installation()
+                .map_err(|error| {
+                    WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
+                })?;
         WorthQueryRuntime::builder(
             worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
         )
@@ -242,7 +247,12 @@ impl WorthServerQueryWorkspaceProvider for StatefulCountingMutationWorkspaceProv
             self.support_profile.clone(),
             self.attempted_writes.clone(),
             self.snapshot_version.clone(),
+            product_source,
         ))
+        .installed_product_bridge(
+            product_bridge,
+            worth_query::facade::runtime::WorthQueryConditionalExecutionResources::development(),
+        )
         .build()
         .map_err(|error| {
             WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
@@ -254,11 +264,12 @@ impl WorthServerQueryWorkspaceProvider for StatefulCountingMutationWorkspaceProv
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 struct StatefulCountingMutationRuntimeBackend {
     support_profile: WorthQueryRuntimeSupportProfile,
     attempted_writes: Arc<AtomicUsize>,
     snapshot_version: Arc<AtomicUsize>,
+    product_source: worth_query::facade::runtime::WorthQueryRelationalSourceOwner,
 }
 
 impl StatefulCountingMutationRuntimeBackend {
@@ -266,11 +277,13 @@ impl StatefulCountingMutationRuntimeBackend {
         support_profile: WorthQueryRuntimeSupportProfile,
         attempted_writes: Arc<AtomicUsize>,
         snapshot_version: Arc<AtomicUsize>,
+        product_source: worth_query::facade::runtime::WorthQueryRelationalSourceOwner,
     ) -> Self {
         Self {
             support_profile,
             attempted_writes,
             snapshot_version,
+            product_source,
         }
     }
 

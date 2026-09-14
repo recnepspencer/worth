@@ -53,8 +53,6 @@ pub use http::{
     BankHttpQueryCapabilityPurpose, BankHttpQueryDisclosure, BankHttpQueryDisclosurePosture,
     BankHttpQueryOmissionPosture, BankHttpQueryPublication, BankHttpRecoveryInspectionOutcome,
     BankHttpRecoveryPosture, BankHttpRecoveryRequest, BankHttpRecoveryWork,
-    BankHttpRedoProgressionOutcome, BankHttpRedoProgressionRequest, BankHttpRequestControls,
-    BankHttpRestrictedBankField, BankHttpServer, BankHttpServerBinding,
-    BankHttpServerConfiguration, BankHttpUndoAdmissionOutcome, BankHttpUndoCorrection,
-    BankHttpUndoProgressionOutcome, BankHttpUndoProgressionRequest,
+    BankHttpRequestControls, BankHttpRestrictedBankField, BankHttpServer, BankHttpServerBinding,
+    BankHttpServerConfiguration,
 };

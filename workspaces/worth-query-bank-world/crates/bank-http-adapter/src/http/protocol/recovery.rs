@@ -72,25 +72,3 @@ pub enum BankHttpRecoveryInspectionOutcome {
         denial: BankHttpDenial,
     },
 }
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum BankHttpUndoCorrection {
-    Compensation,
-    RecordedInverse,
-    Reconciliation,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(tag = "outcome", rename_all = "snake_case")]
-pub enum BankHttpUndoAdmissionOutcome {
-    Admitted {
-        request_id: String,
-        undo: String,
-        correction: BankHttpUndoCorrection,
-    },
-    Denied {
-        request_id: Option<String>,
-        denial: BankHttpDenial,
-    },
-}

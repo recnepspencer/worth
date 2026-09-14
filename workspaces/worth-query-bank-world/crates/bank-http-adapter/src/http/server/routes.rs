@@ -9,7 +9,7 @@ use super::super::protocol::{
     BankHttpAccountSummaryOutcome, BankHttpAccountSummaryRequest, BankHttpDenial,
     BankHttpDenialKind, BankHttpNextAction,
 };
-use super::aftermath_routes::{disburse, progress_redo, progress_undo};
+use super::aftermath_routes::disburse;
 use super::application::{denied, AdmittedAccountSummaryRequest};
 use super::continuation_executor::BankHttpContinuationExecutor;
 use super::continuation_routes::{
@@ -24,7 +24,7 @@ use super::live_routes::account_activity_stream;
 use super::mutation_routes::mutate;
 use super::queue::BankHttpExecutionQueue;
 use super::recovery_executor::BankHttpRecoveryExecutor;
-use super::recovery_routes::{admit_undo, inspect as inspect_recovery, notify_death};
+use super::recovery_routes::{inspect as inspect_recovery, notify_death};
 use super::request_admission::UnadmittedBankHttpRequestBasis;
 
 #[derive(Clone)]
@@ -78,9 +78,6 @@ pub(super) fn router(state: BankHttpRouteState, maximum_body_bytes: usize) -> Ro
         .route("/v1/estate/elevation/review", post(complete_review))
         .route("/v1/estate/notify-death", post(notify_death))
         .route("/v1/recovery/inspect", post(inspect_recovery))
-        .route("/v1/recovery/admit-undo", post(admit_undo))
-        .route("/v1/recovery/progress-undo", post(progress_undo))
-        .route("/v1/recovery/progress-redo", post(progress_redo))
         .layer(DefaultBodyLimit::max(maximum_body_bytes))
         .with_state(state)
 }

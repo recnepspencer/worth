@@ -96,6 +96,8 @@ fn assert_hostile_import_rejected(temp_relative: &str, source: &str, scanned_rel
     let mut hostile = Vec::new();
     let temp = workspace_root.join(temp_relative);
 
+    std::fs::create_dir_all(temp.parent().expect("hostile fixture must have a parent"))
+        .expect("hostile fixture directory should exist");
     std::fs::write(&temp, source).expect("hostile fixture should write");
     scan_file_contents(&temp, scanned_relative, false, &mut hostile)
         .expect("hostile fixture should scan");
