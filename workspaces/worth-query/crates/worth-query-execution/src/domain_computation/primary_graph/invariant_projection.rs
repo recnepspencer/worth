@@ -330,6 +330,10 @@ where
 }
 
 impl<Schema, Entity> WorthQueryInvariantEntityIdentity<Schema, Entity> {
+    pub const fn entity_id(&self) -> EntityId {
+        self.entity_id
+    }
+
     pub fn entity_name(&self) -> &str {
         &self.entity
     }

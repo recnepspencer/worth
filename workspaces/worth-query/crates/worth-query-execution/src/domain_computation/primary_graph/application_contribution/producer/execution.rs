@@ -321,10 +321,13 @@ where
         .map_err(|error| execution_failed(Binding::IDENTITY, error))?
     {
         HandlerResult::Completed(completed) => completed,
-        HandlerResult::DomainDenied(_) => {
+        HandlerResult::DomainDenied(domain_denial) => {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                format!("{}: producer domain denial", Binding::IDENTITY),
+                format!(
+                    "{}: producer domain denial: {domain_denial:?}",
+                    Binding::IDENTITY
+                ),
             ))
         }
         HandlerResult::ExecutionDenied(error) => return Err(failed(Binding::IDENTITY, error)),
