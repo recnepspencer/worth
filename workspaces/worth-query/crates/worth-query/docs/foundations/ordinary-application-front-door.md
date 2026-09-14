@@ -128,6 +128,11 @@ role order from the selected branch occurrence and product generation. The
 resulting typed identities are normal tracked decision reads; undeclared families,
 wrong entity markers, stale correspondence and exhausted work fail through
 `WorthQueryPriorOutputDenial`.
+Handlers shared by initial publication and regeneration use
+`DecisionReader::prior_output_family_if_present`. It returns `None` only when the
+exact prior binding has no correspondence at the selected occurrence and
+generation. Declaration, identity, visibility, consistency, and work failures
+remain denials.
 
 Committed receipts expose `output_correspondence()` for preserve/create/retire
 roles and `committed_changes()` for immutable structural and lineage

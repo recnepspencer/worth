@@ -53,6 +53,24 @@ where
             .map_err(HandlerExecutionDenial::new)
     }
 
+    /// Resolve a complete prior family when this exact binding has correspondence.
+    pub fn prior_output_family_if_present<PriorBinding, Entity>(
+        &mut self,
+        family: super::super::WorthQueryApplicationOutputRoleFamily<PriorBinding, Entity>,
+    ) -> Result<
+        Option<Vec<super::super::WorthQueryPriorOutputFamilyMember<Schema, PriorBinding, Entity>>>,
+        HandlerExecutionDenial,
+    >
+    where
+        PriorBinding: ApplicationMutationBinding<Schema>,
+        Entity:
+            ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
+    {
+        self.reader()
+            .prior_output_family_if_present(family)
+            .map_err(HandlerExecutionDenial::new)
+    }
+
     /// Resolve through the admitted snapshot and retain the identity-field fact
     /// that later candidate authoring and stale-source comparison require.
     pub fn resolve_entity<Entity, Aspect, Field, Value, Write, Unit>(

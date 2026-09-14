@@ -18,10 +18,14 @@ pub(super) fn observe_prior_cycle<Schema: TopologySchemaBinding>(
     input: &PriorCycleAdjustment,
     reader: &mut DecisionReader<'_, '_, '_, Schema, PriorCycleAdjustmentBinding<Schema>>,
 ) -> HandlerResult<PriorCycleDecision<Schema>, PriorCycleAdjustmentDenial> {
-    let prior = match reader.prior_output_family::<crate::PlanarMutationBinding<Schema>, Body>(
-        WorthQueryApplicationOutputRoleFamily::from_static("created."),
-    ) {
-        Ok(prior) => prior,
+    let prior = match reader
+        .prior_output_family_if_present::<crate::PlanarMutationBinding<Schema>, Body>(
+            WorthQueryApplicationOutputRoleFamily::from_static("created."),
+        ) {
+        Ok(Some(prior)) => prior,
+        Ok(None) => {
+            return HandlerResult::DomainDenied(PriorCycleAdjustmentDenial::NoPriorCycle)
+        }
         Err(error) => return HandlerResult::ExecutionDenied(error),
     };
     if prior.is_empty() {

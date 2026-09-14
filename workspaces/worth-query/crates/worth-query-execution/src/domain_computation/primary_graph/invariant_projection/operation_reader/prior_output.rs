@@ -83,6 +83,28 @@ where
         Binding: ApplicationMutationBinding<Schema>,
         Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
     {
+        let subject = family.prefix();
+        self.prior_output_family_if_present(family)?.ok_or_else(|| {
+            WorthQueryPriorOutputDenial::new(WorthQueryPriorOutputDenialKind::Unavailable, subject)
+        })
+    }
+
+    /// Read a generated-role family when this exact prior binding has correspondence.
+    ///
+    /// `None` means no correspondence exists for `Binding` at the selected product
+    /// occurrence and generation. Declaration, entity, work, and live-identity
+    /// failures remain denials.
+    pub fn prior_output_family_if_present<Binding, Entity>(
+        &mut self,
+        family: WorthQueryApplicationOutputRoleFamily<Binding, Entity>,
+    ) -> Result<
+        Option<Vec<WorthQueryPriorOutputFamilyMember<Schema, Binding, Entity>>>,
+        WorthQueryPriorOutputDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
+    {
         self.admit_prior_entity::<Entity>(family.prefix())?;
         let declaration =
             <Binding::Output as ApplicationMutationOutputContract<Schema>>::ROLE_FAMILIES
@@ -100,7 +122,10 @@ where
                 family.prefix(),
             ));
         }
-        let correspondence = self.prior_correspondence::<Binding>(family.prefix())?;
+        let Some(correspondence) = self.select_prior_correspondence::<Binding>(family.prefix())?
+        else {
+            return Ok(None);
+        };
         let mut examined = 0_usize;
         let mut live = 0_usize;
         for entry in correspondence
@@ -138,7 +163,7 @@ where
                 _binding: PhantomData,
             });
         }
-        Ok(members)
+        Ok(Some(members))
     }
 
     fn admit_prior_entity<Entity>(
@@ -166,9 +191,25 @@ where
         std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
         WorthQueryPriorOutputDenial,
     > {
+        self.select_prior_correspondence::<Binding>(subject)?
+            .ok_or_else(|| {
+                WorthQueryPriorOutputDenial::new(
+                    WorthQueryPriorOutputDenialKind::Unavailable,
+                    subject,
+                )
+            })
+    }
+
+    fn select_prior_correspondence<Binding: 'static>(
+        &mut self,
+        subject: &str,
+    ) -> Result<
+        Option<std::sync::Arc<WorthQueryApplicationOutputCorrespondence>>,
+        WorthQueryPriorOutputDenial,
+    > {
         let binding_type = std::any::TypeId::of::<Binding>();
         if let Some(correspondence) = self.reader.prior_output_bindings.get(&binding_type) {
-            return Ok(std::sync::Arc::clone(correspondence));
+            return Ok(Some(std::sync::Arc::clone(correspondence)));
         }
         let scope = self.operation_scope.clone().ok_or_else(|| {
             WorthQueryPriorOutputDenial::new(WorthQueryPriorOutputDenialKind::Unavailable, subject)
@@ -202,13 +243,13 @@ where
         self.reader
             .work
             .record_output_lineage_selection(selection.source_lookups);
-        let correspondence = selection.correspondence.ok_or_else(|| {
-            WorthQueryPriorOutputDenial::new(WorthQueryPriorOutputDenialKind::Unavailable, subject)
-        })?;
+        let Some(correspondence) = selection.correspondence else {
+            return Ok(None);
+        };
         self.reader
             .prior_output_bindings
             .insert(binding_type, std::sync::Arc::clone(&correspondence));
-        Ok(correspondence)
+        Ok(Some(correspondence))
     }
 
     fn require_role_budget(

@@ -23,6 +23,7 @@ pub(super) fn branch_local_inventory_drives_real_publications(
     scope: &WorthQueryRequestScope,
 ) {
     let root = application.request(principal, scope);
+    absent_family_is_a_domain_outcome(&root);
     create_cycle(&root, "family-parent", 950);
     let source_branch = application.current_world();
     let child = fork(application, source_branch);
@@ -59,6 +60,25 @@ pub(super) fn branch_local_inventory_drives_real_publications(
     oversized_family_is_denied_before_publication(application, principal, scope, source_branch);
     application.on_branch(child).close().unwrap();
     application.on_branch(sibling).close().unwrap();
+}
+
+fn absent_family_is_a_domain_outcome(request: &super::Request<'_>) {
+    let source = observed_source(request, "anchor-b");
+    let outcome = request
+        .mutate(PriorCycleAdjustment {
+            scope_key: "anchor-b".to_owned(),
+            offset_y: length(1),
+        })
+        .expect_source(source)
+        .idempotency(&949)
+        .execute()
+        .expect("an absent exact prior binding reaches the installed handler");
+    assert!(matches!(
+        outcome,
+        WorthQueryApplicationMutationOutcome::DomainDenied(
+            worth_query_topology_entry::PriorCycleAdjustmentDenial::NoPriorCycle
+        )
+    ));
 }
 
 fn oversized_family_is_denied_before_publication(

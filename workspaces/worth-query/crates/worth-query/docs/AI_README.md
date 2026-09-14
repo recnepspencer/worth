@@ -199,6 +199,10 @@ selected product branch and selected product generation, consumes the ordinary d
 work budget, and records every returned identity in the decision scope. An
 undeclared family, mismatched entity marker, exhausted budget, or correspondence
 whose live identity cannot be resolved returns `WorthQueryPriorOutputDenial`.
+An operation shared by initial publication and regeneration can instead call
+`prior_output_family_if_present`. It returns `None` only when that exact binding
+has no correspondence at the selected occurrence and generation; malformed,
+undeclared, invisible, or over-budget inventory remains denied.
 `CandidateWriter` exposes the declared create, initialize, write, link, unlink,
 delete, emit, and output-role verbs directly over the one reserved effect program.
 Installed invariant factories resolve typed field and relation bindings once; their
@@ -230,6 +234,8 @@ a second lineage store. `DecisionReader::prior_output_family` reads the existing
 committed output correspondence for the selected branch occurrence and product generation;
 retired members are omitted, and a create/preserve member that is absent from the
 selected live snapshot is denied as inconsistent correspondence.
+`prior_output_family_if_present` adds the explicit initial-publication case
+without converting integrity or resource failures into an empty inventory.
 
 The receipt's `committed_changes()` exposes an immutable
 `WorthQueryApplicationCommittedChanges` view: `commit_reference()` identifies
