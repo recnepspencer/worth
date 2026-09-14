@@ -157,7 +157,7 @@ fn emergency_access_activity_installs_one_identity_across_all_five_lanes() {
         live.payload_type(),
         EstateEmergencyAccessActivityEventBinding::IDENTITY_NAME
     );
-    assert_eq!(live.collection_path(), continuation.collection_path());
+    assert_eq!(live.collection_path(), Some(continuation.collection_path()));
     assert_eq!(live.scope_identity().field(), "EstateCaseIdentityField");
     assert_eq!(
         live.target_identity().field(),

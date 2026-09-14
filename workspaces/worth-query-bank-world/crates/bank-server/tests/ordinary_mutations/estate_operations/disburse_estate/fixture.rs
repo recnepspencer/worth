@@ -131,23 +131,6 @@ pub(crate) fn disbursement_world(scenario: &str, source_balance: i64) -> Disburs
     )
 }
 
-/// Disbursement world with host-owned clock and optional grant expiry (R8.43 A9 / X2).
-pub(crate) fn disbursement_world_with_clock_and_grant_validity(
-    scenario: &str,
-    source_balance: i64,
-    authorization_time: Option<AuthorizationTimeController>,
-    grant_valid_until_epoch: Option<u64>,
-) -> DisbursementFixture {
-    build_world(
-        scenario,
-        source_balance,
-        false,
-        DisbursementWorldSpec::ready(),
-        authorization_time,
-        grant_valid_until_epoch,
-    )
-}
-
 pub(super) fn disbursement_drift_world(scenario: &str) -> DisbursementFixture {
     build_world(
         scenario,

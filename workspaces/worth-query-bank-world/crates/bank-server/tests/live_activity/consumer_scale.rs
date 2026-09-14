@@ -28,7 +28,9 @@ fn live_consumer_fanout_keeps_each_delivery_free_of_canonical_work() {
 
     let mut expected_publication_work = None;
     for lease in &mut leases {
-        let BankAccountActivityLiveOutcome::Delivered(update) = lease.poll() else {
+        let BankAccountActivityLiveOutcome::Delivered(update) =
+            lease.poll(&owner, &request_scope())
+        else {
             panic!("each retained consumer must receive the matching commit")
         };
         let receipt = update.receipt();

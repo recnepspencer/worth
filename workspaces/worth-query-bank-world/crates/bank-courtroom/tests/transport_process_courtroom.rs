@@ -1,5 +1,3 @@
-#[path = "transport_process_courtroom/aftermath.rs"]
-mod aftermath;
 #[path = "transport_process_courtroom/credential_lifecycle.rs"]
 mod credential_lifecycle;
 #[path = "transport_process_courtroom/elevation.rs"]
@@ -76,12 +74,6 @@ async fn independently_authenticated_nodes_cross_real_process_and_tcp_boundaries
         resumed,
         "a lost resume response must replay exactly"
     );
-    aftermath::assert_opaque_disbursement_undo_redo(
-        &world.client,
-        world.primary_address,
-        world.peer_address,
-    )
-    .await;
     credential_lifecycle::assert_expired_session_fails_closed(&world).await;
     world.shutdown().await;
 }

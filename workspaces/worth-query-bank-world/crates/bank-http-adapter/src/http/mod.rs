@@ -30,8 +30,6 @@ pub use protocol::{
     BankHttpQueryBasisPosture, BankHttpQueryCapabilityPurpose, BankHttpQueryDisclosure,
     BankHttpQueryDisclosurePosture, BankHttpQueryOmissionPosture, BankHttpQueryPublication,
     BankHttpRecoveryInspectionOutcome, BankHttpRecoveryPosture, BankHttpRecoveryRequest,
-    BankHttpRecoveryWork, BankHttpRedoProgressionOutcome, BankHttpRedoProgressionRequest,
-    BankHttpRequestControls, BankHttpRestrictedBankField, BankHttpUndoAdmissionOutcome,
-    BankHttpUndoCorrection, BankHttpUndoProgressionOutcome, BankHttpUndoProgressionRequest,
+    BankHttpRecoveryWork, BankHttpRequestControls, BankHttpRestrictedBankField,
 };
 pub use server::{BankHttpServer, BankHttpServerBinding, BankHttpServerConfiguration};

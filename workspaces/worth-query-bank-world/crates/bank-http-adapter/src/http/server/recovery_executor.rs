@@ -9,8 +9,7 @@ use worth_query_host::facade::admission::authenticated_principal::WorthQueryCanc
 
 use super::super::protocol::{
     BankHttpEstateDisbursementOutcome, BankHttpEstateNotificationOutcome,
-    BankHttpRecoveryInspectionOutcome, BankHttpRedoProgressionOutcome,
-    BankHttpUndoAdmissionOutcome, BankHttpUndoProgressionOutcome,
+    BankHttpRecoveryInspectionOutcome,
 };
 use super::authentication::BankHttpApplicationAuthenticator;
 use super::recovery_registry::BankHttpRecoveryRegistry;
@@ -19,17 +18,11 @@ mod disbursement;
 mod inspection;
 mod notification;
 mod outcome;
-mod redo_progression;
-mod undo_admission;
-mod undo_progression;
 
 use disbursement::execute_disbursement;
 use inspection::execute_inspection;
 use notification::execute_notification;
 use outcome::*;
-use redo_progression::execute_redo_progression;
-use undo_admission::execute_undo_admission;
-use undo_progression::execute_undo_progression;
 
 pub(super) struct AdmittedBankHttpRecoveryRequest {
     pub(super) request_id: String,
@@ -54,14 +47,6 @@ pub(super) struct AdmittedBankHttpDisbursementRequest {
     pub(super) deadline: Instant,
 }
 
-pub(super) struct AdmittedBankHttpUndoProgressionRequest {
-    pub(super) request_id: String,
-    pub(super) credential: super::super::protocol::BankHttpCredential,
-    pub(super) idempotency_key: BankIdempotencyKey,
-    pub(super) token: String,
-    pub(super) deadline: Instant,
-}
-
 #[derive(Clone)]
 pub(super) struct BankHttpRecoveryExecutor {
     sender: mpsc::Sender<RecoveryCommand>,
@@ -78,25 +63,10 @@ enum RecoveryCommand {
         cancellation: WorthQueryCancellationSource,
         response: oneshot::Sender<BankHttpRecoveryInspectionOutcome>,
     },
-    AdmitUndo {
-        request: AdmittedBankHttpRecoveryRequest,
-        cancellation: WorthQueryCancellationSource,
-        response: oneshot::Sender<BankHttpUndoAdmissionOutcome>,
-    },
     Disburse {
         request: AdmittedBankHttpDisbursementRequest,
         cancellation: WorthQueryCancellationSource,
         response: oneshot::Sender<BankHttpEstateDisbursementOutcome>,
-    },
-    ProgressUndo {
-        request: AdmittedBankHttpUndoProgressionRequest,
-        cancellation: WorthQueryCancellationSource,
-        response: oneshot::Sender<BankHttpUndoProgressionOutcome>,
-    },
-    ProgressRedo {
-        request: AdmittedBankHttpRecoveryRequest,
-        cancellation: WorthQueryCancellationSource,
-        response: oneshot::Sender<BankHttpRedoProgressionOutcome>,
     },
 }
 
@@ -173,33 +143,6 @@ impl BankHttpRecoveryExecutor {
         }
     }
 
-    pub(super) async fn admit_undo(
-        &self,
-        request: AdmittedBankHttpRecoveryRequest,
-    ) -> BankHttpUndoAdmissionOutcome {
-        let request_id = request.request_id.clone();
-        let deadline = request.deadline;
-        let cancellation = WorthQueryCancellationSource::new();
-        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
-        let (response, receiver) = oneshot::channel();
-        if self
-            .sender
-            .try_send(RecoveryCommand::AdmitUndo {
-                request,
-                cancellation,
-                response,
-            })
-            .is_err()
-        {
-            return undo_denied(Some(request_id), saturated());
-        }
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
-            Ok(Ok(outcome)) => outcome,
-            Ok(Err(_)) => undo_denied(Some(request_id), unavailable()),
-            Err(_) => undo_denied(Some(request_id), deadline_exceeded()),
-        }
-    }
-
     pub(super) async fn disburse(
         &self,
         request: AdmittedBankHttpDisbursementRequest,
@@ -224,60 +167,6 @@ impl BankHttpRecoveryExecutor {
             Ok(Ok(outcome)) => outcome,
             Ok(Err(_)) => disbursement_denied(Some(request_id), unavailable()),
             Err(_) => disbursement_denied(Some(request_id), deadline_exceeded()),
-        }
-    }
-
-    pub(super) async fn progress_undo(
-        &self,
-        request: AdmittedBankHttpUndoProgressionRequest,
-    ) -> BankHttpUndoProgressionOutcome {
-        let request_id = request.request_id.clone();
-        let deadline = request.deadline;
-        let cancellation = WorthQueryCancellationSource::new();
-        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
-        let (response, receiver) = oneshot::channel();
-        if self
-            .sender
-            .try_send(RecoveryCommand::ProgressUndo {
-                request,
-                cancellation,
-                response,
-            })
-            .is_err()
-        {
-            return undo_progression_denied(Some(request_id), saturated());
-        }
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
-            Ok(Ok(outcome)) => outcome,
-            Ok(Err(_)) => undo_progression_denied(Some(request_id), unavailable()),
-            Err(_) => undo_progression_denied(Some(request_id), deadline_exceeded()),
-        }
-    }
-
-    pub(super) async fn progress_redo(
-        &self,
-        request: AdmittedBankHttpRecoveryRequest,
-    ) -> BankHttpRedoProgressionOutcome {
-        let request_id = request.request_id.clone();
-        let deadline = request.deadline;
-        let cancellation = WorthQueryCancellationSource::new();
-        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
-        let (response, receiver) = oneshot::channel();
-        if self
-            .sender
-            .try_send(RecoveryCommand::ProgressRedo {
-                request,
-                cancellation,
-                response,
-            })
-            .is_err()
-        {
-            return redo_progression_denied(Some(request_id), saturated());
-        }
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
-            Ok(Ok(outcome)) => outcome,
-            Ok(Err(_)) => redo_progression_denied(Some(request_id), unavailable()),
-            Err(_) => redo_progression_denied(Some(request_id), deadline_exceeded()),
         }
     }
 }
@@ -324,21 +213,6 @@ async fn run<A>(
                         .await,
                 );
             }
-            RecoveryCommand::AdmitUndo {
-                request,
-                cancellation,
-                response,
-            } => {
-                let _ = response.send(
-                    execute_undo_admission(
-                        application.as_ref(),
-                        &mut registry,
-                        request,
-                        cancellation,
-                    )
-                    .await,
-                );
-            }
             RecoveryCommand::Disburse {
                 request,
                 cancellation,
@@ -346,36 +220,6 @@ async fn run<A>(
             } => {
                 let _ = response.send(
                     execute_disbursement(
-                        application.as_ref(),
-                        &mut registry,
-                        request,
-                        cancellation,
-                    )
-                    .await,
-                );
-            }
-            RecoveryCommand::ProgressUndo {
-                request,
-                cancellation,
-                response,
-            } => {
-                let _ = response.send(
-                    execute_undo_progression(
-                        application.as_ref(),
-                        &mut registry,
-                        request,
-                        cancellation,
-                    )
-                    .await,
-                );
-            }
-            RecoveryCommand::ProgressRedo {
-                request,
-                cancellation,
-                response,
-            } => {
-                let _ = response.send(
-                    execute_redo_progression(
                         application.as_ref(),
                         &mut registry,
                         request,

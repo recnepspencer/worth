@@ -3,7 +3,6 @@ use std::net::SocketAddr;
 use bank_http_adapter::{BankHttpCommitDisposition, BankHttpDenialKind};
 use bank_user_node::{
     BankUserNodeEstateNotificationOutcome, BankUserNodeRecoveryInspectionOutcome,
-    BankUserNodeUndoAdmissionOutcome, BankUserNodeUndoProgressionOutcome,
 };
 
 use super::post_node;
@@ -67,33 +66,6 @@ pub async fn assert_opaque_recovery_is_owned_by_the_authenticated_specialist(
             }
         }
     ));
-    let admitted = post_node::<BankUserNodeUndoAdmissionOutcome>(
-        client,
-        specialist,
-        "/v1/recovery/admit-undo",
-        &recovery_request("admit-undo", &recovery),
-    )
-    .await;
-    let undo = match admitted {
-        BankUserNodeUndoAdmissionOutcome::Forwarded {
-            response:
-                bank_http_adapter::BankHttpUndoAdmissionOutcome::Admitted {
-                    correction: bank_http_adapter::BankHttpUndoCorrection::Reconciliation,
-                    undo,
-                    ..
-                },
-        } => undo,
-        other => panic!("notification undo did not admit: {other:?}"),
-    };
-    let progressed = progress_reconciliation(client, specialist, &undo).await;
-    assert!(matches!(
-        progressed,
-        BankUserNodeUndoProgressionOutcome::Forwarded {
-            response: bank_http_adapter::BankHttpUndoProgressionOutcome::Reconciled { .. }
-        }
-    ));
-    let replayed = progress_reconciliation(client, specialist, &undo).await;
-    assert_eq!(replayed, progressed);
 }
 
 async fn inspect(
@@ -117,23 +89,4 @@ fn recovery_request(request_id: &str, recovery: &str) -> serde_json::Value {
         "controls": { "deadline_milliseconds": 5_000 },
         "recovery": recovery
     })
-}
-
-async fn progress_reconciliation(
-    client: &reqwest::Client,
-    address: SocketAddr,
-    undo: &str,
-) -> BankUserNodeUndoProgressionOutcome {
-    post_node(
-        client,
-        address,
-        "/v1/recovery/progress-undo",
-        &serde_json::json!({
-            "request_id": "process-progress-reconciliation",
-            "controls": { "deadline_milliseconds": 5_000 },
-            "undo": undo,
-            "idempotency_key": "unused-process-reconciliation-key"
-        }),
-    )
-    .await
 }

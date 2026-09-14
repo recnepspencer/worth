@@ -18,6 +18,8 @@ pub enum BankApplicationAttemptDenialKind {
     DecisionDependencyMismatch,
     DecisionFactBudgetExceeded,
     MutationPreconditionMismatch,
+    SourceRetired,
+    SourceChanged,
     AmbiguousRelation,
     UndeclaredEffect,
     InvalidEffectValue,
@@ -106,6 +108,8 @@ const fn application_attempt_kind(
         Query::MutationPreconditionMismatch => {
             BankApplicationAttemptDenialKind::MutationPreconditionMismatch
         }
+        Query::SourceRetired => BankApplicationAttemptDenialKind::SourceRetired,
+        Query::SourceChanged => BankApplicationAttemptDenialKind::SourceChanged,
         Query::AmbiguousRelation => BankApplicationAttemptDenialKind::AmbiguousRelation,
         Query::UndeclaredEffect => BankApplicationAttemptDenialKind::UndeclaredEffect,
         Query::InvalidEffectValue => BankApplicationAttemptDenialKind::InvalidEffectValue,

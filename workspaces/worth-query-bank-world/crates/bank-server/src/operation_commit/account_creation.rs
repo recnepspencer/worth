@@ -38,9 +38,9 @@ impl BankIdentityRuntime {
         let mut effects = reads
             .complete_projected_dependencies()?
             .begin_effect_program();
-        let created = initialize_account(&mut effects, account)?;
         let institution = effects.existing_entity(&institution)?;
         let owner = effects.existing_entity(&owner)?;
+        let created = initialize_account(&mut effects, &institution, account)?;
         effects.link(
             InstitutionAccount::reference(),
             format!("institution-account:{}", account.id().canonical_text()),
@@ -83,9 +83,9 @@ impl BankIdentityRuntime {
         let mut effects = reads
             .complete_projected_dependencies()?
             .begin_effect_program();
-        let created = initialize_account(&mut effects, account)?;
         let institution = effects.existing_entity(&institution)?;
         let business = effects.existing_entity(&business)?;
+        let created = initialize_account(&mut effects, &institution, account)?;
         effects.link(
             InstitutionAccount::reference(),
             format!("institution-account:{}", account.id().canonical_text()),
@@ -111,8 +111,12 @@ fn exact_account(
     Ok(account)
 }
 
-fn initialize_account<Operation, Input, Scope>(
+fn initialize_account<Operation, Input, Scope, ContextEntity>(
     effects: &mut WorthQueryApplicationEffectProgramBuilder<BankSchema, Operation, Input, Scope>,
+    context: &worth_query_host::facade::primary_graph::WorthQueryApplicationEffectEntity<
+        BankSchema,
+        ContextEntity,
+    >,
     account: &BankAccount,
 ) -> Result<
     worth_query_host::facade::primary_graph::WorthQueryApplicationEffectEntity<BankSchema, Account>,
@@ -126,8 +130,11 @@ where
     Kind: worth_query_host::facade::domain::OperationWrites<Operation>,
     Status: worth_query_host::facade::domain::OperationWrites<Operation>,
 {
-    let created =
-        effects.create_entity(Account::reference(), entity_key(account_key(account.id()))?)?;
+    let created = effects.create_entity_in_context(
+        context,
+        Account::reference(),
+        entity_key(account_key(account.id()))?,
+    )?;
     effects.initialize_field(&created, AccountIdentity::reference(), account.id())?;
     effects.initialize_field(
         &created,

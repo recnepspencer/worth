@@ -5,6 +5,9 @@ use super::super::protocol::{BankHttpDenial, BankHttpDenialKind, BankHttpNextAct
 pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDenial {
     use BankEstateProgressionDenial as D;
     match denial {
+        D::ProductSelection(_) => {
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
+        }
         D::Authorization(_)
         | D::ApprovalAuthorization(_)
         | D::CloseAuthorization(_)
@@ -27,11 +30,7 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
             BankHttpDenialKind::MalformedRequest,
             BankHttpNextAction::CorrectRequest,
         ),
-        D::Recovery(_)
-        | D::Undo(_)
-        | D::Redo(_)
-        | D::Idempotency(_)
-        | D::LifecycleProjection(_) => {
+        D::Recovery(_) | D::Idempotency(_) | D::LifecycleProjection(_) => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
         D::CapabilityInstallation(_)

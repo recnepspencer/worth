@@ -9,15 +9,10 @@ use rand::rngs::OsRng;
 use super::authenticated_owner::BankHttpAuthenticatedOwner;
 
 mod commit;
-mod redo;
 mod state;
-mod undo;
 
-pub(super) use state::{
-    BankHttpCommitReplay, BankHttpRecoveryAuthority, BankHttpRecoveryRegistration,
-    BankHttpRedoBinding, BankHttpRedoReplay, BankHttpUndoAuthority, BankHttpUndoReplay,
-};
-use state::{CommitReplayKey, RecoveryOrigin, RecoveryRecord, RecoveryState};
+pub(super) use state::{BankHttpCommitReplay, BankHttpRecoveryRegistration};
+use state::{CommitReplayKey, RecoveryRecord};
 
 const TOKEN_PREFIX: &str = "bank-recovery-v1_";
 
@@ -67,56 +62,10 @@ impl BankHttpRecoveryRegistry {
         self.purge_expired();
         let record = self.records.get(token)?;
         (&record.owner == owner).then_some(())?;
-        match &record.state {
-            RecoveryState::Recovery(handle) => Some(BankHttpRecoveryInspection {
-                handle,
-                action: record.action,
-            }),
-            _ => None,
-        }
-    }
-
-    pub(super) fn take_recovery(
-        &mut self,
-        owner: &BankHttpAuthenticatedOwner,
-        token: &str,
-    ) -> Option<BankHttpRecoveryAuthority> {
-        let record = self.owned_record_mut(owner, token)?;
-        match std::mem::replace(&mut record.state, RecoveryState::Terminal) {
-            RecoveryState::Recovery(handle) => Some(match record.origin {
-                RecoveryOrigin::Notification => BankHttpRecoveryAuthority::Notification(handle),
-                RecoveryOrigin::Disbursement => BankHttpRecoveryAuthority::Disbursement(handle),
-            }),
-            state => {
-                record.state = state;
-                None
-            }
-        }
-    }
-
-    pub(super) fn restore_recovery(&mut self, token: &str, authority: BankHttpRecoveryAuthority) {
-        let handle = match authority {
-            BankHttpRecoveryAuthority::Notification(handle)
-            | BankHttpRecoveryAuthority::Disbursement(handle) => handle,
-        };
-        self.install_state(token, RecoveryState::Recovery(handle));
-    }
-
-    fn owned_record_mut(
-        &mut self,
-        owner: &BankHttpAuthenticatedOwner,
-        token: &str,
-    ) -> Option<&mut RecoveryRecord> {
-        self.purge_expired();
-        let record = self.records.get_mut(token)?;
-        (&record.owner == owner).then_some(record)
-    }
-
-    fn install_state(&mut self, token: &str, state: RecoveryState) {
-        if let Some(record) = self.records.get_mut(token) {
-            record.state = state;
-            record.expires_at = Instant::now() + self.lifetime;
-        }
+        Some(BankHttpRecoveryInspection {
+            handle: &record.handle,
+            action: record.action,
+        })
     }
 
     fn new_token(&self) -> String {

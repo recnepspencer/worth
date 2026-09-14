@@ -65,6 +65,17 @@ where
         }
     };
     let (authority, disposition) = match outcome {
+        BankEstateElevationApprovalOutcome::ProductStale(_, requested) => {
+            registry.restore_requested(&request.token, requested);
+            return approval_denied(Some(request_id), stale());
+        }
+        BankEstateElevationApprovalOutcome::NoEffect(_, requested) => {
+            registry.restore_requested(&request.token, requested);
+            return approval_denied(Some(request_id), unavailable());
+        }
+        BankEstateElevationApprovalOutcome::ProductUnpublished(_) => {
+            return approval_denied(Some(request_id), unavailable());
+        }
         BankEstateElevationApprovalOutcome::Approved(authority) => {
             (authority, BankHttpCommitDisposition::Committed)
         }
@@ -79,12 +90,16 @@ where
             registry.restore_requested(&request.token, requested);
             return approval_denied(Some(request_id), cancelled());
         }
+        BankEstateElevationApprovalOutcome::TimedOut => {
+            return approval_denied(Some(request_id), deadline_exceeded());
+        }
         BankEstateElevationApprovalOutcome::Denied { requested, .. }
         | BankEstateElevationApprovalOutcome::Aborted(requested) => {
             registry.restore_requested(&request.token, requested);
             return approval_denied(Some(request_id), unavailable());
         }
-        BankEstateElevationApprovalOutcome::PartialEffect
+        BankEstateElevationApprovalOutcome::Deferred(_)
+        | BankEstateElevationApprovalOutcome::SettlementDeferred(_)
         | BankEstateElevationApprovalOutcome::Indeterminate => {
             return approval_denied(Some(request_id), indeterminate());
         }

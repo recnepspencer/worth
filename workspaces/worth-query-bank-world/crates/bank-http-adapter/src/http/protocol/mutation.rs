@@ -58,12 +58,17 @@ pub struct BankHttpCommitDescription {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BankHttpMutationFailureKind {
+    ProductStale,
+    ProductUnpublished,
+    NoEffect,
     Stale,
     Cancelled,
+    TimedOut,
     DeadlineExceeded,
     InvariantViolated,
     Aborted,
-    PartialEffect,
+    Deferred,
+    SettlementDeferred,
     Indeterminate,
 }
 

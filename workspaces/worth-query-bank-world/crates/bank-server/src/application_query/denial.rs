@@ -26,6 +26,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationContinuationDenial, WorthQueryApplicationLiveOpenDenial,
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationQueryAdmissionDenial,
     WorthQueryEntityResolutionDenial, WorthQueryOperationAuthorizationDenial,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryPrincipalResolutionDenialKind, WorthQueryProductBranchAdmissionDenial,
 };
 
@@ -38,6 +39,24 @@ use installation::{capability_installation, query_installation};
 pub struct BankApplicationQueryLaneDenial<Kind> {
     kind: Kind,
     authorization: Option<BankAuthorizationDenial>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BankApplicationOutputSettlementDenialKind {
+    ForeignSource,
+    MissingApplicableProducer,
+    AmbiguousApplicableProducer,
+    ProducerUnavailable,
+    SchedulingRejected,
+    Superseded,
+    Cancelled,
+    TimedOut,
+    WorkBudgetExceeded,
+    RetentionBudgetExceeded,
+    ForeignDemand,
+    ForeignSettlement,
+    RetainedBasisUnavailable,
+    Closed,
 }
 
 impl<Kind> BankApplicationQueryLaneDenial<Kind>
@@ -78,6 +97,7 @@ pub enum BankApplicationQueryDenial {
     PreviewSession(BankApplicationPreviewSessionDenialKind),
     Admission(BankApplicationQueryLaneDenial<BankApplicationQueryAdmissionDenialKind>),
     Execution(BankApplicationQueryLaneDenial<BankApplicationOneShotDenialKind>),
+    OutputSettlement(BankApplicationOutputSettlementDenialKind),
     ContinuationExecution(BankApplicationQueryLaneDenial<BankApplicationContinuationDenialKind>),
     LiveOpen(BankApplicationQueryLaneDenial<BankApplicationLiveOpenDenialKind>),
 }
@@ -103,6 +123,9 @@ impl BankApplicationQueryDenial {
             }
             WorthQueryApplicationRequestQueryDenial::Execution(denial) => {
                 Self::from_execution(denial)
+            }
+            WorthQueryApplicationRequestQueryDenial::OutputSettlement(denial) => {
+                Self::from_output_settlement(denial)
             }
         }
     }
@@ -145,6 +168,29 @@ impl BankApplicationQueryDenial {
             one_shot(denial.kind()),
             denial.authorization_denial(),
         ))
+    }
+
+    fn from_output_settlement(denial: WorthQueryOutputDemandDenial) -> Self {
+        use BankApplicationOutputSettlementDenialKind as Bank;
+        use WorthQueryOutputDemandDenialKind as Query;
+
+        let kind = match denial.kind() {
+            Query::ForeignSource => Bank::ForeignSource,
+            Query::MissingApplicableProducer => Bank::MissingApplicableProducer,
+            Query::AmbiguousApplicableProducer => Bank::AmbiguousApplicableProducer,
+            Query::ProducerUnavailable => Bank::ProducerUnavailable,
+            Query::SchedulingRejected => Bank::SchedulingRejected,
+            Query::Superseded => Bank::Superseded,
+            Query::Cancelled => Bank::Cancelled,
+            Query::TimedOut => Bank::TimedOut,
+            Query::WorkBudgetExceeded => Bank::WorkBudgetExceeded,
+            Query::RetentionBudgetExceeded => Bank::RetentionBudgetExceeded,
+            Query::ForeignDemand => Bank::ForeignDemand,
+            Query::ForeignSettlement => Bank::ForeignSettlement,
+            Query::RetainedBasisUnavailable => Bank::RetainedBasisUnavailable,
+            Query::Closed => Bank::Closed,
+        };
+        Self::OutputSettlement(kind)
     }
 
     pub(crate) fn from_continuation_execution(

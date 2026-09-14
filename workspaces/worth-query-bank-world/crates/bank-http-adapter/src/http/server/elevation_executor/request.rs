@@ -57,6 +57,13 @@ where
         Err(denial) => return request_denied(Some(request_id), estate_denial(denial)),
     };
     let (authority, disposition) = match outcome {
+        BankEstateElevationRequestOutcome::ProductStale(_) => {
+            return request_denied(Some(request_id), stale());
+        }
+        BankEstateElevationRequestOutcome::ProductUnpublished(_)
+        | BankEstateElevationRequestOutcome::NoEffect(_) => {
+            return request_denied(Some(request_id), unavailable());
+        }
         BankEstateElevationRequestOutcome::Requested(authority) => {
             (authority, BankHttpCommitDisposition::Committed)
         }
@@ -69,11 +76,15 @@ where
         BankEstateElevationRequestOutcome::Cancelled => {
             return request_denied(Some(request_id), cancelled());
         }
+        BankEstateElevationRequestOutcome::TimedOut => {
+            return request_denied(Some(request_id), deadline_exceeded());
+        }
         BankEstateElevationRequestOutcome::Denied { .. }
         | BankEstateElevationRequestOutcome::Aborted => {
             return request_denied(Some(request_id), unavailable());
         }
-        BankEstateElevationRequestOutcome::PartialEffect
+        BankEstateElevationRequestOutcome::Deferred(_)
+        | BankEstateElevationRequestOutcome::SettlementDeferred(_)
         | BankEstateElevationRequestOutcome::Indeterminate => {
             return request_denied(Some(request_id), indeterminate());
         }

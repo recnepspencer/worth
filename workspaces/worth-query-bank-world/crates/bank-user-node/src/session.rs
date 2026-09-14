@@ -41,10 +41,7 @@ pub(super) struct BankUserSession {
     mutation_endpoint: url::Url,
     estate_notification_endpoint: url::Url,
     recovery_inspection_endpoint: url::Url,
-    undo_admission_endpoint: url::Url,
     estate_disbursement_endpoint: url::Url,
-    undo_progression_endpoint: url::Url,
-    redo_progression_endpoint: url::Url,
     elevation_request_endpoint: url::Url,
     elevation_approval_endpoint: url::Url,
     elevation_revocation_endpoint: url::Url,
@@ -87,18 +84,9 @@ impl BankUserSession {
         let recovery_inspection_endpoint = configuration
             .bank_server_origin
             .join("v1/recovery/inspect")?;
-        let undo_admission_endpoint = configuration
-            .bank_server_origin
-            .join("v1/recovery/admit-undo")?;
         let estate_disbursement_endpoint = configuration
             .bank_server_origin
             .join("v1/estate/disburse")?;
-        let undo_progression_endpoint = configuration
-            .bank_server_origin
-            .join("v1/recovery/progress-undo")?;
-        let redo_progression_endpoint = configuration
-            .bank_server_origin
-            .join("v1/recovery/progress-redo")?;
         let elevation_request_endpoint = configuration
             .bank_server_origin
             .join("v1/estate/elevation/request")?;
@@ -126,10 +114,7 @@ impl BankUserSession {
             mutation_endpoint,
             estate_notification_endpoint,
             recovery_inspection_endpoint,
-            undo_admission_endpoint,
             estate_disbursement_endpoint,
-            undo_progression_endpoint,
-            redo_progression_endpoint,
             elevation_request_endpoint,
             elevation_approval_endpoint,
             elevation_revocation_endpoint,
