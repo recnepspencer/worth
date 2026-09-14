@@ -79,7 +79,7 @@ fn assert_public_creation(display_name: &str) {
         result,
     } = first
     else {
-        panic!("the first mutation must publish an actual World commit");
+        panic!("the first mutation must publish an actual World commit: {first:?}");
     };
     let account = result.account;
     assert!(account.canonical_text().starts_with("operation:"));

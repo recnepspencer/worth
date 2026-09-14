@@ -83,7 +83,14 @@ where
     PostingAccount: OperationLinks<Operation>,
     AccountActivityEffect: OperationEmits<Operation>,
 {
-    let journal_entity = effects.create_entity(
+    let context = accounts
+        .0
+        .values()
+        .next()
+        .ok_or(BankCommitPreparationDenial::InvalidProposalShape)?;
+    let context = effects.existing_entity(&context.identity)?;
+    let journal_entity = effects.create_entity_in_context(
+        &context,
         JournalEntry::reference(),
         entity_key(journal_key(journal.id()))?,
     )?;
@@ -98,7 +105,14 @@ where
         journal.purpose(),
     )?;
     for posting in journal.postings() {
-        lower_posting(effects, &journal_entity, journal, posting, &mut accounts)?;
+        lower_posting(
+            effects,
+            &context,
+            &journal_entity,
+            journal,
+            posting,
+            &mut accounts,
+        )?;
     }
     for (_, account) in accounts.0 {
         if account.remaining_postings != 0 || account.next_sequence != account.revision {
@@ -112,6 +126,7 @@ where
 
 fn lower_posting<Operation, Input, Scope>(
     effects: &mut WorthQueryApplicationEffectProgramBuilder<BankSchema, Operation, Input, Scope>,
+    context: &WorthQueryApplicationEffectEntity<BankSchema, Account>,
     journal_entity: &WorthQueryApplicationEffectEntity<BankSchema, JournalEntry>,
     journal: &BankJournalEntry,
     posting: &bank_domain::accounting::BankPosting,
@@ -127,8 +142,11 @@ where
     PostingAccount: OperationLinks<Operation>,
     AccountActivityEffect: OperationEmits<Operation>,
 {
-    let posting_entity =
-        effects.create_entity(Posting::reference(), entity_key(posting_key(posting.id()))?)?;
+    let posting_entity = effects.create_entity_in_context(
+        context,
+        Posting::reference(),
+        entity_key(posting_key(posting.id()))?,
+    )?;
     effects.initialize_field(
         &posting_entity,
         PostingIdentityField::reference(),

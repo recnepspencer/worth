@@ -3,15 +3,13 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use bank_domain::model::AccountId;
-use bank_server::BankApplicationQueryDenial;
+use bank_server::{BankApplicationQueryDenial, BankReadControls};
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationQueryControls, WorthQueryApplicationQueryResumeControls,
-};
+use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryResumeControls;
 
 use super::super::protocol::{
     BankHttpAccountActivity, BankHttpAccountActivityPageOutcome, BankHttpCredential,
@@ -290,17 +288,16 @@ fn fail_resume(
     outcome
 }
 
-fn page_controls<'a>(
+fn page_controls(
     controls: &BankHttpRequestControls,
-    scope: &'a WorthQueryRequestScope,
-) -> Option<WorthQueryApplicationQueryControls<'a, bank_domain::schema::BankSchema>> {
-    Some(
-        WorthQueryApplicationQueryControls::current_continuation_page(
-            NonZeroUsize::new(controls.maximum_results)?,
-            NonZeroUsize::new(controls.maximum_work)?,
-            scope,
-        ),
+    scope: &WorthQueryRequestScope,
+) -> Option<BankReadControls> {
+    BankReadControls::current(
+        scope.clone(),
+        controls.maximum_results,
+        controls.maximum_work,
     )
+    .ok()
 }
 
 fn resume_controls<'a>(

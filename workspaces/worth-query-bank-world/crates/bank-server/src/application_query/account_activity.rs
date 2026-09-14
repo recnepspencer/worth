@@ -33,9 +33,8 @@ use crate::{
     BankIdentityRuntime, BankReadControls,
 };
 
-type QueryAccountActivityLiveLease<'runtime, 'principal> = WorthQueryApplicationLiveLease<
+type QueryAccountActivityLiveLease<'runtime> = WorthQueryApplicationLiveLease<
     'runtime,
-    'principal,
     BankSchema,
     AccountActivityQuery,
     AccountActivityQueryParameters,
@@ -58,8 +57,8 @@ pub struct BankAccountActivityRequestForPrincipal<'runtime, 'principal> {
     account: AccountId,
 }
 
-pub struct BankAccountActivityLiveLease<'runtime, 'principal> {
-    query: QueryAccountActivityLiveLease<'runtime, 'principal>,
+pub struct BankAccountActivityLiveLease<'runtime> {
+    query: QueryAccountActivityLiveLease<'runtime>,
 }
 
 impl BankIdentityRuntime {
@@ -194,8 +193,7 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
     pub fn subscribe(
         self,
         controls: WorthQueryApplicationLiveControls,
-    ) -> Result<BankAccountActivityLiveLease<'runtime, 'principal>, BankApplicationQueryDenial>
-    {
+    ) -> Result<BankAccountActivityLiveLease<'runtime>, BankApplicationQueryDenial> {
         let application = self.runtime.application_runtime();
         let selected = application
             .on_branch(application.current_world())
@@ -260,13 +258,17 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
     }
 }
 
-impl BankAccountActivityLiveLease<'_, '_> {
+impl BankAccountActivityLiveLease<'_> {
     pub fn buffered_cause_count(&self) -> usize {
         self.query.buffered_cause_count()
     }
 
-    pub fn poll(&mut self) -> BankAccountActivityLiveOutcome {
-        output::publish_live_outcome(self.query.poll())
+    pub fn poll(
+        &mut self,
+        principal: &BankAuthenticatedPrincipal,
+        request: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
+    ) -> BankAccountActivityLiveOutcome {
+        output::publish_live_outcome(self.query.next(principal.query(), request))
     }
 
     pub fn close(self) -> BankApplicationLiveCloseOutcome {

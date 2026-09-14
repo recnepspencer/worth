@@ -1,10 +1,9 @@
-use bank_server::{BankMutationCommitOutcome, BankRecoveryPosture, BankUndoCorrection};
+use bank_server::{BankMutationCommitOutcome, BankRecoveryPosture};
 
 use super::super::super::protocol::{
     BankHttpCommitDescription, BankHttpDenial, BankHttpDenialKind,
     BankHttpEstateDisbursementOutcome, BankHttpEstateNotificationOutcome, BankHttpNextAction,
-    BankHttpRecoveryInspectionOutcome, BankHttpRecoveryPosture, BankHttpRedoProgressionOutcome,
-    BankHttpUndoAdmissionOutcome, BankHttpUndoCorrection, BankHttpUndoProgressionOutcome,
+    BankHttpRecoveryInspectionOutcome, BankHttpRecoveryPosture,
 };
 
 pub(super) fn commit_description(
@@ -28,24 +27,21 @@ pub(super) const fn recovery_posture(posture: BankRecoveryPosture) -> BankHttpRe
     }
 }
 
-pub(super) const fn undo_correction(correction: BankUndoCorrection) -> BankHttpUndoCorrection {
-    match correction {
-        BankUndoCorrection::Compensation => BankHttpUndoCorrection::Compensation,
-        BankUndoCorrection::RecordedInverse => BankHttpUndoCorrection::RecordedInverse,
-        BankUndoCorrection::Reconciliation => BankHttpUndoCorrection::Reconciliation,
-    }
-}
-
 pub(super) fn commit_denial(outcome: BankMutationCommitOutcome) -> BankHttpDenial {
     match outcome {
+        BankMutationCommitOutcome::ProductStale(_) => stale(),
+        BankMutationCommitOutcome::ProductUnpublished(_)
+        | BankMutationCommitOutcome::NoEffect(_) => unavailable(),
         BankMutationCommitOutcome::Stale { .. } => stale(),
         BankMutationCommitOutcome::Cancelled => {
             BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry)
         }
-        BankMutationCommitOutcome::Denied { .. } | BankMutationCommitOutcome::Aborted => {
-            unavailable()
-        }
-        BankMutationCommitOutcome::PartialEffect(_)
+        BankMutationCommitOutcome::TimedOut => deadline_exceeded(),
+        BankMutationCommitOutcome::Denied { .. }
+        | BankMutationCommitOutcome::CustomInvariantDenied { .. }
+        | BankMutationCommitOutcome::Aborted => unavailable(),
+        BankMutationCommitOutcome::Deferred(_)
+        | BankMutationCommitOutcome::SettlementDeferred(_)
         | BankMutationCommitOutcome::Indeterminate(_) => BankHttpDenial::new(
             BankHttpDenialKind::Unavailable,
             BankHttpNextAction::ContactOperator,
@@ -71,32 +67,11 @@ pub(super) fn inspection_denied(
     BankHttpRecoveryInspectionOutcome::Denied { request_id, denial }
 }
 
-pub(super) fn undo_denied(
-    request_id: Option<String>,
-    denial: BankHttpDenial,
-) -> BankHttpUndoAdmissionOutcome {
-    BankHttpUndoAdmissionOutcome::Denied { request_id, denial }
-}
-
 pub(super) fn disbursement_denied(
     request_id: Option<String>,
     denial: BankHttpDenial,
 ) -> BankHttpEstateDisbursementOutcome {
     BankHttpEstateDisbursementOutcome::Denied { request_id, denial }
-}
-
-pub(super) fn undo_progression_denied(
-    request_id: Option<String>,
-    denial: BankHttpDenial,
-) -> BankHttpUndoProgressionOutcome {
-    BankHttpUndoProgressionOutcome::Denied { request_id, denial }
-}
-
-pub(super) fn redo_progression_denied(
-    request_id: Option<String>,
-    denial: BankHttpDenial,
-) -> BankHttpRedoProgressionOutcome {
-    BankHttpRedoProgressionOutcome::Denied { request_id, denial }
 }
 
 pub(super) const fn stale() -> BankHttpDenial {

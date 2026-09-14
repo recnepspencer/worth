@@ -63,7 +63,10 @@ fn exact_activity_meaning_survives_every_public_lane() {
         .subscribe_with_approved_elevation(&world.approved, live_controls)
         .expect("the same exact elevation should open the activity live lane");
     approve_first(&world, first_requested);
-    let BankEstateEmergencyAccessActivityLiveOutcome::Delivered(update) = live.poll() else {
+    let request = super::super::fixture::request_scope();
+    let BankEstateEmergencyAccessActivityLiveOutcome::Delivered(update) =
+        live.poll(&world.requester, &request)
+    else {
         panic!("a real matching approval effect should deliver through publication");
     };
     let current = ready(&world, controls(8))

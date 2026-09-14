@@ -6,7 +6,7 @@ use bank_http_adapter::{
 use crate::protocol::{
     BankUserNodeDenialKind, BankUserNodeEstateNotificationOutcome,
     BankUserNodeEstateNotificationRequest, BankUserNodeRecoveryInspectionOutcome,
-    BankUserNodeRecoveryRequest, BankUserNodeUndoAdmissionOutcome,
+    BankUserNodeRecoveryRequest,
 };
 
 use super::{denial, BankUserSession};
@@ -64,27 +64,6 @@ impl BankUserSession {
         }
     }
 
-    pub(crate) async fn admit_undo(
-        &self,
-        request: BankUserNodeRecoveryRequest,
-    ) -> BankUserNodeUndoAdmissionOutcome {
-        let upstream = match self.recovery_request(request).await {
-            Ok(upstream) => upstream,
-            Err(kind) => return undo_denied(kind),
-        };
-        match self
-            .forward(
-                self.undo_admission_endpoint.clone(),
-                &upstream,
-                upstream.controls.deadline_milliseconds,
-            )
-            .await
-        {
-            Ok(response) => BankUserNodeUndoAdmissionOutcome::Forwarded { response },
-            Err(kind) => undo_denied(kind),
-        }
-    }
-
     async fn recovery_request(
         &self,
         request: BankUserNodeRecoveryRequest,
@@ -113,12 +92,6 @@ fn notification_denied(kind: BankUserNodeDenialKind) -> BankUserNodeEstateNotifi
 
 fn inspection_denied(kind: BankUserNodeDenialKind) -> BankUserNodeRecoveryInspectionOutcome {
     BankUserNodeRecoveryInspectionOutcome::Denied {
-        denial: denial(kind),
-    }
-}
-
-fn undo_denied(kind: BankUserNodeDenialKind) -> BankUserNodeUndoAdmissionOutcome {
-    BankUserNodeUndoAdmissionOutcome::Denied {
         denial: denial(kind),
     }
 }

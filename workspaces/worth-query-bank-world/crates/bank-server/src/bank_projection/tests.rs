@@ -8,7 +8,8 @@ use bank_domain::proposals::{
 };
 use bank_domain::schema::{
     AccountIdentity, ApplyOpeningFunding, BankPrincipalBinding, BankSchema, CreatePersonalAccount,
-    PersonalOwner, PostingAccount, Principal, SendMoney, SendMoneyOperation,
+    CreatePersonalAccountMutationBinding, PersonalOwner, PostingAccount, Principal, SendMoney,
+    SendMoneyOperation,
 };
 use worth_query_host::facade::declaration::authentication::{
     WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
@@ -243,6 +244,15 @@ impl ProjectionHarness {
                 &runtime,
                 &installed_schema,
                 crate::identity_runtime::product_world_resources::bank_product_world_resources(),
+            )
+            .unwrap();
+        let mutation = installed_schema
+            .installed_mutation_binding::<CreatePersonalAccountMutationBinding>()
+            .unwrap();
+        graph
+            .install_handler(
+                &mutation,
+                crate::mutation_handlers::CreatePersonalAccountHandler,
             )
             .unwrap();
         for principal in snapshot.principals() {

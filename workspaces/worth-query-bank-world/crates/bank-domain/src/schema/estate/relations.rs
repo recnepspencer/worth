@@ -1,3 +1,7 @@
+use worth_query_decl::facade::application_schema::{
+    ApplicationRelationCardinality, ApplicationRelationCrossContextPolicy,
+    ApplicationRelationDeletionPolicy, ApplicationRelationEndpoints, ApplicationRelationIntegrity,
+};
 use worth_query_decl::facade::worth_query_relation;
 
 use crate::schema::BankSchema;
@@ -29,43 +33,54 @@ worth_query_relation!(
     LegalAuthority => Principal; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(
     pub CapabilityGrantee in BankSchema,
-    Principal => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
+    Principal => CapabilityGrant; integrity = issued_lifecycle_relation());
 worth_query_relation!(
     pub CapabilityGrantor in BankSchema,
-    Principal => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
+    Principal => CapabilityGrant; integrity = issued_lifecycle_relation());
 worth_query_relation!(
     pub CapabilityEstate in BankSchema,
-    CapabilityGrant => EstateCase; integrity = same_context_unbounded_retain_dangling);
+    CapabilityGrant => EstateCase; integrity = issued_lifecycle_relation());
 worth_query_relation!(
     pub CapabilityAccount in BankSchema,
-    CapabilityGrant => Account; integrity = same_context_unbounded_retain_dangling);
+    CapabilityGrant => Account; integrity = issued_lifecycle_relation());
 worth_query_relation!(
     pub CapabilityInstitution in BankSchema,
-    CapabilityGrant => Institution; integrity = same_context_unbounded_retain_dangling);
+    CapabilityGrant => Institution; integrity = issued_lifecycle_relation());
 worth_query_relation!(
     pub CapabilityBranch in BankSchema,
-    CapabilityGrant => Branch; integrity = same_context_unbounded_retain_dangling);
+    CapabilityGrant => Branch; integrity = issued_lifecycle_relation());
 worth_query_relation!(
     pub CapabilityParent in BankSchema,
-    CapabilityGrant => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
+    CapabilityGrant => CapabilityGrant; integrity = issued_lifecycle_relation());
 worth_query_relation!(
     pub EmergencyRequester in BankSchema,
-    Principal => EmergencyAccess; integrity = same_context_unbounded_retain_dangling);
+    Principal => EmergencyAccess; integrity = issued_lifecycle_relation());
 worth_query_relation!(
     pub EmergencyApprover in BankSchema,
-    Principal => EmergencyAccess; integrity = same_context_unbounded_retain_dangling);
+    Principal => EmergencyAccess; integrity = issued_lifecycle_relation());
 worth_query_relation!(
     pub EmergencyGrant in BankSchema,
-    EmergencyAccess => CapabilityGrant; integrity = same_context_unbounded_retain_dangling);
+    EmergencyAccess => CapabilityGrant; integrity = issued_lifecycle_relation());
 worth_query_relation!(
     pub EmergencyEstate in BankSchema,
-    EmergencyAccess => EstateCase; integrity = same_context_unbounded_retain_dangling);
+    EmergencyAccess => EstateCase; integrity = issued_lifecycle_relation());
 worth_query_relation!(
     pub EmergencyReview in BankSchema,
     EmergencyAccess => MandatoryReview; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(
     pub ReviewPrincipal in BankSchema,
-    Principal => MandatoryReview; integrity = same_context_unbounded_retain_dangling);
+    Principal => MandatoryReview; integrity = issued_lifecycle_relation());
 worth_query_relation!(
     pub ReviewEstate in BankSchema,
-    MandatoryReview => EstateCase; integrity = same_context_unbounded_retain_dangling);
+    MandatoryReview => EstateCase; integrity = issued_lifecycle_relation());
+
+const fn issued_lifecycle_relation() -> ApplicationRelationIntegrity {
+    ApplicationRelationIntegrity::new(
+        ApplicationRelationEndpoints::new(
+            true,
+            ApplicationRelationCrossContextPolicy::AllowExplicit,
+        ),
+        ApplicationRelationCardinality::unbounded(),
+        ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
+    )
+}

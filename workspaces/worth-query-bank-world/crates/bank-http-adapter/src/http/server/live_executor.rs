@@ -242,7 +242,14 @@ where
                 return;
             }
             _ = poll.tick() => {
-                if let Some(event) = live_event(&request_id, lease.poll()) {
+                let delivery_scope = WorthQueryRequestScope::new(
+                    request.deadline,
+                    cancellation.token(),
+                );
+                if let Some(event) = live_event(
+                    &request_id,
+                    lease.poll(&principal, &delivery_scope),
+                ) {
                     if !send_live_event(&events, &mut terminal, event, &request_id) {
                         cancellation.cancel();
                         let _ = lease.close();

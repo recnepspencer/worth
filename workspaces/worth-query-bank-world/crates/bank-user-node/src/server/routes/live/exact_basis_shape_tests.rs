@@ -39,7 +39,7 @@ pub(super) fn update_event(request_id: &str) -> Bytes {
                 branch: "ordinary".to_owned(),
                 snapshot: 1,
                 version: 1,
-                posture: BankHttpQueryBasisPosture::Current,
+                posture: BankHttpQueryBasisPosture::SelectedProduct,
             },
             capability_purpose: BankHttpQueryCapabilityPurpose::AccountActivityReview,
             disclosure: BankHttpQueryDisclosure {

@@ -17,7 +17,11 @@ pub enum BankInvariantProjectionTraversalDenial {
     RelationNotInstalled,
     UndeclaredDecisionTarget,
     ForeignIdentity,
+    MutationTargetUnavailable,
     EndpointUnavailable,
+    CardinalityContractMismatch,
+    MissingTarget,
+    MultipleTargets,
     WorkBudgetExceeded,
 }
 
@@ -45,7 +49,11 @@ impl BankInvariantProjectionTraversalDenial {
             Self::RelationNotInstalled => "relation-not-installed",
             Self::UndeclaredDecisionTarget => "undeclared-decision-target",
             Self::ForeignIdentity => "foreign-identity",
+            Self::MutationTargetUnavailable => "mutation-target-unavailable",
             Self::EndpointUnavailable => "endpoint-unavailable",
+            Self::CardinalityContractMismatch => "cardinality-contract-mismatch",
+            Self::MissingTarget => "missing-target",
+            Self::MultipleTargets => "multiple-targets",
             Self::WorkBudgetExceeded => "work-budget-exceeded",
         }
     }
@@ -55,7 +63,11 @@ impl BankInvariantProjectionTraversalDenial {
             QueryTraversal::RelationNotInstalled => Self::RelationNotInstalled,
             QueryTraversal::UndeclaredDecisionTarget => Self::UndeclaredDecisionTarget,
             QueryTraversal::ForeignIdentity => Self::ForeignIdentity,
+            QueryTraversal::MutationTargetUnavailable => Self::MutationTargetUnavailable,
             QueryTraversal::EndpointUnavailable => Self::EndpointUnavailable,
+            QueryTraversal::CardinalityContractMismatch => Self::CardinalityContractMismatch,
+            QueryTraversal::MissingTarget => Self::MissingTarget,
+            QueryTraversal::MultipleTargets => Self::MultipleTargets,
             QueryTraversal::WorkBudgetExceeded => Self::WorkBudgetExceeded,
         }
     }

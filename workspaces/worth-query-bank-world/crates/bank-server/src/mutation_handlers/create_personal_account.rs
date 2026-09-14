@@ -92,19 +92,15 @@ fn author_candidate(
     )
     .map_err(HandlerExecutionDenial::new)?;
     let created = candidate
-        .candidate()
-        .create_entity(Account::reference(), key)
+        .create_entity_in_context(&institution, Account::reference(), key)
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .candidate()
         .initialize_field(&created, AccountIdentity::reference(), account_id)
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .candidate()
         .initialize_field(&created, AccountDisplayName::reference(), display_name)
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .candidate()
         .initialize_field(
             &created,
             AccountingRevision::reference(),
@@ -112,15 +108,12 @@ fn author_candidate(
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .candidate()
         .initialize_field(&created, Kind::reference(), AccountKind::Personal)
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .candidate()
         .initialize_field(&created, Status::reference(), AccountStatus::Open)
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .candidate()
         .link(
             InstitutionAccount::reference(),
             format!("institution-account:{}", account_id.canonical_text())
@@ -131,7 +124,6 @@ fn author_candidate(
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .candidate()
         .link(
             PersonalOwner::reference(),
             format!("personal-owner:{}", account_id.canonical_text())

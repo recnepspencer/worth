@@ -4,6 +4,7 @@ mod support;
 use bank_domain::{
     estate::{EstateCapabilityPurpose, RestrictedBankField},
     queries,
+    schema::RestrictedBankFieldBinding,
 };
 use support::{certification_fixture, ESTATE};
 use worth_foundational::{
@@ -14,7 +15,7 @@ use worth_foundational::{
     CanonicalDigestAlgorithmId, CanonicalEquivalenceBasis,
     CanonicalSingleSequenceDigestAlgorithmSlot, CanonicalizationRuleVersion, InternedString,
 };
-use worth_query_host::facade::domain::TypedApplicationValue;
+use worth_query_host::facade::declaration::application_schema::ApplicationScalarValueBinding;
 
 const RULE_VERSION: &str = "bank.estate.governed-disclosure-field.v1";
 
@@ -27,10 +28,12 @@ fn capability_and_declared_disclosure_meaning_compare_canonically_before_closed_
         capability_meaning.purpose(),
         EstateCapabilityPurpose::LegalCompliance
     );
-    let capability_value = capability_meaning
-        .field()
-        .expect("the product request carries its exact field")
-        .into_foundational_value();
+    let capability_value = RestrictedBankFieldBinding::encode(
+        &capability_meaning
+            .field()
+            .expect("the product request carries its exact field"),
+    )
+    .expect("the governed field must encode through its installed binding");
 
     let definition = queries::estate_legal_compliance_definition();
     let disclosure_rules = definition.disclosure().rules();
@@ -58,7 +61,8 @@ fn capability_and_declared_disclosure_meaning_compare_canonically_before_closed_
     assert_equivalent(&capability_value, &disclosure_value);
     assert_mismatched(
         &capability_value,
-        &RestrictedBankField::AuditTrail.into_foundational_value(),
+        &RestrictedBankFieldBinding::encode(&RestrictedBankField::AuditTrail)
+            .expect("the comparison field must encode through its installed binding"),
     );
 
     let version = canonical_version();

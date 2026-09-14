@@ -28,7 +28,9 @@ fn queued_real_lifecycle_cause_is_cut_off_before_live_payload_and_closes() {
 
     approve_first(&world, first_requested);
     revoke_exact_support(&world, 153);
-    let BankEstateEmergencyAccessActivityLiveOutcome::AuthorizationDenied(denial) = live.poll()
+    let request = super::super::fixture::request_scope();
+    let BankEstateEmergencyAccessActivityLiveOutcome::AuthorizationDenied(denial) =
+        live.poll(&world.requester, &request)
     else {
         panic!("revoked live authority must terminate with its exact denial");
     };
@@ -38,7 +40,7 @@ fn queued_real_lifecycle_cause_is_cut_off_before_live_payload_and_closes() {
     );
     assert!(denial.contributing_cause_count() > 0);
     assert!(matches!(
-        live.poll(),
+        live.poll(&world.requester, &request),
         BankEstateEmergencyAccessActivityLiveOutcome::Closed
     ));
     assert_eq!(live.buffered_cause_count(), 0);

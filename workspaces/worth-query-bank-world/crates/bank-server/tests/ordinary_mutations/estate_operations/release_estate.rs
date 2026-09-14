@@ -324,7 +324,7 @@ fn assert_release_posture(fixture: &ReleaseFixture, expected: EstateCaseStatus) 
         .runtime
         .query(queries::estate_case(fixture.estate))
         .as_principal(&actor)
-        .controls(BankReadControls::current(request_scope(), 16, 20_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1, 20_000).unwrap())
         .execute()
         .expect("the assigned specialist should read the authoritative estate status");
     assert_eq!(result.rows().len(), 1);
