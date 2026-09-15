@@ -103,10 +103,11 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
                 PlanarFinalBodyOutput,
                 PlanarFinalOutputDemand,
             >()
-            .map(|(demand, _)| demand.body_key())
+            .map(|occurrence| occurrence.demand().body_key())
             .collect::<Vec<_>>(),
         ["anchor-c", "anchor-a"]
     );
+    super::receipt_evidence::assert_exact_outputs(&settled);
     assert_eq!(
         request
             .at(settled.latest_observation())

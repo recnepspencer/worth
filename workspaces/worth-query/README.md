@@ -29,7 +29,8 @@ publishing the mutation. The returned handle drives every reachable dependent
 output. `root_observation()` identifies the committed root output;
 `latest_observation()` identifies the latest commit among independently settled
 inventory outputs; and `output_occurrences::<Feature, Port, Demand>()` returns
-the exact typed output occurrences and their individual observations.
+the exact typed output occurrences with their individual observations and
+immutable publication receipts.
 
 If a caller drops a handle before settlement, Query retains the exact root
 demand under the source receipt. Recovery supplies no reconstructed demand or

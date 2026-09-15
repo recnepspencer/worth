@@ -237,6 +237,7 @@ where
                         port_type: output.port_type(),
                         demand: std::sync::Arc::clone(&settlement.demand),
                         observation: settlement.observation.clone(),
+                        receipt: settlement.receipt.clone(),
                     })
             })
             .collect()

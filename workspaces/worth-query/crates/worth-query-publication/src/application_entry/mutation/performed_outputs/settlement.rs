@@ -27,6 +27,44 @@ pub(super) struct SettledProgramOutput {
     pub(super) port_type: std::any::TypeId,
     pub(super) demand: std::sync::Arc<dyn std::any::Any>,
     pub(super) observation: crate::application_entry::WorthQueryApplicationReadObservation,
+    pub(super) receipt:
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+}
+
+/// One exact typed output occurrence retained by a completed program inventory.
+pub struct WorthQueryApplicationProgramOutputOccurrence<'a, Demand> {
+    demand: &'a Demand,
+    observation: &'a crate::application_entry::WorthQueryApplicationReadObservation,
+    receipt: &'a worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+}
+
+impl<Demand> Copy for WorthQueryApplicationProgramOutputOccurrence<'_, Demand> {}
+
+impl<Demand> Clone for WorthQueryApplicationProgramOutputOccurrence<'_, Demand> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<'a, Demand> WorthQueryApplicationProgramOutputOccurrence<'a, Demand> {
+    /// The typed output demand that selected this occurrence.
+    pub const fn demand(&self) -> &'a Demand {
+        self.demand
+    }
+
+    /// The exact retained observation at which the output settled.
+    pub const fn observation(
+        &self,
+    ) -> &'a crate::application_entry::WorthQueryApplicationReadObservation {
+        self.observation
+    }
+
+    /// The immutable World publication receipt for this output occurrence.
+    pub const fn receipt(
+        &self,
+    ) -> &'a worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt {
+        self.receipt
+    }
 }
 
 impl<Schema, Program, Inventory>
@@ -67,12 +105,7 @@ where
 
     pub fn output_occurrences<Feature, Port, Demand>(
         &self,
-    ) -> impl Iterator<
-        Item = (
-            &Demand,
-            &crate::application_entry::WorthQueryApplicationReadObservation,
-        ),
-    >
+    ) -> impl Iterator<Item = WorthQueryApplicationProgramOutputOccurrence<'_, Demand>>
     where
         Feature: ApplicationFeature<Schema>,
         Port: ApplicationOutputPort<Schema, Feature>,
@@ -85,10 +118,13 @@ where
                     && output.port_type == std::any::TypeId::of::<Port>()
             })
             .filter_map(|output| {
-                output
-                    .demand
-                    .downcast_ref::<Demand>()
-                    .map(|demand| (demand, &output.observation))
+                output.demand.downcast_ref::<Demand>().map(|demand| {
+                    WorthQueryApplicationProgramOutputOccurrence {
+                        demand,
+                        observation: &output.observation,
+                        receipt: &output.receipt,
+                    }
+                })
             })
     }
 }

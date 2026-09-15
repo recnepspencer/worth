@@ -19,6 +19,7 @@ mod dependent_recovery;
 pub(super) mod lifecycle;
 mod owner_demand_boundary;
 mod readiness_recovery;
+mod receipt_evidence;
 mod recovery;
 mod recovery_authority;
 
@@ -202,10 +203,12 @@ pub(super) fn performed_source_settles_required_output(
                 PlanarFinalBodyOutput,
                 PlanarFinalOutputDemand,
             >()
-            .map(|(demand, _)| demand.body_key())
+            .map(|occurrence| occurrence.demand().body_key())
             .collect::<Vec<_>>(),
         ["anchor-a", "anchor-b"]
     );
+    receipt_evidence::assert_exact_outputs(&original_settlement);
+
     let latest_commit = original_settlement
         .output_observations::<PlanarFinalOutputFeature, PlanarFinalBodyOutput>()
         .map(|observation| observation.selected_commit())

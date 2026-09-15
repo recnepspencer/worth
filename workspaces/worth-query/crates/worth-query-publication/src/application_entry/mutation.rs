@@ -12,9 +12,9 @@ pub use performed::{
     WorthQueryRequiredOutputStartFailure, WorthQueryStartedRequiredOutputs,
 };
 pub use performed_outputs::{
-    WorthQueryApplicationProgramOutputHandle, WorthQueryApplicationProgramOutputProgress,
-    WorthQueryApplicationProgramOutputSettlement, WorthQueryProgramConnectionPlan,
-    WorthQueryProgramRootConnection,
+    WorthQueryApplicationProgramOutputHandle, WorthQueryApplicationProgramOutputOccurrence,
+    WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
+    WorthQueryProgramConnectionPlan, WorthQueryProgramRootConnection,
 };
 pub use request::{
     WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,

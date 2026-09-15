@@ -37,6 +37,8 @@ pub(in crate::application_entry) struct ErasedProgramSettlement {
     pub(super) demand: std::sync::Arc<dyn Any>,
     pub(super) authority: Box<dyn Any>,
     pub(super) observation: WorthQueryApplicationReadObservation,
+    pub(super) receipt:
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
 }
 
 pub(in crate::application_entry) trait ErasedProgramNode<'application, Schema>
@@ -151,6 +153,7 @@ where
                 settlement,
                 authority,
             } => {
+                let receipt = settlement.receipt().clone();
                 self.settled = true;
                 self.handle.close();
                 Ok(Some(ErasedProgramSettlement {
@@ -159,6 +162,7 @@ where
                     demand: std::sync::Arc::new(self.handle.demand().clone()),
                     authority: Box::new(authority) as Box<dyn Any>,
                     observation: settlement.observation().clone(),
+                    receipt,
                 }))
             }
         }
