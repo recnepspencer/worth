@@ -4,7 +4,8 @@ use worth_relational::facade::{
 };
 
 use super::{
-    WorthQueryGeneratedOutputInvariantAdmissionDenial, WorthQueryGeneratedOutputRestorationFailure,
+    WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    WorthQueryGeneratedOutputPublicationNoEffect, WorthQueryGeneratedOutputRestorationFailure,
 };
 use crate::domain_computation::primary_graph::WorthQuerySuspendedGeneratedOutput;
 
@@ -22,7 +23,7 @@ pub enum WorthQueryGeneratedOutputRestorationFailureCause {
         major: u16,
         minor: u16,
     },
-    PublicationNoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
+    PublicationNoEffect(WorthQueryGeneratedOutputPublicationNoEffect),
 }
 
 pub(super) fn preparation_failure_cause(

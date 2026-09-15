@@ -4,6 +4,7 @@ use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 mod failure;
 mod invariant_admission;
+mod no_effect;
 mod receipt;
 mod recovery;
 mod settlement;
@@ -11,6 +12,9 @@ mod settlement;
 pub use failure::WorthQueryGeneratedOutputRestorationFailureCause;
 use failure::{preparation_failure_cause, restoration_failure};
 
+pub use no_effect::{
+    WorthQueryGeneratedOutputPublicationNoEffect, WorthQueryGeneratedOutputPublicationNoEffectCause,
+};
 pub use receipt::WorthQueryGeneratedOutputRestorationReceipt;
 pub use recovery::{
     WorthQueryGeneratedOutputRestorationRecovery,
@@ -245,7 +249,7 @@ where
                         completion,
                     ),
                     WorthQueryGeneratedOutputRestorationFailureCause::PublicationNoEffect(
-                        no_effect,
+                        WorthQueryGeneratedOutputPublicationNoEffect::from_world(no_effect),
                     ),
                 ));
             }
@@ -294,7 +298,9 @@ where
                     producer,
                     completion,
                 ),
-                WorthQueryGeneratedOutputRestorationFailureCause::PublicationNoEffect(no_effect),
+                WorthQueryGeneratedOutputRestorationFailureCause::PublicationNoEffect(
+                    WorthQueryGeneratedOutputPublicationNoEffect::from_world(no_effect),
+                ),
             )),
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 let product = self.unpublished_materialization_from_binding(effects, &publication);

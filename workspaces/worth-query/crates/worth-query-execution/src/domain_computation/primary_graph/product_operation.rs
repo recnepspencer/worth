@@ -30,7 +30,9 @@ pub use conditional_definition::{
 pub use context::{WorthQueryProductEntry, WorthQuerySelectedProductOperation};
 pub use generated_materialization::{
     WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryGeneratedEntity,
-    WorthQueryGeneratedOutputInvariantAdmissionDenial, WorthQueryGeneratedOutputReconstruction,
+    WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    WorthQueryGeneratedOutputPublicationNoEffect,
+    WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputReconstruction,
     WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,
     WorthQueryGeneratedOutputRestorationFailure, WorthQueryGeneratedOutputRestorationFailureCause,
     WorthQueryGeneratedOutputRestorationReceipt, WorthQueryGeneratedOutputRestorationRecovery,

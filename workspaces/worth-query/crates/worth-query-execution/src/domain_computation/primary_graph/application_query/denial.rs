@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum WorthQueryApplicationQueryAdmissionDenialKind {
     InstalledQuery(WorthQueryApplicationQueryInstallationDenialKind),
     ForeignPrincipal,

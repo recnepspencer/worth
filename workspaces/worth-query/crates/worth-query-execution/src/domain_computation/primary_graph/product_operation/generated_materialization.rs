@@ -23,7 +23,9 @@ pub use suspension::{
 };
 mod restoration;
 pub use restoration::{
-    WorthQueryGeneratedOutputInvariantAdmissionDenial, WorthQueryGeneratedOutputRestorationFailure,
+    WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    WorthQueryGeneratedOutputPublicationNoEffect,
+    WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputRestorationFailure,
     WorthQueryGeneratedOutputRestorationFailureCause, WorthQueryGeneratedOutputRestorationReceipt,
     WorthQueryGeneratedOutputRestorationRecovery,
     WorthQueryGeneratedOutputRestorationRecoveryFailure,
@@ -84,6 +86,8 @@ impl WorthQuerySuspendedGeneratedOutput {
             && self.producer.binding_identity == Producer::IDENTITY
     }
 
+    // In-memory custody sees the same compiled constant. Keeping this check at
+    // the custody boundary also protects a future restart-restored token.
     pub(super) fn matches_provider_version<Schema, Producer>(&self) -> bool
     where
         Schema: ApplicationSchema,

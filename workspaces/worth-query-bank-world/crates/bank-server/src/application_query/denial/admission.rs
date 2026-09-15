@@ -89,7 +89,7 @@ pub(super) const fn admission(kind: Query) -> BankApplicationQueryAdmissionDenia
         Query::StaleBasis => Bank::StaleBasis,
         Query::WrongProviderBasis => Bank::WrongProviderBasis,
         Query::ExpiredBasis => Bank::ExpiredBasis,
-        Query::BasisUnavailable => Bank::BasisUnavailable,
+        Query::BasisUnavailable | Query::BranchMaterializationSuspended => Bank::BasisUnavailable,
         Query::ForeignHistoricalReceipt => Bank::ForeignHistoricalReceipt,
         Query::RuntimeSupportUnavailable => Bank::RuntimeSupportUnavailable,
         Query::ActiveSnapshotCapacityExhausted {
@@ -117,6 +117,7 @@ pub(super) const fn admission(kind: Query) -> BankApplicationQueryAdmissionDenia
         Query::GraphReadPlan(kind) => Bank::GraphReadPlan(graph_read(kind)),
         Query::GraphWorkAdmissionUnavailable => Bank::GraphWorkAdmissionUnavailable,
         Query::ExecutionShapeUnsupported => Bank::ExecutionShapeUnsupported,
+        _ => Bank::RuntimeSupportUnavailable,
     }
 }
 

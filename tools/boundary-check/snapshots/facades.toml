@@ -333,6 +333,8 @@ exports = [
     "WorthQueryExternalTransportOutcome",
     "WorthQueryGeneratedEntity",
     "WorthQueryGeneratedOutputInvariantAdmissionDenial",
+    "WorthQueryGeneratedOutputPublicationNoEffect",
+    "WorthQueryGeneratedOutputPublicationNoEffectCause",
     "WorthQueryGeneratedOutputReconstruction",
     "WorthQueryGeneratedOutputReconstructionDenial",
     "WorthQueryGeneratedOutputReconstructionFailure",
