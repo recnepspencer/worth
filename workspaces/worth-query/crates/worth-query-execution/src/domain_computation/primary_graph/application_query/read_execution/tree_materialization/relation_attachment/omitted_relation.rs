@@ -3,7 +3,7 @@ use worth_relational::facade::indexes::{
     BoundedIndexParityMode, BoundedRelatedEntityOrderedLookupRequest,
 };
 
-use super::{ordered_lookup_denial, traversal_denial};
+use super::{ordered::ordered_lookup_denial, traversal_denial};
 use crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization::{
     ActiveResultTreeCollectionSelection, OrderedCollectionProgress, ResultTreeWork,
     WorthQueryApplicationProjectionNode, WorthQueryApplicationReadExecutionDenial,

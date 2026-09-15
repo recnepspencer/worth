@@ -10,7 +10,7 @@ use worth_query_installation::facade::{
 };
 use worth_query_package_archive::facade::*;
 
-const VERSION_THREE_NATIVE_ASPECT_HEX: &str = "0003000b00000002000000890000000c4e6174697665536368656d610000000c4e6174697665456e746974790000000750726f66696c650000000750726f66696c650000000091621100000000000000000300020000000200000003416765000a00010001000200000003546167001000010001000200000002000000034167650000000354616700010000000750726f66696c65";
+const VERSION_FOUR_NATIVE_ASPECT_HEX: &str = "0004000b00000002000000890000000c4e6174697665536368656d610000000c4e6174697665456e746974790000000750726f66696c650000000750726f66696c650000000091621100000000000000000300020000000200000003416765000a00010001000200000003546167001000010001000200000002000000034167650000000354616700010000000750726f66696c65";
 
 struct NativeSchema;
 worth_query_declaration::worth_query_entity!(NativeEntity for NativeSchema);
@@ -55,9 +55,9 @@ fn native_aspect_frame_is_deterministic_exact_and_freshly_readmitted() {
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
     let first = encode_record_frame(native, limits).unwrap();
     assert_eq!(encode_record_frame(native, limits).unwrap(), first);
-    assert_eq!(encode_hex(&first), VERSION_THREE_NATIVE_ASPECT_HEX);
+    assert_eq!(encode_hex(&first), VERSION_FOUR_NATIVE_ASPECT_HEX);
     assert_eq!(u16::from_be_bytes(first[2..4].try_into().unwrap()), 11);
-    let frozen = decode_hex(VERSION_THREE_NATIVE_ASPECT_HEX);
+    let frozen = decode_hex(VERSION_FOUR_NATIVE_ASPECT_HEX);
     let decoded = WorthQueryPackageArchiveRecordDecoder::new(limits)
         .decode_frame(&frozen)
         .unwrap();

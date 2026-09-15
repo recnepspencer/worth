@@ -44,6 +44,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
                     direction: ApplicationQueryResultTraversalDirection::Forward,
                     output_name: text("other"),
                     cardinality: ApplicationQueryCardinality::Many,
+                    predicate: None,
                     nested_shape,
                 },
             )],

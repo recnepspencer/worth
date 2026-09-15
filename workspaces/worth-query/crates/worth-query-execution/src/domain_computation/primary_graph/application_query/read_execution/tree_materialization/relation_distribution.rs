@@ -22,18 +22,24 @@ pub(super) fn distribute_relation_rows(
     work: &mut ResultTreeWork,
     already_ordered: bool,
     result_buffer: &mut WorthQueryApplicationResultBufferReservation,
+    predicate_counts: Vec<usize>,
+    predicate_sources: Vec<worth_relational::facade::identity::EntityId>,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
     let temporary_child_buffer_bytes = children
         .capacity()
         .saturating_mul(std::mem::size_of::<WorthQueryApplicationProjectionNode>());
     let mut children = children.into_iter();
-    for (parent, count) in parents.iter_mut().zip(counts) {
+    let mut predicate_sources = predicate_sources.into_iter();
+    for ((parent, count), predicate_count) in parents.iter_mut().zip(counts).zip(predicate_counts) {
         let mut rows = allocate_claimed_result_vector::<WorthQueryApplicationProjectionNode>(
             result_buffer,
             count,
             relation.result_path(),
         )?;
         rows.extend(children.by_ref().take(count));
+        let mut relation_predicate_sources =
+            allocate_claimed_result_vector(result_buffer, predicate_count, relation.result_path())?;
+        relation_predicate_sources.extend(predicate_sources.by_ref().take(predicate_count));
         if !already_ordered {
             order_collection(
                 contract,
@@ -44,12 +50,20 @@ pub(super) fn distribute_relation_rows(
             )?;
         }
         if rows.len() != count
-            || !parent.insert_relation(WorthQueryApplicationProjectedRelation::new(relation, rows))
+            || relation_predicate_sources.len() != predicate_count
+            || !parent.insert_relation(WorthQueryApplicationProjectedRelation::new(
+                relation,
+                relation_predicate_sources,
+                rows,
+            ))
         {
             return Err(projection_denial(relation.result_path()));
         }
     }
     if children.next().is_some() {
+        return Err(projection_denial(relation.result_path()));
+    }
+    if predicate_sources.next().is_some() {
         return Err(projection_denial(relation.result_path()));
     }
     drop(children);

@@ -122,3 +122,27 @@ pub(super) fn relation_parent_entity(relation: &ApplicationQueryResultRelation) 
         ApplicationQueryResultTraversalDirection::Reverse => relation.to(),
     }
 }
+
+pub(super) fn relation_predicates(
+    shape: &ApplicationQueryResultShape,
+) -> Vec<&crate::application_query::ApplicationQueryPredicate> {
+    shape
+        .relations()
+        .iter()
+        .flat_map(|relation| {
+            relation
+                .predicate()
+                .into_iter()
+                .chain(relation_predicates(relation.nested_shape()))
+        })
+        .collect()
+}
+
+pub(super) fn relation_predicate_targets_are_valid(shape: &ApplicationQueryResultShape) -> bool {
+    shape.relations().iter().all(|relation| {
+        relation
+            .predicate()
+            .is_none_or(|predicate| predicate.field().0 == relation.nested_shape().root_entity())
+            && relation_predicate_targets_are_valid(relation.nested_shape())
+    })
+}

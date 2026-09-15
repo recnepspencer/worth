@@ -2,7 +2,8 @@ use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::super::{
     result_slot_key::ApplicationQueryResultRelationSlotContract, ApplicationQueryCardinality,
-    ApplicationQueryResultSlotKey, ApplicationQueryResultTraversalDirection,
+    ApplicationQueryPredicate, ApplicationQueryResultSlotKey,
+    ApplicationQueryResultTraversalDirection,
 };
 use super::ApplicationQueryResultShape;
 
@@ -17,6 +18,7 @@ pub struct ApplicationQueryResultRelation {
     direction: ApplicationQueryResultTraversalDirection,
     output_name: String,
     cardinality: ApplicationQueryCardinality,
+    predicate: Option<ApplicationQueryPredicate>,
     nested_shape: Box<ApplicationQueryResultShape>,
 }
 
@@ -30,6 +32,7 @@ pub struct WorthQueryPortableApplicationQueryResultRelationParts {
     pub direction: ApplicationQueryResultTraversalDirection,
     pub output_name: String,
     pub cardinality: ApplicationQueryCardinality,
+    pub predicate: Option<ApplicationQueryPredicate>,
     pub nested_shape: ApplicationQueryResultShape,
 }
 
@@ -59,6 +62,7 @@ impl ApplicationQueryResultRelation {
             direction: parts.direction,
             output_name: parts.output_name,
             cardinality: parts.cardinality,
+            predicate: parts.predicate,
             nested_shape: Box::new(parts.nested_shape),
         }
     }
@@ -105,6 +109,10 @@ impl ApplicationQueryResultRelation {
 
     pub const fn cardinality(&self) -> ApplicationQueryCardinality {
         self.cardinality
+    }
+
+    pub fn predicate(&self) -> Option<&ApplicationQueryPredicate> {
+        self.predicate.as_ref()
     }
 
     pub fn nested_shape(&self) -> &ApplicationQueryResultShape {

@@ -109,6 +109,7 @@ pub struct WorthQueryInstalledGraphRelation {
     direction: ApplicationQueryResultTraversalDirection,
     output_name: String,
     cardinality: ApplicationQueryCardinality,
+    predicate: Option<WorthQueryInstalledGraphPredicate>,
     depth: usize,
 }
 
@@ -181,6 +182,10 @@ impl WorthQueryInstalledGraphRelation {
 
     pub const fn cardinality(&self) -> ApplicationQueryCardinality {
         self.cardinality
+    }
+
+    pub fn predicate(&self) -> Option<&WorthQueryInstalledGraphPredicate> {
+        self.predicate.as_ref()
     }
 
     pub const fn depth(&self) -> usize {

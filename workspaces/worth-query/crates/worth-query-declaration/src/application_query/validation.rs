@@ -28,12 +28,15 @@ pub enum ApplicationQueryDefinitionDenial {
     InvalidDisclosureContract,
     DisclosureSelectorMismatch,
     UnknownPredicateParameter,
+    PredicateParameterMismatch,
+    RelationPredicateTargetMismatch,
     UnknownOrderingResultSlot,
     OrderingResultFieldMismatch,
     UnknownContinuationResultSlot,
     ContinuationResultRelationMismatch,
     ContinuationOrderingMissing,
     ContinuationOrderingOutsideTarget,
+    ContinuationRelationPredicateUnsupported,
     ContinuationRequiresPinnedBasis,
     ContinuationRequiresExactlyOneParentPath,
     ContinuationRequiresSingleRoot,
@@ -172,13 +175,22 @@ fn validate_parameter_names(
 fn validate_predicates(
     definition: &WorthQueryPortableApplicationQueryParts,
 ) -> Result<(), ApplicationQueryDefinitionDenial> {
-    if definition.predicates().iter().any(|predicate| {
-        !definition
+    let relation_predicates = result_shape::relation_predicates(definition.result_shape());
+    let predicates = definition
+        .predicates()
+        .iter()
+        .chain(relation_predicates.iter().copied());
+    for predicate in predicates {
+        let Some(parameter) = definition
             .parameters()
             .iter()
-            .any(|parameter| parameter.name() == predicate.parameter())
-    }) {
-        return Err(ApplicationQueryDefinitionDenial::UnknownPredicateParameter);
+            .find(|parameter| parameter.name() == predicate.parameter())
+        else {
+            return Err(ApplicationQueryDefinitionDenial::UnknownPredicateParameter);
+        };
+        if parameter.scalar_family() != predicate.scalar_family() {
+            return Err(ApplicationQueryDefinitionDenial::PredicateParameterMismatch);
+        }
     }
     if definition
         .predicates()
@@ -186,6 +198,9 @@ fn validate_predicates(
         .any(|predicate| !shape_contains_entity(definition.result_shape(), predicate.field().0))
     {
         return Err(ApplicationQueryDefinitionDenial::ResultRootMismatch);
+    }
+    if result_shape::relation_predicate_targets_are_valid(definition.result_shape()) == false {
+        return Err(ApplicationQueryDefinitionDenial::RelationPredicateTargetMismatch);
     }
     Ok(())
 }
@@ -335,6 +350,9 @@ fn validate_continuation(
         || relation_parent_entity(relation) != continuation.parent_entity()
     {
         return Err(ApplicationQueryDefinitionDenial::ContinuationResultRelationMismatch);
+    }
+    if relation.predicate().is_some() {
+        return Err(ApplicationQueryDefinitionDenial::ContinuationRelationPredicateUnsupported);
     }
     if count_many_relations(definition.result_shape()) != 1 {
         return Err(ApplicationQueryDefinitionDenial::ContinuationRequiresSingleManyCollection);

@@ -103,6 +103,12 @@ fn footprint_counts(
             relations: node.relations().len(),
         },
         |mut counts, relation| {
+            counts.entities = counts
+                .entities
+                .saturating_add(relation.predicate_sources().len());
+            counts.fields = counts
+                .fields
+                .saturating_add(relation.predicate_sources().len());
             for child in relation.rows() {
                 let child = footprint_counts(contract, governance, child);
                 counts.entities = counts.entities.saturating_add(child.entities);
@@ -187,18 +193,54 @@ fn collect_node(
                     relation.result_path(),
                 )
             })?;
+        if let Some(predicate) = relation.predicate() {
+            let contract_revision = graph
+                .aspect_contract(relation.child_entity(), predicate.aspect_key())
+                .ok_or_else(|| projection_denial(relation.result_path()))?
+                .revision();
+            for entity_id in projected.predicate_sources() {
+                result_buffer
+                    .claim(
+                        relation
+                            .child_entity()
+                            .len()
+                            .saturating_add(predicate.aspect_key().as_str().len()),
+                    )
+                    .map_err(|()| super::result_buffer_denial(relation.result_path()))?;
+                footprint.entities.push(*entity_id);
+                footprint.aspects.push(WorthQueryObservedAspectRevision {
+                    entity: *entity_id,
+                    entity_name: relation.child_entity().to_owned(),
+                    aspect: predicate.aspect_key().clone(),
+                    contract_revision,
+                    native_revision: projection
+                        .entity_aspect_version(*entity_id, predicate.aspect_key())
+                        .ok_or_else(|| projection_denial(relation.result_path()))?,
+                });
+                work.charge_source_observation(1, relation.result_path())?;
+            }
+        }
         work.charge_source_observation(revision.work_units(), relation.result_path())?;
+        let filtered_relation = relation.predicate().is_some();
         let mut endpoints = allocate_claimed_result_vector(
             result_buffer,
-            projected.rows().len(),
+            if filtered_relation {
+                projected.predicate_sources().len()
+            } else {
+                projected.rows().len()
+            },
             relation.result_path(),
         )?;
-        endpoints.extend(
-            projected
-                .rows()
-                .iter()
-                .map(WorthQueryApplicationProjectionNode::entity_id),
-        );
+        if filtered_relation {
+            endpoints.extend_from_slice(projected.predicate_sources());
+        } else {
+            endpoints.extend(
+                projected
+                    .rows()
+                    .iter()
+                    .map(WorthQueryApplicationProjectionNode::entity_id),
+            );
+        }
         footprint
             .adjacencies
             .push(WorthQueryObservedAdjacencyRevision {
