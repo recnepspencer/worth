@@ -1,172 +1,146 @@
-mod connection_plan;
-mod inventory;
-mod node;
-mod settlement;
-pub use settlement::*;
-
-pub use connection_plan::{WorthQueryProgramConnectionPlan, WorthQueryProgramRootConnection};
-
-use std::collections::BTreeSet;
-
 use worth_query_declaration::facade::application_program::{
-    ApplicationFeature, ApplicationOutputPort, ApplicationProgramDefinition,
-    ApplicationProgramInventoryIdentity,
+    ApplicationOutputGraphShape, ApplicationProgramDefinition, ApplicationProgramRootConnection,
+    ApplicationProgramRootEdges,
 };
-use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_declaration::facade::application_query::{
+    ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
+};
+use worth_query_declaration::facade::application_schema::{
+    ApplicationSchema, ApplicationStructuredValueBinding,
+};
+use worth_query_execution::facade::application_contribution::{
+    WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily,
+};
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
-use worth_query_installation::facade::WorthQueryInstalledProgramInventoryPosture;
+use worth_query_execution::facade::primary_graph::{
+    WorthQueryApplicationProjection, WorthQueryApplicationRequiredOutputConnection,
+};
 
-use connection_plan::ErasedProgramConnection;
-use inventory::inventory_closure;
-use node::{runtime_matches, ErasedProgramNode, ErasedProgramSettlement, TypedProgramNode};
+use crate::application_entry::demand::{
+    WorthQueryApplicationProgramDemandHandle, WorthQueryApplicationProgramDemandProgress,
+};
 
-#[doc(hidden)]
-pub struct WorthQueryProgramConnectionFactories<'application, Schema, Program, Inventory>
+use super::program_output_continuation::{
+    ProgramOutputContinuation, ProgramOutputContinuationFactory, ProgramOutputContinuationProgress,
+};
+use super::program_output_settlement::{
+    WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
+};
+
+type RootConnection<Schema, Program> = ApplicationProgramRootConnection<Schema, Program>;
+type RootDemand<Schema, Program> =
+    <RootConnection<Schema, Program> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand;
+type Family<Schema, Demand> = <Demand as WorthQueryApplicationOutputDemand<Schema>>::OutputFamily;
+type Source<Schema, Demand> =
+    <Family<Schema, Demand> as WorthQueryProducerOutputFamily<Schema>>::Source;
+type Query<Schema, Demand> = <Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::Query;
+type Value<Schema, Demand> = <<Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+
+pub struct WorthQueryApplicationProgramOutputHandle<'application, Schema, Program>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
-    Inventory: ApplicationProgramInventoryIdentity,
-{
-    connections: Vec<
-        Box<dyn ErasedProgramConnection<'application, Schema, Program, Inventory> + 'application>,
-    >,
-}
-
-impl<'application, Schema, Program, Inventory>
-    WorthQueryProgramConnectionFactories<'application, Schema, Program, Inventory>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-    Inventory: ApplicationProgramInventoryIdentity,
-{
-    fn new(
-        connections: Vec<
-            Box<
-                dyn ErasedProgramConnection<'application, Schema, Program, Inventory>
-                    + 'application,
-            >,
-        >,
-    ) -> Self {
-        Self { connections }
-    }
-
-    fn into_connections(
-        self,
-    ) -> Vec<
-        Box<dyn ErasedProgramConnection<'application, Schema, Program, Inventory> + 'application>,
-    > {
-        self.connections
-    }
-}
-
-pub struct WorthQueryApplicationProgramOutputHandle<'application, Schema, Program, Inventory>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-    Inventory: ApplicationProgramInventoryIdentity,
+    RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
     application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-    source_commit: worth_runtime_world::facade::CompositeCommitIdentity,
-    nodes: Vec<Option<Box<dyn ErasedProgramNode<'application, Schema> + 'application>>>,
-    settlements: Vec<ErasedProgramSettlement>,
-    connections: Vec<
-        Box<dyn ErasedProgramConnection<'application, Schema, Program, Inventory> + 'application>,
-    >,
-    required_features: BTreeSet<&'static str>,
-    inventory_features: BTreeSet<&'static str>,
-    empty_features: BTreeSet<&'static str>,
-    started_edges: BTreeSet<(&'static str, usize)>,
-    controls: crate::application_entry::WorthQueryOutputDemandControls,
-    closed: bool,
-}
-
-impl<'application, Schema, Program, Inventory>
-    WorthQueryApplicationProgramOutputHandle<'application, Schema, Program, Inventory>
-where
-    Schema: ApplicationSchema + 'static,
-    Program: ApplicationProgramDefinition<Schema>,
-    Program::Connections: WorthQueryProgramConnectionPlan<Schema, Program, Inventory>,
-    Inventory: ApplicationProgramInventoryIdentity,
-{
-    pub(in crate::application_entry) fn new<Demand>(
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        source_commit: worth_runtime_world::facade::CompositeCommitIdentity,
-        root_feature: &'static str,
-        root_feature_type: std::any::TypeId,
-        root: crate::application_entry::demand::WorthQueryProgramNodeHandle<
+    root: Option<
+        WorthQueryApplicationProgramDemandHandle<
             'application,
             Schema,
             Program,
-            Inventory,
-            Demand,
+            RootDemand<Schema, Program>,
         >,
-        controls: crate::application_entry::WorthQueryOutputDemandControls,
-    ) -> Result<Self, crate::application_entry::WorthQueryRequiredOutputPreparationDenial>
-    where
-        Demand: worth_query_execution::facade::application_contribution::WorthQueryApplicationOutputDemand<Schema>
-            + Clone
-            + 'static,
-        TypedProgramNode<'application, Schema, Program, Inventory, Demand>:
-            ErasedProgramNode<'application, Schema>,
-    {
-        match application.installed_program().inventory_posture::<Inventory>() {
-            WorthQueryInstalledProgramInventoryPosture::Missing => {
-                return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::MissingInventory)
-            }
-            WorthQueryInstalledProgramInventoryPosture::Unavailable { feature } => {
-                return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Unavailable { feature })
-            }
-            WorthQueryInstalledProgramInventoryPosture::Available => {}
-        }
-        let (required_features, inventory_features) =
-            inventory_closure::<Schema, Program, Inventory>(application)?;
-        if !required_features.contains(root_feature) {
-            return Err(
-                crate::application_entry::WorthQueryRequiredOutputPreparationDenial::WrongRoot,
-            );
-        }
-        Ok(Self {
-            application,
-            source_commit,
-            nodes: vec![Some(Box::new(TypedProgramNode::new(
-                root_feature,
-                root_feature_type,
-                root,
-            )))],
-            settlements: Vec::new(),
-            connections: Program::Connections::connections().into_connections(),
-            required_features,
-            inventory_features,
-            empty_features: BTreeSet::new(),
-            started_edges: BTreeSet::new(),
-            controls,
-            closed: false,
-        })
-    }
+    >,
+    root_demand: RootDemand<Schema, Program>,
+    root_settlement: Option<
+        crate::application_entry::WorthQueryApplicationOutputDemandSettlement<
+            Query<Schema, RootDemand<Schema, Program>>,
+        >,
+    >,
+    continuation: Option<Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>>,
+    controls: crate::application_entry::WorthQueryOutputDemandControls,
+    complete: bool,
+}
 
+impl<'application, Schema, Program>
+    WorthQueryApplicationProgramOutputHandle<'application, Schema, Program>
+where
+    Schema: ApplicationSchema + 'static,
+    Program: ApplicationProgramDefinition<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
+    RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    ApplicationProgramRootEdges<Schema, Program>: ProgramOutputContinuationFactory<
+        'application,
+        Schema,
+        Program,
+        RootDemand<Schema, Program>,
+    >,
+{
+    pub(in crate::application_entry) fn new(
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        root: WorthQueryApplicationProgramDemandHandle<
+            'application,
+            Schema,
+            Program,
+            RootDemand<Schema, Program>,
+        >,
+        root_demand: RootDemand<Schema, Program>,
+        controls: crate::application_entry::WorthQueryOutputDemandControls,
+    ) -> Self {
+        Self {
+            application,
+            root: Some(root),
+            root_demand,
+            root_settlement: None,
+            continuation: None,
+            controls,
+            complete: false,
+        }
+    }
+}
+
+impl<'application, Schema, Program>
+    WorthQueryApplicationProgramOutputHandle<'application, Schema, Program>
+where
+    Schema: ApplicationSchema + 'static,
+    Program: ApplicationProgramDefinition<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
+    RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    RootDemand<Schema, Program>: Clone,
+    Value<Schema, RootDemand<Schema, Program>>:
+        WorthQueryApplicationProjection<Schema, Query<Schema, RootDemand<Schema, Program>>> + Clone,
+    <Source<Schema, RootDemand<Schema, Program>> as ApplicationQueryBinding<Schema>>::Input:
+        ApplicationQueryIntent<
+            Schema,
+            Binding = Source<Schema, RootDemand<Schema, Program>>,
+        >,
+    <Source<Schema, RootDemand<Schema, Program>> as ApplicationQueryBinding<Schema>>::ScopeBinding:
+        ApplicationQueryScopeResolution<
+            Schema,
+            <Source<Schema, RootDemand<Schema, Program>> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+        >,
+    ApplicationProgramRootEdges<Schema, Program>:
+        ProgramOutputContinuationFactory<'application, Schema, Program, RootDemand<Schema, Program>>,
+{
     pub fn notifications(
         &self,
     ) -> Result<
         worth_query_execution::facade::primary_graph::WorthQueryOutputDemandNotifications,
         crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
     > {
-        self.nodes
-            .iter()
-            .flatten()
-            .next()
+        self.root
+            .as_ref()
             .ok_or(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Closed)?
             .notifications()
             .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)
     }
 
-    /// Returns the exact root observation once the root has settled, even while
-    /// dependent inventory work remains pending.
     pub fn settled_root_observation(
         &self,
     ) -> Option<&crate::application_entry::WorthQueryApplicationReadObservation> {
-        self.settlements
-            .first()
-            .map(|settlement| &settlement.observation)
+        self.root_settlement.as_ref().map(
+            crate::application_entry::WorthQueryApplicationOutputDemandSettlement::observation,
+        )
     }
 
     pub fn advance(
@@ -178,186 +152,71 @@ where
             Schema,
         >,
     ) -> Result<
-        WorthQueryApplicationProgramOutputProgress<Schema, Program, Inventory>,
+        WorthQueryApplicationProgramOutputProgress<
+            Query<Schema, RootDemand<Schema, Program>>,
+        >,
         crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
     > {
-        if self.closed {
-            return Err(
-                crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Closed,
-            );
+        if self.complete {
+            return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Closed);
         }
-        if !runtime_matches(self.application, request) {
-            return Err(
-                crate::application_entry::WorthQueryRequiredOutputPreparationDenial::ForeignProgram,
-            );
-        }
-        self.advance_active(request)?;
-        self.start_ready_connections(request)?;
-        if self.nodes.iter().any(Option::is_some) {
-            return Ok(WorthQueryApplicationProgramOutputProgress::Pending);
-        }
-        let complete = self
-            .inventory_features
-            .iter()
-            .all(|feature| self.feature_is_complete(feature));
-        if !complete {
-            return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::IncompleteInventory);
-        }
-        self.closed = true;
-        worth_query_execution::facade::publication_integration::program_execution_port(
-            self.application,
-        )
-        .release_program_recovery(&self.source_commit);
-        let basis = self
-            .settlements
-            .iter()
-            .map(|settlement| &settlement.observation)
-            .max_by_key(|observation| observation.selected_commit().ordinal())
-            .expect("an admitted program settles its root before completion")
-            .clone();
-        let root_observation = self
-            .settlements
-            .first()
-            .expect("the first program settlement belongs to its root")
-            .observation
-            .clone();
-        Ok(WorthQueryApplicationProgramOutputProgress::Settled(
-            WorthQueryApplicationProgramOutputSettlement {
-                outputs: self.settled_inventory_outputs(),
-                basis,
-                root_observation,
-                marker: std::marker::PhantomData,
-            },
-        ))
-    }
-
-    fn settled_inventory_outputs(&self) -> Vec<SettledProgramOutput> {
-        let inventory = self
-            .application
-            .installed_program()
-            .inventory::<Inventory>()
-            .expect("the admitted inventory remains installed");
-        inventory
-            .outputs()
-            .iter()
-            .flat_map(|output| {
-                self.settlements
-                    .iter()
-                    .filter(move |settlement| settlement.feature_type == output.feature_type())
-                    .map(move |settlement| SettledProgramOutput {
-                        feature_type: output.feature_type(),
-                        port_type: output.port_type(),
-                        demand: std::sync::Arc::clone(&settlement.demand),
-                        observation: settlement.observation.clone(),
-                        receipt: settlement.receipt.clone(),
-                    })
-            })
-            .collect()
-    }
-
-    fn advance_active(
-        &mut self,
-        request: &crate::application_entry::WorthQueryApplicationRequest<
-            'application,
-            '_,
-            '_,
-            Schema,
-        >,
-    ) -> Result<(), crate::application_entry::WorthQueryRequiredOutputPreparationDenial> {
-        for index in 0..self.nodes.len() {
-            let Some(node) = &mut self.nodes[index] else {
-                continue;
-            };
-            if let Some(settlement) = node.advance(request).map_err(
-                crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand,
-            )? {
-                self.nodes[index] = None;
-                self.settlements.push(settlement);
-            }
-        }
-        Ok(())
-    }
-
-    fn start_ready_connections(
-        &mut self,
-        request: &crate::application_entry::WorthQueryApplicationRequest<
-            'application,
-            '_,
-            '_,
-            Schema,
-        >,
-    ) -> Result<(), crate::application_entry::WorthQueryRequiredOutputPreparationDenial> {
-        for connection_index in 0..self.connections.len() {
-            let connection = &self.connections[connection_index];
-            if !self.required_features.contains(connection.target_feature())
-                || !self.parents_complete(connection.target_feature())
+        if let Some(root) = &mut self.root {
+            match root
+                .advance(request)
+                .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?
             {
-                continue;
-            }
-            for settlement_index in 0..self.settlements.len() {
-                let parent = &self.settlements[settlement_index];
-                if parent.feature != connection.source_feature()
-                    || !self
-                        .started_edges
-                        .insert((connection.identity(), settlement_index))
-                {
-                    continue;
+                WorthQueryApplicationProgramDemandProgress::Pending => {
+                    return Ok(WorthQueryApplicationProgramOutputProgress::Pending);
                 }
-                let started = connection.start(parent, request, self.application, self.controls)?;
-                if started.is_empty() {
-                    self.empty_features.insert(connection.target_feature());
+                WorthQueryApplicationProgramDemandProgress::Settled {
+                    settlement,
+                    authority,
+                } => {
+                    self.continuation = Some(ApplicationProgramRootEdges::<
+                        Schema,
+                        Program,
+                    >::start(
+                        self.application,
+                        &self.root_demand,
+                        &settlement,
+                        &authority,
+                        request,
+                        self.controls,
+                    )?);
+                    self.root_settlement = Some(settlement);
+                    self.root = None;
                 }
-                self.nodes.extend(started.into_iter().map(Some));
             }
         }
-        Ok(())
-    }
-
-    fn parents_complete(&self, target: &str) -> bool {
-        self.application
-            .installed_program()
-            .connections()
-            .iter()
-            .filter(|connection| connection.target_feature() == target)
-            .all(|connection| self.feature_is_complete(connection.source_feature()))
-    }
-
-    fn feature_is_complete(&self, feature: &str) -> bool {
-        (self.empty_features.contains(feature)
-            || self
-                .settlements
-                .iter()
-                .any(|settlement| settlement.feature == feature))
-            && !self
-                .nodes
-                .iter()
-                .flatten()
-                .any(|node| node.feature() == feature)
-    }
-
-    pub fn close(&mut self) {
-        if self.closed {
-            return;
-        }
-        for node in self.nodes.iter_mut().flatten() {
-            node.close();
-        }
-        self.nodes.clear();
-        self.closed = true;
-    }
-}
-
-impl<Schema, Program, Inventory> Drop
-    for WorthQueryApplicationProgramOutputHandle<'_, Schema, Program, Inventory>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-    Inventory: ApplicationProgramInventoryIdentity,
-{
-    fn drop(&mut self) {
-        if !self.closed {
-            for node in self.nodes.iter_mut().flatten() {
-                node.close();
+        let continuation = self
+            .continuation
+            .as_mut()
+            .expect("a settled root installs its typed output continuation");
+        match continuation.advance(request)? {
+            ProgramOutputContinuationProgress::Pending => {
+                Ok(WorthQueryApplicationProgramOutputProgress::Pending)
+            }
+            ProgramOutputContinuationProgress::Settled { outputs, work } => {
+                self.complete = true;
+                self.continuation = None;
+                let root = self
+                    .root_settlement
+                    .take()
+                    .expect("output progression retains its root settlement");
+                let program_work = super::program_output_work::WorthQueryApplicationProgramWork::from_settlements(
+                    work,
+                    (root.receipt(), root.readiness_delivery()),
+                    outputs.iter().map(|output| {
+                        (output.receipt(), output.readiness_delivery())
+                    }),
+                );
+                Ok(WorthQueryApplicationProgramOutputProgress::Settled(
+                    WorthQueryApplicationProgramOutputSettlement {
+                        root,
+                        outputs,
+                        work: program_work,
+                    },
+                ))
             }
         }
     }

@@ -83,7 +83,30 @@ where
             }
         };
         if !delivery.has_conditional_successor() {
+            let preserved = self
+                .installed_producers
+                .entries
+                .get(producer_identity)
+                .expect("readiness route must retain its installed producer")
+                .executor
+                .preserved_readiness_output(&receipt);
             let counters = delivery.counters();
+            let delivery_is_exact_noop = delivery.truth_targets_admitted() == 0
+                && delivery.change_set().changes().is_empty()
+                && delivery.signal_seeds_emitted() == 0
+                && delivery.node_fan_out() == 0
+                && delivery.slots_touched() == 0
+                && counters.failed_deliveries() == 0;
+            if preserved && delivery_is_exact_noop {
+                return self.finish_output_readiness_evaluation::<Family>(
+                    interest,
+                    producer_identity,
+                    crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputReadiness {
+                        receipt,
+                        delivery,
+                    },
+                );
+            }
             let result = Err(denial(
                 WorthQueryOutputDemandDenialKind::SchedulingRejected,
                 format!(

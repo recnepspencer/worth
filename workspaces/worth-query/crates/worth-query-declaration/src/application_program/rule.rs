@@ -6,44 +6,126 @@ use crate::application_schema::{
 
 use super::ApplicationFeature;
 
-pub trait ApplicationProgramExecutionPoint: Sized + 'static {
-    const POINT: ApplicationInvariantExecutionPoint;
+pub struct ApplicationRuleAt<Rule, ExecutionPoint> {
+    marker: PhantomData<fn() -> (Rule, ExecutionPoint)>,
 }
 
-pub struct AtCommitBoundary;
-pub struct AtMutationSensitive;
-pub struct AtSnapshotPublication;
+pub struct ApplicationRuleList<Rule, Tail> {
+    marker: PhantomData<fn() -> (Rule, Tail)>,
+}
 
-impl ApplicationProgramExecutionPoint for AtCommitBoundary {
-    const POINT: ApplicationInvariantExecutionPoint =
+pub struct ApplicationRuleLeaf;
+pub struct ApplicationCommitBoundary;
+pub struct ApplicationMutationSensitive;
+pub struct ApplicationSnapshotPublication;
+
+pub trait ApplicationRuleExecutionPoint: Sized + 'static {
+    const VALUE: ApplicationInvariantExecutionPoint;
+}
+
+impl ApplicationRuleExecutionPoint for ApplicationCommitBoundary {
+    const VALUE: ApplicationInvariantExecutionPoint =
         ApplicationInvariantExecutionPoint::CommitBoundary;
 }
-impl ApplicationProgramExecutionPoint for AtMutationSensitive {
-    const POINT: ApplicationInvariantExecutionPoint =
+
+impl ApplicationRuleExecutionPoint for ApplicationMutationSensitive {
+    const VALUE: ApplicationInvariantExecutionPoint =
         ApplicationInvariantExecutionPoint::MutationSensitive;
 }
-impl ApplicationProgramExecutionPoint for AtSnapshotPublication {
-    const POINT: ApplicationInvariantExecutionPoint =
+
+impl ApplicationRuleExecutionPoint for ApplicationSnapshotPublication {
+    const VALUE: ApplicationInvariantExecutionPoint =
         ApplicationInvariantExecutionPoint::SnapshotPublication;
+}
+
+pub trait ApplicationRuleRefShape<Schema>: Sized + 'static
+where
+    Schema: ApplicationSchema,
+{
+    fn declaration(
+        execution_point: ApplicationInvariantExecutionPoint,
+    ) -> ApplicationProgramRuleDeclaration;
+}
+
+pub trait ApplicationRuleShape<Schema>: Sized + 'static
+where
+    Schema: ApplicationSchema,
+{
+    fn declaration() -> ApplicationProgramRuleDeclaration;
+}
+
+impl<Schema, Rule, ExecutionPoint> ApplicationRuleShape<Schema>
+    for ApplicationRuleAt<Rule, ExecutionPoint>
+where
+    Schema: ApplicationSchema,
+    Rule: ApplicationRuleRefShape<Schema>,
+    ExecutionPoint: ApplicationRuleExecutionPoint,
+{
+    fn declaration() -> ApplicationProgramRuleDeclaration {
+        Rule::declaration(ExecutionPoint::VALUE)
+    }
+}
+
+pub trait ApplicationProgramRulesShape<Schema>: Sized + 'static
+where
+    Schema: ApplicationSchema,
+{
+    fn rules() -> Vec<ApplicationProgramRuleDeclaration>;
+}
+
+pub trait ApplicationRuleTailShape<Schema>: Sized + 'static
+where
+    Schema: ApplicationSchema,
+{
+    fn append_rules(rules: &mut Vec<ApplicationProgramRuleDeclaration>);
+}
+
+impl<Schema, Rule, Tail> ApplicationProgramRulesShape<Schema> for ApplicationRuleList<Rule, Tail>
+where
+    Schema: ApplicationSchema,
+    Rule: ApplicationRuleShape<Schema>,
+    Tail: ApplicationRuleTailShape<Schema>,
+{
+    fn rules() -> Vec<ApplicationProgramRuleDeclaration> {
+        let mut rules = vec![Rule::declaration()];
+        Tail::append_rules(&mut rules);
+        rules
+    }
+}
+
+impl<Schema> ApplicationRuleTailShape<Schema> for ApplicationRuleLeaf
+where
+    Schema: ApplicationSchema,
+{
+    fn append_rules(_: &mut Vec<ApplicationProgramRuleDeclaration>) {}
+}
+
+impl<Schema, Rule, Tail> ApplicationRuleTailShape<Schema> for ApplicationRuleList<Rule, Tail>
+where
+    Schema: ApplicationSchema,
+    Rule: ApplicationRuleShape<Schema>,
+    Tail: ApplicationRuleTailShape<Schema>,
+{
+    fn append_rules(rules: &mut Vec<ApplicationProgramRuleDeclaration>) {
+        rules.push(Rule::declaration());
+        Tail::append_rules(rules);
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ApplicationProgramRuleDeclaration {
+    composition_instance: &'static str,
     identity: &'static str,
     major: u16,
     minor: u16,
     execution_point: ApplicationInvariantExecutionPoint,
     local_owner: Option<&'static str>,
-    posture: ApplicationProgramRulePosture,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ApplicationProgramRulePosture {
-    Available,
-    Unavailable,
 }
 
 impl ApplicationProgramRuleDeclaration {
+    pub const fn composition_instance(&self) -> &'static str {
+        self.composition_instance
+    }
     pub const fn identity(&self) -> &'static str {
         self.identity
     }
@@ -58,14 +140,6 @@ impl ApplicationProgramRuleDeclaration {
     }
     pub const fn local_owner(&self) -> Option<&'static str> {
         self.local_owner
-    }
-    pub const fn posture(&self) -> ApplicationProgramRulePosture {
-        self.posture
-    }
-
-    const fn unavailable(mut self) -> Self {
-        self.posture = ApplicationProgramRulePosture::Unavailable;
-        self
     }
 }
 
@@ -91,12 +165,13 @@ where
         execution_point: ApplicationInvariantExecutionPoint,
     ) -> ApplicationProgramRuleDeclaration {
         ApplicationProgramRuleDeclaration {
+            composition_instance:
+                <super::ApplicationRootComposition as super::ApplicationCompositionInstance>::PATH,
             identity: Invariant::IDENTIFIER,
             major: Invariant::MAJOR,
             minor: Invariant::MINOR,
             execution_point,
             local_owner: Some(Feature::IDENTITY),
-            posture: ApplicationProgramRulePosture::Available,
         }
     }
 }
@@ -109,6 +184,20 @@ where
 {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl<Schema, Feature, Invariant> ApplicationRuleRefShape<Schema>
+    for ApplicationLocalRuleRef<Schema, Feature, Invariant>
+where
+    Schema: ApplicationSchema + 'static,
+    Feature: ApplicationFeature<Schema>,
+    Invariant: ApplicationInvariantMarkerIdentity<Schema>,
+{
+    fn declaration(
+        execution_point: ApplicationInvariantExecutionPoint,
+    ) -> ApplicationProgramRuleDeclaration {
+        Self::new().declaration(execution_point)
     }
 }
 
@@ -133,12 +222,66 @@ where
         execution_point: ApplicationInvariantExecutionPoint,
     ) -> ApplicationProgramRuleDeclaration {
         ApplicationProgramRuleDeclaration {
+            composition_instance:
+                <super::ApplicationRootComposition as super::ApplicationCompositionInstance>::PATH,
             identity: Invariant::IDENTIFIER,
             major: Invariant::MAJOR,
             minor: Invariant::MINOR,
             execution_point,
             local_owner: None,
-            posture: ApplicationProgramRulePosture::Available,
+        }
+    }
+}
+
+/// A feature-local rule installed at one explicit composition instance.
+pub struct ApplicationLocalRuleInstanceRef<Schema, Instance, Feature, Invariant> {
+    marker: PhantomData<fn() -> (Schema, Instance, Feature, Invariant)>,
+}
+
+impl<Schema, Instance, Feature, Invariant> ApplicationRuleRefShape<Schema>
+    for ApplicationLocalRuleInstanceRef<Schema, Instance, Feature, Invariant>
+where
+    Schema: ApplicationSchema + 'static,
+    Instance: super::ApplicationCompositionInstance,
+    Feature: ApplicationFeature<Schema>,
+    Invariant: ApplicationInvariantMarkerIdentity<Schema>,
+{
+    fn declaration(
+        execution_point: ApplicationInvariantExecutionPoint,
+    ) -> ApplicationProgramRuleDeclaration {
+        ApplicationProgramRuleDeclaration {
+            composition_instance: Instance::PATH,
+            identity: Invariant::IDENTIFIER,
+            major: Invariant::MAJOR,
+            minor: Invariant::MINOR,
+            execution_point,
+            local_owner: Some(Feature::IDENTITY),
+        }
+    }
+}
+
+/// A composition-owned rule installed at one explicit composition instance.
+pub struct ApplicationSharedRuleInstanceRef<Schema, Instance, Invariant> {
+    marker: PhantomData<fn() -> (Schema, Instance, Invariant)>,
+}
+
+impl<Schema, Instance, Invariant> ApplicationRuleRefShape<Schema>
+    for ApplicationSharedRuleInstanceRef<Schema, Instance, Invariant>
+where
+    Schema: ApplicationSchema + 'static,
+    Instance: super::ApplicationCompositionInstance,
+    Invariant: ApplicationInvariantMarkerIdentity<Schema>,
+{
+    fn declaration(
+        execution_point: ApplicationInvariantExecutionPoint,
+    ) -> ApplicationProgramRuleDeclaration {
+        ApplicationProgramRuleDeclaration {
+            composition_instance: Instance::PATH,
+            identity: Invariant::IDENTIFIER,
+            major: Invariant::MAJOR,
+            minor: Invariant::MINOR,
+            execution_point,
+            local_owner: None,
         }
     }
 }
@@ -153,117 +296,15 @@ where
     }
 }
 
-pub struct ApplicationProgramLocalRule<Feature, Invariant, Point>(
-    PhantomData<fn() -> (Feature, Invariant, Point)>,
-);
-pub struct ApplicationProgramSharedRule<Invariant, Point>(PhantomData<fn() -> (Invariant, Point)>);
-pub struct ApplicationProgramUnavailableLocalRule<Feature, Invariant, Point>(
-    PhantomData<fn() -> (Feature, Invariant, Point)>,
-);
-pub struct ApplicationProgramUnavailableSharedRule<Invariant, Point>(
-    PhantomData<fn() -> (Invariant, Point)>,
-);
-
-pub trait ApplicationProgramRuleNode<Schema>
+impl<Schema, Invariant> ApplicationRuleRefShape<Schema>
+    for ApplicationSharedRuleRef<Schema, Invariant>
 where
-    Schema: ApplicationSchema,
-{
-    fn declaration() -> ApplicationProgramRuleDeclaration;
-}
-
-impl<Schema, Feature, Invariant, Point> ApplicationProgramRuleNode<Schema>
-    for ApplicationProgramLocalRule<Feature, Invariant, Point>
-where
-    Schema: ApplicationSchema,
-    Feature: ApplicationFeature<Schema>,
+    Schema: ApplicationSchema + 'static,
     Invariant: ApplicationInvariantMarkerIdentity<Schema>,
-    Point: ApplicationProgramExecutionPoint,
 {
-    fn declaration() -> ApplicationProgramRuleDeclaration {
-        ApplicationLocalRuleRef::<Schema, Feature, Invariant>::new().declaration(Point::POINT)
+    fn declaration(
+        execution_point: ApplicationInvariantExecutionPoint,
+    ) -> ApplicationProgramRuleDeclaration {
+        Self::new().declaration(execution_point)
     }
 }
-
-impl<Schema, Invariant, Point> ApplicationProgramRuleNode<Schema>
-    for ApplicationProgramSharedRule<Invariant, Point>
-where
-    Schema: ApplicationSchema,
-    Invariant: ApplicationInvariantMarkerIdentity<Schema>,
-    Point: ApplicationProgramExecutionPoint,
-{
-    fn declaration() -> ApplicationProgramRuleDeclaration {
-        ApplicationSharedRuleRef::<Schema, Invariant>::new().declaration(Point::POINT)
-    }
-}
-
-impl<Schema, Feature, Invariant, Point> ApplicationProgramRuleNode<Schema>
-    for ApplicationProgramUnavailableLocalRule<Feature, Invariant, Point>
-where
-    Schema: ApplicationSchema,
-    Feature: ApplicationFeature<Schema>,
-    Invariant: ApplicationInvariantMarkerIdentity<Schema>,
-    Point: ApplicationProgramExecutionPoint,
-{
-    fn declaration() -> ApplicationProgramRuleDeclaration {
-        ApplicationLocalRuleRef::<Schema, Feature, Invariant>::new()
-            .declaration(Point::POINT)
-            .unavailable()
-    }
-}
-
-impl<Schema, Invariant, Point> ApplicationProgramRuleNode<Schema>
-    for ApplicationProgramUnavailableSharedRule<Invariant, Point>
-where
-    Schema: ApplicationSchema,
-    Invariant: ApplicationInvariantMarkerIdentity<Schema>,
-    Point: ApplicationProgramExecutionPoint,
-{
-    fn declaration() -> ApplicationProgramRuleDeclaration {
-        ApplicationSharedRuleRef::<Schema, Invariant>::new()
-            .declaration(Point::POINT)
-            .unavailable()
-    }
-}
-
-pub trait ApplicationProgramRuleSet<Schema>
-where
-    Schema: ApplicationSchema,
-{
-    fn declarations() -> Vec<ApplicationProgramRuleDeclaration>;
-}
-
-impl<Schema> ApplicationProgramRuleSet<Schema> for ()
-where
-    Schema: ApplicationSchema,
-{
-    fn declarations() -> Vec<ApplicationProgramRuleDeclaration> {
-        Vec::new()
-    }
-}
-
-macro_rules! impl_rule_sets {
-    ($($rule:ident),+) => {
-        impl<Schema, $($rule),+> ApplicationProgramRuleSet<Schema> for ($($rule,)+)
-        where
-            Schema: ApplicationSchema,
-            $($rule: ApplicationProgramRuleNode<Schema>,)+
-        {
-            fn declarations() -> Vec<ApplicationProgramRuleDeclaration> {
-                vec![$($rule::declaration()),+]
-            }
-        }
-    };
-}
-
-impl_rule_sets!(A);
-impl_rule_sets!(A, B);
-impl_rule_sets!(A, B, C);
-impl_rule_sets!(A, B, C, D);
-impl_rule_sets!(A, B, C, D, E);
-impl_rule_sets!(A, B, C, D, E, F);
-impl_rule_sets!(A, B, C, D, E, F, G);
-impl_rule_sets!(A, B, C, D, E, F, G, H);
-impl_rule_sets!(A, B, C, D, E, F, G, H, I);
-impl_rule_sets!(A, B, C, D, E, F, G, H, I, J);
-impl_rule_sets!(A, B, C, D, E, F, G, H, I, J, K);
-impl_rule_sets!(A, B, C, D, E, F, G, H, I, J, K, L);

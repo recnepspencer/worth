@@ -1,4 +1,7 @@
 //! Host-audience view over the production Query authority graph.
+//!
+//! Program-output publication custody is deliberately absent from this facade;
+//! the workspace boundary checker reserves its issuer to the publication owner.
 
 pub use worth_query_admission::facade as admission;
 pub use worth_query_declaration::facade as declaration;

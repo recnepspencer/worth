@@ -4,7 +4,7 @@ mod request;
 mod settlement;
 
 pub(in crate::application_entry) use program_interest::{
-    WorthQueryProgramNodeHandle, WorthQueryProgramNodeProgress,
+    WorthQueryApplicationProgramDemandHandle, WorthQueryApplicationProgramDemandProgress,
 };
 
 pub use interest::{

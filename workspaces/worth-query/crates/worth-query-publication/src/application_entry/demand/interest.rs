@@ -1,5 +1,6 @@
 use worth_query_declaration::facade::application_program::{
-    ApplicationProgramDefinition, ApplicationProgramInventoryIdentity,
+    ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
+    ApplicationProgramRootConnection,
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
@@ -12,8 +13,9 @@ use worth_query_execution::facade::application_contribution::{
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryAdmittedOutputDemand, WorthQueryApplicationOutputDemandSource,
-    WorthQueryApplicationProjection, WorthQueryOutputDemandAdvance,
+    WorthQueryAdmittedOutputDemand, WorthQueryApplicationDependentOutputConnection,
+    WorthQueryApplicationOutputDemandSource, WorthQueryApplicationProjection,
+    WorthQueryApplicationRequiredOutputConnection, WorthQueryOutputDemandAdvance,
     WorthQueryOutputDemandNotifications, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
@@ -31,6 +33,9 @@ type SourceQuery<Schema, Demand> =
 type SourceValue<Schema, Demand> = <<SourceBinding<Schema, Demand> as ApplicationQueryBinding<
     Schema,
 >>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+type RootConnection<Schema, Program> = ApplicationProgramRootConnection<Schema, Program>;
+type ConnectionBinding<Schema, Connection> =
+    <Connection as ApplicationConnectionShape<Schema>>::Binding;
 
 pub enum WorthQueryApplicationOutputDemandProgress<Query> {
     Pending,
@@ -74,17 +79,19 @@ where
         self.start_ordinary(source_result.into_output_demand_source())
     }
 
-    pub(in crate::application_entry) fn start_recovery<Program, Inventory>(
+    pub(in crate::application_entry) fn start_recovery<Program>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<
-        super::WorthQueryProgramNodeHandle<'application, Schema, Program, Inventory, Demand>,
+        super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     >
     where
         Program: ApplicationProgramDefinition<Schema>,
-        Inventory: ApplicationProgramInventoryIdentity,
+        Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
+        RootConnection<Schema, Program>:
+            WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
     {
         let source_result = self.query_source()?;
         let maximum_work = self
@@ -93,41 +100,43 @@ where
         let maximum_retained_bytes = self
             .controls
             .map_or(1, |controls| controls.maximum_retained_bytes().get());
-        let admitted =
-            worth_query_execution::facade::publication_integration::program_execution_port(
-                application,
-            )
-            .recover_program_output::<Inventory, Demand>(
+        let admitted = application
+            .recover_program_root_output(
+                &worth_query_execution::publication_boundary::program_publication_access(),
                 source_result.into_output_demand_source(),
                 maximum_work,
                 maximum_retained_bytes,
                 source_receipt,
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
-        Ok(super::WorthQueryProgramNodeHandle::new(
+        Ok(super::WorthQueryApplicationProgramDemandHandle::new(
             application,
             admitted,
             self.demand,
         ))
     }
 
-    pub(in crate::application_entry) fn start_dependent<Program, Inventory, ParentDemand>(
+    pub(in crate::application_entry) fn start_dependent<Program, ParentDemand, Connection>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent: &worth_query_execution::facade::application_installation::WorthQuerySettledProgramOutput<
             Schema,
             Program,
-            Inventory,
             ParentDemand,
         >,
     ) -> Result<
-        super::WorthQueryProgramNodeHandle<'application, Schema, Program, Inventory, Demand>,
+        super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     >
     where
         Program: ApplicationProgramDefinition<Schema>,
-        Inventory: ApplicationProgramInventoryIdentity,
         ParentDemand: WorthQueryApplicationOutputDemand<Schema>,
+        Connection: ApplicationConnectionShape<Schema>,
+        ConnectionBinding<Schema, Connection>: WorthQueryApplicationDependentOutputConnection<
+            Schema,
+            RootDemand = ParentDemand,
+            Demand = Demand,
+        >,
     {
         let source_result = self.query_source()?;
         let maximum_work = self
@@ -136,18 +145,16 @@ where
         let maximum_retained_bytes = self
             .controls
             .map_or(1, |controls| controls.maximum_retained_bytes().get());
-        let admitted =
-            worth_query_execution::facade::publication_integration::program_execution_port(
-                application,
-            )
-            .admit_dependent_program_output::<Inventory, ParentDemand, Demand>(
+        let admitted = application
+            .admit_program_dependent_output::<ParentDemand, Connection>(
+                &worth_query_execution::publication_boundary::program_publication_access(),
                 parent,
                 source_result.into_output_demand_source(),
                 maximum_work,
                 maximum_retained_bytes,
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
-        Ok(super::WorthQueryProgramNodeHandle::new(
+        Ok(super::WorthQueryApplicationProgramDemandHandle::new(
             application,
             admitted,
             self.demand,
@@ -184,7 +191,7 @@ where
         .map_err(WorthQueryApplicationOutputDemandDenial::Source)
     }
 
-    pub(in crate::application_entry) fn start_performed<Program, Inventory>(
+    pub(in crate::application_entry) fn start_performed<Program>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         prepared: &worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
@@ -193,12 +200,14 @@ where
             SourceValue<Schema, Demand>,
         >,
     ) -> Result<
-        super::WorthQueryProgramNodeHandle<'application, Schema, Program, Inventory, Demand>,
+        super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     >
     where
         Program: ApplicationProgramDefinition<Schema>,
-        Inventory: ApplicationProgramInventoryIdentity,
+        Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
+        RootConnection<Schema, Program>:
+            WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
     {
         let maximum_work = self
             .controls
@@ -206,18 +215,16 @@ where
         let maximum_retained_bytes = self
             .controls
             .map_or(1, |controls| controls.maximum_retained_bytes().get());
-        let admitted =
-            worth_query_execution::facade::publication_integration::program_execution_port(
-                application,
-            )
-            .admit_performed_program_output::<Inventory, Demand>(
+        let admitted = application
+            .admit_performed_program_root_output(
+                &worth_query_execution::publication_boundary::program_publication_access(),
                 source_result,
                 maximum_work,
                 maximum_retained_bytes,
                 prepared,
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
-        Ok(super::WorthQueryProgramNodeHandle::new(
+        Ok(super::WorthQueryApplicationProgramDemandHandle::new(
             application,
             admitted,
             self.demand,

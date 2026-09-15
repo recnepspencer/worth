@@ -91,7 +91,6 @@ pub struct WorthQueryOutputDemandNotifications {
 mod admission;
 mod lifecycle;
 mod notifications;
-mod program_recovery;
 mod progression;
 mod source_custody;
 mod supersession;
@@ -99,7 +98,6 @@ mod supersession;
 mod tests;
 use supersession::supersede_predecessors;
 
-#[derive(Default)]
 struct DemandWake {
     generation: Mutex<u64>,
     changed: Condvar,
@@ -159,7 +157,6 @@ struct DemandRecord {
 
 #[derive(Default)]
 struct DemandRegistryState {
-    wake: Arc<DemandWake>,
     records: HashMap<WorthQueryOutputDemandKey, DemandRecord>,
     source_preparations:
         HashMap<worth_runtime_world::facade::ProductBranchIncarnation, SourcePreparationState>,
@@ -169,16 +166,6 @@ struct DemandRegistryState {
     )>,
     retired_prepared_sources:
         HashMap<worth_runtime_world::facade::CompositeCommitIdentity, WorthQueryOutputDemandDenial>,
-    program_recovery: Vec<ProgramRecoveryCustody>,
-}
-
-struct ProgramRecoveryCustody {
-    provider_runtime_instance_id: u64,
-    product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    source_commit: worth_runtime_world::facade::CompositeCommitIdentity,
-    inventory: std::any::TypeId,
-    root: std::any::TypeId,
-    demand: Box<dyn std::any::Any + Send + Sync>,
 }
 
 #[derive(Default)]

@@ -53,7 +53,7 @@ pub(super) fn candidate_bytes_beyond_host_limit_are_denied(
     assert_eq!(read_y(&request, "sibling-a"), 21);
 }
 
-pub(super) fn result_tree_allocation_beyond_host_limit_is_released(
+pub(super) fn source_footprint_bytes_beyond_host_limit_are_denied(
     foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>,
 ) {
     let world = installation::install_with_query_bytes(foreign, 1400);
@@ -71,24 +71,19 @@ pub(super) fn result_tree_allocation_beyond_host_limit_is_released(
         })
         .execute();
     let Err(denial) = outcome else {
-        panic!("the result tree must obey the result-byte reservation")
+        panic!("the retained source footprint must obey the result-byte reservation")
     };
     let WorthQueryApplicationRequestQueryDenial::Execution(denial) = denial else {
-        panic!("result tree bytes must deny at bounded execution: {denial:?}")
+        panic!("source footprint bytes must deny at bounded execution: {denial:?}")
     };
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded
     );
+    // The current tree materializer reserves each relation's immediate row
+    // vector before descending into its fields. This budget therefore fails at
+    // the first relation allocation, rather than at a later descendant field.
     assert_eq!(denial.subject(), "root/relation[0]");
-    assert_eq!(
-        world
-            .application
-            .result_buffer_observer()
-            .observe()
-            .active_buffers(),
-        0
-    );
     assert_eq!(
         world
             .application

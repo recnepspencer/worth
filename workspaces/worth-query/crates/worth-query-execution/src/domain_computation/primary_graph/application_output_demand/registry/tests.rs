@@ -349,8 +349,6 @@ fn retiring_occurrence_removes_unheld_cached_work_and_marks_preparation_closed()
         .is_empty());
 }
 
-mod recovery_custody;
-
 #[test]
 fn denied_executor_releases_the_shared_claim_for_its_peer() {
     let registry = WorthQueryOutputDemandRegistry::default();

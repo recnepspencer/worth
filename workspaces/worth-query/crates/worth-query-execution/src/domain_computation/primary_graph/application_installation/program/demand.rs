@@ -1,74 +1,82 @@
-use std::marker::PhantomData;
-use std::sync::Arc;
-
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::application_program::{
-    ApplicationProgramDefinition, ApplicationProgramInventoryIdentity,
+    ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationStructuredValueBinding,
 };
 
-use super::WorthQueryProgramExecutionPort;
+use super::WorthQueryProgramApplicationRuntime;
 use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedOutputDemand, WorthQueryApplicationOutputDemand,
-    WorthQueryApplicationOutputDemandDisclosure, WorthQueryApplicationOutputDemandSource,
-    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    WorthQueryAdmittedOutputDemand, WorthQueryApplicationDependentOutputConnection,
+    WorthQueryApplicationOutputDemand, WorthQueryApplicationOutputDemandDisclosure,
+    WorthQueryApplicationOutputDemandSource, WorthQueryApplicationRequiredOutputConnection,
+    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandNotifications, WorthQueryOutputDemandSettlement,
     WorthQueryPreparedRequiredOutputSource, WorthQueryProducerOutputFamily,
 };
 
 type Family<Schema, Demand> = <Demand as WorthQueryApplicationOutputDemand<Schema>>::OutputFamily;
-type SourceQuery<Schema, Demand> = <<Family<Schema, Demand> as WorthQueryProducerOutputFamily<
-    Schema,
->>::Source as ApplicationQueryBinding<Schema>>::Query;
+type Source<Schema, Demand> =
+    <Family<Schema, Demand> as WorthQueryProducerOutputFamily<Schema>>::Source;
+type SourceQuery<Schema, Demand> =
+    <Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::Query;
 type SourceValue<Schema, Demand> =
-    <<<Family<Schema, Demand> as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+    <<Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+type RootConnectionRef<Schema, Program> =
+    <<Program as ApplicationProgramDefinition<Schema>>::OutputGraph as ApplicationOutputGraphShape<
+        Schema,
+    >>::RootConnection;
+type RootConnection<Schema, Program> =
+    <RootConnectionRef<Schema, Program> as ApplicationConnectionShape<Schema>>::Binding;
+pub type WorthQueryProgramRootDemand<Schema, Program> =
+    <RootConnection<Schema, Program> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand;
+type ConnectionBinding<Schema, Connection> =
+    <Connection as ApplicationConnectionShape<Schema>>::Binding;
+type ConnectionDemand<Schema, Connection> =
+    <ConnectionBinding<Schema, Connection> as WorthQueryApplicationDependentOutputConnection<
+        Schema,
+    >>::Demand;
 
-/// One admitted node in an installed program plan.
-pub struct WorthQueryAdmittedProgramOutput<Schema, Program, Inventory, Demand>
+/// Program-affine admission for one required output at any graph depth.
+pub struct WorthQueryAdmittedProgramOutput<Schema, Program, Demand>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
-    Inventory: ApplicationProgramInventoryIdentity,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
-    marker: PhantomData<fn() -> (Program, Inventory, Demand)>,
+    marker: std::marker::PhantomData<fn() -> Program>,
 }
 
-/// Settlement authority sealed to one installed program and requested inventory.
-pub struct WorthQuerySettledProgramOutput<Schema, Program, Inventory, Demand>
+/// Settled output that authorizes admission of its declared child edges.
+pub struct WorthQuerySettledProgramOutput<Schema, Program, Demand>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
-    Inventory: ApplicationProgramInventoryIdentity,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
-    retained: Arc<WorthQueryOutputDemandSettlement>,
-    marker: PhantomData<fn() -> (Schema, Program, Inventory, Demand)>,
+    retained: std::sync::Arc<WorthQueryOutputDemandSettlement>,
+    marker: std::marker::PhantomData<fn() -> (Schema, Program, Demand)>,
 }
 
-pub enum WorthQueryProgramOutputAdvance<Schema, Program, Inventory, Demand>
+pub enum WorthQueryProgramOutputAdvance<Schema, Program, Demand>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
-    Inventory: ApplicationProgramInventoryIdentity,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     Pending,
-    Settled(WorthQuerySettledProgramOutput<Schema, Program, Inventory, Demand>),
+    Settled(WorthQuerySettledProgramOutput<Schema, Program, Demand>),
 }
 
-impl<Schema, Program, Inventory, Demand>
-    WorthQueryAdmittedProgramOutput<Schema, Program, Inventory, Demand>
+impl<Schema, Program, Demand> WorthQueryAdmittedProgramOutput<Schema, Program, Demand>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
-    Inventory: ApplicationProgramInventoryIdentity,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     pub fn observed_source(
@@ -90,44 +98,46 @@ where
     }
 }
 
-impl<Schema, Program, Inventory, Demand>
-    WorthQuerySettledProgramOutput<Schema, Program, Inventory, Demand>
+impl<Schema, Program, Demand> WorthQuerySettledProgramOutput<Schema, Program, Demand>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
-    Inventory: ApplicationProgramInventoryIdentity,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
-    pub fn retained(&self) -> Arc<WorthQueryOutputDemandSettlement> {
-        Arc::clone(&self.retained)
+    pub fn retained(&self) -> std::sync::Arc<WorthQueryOutputDemandSettlement> {
+        std::sync::Arc::clone(&self.retained)
     }
 }
 
-impl<Schema, Program> WorthQueryProgramExecutionPort<'_, Schema, Program>
+impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
+    RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
-    pub fn recover_program_output<Inventory, Demand>(
+    pub fn recover_program_root_output(
         &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
-            SourceQuery<Schema, Demand>,
-            SourceValue<Schema, Demand>,
+            SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
+            SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
         >,
         maximum_work: usize,
         maximum_retained_bytes: usize,
         source_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<
-        WorthQueryAdmittedProgramOutput<Schema, Program, Inventory, Demand>,
+        WorthQueryAdmittedProgramOutput<
+            Schema,
+            Program,
+            WorthQueryProgramRootDemand<Schema, Program>,
+        >,
         WorthQueryOutputDemandDenial,
-    >
-    where
-        Inventory: ApplicationProgramInventoryIdentity,
-        Demand: WorthQueryApplicationOutputDemand<Schema>,
-    {
-        self.application
-            .runtime
-            .admit_recovered_output_demand::<Family<Schema, Demand>>(
+    > {
+        self.runtime
+            .admit_recovered_output_demand::<
+                Family<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
+            >(
                 source,
                 maximum_work,
                 maximum_retained_bytes,
@@ -135,60 +145,59 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
-                marker: PhantomData,
+                marker: std::marker::PhantomData,
             })
     }
 
-    pub fn admit_performed_program_output<Inventory, Demand>(
+    pub fn admit_performed_program_root_output(
         &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
-            SourceQuery<Schema, Demand>,
-            SourceValue<Schema, Demand>,
+            SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
+            SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
         >,
         maximum_work: usize,
         maximum_retained_bytes: usize,
         prepared: &WorthQueryPreparedRequiredOutputSource,
     ) -> Result<
-        WorthQueryAdmittedProgramOutput<Schema, Program, Inventory, Demand>,
+        WorthQueryAdmittedProgramOutput<
+            Schema,
+            Program,
+            WorthQueryProgramRootDemand<Schema, Program>,
+        >,
         WorthQueryOutputDemandDenial,
-    >
-    where
-        Inventory: ApplicationProgramInventoryIdentity,
-        Demand: WorthQueryApplicationOutputDemand<Schema>,
-    {
-        self.application
-            .runtime
-            .admit_performed_output_demand::<Family<Schema, Demand>>(
-                source,
-                maximum_work,
-                maximum_retained_bytes,
-                prepared,
-            )
+    > {
+        self.runtime
+            .admit_performed_output_demand::<
+                Family<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
+            >(source, maximum_work, maximum_retained_bytes, prepared)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
-                marker: PhantomData,
+                marker: std::marker::PhantomData,
             })
     }
+}
 
-    pub fn advance_program_output<Inventory, Demand>(
+impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
+where
+    Schema: ApplicationSchema + 'static,
+    Program: ApplicationProgramDefinition<Schema>,
+{
+    pub fn advance_program_output<Demand>(
         &self,
-        demand: &WorthQueryAdmittedProgramOutput<Schema, Program, Inventory, Demand>,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        demand: &WorthQueryAdmittedProgramOutput<Schema, Program, Demand>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
         disclosure: WorthQueryApplicationOutputDemandDisclosure<SourceQuery<Schema, Demand>>,
-    ) -> Result<
-        WorthQueryProgramOutputAdvance<Schema, Program, Inventory, Demand>,
-        WorthQueryOutputDemandDenial,
-    >
+    ) -> Result<WorthQueryProgramOutputAdvance<Schema, Program, Demand>, WorthQueryOutputDemandDenial>
     where
-        Inventory: ApplicationProgramInventoryIdentity,
         Demand: WorthQueryApplicationOutputDemand<Schema>,
         SourceValue<Schema, Demand>: 'static,
         SourceQuery<Schema, Demand>: 'static,
     {
-        self.application
-            .runtime
+        self.runtime
             .advance_output_demand(
                 &demand.admitted,
                 principal,
@@ -201,34 +210,42 @@ where
                 WorthQueryOutputDemandAdvance::Settled(retained) => {
                     WorthQueryProgramOutputAdvance::Settled(WorthQuerySettledProgramOutput {
                         retained,
-                        marker: PhantomData,
+                        marker: std::marker::PhantomData,
                     })
                 }
             })
     }
 
-    pub fn admit_dependent_program_output<Inventory, ParentDemand, Demand>(
+    pub fn admit_program_dependent_output<ParentDemand, Connection>(
         &self,
-        parent: &WorthQuerySettledProgramOutput<Schema, Program, Inventory, ParentDemand>,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        parent: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
         source: WorthQueryApplicationOutputDemandSource<
-            SourceQuery<Schema, Demand>,
-            SourceValue<Schema, Demand>,
+            SourceQuery<Schema, ConnectionDemand<Schema, Connection>>,
+            SourceValue<Schema, ConnectionDemand<Schema, Connection>>,
         >,
         maximum_work: usize,
         maximum_retained_bytes: usize,
     ) -> Result<
-        WorthQueryAdmittedProgramOutput<Schema, Program, Inventory, Demand>,
+        WorthQueryAdmittedProgramOutput<Schema, Program, ConnectionDemand<Schema, Connection>>,
         WorthQueryOutputDemandDenial,
     >
     where
-        Inventory: ApplicationProgramInventoryIdentity,
         ParentDemand: WorthQueryApplicationOutputDemand<Schema>,
-        Demand: WorthQueryApplicationOutputDemand<Schema>,
+        Connection: ApplicationConnectionShape<Schema>,
+        ConnectionBinding<Schema, Connection>:
+            WorthQueryApplicationDependentOutputConnection<Schema, RootDemand = ParentDemand>,
     {
-        if !parent.retained.belongs_to(&self.application.runtime) {
+        if !self.contains_connection_type::<Connection>() {
             return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::ForeignSettlement,
-                "program parent belongs to another installed application",
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "dependent output connection is not installed for this program",
+            ));
+        }
+        if !parent.retained.belongs_to(&self.runtime) {
+            return Err(WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                "dependent output parent belongs to another installed application",
             ));
         }
         let selected_source = source
@@ -246,20 +263,19 @@ where
                 || observed.selected_product_occurrence() != Some(parent_occurrence)
         }) {
             return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::ForeignSettlement,
-                "dependent source was not discovered at its settled program parent",
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                "dependent output source was not discovered at its settled program parent",
             ));
         }
-        self.application
-            .runtime
-            .admit_required_output_demand::<Family<Schema, Demand>>(
+        self.runtime
+            .admit_required_output_demand::<Family<Schema, ConnectionDemand<Schema, Connection>>>(
                 source,
                 maximum_work,
                 maximum_retained_bytes,
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
-                marker: PhantomData,
+                marker: std::marker::PhantomData,
             })
     }
 }

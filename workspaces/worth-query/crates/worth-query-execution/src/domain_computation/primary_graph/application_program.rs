@@ -62,8 +62,6 @@ pub struct WorthQueryPreparedRequiredOutputSource {
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     pub(in crate::domain_computation::primary_graph) owner:
         super::application_output_demand::WorthQueryOutputDemandRegistry,
-    pub(in crate::domain_computation::primary_graph) preparation:
-        super::application_output_demand::WorthQueryRequiredOutputSourcePreparation,
 }
 
 impl Drop for WorthQueryPreparedRequiredOutputSource {
@@ -104,14 +102,9 @@ where
     /// validated program before the source operation may publish.
     const IDENTITY: &'static str;
 
-    fn validate_source(
+    fn demand_from_source(
         source: &<Self::Source as ApplicationMutationBinding<Schema>>::Input,
-    ) -> Result<(), WorthQueryRequiredOutputConnectionDenial>;
-
-    fn demand_from_committed_source(
-        source: &<Self::Source as ApplicationMutationBinding<Schema>>::Input,
-        result: &<Self::Source as ApplicationMutationBinding<Schema>>::Result,
-    ) -> Self::Demand;
+    ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial>;
 }
 
 /// One typed transitive connection from a settled root output to every

@@ -70,6 +70,8 @@ pub(super) trait InstalledProducerExecutor<Schema>: Send + Sync {
         worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
         WorthQueryOutputDemandDenial,
     >;
+
+    fn preserved_readiness_output(&self, receipt: &WorthQueryApplicationCommitReceipt) -> bool;
 }
 
 pub(super) struct TypedInstalledProducer<Schema, Binding>
@@ -102,6 +104,15 @@ where
     SourceValue<Schema, Binding>: 'static,
     SourceQuery<Schema, Binding>: 'static,
 {
+    fn preserved_readiness_output(&self, receipt: &WorthQueryApplicationCommitReceipt) -> bool {
+        receipt
+            .output_correspondence()
+            .posture_for_binding_role::<Binding::Operation>(Binding::OUTPUT_ROLE)
+            == Ok(
+                worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Preserve,
+            )
+    }
+
     fn readiness_record(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,

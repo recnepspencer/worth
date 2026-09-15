@@ -2,6 +2,6 @@
 pub use crate::domain_computation::primary_graph::application_installation::{
     in_memory, in_memory_program, WorthQueryAdmittedProgramOutput,
     WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
-    WorthQueryProgramApplicationRuntime, WorthQueryProgramConnectionBindings,
-    WorthQueryProgramOutputAdvance, WorthQuerySettledProgramOutput,
+    WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance,
+    WorthQueryProgramRootDemand, WorthQuerySettledProgramOutput,
 };

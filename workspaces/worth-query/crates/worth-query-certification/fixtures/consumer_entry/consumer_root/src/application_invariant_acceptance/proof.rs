@@ -47,7 +47,7 @@ pub(crate) fn run(
     application_program::ordinary_source_publication_cannot_bypass_program(foreign);
     application_program::lifecycle_proofs(foreign);
     resource_profile::candidate_bytes_beyond_host_limit_are_denied(foreign);
-    resource_profile::result_tree_allocation_beyond_host_limit_is_released(foreign);
+    resource_profile::source_footprint_bytes_beyond_host_limit_are_denied(foreign);
     let world = installation::install(foreign);
     super::discovery::verify(&world.application);
     let scope = authentication::request_scope();

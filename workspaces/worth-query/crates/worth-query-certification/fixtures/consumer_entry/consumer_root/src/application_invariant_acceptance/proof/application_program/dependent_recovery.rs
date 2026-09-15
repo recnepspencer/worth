@@ -5,8 +5,8 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
 };
 use worth_query_topology_entry::{
-    PlanarFinalBodyOutput, PlanarFinalOutputDemand, PlanarFinalOutputFeature, PlanarOutputRead,
-    PlanarRead, PlanarSourceAdjustment,
+    PlanarOutputDemand, PlanarOutputRead, PlanarOutputToAlternateFinalConnection,
+    PlanarOutputToFinalConnection, PlanarRead, PlanarSourceAdjustment,
 };
 
 use super::super::super::{authentication, installation, seed::length};
@@ -41,7 +41,7 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
         })
         .expect_source(source)
         .idempotency(&10_018)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(&world.application)
+        .execute_performed(&world.application)
         .expect("the source edit reaches its installed program");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source edit must be fresh")
@@ -54,10 +54,6 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
         .start_required_outputs(&request, controls)
         .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()));
     let source_receipt = started.receipt().clone();
-    assert!(started
-        .required_output()
-        .settled_root_observation()
-        .is_none());
 
     for _ in 0..2 {
         assert!(matches!(
@@ -65,23 +61,6 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
             WorthQueryApplicationProgramOutputProgress::Pending
         ));
     }
-    let root_observation = started
-        .required_output_mut()
-        .settled_root_observation()
-        .expect("the root observation remains available while a dependent is pending");
-    let pending_root_commit = root_observation.selected_commit().clone();
-    assert_eq!(
-        request
-            .at(root_observation)
-            .query(PlanarOutputRead {
-                body_key: "anchor-c".to_owned(),
-            })
-            .execute()
-            .expect("the exposed root observation selects the exact root output")
-            .rows()[0]
-            .value,
-        length(3)
-    );
     assert_eq!(
         request
             .query(PlanarOutputRead {
@@ -105,9 +84,10 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
     drop(started);
 
     let mut recovered = request
-        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(
+        .recover_required_outputs::<crate::ConsumerProgram>(
             &world.application,
             &source_receipt,
+            PlanarOutputDemand::new("anchor-c"),
             controls,
         )
         .expect("fresh caller authority recovers the installed obligation");
@@ -118,30 +98,28 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
         }
     };
     assert_eq!(
-        &pending_root_commit,
-        settled.root_observation().selected_commit(),
-        "recovery preserves the exact root observed before interruption",
+        settled
+            .outputs_for::<ConsumerSchema, PlanarOutputToFinalConnection>()
+            .count(),
+        1
     );
     assert_eq!(
         settled
-            .output_occurrences::<
-                PlanarFinalOutputFeature,
-                PlanarFinalBodyOutput,
-                PlanarFinalOutputDemand,
-            >()
-            .map(|occurrence| occurrence.demand().body_key())
+            .outputs_for::<ConsumerSchema, PlanarOutputToFinalConnection>()
+            .map(|(demand, _)| demand.body_key())
             .collect::<Vec<_>>(),
-        ["anchor-c", "anchor-a"]
+        ["anchor-c"]
     );
-    super::receipt_evidence::assert_exact_outputs(
-        &settled,
-        recovered
-            .settled_root_observation()
-            .expect("recovery retains the exact settled root basis"),
+    assert_eq!(
+        settled
+            .outputs_for::<ConsumerSchema, PlanarOutputToAlternateFinalConnection>()
+            .map(|(demand, _)| demand.body_key())
+            .collect::<Vec<_>>(),
+        ["anchor-a"]
     );
     assert_eq!(
         request
-            .at(settled.latest_observation())
+            .at(settled.observation())
             .query(PlanarOutputRead {
                 body_key: "final:anchor-c".to_owned(),
             })

@@ -169,7 +169,7 @@ fn adjust_source(
         })
         .expect_source(source)
         .idempotency(&command)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(application)
+        .execute_performed(application)
         .expect("the independent source adjustment reaches its real mutation owner");
     assert!(matches!(
         outcome,

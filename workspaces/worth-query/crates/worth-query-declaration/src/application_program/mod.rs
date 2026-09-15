@@ -1,48 +1,40 @@
 //! Authored static application composition.
 
-mod binding;
 mod connection;
 mod feature;
 mod identity;
-mod inventory;
+mod instance;
+mod output_graph;
 mod program;
 mod rule;
-mod validation;
-#[cfg(test)]
-mod validation_tests;
-
-pub use binding::{
-    ApplicationProgramConnectionNode, ApplicationProgramConnectionRole,
-    ApplicationProgramConnectionSet, ApplicationProgramDependentConnection,
-    ApplicationProgramRequiredConnection, ApplicationProgramUnavailableConnection,
-};
 
 pub use connection::{
-    ApplicationConnectionDeclaration, ApplicationConnectionIdentity, ApplicationConnectionRef,
+    ApplicationConnectionDeclaration, ApplicationConnectionIdentity,
+    ApplicationConnectionInstanceRef, ApplicationConnectionRef,
     ApplicationOccurrenceConnectionBinding,
 };
 pub use feature::{
-    ApplicationFeature, ApplicationFeatureAvailable, ApplicationFeatureDeclaration,
-    ApplicationFeaturePosture, ApplicationFeaturePostureMarker, ApplicationFeatureUnavailable,
-    ApplicationInputPort, ApplicationOutputPort, ApplicationPortDeclaration, ApplicationPortRef,
-    ApplicationProgramFeature, ApplicationProgramFeatureNode, ApplicationProgramFeatureSet,
-    ApplicationProgramInputSet, ApplicationProgramOutputSet,
+    ApplicationFeature, ApplicationFeatureDeclaration, ApplicationFeatureInputDeclaration,
+    ApplicationFeatureInputLeaf, ApplicationFeatureInputList, ApplicationFeatureInstanceRef,
+    ApplicationFeatureLeaf, ApplicationFeatureList, ApplicationFeatureRef, ApplicationFeatureShape,
+    ApplicationInputPort, ApplicationOutputPort, ApplicationPortRef,
+    ApplicationProgramFeaturesShape,
 };
 pub use identity::ApplicationProgramIdentity;
-pub use inventory::{
-    ApplicationProgramInventory, ApplicationProgramInventoryDeclaration,
-    ApplicationProgramInventoryIdentity, ApplicationProgramInventoryNode,
-    ApplicationProgramInventorySet, ApplicationProgramOutput, ApplicationProgramOutputDeclaration,
-    ApplicationProgramOutputInventorySet, ApplicationProgramOutputNode,
+pub use instance::{ApplicationCompositionInstance, ApplicationRootComposition};
+pub use output_graph::{
+    ApplicationConnectionShape, ApplicationOutputChildrenShape, ApplicationOutputEdge,
+    ApplicationOutputEdgeShape, ApplicationOutputEdgesShape, ApplicationOutputGraph,
+    ApplicationOutputGraphShape, ApplicationOutputLeaf, ApplicationProgramRootConnection,
+    ApplicationProgramRootConnectionRef, ApplicationProgramRootEdges,
 };
 pub use program::{
-    validate_application_program, ApplicationProgramDefinition, ApplicationProgramValidationDenial,
+    ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramValidationDenial,
     ApplicationProgramValidationDenialKind, ValidatedApplicationProgram,
 };
 pub use rule::{
-    ApplicationLocalRuleRef, ApplicationProgramExecutionPoint, ApplicationProgramLocalRule,
-    ApplicationProgramRuleDeclaration, ApplicationProgramRuleNode, ApplicationProgramRulePosture,
-    ApplicationProgramRuleSet, ApplicationProgramSharedRule,
-    ApplicationProgramUnavailableLocalRule, ApplicationProgramUnavailableSharedRule,
-    ApplicationSharedRuleRef, AtCommitBoundary, AtMutationSensitive, AtSnapshotPublication,
+    ApplicationCommitBoundary, ApplicationLocalRuleInstanceRef, ApplicationLocalRuleRef,
+    ApplicationMutationSensitive, ApplicationProgramRuleDeclaration, ApplicationProgramRulesShape,
+    ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList, ApplicationSharedRuleInstanceRef,
+    ApplicationSharedRuleRef, ApplicationSnapshotPublication,
 };

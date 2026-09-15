@@ -113,7 +113,7 @@ where
         &self,
         receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         change: crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
-        preparation: crate::domain_computation::primary_graph::application_output_demand::WorthQueryRequiredOutputSourcePreparation,
+        preparation: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRequiredOutputSourcePreparation,
     ) -> Result<
         (
             crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
@@ -163,7 +163,7 @@ where
                 source_identity,
                 output_source_identity: None,
             },
-            &preparation,
+            preparation,
         )?;
         Ok((
             crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource {
@@ -171,7 +171,6 @@ where
                 source_commit,
                 source_scope,
                 owner: self.output_demands.clone(),
-                preparation,
             },
             retained,
         ))

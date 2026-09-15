@@ -2,7 +2,6 @@
 pub enum WorthQueryPerformedMutationExecutionDenial {
     ForeignProgram,
     MissingConnection,
-    Preparation(WorthQueryRequiredOutputPreparationDenial),
     Connection(
         worth_query_execution::facade::primary_graph::WorthQueryRequiredOutputConnectionDenial,
     ),
@@ -13,12 +12,6 @@ pub enum WorthQueryPerformedMutationExecutionDenial {
 pub enum WorthQueryRequiredOutputPreparationDenial {
     ForeignProgram,
     MissingConnection,
-    MissingInventory,
-    WrongRoot,
-    IncompleteInventory,
-    Unavailable {
-        feature: String,
-    },
     MissingPerformedDelivery,
     MissingSource,
     SourceQuery(crate::application_entry::WorthQueryApplicationRequestQueryDenial),

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Condvar, Mutex};
 
 use super::{
     supersede_predecessors, DemandAdmissionKind, DemandRecord, DemandState, DemandWake,
@@ -174,14 +174,12 @@ impl WorthQueryOutputDemandRegistry {
         let prepared_source_commit = prepared_source
             .as_ref()
             .map(|source| source.change.product_commit().clone());
-        let wake = Arc::clone(&state.wake);
         let record = state.records.entry(key.clone()).or_insert_with(|| {
             new_record(
                 product_occurrence,
                 source_scope,
                 prepared_source_commit.clone(),
                 admission_kind.is_required(),
-                wake,
             )
         });
         if record.performed_source.is_none() {
@@ -231,14 +229,12 @@ impl WorthQueryOutputDemandRegistry {
         supersede_predecessors(&mut state, &key)?;
         let performed_source = state.prepared_sources.swap_remove(prepared_index).1;
         let performed_scope = performed_source.receipt.principal_scope().scope();
-        let wake = Arc::clone(&state.wake);
         let record = state.records.entry(key.clone()).or_insert_with(|| {
             new_record(
                 product_occurrence,
                 performed_scope,
                 Some(source_commit.clone()),
                 true,
-                wake,
             )
         });
         if matches!(record.state, DemandState::Admitted) {
@@ -257,7 +253,6 @@ fn new_record(
     source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     source_commit: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
     required: bool,
-    wake: Arc<DemandWake>,
 ) -> DemandRecord {
     DemandRecord {
         interests: 0,
@@ -268,7 +263,10 @@ fn new_record(
         state: DemandState::Admitted,
         performed_source: None,
         performed_source_accepted: false,
-        wake,
+        wake: Arc::new(DemandWake {
+            generation: Mutex::new(0),
+            changed: Condvar::new(),
+        }),
     }
 }
 

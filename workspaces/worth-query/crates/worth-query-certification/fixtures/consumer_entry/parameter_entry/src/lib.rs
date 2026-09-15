@@ -17,6 +17,8 @@ pub struct ParameterFeature;
 impl<Schema: ParameterSchemaBinding>
     worth_query_decl::facade::application_program::ApplicationFeature<Schema> for ParameterFeature
 {
+    type Inputs =
+        worth_query_decl::facade::application_program::ApplicationFeatureInputLeaf;
     const IDENTITY: &'static str = "worth.query.certification.parameter-feature.v1";
 }
 

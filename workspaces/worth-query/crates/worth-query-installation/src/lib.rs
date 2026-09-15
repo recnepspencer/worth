@@ -171,8 +171,7 @@ pub mod facade {
     };
     pub use crate::application_program::{
         install_application_program, WorthQueryApplicationProgramInstallationDenial,
-        WorthQueryApplicationProgramInstallationDenialKind, WorthQueryInstalledApplicationProgram,
-        WorthQueryInstalledProgramInventoryPosture,
+        WorthQueryInstalledApplicationProgram,
     };
     pub use crate::application_query::{
         prepare_canonical_read_graph_planning_basis, WorthQueryApplicationCanonicalArtifact,
