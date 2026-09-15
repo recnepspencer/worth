@@ -126,6 +126,12 @@ without asking, why, and how it is enforced.
 14. **Public surface policy.** `package/types/host_tip_surface.d.ts` belongs to
     `core.callable` with `compatibility_host_tip_commit.test.mjs` as evidence;
     every drifted baseline was regenerated after reviewing the docs.
+16. **The package entry re-exports whatever the wasm-bindgen glue exports.**
+    `scripts/wasm/write-worth-signals-wasm-entrypoint.mjs` hard-coded the
+    export list, so the entry silently went stale when the crate gained
+    `discardRestoreToken` and `raw_surface.js` failed to link. It now reads
+    the public export names from `worth_signal_wasm_bg.js` and fails the
+    build when it finds none.
 
 ## Pre-existing state of master (not introduced here)
 
