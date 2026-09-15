@@ -84,6 +84,14 @@ impl WorthQuerySuspendedGeneratedOutput {
             && self.producer.binding_identity == Producer::IDENTITY
     }
 
+    pub(super) fn matches_provider_version<Schema, Producer>(&self) -> bool
+    where
+        Schema: ApplicationSchema,
+        Producer: WorthQueryApplicationProducerBinding<Schema>,
+    {
+        self.producer.provider_identity == Producer::Provider::SEMANTIC_IDENTITY
+    }
+
     pub(super) fn matches_runtime<Schema>(
         &self,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,

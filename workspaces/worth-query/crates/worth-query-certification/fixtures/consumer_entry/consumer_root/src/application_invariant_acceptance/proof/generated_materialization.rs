@@ -5,9 +5,9 @@ use worth_query_host::facade::{
         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestQueryDenial,
     },
     primary_graph::{
-        WorthQueryApplicationOutputRole, WorthQueryGeneratedOutputReconstructionDenial,
-        WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionDenialKind,
-        WorthQueryCreateOutput,
+        WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
+        WorthQueryGeneratedOutputReconstructionDenial, WorthQueryPrimaryGraphApplicationRuntime,
+        WorthQueryPrincipalResolutionDenialKind,
     },
 };
 use worth_query_topology_entry::{
@@ -83,8 +83,7 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
     let recovery = match foreign
         .continue_generated_output_suspension_recovery::<InitialPlanarProducer<ConsumerSchema>>(
             recovery, scope,
-        )
-    {
+        ) {
         Ok(_) => panic!("a foreign Query runtime must not settle suspension custody"),
         Err(failure) => {
             assert_eq!(
@@ -113,7 +112,7 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
     match unavailable {
         Err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution(denial)) => assert_eq!(
             denial.kind(),
-            WorthQueryPrincipalResolutionDenialKind::IdentityIndexUnavailable,
+            WorthQueryPrincipalResolutionDenialKind::BranchMaterializationSuspended,
         ),
         Err(denial) => panic!("suspended generated materialization reported {denial:?}"),
         Ok(_) => panic!("suspended generated materialization must not be currently readable"),

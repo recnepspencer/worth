@@ -25,6 +25,7 @@ pub enum WorthQueryApplicationQueryAdmissionDenialKind {
     WrongProviderBasis,
     ExpiredBasis,
     BasisUnavailable,
+    BranchMaterializationSuspended,
     ForeignHistoricalReceipt,
     RuntimeSupportUnavailable,
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },

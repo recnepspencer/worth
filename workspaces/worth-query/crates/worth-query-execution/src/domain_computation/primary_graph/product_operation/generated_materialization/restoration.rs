@@ -97,30 +97,6 @@ where
     where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
-        let gate = match self.product_runtime.activations.gate(
-            completed
-                .suspended
-                .publication
-                .observation()
-                .branch_identity(),
-        ) {
-            Ok(gate) => gate,
-            Err(_) => {
-                return Err(restoration_failure(
-                    completed.suspended,
-                    WorthQueryGeneratedOutputRestorationFailureCause::ProductActivationUnavailable,
-                ));
-            }
-        };
-        let _publication_admission = match gate.begin_publication() {
-            Ok(admission) => admission,
-            Err(_) => {
-                return Err(restoration_failure(
-                    completed.suspended,
-                    WorthQueryGeneratedOutputRestorationFailureCause::ProductActivationUnavailable,
-                ));
-            }
-        };
         let WorthQueryCompletedGeneratedOutputReconstruction {
             suspended,
             entities,
@@ -143,7 +119,9 @@ where
                 WorthQueryGeneratedOutputRestorationFailureCause::WrongProducer,
             ));
         }
-        if self.installed_producers.provider::<Producer>().is_none() {
+        if !suspended.matches_provider_version::<Schema, Producer>()
+            || self.installed_producers.provider::<Producer>().is_none()
+        {
             return Err(restoration_failure(
                 suspended,
                 WorthQueryGeneratedOutputRestorationFailureCause::StaleProducerVersion,
@@ -155,6 +133,28 @@ where
                 WorthQueryGeneratedOutputRestorationFailureCause::StaleOutputLineage,
             ));
         }
+        let gate = match self
+            .product_runtime
+            .activations
+            .gate(suspended.publication.observation().branch_identity())
+        {
+            Ok(gate) => gate,
+            Err(_) => {
+                return Err(restoration_failure(
+                    suspended,
+                    WorthQueryGeneratedOutputRestorationFailureCause::ProductActivationUnavailable,
+                ));
+            }
+        };
+        let _publication_admission = match gate.begin_publication() {
+            Ok(admission) => admission,
+            Err(_) => {
+                return Err(restoration_failure(
+                    suspended,
+                    WorthQueryGeneratedOutputRestorationFailureCause::ProductActivationUnavailable,
+                ));
+            }
+        };
         let WorthQuerySuspendedGeneratedOutput {
             publication,
             branch,

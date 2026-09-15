@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::resolution_denial::principal_index_currency_denial;
 
 impl<Schema> super::super::WorthQuerySelectedProductOperation<'_, Schema>
 where
@@ -61,11 +62,8 @@ where
         let evidence = handle.with_runtime_mut(|relational| {
             handle
                 .ensure_primary_indexes_for_basis(relational, self.product().relational_basis())
-                .map_err(|_| {
-                    resolution_denial(
-                        WorthQueryPrincipalResolutionDenialKind::IdentityIndexUnavailable,
-                        installed_binding.binding(),
-                    )
+                .map_err(|denial| {
+                    principal_index_currency_denial(denial, installed_binding.binding())
                 })?;
             resolve_at_snapshot(
                 relational,
@@ -117,12 +115,7 @@ where
         handle.with_runtime_mut(|relational| {
             handle
                 .ensure_primary_indexes_for_basis(relational, self.product().relational_basis())
-                .map_err(|_| {
-                    resolution_denial(
-                        WorthQueryPrincipalResolutionDenialKind::IdentityIndexUnavailable,
-                        principal.binding(),
-                    )
-                })?;
+                .map_err(|denial| principal_index_currency_denial(denial, principal.binding()))?;
             validate_freshness_at_snapshot(
                 relational,
                 self.application_basis().snapshot_handle(),

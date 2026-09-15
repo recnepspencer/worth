@@ -81,7 +81,6 @@ pub enum WorthQueryGeneratedOutputReconstructionDenial {
     DuplicateEntityClaim,
     ForeignEntityHandle,
     RetainedEntityKindMismatch,
-    RetainedEntityGenerated,
     ForeignRetainedEntityHandle,
     UnknownField,
     DuplicateField,
@@ -143,7 +142,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryGeneratedOutputReconstructionDenial::ForeignProducer,
             ));
         }
-        if self.installed_producers.provider::<Producer>().is_none() {
+        if !suspended.matches_provider_version::<Schema, Producer>()
+            || self.installed_producers.provider::<Producer>().is_none()
+        {
             return Err(reconstruction_failure(
                 suspended,
                 WorthQueryGeneratedOutputReconstructionDenial::StaleProducerVersion,
