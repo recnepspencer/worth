@@ -12,6 +12,7 @@ async function loadStoreModule() {
   const tempDir = await mkdtemp(path.join(tmpdir(), "worth-signal-react-store-"));
   const sourceFiles = [
     ["model.ts", "model.js"],
+    ["signal_snapshot_equality.ts", "signal_snapshot_equality.js"],
     ["store.ts", "store.js"],
   ];
   try {
@@ -87,7 +88,7 @@ test("createReactSignalsStore does not monkey-patch shared transaction facades",
   }
 });
 
-test("createReactSignalsStore reads snapshots through signals.read and refreshes diagnostics locally", async () => {
+test("createReactSignalsStore enters root read on every snapshot, keeps stable snapshots, and refreshes diagnostics locally", async () => {
   const { createReactSignalsStore, cleanup } = await loadStoreModule();
   try {
     let watchCallback = null;
@@ -104,10 +105,18 @@ test("createReactSignalsStore reads snapshots through signals.read and refreshes
       },
     };
 
+    // The runtime value changes only when the test says so; every read hands
+    // back a fresh copy, the way the compatibility deployment deserializes.
+    let countValue = { total: 1 };
+    const foreignHandle = { id: "foreign", get: () => "foreign" };
     const signals = {
       read(target) {
         readCalls += 1;
-        return typeof target === "string" ? `${target}:value:${readCalls}` : `${target.id}:value:${readCalls}`;
+        const id = typeof target === "string" ? target : target.id;
+        if (id === "foreign") {
+          throw new Error("`foreign` is not a currently available worker-first signal");
+        }
+        return { ...countValue };
       },
       watch(target, callback) {
         assert.equal(target, handle);
@@ -163,23 +172,49 @@ test("createReactSignalsStore reads snapshots through signals.read and refreshes
       diagnosticsSnapshots.push(store.getDiagnosticsSnapshot());
     });
 
+    // Unsubscribed (React renders before it subscribes): every snapshot enters
+    // root read, and an unchanged value keeps the cached reference.
     const first = store.getSignalSnapshot(handle);
     const second = store.getSignalSnapshot(handle);
-    assert.equal(first, "count:value:1");
-    assert.equal(second, first);
-    assert.equal(readCalls, 1);
+    assert.deepEqual(first, { total: 1 });
+    assert.equal(second, first, "an unchanged value must keep its snapshot reference");
+    assert.equal(readCalls, 2, "every snapshot read enters root read");
     assert.equal(compatibilityReads, 0);
+
+    // A changed value with no watch yet is adopted by the next read.
+    countValue = { total: 5 };
+    const changedBeforeSubscribe = store.getSignalSnapshot(handle);
+    assert.deepEqual(changedBeforeSubscribe, { total: 5 });
+    assert.notEqual(changedBeforeSubscribe, first);
+    assert.equal(readCalls, 3);
+
+    // Root read authority is never bypassed by the cache.
+    assert.throws(
+      () => store.getSignalSnapshot(foreignHandle),
+      /not a currently available worker-first signal/,
+    );
+    assert.equal(readCalls, 4);
 
     const unsubscribeSignal = store.subscribeSignal(handle, () => {});
     assert.ok(watchCallback, "subscribeSignal should establish one runtime watch");
+    // Subscribed and current: the read is the authority check, the snapshot is
+    // the cached reference.
+    countValue = { total: 7 };
+    assert.equal(store.getSignalSnapshot(handle), changedBeforeSubscribe);
+    assert.equal(readCalls, 5);
+
     diagnosticsVersion += 1;
     diagnosticsCallback?.();
     watchCallback({ triggerMatched: true, meaningfulChange: true });
     await flushMicrotasks();
 
+    // A watch notice invalidates the cache; the next read adopts the new value.
     const third = store.getSignalSnapshot(handle);
-    assert.equal(third, "count:value:2");
-    assert.equal(readCalls, 2);
+    assert.deepEqual(third, { total: 7 });
+    assert.notEqual(third, changedBeforeSubscribe);
+    assert.equal(readCalls, 6);
+    assert.equal(store.getSignalSnapshot(handle), third);
+    assert.equal(readCalls, 7);
 
     signals.transaction(() => {});
     await flushMicrotasks();

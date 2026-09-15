@@ -56,6 +56,7 @@ impl DiagnosticsState {
             latest_invalidation_trace_records: Arc::new(Vec::new()),
             observation_activation_mask: self.observation_activation_mask,
             lineage_custody: Default::default(),
+            transaction_flow_scope: super::TransactionFlowScope::Closed,
         };
         state.bootstrap_defaults();
         state
@@ -102,6 +103,7 @@ impl Default for DiagnosticsState {
             latest_invalidation_trace_records: Arc::new(Vec::new()),
             observation_activation_mask: 0,
             lineage_custody: Default::default(),
+            transaction_flow_scope: super::TransactionFlowScope::Closed,
         };
         state.bootstrap_defaults();
         state

@@ -167,6 +167,54 @@ impl RuntimeCore {
         }
         self.sync_callback_diagnostics_from_store()?;
         self.restore_callback_dependency_shapes(&snapshot)?;
+        self.recompute_uninitialized_recipes(&snapshot)?;
+        Ok(())
+    }
+
+    /// A restored store may carry recipes without a value: a merged branch
+    /// state resets every recipe so the merged inputs recompute it, while the
+    /// native graph still records those nodes as clean. A read invalidates
+    /// only the node it asks for, so an uninitialized recipe upstream of it
+    /// would feed `Null` into the evaluation instead of recomputing. When the
+    /// store is restored, every uninitialized recipe is invalidated and the
+    /// standing demand (published outputs) is evaluated at once, so the branch
+    /// is complete before anything observes it and the first read after a
+    /// switch, merge, or restore sees the merged truth. Other computeds stay
+    /// on-demand and recompute on their next read. O(recipes) once per restore
+    /// (the restore already clones every recipe) plus one evaluation of the
+    /// demanded nodes, which is the same work a read would have done.
+    fn recompute_uninitialized_recipes(
+        &mut self,
+        snapshot: &RuntimeStoreSnapshot,
+    ) -> Result<(), WorthSignalJsError> {
+        let mut invalidated = false;
+        for recipe in &snapshot.recipes {
+            if recipe.initialized {
+                continue;
+            }
+            let Some(node) = self.catalog.get(&recipe.id).map(|entry| entry.node) else {
+                continue;
+            };
+            worth_signal::facade::core::mark_dirty(self.runtime.graph_mut(), node, DEFAULT_ASPECT)
+                .map_err(WorthSignalJsError::from)?;
+            invalidated = true;
+        }
+        if !invalidated {
+            return Ok(());
+        }
+        let standing_demand = self.standing_demand_nodes();
+        if standing_demand.is_empty() {
+            return Ok(());
+        }
+        let evaluator = self.evaluator();
+        let _ = self
+            .runtime
+            .targets(standing_demand)
+            .on_demand()
+            .read_many(&self.store, &evaluator)
+            .map_err(WorthSignalJsError::from)?;
+        self.runtime.clear_live_branch_mutation_residue();
+        self.apply_pending_callback_dependency_patches()?;
         Ok(())
     }
 

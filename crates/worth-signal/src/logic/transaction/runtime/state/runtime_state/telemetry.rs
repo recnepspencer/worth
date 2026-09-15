@@ -138,6 +138,15 @@ where
         restored.staged_observation_match_count = restored
             .staged_observation_match_count
             .max(current.staged_observation_match_count);
+        restored.observed_demand_reach_visits = restored
+            .observed_demand_reach_visits
+            .max(current.observed_demand_reach_visits);
+        restored.observed_demand_targets = restored
+            .observed_demand_targets
+            .max(current.observed_demand_targets);
+        restored.observed_demand_passes = restored
+            .observed_demand_passes
+            .max(current.observed_demand_passes);
         restored.classified_observation_count = restored
             .classified_observation_count
             .max(current.classified_observation_count);
@@ -168,6 +177,9 @@ mod tests {
             observation_classification_breadth: 23,
             delivered_observation_count: 5,
             rollback_suppressed_observation_count: 3,
+            observed_demand_reach_visits: 13,
+            observed_demand_targets: 2,
+            observed_demand_passes: 1,
             ..TransactionTelemetry::default()
         };
         let mut restored = TransactionTelemetry::default();
@@ -178,6 +190,9 @@ mod tests {
         );
 
         assert_eq!(restored.staged_observation_candidate_count, 11);
+        assert_eq!(restored.observed_demand_reach_visits, 13);
+        assert_eq!(restored.observed_demand_targets, 2);
+        assert_eq!(restored.observed_demand_passes, 1);
         assert_eq!(restored.staged_observation_match_count, 19);
         assert_eq!(restored.classified_observation_count, 7);
         assert_eq!(restored.observation_classification_breadth, 23);

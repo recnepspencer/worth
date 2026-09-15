@@ -7,6 +7,7 @@ import {
   setCheckboxInput,
 } from "./form_input_events.js";
 import { useSignalValue } from "./hooks.js";
+import { createLazyActionBindings, readActionBinding } from "./signals_form_actions.js";
 
 import type {
   ReactSignalsStore,
@@ -170,30 +171,6 @@ function readMultiSelectBinding<TValue = string>(
   return Object.freeze(multiSelectBinding) as SignalsFormMultiSelectBinding<TValue>;
 }
 
-function readActionBinding(form: RuntimeFormController, actionId: string): SignalsFormActionBinding {
-  const plan = form.actionPlan(actionId);
-  const debug = form.debugAction(actionId);
-  const latestExecution = debug.latestExecution;
-  return Object.freeze({
-    plan,
-    debug,
-    disabled: plan.status !== "accepted" || !plan.readiness.canRun || debug.pending,
-    pending: debug.pending,
-    latestExecution,
-    resultKind: readExecutionResultKind(latestExecution),
-    execute() {
-      return form.executeAction(actionId);
-    },
-  });
-}
-
-function readExecutionResultKind(execution: unknown): string | null {
-  if (!execution || typeof execution !== "object" || !("resultKind" in execution)) {
-    return null;
-  }
-  return typeof execution.resultKind === "string" ? execution.resultKind : null;
-}
-
 function readActionIds(form: RuntimeFormController): string[] {
   return form.actions().catalog.map((entry) => entry.id);
 }
@@ -266,9 +243,10 @@ export function useSignalsForm<
   const summarySnapshot = useSignalValue(controller.summarySignal(), resolvedStore);
 
   return useMemo(() => {
-    const actions = Object.fromEntries(
-      readActionIds(controller).map((actionId) => [actionId, readActionBinding(controller, actionId)]),
-    ) as Readonly<Record<Extract<keyof TActions, string>, SignalsFormActionBinding>>;
+    const actions = createLazyActionBindings<Extract<keyof TActions, string>>(
+      controller,
+      readActionIds(controller) as Extract<keyof TActions, string>[],
+    );
 
     return Object.freeze({
       controller,

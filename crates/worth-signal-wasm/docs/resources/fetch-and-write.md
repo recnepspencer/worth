@@ -58,6 +58,19 @@ console.log(listLine.summary());
 console.log(createLine.value());
 ```
 
+## What `load(...)` May Return
+
+A line value is a JSON value. Whatever `load(...)` resolves is committed as the
+JSON it would serialize to: `toJSON` is honored exactly as `JSON.stringify`
+honors it (a `Date` becomes its ISO string, a class with `toJSON` becomes what
+it returns), `undefined` members are omitted, and non-finite numbers become
+`null`. A value JSON would misrepresent is refused instead of stored as
+something it is not: a `Map` or `Set` (serialized as `{}`), a typed array, a
+boxed primitive, a function, or cyclic data settles the line `rejected` with a
+message naming the class and the path (`resource line value cannot represent
+Set at $value.sizes: ...`). Decode wire data to plain JSON before returning it,
+or give rich types a `toJSON`.
+
 ## When To Use The Standard Finalizers
 
 - `.detail(...)` for one resource member

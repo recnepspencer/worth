@@ -223,3 +223,58 @@ fn merge_branch_equivalent_runtime_state_ignores_retained_artifact_richness() {
         "merge comparability should be driven by runtime state, not retained richness"
     );
 }
+
+/// Capturing a snapshot observes a branch; it must not consume the pending
+/// merge ledger. The worker-first root mints snapshots after every mutation,
+/// so a capture that emptied the ledger would make every later merge adopt
+/// nothing. Both capture paths (active branch, stored branch) are covered.
+#[test]
+fn snapshot_capture_keeps_pending_source_mutations_merge_visible() {
+    let mut runtime = SignalRuntime::builder(SignalGraph::new())
+        .with_kernel_defaults()
+        .build();
+    let main = runtime.observe().current_branch();
+    let feature = runtime.create_branch("feature-snapshot-observation").unwrap();
+    let mut runtime_ctx = ();
+
+    runtime.switch_branch(feature.clone()).unwrap();
+    let edited = runtime.graph_mut().node().output_identity().build();
+    runtime
+        .transaction(&mut runtime_ctx, |tx| {
+            tx.read(edited, &|view| {
+                Ok(view.finish(
+                    NodeEvaluationResult::from_version(version_ab(31, 0))
+                        .with_output_identity("observed-before-merge"),
+                ))
+            })?;
+            Ok(())
+        })
+        .unwrap();
+
+    let active_snapshot = runtime
+        .capture_snapshot()
+        .expect("active snapshot capture should succeed");
+    runtime.switch_branch(main.clone()).unwrap();
+    let stored_snapshot = runtime
+        .capture_branch_snapshot(feature.clone())
+        .expect("stored branch snapshot capture should succeed");
+    assert_ne!(
+        active_snapshot.meta.snapshot_id, stored_snapshot.meta.snapshot_id,
+        "each capture mints its own snapshot"
+    );
+
+    let merge = runtime.merge_branch_raw(feature, main).unwrap();
+    assert!(
+        merge
+            .records
+            .iter()
+            .any(|record| record.source_node == edited
+                && matches!(record.action, ArtifactMergeAction::IntroducedIntoTarget)),
+        "snapshot captures are observations and must leave the edit merge-visible: {:?}",
+        merge
+            .records
+            .iter()
+            .map(|record| (record.source_node, record.action))
+            .collect::<Vec<_>>()
+    );
+}

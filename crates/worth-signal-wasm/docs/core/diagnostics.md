@@ -66,6 +66,12 @@ A derived signal can run without changing its answer. That is not wasted
 evidence. It proves the policy was reconsidered and stayed on the same side of
 its boundary.
 
+Published outputs are standing demand. A transaction that reaches one
+recomputes it at commit, so the committed truth and the flow evidence include
+it even when nothing read it during the transaction. Computed signals without
+a watcher or published output stay on-demand: they appear in `why()` and
+`latestFlow()` once something reads them.
+
 ## Small Example
 
 ```ts

@@ -177,24 +177,29 @@ test("create responses deny grouped insert when lookup group disagrees with next
       });
     const line = groupedTasks.line({});
 
-    assert.throws(
-      () => runtime.signals.api({}).url("/tasks")
-        .response(runtime.signals.resource.response.detail()())
-        .create({
-          reconciles: [{
-            family: groupedTasks,
-            params: () => ({}),
-            fallback: "placementUnavailable",
-            collection: { kind: "insert", placement: "append" },
-          }],
-          load: ({ body }) => body,
-        })
-        .line({
-          body: { id: "task:2", group: "todo", title: "Second" },
-        })
-        .mutationResponse(),
+    const createTask = runtime.signals.api({}).url("/tasks")
+      .response(runtime.signals.resource.response.detail()())
+      .create({
+        reconciles: [{
+          family: groupedTasks,
+          params: () => ({}),
+          fallback: "placementUnavailable",
+          collection: { kind: "insert", placement: "append" },
+        }],
+        load: ({ body }) => body,
+      });
+    const created = createTask.line({
+      body: { id: "task:2", group: "todo", title: "Second" },
+    });
+
+    // The denial settles the write line rejected with the reason; the target
+    // collection is untouched.
+    assert.equal(created.status().kind, "rejected");
+    assert.match(
+      created.status().message,
       /nextItem group id "todo" to match grouped lookup group id "done"/,
     );
+    assert.equal(created.mutationResponse(), null);
 
     assert.deepEqual(line.value(), {
       groups: {

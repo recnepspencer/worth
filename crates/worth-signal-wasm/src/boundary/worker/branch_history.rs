@@ -3,8 +3,7 @@ use wasm_bindgen::prelude::*;
 use worth_signal::facade::history::RuntimeSnapshot;
 
 use crate::boundary::restore_tokens::{
-    ensure_restore_token_capacity_available, load_snapshot, load_snapshot_envelope, store_snapshot,
-    store_snapshot_envelope,
+    load_snapshot, load_snapshot_envelope, store_snapshot, store_snapshot_envelope,
 };
 use crate::boundary::serde::{from_js, from_json_wire, to_js, to_js_structured, to_json_wire};
 use crate::runtime::core::MergePolicyPreviewRequest;
@@ -116,21 +115,18 @@ impl SignalWorkerRuntime {
 
     #[wasm_bindgen(js_name = branchSnapshotEnvelopeArtifact)]
     pub fn branch_snapshot_envelope_artifact(&self, branch_id: u64) -> Result<JsValue, JsValue> {
-        ensure_restore_token_capacity_available().map_err(JsValue::from)?;
         let snapshot = self.branch_snapshot_envelope_for_test(branch_id)?;
         worker_snapshot_envelope_artifact(snapshot)
     }
 
     #[wasm_bindgen(js_name = branchSnapshotArtifact)]
     pub fn branch_snapshot_artifact(&self, branch_id: u64) -> Result<JsValue, JsValue> {
-        ensure_restore_token_capacity_available().map_err(JsValue::from)?;
         let snapshot = self.branch_snapshot_for_test(branch_id)?;
         worker_snapshot_artifact(snapshot)
     }
 
     #[wasm_bindgen(js_name = branchSnapshotEnvelopeWire)]
     pub fn branch_snapshot_envelope_wire(&self, branch_id: u64) -> Result<String, JsValue> {
-        ensure_restore_token_capacity_available().map_err(JsValue::from)?;
         store_snapshot_envelope(self.branch_snapshot_envelope_for_test(branch_id)?)
             .map_err(JsValue::from)
     }

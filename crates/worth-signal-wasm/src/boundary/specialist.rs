@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 
 use crate::boundary::restore_tokens::{
-    ensure_restore_token_capacity_available, load_runtime_envelope, store_runtime_envelope,
+    discard_restore_token, load_runtime_envelope, store_runtime_envelope,
 };
 use crate::boundary::serde::{from_js, from_json_wire, to_js, to_js_structured, to_json_wire};
 use crate::runtime::adapters::{PortableRuntimeEnvelopeArtifact, RuntimeEnvelope};
@@ -55,8 +55,13 @@ impl SignalAdapters {
         to_js_structured(&envelope).map_err(JsValue::from)
     }
 
+    /// Releases one pending exact runtime envelope minted by this realm's
+    /// `export_runtime_envelope_wire`. `false` when it is not pending.
+    pub fn discard_restore_token(&self, token: String) -> bool {
+        discard_restore_token(token)
+    }
+
     pub fn export_runtime_envelope_wire(&self) -> Result<String, JsValue> {
-        ensure_restore_token_capacity_available().map_err(JsValue::from)?;
         let envelope = self
             .core
             .borrow_mut()

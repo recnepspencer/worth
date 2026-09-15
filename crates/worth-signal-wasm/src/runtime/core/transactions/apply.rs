@@ -50,6 +50,7 @@ impl RuntimeCore {
         let store = self.store.clone();
         let dense_grids = self.dense_grids.clone();
         let evaluator = self.evaluator();
+        let standing_demand = self.standing_demand_nodes();
         let committed_dependency_patches = Arc::new(Mutex::new(
             None::<(Vec<PendingCallbackDependencyPatch>, u64)>,
         ));
@@ -66,6 +67,10 @@ impl RuntimeCore {
                 wasm_debug("[worth-signals-wasm] tx:evaluate-dirty-start");
                 tx.evaluate_dirty(&evaluator)?;
                 wasm_debug("[worth-signals-wasm] tx:evaluate-dirty-done");
+                // Computed recipes are on-demand; watchers and published outputs
+                // are demand. Recompute the demanded nodes this change reaches so
+                // commit delivers them and the committed truth includes them.
+                tx.evaluate_demand(&evaluator, &standing_demand)?;
                 let (pending, runtime_read_breadth) =
                     apply_pending_dependency_patches_in_transaction(tx, &store)?;
                 *committed_dependency_patches_for_tx.lock().map_err(|_| {
@@ -237,8 +242,10 @@ pub(in crate::runtime::core) fn apply_pending_dependency_patches_in_transaction(
         locked.pending_callback_runtime_read_breadth = 0;
         (pending, runtime_read_breadth)
     };
+    // Evaluated topology, not a structural replacement: the node keeps the
+    // value this transaction computed (see `apply_pending_callback_dependency_patches`).
     for patch in &pending {
-        tx.set_dependencies(patch.node, patch.dependencies.clone())?;
+        tx.set_evaluated_dependencies(patch.node, patch.dependencies.clone())?;
     }
     Ok((pending, runtime_read_breadth))
 }

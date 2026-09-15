@@ -104,6 +104,12 @@ fn why_summary_exposes_callback_dependency_patch_and_failure_details() {
             aspects: None,
         }])
         .unwrap();
+    // Callback computeds are on-demand: the commit invalidates `label`, the
+    // next read recomputes it and discovers the narrower read set.
+    assert_eq!(
+        runtime.read_value("label").unwrap(),
+        SignalValue::String("disabled".to_owned())
+    );
 
     let why = runtime.why("label").unwrap();
     assert_eq!(why.api_family.as_deref(), Some("computed"));
@@ -124,14 +130,16 @@ fn why_summary_exposes_callback_dependency_patch_and_failure_details() {
     assert_eq!(patch.removed_count, 1);
 
     *should_fail.borrow_mut() = true;
-    let err = runtime
+    runtime
         .apply_transaction(vec![TransactionOp::Set {
             id: "count".to_owned(),
             value: SignalValue::Number(2.0),
             aspect: None,
             aspects: None,
         }])
-        .unwrap_err();
+        .unwrap();
+    // The failure surfaces on the read that demands the callback.
+    let err = runtime.read_value("fragile").unwrap_err();
     assert_eq!(err.code, "invalidInput");
 
     let why = runtime.why("fragile").unwrap();
@@ -215,15 +223,18 @@ fn callback_failure_surfaces_expose_typed_cycle_denial_classes_and_clear_collect
         SignalValue::Number(2.0)
     );
 
+    // Callback computeds are on-demand: the commit succeeds and the denial
+    // surfaces on the read that demands the callback.
     *self_mode.borrow_mut() = true;
-    let self_err = runtime
+    runtime
         .apply_transaction(vec![TransactionOp::Set {
             id: "tick".to_owned(),
             value: SignalValue::Number(2.0),
             aspect: None,
             aspects: None,
         }])
-        .unwrap_err();
+        .unwrap();
+    let self_err = runtime.read_value("selfy").unwrap_err();
     assert_eq!(self_err.code, "invalidInput");
 
     let self_why = runtime.why("selfy").unwrap();
@@ -244,14 +255,15 @@ fn callback_failure_surfaces_expose_typed_cycle_denial_classes_and_clear_collect
 
     *self_mode.borrow_mut() = false;
     *cycle_mode.borrow_mut() = true;
-    let cycle_err = runtime
+    runtime
         .apply_transaction(vec![TransactionOp::Set {
             id: "tick".to_owned(),
             value: SignalValue::Number(3.0),
             aspect: None,
             aspects: None,
         }])
-        .unwrap_err();
+        .unwrap();
+    let cycle_err = runtime.read_value("cycley").unwrap_err();
     assert_eq!(cycle_err.code, "invalidInput");
 
     let cycle_why = runtime.why("cycley").unwrap();

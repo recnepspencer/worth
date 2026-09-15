@@ -9,7 +9,7 @@ fn full_fork_preserves_pending_inputs_and_catalog_with_isolated_edits() {
     let nodes: Vec<_> = (0..128).map(|_| graph.node().build()).collect();
     let mut source = DiagnosticsState::default();
     for &node in &nodes {
-        source.note_change_input(node, Aspect::new(3), &[], Some("cause".repeat(1024)));
+        source.note_change_input(node, Aspect::new(3), &[], Some("cause".repeat(1024)), Default::default());
     }
     for id in 1..128 {
         source.branch_catalog.insert(

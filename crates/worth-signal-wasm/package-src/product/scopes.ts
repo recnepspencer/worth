@@ -389,6 +389,22 @@ export function createScopedSignalNamespace(
         `signals.scope(${JSON.stringify(scopeId)}).assertCompatibility`,
       );
     },
+    // Host tip surface: scopes share the root's tip epochs and drain.
+    settleAuthoredWork() {
+      return callableSignals.settleAuthoredWork();
+    },
+    authoredSettleInvocationCount() {
+      return callableSignals.authoredSettleInvocationCount();
+    },
+    commitHostTipAndNotify(tipWrites) {
+      return callableSignals.commitHostTipAndNotify(tipWrites);
+    },
+    applyCommittedTipWorkerBatch(tipWrites) {
+      return callableSignals.applyCommittedTipWorkerBatch(tipWrites);
+    },
+    publishAuthoredTipProjection(changedIds) {
+      return callableSignals.publishAuthoredTipProjection(changedIds);
+    },
     [RAW_SIGNALS]: rawSignals,
   };
 

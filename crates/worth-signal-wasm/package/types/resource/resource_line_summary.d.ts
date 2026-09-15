@@ -53,8 +53,9 @@ export interface ResourceLineDiagnosticsLatestChangeSummary {
     | "manualLineInvalidate"
     | "manualFamilyInvalidate"
     | "manualFamilyInvalidateAll"
+    | "manualRuntimeInvalidateAll"
     | null;
-  readonly invalidationScope: "line" | "familyMember" | "familyAll" | null;
+  readonly invalidationScope: "line" | "familyMember" | "familyAll" | "runtimeAll" | null;
   readonly patchKind:
     | "replace"
     | "field"

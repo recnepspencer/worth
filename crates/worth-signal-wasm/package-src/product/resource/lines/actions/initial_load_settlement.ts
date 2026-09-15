@@ -32,6 +32,8 @@ import {
   readLineBindingState,
   replaceLineBindingState,
 } from "../state/line_binding_state.js";
+import { canonicalizeLineValue } from "../state/line_value_canonical_json.js";
+import { readLineRejectionMessage } from "../state/line_rejection_message.js";
 
 function createInitialLineBinding(
   load,
@@ -131,7 +133,7 @@ function createInitialLineBinding(
     throw normalizeReloadFailure(error).error;
   }
   if (resolvedBindingResult.kind === "settled") {
-    applyFulfilledInitialLoad(
+    settleInitialLoad(
       lifecycleHistory,
       binding,
       policy,
@@ -174,13 +176,14 @@ function createInitialLineBinding(
       if (!lifecycle.completePendingReload(pendingToken)) {
         return;
       }
-      applyFulfilledInitialLoad(
+      settleInitialLoad(
         lifecycleHistory,
         binding,
         policy,
         mutationResponsePlanning,
         settled.loaded,
         settled.retryAttempts,
+        true,
       );
     },
     (error) => {
@@ -196,15 +199,49 @@ function createInitialLineBinding(
   return binding;
 }
 
-function applyFulfilledInitialLoad(
+// A loaded value the runtime refuses to commit (a value JSON cannot
+// represent, an undeclared reconcile target, ...) is a rejection of this
+// load, not a thrown error: the line settles rejected with the reason on
+// every path, the same way a rejected load does.
+function settleInitialLoad(
   lifecycleHistory,
   binding,
   policy,
   mutationResponsePlanning,
   loaded,
   retryAttempts,
-  shouldRecordHistory = true,
+  shouldRecordHistory,
 ) {
+  let prepared;
+  try {
+    prepared = prepareFulfilledInitialLoadCommit(
+      binding,
+      policy,
+      mutationResponsePlanning,
+      loaded,
+      retryAttempts,
+    );
+  } catch (error) {
+    applyRejectedInitialLoad(lifecycleHistory, binding, error, shouldRecordHistory);
+    return;
+  }
+  applyFulfilledInitialLoad(
+    lifecycleHistory,
+    binding,
+    loaded,
+    prepared,
+    shouldRecordHistory,
+  );
+}
+
+function prepareFulfilledInitialLoadCommit(
+  binding,
+  policy,
+  mutationResponsePlanning,
+  loaded,
+  retryAttempts,
+) {
+  const value = canonicalizeLineValue(loaded.value);
   const status = createFulfilledLineStatus("initialLoad");
   const freshness = createFreshnessFromPolicy(policy);
   const nextDiagnostics = createReloadFulfilledDiagnostics(
@@ -227,14 +264,25 @@ function applyFulfilledInitialLoad(
           mutationResponsePlanning.requestDescriptor,
           nextDiagnostics,
           mutationResponsePlanning.declaration,
-          loaded.value,
+          value,
           mutationResponsePlanning.submittedTargets,
           mutationResponsePlanning.submittedIdentityMigration ?? null,
         );
+  return Object.freeze({ value, status, freshness, preparedMutationResponse });
+}
+
+function applyFulfilledInitialLoad(
+  lifecycleHistory,
+  binding,
+  loaded,
+  prepared,
+  shouldRecordHistory,
+) {
+  const { value, status, freshness, preparedMutationResponse } = prepared;
   replaceLineBindingState(binding, {
     ...readLineBindingState(binding),
-    value: loaded.value,
-    canonicalValue: loaded.value,
+    value,
+    canonicalValue: value,
     processing: loaded.processing,
     upload: loaded.upload,
     download: loaded.download,
@@ -252,12 +300,20 @@ function applyFulfilledInitialLoad(
   }
 }
 
-function applyRejectedInitialLoad(lifecycleHistory, binding, error) {
+// `shouldRecordHistory` is false only on the synchronous materialization
+// path, where the "materialized" entry recorded by the caller carries the
+// settled (here: rejected) state, exactly as it carries a fulfilled one.
+function applyRejectedInitialLoad(
+  lifecycleHistory,
+  binding,
+  error,
+  shouldRecordHistory = true,
+) {
   const failure = normalizeReloadFailure(error);
-  const message =
-    failure.error instanceof Error
-      ? failure.error.message
-      : "resource initial load failed";
+  const message = readLineRejectionMessage(
+    failure.error,
+    "resource initial load failed",
+  );
   patchLineBindingState(binding, {
     status: createRejectedLineStatus("initialLoad", message, false),
     freshness: createRejectedFreshness("initialLoad"),
@@ -268,7 +324,9 @@ function applyRejectedInitialLoad(lifecycleHistory, binding, error) {
       failure.retryAttempts,
     ),
   });
-  recordLineHistoryEntry(lifecycleHistory, binding, "rejected");
+  if (shouldRecordHistory) {
+    recordLineHistoryEntry(lifecycleHistory, binding, "rejected");
+  }
 }
 
 function applyTimedOutInitialLoad(lifecycleHistory, binding, retryAttempts) {

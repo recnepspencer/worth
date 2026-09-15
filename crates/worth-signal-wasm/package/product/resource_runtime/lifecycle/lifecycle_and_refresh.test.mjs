@@ -238,7 +238,7 @@ test("resource families expose optionalLine and execute as first-class final-for
   }
 });
 
-test("resource line awaitSettlement rejects when the caller timeout elapses first", async () => {
+test("resource line awaitSettlement resolves timedOut when the caller deadline elapses first and the line keeps settling", async () => {
   const runtime = await createRealLifecycleRuntime();
   try {
     const { mod, resource } = runtime;
@@ -260,10 +260,31 @@ test("resource line awaitSettlement rejects when the caller timeout elapses firs
     const line = detail.line({ productId: "p1" });
     line.refresh();
 
-    await assert.rejects(
-      () => line.awaitSettlement({ timeoutMs: 1 }),
-      /Timed out waiting for resource line settlement/,
-    );
+    const timedOut = await line.awaitSettlement({ timeoutMs: 1 });
+
+    assert.equal(timedOut.resultKind, "timedOut");
+    assert.deepEqual(timedOut.status, {
+      kind: "timedOut",
+      operation: "refresh",
+      continuity: "preservedVisibleValue",
+    });
+    assert.equal(timedOut.confirmationKind, null);
+    assert.equal(timedOut.mutationResponse, null);
+    assert.deepEqual(timedOut.freshness, { kind: "stale", reason: "refreshPending" });
+    // The deadline was the waiter's, not the line's: the line is still pending
+    // and the visible value is intact.
+    assert.deepEqual(line.status(), {
+      kind: "pending",
+      operation: "refresh",
+      continuity: "preservedVisibleValue",
+    });
+    assert.deepEqual(line.value(), { id: "p1", version: 1 });
+
+    deferred.resolve({ id: "p1", version: 2 });
+    const settled = await line.awaitSettlement({ timeoutMs: 1_000 });
+    assert.equal(settled.resultKind, "fulfilled");
+    assert.deepEqual(settled.value, { id: "p1", version: 2 });
+    assert.deepEqual(line.status(), { kind: "fulfilled", operation: "refresh" });
   } finally {
     await runtime.cleanup();
   }

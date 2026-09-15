@@ -168,10 +168,14 @@ impl RuntimeCore {
         &mut self,
     ) -> Result<(), WorthSignalJsError> {
         let (pending, runtime_read_breadth) = self.take_pending_callback_dependency_patches()?;
+        // The patch is the read set of the evaluation that just produced the
+        // node's value: install it as evaluated topology so the node stays
+        // clean. A plain `set_dependencies` would demote it to `MaybeStale`
+        // and the next read would recompute a value nothing invalidated.
         let mut graph = self.runtime.graph_mut();
         for patch in &pending {
             graph
-                .set_dependencies(patch.node, patch.dependencies.clone())
+                .set_evaluated_dependencies(patch.node, patch.dependencies.clone())
                 .map_err(WorthSignalJsError::from)?;
         }
         drop(graph);

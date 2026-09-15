@@ -65,7 +65,8 @@ console.log(after.actionHistory.attempts);
 - action catalog digests stay stable when only lifecycle history changes
 - action lifecycle digests change when attempts or execution history changes
 - `form.debugAction(actionId).verification` gives the matching action-facing
-  digest view beside the broader verification package
+  digest view beside the broader verification package; it is built on first
+  access of that field (once per report), not on every `debugAction` call
 
 ## Anti-Patterns
 

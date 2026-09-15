@@ -25,7 +25,14 @@ for one-shot workflows.
 
 ## Value And Subscription
 
-- `value()` — current projected value; can be `null` before first settlement;
+- `value()` — current projected value; can be `null` before first settlement.
+  Line values are JSON values: a loaded result is committed as the JSON it
+  serializes to (`toJSON` honored once per value, so a `Date` is stored as its
+  ISO string; `undefined` members omitted; non-finite numbers stored as
+  `null`). A result JSON cannot represent faithfully (`Map`, `Set`, typed
+  arrays, boxed primitives, functions, cyclic data) is not committed: the line
+  settles `rejected` with a message naming the value class and its path, on
+  the initial load and on every reload;
 - `signal()` — computed signal handle for the value;
 - `view(project)` — a derived signal view of the line value;
 - `summary()` — grouped current resource posture;
@@ -48,8 +55,10 @@ uses it to perform I/O; the descriptor does not send a request itself.
 - `status()` — pending, fulfilled, rejected, or timed out;
 - `freshness()` — fresh or stale;
 - `awaitSettlement({ timeoutMs?, drainAuthoredWork? })` — wait for the next
-  settled line tip-status truth; set `drainAuthoredWork: true` to also drain
-  authored publications/mutations after tip status settles
+  settled line tip-status truth; when `timeoutMs` elapses first the promise
+  resolves with `resultKind: "timedOut"` (the line stays pending and settles
+  later; it never rejects for time); set `drainAuthoredWork: true` to also
+  drain authored publications/mutations after tip status settles
   ([1.5 migration](../package/migration-1.5.md));
 - `invalidate()` — retain visible value and mark stale;
 - `refresh()` — start a new load;

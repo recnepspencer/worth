@@ -75,9 +75,18 @@ impl RuntimeCore {
         }
         define_recipes_in_dependency_order(&mut rebuilt, recipes, source_ids)?;
 
-        apply_imported_source_truth(&mut rebuilt, &state)?;
-
+        // Public outputs are standing demand: marking them before the source
+        // truth lands makes that transaction evaluate them, so the admitted
+        // runtime holds evaluated truth (and diagnostics that describe it)
+        // exactly as a compatibility import does, rather than a dirty graph
+        // whose diagnostics change on the first read.
         rebuilt.mark_worker_public_outputs(worker_public_output_ids)?;
+        apply_imported_source_truth(&mut rebuilt, &state)?;
+        // The source-truth transaction leaves history_now() describing that
+        // one commit. Refresh the retained views from the finished graph so
+        // history_now() describes the imported graph, as it does after an
+        // exact import (which carries the snapshot-time views).
+        worth_signal::facade::core::refresh_retained_diagnostics_views(rebuilt.runtime.graph_mut());
         *self = rebuilt;
         Ok(())
     }

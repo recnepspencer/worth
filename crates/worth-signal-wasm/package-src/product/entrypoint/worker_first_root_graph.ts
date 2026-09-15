@@ -134,14 +134,17 @@ class WorkerFirstRootGraph {
         this.#context.runtimeDefinitionEnvelope,
       ),
       exportDefinition,
-      exportSnapshot: () => buildImportedGraphSnapshotArtifact({
-        definition: exportDefinition(),
-        runtimeEnvelope: this.#context.runtimeEnvelopeArtifact,
-        snapshotEnvelope: this.#context.snapshotEnvelope,
-        restoreMode: this.#context.runtimeEnvelopeArtifact.runtimeEnvelopeRestoreMode,
-        contractHistory: this.#contractHistory,
-        importPosture: this.importPosture(),
-      }),
+      exportSnapshot: () => {
+        const runtimeEnvelope = this.#context.requireRuntimeEnvelopeArtifact();
+        return buildImportedGraphSnapshotArtifact({
+          definition: exportDefinition(),
+          runtimeEnvelope,
+          snapshotEnvelope: this.#context.snapshotEnvelope,
+          restoreMode: runtimeEnvelope.runtimeEnvelopeRestoreMode,
+          contractHistory: this.#contractHistory,
+          importPosture: this.importPosture(),
+        });
+      },
       diagnostics,
       history,
       specialist,

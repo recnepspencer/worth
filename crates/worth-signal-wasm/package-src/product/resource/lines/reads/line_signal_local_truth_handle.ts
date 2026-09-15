@@ -43,5 +43,20 @@ export function createLineSignalLocalTruthHandle(materialization) {
       value() {},
     },
   });
+  // Every consumer that keys on product identity (signals.graph outputs,
+  // watch, React bindings, runtime-affinity checks) sees this handle as the
+  // line's readable computed: its symbol-keyed identity is the computed's
+  // own. Only the value read is binding-local.
+  for (const symbol of Object.getOwnPropertySymbols(underlying)) {
+    if (symbol === Symbol.dispose) {
+      continue;
+    }
+    Object.defineProperty(handle, symbol, {
+      enumerable: false,
+      get() {
+        return underlying[symbol];
+      },
+    });
+  }
   return handle;
 }

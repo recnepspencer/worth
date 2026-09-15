@@ -3,8 +3,7 @@ use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 
 use crate::boundary::restore_tokens::{
-    ensure_restore_token_capacity_available, load_runtime_envelope, store_runtime_envelope,
-    store_snapshot_envelope,
+    discard_restore_token, load_runtime_envelope, store_runtime_envelope, store_snapshot_envelope,
 };
 use crate::boundary::serde::{from_js, from_json_wire, to_js, to_js_structured, to_json_wire};
 use crate::recipe::model::TransactionOp;
@@ -159,14 +158,12 @@ impl SignalWorkerRuntime {
 
     #[wasm_bindgen(js_name = exportWorkerSnapshotEnvelopeArtifact)]
     pub fn export_worker_snapshot_envelope_artifact(&self) -> Result<JsValue, JsValue> {
-        ensure_restore_token_capacity_available().map_err(JsValue::from)?;
         let snapshot = self.export_worker_snapshot_envelope_for_test()?;
         branch_history::worker_snapshot_envelope_artifact(snapshot)
     }
 
     #[wasm_bindgen(js_name = exportWorkerSnapshotEnvelopeWire)]
     pub fn export_worker_snapshot_envelope_wire(&self) -> Result<String, JsValue> {
-        ensure_restore_token_capacity_available().map_err(JsValue::from)?;
         store_snapshot_envelope(self.export_worker_snapshot_envelope_for_test()?)
             .map_err(JsValue::from)
     }
@@ -175,9 +172,16 @@ impl SignalWorkerRuntime {
     pub fn export_worker_snapshot_envelope_portable_wire(&self) -> Result<String, JsValue> {
         to_json_wire(&self.export_worker_snapshot_envelope_for_test()?).map_err(JsValue::from)
     }
+    /// Releases one pending exact restore artifact minted in the worker
+    /// realm (snapshot, snapshot envelope, or runtime envelope). `false`
+    /// when it is not pending.
+    #[wasm_bindgen(js_name = discardRestoreToken)]
+    pub fn discard_restore_token(&self, token: String) -> bool {
+        discard_restore_token(token)
+    }
+
     #[wasm_bindgen(js_name = exportWorkerRuntimeEnvelopeWire)]
     pub fn export_worker_runtime_envelope_wire(&self) -> Result<String, JsValue> {
-        ensure_restore_token_capacity_available().map_err(JsValue::from)?;
         let artifact = self.export_exact_worker_runtime_restore_artifact_for_test()?;
         store_runtime_envelope(artifact).map_err(JsValue::from)
     }
