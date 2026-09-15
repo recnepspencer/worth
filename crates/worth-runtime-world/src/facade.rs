@@ -93,6 +93,7 @@ pub use crate::recovery::{
     PerformedPublicationRecoveryDenial, ProductUnpublishedCause, ProductUnpublishedCleanup,
     ProductUnpublishedNextAction, ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle,
     ProductUnpublishedRetentionPosture, RecoveryContinuationContract, RuntimeWorldRecoveryDenial,
+    RuntimeWorldSettledRelationalAdoptionDenial,
 };
 
 pub use crate::inspection::{

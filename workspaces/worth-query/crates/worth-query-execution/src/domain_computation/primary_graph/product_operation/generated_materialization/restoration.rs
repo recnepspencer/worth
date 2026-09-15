@@ -1,8 +1,26 @@
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::branch::{
-    RelationalMaterializationError, RelationalRematerializationCompletion,
-};
+use worth_relational::facade::branch::RelationalRematerializationCompletion;
 use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
+
+mod failure;
+mod invariant_admission;
+mod no_effect;
+mod receipt;
+mod recovery;
+mod settlement;
+
+pub use failure::WorthQueryGeneratedOutputRestorationFailureCause;
+use failure::{preparation_failure_cause, restoration_failure};
+
+pub use no_effect::{
+    WorthQueryGeneratedOutputPublicationNoEffect, WorthQueryGeneratedOutputPublicationNoEffectCause,
+};
+pub use receipt::WorthQueryGeneratedOutputRestorationReceipt;
+pub use recovery::{
+    WorthQueryGeneratedOutputRestorationRecovery,
+    WorthQueryGeneratedOutputRestorationRecoveryFailure,
+    WorthQueryGeneratedOutputRestorationRecoveryStage,
+};
 
 use super::{WorthQueryCompletedGeneratedOutputReconstruction, WorthQuerySuspendedGeneratedOutput};
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding;
@@ -13,7 +31,7 @@ use crate::domain_computation::primary_graph::{
 
 pub struct WorthQueryRestoredGeneratedOutput {
     branch: crate::basis::WorthQueryProductBranch,
-    commit: worth_relational::facade::history::RelationalCommitReceipt,
+    commit: WorthQueryGeneratedOutputRestorationReceipt,
 }
 
 impl WorthQueryRestoredGeneratedOutput {
@@ -21,7 +39,7 @@ impl WorthQueryRestoredGeneratedOutput {
         self.branch
     }
 
-    pub fn commit(&self) -> &worth_relational::facade::history::RelationalCommitReceipt {
+    pub fn commit(&self) -> &WorthQueryGeneratedOutputRestorationReceipt {
         &self.commit
     }
 }
@@ -53,33 +71,22 @@ impl WorthQueryGeneratedOutputRestorationFailure {
 #[must_use = "unpublished restoration custody must remain with its World recovery authority"]
 pub struct WorthQueryUnpublishedGeneratedOutputRestoration {
     product: crate::domain_computation::WorthQueryProductUnpublishedApplication,
-    suspended: WorthQuerySuspendedGeneratedOutput,
+    retry: recovery::RestorationRetry,
 }
 
 impl WorthQueryUnpublishedGeneratedOutputRestoration {
-    pub fn product(&self) -> &crate::domain_computation::WorthQueryProductUnpublishedApplication {
-        &self.product
-    }
-
-    pub fn into_parts(
+    fn into_parts(
         self,
     ) -> (
         crate::domain_computation::WorthQueryProductUnpublishedApplication,
-        WorthQuerySuspendedGeneratedOutput,
+        recovery::RestorationRetry,
     ) {
-        (self.product, self.suspended)
+        (self.product, self.retry)
     }
-}
 
-#[derive(Debug)]
-pub enum WorthQueryGeneratedOutputRestorationFailureCause {
-    ForeignRuntime,
-    WrongProducer,
-    StaleProducerVersion,
-    StaleOutputLineage,
-    ProductActivationUnavailable,
-    Preparation(RelationalMaterializationError),
-    PublicationNoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
+    pub fn into_recovery(self) -> WorthQueryGeneratedOutputRestorationRecovery {
+        WorthQueryGeneratedOutputRestorationRecovery::from_unpublished(self)
+    }
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -94,30 +101,6 @@ where
     where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
-        let gate = match self.product_runtime.activations.gate(
-            completed
-                .suspended
-                .publication
-                .observation()
-                .branch_identity(),
-        ) {
-            Ok(gate) => gate,
-            Err(_) => {
-                return Err(restoration_failure(
-                    completed.suspended,
-                    WorthQueryGeneratedOutputRestorationFailureCause::ProductActivationUnavailable,
-                ));
-            }
-        };
-        let _publication_admission = match gate.begin_publication() {
-            Ok(admission) => admission,
-            Err(_) => {
-                return Err(restoration_failure(
-                    completed.suspended,
-                    WorthQueryGeneratedOutputRestorationFailureCause::ProductActivationUnavailable,
-                ));
-            }
-        };
         let WorthQueryCompletedGeneratedOutputReconstruction {
             suspended,
             entities,
@@ -134,13 +117,15 @@ where
                 WorthQueryGeneratedOutputRestorationFailureCause::ForeignRuntime,
             ));
         }
-        if !suspended.matches_producer::<Schema, Producer>() {
+        if !suspended.matches_producer_binding::<Schema, Producer>() {
             return Err(restoration_failure(
                 suspended,
                 WorthQueryGeneratedOutputRestorationFailureCause::WrongProducer,
             ));
         }
-        if self.installed_producers.provider::<Producer>().is_none() {
+        if !suspended.matches_provider_version::<Schema, Producer>()
+            || self.installed_producers.provider::<Producer>().is_none()
+        {
             return Err(restoration_failure(
                 suspended,
                 WorthQueryGeneratedOutputRestorationFailureCause::StaleProducerVersion,
@@ -152,6 +137,28 @@ where
                 WorthQueryGeneratedOutputRestorationFailureCause::StaleOutputLineage,
             ));
         }
+        let gate = match self
+            .product_runtime
+            .activations
+            .gate(suspended.publication.observation().branch_identity())
+        {
+            Ok(gate) => gate,
+            Err(_) => {
+                return Err(restoration_failure(
+                    suspended,
+                    WorthQueryGeneratedOutputRestorationFailureCause::ProductActivationUnavailable,
+                ));
+            }
+        };
+        let _publication_admission = match gate.begin_publication() {
+            Ok(admission) => admission,
+            Err(_) => {
+                return Err(restoration_failure(
+                    suspended,
+                    WorthQueryGeneratedOutputRestorationFailureCause::ProductActivationUnavailable,
+                ));
+            }
+        };
         let WorthQuerySuspendedGeneratedOutput {
             publication,
             branch,
@@ -173,6 +180,7 @@ where
         let prepared = match prepared {
             Ok(prepared) => prepared,
             Err(failure) => {
+                let cause = preparation_failure_cause(&failure.error);
                 return Err(restoration_failure(
                     WorthQuerySuspendedGeneratedOutput {
                         publication,
@@ -181,11 +189,32 @@ where
                         correspondence,
                         producer,
                     },
-                    WorthQueryGeneratedOutputRestorationFailureCause::Preparation(failure.error),
+                    cause,
                 ));
             }
         };
-        let (candidate, completion) = prepared.into_parts();
+        let (candidate, completion, invariant_evidence) = prepared.into_parts();
+        if let Err(denial) = invariant_admission::admit::<Schema, Producer>(
+            &invariant_evidence,
+            publication
+                .observation()
+                .basis()
+                .relational_basis()
+                .identity()
+                .branch_id(),
+        ) {
+            drop(candidate);
+            return Err(restoration_failure(
+                suspended_from_completion(
+                    publication,
+                    branch,
+                    correspondence,
+                    producer,
+                    completion,
+                ),
+                WorthQueryGeneratedOutputRestorationFailureCause::InvariantAdmission(denial),
+            ));
+        }
         self.publish_restoration(
             publication,
             branch,
@@ -220,7 +249,7 @@ where
                         completion,
                     ),
                     WorthQueryGeneratedOutputRestorationFailureCause::PublicationNoEffect(
-                        no_effect,
+                        WorthQueryGeneratedOutputPublicationNoEffect::from_world(no_effect),
                     ),
                 ));
             }
@@ -236,7 +265,7 @@ where
                 let observation = consumed
                     .take_successor_observation()
                     .expect("the requested restoration successor is retained");
-                let commit = completion
+                let restored = completion
                     .complete(commit)
                     .expect("World returns the exact prepared relational restoration result");
                 self.primary_provider
@@ -256,7 +285,9 @@ where
                     );
                 Ok(WorthQueryRestoredGeneratedOutput {
                     branch,
-                    commit: commit.commit.clone(),
+                    commit: WorthQueryGeneratedOutputRestorationReceipt::new(
+                        restored.commit.clone(),
+                    ),
                 })
             }
             RuntimeWorldPublicationOutcome::NoEffect(no_effect) => Err(restoration_failure(
@@ -267,21 +298,23 @@ where
                     producer,
                     completion,
                 ),
-                WorthQueryGeneratedOutputRestorationFailureCause::PublicationNoEffect(no_effect),
+                WorthQueryGeneratedOutputRestorationFailureCause::PublicationNoEffect(
+                    WorthQueryGeneratedOutputPublicationNoEffect::from_world(no_effect),
+                ),
             )),
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 let product = self.unpublished_materialization_from_binding(effects, &publication);
                 Err(
                     WorthQueryGeneratedOutputRestorationFailure::ProductUnpublished(
                         WorthQueryUnpublishedGeneratedOutputRestoration {
-                            suspended: suspended_from_completion(
+                            product,
+                            retry: recovery::RestorationRetry {
                                 publication,
                                 branch,
                                 correspondence,
                                 producer,
                                 completion,
-                            ),
-                            product,
+                            },
                         },
                     ),
                 )
@@ -310,7 +343,7 @@ where
         self.unpublished_materialization_from_binding(effects, &product.publication_binding())
     }
 
-    fn unpublished_materialization_from_binding(
+    pub(super) fn unpublished_materialization_from_binding(
         &self,
         effects: worth_runtime_world::facade::ProductUnpublishedOwnerEffects,
         publication: &WorthQueryProductPublicationBinding,
@@ -321,6 +354,16 @@ where
             self.primary_provider.unpublished_idempotency_disposition(),
         )
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryGeneratedOutputInvariantAdmissionDenial {
+    ForeignBranchEvidence,
+    IncompleteOwnerEvidence,
+    MissingRequiredInvariant,
+    RequiredInvariantVersionMismatch,
+    DuplicateRequiredInvariant,
+    RequiredInvariantDidNotPass,
 }
 
 fn suspended_from_completion(
@@ -337,11 +380,4 @@ fn suspended_from_completion(
         correspondence,
         producer,
     }
-}
-
-fn restoration_failure(
-    suspended: WorthQuerySuspendedGeneratedOutput,
-    cause: WorthQueryGeneratedOutputRestorationFailureCause,
-) -> WorthQueryGeneratedOutputRestorationFailure {
-    WorthQueryGeneratedOutputRestorationFailure::Rejected { suspended, cause }
 }

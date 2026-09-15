@@ -30,12 +30,19 @@ pub use conditional_definition::{
 pub use context::{WorthQueryProductEntry, WorthQuerySelectedProductOperation};
 pub use generated_materialization::{
     WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryGeneratedEntity,
-    WorthQueryGeneratedOutputReconstruction, WorthQueryGeneratedOutputReconstructionDenial,
-    WorthQueryGeneratedOutputReconstructionFailure, WorthQueryGeneratedOutputRestorationFailure,
-    WorthQueryGeneratedOutputRestorationFailureCause, WorthQueryGeneratedOutputSuspensionDenial,
-    WorthQueryGeneratedOutputSuspensionFailure, WorthQueryRestoredGeneratedOutput,
-    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedGeneratedOutputRestoration,
-    WorthQueryUnpublishedGeneratedOutputSuspension,
+    WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    WorthQueryGeneratedOutputPublicationNoEffect,
+    WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputReconstruction,
+    WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,
+    WorthQueryGeneratedOutputRestorationFailure, WorthQueryGeneratedOutputRestorationFailureCause,
+    WorthQueryGeneratedOutputRestorationReceipt, WorthQueryGeneratedOutputRestorationRecovery,
+    WorthQueryGeneratedOutputRestorationRecoveryFailure,
+    WorthQueryGeneratedOutputRestorationRecoveryStage, WorthQueryGeneratedOutputSuspensionDenial,
+    WorthQueryGeneratedOutputSuspensionFailure, WorthQueryGeneratedOutputSuspensionRecovery,
+    WorthQueryGeneratedOutputSuspensionRecoveryFailure,
+    WorthQueryGeneratedOutputSuspensionRecoveryStage, WorthQueryRestoredGeneratedOutput,
+    WorthQueryRetainedGeneratedOutputEntity, WorthQuerySuspendedGeneratedOutput,
+    WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 pub use history::{WorthQueryProductHistory, WorthQueryProductHistoryEntry};
 pub use query::WorthQueryProductQueryControls;

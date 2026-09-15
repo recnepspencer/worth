@@ -8,6 +8,7 @@ use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 pub enum RelationalComponentPlanPosture {
     RetainExact,
     PublishPrepared,
+    AdoptSettled,
 }
 
 #[derive(Debug)]
@@ -15,6 +16,7 @@ pub struct RelationalComponentPlan {
     posture: RelationalComponentPlanPosture,
     expected: AdmittedRelationalBranchBasis,
     prepared_candidate: Option<PreparedRelationalCommitCandidate>,
+    settled_adoption: Option<crate::publication::SettledRelationalPublicationAdoption>,
 }
 
 impl RelationalComponentPlan {
@@ -33,11 +35,18 @@ impl RelationalComponentPlan {
         self.prepared_candidate.as_ref()
     }
 
+    pub(crate) fn settled_adoption(
+        &self,
+    ) -> Option<&crate::publication::SettledRelationalPublicationAdoption> {
+        self.settled_adoption.as_ref()
+    }
+
     pub(crate) fn retain_exact(expected: AdmittedRelationalBranchBasis) -> Self {
         Self {
             posture: RelationalComponentPlanPosture::RetainExact,
             expected,
             prepared_candidate: None,
+            settled_adoption: None,
         }
     }
 
@@ -49,10 +58,29 @@ impl RelationalComponentPlan {
             posture: RelationalComponentPlanPosture::PublishPrepared,
             expected,
             prepared_candidate: Some(prepared_candidate),
+            settled_adoption: None,
+        }
+    }
+
+    pub(crate) fn adopt_settled(
+        expected: AdmittedRelationalBranchBasis,
+        settled_adoption: crate::publication::SettledRelationalPublicationAdoption,
+    ) -> Self {
+        Self {
+            posture: RelationalComponentPlanPosture::AdoptSettled,
+            expected,
+            prepared_candidate: None,
+            settled_adoption: Some(settled_adoption),
         }
     }
 
     pub(crate) fn take_prepared_candidate(&mut self) -> Option<PreparedRelationalCommitCandidate> {
         self.prepared_candidate.take()
+    }
+
+    pub(crate) fn take_settled_adoption(
+        &mut self,
+    ) -> Option<crate::publication::SettledRelationalPublicationAdoption> {
+        self.settled_adoption.take()
     }
 }

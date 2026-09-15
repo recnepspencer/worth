@@ -23,6 +23,7 @@ use crate::ConsumerSchema;
 mod output_correspondence;
 mod publication;
 mod current_output_selector;
+mod generated_materialization;
 mod prior_output_family;
 mod resource_profile;
 
@@ -65,6 +66,12 @@ pub(crate) fn run(
     current_output_selector::producer_qualified_selection_is_current(&request);
     actual_candidate_checks_untouched_neighbors(&request, &world);
     let foreign_world = installation::install(foreign);
+    generated_materialization::typed_reconstruction_preserves_query_authority(
+        &world.application,
+        &foreign_world.application,
+        &request,
+        &scope,
+    );
     let foreign_scope = authentication::request_scope();
     let foreign_adapter = authentication::admit(foreign_world.application.installed_schema());
     let foreign_principal = authentication::block_on(foreign_adapter.authenticate(

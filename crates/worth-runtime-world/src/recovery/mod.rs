@@ -11,6 +11,12 @@ pub use product_unpublished::{
     ProductUnpublishedRetentionPosture,
 };
 
+#[derive(Debug)]
+pub enum RuntimeWorldSettledRelationalAdoptionDenial {
+    Recovery(RuntimeWorldRecoveryDenial),
+    Publication(crate::publication::NoEffectCompositePublication),
+}
+
 pub(crate) use catalog::{RecoveryCatalog, RecoveryCatalogDenial, ReservedProductUnpublishedSlot};
 pub(crate) use cleanup::RecoveryCleanupOutcome;
 

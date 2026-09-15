@@ -96,7 +96,7 @@ impl RelationalMaterializationPort {
         relations: Vec<RelationalRelationMaterialization>,
     ) -> Result<PreparedRelationalRematerialization, RelationalRematerializationFailure> {
         match self.prepare_rematerialization_inner(basis, &custody, entities, relations) {
-            Ok(candidate) => {
+            Ok((candidate, invariant_evidence)) => {
                 let transaction_id = candidate.transaction_id();
                 Ok(PreparedRelationalRematerialization {
                     candidate,
@@ -104,6 +104,7 @@ impl RelationalMaterializationPort {
                         transaction_id,
                         custody,
                     },
+                    invariant_evidence,
                 })
             }
             Err(error) => Err(RelationalRematerializationFailure { custody, error }),
@@ -120,7 +121,7 @@ impl RelationalMaterializationPort {
     ) -> Result<crate::transactions::data::CommitResult, RelationalRematerializationFailure> {
         let prepared =
             self.prepare_generated_rematerialization(basis, custody, entities, relations)?;
-        let (candidate, completion) = prepared.into_parts();
+        let (candidate, completion, _invariant_evidence) = prepared.into_parts();
         let Some(runtime) = self.owner.admitted_runtime() else {
             return Err(RelationalRematerializationFailure {
                 custody: completion.into_custody(),
@@ -142,8 +143,13 @@ impl RelationalMaterializationPort {
         custody: &RelationalMaterializationCustody,
         entities: Vec<RelationalEntityMaterialization>,
         relations: Vec<RelationalRelationMaterialization>,
-    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, RelationalMaterializationError>
-    {
+    ) -> Result<
+        (
+            crate::mvcc::PreparedRelationalCommitCandidate,
+            crate::mvcc::RelationalMutationInvariantEvidence,
+        ),
+        RelationalMaterializationError,
+    > {
         let runtime = self
             .owner
             .admitted_runtime()
@@ -161,9 +167,14 @@ impl RelationalMaterializationPort {
         transaction
             .push_batch(rematerialization_batch(entities, relations))
             .map_err(RelationalMaterializationError::TransactionStaging)?;
-        runtime
-            .prepare_branch_transaction(transaction)
-            .map_err(RelationalMaterializationError::Commit)
+        let validated = transaction
+            .validate(&runtime)
+            .map_err(RelationalMaterializationError::Commit)?;
+        let invariant_evidence = validated.invariant_evidence().clone();
+        let candidate = runtime
+            .prepare_validated_proposal(validated)
+            .map_err(RelationalMaterializationError::Commit)?;
+        Ok((candidate, invariant_evidence))
     }
 }
 

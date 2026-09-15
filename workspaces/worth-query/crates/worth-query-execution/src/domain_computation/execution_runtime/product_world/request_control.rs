@@ -64,6 +64,24 @@ impl Wake for PublicationCancellation {
 }
 
 impl WorthQueryProductPublicationBinding {
+    pub(crate) fn prepare_settled_relational_adoption(
+        &self,
+        unpublished: &crate::domain_computation::WorthQueryProductUnpublishedApplication,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        WorthQueryPreparedProductPublication,
+        worth_runtime_world::facade::RuntimeWorldSettledRelationalAdoptionDenial,
+    > {
+        let control = self.request_control(request);
+        let prepared = unpublished
+            .prepare_settled_relational_adoption(control.cancellation(), control.deadline())?;
+        Ok(WorthQueryPreparedProductPublication {
+            publication: self.publication().clone(),
+            prepared,
+            control,
+        })
+    }
+
     pub(crate) fn request_control(
         &self,
         request: &WorthQueryRequestScope,

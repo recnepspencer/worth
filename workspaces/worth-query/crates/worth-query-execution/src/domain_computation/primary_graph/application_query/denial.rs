@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum WorthQueryApplicationQueryAdmissionDenialKind {
     InstalledQuery(WorthQueryApplicationQueryInstallationDenialKind),
     ForeignPrincipal,
@@ -25,6 +26,7 @@ pub enum WorthQueryApplicationQueryAdmissionDenialKind {
     WrongProviderBasis,
     ExpiredBasis,
     BasisUnavailable,
+    BranchMaterializationSuspended,
     ForeignHistoricalReceipt,
     RuntimeSupportUnavailable,
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },

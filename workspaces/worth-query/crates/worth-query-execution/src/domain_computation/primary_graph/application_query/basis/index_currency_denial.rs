@@ -27,6 +27,12 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map_index
             WorthQueryApplicationQueryAdmissionDenialKind::SnapshotIdentityExhausted,
             "primary graph index currency exhausted snapshot identity space",
         ),
+        WorthQueryPrimaryIndexCurrencyDenial::Basis(
+            WorthQueryExactBasisSnapshotDenial::BranchMaterializationSuspended,
+        ) => admission_denial(
+            WorthQueryApplicationQueryAdmissionDenialKind::BranchMaterializationSuspended,
+            "the selected branch materialization is suspended",
+        ),
         WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(detail) => admission_denial(
             WorthQueryApplicationQueryAdmissionDenialKind::RuntimeSupportUnavailable,
             detail,

@@ -1,4 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum WorthQueryPrincipalResolutionDenialKind {
     PrimaryGraphNotInstalled,
     BindingNotInstalled,
@@ -7,6 +8,7 @@ pub enum WorthQueryPrincipalResolutionDenialKind {
     ExpiredAuthentication,
     Cancelled,
     DeadlineExceeded,
+    BranchMaterializationSuspended,
     IdentityIndexUnavailable,
     CorruptIdentityIndex,
     UnknownPrincipal,
@@ -98,11 +100,44 @@ pub(super) fn entity_lookup_resolution_denial(
     resolution_denial(resolution_kind, binding)
 }
 
+pub(super) fn principal_index_currency_denial(
+    denial: super::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
+    binding: &str,
+) -> WorthQueryPrincipalResolutionDenial {
+    let kind = match denial {
+        super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
+            super::WorthQueryExactBasisSnapshotDenial::BranchMaterializationSuspended,
+        ) => WorthQueryPrincipalResolutionDenialKind::BranchMaterializationSuspended,
+        _ => WorthQueryPrincipalResolutionDenialKind::IdentityIndexUnavailable,
+    };
+    resolution_denial(kind, binding)
+}
+
 pub(super) fn resolution_denial(
     kind: WorthQueryPrincipalResolutionDenialKind,
     binding: impl Into<String>,
 ) -> WorthQueryPrincipalResolutionDenial {
     WorthQueryPrincipalResolutionDenial::new(kind, binding)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn suspended_materialization_is_not_reported_as_an_index_outage() {
+        let denial = principal_index_currency_denial(
+            super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
+                super::super::WorthQueryExactBasisSnapshotDenial::BranchMaterializationSuspended,
+            ),
+            "principal",
+        );
+
+        assert_eq!(
+            denial.kind(),
+            WorthQueryPrincipalResolutionDenialKind::BranchMaterializationSuspended
+        );
+    }
 }
 use worth_query_installation::facade::WorthQueryPrincipalBindingInstallationDenialKind;
 use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;

@@ -36,11 +36,13 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map_basis
         worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
             WorthQueryApplicationQueryAdmissionDenialKind::SnapshotIdentityExhausted
         }
+        worth_relational::facade::branch::RelationalBranchBasisDenial::MaterializationUnavailable => {
+            WorthQueryApplicationQueryAdmissionDenialKind::BranchMaterializationSuspended
+        }
         worth_relational::facade::branch::RelationalBranchBasisDenial::UnknownBranch(_)
         | worth_relational::facade::branch::RelationalBranchBasisDenial::ArchivedBranch(_)
         | worth_relational::facade::branch::RelationalBranchBasisDenial::DeletingBranch(_)
         | worth_relational::facade::branch::RelationalBranchBasisDenial::UnavailableRetainedTarget
-        | worth_relational::facade::branch::RelationalBranchBasisDenial::MaterializationUnavailable
         | worth_relational::facade::branch::RelationalBranchBasisDenial::OwnerFailure
         | worth_relational::facade::branch::RelationalBranchBasisDenial::OwnerUnavailable => {
             WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable
@@ -62,6 +64,18 @@ mod tests {
         assert_eq!(
             denial.kind(),
             WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable
+        );
+    }
+
+    #[test]
+    fn suspended_materialization_is_preserved_as_a_query_basis_cause() {
+        let denial = map_basis_denial(
+            worth_relational::facade::branch::RelationalBranchBasisDenial::MaterializationUnavailable,
+        );
+
+        assert_eq!(
+            denial.kind(),
+            WorthQueryApplicationQueryAdmissionDenialKind::BranchMaterializationSuspended
         );
     }
 }

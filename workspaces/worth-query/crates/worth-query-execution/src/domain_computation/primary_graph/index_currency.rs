@@ -78,6 +78,7 @@ fn index_basis_denial(
         Denial::RetentionCapacityExhausted => QueryDenial::RetentionCapacityExhausted,
         Denial::RetentionIdentityExhausted => QueryDenial::RetentionIdentityExhausted,
         Denial::SnapshotIdentityExhausted => QueryDenial::SnapshotIdentityExhausted,
+        Denial::MaterializationUnavailable => QueryDenial::BranchMaterializationSuspended,
         Denial::ForeignRuntime {
             expected_runtime_instance_id,
             actual_runtime_instance_id,

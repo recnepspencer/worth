@@ -11,16 +11,14 @@ use super::RuntimeWorldOwnerRoot;
 mod attempt;
 #[path = "operation/creation_reservation.rs"]
 mod creation_reservation;
-mod publication_capacity;
-mod reservation_steps;
-
-#[cfg(test)]
-#[path = "operation/preparation_tests.rs"]
-mod preparation_tests;
-
 #[cfg(test)]
 #[path = "operation/preparation_test_support.rs"]
 mod preparation_test_support;
+#[cfg(test)]
+#[path = "operation/preparation_tests.rs"]
+mod preparation_tests;
+mod publication_capacity;
+mod reservation_steps;
 
 pub(crate) use attempt::{
     RuntimeWorldOperationLedger, RuntimeWorldOperationReservation, RuntimeWorldOperationState,
@@ -307,8 +305,12 @@ where
         S: crate::publication::CompositePublicationStage,
     {
         let current = self.admit_publication_source(&expected)?;
-        let (component_intent, prepared_candidate, successor_observation_requested) =
-            intent.into_parts();
+        let (
+            component_intent,
+            prepared_candidate,
+            settled_adoption,
+            successor_observation_requested,
+        ) = intent.into_parts();
         let resolved = match ResolvedExpectedProductHead::from_current(
             component_intent,
             expected.clone(),
@@ -317,13 +319,14 @@ where
             Ok(resolved) => resolved,
             Err(_) => {
                 drop(prepared_candidate);
+                drop(settled_adoption);
                 return Err(NoEffectCompositePublication::new(
                     NoEffectCause::StaleExpectedProductHead,
                     Some(expected),
                 ));
             }
         };
-        let plan = lower_component_plans(resolved, prepared_candidate)?;
+        let plan = lower_component_plans(resolved, prepared_candidate, settled_adoption)?;
         let attempt = RuntimeWorldOwnerRoot::reserve(
             self,
             plan,

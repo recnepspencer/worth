@@ -20,6 +20,7 @@ pub(crate) enum WorthQueryExactBasisSnapshotDenial {
     #[cfg(test)]
     BranchIdentityUnavailable,
     BranchObservationUnavailable,
+    BranchMaterializationSuspended,
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     ForeignRuntime {
@@ -40,6 +41,9 @@ fn observation_denial(denial: RelationalBranchBasisDenial) -> WorthQueryExactBas
         }
         RelationalBranchBasisDenial::RetentionIdentityExhausted => {
             WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted
+        }
+        RelationalBranchBasisDenial::MaterializationUnavailable => {
+            WorthQueryExactBasisSnapshotDenial::BranchMaterializationSuspended
         }
         _ => WorthQueryExactBasisSnapshotDenial::BranchObservationUnavailable,
     }

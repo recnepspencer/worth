@@ -102,6 +102,7 @@ fn resolution_kind(kind: WorthQueryPrincipalResolutionDenialKind) -> BankHttpDen
         ),
         Resolution::PrimaryGraphNotInstalled
         | Resolution::BindingNotInstalled
+        | Resolution::BranchMaterializationSuspended
         | Resolution::IdentityIndexUnavailable => unavailable(),
         Resolution::ActiveSnapshotCapacityExhausted { .. }
         | Resolution::SnapshotIdentityExhausted
@@ -119,6 +120,7 @@ fn resolution_kind(kind: WorthQueryPrincipalResolutionDenialKind) -> BankHttpDen
         | Resolution::WrongPrincipalTargetKind => {
             BankHttpDenial::new(BankHttpDenialKind::InternalDenied, BankHttpNextAction::None)
         }
+        _ => unavailable(),
     }
 }
 

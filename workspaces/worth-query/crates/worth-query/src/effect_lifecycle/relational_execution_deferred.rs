@@ -249,4 +249,24 @@ mod tests {
             }
         ));
     }
+
+    #[test]
+    fn materialization_staging_denials_preserve_authority_meaning() {
+        assert!(matches!(
+            transaction_staging(
+                RelationalTransactionStagingDenial::MaterializationAuthorityRequired
+            ),
+            RelationalEffectExecutionFailure::Denied {
+                kind: EffectExecutionDenialKind::TransactionMaterializationAuthorityRequired,
+                ..
+            }
+        ));
+        assert!(matches!(
+            transaction_staging(RelationalTransactionStagingDenial::MaterializationModeMismatch),
+            RelationalEffectExecutionFailure::Denied {
+                kind: EffectExecutionDenialKind::TransactionMaterializationModeMismatch,
+                ..
+            }
+        ));
+    }
 }

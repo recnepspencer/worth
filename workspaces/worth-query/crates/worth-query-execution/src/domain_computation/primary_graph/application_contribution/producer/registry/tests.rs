@@ -11,6 +11,15 @@ fn producer_meaning_rejects_a_distinct_rust_binding_type_reusing_the_identity() 
     assert!(!installed.has_same_meaning_as(&substituted));
 }
 
+#[test]
+fn producer_meaning_rejects_a_provider_version_change() {
+    let installed = declared(TypeId::of::<InstalledProducer>());
+    let mut changed = installed.clone();
+    changed.provider_identity = "provider.v2".into();
+
+    assert!(!installed.has_same_meaning_as(&changed));
+}
+
 fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
     DeclaredProducerBinding {
         owner: "owner".into(),

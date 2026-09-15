@@ -140,6 +140,40 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn prepare_settled_relational_adoption(
+        &self,
+        effects: &ProductUnpublishedOwnerEffects,
+        cancellation: &crate::publication::RuntimeWorldCancellationToken,
+        deadline: Option<crate::lifecycle::RuntimeWorldInstant>,
+    ) -> Result<
+        crate::publication::PreparedCompositePublicationWithoutSignal,
+        crate::recovery::RuntimeWorldSettledRelationalAdoptionDenial,
+    > {
+        use crate::lifecycle::ports::RuntimeWorldPreparationService;
+        use crate::recovery::RuntimeWorldSettledRelationalAdoptionDenial as Denial;
+
+        let record = self
+            .state
+            .recovery
+            .inspect_record(&effects.recovery_handle())
+            .map_err(Denial::Recovery)?;
+        let retained = ProductUnpublishedOwnerEffects::from_catalog_record(record);
+        let expected = retained.expected_head().clone();
+        let adoption = retained
+            .settled_relational_adoption()
+            .ok_or(Denial::Recovery(
+                crate::recovery::RuntimeWorldRecoveryDenial::SettlementEvidenceUnavailable,
+            ))?;
+        drop(retained);
+        let intent = crate::publication::CompositePublicationIntent::without_signal(
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
+        .with_settled_relational_adoption(adoption)
+        .with_successor_observation();
+        self.prepare_publication(expected, intent, cancellation, deadline)
+            .map_err(Denial::Publication)
+    }
+
     fn inspect_effects(
         &self,
         handle: &ProductUnpublishedRecoveryHandle,

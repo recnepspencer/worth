@@ -20,6 +20,7 @@ mod product_comparison;
 mod progress;
 mod progression;
 mod reservation;
+mod settled_adoption;
 
 pub(crate) use cancellation::RuntimeWorldCancellationBoundary;
 pub use cancellation::{RuntimeWorldCancellationSource, RuntimeWorldCancellationToken};
@@ -65,6 +66,7 @@ pub(crate) use reservation::{
     ReservedAttemptCapacities, ReservedAttemptCapacityInputs, ReservedBranchCreationAttempt,
     ReservedBranchCreationInputs, ReservedPublicationAttemptParts,
 };
+pub(crate) use settled_adoption::SettledRelationalPublicationAdoption;
 
 mod movement_cutoff;
 pub(crate) use movement_cutoff::{ProductMovementCutoff, ProductMovementCutoffDenial};

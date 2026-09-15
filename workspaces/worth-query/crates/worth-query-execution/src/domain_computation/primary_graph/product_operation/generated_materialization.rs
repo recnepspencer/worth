@@ -1,10 +1,11 @@
 use std::any::TypeId;
 use std::sync::Arc;
 
+use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::branch::{
-    RelationalMaterializationCustody, RelationalMaterializationError,
-    RelationalMaterializationRecord, RelationalMaterializationSuspensionCompletion,
+    RelationalMaterializationCustody, RelationalMaterializationRecord,
+    RelationalMaterializationSuspensionCompletion,
 };
 use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
@@ -12,12 +13,24 @@ mod reconstruction;
 pub use reconstruction::{
     WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryGeneratedEntity,
     WorthQueryGeneratedOutputReconstruction, WorthQueryGeneratedOutputReconstructionDenial,
-    WorthQueryGeneratedOutputReconstructionFailure,
+    WorthQueryGeneratedOutputReconstructionFailure, WorthQueryRetainedGeneratedOutputEntity,
+};
+mod suspension;
+pub use suspension::{
+    WorthQueryGeneratedOutputSuspensionRecovery,
+    WorthQueryGeneratedOutputSuspensionRecoveryFailure,
+    WorthQueryGeneratedOutputSuspensionRecoveryStage,
 };
 mod restoration;
 pub use restoration::{
-    WorthQueryGeneratedOutputRestorationFailure, WorthQueryGeneratedOutputRestorationFailureCause,
-    WorthQueryRestoredGeneratedOutput, WorthQueryUnpublishedGeneratedOutputRestoration,
+    WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    WorthQueryGeneratedOutputPublicationNoEffect,
+    WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputRestorationFailure,
+    WorthQueryGeneratedOutputRestorationFailureCause, WorthQueryGeneratedOutputRestorationReceipt,
+    WorthQueryGeneratedOutputRestorationRecovery,
+    WorthQueryGeneratedOutputRestorationRecoveryFailure,
+    WorthQueryGeneratedOutputRestorationRecoveryStage, WorthQueryRestoredGeneratedOutput,
+    WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 
 use super::context::WorthQuerySelectedProductOperation;
@@ -27,7 +40,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProducerProvider,
 };
 
-struct ProducerQualification {
+pub(super) struct ProducerQualification {
     binding_type: TypeId,
     output_binding_type: TypeId,
     binding_identity: &'static str,
@@ -64,14 +77,23 @@ impl WorthQuerySuspendedGeneratedOutput {
         &self.correspondence
     }
 
-    pub(super) fn matches_producer<Schema, Producer>(&self) -> bool
+    pub(super) fn matches_producer_binding<Schema, Producer>(&self) -> bool
     where
         Schema: ApplicationSchema,
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         self.producer.binding_type == TypeId::of::<Producer>()
             && self.producer.binding_identity == Producer::IDENTITY
-            && self.producer.provider_identity == Producer::Provider::SEMANTIC_IDENTITY
+    }
+
+    // In-memory custody sees the same compiled constant. Keeping this check at
+    // the custody boundary also protects a future restart-restored token.
+    pub(super) fn matches_provider_version<Schema, Producer>(&self) -> bool
+    where
+        Schema: ApplicationSchema,
+        Producer: WorthQueryApplicationProducerBinding<Schema>,
+    {
+        self.producer.provider_identity == Producer::Provider::SEMANTIC_IDENTITY
     }
 
     pub(super) fn matches_runtime<Schema>(
@@ -117,6 +139,7 @@ impl WorthQuerySuspendedGeneratedOutput {
 pub enum WorthQueryGeneratedOutputSuspensionDenial {
     ProducerUnavailable,
     MissingQualifiedOutput,
+    SourceMismatch,
     ForeignRuntime,
     ForeignSchema,
 }
@@ -124,30 +147,15 @@ pub enum WorthQueryGeneratedOutputSuspensionDenial {
 pub enum WorthQueryGeneratedOutputSuspensionFailure {
     Qualification(WorthQueryGeneratedOutputSuspensionDenial),
     ProductActivationUnavailable,
-    Preparation(RelationalMaterializationError),
-    PublicationNoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
-    ProductUnpublished(WorthQueryUnpublishedGeneratedOutputSuspension),
+    Preparation,
+    PublicationNoEffect,
+    ProductUnpublished(WorthQueryGeneratedOutputSuspensionRecovery),
 }
 
-#[must_use = "unpublished owner effects and suspension completion must remain together"]
-pub struct WorthQueryUnpublishedGeneratedOutputSuspension {
-    product: crate::domain_computation::WorthQueryProductUnpublishedApplication,
-    completion: RelationalMaterializationSuspensionCompletion,
-}
-
-impl WorthQueryUnpublishedGeneratedOutputSuspension {
-    pub fn product(&self) -> &crate::domain_computation::WorthQueryProductUnpublishedApplication {
-        &self.product
-    }
-
-    pub fn into_parts(
-        self,
-    ) -> (
-        crate::domain_computation::WorthQueryProductUnpublishedApplication,
-        RelationalMaterializationSuspensionCompletion,
-    ) {
-        (self.product, self.completion)
-    }
+pub(super) struct ExpectedSourceQualification {
+    runtime_authority: u64,
+    schema: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    source_identity: [u8; 32],
 }
 
 impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema>
@@ -157,6 +165,28 @@ where
     pub fn suspend_current_generated_output<Producer>(
         self,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
+            <<Producer::OutputFamily as crate::domain_computation::primary_graph::WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Query,
+        >,
+    ) -> Result<WorthQuerySuspendedGeneratedOutput, WorthQueryGeneratedOutputSuspensionFailure>
+    where
+        Producer: WorthQueryApplicationProducerBinding<Schema>,
+    {
+        let source_identity = source.idempotency_identity();
+        self.suspend_qualified_generated_output::<Producer>(
+            request,
+            ExpectedSourceQualification {
+                runtime_authority: source.runtime_authority,
+                schema: source.schema_binding,
+                source_identity,
+            },
+        )
+    }
+
+    pub(super) fn suspend_qualified_generated_output<Producer>(
+        self,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        source: ExpectedSourceQualification,
     ) -> Result<WorthQuerySuspendedGeneratedOutput, WorthQueryGeneratedOutputSuspensionFailure>
     where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
@@ -209,6 +239,14 @@ where
                 WorthQueryGeneratedOutputSuspensionDenial::ForeignSchema,
             ));
         }
+        if source.runtime_authority != exact.runtime_authority
+            || source.schema != exact.schema
+            || source.source_identity != exact.source_identity
+        {
+            return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
+                WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
+            ));
+        }
         let generated_entities = exact
             .correspondence
             .created_entity_ids()
@@ -222,12 +260,27 @@ where
                     &generated_entities,
                 )
         });
-        let prepared = prepared.map_err(WorthQueryGeneratedOutputSuspensionFailure::Preparation)?;
+        let prepared =
+            prepared.map_err(|_| WorthQueryGeneratedOutputSuspensionFailure::Preparation)?;
         let (candidate, completion) = prepared.into_parts();
         let prepared = product
             .publication_binding()
             .prepare_relational_candidate(candidate, request, true)
-            .map_err(WorthQueryGeneratedOutputSuspensionFailure::PublicationNoEffect)?;
+            .map_err(|_| WorthQueryGeneratedOutputSuspensionFailure::PublicationNoEffect)?;
+        let correspondence = exact.correspondence;
+        let producer = ProducerQualification {
+            binding_type: TypeId::of::<Producer>(),
+            output_binding_type: TypeId::of::<Producer::Operation>(),
+            binding_identity: Producer::IDENTITY,
+            provider_identity: Producer::Provider::SEMANTIC_IDENTITY,
+            source_identity: exact.source_identity,
+            runtime_authority: exact.runtime_authority,
+            schema: exact.schema,
+            scope: exact.scope,
+            output_occurrence,
+            output_generation,
+            observed_source_facts: exact.observed_source_facts,
+        };
         match prepared.execute() {
             RuntimeWorldPublicationOutcome::Performed(performed) => {
                 let commit = performed
@@ -239,43 +292,53 @@ where
                 let observation = publication
                     .take_successor_observation()
                     .expect("the requested successor observation is retained");
-                let suspension = completion
-                    .complete(commit)
-                    .expect("World returns the prepared relational transaction result");
-                Ok(WorthQuerySuspendedGeneratedOutput {
-                    publication: application.materialization_publication_binding(observation),
+                Ok(suspended_output(
+                    application.materialization_publication_binding(observation),
                     branch,
-                    custody: suspension.custody,
-                    correspondence: exact.correspondence,
-                    producer: ProducerQualification {
-                        binding_type: TypeId::of::<Producer>(),
-                        output_binding_type: TypeId::of::<Producer::Operation>(),
-                        binding_identity: Producer::IDENTITY,
-                        provider_identity: Producer::Provider::SEMANTIC_IDENTITY,
-                        source_identity: exact.source_identity,
-                        runtime_authority: exact.runtime_authority,
-                        schema: exact.schema,
-                        scope: exact.scope,
-                        output_occurrence,
-                        output_generation,
-                        observed_source_facts: exact.observed_source_facts,
-                    },
-                })
+                    correspondence,
+                    producer,
+                    completion,
+                    commit,
+                ))
             }
             RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
-                Err(WorthQueryGeneratedOutputSuspensionFailure::PublicationNoEffect(no_effect))
+                drop(no_effect);
+                Err(WorthQueryGeneratedOutputSuspensionFailure::PublicationNoEffect)
             }
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 let product = application.unpublished_materialization(effects, &product);
                 Err(
                     WorthQueryGeneratedOutputSuspensionFailure::ProductUnpublished(
-                        WorthQueryUnpublishedGeneratedOutputSuspension {
+                        WorthQueryGeneratedOutputSuspensionRecovery::new(
                             product,
                             completion,
-                        },
+                            branch,
+                            correspondence,
+                            producer,
+                        ),
                     ),
                 )
             }
         }
+    }
+}
+
+pub(super) fn suspended_output(
+    publication: WorthQueryProductPublicationBinding,
+    branch: crate::basis::WorthQueryProductBranch,
+    correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    producer: ProducerQualification,
+    completion: RelationalMaterializationSuspensionCompletion,
+    commit: worth_relational::facade::transactions::CommitResult,
+) -> WorthQuerySuspendedGeneratedOutput {
+    let suspension = completion
+        .complete(commit)
+        .expect("World returns the prepared relational transaction result");
+    WorthQuerySuspendedGeneratedOutput {
+        publication,
+        branch,
+        custody: suspension.custody,
+        correspondence,
+        producer,
     }
 }
