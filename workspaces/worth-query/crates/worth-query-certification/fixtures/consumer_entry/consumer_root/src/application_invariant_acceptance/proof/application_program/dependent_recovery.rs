@@ -5,7 +5,8 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
 };
 use worth_query_topology_entry::{
-    PlanarOutputDemand, PlanarOutputRead, PlanarRead, PlanarSourceAdjustment,
+    PlanarFinalBodyOutput, PlanarFinalOutputDemand, PlanarFinalOutputFeature, PlanarOutputRead,
+    PlanarRead, PlanarSourceAdjustment,
 };
 
 use super::super::super::{authentication, installation, seed::length};
@@ -40,7 +41,7 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
         })
         .expect_source(source)
         .idempotency(&10_018)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(&world.application)
         .expect("the source edit reaches its installed program");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source edit must be fresh")
@@ -83,10 +84,9 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
     drop(started);
 
     let mut recovered = request
-        .recover_required_outputs::<crate::ConsumerProgram>(
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
-            PlanarOutputDemand::new("anchor-c"),
             controls,
         )
         .expect("fresh caller authority recovers the installed obligation");
@@ -96,18 +96,20 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
         }
     };
-    assert_eq!(settled.dependent_count(), 2);
     assert_eq!(
         settled
-            .dependents()
-            .iter()
+            .output_occurrences::<
+                PlanarFinalOutputFeature,
+                PlanarFinalBodyOutput,
+                PlanarFinalOutputDemand,
+            >()
             .map(|(demand, _)| demand.body_key())
             .collect::<Vec<_>>(),
         ["anchor-c", "anchor-a"]
     );
     assert_eq!(
         request
-            .at(settled.observation())
+            .at(settled.latest_observation())
             .query(PlanarOutputRead {
                 body_key: "final:anchor-c".to_owned(),
             })

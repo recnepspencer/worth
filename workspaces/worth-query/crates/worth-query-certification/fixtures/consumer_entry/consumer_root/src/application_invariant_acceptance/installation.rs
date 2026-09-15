@@ -11,6 +11,10 @@ use worth_query_host::facade::{
 };
 use worth_query_topology_entry::{ConsumerPrincipalBinding, TopologyConfiguration};
 
+#[path = "installation/unavailable_program.rs"]
+mod unavailable_program;
+pub(super) use unavailable_program::install_unavailable;
+
 pub(super) struct ConsumerWorld {
     pub(super) application:
         installation::WorthQueryProgramApplicationRuntime<ConsumerSchema, ConsumerProgram>,

@@ -13,7 +13,8 @@ pub use performed::{
 };
 pub use performed_outputs::{
     WorthQueryApplicationProgramOutputHandle, WorthQueryApplicationProgramOutputProgress,
-    WorthQueryApplicationProgramOutputSettlement,
+    WorthQueryApplicationProgramOutputSettlement, WorthQueryProgramConnectionPlan,
+    WorthQueryProgramRootConnection,
 };
 pub use request::{
     WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,

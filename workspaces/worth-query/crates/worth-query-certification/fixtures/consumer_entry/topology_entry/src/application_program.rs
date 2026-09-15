@@ -5,8 +5,8 @@ use worth_query_decl::facade::application_program::{
 use worth_query_host::facade::{
     application_contribution::WorthQueryApplicationOutputDemand,
     primary_graph::{
-        WorthQueryApplicationRequiredOutputConnection, WorthQueryRequiredOutputConnectionDenial,
         WorthQueryApplicationDependentOutputConnection,
+        WorthQueryApplicationRequiredOutputConnection, WorthQueryRequiredOutputConnectionDenial,
     },
 };
 
@@ -23,6 +23,7 @@ pub struct PlanarSourceToOutputConnection;
 pub struct PlanarFinalOutputFeature;
 pub struct PlanarDerivedBodyOutput;
 pub struct PlanarDerivedBodyInput;
+pub struct PlanarFinalBodyOutput;
 pub struct PlanarOutputToFinalConnection;
 
 impl<Schema: TopologySchemaBinding> ApplicationFeature<Schema> for PlanarSourceFeature {
@@ -128,15 +129,22 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationRequiredOutputConnectio
 
     const IDENTITY: &'static str = "worth.query.certification.planar-source-to-output.v1";
 
-    fn demand_from_source(
+    fn validate_source(
         source: &PlanarSourceAdjustment,
-    ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
+    ) -> Result<(), WorthQueryRequiredOutputConnectionDenial> {
         if source.scope_key.is_empty() {
             return Err(WorthQueryRequiredOutputConnectionDenial::new(
                 "source occurrence key is empty",
             ));
         }
-        Ok(PlanarOutputDemand::new(&source.scope_key))
+        Ok(())
+    }
+
+    fn demand_from_committed_source(
+        source: &PlanarSourceAdjustment,
+        _result: &worth_query_consumer_values::PlanarAdjustmentResult,
+    ) -> Self::Demand {
+        PlanarOutputDemand::new(&source.scope_key)
     }
 }
 
@@ -160,9 +168,21 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationDependentOutputConnecti
     fn demands_from_discovery(
         discovery: &super::PlanarOutputReadResult,
     ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
+        if discovery.body_key == "sibling-c" {
+            return Ok(Vec::new());
+        }
         Ok(vec![
             super::PlanarFinalOutputDemand::new(&discovery.body_key),
             super::PlanarFinalOutputDemand::new(&discovery.successor_body_key),
         ])
     }
+}
+
+impl<Schema: TopologySchemaBinding> ApplicationOutputPort<Schema, PlanarFinalOutputFeature>
+    for PlanarFinalBodyOutput
+{
+    type Value = PlanarReadResultBinding;
+
+    const IDENTITY: &'static str = "final-body";
+    const REQUIRED: bool = true;
 }

@@ -50,6 +50,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        Self::retire_program_recovery_occurrence(&mut state, occurrence);
         let prepared_sources = std::mem::take(&mut state.prepared_sources);
         for (commit, source) in prepared_sources {
             if source.receipt.product_branch().occurrence() == occurrence {
@@ -90,6 +91,15 @@ impl WorthQueryOutputDemandRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .prepared_sources
+            .len()
+    }
+
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub(in crate::domain_computation::primary_graph) fn program_recovery_count(&self) -> usize {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .program_recovery
             .len()
     }
 

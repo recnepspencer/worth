@@ -1,23 +1,26 @@
 use std::num::NonZeroUsize;
 
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationProgramOutputProgress,
-    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationRequestExt,
+    WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationPerformedMutationOutcome,
+    WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
     WorthQueryOutputDemandControls,
 };
 use worth_query_topology_entry::{
-    PlanarOutputDemand, PlanarOutputRead, PlanarRead, PlanarSourceAdjustment,
+    PlanarFinalBodyOutput, PlanarFinalOutputDemand, PlanarFinalOutputFeature, PlanarOutputDemand,
+    PlanarOutputRead, PlanarRead, PlanarSourceAdjustment,
 };
 
 use super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
 
-pub(super) mod lifecycle;
+mod authority_identity;
 mod custody;
 mod dependent_recovery;
+pub(super) mod lifecycle;
 mod owner_demand_boundary;
-mod recovery;
 mod readiness_recovery;
+mod recovery;
+mod recovery_authority;
 
 pub(super) fn caller_disposal_before_progress_recovers(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
@@ -42,6 +45,8 @@ pub(super) fn lifecycle_proofs(
         ConsumerSchema,
     >,
 ) {
+    authority_identity::forged_inventory_is_denied_before_publication(foreign);
+    authority_identity::unavailable_inventory_is_denied_before_publication();
     custody::abandoned_and_superseded_preparations_are_bounded(foreign);
     custody::close_before_required_output_start_is_typed(foreign);
     lifecycle::supersession_retires_pending_predecessor(foreign);
@@ -49,6 +54,8 @@ pub(super) fn lifecycle_proofs(
     lifecycle::two_forks_preserve_predecessor_output(foreign);
     lifecycle::branch_close_wakes_live_required_output(foreign);
     readiness_recovery::readiness_failure_recovers_exact_pending_output(foreign);
+    recovery_authority::foreign_retired_and_superseded_custody_is_denied(foreign);
+    recovery_authority::zero_discovery_settles_an_empty_inventory(foreign);
     owner_demand_boundary::raw_owner_guards(foreign);
 }
 
@@ -97,7 +104,7 @@ pub(super) fn performed_source_settles_required_output(
         })
         .expect_source(source)
         .idempotency(&10_001)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(&world.application)
         .expect("the source edit reaches publication");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the fresh source publication must retain performed delivery")
@@ -180,36 +187,38 @@ pub(super) fn performed_source_settles_required_output(
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
         }
     };
+    let output_observations = original_settlement
+        .output_observations::<PlanarFinalOutputFeature, PlanarFinalBodyOutput>()
+        .collect::<Vec<_>>();
+    assert_eq!(output_observations.len(), 2);
     assert_eq!(
         original_settlement.root_observation().selected_commit(),
         settled.observation().selected_commit()
     );
-    assert_eq!(original_settlement.dependent_count(), 2);
     assert_eq!(
         original_settlement
-            .dependents()
-            .iter()
+            .output_occurrences::<
+                PlanarFinalOutputFeature,
+                PlanarFinalBodyOutput,
+                PlanarFinalOutputDemand,
+            >()
             .map(|(demand, _)| demand.body_key())
             .collect::<Vec<_>>(),
         ["anchor-a", "anchor-b"]
     );
     let latest_commit = original_settlement
-        .dependents()
-        .iter()
-        .map(|(_, settlement)| settlement.observation().selected_commit())
-        .chain(std::iter::once(
-            original_settlement.root_observation().selected_commit(),
-        ))
+        .output_observations::<PlanarFinalOutputFeature, PlanarFinalBodyOutput>()
+        .map(|observation| observation.selected_commit())
         .max_by_key(|commit| commit.ordinal())
         .expect("the independently enumerated program outputs are non-empty");
     assert_eq!(
-        original_settlement.observation().selected_commit(),
+        original_settlement.latest_observation().selected_commit(),
         latest_commit,
         "the aggregate retains the latest actual dependent publication"
     );
     assert_eq!(
         request
-            .at(original_settlement.observation())
+            .at(original_settlement.latest_observation())
             .query(PlanarOutputRead {
                 body_key: "final:anchor-a".to_owned(),
             })
@@ -221,7 +230,7 @@ pub(super) fn performed_source_settles_required_output(
     );
     assert_eq!(
         request
-            .at(original_settlement.observation())
+            .at(original_settlement.latest_observation())
             .query(PlanarOutputRead {
                 body_key: "final:anchor-b".to_owned(),
             })
@@ -246,13 +255,7 @@ pub(super) fn performed_source_settles_required_output(
             .composite_commit(),
         &exact_output
     );
-    assert!(
-        retired_settlement
-            .observation()
-            .selected_commit()
-            .ordinal()
-            > exact_output.ordinal()
-    );
+    assert!(retired_settlement.observation().selected_commit().ordinal() > exact_output.ordinal());
     assert_eq!(
         request
             .at(retired_settlement.observation())
@@ -296,7 +299,7 @@ pub(super) fn foreign_program_is_denied_before_publication(
         })
         .expect_source(source)
         .idempotency(&10_004)
-        .execute_performed(&other_world.application);
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(&other_world.application);
     let Err(denial) = denial else {
         panic!("foreign program meaning must be denied before source publication")
     };

@@ -1,27 +1,47 @@
 //! Authored static application composition.
 
+mod binding;
 mod connection;
 mod feature;
 mod identity;
+mod inventory;
 mod program;
 mod rule;
+mod validation;
+#[cfg(test)]
+mod validation_tests;
+
+pub use binding::{
+    ApplicationProgramConnectionNode, ApplicationProgramConnectionRole,
+    ApplicationProgramConnectionSet, ApplicationProgramDependentConnection,
+    ApplicationProgramRequiredConnection, ApplicationProgramUnavailableConnection,
+};
 
 pub use connection::{
     ApplicationConnectionDeclaration, ApplicationConnectionIdentity, ApplicationConnectionRef,
     ApplicationOccurrenceConnectionBinding,
 };
 pub use feature::{
-    ApplicationFeature, ApplicationFeatureDeclaration, ApplicationInputPort, ApplicationOutputPort,
-    ApplicationPortRef,
+    ApplicationFeature, ApplicationFeatureAvailable, ApplicationFeatureDeclaration,
+    ApplicationFeaturePosture, ApplicationFeaturePostureMarker, ApplicationFeatureUnavailable,
+    ApplicationInputPort, ApplicationOutputPort, ApplicationPortDeclaration, ApplicationPortRef,
+    ApplicationProgramFeature, ApplicationProgramFeatureNode, ApplicationProgramFeatureSet,
+    ApplicationProgramInputSet, ApplicationProgramOutputSet,
 };
 pub use identity::ApplicationProgramIdentity;
+pub use inventory::{
+    ApplicationProgramInventory, ApplicationProgramInventoryDeclaration,
+    ApplicationProgramInventoryIdentity, ApplicationProgramInventoryNode,
+    ApplicationProgramInventorySet, ApplicationProgramOutput, ApplicationProgramOutputDeclaration,
+    ApplicationProgramOutputInventorySet, ApplicationProgramOutputNode,
+};
 pub use program::{
-    ApplicationProgramAuthoring, ApplicationProgramComplete, ApplicationProgramConnectionRequired,
-    ApplicationProgramDefinition, ApplicationProgramDependentConnectionRequired,
-    ApplicationProgramLocalRuleRequired, ApplicationProgramSharedRuleRequired,
-    ApplicationProgramValidationDenial, ApplicationProgramValidationDenialKind,
-    ValidatedApplicationProgram,
+    validate_application_program, ApplicationProgramDefinition, ApplicationProgramValidationDenial,
+    ApplicationProgramValidationDenialKind, ValidatedApplicationProgram,
 };
 pub use rule::{
-    ApplicationLocalRuleRef, ApplicationProgramRuleDeclaration, ApplicationSharedRuleRef,
+    ApplicationLocalRuleRef, ApplicationProgramExecutionPoint, ApplicationProgramLocalRule,
+    ApplicationProgramRuleDeclaration, ApplicationProgramRuleNode, ApplicationProgramRuleSet,
+    ApplicationProgramSharedRule, ApplicationSharedRuleRef, AtCommitBoundary, AtMutationSensitive,
+    AtSnapshotPublication,
 };

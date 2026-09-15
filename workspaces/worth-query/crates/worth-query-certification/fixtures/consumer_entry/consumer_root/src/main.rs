@@ -3,7 +3,9 @@
 mod application_invariant_acceptance;
 mod application_program;
 
-pub use application_program::ConsumerProgram;
+pub use application_program::{
+    ConsumerProgram, ConsumerProgramInventory, ConsumerProgramRoot, UnavailableConsumerProgram,
+};
 
 use worth_query_consumer_values::PositiveLength;
 use worth_query_decl::facade::application_schema::{

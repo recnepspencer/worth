@@ -27,7 +27,8 @@ pub use mutation::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputHandle,
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
     WorthQueryMutationSourcePrepared, WorthQueryPerformedApplicationMutation,
-    WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
+    WorthQueryPerformedMutationExecutionDenial, WorthQueryProgramConnectionPlan,
+    WorthQueryProgramRootConnection, WorthQueryRequiredOutputPreparationDenial,
     WorthQueryRequiredOutputStartFailure, WorthQueryStartedRequiredOutputs,
 };
 pub use query::WorthQueryApplicationQueryRequest;

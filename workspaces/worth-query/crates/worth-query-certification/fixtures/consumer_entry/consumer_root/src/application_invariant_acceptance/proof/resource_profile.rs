@@ -53,7 +53,7 @@ pub(super) fn candidate_bytes_beyond_host_limit_are_denied(
     assert_eq!(read_y(&request, "sibling-a"), 21);
 }
 
-pub(super) fn source_footprint_bytes_beyond_host_limit_are_denied(
+pub(super) fn result_tree_allocation_beyond_host_limit_is_released(
     foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>,
 ) {
     let world = installation::install_with_query_bytes(foreign, 1400);
@@ -71,16 +71,24 @@ pub(super) fn source_footprint_bytes_beyond_host_limit_are_denied(
         })
         .execute();
     let Err(denial) = outcome else {
-        panic!("the retained source footprint must obey the result-byte reservation")
+        panic!("the result tree must obey the result-byte reservation")
     };
     let WorthQueryApplicationRequestQueryDenial::Execution(denial) = denial else {
-        panic!("source footprint bytes must deny at bounded execution: {denial:?}")
+        panic!("result tree bytes must deny at bounded execution: {denial:?}")
     };
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded
     );
-    assert_eq!(denial.subject(), "root/relation[0]/relation[0]/field[0]");
+    assert_eq!(denial.subject(), "root/relation[0]");
+    assert_eq!(
+        world
+            .application
+            .result_buffer_observer()
+            .observe()
+            .active_buffers(),
+        0
+    );
     assert_eq!(
         world
             .application

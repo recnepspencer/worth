@@ -1,11 +1,11 @@
 use std::num::NonZeroUsize;
 
+use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation, PlanarVertex};
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationProgramOutputProgress,
-    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationRequestExt,
+    WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationPerformedMutationOutcome,
+    WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
     WorthQueryOutputDemandControls,
 };
-use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation, PlanarVertex};
 use worth_query_topology_entry::{
     PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarRead, PlanarSourceAdjustment,
 };
@@ -43,7 +43,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
         })
         .expect_source(source)
         .idempotency(&10_002)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(&world.application)
         .expect("source publication admits its required output");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source publication must be fresh")
@@ -104,10 +104,9 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .execute()
         .expect("an intervening ordinary commit lands on the same branch");
     let recovered_once = request
-        .recover_required_outputs::<crate::ConsumerProgram>(
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
-            PlanarOutputDemand::new("anchor-b"),
             controls,
         )
         .expect("the installed program re-enters its owner-retained obligation");
@@ -120,10 +119,9 @@ pub(super) fn caller_disposal_before_progress_recovers(
     );
     drop(recovered_once);
     let mut recovered = request
-        .recover_required_outputs::<crate::ConsumerProgram>(
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
-            PlanarOutputDemand::new("anchor-b"),
             controls,
         )
         .expect("interrupted recovery re-enters the same receipt-bound obligation");
@@ -134,7 +132,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
         }
     };
     let row = request
-        .at(settled.observation())
+        .at(settled.latest_observation())
         .query(PlanarOutputRead {
             body_key: "final:anchor-b".to_owned(),
         })
@@ -173,7 +171,7 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         })
         .expect_source(source)
         .idempotency(&10_018)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(&world.application)
         .expect("the source publication prepares its installed program");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source publication must be fresh")
@@ -203,10 +201,9 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         .expect("a distinct operation changes the same source occurrence");
 
     let denial = request
-        .recover_required_outputs::<crate::ConsumerProgram>(
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
-            PlanarOutputDemand::new("anchor-b"),
             output_controls(),
         )
         .err()
@@ -262,7 +259,7 @@ pub(super) fn resource_denial_preserves_source_and_delivery(
         })
         .expect_source(source)
         .idempotency(&10_003)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(&world.application)
         .expect("the source operation reaches its installed program");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source publication must succeed before derived admission")
@@ -304,7 +301,7 @@ pub(super) fn resource_denial_preserves_source_and_delivery(
         }
     };
     let row = request
-        .at(settled.observation())
+        .at(settled.latest_observation())
         .query(PlanarOutputRead {
             body_key: "anchor-c".to_owned(),
         })

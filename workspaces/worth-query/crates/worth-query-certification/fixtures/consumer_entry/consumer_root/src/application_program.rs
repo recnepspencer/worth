@@ -1,19 +1,28 @@
 use worth_query_decl::facade::application_program::{
-    ApplicationConnectionRef, ApplicationFeatureDeclaration, ApplicationLocalRuleRef,
-    ApplicationPortRef, ApplicationProgramAuthoring, ApplicationProgramDefinition,
-    ApplicationProgramIdentity, ApplicationSharedRuleRef,
+    validate_application_program, ApplicationConnectionRef, ApplicationFeatureAvailable,
+    ApplicationFeatureUnavailable, ApplicationProgramDefinition,
+    ApplicationProgramDependentConnection, ApplicationProgramFeature, ApplicationProgramIdentity,
+    ApplicationProgramInventory, ApplicationProgramInventoryIdentity, ApplicationProgramLocalRule,
+    ApplicationProgramOutput, ApplicationProgramRequiredConnection, ApplicationProgramSharedRule,
+    ApplicationProgramUnavailableConnection, AtCommitBoundary,
 };
-use worth_query_decl::facade::application_schema::ApplicationInvariantExecutionPoint;
 use worth_query_parameter_entry::{ParameterFeature, PositiveParameterCount};
 use worth_query_topology_entry::{
-    PlanarBodyInput, PlanarBodyOutput, PlanarOutputFeature, PlanarSourceFeature,
-    PlanarSourceToOutputConnection, PositivePlanarTurn, PlanarDerivedBodyInput,
-    PlanarDerivedBodyOutput, PlanarFinalOutputFeature, PlanarOutputToFinalConnection,
+    PlanarBodyInput, PlanarBodyOutput, PlanarDerivedBodyInput, PlanarDerivedBodyOutput,
+    PlanarFinalBodyOutput, PlanarFinalOutputFeature, PlanarOutputFeature,
+    PlanarOutputToFinalConnection, PlanarSourceFeature, PlanarSourceToOutputConnection,
+    PositivePlanarTurn,
 };
 
 use crate::ConsumerSchema;
 
 pub struct ConsumerProgram;
+pub struct UnavailableConsumerProgram;
+pub struct ConsumerOutputs;
+
+impl ApplicationProgramInventoryIdentity for ConsumerOutputs {
+    const IDENTITY: &'static str = "worth.query.certification.consumer-outputs.v1";
+}
 
 type PlanarConnection = ApplicationConnectionRef<
     ConsumerSchema,
@@ -24,9 +33,6 @@ type PlanarConnection = ApplicationConnectionRef<
     PlanarSourceToOutputConnection,
 >;
 
-pub const PLANAR_CONNECTION: PlanarConnection =
-    PlanarConnection::connect(ApplicationPortRef::new(), ApplicationPortRef::new());
-
 type PlanarDependentConnection = ApplicationConnectionRef<
     ConsumerSchema,
     PlanarOutputFeature,
@@ -36,9 +42,6 @@ type PlanarDependentConnection = ApplicationConnectionRef<
     PlanarOutputToFinalConnection,
 >;
 
-pub const PLANAR_DEPENDENT_CONNECTION: PlanarDependentConnection =
-    PlanarDependentConnection::connect(ApplicationPortRef::new(), ApplicationPortRef::new());
-
 pub fn validated_program() -> Result<
     worth_query_decl::facade::application_program::ValidatedApplicationProgram<
         ConsumerSchema,
@@ -46,41 +49,94 @@ pub fn validated_program() -> Result<
     >,
     worth_query_decl::facade::application_program::ApplicationProgramValidationDenial,
 > {
-    ApplicationProgramAuthoring::<ConsumerSchema, ConsumerProgram>::begin()
-        .connect(PLANAR_CONNECTION)
-        .connect_dependent(PLANAR_DEPENDENT_CONNECTION)
-        .local_rule(
-            ApplicationLocalRuleRef::<ConsumerSchema, ParameterFeature, PositiveParameterCount>::new(),
-            ApplicationInvariantExecutionPoint::CommitBoundary,
-        )
-        .shared_rule(
-            ApplicationSharedRuleRef::<ConsumerSchema, PositivePlanarTurn>::new(),
-            ApplicationInvariantExecutionPoint::CommitBoundary,
-        )
-        .validated_program()
+    validate_application_program::<ConsumerSchema, ConsumerProgram>()
 }
 
-const FEATURES: &[ApplicationFeatureDeclaration] = &[
-    ApplicationFeatureDeclaration::new("worth.query.certification.planar-source-feature.v1", &[]),
-    ApplicationFeatureDeclaration::new(
-        "worth.query.certification.planar-output-feature.v1",
-        &["source"],
-    ),
-    ApplicationFeatureDeclaration::new(
-        "worth.query.certification.planar-final-output-feature.v1",
-        &["source"],
-    ),
-    ApplicationFeatureDeclaration::new("worth.query.certification.parameter-feature.v1", &[]),
-];
+type SourceFeature = ApplicationProgramFeature<
+    PlanarSourceFeature,
+    (),
+    (PlanarBodyOutput,),
+    ApplicationFeatureAvailable,
+>;
+type OutputFeature = ApplicationProgramFeature<
+    PlanarOutputFeature,
+    (PlanarBodyInput,),
+    (PlanarDerivedBodyOutput,),
+    ApplicationFeatureAvailable,
+>;
+type FinalFeature = ApplicationProgramFeature<
+    PlanarFinalOutputFeature,
+    (PlanarDerivedBodyInput,),
+    (PlanarFinalBodyOutput,),
+    ApplicationFeatureAvailable,
+>;
+type UnavailableFinalFeature = ApplicationProgramFeature<
+    PlanarFinalOutputFeature,
+    (PlanarDerivedBodyInput,),
+    (PlanarFinalBodyOutput,),
+    ApplicationFeatureUnavailable,
+>;
+type ParameterProgramFeature =
+    ApplicationProgramFeature<ParameterFeature, (), (), ApplicationFeatureAvailable>;
+pub type ConsumerProgramRoot = ApplicationProgramRequiredConnection<PlanarConnection>;
+pub type ConsumerProgramInventory = ConsumerOutputs;
+
+type ProgramConnections = (
+    ConsumerProgramRoot,
+    ApplicationProgramDependentConnection<PlanarDependentConnection>,
+);
+type UnavailableProgramConnections = (
+    ConsumerProgramRoot,
+    ApplicationProgramUnavailableConnection<PlanarDependentConnection>,
+);
+type ProgramRules = (
+    ApplicationProgramLocalRule<ParameterFeature, PositiveParameterCount, AtCommitBoundary>,
+    ApplicationProgramSharedRule<PositivePlanarTurn, AtCommitBoundary>,
+);
+type ProgramInventories = (
+    ApplicationProgramInventory<
+        ConsumerOutputs,
+        (ApplicationProgramOutput<PlanarFinalOutputFeature, PlanarFinalBodyOutput>,),
+    >,
+);
 
 impl ApplicationProgramDefinition<ConsumerSchema> for ConsumerProgram {
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
-    type Connections = PlanarSourceToOutputConnection;
-    type DependentConnection = PlanarOutputToFinalConnection;
+    type Features = (
+        SourceFeature,
+        OutputFeature,
+        FinalFeature,
+        ParameterProgramFeature,
+    );
+    type Connections = ProgramConnections;
+    type Rules = ProgramRules;
+    type Inventories = ProgramInventories;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.consumer-program.v1");
+}
 
-    fn features() -> &'static [ApplicationFeatureDeclaration] {
-        FEATURES
-    }
+impl ApplicationProgramDefinition<ConsumerSchema> for UnavailableConsumerProgram {
+    type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
+    type Features = (
+        SourceFeature,
+        OutputFeature,
+        UnavailableFinalFeature,
+        ParameterProgramFeature,
+    );
+    type Connections = UnavailableProgramConnections;
+    type Rules = ProgramRules;
+    type Inventories = ProgramInventories;
+    const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
+        "worth.query.certification.unavailable-consumer-program.v1",
+    );
+}
+
+pub fn validated_unavailable_program() -> Result<
+    worth_query_decl::facade::application_program::ValidatedApplicationProgram<
+        ConsumerSchema,
+        UnavailableConsumerProgram,
+    >,
+    worth_query_decl::facade::application_program::ApplicationProgramValidationDenial,
+> {
+    validate_application_program::<ConsumerSchema, UnavailableConsumerProgram>()
 }

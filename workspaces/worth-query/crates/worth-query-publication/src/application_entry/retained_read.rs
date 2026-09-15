@@ -3,6 +3,7 @@ use std::sync::Arc;
 use worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation as RetainedRead;
 
 /// Public read-only handle for one exact World product occurrence.
+#[derive(Clone)]
 pub struct WorthQueryApplicationReadObservation {
     pub(super) retained: Arc<RetainedRead>,
 }

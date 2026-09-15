@@ -12,18 +12,17 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
     WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
 };
-use worth_query_host::facade::{application_contribution, domain};
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
 };
+use worth_query_host::facade::{application_contribution, domain};
 
 use super::{
-    Body, BodyKey, ConsumerPrincipalBinding, ExternalPrincipalMapping, Length,
-    PlanarMutation, PlanarMutationDenialBinding,
-    PlanarMutationResultBinding, PlanarMutationScope, PlanarPosition, PlanarQuery, PlanarSuccessor,
-    PositionX, PositionY,
-    PlanarRead, PlanarReadBinding, PlanarReadResult, Principal, TopologySchemaBinding,
+    Body, BodyKey, ConsumerPrincipalBinding, ExternalPrincipalMapping, Length, PlanarMutation,
+    PlanarMutationDenialBinding, PlanarMutationResultBinding, PlanarMutationScope, PlanarPosition,
+    PlanarQuery, PlanarRead, PlanarReadBinding, PlanarReadResult, PlanarSuccessor, PositionX,
+    PositionY, Principal, TopologySchemaBinding,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -50,10 +49,10 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationOutputContract<Schema>
     for FinalPlanarOutputs
 {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<Schema, Body>(
-            "anchor",
-            ApplicationMutationOutputPosture::Create,
-        )];
+        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
+            Schema,
+            Body,
+        >("anchor", ApplicationMutationOutputPosture::Create)];
 }
 
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
@@ -172,18 +171,33 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
         let coordinates = [(1, 1), (2, 1), (1, 2)];
         let mut entities = Vec::with_capacity(3);
         for (key, (x, y)) in keys.iter().zip(coordinates) {
-            let entity_key = match worth_query_host::facade::primary_graph::WorthQueryApplicationEntityKey::new(key) {
-                Ok(key) => key,
-                Err(error) => return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),
-            };
+            let entity_key =
+                match worth_query_host::facade::primary_graph::WorthQueryApplicationEntityKey::new(
+                    key,
+                ) {
+                    Ok(key) => key,
+                    Err(error) => {
+                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
+                    }
+                };
             let entity = match writer.create_entity(Body::reference(), entity_key) {
                 Ok(entity) => entity,
-                Err(error) => return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),
+                Err(error) => {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
+                }
             };
             for result in [
                 writer.initialize_field(&entity, BodyKey::reference(), key.clone()),
-                writer.initialize_field(&entity, PositionX::reference(), worth_query_consumer_values::PositiveLength::new(x).unwrap()),
-                writer.initialize_field(&entity, PositionY::reference(), worth_query_consumer_values::PositiveLength::new(y).unwrap()),
+                writer.initialize_field(
+                    &entity,
+                    PositionX::reference(),
+                    worth_query_consumer_values::PositiveLength::new(x).unwrap(),
+                ),
+                writer.initialize_field(
+                    &entity,
+                    PositionY::reference(),
+                    worth_query_consumer_values::PositiveLength::new(y).unwrap(),
+                ),
                 writer.initialize_field(&entity, Length::reference(), input.value),
             ] {
                 if let Err(error) = result {
@@ -218,8 +232,10 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
     }
 }
 
-const INITIAL: WorthQueryProducerApplicability =
-    WorthQueryProducerApplicability::new("planar-final", WorthQueryProducerLifecyclePosture::Initial);
+const INITIAL: WorthQueryProducerApplicability = WorthQueryProducerApplicability::new(
+    "planar-final",
+    WorthQueryProducerLifecyclePosture::Initial,
+);
 const PRESERVE: WorthQueryProducerApplicability = WorthQueryProducerApplicability::new(
     "planar-final",
     WorthQueryProducerLifecyclePosture::Preserve,

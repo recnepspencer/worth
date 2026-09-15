@@ -2,7 +2,10 @@ use std::marker::PhantomData;
 
 use crate::application_schema::ApplicationSchema;
 
-use super::{ApplicationFeature, ApplicationInputPort, ApplicationOutputPort, ApplicationPortRef};
+use super::{
+    ApplicationFeature, ApplicationInputPort, ApplicationOutputPort, ApplicationPortRef,
+    ApplicationProgramConnectionRole,
+};
 
 pub trait ApplicationConnectionIdentity: Sized + 'static {
     const IDENTITY: &'static str;
@@ -63,18 +66,52 @@ where
         }
     }
 
-    pub const fn declaration() -> ApplicationConnectionDeclaration {
+    pub(crate) const fn declaration(
+        role: ApplicationProgramConnectionRole,
+        node_type: std::any::TypeId,
+    ) -> ApplicationConnectionDeclaration {
         ApplicationConnectionDeclaration::new(
             <Binding as ApplicationConnectionIdentity>::IDENTITY,
-            SourceFeature::IDENTITY,
-            SourcePort::IDENTITY,
-            TargetFeature::IDENTITY,
-            TargetPort::IDENTITY,
+            node_type,
+            std::any::TypeId::of::<Binding>(),
+            ApplicationConnectionEndpointDeclaration::new(
+                SourceFeature::IDENTITY,
+                std::any::TypeId::of::<SourceFeature>(),
+                SourcePort::IDENTITY,
+                std::any::TypeId::of::<SourcePort>(),
+            ),
+            ApplicationConnectionEndpointDeclaration::new(
+                TargetFeature::IDENTITY,
+                std::any::TypeId::of::<TargetFeature>(),
+                TargetPort::IDENTITY,
+                std::any::TypeId::of::<TargetPort>(),
+            ),
+            role,
         )
     }
+}
 
-    pub const fn into_declaration(self) -> ApplicationConnectionDeclaration {
-        Self::declaration()
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct ApplicationConnectionEndpointDeclaration {
+    feature: &'static str,
+    feature_type: std::any::TypeId,
+    port: &'static str,
+    port_type: std::any::TypeId,
+}
+
+impl ApplicationConnectionEndpointDeclaration {
+    const fn new(
+        feature: &'static str,
+        feature_type: std::any::TypeId,
+        port: &'static str,
+        port_type: std::any::TypeId,
+    ) -> Self {
+        Self {
+            feature,
+            feature_type,
+            port,
+            port_type,
+        }
     }
 }
 
@@ -82,26 +119,41 @@ where
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ApplicationConnectionDeclaration {
     identity: &'static str,
+    node_type: std::any::TypeId,
+    binding_type: std::any::TypeId,
     source_feature: &'static str,
+    source_feature_type: std::any::TypeId,
     source_port: &'static str,
+    source_port_type: std::any::TypeId,
     target_feature: &'static str,
+    target_feature_type: std::any::TypeId,
     target_port: &'static str,
+    target_port_type: std::any::TypeId,
+    role: ApplicationProgramConnectionRole,
 }
 
 impl ApplicationConnectionDeclaration {
-    pub const fn new(
+    const fn new(
         identity: &'static str,
-        source_feature: &'static str,
-        source_port: &'static str,
-        target_feature: &'static str,
-        target_port: &'static str,
+        node_type: std::any::TypeId,
+        binding_type: std::any::TypeId,
+        source: ApplicationConnectionEndpointDeclaration,
+        target: ApplicationConnectionEndpointDeclaration,
+        role: ApplicationProgramConnectionRole,
     ) -> Self {
         Self {
             identity,
-            source_feature,
-            source_port,
-            target_feature,
-            target_port,
+            node_type,
+            binding_type,
+            source_feature: source.feature,
+            source_feature_type: source.feature_type,
+            source_port: source.port,
+            source_port_type: source.port_type,
+            target_feature: target.feature,
+            target_feature_type: target.feature_type,
+            target_port: target.port,
+            target_port_type: target.port_type,
+            role,
         }
     }
 
@@ -119,5 +171,27 @@ impl ApplicationConnectionDeclaration {
     }
     pub const fn target_port(&self) -> &'static str {
         self.target_port
+    }
+    pub const fn node_type(&self) -> std::any::TypeId {
+        self.node_type
+    }
+    pub const fn binding_type(&self) -> std::any::TypeId {
+        self.binding_type
+    }
+    pub const fn source_feature_type(&self) -> std::any::TypeId {
+        self.source_feature_type
+    }
+    pub const fn source_port_type(&self) -> std::any::TypeId {
+        self.source_port_type
+    }
+    pub const fn target_feature_type(&self) -> std::any::TypeId {
+        self.target_feature_type
+    }
+    pub const fn target_port_type(&self) -> std::any::TypeId {
+        self.target_port_type
+    }
+
+    pub const fn role(&self) -> ApplicationProgramConnectionRole {
+        self.role
     }
 }

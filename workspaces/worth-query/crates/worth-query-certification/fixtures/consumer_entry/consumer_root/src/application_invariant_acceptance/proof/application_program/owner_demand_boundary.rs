@@ -43,19 +43,29 @@ fn sibling_target_disclosure_is_denied(
     let world = installation::install(foreign_schema);
     let scope = authentication::request_scope();
     let principal = authenticate(&world.application, &scope);
-    let mut owner = admit(&world.application, source(&world.application, &principal, &scope, "anchor-a"));
-    let mut peer = admit(&world.application, source(&world.application, &principal, &scope, "anchor-a"));
-    settle(&world.application, &principal, &scope, &mut owner, "anchor-a");
+    let mut owner = admit(
+        &world.application,
+        source(&world.application, &principal, &scope, "anchor-a"),
+    );
+    let mut peer = admit(
+        &world.application,
+        source(&world.application, &principal, &scope, "anchor-a"),
+    );
+    settle(
+        &world.application,
+        &principal,
+        &scope,
+        &mut owner,
+        "anchor-a",
+    );
 
-    let denial = match world
-        .application
-        .advance_output_demand(
-            &peer,
-            &principal,
-            &scope,
-            world.application.current_world(),
-            source(&world.application, &principal, &scope, "anchor-b").into_disclosure(),
-        ) {
+    let denial = match world.application.advance_output_demand(
+        &peer,
+        &principal,
+        &scope,
+        world.application.current_world(),
+        source(&world.application, &principal, &scope, "anchor-b").into_disclosure(),
+    ) {
         Ok(_) => panic!("a sibling target consumed the settled target's owner record"),
         Err(denial) => denial,
     };
@@ -72,13 +82,26 @@ fn principal_and_scope_are_revalidated(
     let world = installation::install(foreign_schema);
     let scope = authentication::request_scope();
     let principal = authenticate(&world.application, &scope);
-    let mut owner = admit(&world.application, source(&world.application, &principal, &scope, "anchor-a"));
-    let mut foreign_peer = admit(&world.application, source(&world.application, &principal, &scope, "anchor-a"));
-    settle(&world.application, &principal, &scope, &mut owner, "anchor-a");
+    let mut owner = admit(
+        &world.application,
+        source(&world.application, &principal, &scope, "anchor-a"),
+    );
+    let mut foreign_peer = admit(
+        &world.application,
+        source(&world.application, &principal, &scope, "anchor-a"),
+    );
+    settle(
+        &world.application,
+        &principal,
+        &scope,
+        &mut owner,
+        "anchor-a",
+    );
 
     let other = installation::install(foreign_schema);
     let foreign_principal = authenticate(&other.application, &scope);
-    let local_disclosure = source(&world.application, &principal, &scope, "anchor-a").into_disclosure();
+    let local_disclosure =
+        source(&world.application, &principal, &scope, "anchor-a").into_disclosure();
     let denial = expect_denial(
         world.application.advance_output_demand(
             &foreign_peer,
@@ -113,20 +136,10 @@ fn principal_and_scope_are_revalidated(
     );
     let mut cancelled_peer = admit(
         &world.application,
-        source(
-            &world.application,
-            &principal,
-            &cancelled_scope,
-            "anchor-a",
-        ),
+        source(&world.application, &principal, &cancelled_scope, "anchor-a"),
     );
-    let cancelled_disclosure = source(
-        &world.application,
-        &principal,
-        &cancelled_scope,
-        "anchor-a",
-    )
-    .into_disclosure();
+    let cancelled_disclosure =
+        source(&world.application, &principal, &cancelled_scope, "anchor-a").into_disclosure();
     cancellation.cancel();
     let denial = expect_denial(
         world.application.advance_output_demand(
@@ -162,16 +175,17 @@ fn close_is_idempotent_and_terminal(
         Ok(_) => panic!("a closed owner exposed notifications"),
         Err(denial) => denial,
     };
-    assert_eq!(notification.kind(), WorthQueryOutputDemandDenialKind::Closed);
-    let denial = match world
-        .application
-        .advance_output_demand(
-            &admitted,
-            &principal,
-            &scope,
-            world.application.current_world(),
-            source(&world.application, &principal, &scope, "anchor-a").into_disclosure(),
-        ) {
+    assert_eq!(
+        notification.kind(),
+        WorthQueryOutputDemandDenialKind::Closed
+    );
+    let denial = match world.application.advance_output_demand(
+        &admitted,
+        &principal,
+        &scope,
+        world.application.current_world(),
+        source(&world.application, &principal, &scope, "anchor-a").into_disclosure(),
+    ) {
         Ok(_) => panic!("a closed owner advanced"),
         Err(denial) => denial,
     };
@@ -295,7 +309,10 @@ fn source(
         .into_output_demand_source()
 }
 
-fn admit(application: &Application, source: WorthQueryApplicationOutputDemandSource<PlanarQuery, PlanarReadResult>) -> Admitted {
+fn admit(
+    application: &Application,
+    source: WorthQueryApplicationOutputDemandSource<PlanarQuery, PlanarReadResult>,
+) -> Admitted {
     application
         .admit_output_demand::<PlanarOutputFamily>(source, 4_096, 8_192)
         .expect("the raw owner demand admits")

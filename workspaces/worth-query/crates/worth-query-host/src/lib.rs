@@ -208,83 +208,156 @@
 //! }
 //! ```
 //!
-//! Recovery likewise accepts the installed connection's typed root demand;
-//! text with the same visible identity cannot call the production handoff:
+//! Program recovery is selected by the installed program, inventory marker,
+//! and root connection types. The request supplies only the source receipt and
+//! demand controls:
 //!
-//! ```compile_fail,E0308
+//! ```text
+//! request.recover_required_outputs::<Program, Inventory, Root>(
+//!     application,
+//!     &source_receipt,
+//!     controls,
+//! )
+//! ```
+//!
+//! Query resolves the retained demand from runtime custody. Callers cannot
+//! provide a textual output identity or rebuild that demand themselves.
+//!
+//! Recovery custody is not a host capability:
+//!
+//! ```compile_fail,E0599
 //! use worth_query_host::facade::{
-//!     application_contribution::{WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily},
-//!     application_entry::{WorthQueryApplicationRequest, WorthQueryOutputDemandControls},
 //!     application_installation::WorthQueryProgramApplicationRuntime,
-//!     declaration::{
-//!         application_program::ApplicationProgramDefinition,
-//!         application_query::{ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution},
-//!         application_schema::ApplicationStructuredValueBinding,
-//!     },
+//!     declaration::application_program::ApplicationProgramDefinition,
 //!     domain::ApplicationSchema,
-//!     primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryApplicationDependentOutputConnection, WorthQueryApplicationProjection, WorthQueryApplicationRequiredOutputConnection},
+//!     primary_graph::WorthQueryApplicationCommitReceipt,
 //! };
-//! type RootDemand<S, P> = <<P as ApplicationProgramDefinition<S>>::Connections as WorthQueryApplicationRequiredOutputConnection<S>>::Demand;
-//! type RootFamily<S, P> = <RootDemand<S, P> as WorthQueryApplicationOutputDemand<S>>::OutputFamily;
-//! type RootSource<S, P> = <RootFamily<S, P> as WorthQueryProducerOutputFamily<S>>::Source;
-//! type RootQuery<S, P> = <RootSource<S, P> as ApplicationQueryBinding<S>>::Query;
-//! type RootValue<S, P> = <<RootSource<S, P> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-//! fn cannot_recover_by_name<'a, S, P>(
-//!     request: &WorthQueryApplicationRequest<'a, 'a, 'a, S>,
-//!     application: &'a WorthQueryProgramApplicationRuntime<S, P>,
+//!
+//! fn cannot_replace_recovery_custody<S, P>(
+//!     application: &WorthQueryProgramApplicationRuntime<S, P>,
 //!     receipt: &WorthQueryApplicationCommitReceipt,
-//!     controls: WorthQueryOutputDemandControls,
 //! ) where
-//!     S: ApplicationSchema + 'static,
+//!     S: ApplicationSchema,
 //!     P: ApplicationProgramDefinition<S>,
-//!     P::Connections: WorthQueryApplicationRequiredOutputConnection<S>,
-//!     P::DependentConnection: WorthQueryApplicationDependentOutputConnection<S, RootDemand = RootDemand<S, P>>,
-//!     RootDemand<S, P>: WorthQueryApplicationOutputDemand<S> + Clone,
-//!     <RootSource<S, P> as ApplicationQueryBinding<S>>::Input: ApplicationQueryIntent<S, Binding = RootSource<S, P>>,
-//!     <RootSource<S, P> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<S, <RootSource<S, P> as ApplicationQueryBinding<S>>::PrincipalIdentity>,
-//!     RootValue<S, P>: WorthQueryApplicationProjection<S, RootQuery<S, P>> + Clone,
 //! {
-//!     let _ = request.recover_required_outputs::<P>(application, receipt, "root-output", controls);
+//!     application.retain_program_recovery::<(), (), _>(receipt, &());
 //! }
 //! ```
 //!
-//! The passing twin calls that same handoff with its installed demand type:
+//! The recovery handoff accepts no caller-created demand or target. Its
+//! compiling form has exactly the source receipt and controls:
 //!
 //! ```
+//! # use worth_query_host::facade::{
+//! #   application_entry::{WorthQueryApplicationRequest, WorthQueryOutputDemandControls, WorthQueryProgramConnectionPlan, WorthQueryProgramRootConnection},
+//! #   application_contribution::{WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily},
+//! #   application_installation::WorthQueryProgramApplicationRuntime,
+//! #   declaration::{application_program::{ApplicationProgramDefinition, ApplicationProgramInventoryIdentity}, application_query::{ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution}, application_schema::{ApplicationSchema, ApplicationStructuredValueBinding}},
+//! #   primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryApplicationProjection},
+//! # };
+//! # type Demand<S, R> = <R as WorthQueryProgramRootConnection<S>>::Demand;
+//! # type Family<S, R> = <Demand<S, R> as WorthQueryApplicationOutputDemand<S>>::OutputFamily;
+//! # type Source<S, R> = <Family<S, R> as WorthQueryProducerOutputFamily<S>>::Source;
+//! # type Query<S, R> = <Source<S, R> as ApplicationQueryBinding<S>>::Query;
+//! # type Value<S, R> = <<Source<S, R> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+//! # fn accepts_query_owned_recovery<'a, S, P, I, R>(
+//! #   request: &WorthQueryApplicationRequest<'a, 'a, 'a, S>,
+//! #   application: &'a WorthQueryProgramApplicationRuntime<S, P>,
+//! #   receipt: &WorthQueryApplicationCommitReceipt,
+//! #   controls: WorthQueryOutputDemandControls,
+//! # )
+//! # where
+//! #   S: ApplicationSchema + 'static,
+//! #   P: ApplicationProgramDefinition<S>,
+//! #   P::Connections: WorthQueryProgramConnectionPlan<S, P, I>,
+//! #   I: ApplicationProgramInventoryIdentity,
+//! #   R: WorthQueryProgramRootConnection<S>,
+//! #   Demand<S, R>: Clone + 'static,
+//! #   <Source<S, R> as ApplicationQueryBinding<S>>::Input: ApplicationQueryIntent<S, Binding = Source<S, R>>,
+//! #   <Source<S, R> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<S, <Source<S, R> as ApplicationQueryBinding<S>>::PrincipalIdentity>,
+//! #   Query<S, R>: 'static,
+//! #   Value<S, R>: WorthQueryApplicationProjection<S, Query<S, R>> + Clone + 'static,
+//! # {
+//! let _ = request.recover_required_outputs::<P, I, R>(application, receipt, controls);
+//! # }
+//! ```
+//!
+//! ```compile_fail,E0061
+//! # use worth_query_host::facade::{
+//! #   application_entry::{WorthQueryApplicationRequest, WorthQueryOutputDemandControls, WorthQueryProgramConnectionPlan, WorthQueryProgramRootConnection},
+//! #   application_contribution::{WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily},
+//! #   application_installation::WorthQueryProgramApplicationRuntime,
+//! #   declaration::{application_program::{ApplicationProgramDefinition, ApplicationProgramInventoryIdentity}, application_query::{ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution}, application_schema::{ApplicationSchema, ApplicationStructuredValueBinding}},
+//! #   primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryApplicationProjection},
+//! # };
+//! # type Demand<S, R> = <R as WorthQueryProgramRootConnection<S>>::Demand;
+//! # type Family<S, R> = <Demand<S, R> as WorthQueryApplicationOutputDemand<S>>::OutputFamily;
+//! # type Source<S, R> = <Family<S, R> as WorthQueryProducerOutputFamily<S>>::Source;
+//! # type Query<S, R> = <Source<S, R> as ApplicationQueryBinding<S>>::Query;
+//! # type Value<S, R> = <<Source<S, R> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+//! # fn cannot_supply_recovery_demand<'a, S, P, I, R>(
+//! #   request: &WorthQueryApplicationRequest<'a, 'a, 'a, S>,
+//! #   application: &'a WorthQueryProgramApplicationRuntime<S, P>,
+//! #   receipt: &WorthQueryApplicationCommitReceipt,
+//! #   demand: Demand<S, R>,
+//! #   controls: WorthQueryOutputDemandControls,
+//! # )
+//! # where
+//! #   S: ApplicationSchema + 'static,
+//! #   P: ApplicationProgramDefinition<S>,
+//! #   P::Connections: WorthQueryProgramConnectionPlan<S, P, I>,
+//! #   I: ApplicationProgramInventoryIdentity,
+//! #   R: WorthQueryProgramRootConnection<S>,
+//! #   Demand<S, R>: Clone + 'static,
+//! #   <Source<S, R> as ApplicationQueryBinding<S>>::Input: ApplicationQueryIntent<S, Binding = Source<S, R>>,
+//! #   <Source<S, R> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<S, <Source<S, R> as ApplicationQueryBinding<S>>::PrincipalIdentity>,
+//! #   Query<S, R>: 'static,
+//! #   Value<S, R>: WorthQueryApplicationProjection<S, Query<S, R>> + Clone + 'static,
+//! # {
+//! request.recover_required_outputs::<P, I, R>(application, receipt, demand, controls);
+//! # }
+//! ```
+//!
+//! The publication-only integration port is absent from the host facade:
+//!
+//! ```compile_fail,E0432
+//! use worth_query_host::facade::publication_integration::program_execution_port;
+//! ```
+//!
+//! Application crates cannot implement their own root authority wrapper:
+//!
+//! ```compile_fail,E0277
+//! use std::marker::PhantomData;
 //! use worth_query_host::facade::{
-//!     application_contribution::{WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily},
-//!     application_entry::{WorthQueryApplicationRequest, WorthQueryOutputDemandControls},
-//!     application_installation::WorthQueryProgramApplicationRuntime,
+//!     application_entry::WorthQueryProgramRootConnection,
 //!     declaration::{
-//!         application_program::ApplicationProgramDefinition,
-//!         application_query::{ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution},
-//!         application_schema::ApplicationStructuredValueBinding,
+//!         application_operation::ApplicationMutationBinding,
+//!         application_schema::ApplicationSchema,
 //!     },
-//!     domain::ApplicationSchema,
-//!     primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryApplicationDependentOutputConnection, WorthQueryApplicationProjection, WorthQueryApplicationRequiredOutputConnection},
+//!     primary_graph::WorthQueryRequiredOutputConnectionDenial,
 //! };
-//! type RootDemand<S, P> = <<P as ApplicationProgramDefinition<S>>::Connections as WorthQueryApplicationRequiredOutputConnection<S>>::Demand;
-//! type RootFamily<S, P> = <RootDemand<S, P> as WorthQueryApplicationOutputDemand<S>>::OutputFamily;
-//! type RootSource<S, P> = <RootFamily<S, P> as WorthQueryProducerOutputFamily<S>>::Source;
-//! type RootQuery<S, P> = <RootSource<S, P> as ApplicationQueryBinding<S>>::Query;
-//! type RootValue<S, P> = <<RootSource<S, P> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-//! fn recover_installed_root<'a, S, P>(
-//!     request: &WorthQueryApplicationRequest<'a, 'a, 'a, S>,
-//!     application: &'a WorthQueryProgramApplicationRuntime<S, P>,
-//!     receipt: &WorthQueryApplicationCommitReceipt,
-//!     demand: RootDemand<S, P>,
-//!     controls: WorthQueryOutputDemandControls,
-//! ) where
-//!     S: ApplicationSchema + 'static,
-//!     P: ApplicationProgramDefinition<S>,
-//!     P::Connections: WorthQueryApplicationRequiredOutputConnection<S>,
-//!     P::DependentConnection: WorthQueryApplicationDependentOutputConnection<S, RootDemand = RootDemand<S, P>>,
-//!     RootDemand<S, P>: WorthQueryApplicationOutputDemand<S> + Clone,
-//!     <RootSource<S, P> as ApplicationQueryBinding<S>>::Input: ApplicationQueryIntent<S, Binding = RootSource<S, P>>,
-//!     <RootSource<S, P> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<S, <RootSource<S, P> as ApplicationQueryBinding<S>>::PrincipalIdentity>,
-//!     RootValue<S, P>: WorthQueryApplicationProjection<S, RootQuery<S, P>> + Clone,
+//! struct Forged<C>(PhantomData<C>);
+//! impl<S, C> WorthQueryProgramRootConnection<S> for Forged<C>
+//! where
+//!     S: ApplicationSchema,
+//!     C: WorthQueryProgramRootConnection<S>,
 //! {
-//!     let _ = request.recover_required_outputs::<P>(application, receipt, demand, controls);
+//!     type Source = C::Source;
+//!     type Demand = C::Demand;
+//!     const IDENTITY: &'static str = C::IDENTITY;
+//!     const TARGET_FEATURE: &'static str = C::TARGET_FEATURE;
+//!     fn target_feature_type() -> std::any::TypeId { C::target_feature_type() }
+//!     fn validate_source(
+//!         source: &<C::Source as ApplicationMutationBinding<S>>::Input,
+//!     ) -> Result<(), WorthQueryRequiredOutputConnectionDenial> {
+//!         C::validate_source(source)
+//!     }
+//!     fn demand_from_committed_source(
+//!         source: &<C::Source as ApplicationMutationBinding<S>>::Input,
+//!         result: &<C::Source as ApplicationMutationBinding<S>>::Result,
+//!     ) -> C::Demand {
+//!         C::demand_from_committed_source(source, result)
+//!     }
 //! }
 //! ```
 //!

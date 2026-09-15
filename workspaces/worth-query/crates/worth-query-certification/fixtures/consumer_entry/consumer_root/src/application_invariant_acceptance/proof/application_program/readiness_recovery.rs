@@ -1,7 +1,7 @@
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
 };
-use worth_query_topology_entry::{PlanarOutputDemand, PlanarOutputRead};
+use worth_query_topology_entry::PlanarOutputRead;
 
 use super::super::super::{authentication, installation, seed::length};
 use super::lifecycle::{controls, perform};
@@ -47,10 +47,9 @@ pub(super) fn readiness_failure_recovers_exact_pending_output(
     drop(output);
 
     let mut recovered = request
-        .recover_required_outputs::<crate::ConsumerProgram>(
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramInventory, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
-            PlanarOutputDemand::new("anchor-c"),
             controls(),
         )
         .expect("owner-held readiness custody is recoverable");
@@ -62,7 +61,7 @@ pub(super) fn readiness_failure_recovers_exact_pending_output(
     };
     assert_eq!(
         request
-            .at(settled.observation())
+            .at(settled.latest_observation())
             .query(PlanarOutputRead {
                 body_key: "final:anchor-c".to_owned(),
             })

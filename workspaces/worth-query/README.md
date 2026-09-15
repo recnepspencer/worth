@@ -3,6 +3,53 @@
 This workspace owns the Query engine, its audience facades, and its explicit
 cold certification package.
 
+## Installed application programs
+
+An application program declares a finite typed graph before its runtime is
+published. Its definition names feature nodes, typed input and output ports,
+typed connections, invariant rules, and one or more output inventories. The
+declaration validator rejects dangling or same-name foreign types, cycles,
+fan-in, unavailable work in an available closure, and connection roles the
+program scheduler cannot execute.
+
+The host installs the validated program together with its schema. A performed
+source mutation selects an installed output inventory and root connection by
+type:
+
+```text
+request
+    .mutate(intent)
+    .expect_source(observed_source)
+    .idempotency(&command_id)
+    .execute_performed::<Program, Inventory, Root>(&application)
+```
+
+Query checks the program, root, inventory, feature posture, and source before
+publishing the mutation. The returned handle drives every reachable dependent
+output. `root_observation()` identifies the committed root output;
+`latest_observation()` identifies the latest commit among independently settled
+inventory outputs; and `output_occurrences::<Feature, Port, Demand>()` returns
+the exact typed output occurrences and their individual observations.
+
+If a caller drops a handle before settlement, Query retains the exact root
+demand under the source receipt. Recovery supplies no reconstructed demand or
+target:
+
+```text
+request.recover_required_outputs::<Program, Inventory, Root>(
+    &application,
+    &source_receipt,
+    controls,
+)
+```
+
+Custody is bound to the provider runtime, product occurrence, source commit,
+inventory, and root type. Foreign, retired, and superseded receipts are denied.
+Completing the inventory consumes custody; retiring the product occurrence
+releases it. A completed close releases custody immediately. If an abandoned
+close leaves owner cleanup pending, `branches().pending_cleanup()` performs the
+same release when the owner rediscovers that obligation.
+
 For architecture and usage, start with:
 
 - [`docs/AI_README.md`](./crates/worth-query/docs/AI_README.md) for the authority

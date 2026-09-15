@@ -64,6 +64,8 @@ pub mod application_discovery;
 pub mod application_installation;
 pub mod application_invariants;
 pub mod product;
+#[doc(hidden)]
+pub mod publication_integration;
 
 pub mod provider_session {
     pub use crate::domain_computation::provider_session::*;

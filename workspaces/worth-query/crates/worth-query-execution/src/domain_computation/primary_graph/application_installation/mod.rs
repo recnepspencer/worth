@@ -6,9 +6,9 @@ mod program;
 pub use denial::WorthQueryInMemoryApplicationDenial;
 pub use limits::WorthQueryInMemoryApplicationLimits;
 pub use program::{
-    in_memory_program, WorthQueryAdmittedProgramDependentOutput,
-    WorthQueryAdmittedProgramRootOutput, WorthQueryProgramApplicationRuntime,
-    WorthQueryProgramRootOutputAdvance, WorthQuerySettledProgramRootOutput,
+    in_memory_program, program_execution_port, WorthQueryAdmittedProgramOutput,
+    WorthQueryProgramApplicationRuntime, WorthQueryProgramConnectionBindings,
+    WorthQueryProgramExecutionPort, WorthQueryProgramOutputAdvance, WorthQuerySettledProgramOutput,
 };
 
 use super::application_contribution::{
