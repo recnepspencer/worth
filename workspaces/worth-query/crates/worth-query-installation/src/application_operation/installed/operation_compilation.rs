@@ -1,6 +1,7 @@
 //! One-operation compilation authority shared by install and reinstallation.
 
 mod capability_demand;
+mod invariant_selection;
 use capability_demand::{operation_capability_count, progression_support_fact_count};
 
 use worth_query_declaration::facade::application_aftermath::PortableApplicationAftermathContract;
@@ -214,6 +215,43 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 &self.operation,
             )
         })?;
+        let invariant_invocations = self
+            .members
+            .iter()
+            .filter_map(|member| {
+                let ApplicationSchemaMember::ApplicationInvariant {
+                    invariant,
+                    major,
+                    minor,
+                    execution_point,
+                    maximum_work_units,
+                    enforcement,
+                    required_groups,
+                    read_closure,
+                    applicability,
+                    provider,
+                    cost_posture,
+                } = member
+                else {
+                    return None;
+                };
+                invariant_selection::requires(&touches, required_groups).then(|| {
+                    WorthQueryInstalledApplicationInvariantDescriptor::from_installed_parts(
+                        invariant.clone(),
+                        *major,
+                        *minor,
+                        *execution_point,
+                        *maximum_work_units,
+                        *enforcement,
+                        required_groups.clone(),
+                        read_closure.clone(),
+                        applicability.clone(),
+                        provider.clone(),
+                        *cost_posture,
+                    )
+                })
+            })
+            .collect();
         let sealed = WorthQuerySealedOperationContractCompilation {
             authorization,
             ability_requirements,
@@ -234,43 +272,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 &self.operation,
                 &self.input_type,
             ),
-            invariant_invocations: self
-                .members
-                .iter()
-                .filter_map(|member| {
-                    let ApplicationSchemaMember::ApplicationInvariant {
-                        invariant,
-                        major,
-                        minor,
-                        execution_point,
-                        maximum_work_units,
-                        enforcement,
-                        required_groups,
-                        read_closure,
-                        applicability,
-                        provider,
-                        cost_posture,
-                    } = member
-                    else {
-                        return None;
-                    };
-                    Some(
-                        WorthQueryInstalledApplicationInvariantDescriptor::from_installed_parts(
-                            invariant.clone(),
-                            *major,
-                            *minor,
-                            *execution_point,
-                            *maximum_work_units,
-                            *enforcement,
-                            required_groups.clone(),
-                            read_closure.clone(),
-                            applicability.clone(),
-                            provider.clone(),
-                            *cost_posture,
-                        ),
-                    )
-                })
-                .collect(),
+            invariant_invocations,
         };
         WorthQueryCompiledApplicationOperationContracts::compile(sealed).map_err(|()| {
             operation_denial(

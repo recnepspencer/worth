@@ -206,6 +206,19 @@ fn collect_planned_counts(
                     }
                 }
             }
+            crate::transactions::data::MutationIntent::Materialization(
+                crate::transactions::data::MaterializationMutationIntent::RematerializeRelation(
+                    spec,
+                ),
+            ) => {
+                if spec.kind_id == contract.relation_kind_id {
+                    record_relation_references(
+                        snapshot,
+                        EntityReference::Existing(spec.source),
+                        EntityReference::Existing(spec.target),
+                    );
+                }
+            }
             _ => {}
         }
     }

@@ -86,6 +86,7 @@ pub(super) fn read_bounded_root_rows<
         graph,
         contract,
         &plan.governance,
+        &plan.parameters,
         &selection.candidates,
         plan.controls
             .maximum_work()
@@ -114,7 +115,9 @@ pub(super) fn read_bounded_root_rows<
             rows: tree.rows,
             source_footprints: tree.source_footprints,
             examined_candidates: selection.examined_candidates,
-            predicate_work_units: selection.predicate_work_units,
+            predicate_work_units: selection
+                .predicate_work_units
+                .saturating_add(tree.relation_predicate_work_units),
             predicate_index_generation: selection.predicate_index_generation,
             target_identity_index_generation: None,
             target_identity_index_entries_examined: 0,
@@ -182,6 +185,7 @@ pub(super) fn read_continuation_page<
         graph,
         contract,
         &plan.governance,
+        &plan.parameters,
         &selection.candidates,
         plan.controls
             .maximum_work()
@@ -226,7 +230,9 @@ pub(super) fn read_continuation_page<
             rows: tree.rows,
             source_footprints: tree.source_footprints,
             examined_candidates: selection.examined_candidates,
-            predicate_work_units: selection.predicate_work_units,
+            predicate_work_units: selection
+                .predicate_work_units
+                .saturating_add(tree.relation_predicate_work_units),
             predicate_index_generation: selection.predicate_index_generation,
             target_identity_index_generation: None,
             target_identity_index_entries_examined: 0,

@@ -346,9 +346,13 @@ where
         .output_lineage
         .lock()
         .expect("application output lineage lock is available")
-        .exact_output::<Producer::Operation>(
+        .qualified_output::<Producer::Operation>(
+            retry.producer.runtime_authority,
+            &retry.producer.schema,
+            retry.producer.scope,
             retry.producer.output_occurrence,
             retry.producer.output_generation,
+            retry.producer.source_identity,
         )
         .is_some_and(|exact| {
             exact.source_identity == retry.producer.source_identity

@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
+use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_query_installation::facade::{
     ApplicationFieldPresence, WorthQueryInstalledGraphProjection,
     WorthQueryInstalledGraphReadContract, WorthQueryInstalledGraphRelation,
@@ -26,6 +27,7 @@ use crate::domain_computation::primary_graph::application_query::resource_lifecy
 mod bounded_ordering;
 mod relation_attachment;
 mod relation_distribution;
+mod relation_target_filter;
 mod source_footprint;
 mod work;
 
@@ -43,6 +45,7 @@ pub(super) struct MaterializedApplicationResultTree {
     pub(super) relation_records_examined: usize,
     pub(super) ordering_comparisons: usize,
     pub(super) ordered_index_entries_examined: usize,
+    pub(super) relation_predicate_work_units: usize,
     pub(super) work_units: usize,
     pub(super) continuation: Option<OrderedCollectionProgress>,
 }
@@ -79,6 +82,7 @@ pub(super) fn materialize_result_tree(
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
+    parameters: &WorthQueryAdmittedApplicationQueryParameters,
     root_ids: &[EntityId],
     maximum_work: usize,
     collection_selection: ResultTreeCollectionSelection,
@@ -96,6 +100,7 @@ pub(super) fn materialize_result_tree(
         graph,
         contract,
         governance,
+        parameters,
         None,
         "root",
         contract.root_entity(),
@@ -125,6 +130,7 @@ pub(super) fn materialize_result_tree(
         relation_records_examined: work.relation_records_examined,
         ordering_comparisons: work.ordering_comparisons,
         ordered_index_entries_examined: work.ordered_index_entries_examined,
+        relation_predicate_work_units: work.relation_predicate_work_units,
         work_units: work.work_units,
         continuation: collection_selection.into_progress(),
     })
@@ -180,6 +186,7 @@ fn project_nodes(
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
+    parameters: &WorthQueryAdmittedApplicationQueryParameters,
     source_path: Option<Arc<str>>,
     result_path: &str,
     entity_name: &str,
@@ -245,6 +252,7 @@ fn project_nodes(
             graph,
             contract,
             governance,
+            parameters,
             relation,
             &mut nodes,
             work,

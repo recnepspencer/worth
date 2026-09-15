@@ -7,7 +7,9 @@ use crate::identity::data::PartitionId;
 use crate::transactions::data::EntityReference;
 use crate::transactions::data::{
     CreateIntent, DeleteEntityIntent, DeleteRelationIntent, EntityMutationIntent, EntitySpec,
-    MergedCommitPlan, MutationIntent, RelationMutationIntent, ReplaceEntityIntent, TransactionId,
+    MaterializationMutationIntent, MergedCommitPlan, MutationIntent, RelationMutationIntent,
+    RematerializeRelationIntent, ReplaceEntityIntent, SuspendRelationMaterializationIntent,
+    TransactionId, WorkerIntentBatch,
 };
 
 #[test]
@@ -122,6 +124,69 @@ fn request_includes_deleted_relation_kind_scope_for_delete_only_commits() {
     };
 
     let request = request_for_plan(&runtime, &plan);
+    let included_relation_kinds = runtime
+        .schema_contract_runtime
+        .relation_integrity_registrations
+        .iter()
+        .filter(|registration| request.includes_registration(registration))
+        .filter_map(|registration| relation_rule_kind(&registration.rule))
+        .collect::<Vec<_>>();
+
+    assert_eq!(included_relation_kinds, vec![KindId(2)]);
+}
+
+#[test]
+fn request_includes_rematerialized_relation_as_a_planned_edge() {
+    let runtime = relation_integrity_runtime();
+    let source = create_entity(&runtime, "restored-source");
+    let target = create_entity(&runtime, "restored-target");
+    let relation_id = create_relation_of_kind(&runtime, KindId(2), source, target, "restored-edge");
+    let services = runtime.owner_component_services();
+    let (_, basis) = services
+        .basis_port()
+        .observe_branch(&runtime.main_branch_identity())
+        .expect("the relation has an owner basis");
+    let mut suspension = runtime
+        .begin_branch_transaction(
+            &basis,
+            crate::mvcc::RelationalTransactionIntent::materialization(
+                crate::mvcc::RelationalMaterializationTransactionMode::Suspend,
+            ),
+        )
+        .expect("owner materialization suspension is admitted");
+    suspension
+        .push_batch(
+            WorkerIntentBatch::new("suspend-edge").push(MutationIntent::Materialization(
+                MaterializationMutationIntent::SuspendRelation(
+                    SuspendRelationMaterializationIntent { relation_id },
+                ),
+            )),
+        )
+        .expect("the exact relation suspension is staged");
+    suspension
+        .commit(&runtime)
+        .expect("the exact relation becomes unavailable");
+    let plan = MergedCommitPlan {
+        transaction_id: TransactionId(15),
+        merged_intents: vec![MutationIntent::Materialization(
+            MaterializationMutationIntent::RematerializeRelation(RematerializeRelationIntent {
+                relation_id,
+                kind_id: KindId(2),
+                source,
+                target,
+                fields: crate::transactions::data::AspectFieldPatch::default(),
+            }),
+        )],
+    };
+
+    let request = request_for_plan(&runtime, &plan);
+    let scope = request
+        .relation_integrity_scopes()
+        .and_then(|scopes| scopes.scope_for(KindId(2)))
+        .expect("rematerialization prepares its relation-integrity scope");
+    assert_eq!(scope.planned_edges.len(), 1);
+    assert_eq!(scope.source_counts.values().sum::<usize>(), 1);
+    assert_eq!(scope.target_counts.values().sum::<usize>(), 1);
     let included_relation_kinds = runtime
         .schema_contract_runtime
         .relation_integrity_registrations

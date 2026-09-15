@@ -183,60 +183,63 @@ fn source_generated_manifest(
     generated_entities: &[crate::identity::data::EntityId],
 ) -> Result<Vec<RelationalMaterializationRecord>, RelationalMaterializationError> {
     let root = &basis.inner.root;
-    let envelope = root
-        .canonical_envelope()
-        .ok_or(RelationalMaterializationError::SourceCommitMismatch)?;
     let generated = generated_entities.iter().copied().collect::<BTreeSet<_>>();
     if generated.is_empty() || generated.len() != generated_entities.len() {
         return Err(RelationalMaterializationError::SourceIsNotCompleteCreatePublication);
     }
     let mut unique = BTreeSet::new();
-    for patch in &envelope.patch.authoritative_record_patches {
-        if patch.structural_change
-            != crate::publication::patch::data::RecordStructuralChange::Created
-        {
-            continue;
-        }
-        match patch.target {
-            crate::transactions::data::RecordRef::Entity(entity_id)
-                if generated.contains(&entity_id) =>
+    let mut incident_relations = BTreeSet::new();
+    for entity_id in &generated {
+        unique.insert(live_record_manifest(
+            root,
+            &crate::transactions::data::RecordRef::Entity(*entity_id),
+        )?);
+        if let Some(partition) = root.partition_state(entity_id.partition_id) {
+            let slot = entity_id.slot_index();
+            for adjacency in [
+                partition.adjacency.get(slot),
+                partition.reverse_adjacency.get(slot),
+            ]
+            .into_iter()
+            .flatten()
             {
-                unique.insert(live_record_manifest(root, &patch.target)?);
+                incident_relations.extend(adjacency.as_slice().iter().copied());
             }
-            crate::transactions::data::RecordRef::Relation(relation_id) => {
-                let record = live_record_manifest(root, &patch.target)?;
-                let RelationalMaterializationRecord::Relation {
-                    kind_id,
-                    source,
-                    target,
-                    ..
-                } = record
-                else {
-                    unreachable!("a relation target resolves to a relation manifest")
-                };
-                if generated.contains(&source) || generated.contains(&target) {
-                    unique.insert(RelationalMaterializationRecord::Relation {
-                        relation_id,
-                        kind_id,
-                        source,
-                        target,
-                    });
-                }
-            }
-            _ => {}
         }
     }
-    let present = unique
-        .iter()
-        .filter_map(|record| match record {
-            RelationalMaterializationRecord::Entity { entity_id, .. } => Some(*entity_id),
-            RelationalMaterializationRecord::Relation { .. } => None,
-        })
-        .collect::<BTreeSet<_>>();
-    if present != generated {
-        return Err(RelationalMaterializationError::SourceIsNotCompleteCreatePublication);
+    for relation_id in incident_relations {
+        if let Some(record) = live_relation_manifest(root, relation_id)? {
+            unique.insert(record);
+        }
     }
     Ok(unique.into_iter().collect())
+}
+
+fn live_relation_manifest(
+    root: &crate::branch::RelationalBranchRoot,
+    relation_id: crate::identity::data::RelationId,
+) -> Result<Option<RelationalMaterializationRecord>, RelationalMaterializationError> {
+    let Some(slot) = root
+        .partition_state(relation_id.partition_id)
+        .and_then(|partition| partition.relation_arena.get(&relation_id))
+        .filter(|slot| slot.is_live())
+    else {
+        return Ok(None);
+    };
+    let kind_id = slot
+        .kind_id()
+        .ok_or_else(|| missing_relation(relation_id))?;
+    let endpoints = slot
+        .extra()
+        .endpoints
+        .as_ref()
+        .ok_or_else(|| missing_relation(relation_id))?;
+    Ok(Some(RelationalMaterializationRecord::Relation {
+        relation_id,
+        kind_id,
+        source: endpoints.source,
+        target: endpoints.target,
+    }))
 }
 
 fn live_record_manifest(

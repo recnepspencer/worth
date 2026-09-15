@@ -27,6 +27,8 @@ an invariant callback or construct an admitted plan.
 - `worth_query_application_query!`
 - `ApplicationQueryDefinitionBuilder`
 - `ApplicationQueryResultShapeBuilder`
+- `ApplicationQueryResultShapeBuilder::relation_where_equal(...)` when one
+  related child must be selected by a typed child field and query parameter
 - `ApplicationQueryResultFieldRef` for required fields
 - `ApplicationQueryOptionalResultFieldRef` for optional fields
 - `row.field(...)` and `row.optional_field(...)` during domain projection
@@ -35,10 +37,6 @@ an invariant callback or construct an admitted plan.
 - typed parameter, predicate, ordering, field, and relation references
 - installed-query inspection through `worth_query_host::facade::domain`
 - ordinary typed application-query execution through the host runtime
-
-The older generic workspace read engine remains an internal/preserved runtime
-surface for its existing consumers. Its `compose_read` and reusable-family
-lowering are not a second public application-query planning authority.
 
 There is no `compose_read_with_invariant_pack(...)` or
 `define_read_family_with_invariant_pack(...)`. Read-only application work never
@@ -159,6 +157,33 @@ let definition = ApplicationQueryDefinitionBuilder::declare(AccountActivity::ref
 .order_by(activity_sequence, ApplicationQueryOrderingDirection::Descending)
 .build()?;
 ```
+
+Filter a relation at the result-shape boundary when the application needs one
+specific child from a larger adjacency:
+
+```rust
+let occurrence_shape = ApplicationQueryResultShapeBuilder::new(
+    GeometricOccurrence::reference(),
+)
+.field(occurrence_transform());
+
+let shape = ApplicationQueryResultShapeBuilder::new(BodySet::reference())
+    .relation_where_equal(
+        selected_occurrence(),
+        occurrence_shape,
+        GeometricOccurrenceKey::reference(),
+        selected_occurrence_parameter,
+    )
+    .build();
+```
+
+Query applies the typed equality predicate to actual relation targets before
+relation cardinality and child projection. The predicate field must be declared
+equality-queryable and must belong to the nested child entity. Source evidence
+retains every examined sibling and the predicate aspect revision, including
+siblings excluded from the public result. A changed excluded sibling therefore
+invalidates source authority. Filtered relations cannot also be continuation
+targets because that pagination contract is not defined.
 
 When the definition is governed, give the optional slot its own disclosure
 rule and keep policy omission typed in the result:

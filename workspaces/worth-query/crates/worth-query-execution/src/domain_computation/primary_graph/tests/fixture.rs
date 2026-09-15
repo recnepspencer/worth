@@ -60,6 +60,8 @@ pub(in crate::domain_computation::primary_graph) use capability_status_mutation:
 mod application_queries;
 #[path = "fixture/current_output_source.rs"]
 mod current_output_source;
+#[path = "fixture/filtered_activity_query.rs"]
+mod filtered_activity_query;
 pub(in crate::domain_computation::primary_graph) use application_queries::AccountSummaryParameters;
 pub(super) use application_queries::{
     cross_root_definition, status_parameter, AccountSummaryQuery, AccountSummaryResult,
@@ -67,6 +69,10 @@ pub(super) use application_queries::{
     ScopedAccountSummaryQuery,
 };
 pub(super) use current_output_source::TestAccountSourceBinding;
+pub(super) use filtered_activity_query::{
+    selected_activity_parameters, SelectedActivityParameters, SelectedActivityQuery,
+    SelectedActivityResult,
+};
 #[path = "fixture/optional_account_field_query.rs"]
 mod optional_account_field_query;
 pub(super) use optional_account_field_query::{
@@ -292,6 +298,7 @@ worth_query_application_schema! {
                 .application_query(application_queries::ordered_account_summary_definition())
                 .application_query(optional_account_field_query::optional_account_field_definition())
                 .application_query(nested_account::nested_account_definition())
+                .application_query(filtered_activity_query::selected_activity_definition())
                 .application_query(forged_selector::forged_selector_definition())
                 .application_query(live_account_query::live_account_activity_definition())
                 .application_query(governed_live_query::governed_live_account_definition())

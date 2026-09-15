@@ -179,6 +179,16 @@ fn flatten_shape(
             direction: relation.direction(),
             output_name: relation.output_name().to_string(),
             cardinality: relation.cardinality(),
+            predicate: relation.predicate().map(|predicate| {
+                let (entity, aspect, field) = predicate.field();
+                WorthQueryInstalledGraphPredicate {
+                    entity: entity.to_owned(),
+                    aspect: admitted_aspect_key(aspect),
+                    field: admitted_field_key(field),
+                    parameter: predicate.parameter().to_owned(),
+                    scalar_family: predicate.scalar_family(),
+                }
+            }),
             depth: depth + 1,
         });
         flatten_shape(

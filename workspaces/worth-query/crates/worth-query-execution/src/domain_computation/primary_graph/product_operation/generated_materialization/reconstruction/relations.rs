@@ -17,6 +17,38 @@ where
     Schema: ApplicationSchema,
     Producer: WorthQueryApplicationProducerBinding<Schema>,
 {
+    pub fn retained_relation_sources<Relation, From, To>(
+        &self,
+        relation: ApplicationRelationRef<Schema, Relation, From, To>,
+        source: ApplicationEntityRef<Schema, From>,
+        target: &WorthQueryGeneratedEntity<Schema, To>,
+    ) -> Result<
+        Vec<WorthQueryRetainedGeneratedOutputEntity<Schema, From>>,
+        WorthQueryGeneratedOutputReconstructionDenial,
+    > {
+        self.validate_handle(target)?;
+        let expected = self
+            .layout
+            .relation(relation.name())
+            .ok_or(WorthQueryGeneratedOutputReconstructionDenial::MissingRelation)?;
+        let source_kind = self
+            .layout
+            .entity_kind(source.name())
+            .ok_or(WorthQueryGeneratedOutputReconstructionDenial::RetainedEntityKindMismatch)?;
+        if expected.from != source_kind {
+            return Err(WorthQueryGeneratedOutputReconstructionDenial::RetainedEntityKindMismatch);
+        }
+        Ok(self
+            .retained_endpoints(
+                expected.kind,
+                |candidate| candidate.target == target.identity,
+                |candidate| candidate.source,
+            )
+            .into_iter()
+            .map(|identity| self.retained_handle(identity))
+            .collect())
+    }
+
     pub fn retained_relation_source<Relation, From, To>(
         &self,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
@@ -73,6 +105,38 @@ where
             |candidate| candidate.target,
         )?;
         Ok(self.retained_handle(identity))
+    }
+
+    pub fn retained_relation_targets<Relation, From, To>(
+        &self,
+        relation: ApplicationRelationRef<Schema, Relation, From, To>,
+        source: &WorthQueryGeneratedEntity<Schema, From>,
+        target: ApplicationEntityRef<Schema, To>,
+    ) -> Result<
+        Vec<WorthQueryRetainedGeneratedOutputEntity<Schema, To>>,
+        WorthQueryGeneratedOutputReconstructionDenial,
+    > {
+        self.validate_handle(source)?;
+        let expected = self
+            .layout
+            .relation(relation.name())
+            .ok_or(WorthQueryGeneratedOutputReconstructionDenial::MissingRelation)?;
+        let target_kind = self
+            .layout
+            .entity_kind(target.name())
+            .ok_or(WorthQueryGeneratedOutputReconstructionDenial::RetainedEntityKindMismatch)?;
+        if expected.to != target_kind {
+            return Err(WorthQueryGeneratedOutputReconstructionDenial::RetainedEntityKindMismatch);
+        }
+        Ok(self
+            .retained_endpoints(
+                expected.kind,
+                |candidate| candidate.source == source.identity,
+                |candidate| candidate.target,
+            )
+            .into_iter()
+            .map(|identity| self.retained_handle(identity))
+            .collect())
     }
 
     pub fn relation<Relation, From, To>(
@@ -161,6 +225,20 @@ where
             return Err(WorthQueryGeneratedOutputReconstructionDenial::AmbiguousRelation);
         }
         Ok(first)
+    }
+
+    fn retained_endpoints(
+        &self,
+        kind: worth_relational::facade::identity::KindId,
+        matches_anchor: impl Fn(&super::ReconstructionRelation) -> bool,
+        endpoint: impl Fn(&super::ReconstructionRelation) -> EntityId,
+    ) -> Vec<EntityId> {
+        self.relations
+            .iter()
+            .filter(|candidate| candidate.kind == kind && matches_anchor(candidate))
+            .map(endpoint)
+            .filter(|identity| !self.entities.contains_key(identity))
+            .collect()
     }
 
     fn retained_handle<Entity>(

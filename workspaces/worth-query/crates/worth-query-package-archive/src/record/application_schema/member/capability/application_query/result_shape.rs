@@ -1,6 +1,7 @@
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryResultField, ApplicationQueryResultRelation, ApplicationQueryResultShape,
-    ApplicationQueryResultTraversalDirection, WorthQueryPortableApplicationQueryResultFieldParts,
+    ApplicationQueryPredicate, ApplicationQueryResultField, ApplicationQueryResultRelation,
+    ApplicationQueryResultShape, ApplicationQueryResultTraversalDirection,
+    WorthQueryPortableApplicationQueryResultFieldParts,
     WorthQueryPortableApplicationQueryResultRelationParts,
     WorthQueryPortableApplicationQueryResultShapeParts,
 };
@@ -14,6 +15,7 @@ use crate::denial::{
 use super::super::super::super::super::decode_budget::RecordDecodeAttempt;
 use super::super::super::super::super::foundational_aspect;
 use super::super::super::super::super::sequence::{decode_sequence, write_sequence};
+use super::super::super::super::wire_vocabulary::{decode_optional, write_optional};
 use super::super::super::super::wire_vocabulary::{decode_type_identity, write_type_identity};
 
 pub(super) fn write(
@@ -101,7 +103,32 @@ fn write_relation(
     write_traversal_direction(output, relation.direction())?;
     output.text(relation.output_name())?;
     super::controls::write_cardinality(output, relation.cardinality())?;
+    write_optional(output, relation.predicate(), write_relation_predicate)?;
     write(output, relation.nested_shape())
+}
+
+fn write_relation_predicate(
+    output: &mut dyn BinaryEncodingSink,
+    predicate: &ApplicationQueryPredicate,
+) -> Result<(), Denial> {
+    let (entity, aspect, field) = predicate.field();
+    output.text(entity)?;
+    output.text(aspect)?;
+    output.text(field)?;
+    output.text(predicate.parameter())?;
+    foundational_aspect::write_scalar_type(output, predicate.scalar_family())
+}
+
+fn decode_relation_predicate(
+    input: &mut BinaryInput<'_>,
+) -> Result<ApplicationQueryPredicate, Denial> {
+    Ok(ApplicationQueryPredicate::from_untrusted_fields(
+        input.text()?.to_owned(),
+        input.text()?.to_owned(),
+        input.text()?.to_owned(),
+        input.text()?.to_owned(),
+        foundational_aspect::decode_scalar_type(input)?,
+    ))
 }
 
 fn decode_relation(
@@ -117,6 +144,7 @@ fn decode_relation(
     let direction = decode_traversal_direction(input)?;
     let output_name = input.text()?.to_owned();
     let cardinality = super::controls::decode_cardinality(input)?;
+    let predicate = decode_optional(input, decode_relation_predicate)?;
     let nested_depth = parent_depth
         .checked_add(1)
         .ok_or_else(|| Denial::new(Kind::NestingDepthBudgetExceeded))?;
@@ -131,6 +159,7 @@ fn decode_relation(
             direction,
             output_name,
             cardinality,
+            predicate,
             nested_shape,
         },
     ))
@@ -176,5 +205,90 @@ pub(super) fn decode_traversal_direction(
         1 => Ok(ApplicationQueryResultTraversalDirection::Forward),
         2 => Ok(ApplicationQueryResultTraversalDirection::Reverse),
         _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use worth_foundational::facade::ScalarAspectType;
+    use worth_query_declaration::facade::application_query::{
+        ApplicationQueryCardinality, ApplicationQueryPredicate, ApplicationQueryResultRelation,
+        ApplicationQueryResultShape, ApplicationQueryResultTraversalDirection,
+        WorthQueryPortableApplicationQueryResultRelationParts,
+        WorthQueryPortableApplicationQueryResultShapeParts,
+    };
+    use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
+
+    use crate::binary_input::BinaryInput;
+    use crate::binary_output::BinaryOutput;
+    use crate::limits::WorthQueryPackageArchiveLimits;
+    use crate::record::decode_budget::RecordDecodeAttempt;
+
+    use super::{decode, write};
+
+    #[test]
+    fn relation_predicate_round_trips_exact_owned_meaning() {
+        let source = filtered_shape();
+        let mut output = BinaryOutput::with_capacity(1024);
+        write(&mut output, &source).unwrap();
+        let bytes = output.into_bytes();
+        let mut input = BinaryInput::new(&bytes);
+        let mut budget = RecordDecodeAttempt::begin(
+            Default::default(),
+            u64::try_from(bytes.len()).unwrap(),
+            WorthQueryPackageArchiveLimits::DEFAULT,
+        )
+        .unwrap();
+
+        let decoded = decode(&mut input, &mut budget).unwrap();
+        assert!(input.is_finished());
+        assert_eq!(decoded, source);
+        assert_eq!(
+            decoded.relations()[0].predicate().unwrap().field(),
+            ("Child", "Facts", "key")
+        );
+    }
+
+    fn filtered_shape() -> ApplicationQueryResultShape {
+        let identity =
+            |value: &str| WorthQueryPortableTypeIdentity::from_untrusted(value.to_owned());
+        let child = ApplicationQueryResultShape::from_untrusted_parts(
+            WorthQueryPortableApplicationQueryResultShapeParts {
+                query_type: identity("Query"),
+                root_entity: "Child".to_owned(),
+                result_type: identity("ChildResult"),
+                fields: Vec::new(),
+                relations: Vec::new(),
+            },
+        );
+        let relation = ApplicationQueryResultRelation::from_untrusted_parts(
+            WorthQueryPortableApplicationQueryResultRelationParts {
+                query_type: identity("Query"),
+                slot_type: identity("ChildSlot"),
+                relation: "RootAllChild".to_owned(),
+                from: "Root".to_owned(),
+                to: "Child".to_owned(),
+                direction: ApplicationQueryResultTraversalDirection::Forward,
+                output_name: "child".to_owned(),
+                cardinality: ApplicationQueryCardinality::ExactlyOne,
+                predicate: Some(ApplicationQueryPredicate::from_untrusted_fields(
+                    "Child".to_owned(),
+                    "Facts".to_owned(),
+                    "key".to_owned(),
+                    "selected".to_owned(),
+                    ScalarAspectType::String,
+                )),
+                nested_shape: child,
+            },
+        );
+        ApplicationQueryResultShape::from_untrusted_parts(
+            WorthQueryPortableApplicationQueryResultShapeParts {
+                query_type: identity("Query"),
+                root_entity: "Root".to_owned(),
+                result_type: identity("RootResult"),
+                fields: Vec::new(),
+                relations: vec![relation],
+            },
+        )
     }
 }

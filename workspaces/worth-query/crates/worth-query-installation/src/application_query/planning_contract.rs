@@ -140,7 +140,7 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphPlanningPre
     }
 
     fn predicate_count(&self) -> usize {
-        self.meaning.predicates.len()
+        all_predicate_count(self.meaning)
     }
 
     fn predicate(&self, index: usize) -> Option<WorthQueryReadGraphPredicateView<'_>> {
@@ -202,7 +202,7 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphReadContrac
     }
 
     fn predicate_count(&self) -> usize {
-        self.predicates().len()
+        all_predicate_count(self.meaning())
     }
 
     fn predicate(&self, index: usize) -> Option<WorthQueryReadGraphPredicateView<'_>> {
@@ -340,15 +340,28 @@ fn predicate(
     meaning: &WorthQueryInstalledGraphReadMeaning,
     index: usize,
 ) -> Option<WorthQueryReadGraphPredicateView<'_>> {
-    meaning
-        .predicates
-        .get(index)
-        .map(|predicate| WorthQueryReadGraphPredicateView {
-            aspect: predicate.aspect_key(),
-            field: predicate.field_key(),
-            parameter: predicate.parameter(),
-            scalar_family: predicate.scalar_family(),
-        })
+    let predicate = meaning.predicates.get(index).or_else(|| {
+        meaning
+            .relations
+            .iter()
+            .filter_map(|relation| relation.predicate())
+            .nth(index.saturating_sub(meaning.predicates.len()))
+    });
+    predicate.map(|predicate| WorthQueryReadGraphPredicateView {
+        aspect: predicate.aspect_key(),
+        field: predicate.field_key(),
+        parameter: predicate.parameter(),
+        scalar_family: predicate.scalar_family(),
+    })
+}
+
+fn all_predicate_count(meaning: &WorthQueryInstalledGraphReadMeaning) -> usize {
+    meaning.predicates.len()
+        + meaning
+            .relations
+            .iter()
+            .filter(|relation| relation.predicate().is_some())
+            .count()
 }
 
 fn ordering(

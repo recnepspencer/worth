@@ -11,6 +11,8 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world, installed_authorization_world_with_label, live_scope,
     status_parameter, AccountStatus,
 };
+
+mod relation_predicate;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOneShotDenialKind, WorthQueryApplicationProjectionDenialKind,
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryOmissionPosture,

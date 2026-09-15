@@ -1,14 +1,18 @@
 use worth_foundational::facade::ScalarAspectType;
 
-use super::validate_application_query_members;
+use super::{shape_is_closed, validate_application_query_members};
+use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use crate::{
     application_query::{
         ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
         ApplicationQueryDisclosureContract, ApplicationQueryDisclosurePosture,
-        ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
-        ApplicationQueryResultShapeBuilder, ErasedApplicationQueryDefinition,
-        WorthQueryPortableApplicationQueryDisclosureParts,
+        ApplicationQueryLaneEligibility, ApplicationQueryPredicate, ApplicationQueryResultFieldRef,
+        ApplicationQueryResultRelation, ApplicationQueryResultShape,
+        ApplicationQueryResultShapeBuilder, ApplicationQueryResultTraversalDirection,
+        ErasedApplicationQueryDefinition, WorthQueryPortableApplicationQueryDisclosureParts,
+        WorthQueryPortableApplicationQueryResultRelationParts,
+        WorthQueryPortableApplicationQueryResultShapeParts,
     },
     application_schema::{
         ApplicationAbilityRef, ApplicationEntityRef, ApplicationFieldRef,
@@ -61,6 +65,22 @@ fn forged_projection_field_or_value_type_cannot_enter_package_meaning() {
         validate_application_query_members(&members(query("MissingField", "id"))),
         Err(ApplicationSchemaDeclarationDenial::InvalidApplicationQuery)
     );
+}
+
+#[test]
+fn relation_predicate_field_must_be_declared_and_equality_queryable() {
+    let mut members = relation_predicate_dependencies(false);
+    let shape = relation_predicate_shape();
+    assert!(!shape_is_closed(&members, "PredicateQuery", &shape));
+
+    let ApplicationSchemaMember::Field {
+        equality_queryable, ..
+    } = &mut members[5]
+    else {
+        panic!("fixture field must occupy the declared slot");
+    };
+    *equality_queryable = true;
+    assert!(shape_is_closed(&members, "PredicateQuery", &shape));
 }
 
 #[test]
@@ -166,6 +186,85 @@ fn dependencies() -> Vec<ApplicationSchemaMember> {
             equality_queryable: true,
         },
     ]
+}
+
+fn relation_predicate_dependencies(equality_queryable: bool) -> Vec<ApplicationSchemaMember> {
+    let mut members = dependencies();
+    members.extend([
+        ApplicationSchemaMember::Entity {
+            entity: "Activity".to_owned(),
+        },
+        ApplicationSchemaMember::Aspect {
+            entity: "Activity".to_owned(),
+            aspect: "ActivityFacts".to_owned(),
+            identity: worth_foundational::facade::AspectIdentity(0x91613006),
+            revision: worth_foundational::facade::AspectContractRevision(1),
+        },
+        ApplicationSchemaMember::Field {
+            entity: "Activity".to_owned(),
+            aspect: "ActivityFacts".to_owned(),
+            field: "ActivityId".to_owned(),
+            presence: crate::application_schema::ApplicationFieldPresence::Required,
+            scalar_family: ScalarAspectType::UInt64,
+            value_type:
+                <u64 as crate::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY
+                    .as_str()
+                    .to_owned(),
+            unit: None,
+            frame: None,
+            writable: false,
+            equality_queryable,
+        },
+        ApplicationSchemaMember::Relation {
+            relation: "AccountAllActivity".to_owned(),
+            from: "Account".to_owned(),
+            to: "Activity".to_owned(),
+            integrity: crate::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+        },
+    ]);
+    members
+}
+
+fn relation_predicate_shape() -> ApplicationQueryResultShape {
+    let identity = |value: &str| WorthQueryPortableTypeIdentity::from_untrusted(value.to_owned());
+    let nested = ApplicationQueryResultShape::from_untrusted_parts(
+        WorthQueryPortableApplicationQueryResultShapeParts {
+            query_type: identity("PredicateQuery"),
+            root_entity: "Activity".to_owned(),
+            result_type: identity("ActivityResult"),
+            fields: Vec::new(),
+            relations: Vec::new(),
+        },
+    );
+    let relation = ApplicationQueryResultRelation::from_untrusted_parts(
+        WorthQueryPortableApplicationQueryResultRelationParts {
+            query_type: identity("PredicateQuery"),
+            slot_type: identity("ActivitySlot"),
+            relation: "AccountAllActivity".to_owned(),
+            from: "Account".to_owned(),
+            to: "Activity".to_owned(),
+            direction: ApplicationQueryResultTraversalDirection::Forward,
+            output_name: "activity".to_owned(),
+            cardinality: ApplicationQueryCardinality::ExactlyOne,
+            predicate: Some(ApplicationQueryPredicate::from_untrusted_fields(
+                "Activity".to_owned(),
+                "ActivityFacts".to_owned(),
+                "ActivityId".to_owned(),
+                "activity".to_owned(),
+                ScalarAspectType::UInt64,
+            )),
+            nested_shape: nested,
+        },
+    );
+    ApplicationQueryResultShape::from_untrusted_parts(
+        WorthQueryPortableApplicationQueryResultShapeParts {
+            query_type: identity("PredicateQuery"),
+            root_entity: "Account".to_owned(),
+            result_type: identity("AccountResult"),
+            fields: Vec::new(),
+            relations: vec![relation],
+        },
+    )
 }
 
 fn query(field_name: &'static str, output_name: &'static str) -> ErasedApplicationQueryDefinition {

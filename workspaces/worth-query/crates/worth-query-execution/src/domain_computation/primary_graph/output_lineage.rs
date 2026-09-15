@@ -1,6 +1,7 @@
 //! Product-local semantic output correspondence owned by Query publication.
 
 mod current_output;
+mod qualification;
 mod retention;
 
 use std::any::TypeId;
@@ -95,34 +96,6 @@ pub struct WorthQueryPriorOutputDenial {
 }
 
 impl WorthQueryApplicationOutputLineage {
-    pub(super) fn exact_output<Binding: 'static>(
-        &self,
-        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        generation: u64,
-    ) -> Option<WorthQueryExactRecordedOutput> {
-        let mut matching = self.by_source.iter().filter_map(|(source, versions)| {
-            (source.output_binding == TypeId::of::<Binding>()).then(|| {
-                versions
-                    .get(&occurrence)?
-                    .get(&generation)
-                    .map(|recorded| (source, recorded))
-            })?
-        });
-        let (source, recorded) = matching.next()?;
-        assert!(
-            matching.next().is_none(),
-            "one product generation has one output binding"
-        );
-        Some(WorthQueryExactRecordedOutput {
-            correspondence: Arc::clone(&recorded.correspondence),
-            source_identity: recorded.source_identity?,
-            runtime_authority: source.runtime_authority,
-            schema: source.schema.clone(),
-            scope: source.scope,
-            observed_source_facts: Arc::clone(&recorded.observed_source_facts),
-        })
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub(super) fn record_restoration(
         &mut self,

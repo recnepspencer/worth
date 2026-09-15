@@ -2,10 +2,11 @@ use crate::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDefinitionDenial,
     ApplicationQueryDependencyCeiling, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection, ApplicationQueryReference,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-    ApplicationQueryResultShapeBuilder, ApplicationQueryResultTraversalEndpoints,
-    ErasedApplicationQueryDefinition, ForwardResultTraversal, ManyResults, ReverseResultTraversal,
+    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
+    ApplicationQueryParameterRef, ApplicationQueryReference, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder,
+    ApplicationQueryResultTraversalEndpoints, ErasedApplicationQueryDefinition,
+    ForwardResultTraversal, ManyResults, ReverseResultTraversal,
 };
 
 use super::canonical_identity::{canonical_identity, ApplicationSchemaCanonicalHeader};
@@ -25,6 +26,7 @@ struct FirstSlot;
 struct SecondSlot;
 struct Relation;
 struct RelationSlot;
+struct PredicateParameter;
 struct ViewEntity;
 
 crate::worth_query_structured_value_binding!(QueryParametersBinding for Parameters { identity: "Parameters" });
@@ -154,6 +156,8 @@ fn result_traversal_direction_changes_definition_identity() {
     assert_ne!(forward.canonical_basis(), reverse.canonical_basis());
 }
 
+mod relation_predicate_identity;
+
 #[test]
 fn ordering_selector_must_name_a_projected_result_slot() {
     let denial = ordering_definition(selector::<SecondSlot>("value"))
@@ -219,7 +223,16 @@ fn selector<Slot: crate::portable_identity::WorthQueryPortableType>(
 > {
     ApplicationQueryResultFieldRef::new(
         output,
-        ApplicationFieldRef::from_schema_identifiers("Entity", "Aspect", "Field"),
+        ApplicationFieldRef::<
+            Schema,
+            Entity,
+            Aspect,
+            Field,
+            u64,
+            ReadOnly,
+            EqualityPredicate,
+            NoApplicationUnit,
+        >::from_schema_identifiers("Entity", "Aspect", "Field"),
     )
 }
 

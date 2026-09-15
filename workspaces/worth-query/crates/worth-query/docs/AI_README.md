@@ -126,6 +126,13 @@ that identity for topology membership and deduplication instead of inferring
 identity from projected field values. Relation accessors still expose only the
 children admitted by the installed query and disclosure policy.
 
+When a result needs one child from a broader adjacency, declare that selection
+with `ApplicationQueryResultShapeBuilder::relation_where_equal(...)`. It binds a
+typed equality-queryable field on the nested entity to a typed query parameter.
+Query filters actual relation targets before cardinality and child projection,
+while source evidence retains the complete examined sibling set and predicate
+aspect revisions. Filtered result relations are not continuation targets.
+
 ## Contribution And Installation Boundary
 
 The application foundation supports independently compiled entry contributions

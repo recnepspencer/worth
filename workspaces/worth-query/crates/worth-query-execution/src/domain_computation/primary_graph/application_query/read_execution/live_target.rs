@@ -85,6 +85,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         graph,
         contract,
         &plan.governance,
+        &plan.parameters,
         &selection.candidates,
         plan.controls
             .maximum_work()
@@ -117,7 +118,8 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
                 .saturating_add(target_lookup_work),
             predicate_work_units: selection
                 .predicate_work_units
-                .saturating_add(target_lookup_work),
+                .saturating_add(target_lookup_work)
+                .saturating_add(tree.relation_predicate_work_units),
             predicate_index_generation: selection.predicate_index_generation,
             target_identity_index_generation: target.generation_id,
             target_identity_index_entries_examined: target_lookup_work,

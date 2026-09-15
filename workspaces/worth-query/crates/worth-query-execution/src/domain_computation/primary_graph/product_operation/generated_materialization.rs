@@ -121,9 +121,13 @@ impl WorthQuerySuspendedGeneratedOutput {
             .output_lineage
             .lock()
             .expect("application output lineage lock is available")
-            .exact_output::<Producer::Operation>(
+            .qualified_output::<Producer::Operation>(
+                self.producer.runtime_authority,
+                &self.producer.schema,
+                self.producer.scope,
                 self.producer.output_occurrence,
                 self.producer.output_generation,
+                self.producer.source_identity,
             )
             .is_some_and(|exact| {
                 exact.source_identity == self.producer.source_identity
@@ -155,7 +159,9 @@ pub enum WorthQueryGeneratedOutputSuspensionFailure {
 pub(super) struct ExpectedSourceQualification {
     runtime_authority: u64,
     schema: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     source_identity: [u8; 32],
+    selection: crate::basis::WorthQueryProductBranchReadIdentity,
 }
 
 impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema>
@@ -173,12 +179,19 @@ where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         let source_identity = source.idempotency_identity();
+        let crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisSelectionIdentity::Product(selection) = source.selection.clone() else {
+            return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
+                WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
+            ));
+        };
         self.suspend_qualified_generated_output::<Producer>(
             request,
             ExpectedSourceQualification {
                 runtime_authority: source.runtime_authority,
                 schema: source.schema_binding,
+                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.footprint.root),
                 source_identity,
+                selection,
             },
         )
     }
@@ -214,21 +227,42 @@ where
             WorthQueryGeneratedOutputSuspensionFailure::ProductActivationUnavailable
         })?;
         let observation = product.observation();
+        if source.selection
+            != crate::basis::WorthQueryProductBranchReadIdentity::from_observation(observation)
+        {
+            return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
+                WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
+            ));
+        }
         let output_occurrence = observation.lifecycle_incarnation();
         let output_generation = observation.reference_generation().get();
-        let exact = application
+        let lineage = application
             .primary_provider
             .graph
             .output_lineage
             .lock()
-            .expect("application output lineage lock is available")
-            .exact_output::<Producer::Operation>(
+            .expect("application output lineage lock is available");
+        let exact = lineage
+            .qualified_output::<Producer::Operation>(
+                source.runtime_authority,
+                &source.schema,
+                source.scope,
                 observation.lifecycle_incarnation(),
                 observation.reference_generation().get(),
+                source.source_identity,
             )
-            .ok_or(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
-                WorthQueryGeneratedOutputSuspensionDenial::MissingQualifiedOutput,
-            ))?;
+            .ok_or_else(|| {
+                let denial = if lineage.has_output_at_or_before::<Producer::Operation>(
+                    observation.lifecycle_incarnation(),
+                    observation.reference_generation().get(),
+                ) {
+                    WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch
+                } else {
+                    WorthQueryGeneratedOutputSuspensionDenial::MissingQualifiedOutput
+                };
+                WorthQueryGeneratedOutputSuspensionFailure::Qualification(denial)
+            })?;
+        drop(lineage);
         if exact.runtime_authority != application.runtime.authority_identity().as_u64() {
             return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
                 WorthQueryGeneratedOutputSuspensionDenial::ForeignRuntime,
