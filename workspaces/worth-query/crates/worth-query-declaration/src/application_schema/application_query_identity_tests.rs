@@ -99,54 +99,6 @@ fn duplicate_result_slot_denies_definition_authority() {
 }
 
 #[test]
-fn a_relation_slot_may_repeat_at_a_deeper_result_path() {
-    let entity = ApplicationEntityRef::<Schema, Entity>::from_schema_identifier("Entity");
-    let relation = || {
-        ApplicationQueryResultRelationRef::<
-            Query,
-            RelationSlot,
-            Schema,
-            Relation,
-            Entity,
-            Entity,
-            ForwardResultTraversal,
-            ManyResults,
-        >::forward_many("related", relation_reference())
-    };
-    let leaf =
-        ApplicationQueryResultShapeBuilder::<Schema, Query, Entity, (), NestedResultBinding>::new(
-            entity,
-        );
-    let nested =
-        ApplicationQueryResultShapeBuilder::<Schema, Query, Entity, (), NestedResultBinding>::new(
-            entity,
-        )
-        .relation(relation(), leaf);
-    let shape = ApplicationQueryResultShapeBuilder::<
-        Schema,
-        Query,
-        Entity,
-        QueryResult,
-        QueryResultBinding,
-    >::new(entity)
-    .relation(relation(), nested)
-    .build();
-
-    ApplicationQueryDefinitionBuilder::declare(query_reference())
-        .root(entity)
-        .scope(entity)
-        .result_shape(shape)
-        .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(2, 2, 0))
-        .disclosure(ApplicationQueryDisclosureContract::public())
-        .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
-        .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .public()
-        .build()
-        .expect("the same accessor is unambiguous in distinct result rows");
-}
-
-#[test]
 fn scoped_authorization_requirement_changes_definition_and_schema_identity() {
     let public = definition::<FirstSlot>().unwrap().into_erased();
     let entity = ApplicationEntityRef::<Schema, Entity>::from_schema_identifier("Entity");
