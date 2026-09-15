@@ -7,7 +7,8 @@ use crate::identity::data::PartitionId;
 use crate::transactions::data::EntityReference;
 use crate::transactions::data::{
     CreateIntent, DeleteEntityIntent, DeleteRelationIntent, EntityMutationIntent, EntitySpec,
-    MergedCommitPlan, MutationIntent, RelationMutationIntent, ReplaceEntityIntent, TransactionId,
+    MaterializationMutationIntent, MergedCommitPlan, MutationIntent, RelationMutationIntent,
+    RematerializeRelationIntent, ReplaceEntityIntent, TransactionId,
 };
 
 #[test]
@@ -119,6 +120,37 @@ fn request_includes_deleted_relation_kind_scope_for_delete_only_commits() {
         merged_intents: vec![MutationIntent::Relation(RelationMutationIntent::Delete(
             DeleteRelationIntent { relation_id },
         ))],
+    };
+
+    let request = request_for_plan(&runtime, &plan);
+    let included_relation_kinds = runtime
+        .schema_contract_runtime
+        .relation_integrity_registrations
+        .iter()
+        .filter(|registration| request.includes_registration(registration))
+        .filter_map(|registration| relation_rule_kind(&registration.rule))
+        .collect::<Vec<_>>();
+
+    assert_eq!(included_relation_kinds, vec![KindId(2)]);
+}
+
+#[test]
+fn request_includes_rematerialized_relation_as_a_planned_edge() {
+    let runtime = relation_integrity_runtime();
+    let source = create_entity(&runtime, "restored-source");
+    let target = create_entity(&runtime, "restored-target");
+    let relation_id = create_relation_of_kind(&runtime, KindId(2), source, target, "restored-edge");
+    let plan = MergedCommitPlan {
+        transaction_id: TransactionId(15),
+        merged_intents: vec![MutationIntent::Materialization(
+            MaterializationMutationIntent::RematerializeRelation(RematerializeRelationIntent {
+                relation_id,
+                kind_id: KindId(2),
+                source,
+                target,
+                fields: crate::transactions::data::AspectFieldPatch::default(),
+            }),
+        )],
     };
 
     let request = request_for_plan(&runtime, &plan);
