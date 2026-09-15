@@ -169,7 +169,13 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
             format!("{}:b", input.output_key),
             format!("{}:c", input.output_key),
         ];
-        let coordinates = [(1, 1), (2, 1), (1, 2)];
+        let base_y = worth_query_consumer_values::PositiveLength::get(&input.value);
+        let Some(next_y) = base_y.checked_add(1) else {
+            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(
+                std::io::Error::other("final output ordinate exceeds its value binding"),
+            ));
+        };
+        let coordinates = [(1, base_y), (2, base_y), (1, next_y)];
         let mut entities = Vec::with_capacity(3);
         for (key, (x, y)) in keys.iter().zip(coordinates) {
             let entity_key = match worth_query_host::facade::primary_graph::WorthQueryApplicationEntityKey::new(key) {

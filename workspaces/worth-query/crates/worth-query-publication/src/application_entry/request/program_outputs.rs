@@ -1,4 +1,6 @@
-use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
+use worth_query_declaration::facade::application_program::{
+    ApplicationOutputGraphShape, ApplicationProgramDefinition, ApplicationProgramRootConnection,
+};
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
 };
@@ -10,16 +12,14 @@ use worth_query_execution::facade::application_contribution::{
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationDependentOutputConnection, WorthQueryApplicationProjection,
-    WorthQueryApplicationRequiredOutputConnection,
+    WorthQueryApplicationProjection, WorthQueryApplicationRequiredOutputConnection,
 };
 
 use super::WorthQueryApplicationRequest;
 
 type RootDemand<Schema, Program> =
-    <<Program as ApplicationProgramDefinition<Schema>>::Connections as WorthQueryApplicationRequiredOutputConnection<
-        Schema,
-    >>::Demand;
+    <ApplicationProgramRootConnection<Schema, Program> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand;
+type RootConnection<Schema, Program> = ApplicationProgramRootConnection<Schema, Program>;
 type RootFamily<Schema, Program> =
     <RootDemand<Schema, Program> as WorthQueryApplicationOutputDemand<Schema>>::OutputFamily;
 type RootSource<Schema, Program> =
@@ -29,6 +29,10 @@ type RootQuery<Schema, Program> =
 type RootValue<Schema, Program> = <<RootSource<Schema, Program> as ApplicationQueryBinding<
     Schema,
 >>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+type RootEdges<Schema, Program> =
+    <<Program as ApplicationProgramDefinition<Schema>>::OutputGraph as ApplicationOutputGraphShape<
+        Schema,
+    >>::Dependents;
 
 impl<'application, 'principal, 'scope, Schema>
     WorthQueryApplicationRequest<'application, 'principal, 'scope, Schema>
@@ -53,11 +57,15 @@ where
     >
     where
         Program: ApplicationProgramDefinition<Schema>,
-        Program::Connections: WorthQueryApplicationRequiredOutputConnection<Schema>,
-        Program::DependentConnection: WorthQueryApplicationDependentOutputConnection<
-            Schema,
-            RootDemand = RootDemand<Schema, Program>,
-        >,
+        Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
+        RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+        RootEdges<Schema, Program>:
+            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
+                'application,
+                Schema,
+                Program,
+                RootDemand<Schema, Program>,
+            >,
         RootDemand<Schema, Program>: Clone,
         <RootSource<Schema, Program> as ApplicationQueryBinding<Schema>>::Input:
             ApplicationQueryIntent<Schema, Binding = RootSource<Schema, Program>>,
@@ -72,17 +80,6 @@ where
         if !std::ptr::eq(application.runtime(), self.application) {
             return Err(
                 crate::application_entry::WorthQueryRequiredOutputPreparationDenial::ForeignProgram,
-            );
-        }
-        if !application
-            .installed_program()
-            .contains_connection(Program::Connections::IDENTITY)
-            || !application
-                .installed_program()
-                .contains_connection(Program::DependentConnection::IDENTITY)
-        {
-            return Err(
-                crate::application_entry::WorthQueryRequiredOutputPreparationDenial::MissingConnection,
             );
         }
         let root = self

@@ -11,3 +11,4 @@ mod execution_digest;
 mod relational_snapshot_release;
 
 pub mod facade;
+pub mod publication_boundary;

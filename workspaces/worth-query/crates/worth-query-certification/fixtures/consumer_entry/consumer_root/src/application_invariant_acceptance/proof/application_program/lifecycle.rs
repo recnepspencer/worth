@@ -302,8 +302,6 @@ fn settle<'a>(
     request: &'a Request<'a>,
 ) -> worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputSettlement<
     <worth_query_topology_entry::PlanarReadBinding<ConsumerSchema> as worth_query_decl::facade::application_query::ApplicationQueryBinding<ConsumerSchema>>::Query,
-    <worth_query_topology_entry::PlanarReadBinding<ConsumerSchema> as worth_query_decl::facade::application_query::ApplicationQueryBinding<ConsumerSchema>>::Query,
-    worth_query_topology_entry::PlanarFinalOutputDemand,
 >{
     loop {
         match performed.required_output_mut().advance(request).unwrap() {
@@ -317,8 +315,6 @@ fn read_at(
     request: &Request<'_>,
     settled: &worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputSettlement<
         <worth_query_topology_entry::PlanarReadBinding<ConsumerSchema> as worth_query_decl::facade::application_query::ApplicationQueryBinding<ConsumerSchema>>::Query,
-        <worth_query_topology_entry::PlanarReadBinding<ConsumerSchema> as worth_query_decl::facade::application_query::ApplicationQueryBinding<ConsumerSchema>>::Query,
-        worth_query_topology_entry::PlanarFinalOutputDemand,
     >,
     key: &str,
 ) -> worth_query_consumer_values::PositiveLength {

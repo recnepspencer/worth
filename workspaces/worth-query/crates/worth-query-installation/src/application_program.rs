@@ -36,7 +36,7 @@ impl std::error::Error for WorthQueryApplicationProgramInstallationDenial {}
 pub struct WorthQueryInstalledApplicationProgram<Schema, Program> {
     identity: ApplicationProgramIdentity,
     schema_binding: ApplicationSchemaBindingIdentity,
-    features: &'static [ApplicationFeatureDeclaration],
+    features: Box<[ApplicationFeatureDeclaration]>,
     connections: Box<[ApplicationConnectionDeclaration]>,
     rules: Box<[ApplicationProgramRuleDeclaration]>,
     marker: PhantomData<fn() -> (Schema, Program)>,
@@ -49,8 +49,8 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
     pub fn schema_binding(&self) -> &ApplicationSchemaBindingIdentity {
         &self.schema_binding
     }
-    pub const fn features(&self) -> &'static [ApplicationFeatureDeclaration] {
-        self.features
+    pub fn features(&self) -> &[ApplicationFeatureDeclaration] {
+        &self.features
     }
     pub fn connections(&self) -> &[ApplicationConnectionDeclaration] {
         &self.connections
@@ -104,7 +104,7 @@ where
     Ok(WorthQueryInstalledApplicationProgram {
         identity: program.identity().clone(),
         schema_binding: installed_schema.binding_identity(),
-        features: program.features(),
+        features: program.features().to_vec().into_boxed_slice(),
         connections: program.connections().to_vec().into_boxed_slice(),
         rules: program.rules().to_vec().into_boxed_slice(),
         marker: PhantomData,

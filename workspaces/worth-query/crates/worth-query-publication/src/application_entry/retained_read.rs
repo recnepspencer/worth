@@ -19,4 +19,8 @@ impl WorthQueryApplicationReadObservation {
     pub fn selected_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
         self.retained.selected_commit()
     }
+
+    pub(super) fn retained_clone(&self) -> Self {
+        Self::new(Arc::clone(&self.retained))
+    }
 }

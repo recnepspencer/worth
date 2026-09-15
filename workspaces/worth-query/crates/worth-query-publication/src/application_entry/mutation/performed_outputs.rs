@@ -1,8 +1,7 @@
-use crate::application_entry::demand::{
-    WorthQueryApplicationProgramDependentDemandHandle,
-    WorthQueryApplicationProgramRootDemandHandle, WorthQueryApplicationProgramRootDemandProgress,
+use worth_query_declaration::facade::application_program::{
+    ApplicationOutputGraphShape, ApplicationProgramDefinition, ApplicationProgramRootConnection,
+    ApplicationProgramRootEdges,
 };
-use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
 };
@@ -14,113 +13,51 @@ use worth_query_execution::facade::application_contribution::{
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationDependentOutputConnection, WorthQueryApplicationProjection,
-    WorthQueryApplicationRequiredOutputConnection,
+    WorthQueryApplicationProjection, WorthQueryApplicationRequiredOutputConnection,
 };
 
+use crate::application_entry::demand::{
+    WorthQueryApplicationProgramDemandHandle, WorthQueryApplicationProgramDemandProgress,
+};
+
+use super::program_output_continuation::{
+    ProgramOutputContinuation, ProgramOutputContinuationFactory, ProgramOutputContinuationProgress,
+};
+use super::program_output_settlement::{
+    WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
+};
+
+type RootConnection<Schema, Program> = ApplicationProgramRootConnection<Schema, Program>;
 type RootDemand<Schema, Program> =
-    <<Program as ApplicationProgramDefinition<Schema>>::Connections as WorthQueryApplicationRequiredOutputConnection<
-        Schema,
-    >>::Demand;
-type DependentConnection<Schema, Program> =
-    <Program as ApplicationProgramDefinition<Schema>>::DependentConnection;
-type DependentIntent<Schema, Program> =
-    <DependentConnection<Schema, Program> as WorthQueryApplicationDependentOutputConnection<
-        Schema,
-    >>::Discovery;
-type DependentDemand<Schema, Program> =
-    <DependentConnection<Schema, Program> as WorthQueryApplicationDependentOutputConnection<
-        Schema,
-    >>::Demand;
-type DemandSource<Schema, Demand> = <<Demand as WorthQueryApplicationOutputDemand<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source;
-type DemandQuery<Schema, Demand> =
-    <DemandSource<Schema, Demand> as ApplicationQueryBinding<Schema>>::Query;
-type DemandValue<Schema, Demand> = <<DemandSource<Schema, Demand> as ApplicationQueryBinding<
-    Schema,
->>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-type DiscoveryBinding<Schema, Program> =
-    <DependentIntent<Schema, Program> as ApplicationQueryIntent<Schema>>::Binding;
-type DiscoveryValue<Schema, Program> =
-    <<DiscoveryBinding<Schema, Program> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-
-pub enum WorthQueryApplicationProgramOutputProgress<RootQuery, DependentQuery, DependentDemand> {
-    Pending,
-    Settled(
-        WorthQueryApplicationProgramOutputSettlement<RootQuery, DependentQuery, DependentDemand>,
-    ),
-}
-
-pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery, DependentQuery, DependentDemand>
-{
-    root: crate::application_entry::WorthQueryApplicationOutputDemandSettlement<RootQuery>,
-    dependent: Vec<(
-        DependentDemand,
-        crate::application_entry::WorthQueryApplicationOutputDemandSettlement<DependentQuery>,
-    )>,
-}
-
-impl<RootQuery, DependentQuery, DependentDemand>
-    WorthQueryApplicationProgramOutputSettlement<RootQuery, DependentQuery, DependentDemand>
-{
-    pub fn root_observation(
-        &self,
-    ) -> &crate::application_entry::WorthQueryApplicationReadObservation {
-        self.root.observation()
-    }
-
-    pub fn observation(&self) -> &crate::application_entry::WorthQueryApplicationReadObservation {
-        self.dependent
-            .iter()
-            .map(|(_, settled)| settled.observation())
-            .chain(std::iter::once(self.root.observation()))
-            .max_by_key(|observation| observation.selected_commit().ordinal())
-            .expect("one program settlement always retains its root output")
-    }
-
-    pub fn dependent_count(&self) -> usize {
-        self.dependent.len()
-    }
-
-    pub fn dependents(
-        &self,
-    ) -> &[(
-        DependentDemand,
-        crate::application_entry::WorthQueryApplicationOutputDemandSettlement<DependentQuery>,
-    )] {
-        &self.dependent
-    }
-}
+    <RootConnection<Schema, Program> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand;
+type Family<Schema, Demand> = <Demand as WorthQueryApplicationOutputDemand<Schema>>::OutputFamily;
+type Source<Schema, Demand> =
+    <Family<Schema, Demand> as WorthQueryProducerOutputFamily<Schema>>::Source;
+type Query<Schema, Demand> = <Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::Query;
+type Value<Schema, Demand> = <<Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
 pub struct WorthQueryApplicationProgramOutputHandle<'application, Schema, Program>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
-    Program::Connections: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Program::DependentConnection: WorthQueryApplicationDependentOutputConnection<
-        Schema,
-        RootDemand = RootDemand<Schema, Program>,
-    >,
+    RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
     application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-    root: Option<WorthQueryApplicationProgramRootDemandHandle<'application, Schema, Program>>,
+    root: Option<
+        WorthQueryApplicationProgramDemandHandle<
+            'application,
+            Schema,
+            Program,
+            RootDemand<Schema, Program>,
+        >,
+    >,
     root_demand: RootDemand<Schema, Program>,
     root_settlement: Option<
         crate::application_entry::WorthQueryApplicationOutputDemandSettlement<
-            DemandQuery<Schema, RootDemand<Schema, Program>>,
+            Query<Schema, RootDemand<Schema, Program>>,
         >,
     >,
-    dependent: Vec<
-        Option<(
-            DependentDemand<Schema, Program>,
-            WorthQueryApplicationProgramDependentDemandHandle<'application, Schema, Program>,
-        )>,
-    >,
-    dependent_settlements: Vec<(
-        DependentDemand<Schema, Program>,
-        crate::application_entry::WorthQueryApplicationOutputDemandSettlement<
-            DemandQuery<Schema, DependentDemand<Schema, Program>>,
-        >,
-    )>,
+    continuation: Option<Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>>,
     controls: crate::application_entry::WorthQueryOutputDemandControls,
     complete: bool,
 }
@@ -128,17 +65,25 @@ where
 impl<'application, Schema, Program>
     WorthQueryApplicationProgramOutputHandle<'application, Schema, Program>
 where
-    Schema: ApplicationSchema,
+    Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
-    Program::Connections: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Program::DependentConnection: WorthQueryApplicationDependentOutputConnection<
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
+    RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    ApplicationProgramRootEdges<Schema, Program>: ProgramOutputContinuationFactory<
+        'application,
         Schema,
-        RootDemand = RootDemand<Schema, Program>,
+        Program,
+        RootDemand<Schema, Program>,
     >,
 {
     pub(in crate::application_entry) fn new(
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        root: WorthQueryApplicationProgramRootDemandHandle<'application, Schema, Program>,
+        root: WorthQueryApplicationProgramDemandHandle<
+            'application,
+            Schema,
+            Program,
+            RootDemand<Schema, Program>,
+        >,
         root_demand: RootDemand<Schema, Program>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Self {
@@ -147,8 +92,7 @@ where
             root: Some(root),
             root_demand,
             root_settlement: None,
-            dependent: Vec::new(),
-            dependent_settlements: Vec::new(),
+            continuation: None,
             controls,
             complete: false,
         }
@@ -160,50 +104,23 @@ impl<'application, Schema, Program>
 where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
-    Program::Connections: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Program::DependentConnection: WorthQueryApplicationDependentOutputConnection<
-        Schema,
-        RootDemand = RootDemand<Schema, Program>,
-    >,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
+    RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     RootDemand<Schema, Program>: Clone,
-    DependentDemand<Schema, Program>: Clone,
-    DiscoveryValue<Schema, Program>: WorthQueryApplicationProjection<
-            Schema,
-            <DiscoveryBinding<Schema, Program> as ApplicationQueryBinding<Schema>>::Query,
-        > + Clone,
-    <DiscoveryBinding<Schema, Program> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-        ApplicationQueryScopeResolution<
-            Schema,
-            <DiscoveryBinding<Schema, Program> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-        >,
-    DemandValue<Schema, RootDemand<Schema, Program>>:
-        WorthQueryApplicationProjection<Schema, DemandQuery<Schema, RootDemand<Schema, Program>>>
-            + Clone,
-    <DemandSource<Schema, RootDemand<Schema, Program>> as ApplicationQueryBinding<Schema>>::Input:
+    Value<Schema, RootDemand<Schema, Program>>:
+        WorthQueryApplicationProjection<Schema, Query<Schema, RootDemand<Schema, Program>>> + Clone,
+    <Source<Schema, RootDemand<Schema, Program>> as ApplicationQueryBinding<Schema>>::Input:
         ApplicationQueryIntent<
             Schema,
-            Binding = DemandSource<Schema, RootDemand<Schema, Program>>,
+            Binding = Source<Schema, RootDemand<Schema, Program>>,
         >,
-    <DemandSource<Schema, RootDemand<Schema, Program>> as ApplicationQueryBinding<Schema>>::ScopeBinding:
+    <Source<Schema, RootDemand<Schema, Program>> as ApplicationQueryBinding<Schema>>::ScopeBinding:
         ApplicationQueryScopeResolution<
             Schema,
-            <DemandSource<Schema, RootDemand<Schema, Program>> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            <Source<Schema, RootDemand<Schema, Program>> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
         >,
-    DemandValue<Schema, DependentDemand<Schema, Program>>:
-        WorthQueryApplicationProjection<
-                Schema,
-                DemandQuery<Schema, DependentDemand<Schema, Program>>,
-            > + Clone,
-    <DemandSource<Schema, DependentDemand<Schema, Program>> as ApplicationQueryBinding<Schema>>::Input:
-        ApplicationQueryIntent<
-            Schema,
-            Binding = DemandSource<Schema, DependentDemand<Schema, Program>>,
-        >,
-    <DemandSource<Schema, DependentDemand<Schema, Program>> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-        ApplicationQueryScopeResolution<
-            Schema,
-            <DemandSource<Schema, DependentDemand<Schema, Program>> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-        >,
+    ApplicationProgramRootEdges<Schema, Program>:
+        ProgramOutputContinuationFactory<'application, Schema, Program, RootDemand<Schema, Program>>,
 {
     pub fn notifications(
         &self,
@@ -218,13 +135,12 @@ where
             .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)
     }
 
-    /// Exact settled root retained while transitive program outputs continue.
     pub fn settled_root_observation(
         &self,
     ) -> Option<&crate::application_entry::WorthQueryApplicationReadObservation> {
-        self.root_settlement
-            .as_ref()
-            .map(crate::application_entry::WorthQueryApplicationOutputDemandSettlement::observation)
+        self.root_settlement.as_ref().map(
+            crate::application_entry::WorthQueryApplicationOutputDemandSettlement::observation,
+        )
     }
 
     pub fn advance(
@@ -237,9 +153,7 @@ where
         >,
     ) -> Result<
         WorthQueryApplicationProgramOutputProgress<
-            DemandQuery<Schema, RootDemand<Schema, Program>>,
-            DemandQuery<Schema, DependentDemand<Schema, Program>>,
-            DependentDemand<Schema, Program>,
+            Query<Schema, RootDemand<Schema, Program>>,
         >,
         crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
     > {
@@ -251,90 +165,59 @@ where
                 .advance(request)
                 .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?
             {
-                WorthQueryApplicationProgramRootDemandProgress::Pending => {
-                    return Ok(WorthQueryApplicationProgramOutputProgress::Pending)
+                WorthQueryApplicationProgramDemandProgress::Pending => {
+                    return Ok(WorthQueryApplicationProgramOutputProgress::Pending);
                 }
-                WorthQueryApplicationProgramRootDemandProgress::Settled {
+                WorthQueryApplicationProgramDemandProgress::Settled {
                     settlement,
                     authority,
-                } => self.start_dependents(request, settlement, authority)?,
-            }
-        }
-        for index in 0..self.dependent.len() {
-            let Some((_, handle)) = &mut self.dependent[index] else {
-                continue;
-            };
-            match handle
-                .advance(request)
-                .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?
-            {
-                crate::application_entry::WorthQueryApplicationOutputDemandProgress::Pending => {}
-                crate::application_entry::WorthQueryApplicationOutputDemandProgress::Settled(
-                    settled,
-                ) => {
-                    let (demand, _) = self.dependent[index]
-                        .take()
-                        .expect("the settled dependent retains its typed occurrence demand");
-                    self.dependent_settlements.push((demand, settled));
+                } => {
+                    self.continuation = Some(ApplicationProgramRootEdges::<
+                        Schema,
+                        Program,
+                    >::start(
+                        self.application,
+                        &self.root_demand,
+                        &settlement,
+                        &authority,
+                        request,
+                        self.controls,
+                    )?);
+                    self.root_settlement = Some(settlement);
+                    self.root = None;
                 }
             }
         }
-        if self.dependent.iter().any(Option::is_some) {
-            return Ok(WorthQueryApplicationProgramOutputProgress::Pending);
-        }
-        self.complete = true;
-        Ok(WorthQueryApplicationProgramOutputProgress::Settled(
-            WorthQueryApplicationProgramOutputSettlement {
-                root: self
+        let continuation = self
+            .continuation
+            .as_mut()
+            .expect("a settled root installs its typed output continuation");
+        match continuation.advance(request)? {
+            ProgramOutputContinuationProgress::Pending => {
+                Ok(WorthQueryApplicationProgramOutputProgress::Pending)
+            }
+            ProgramOutputContinuationProgress::Settled { outputs, work } => {
+                self.complete = true;
+                self.continuation = None;
+                let root = self
                     .root_settlement
                     .take()
-                    .expect("dependent progression retains its root settlement"),
-                dependent: std::mem::take(&mut self.dependent_settlements),
-            },
-        ))
-    }
-
-    fn start_dependents(
-        &mut self,
-        request: &crate::application_entry::WorthQueryApplicationRequest<
-            'application,
-            '_,
-            '_,
-            Schema,
-        >,
-        settled: crate::application_entry::WorthQueryApplicationOutputDemandSettlement<
-            DemandQuery<Schema, RootDemand<Schema, Program>>,
-        >,
-        authority: worth_query_execution::facade::application_installation::WorthQuerySettledProgramRootOutput<
-            Schema,
-            Program,
-        >,
-    ) -> Result<(), crate::application_entry::WorthQueryRequiredOutputPreparationDenial> {
-        let discovery = Program::DependentConnection::discovery_from_root(&self.root_demand)
-            .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Connection)?;
-        let retained = request.at(settled.observation());
-        let result = retained
-            .query(discovery)
-            .execute()
-            .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::SourceQuery)?;
-        if result.rows().len() != 1 {
-            return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::MissingSource);
+                    .expect("output progression retains its root settlement");
+                let program_work = super::program_output_work::WorthQueryApplicationProgramWork::from_settlements(
+                    work,
+                    (root.receipt(), root.readiness_delivery()),
+                    outputs.iter().map(|output| {
+                        (output.receipt(), output.readiness_delivery())
+                    }),
+                );
+                Ok(WorthQueryApplicationProgramOutputProgress::Settled(
+                    WorthQueryApplicationProgramOutputSettlement {
+                        root,
+                        outputs,
+                        work: program_work,
+                    },
+                ))
+            }
         }
-        let demands = Program::DependentConnection::demands_from_discovery(&result.rows()[0])
-            .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Connection)?;
-        self.dependent = demands
-            .into_iter()
-            .map(|demand| {
-                let handle = retained
-                    .demand(demand.clone())
-                    .controls(self.controls)
-                    .start_dependent(self.application, &authority)
-                    .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?;
-                Ok(Some((demand, handle)))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        self.root = None;
-        self.root_settlement = Some(settled);
-        Ok(())
     }
 }

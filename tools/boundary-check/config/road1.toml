@@ -613,6 +613,16 @@ source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"
 reexport = "worth_query_execution::facade::primary_graph"
 owner_source = "workspaces/worth-query/crates/worth-query-execution/src/facade/primary_graph.rs"
 
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates"
+exclude_paths = [
+  "workspaces/worth-query/crates/worth-query-execution/src/publication_boundary.rs",
+  "workspaces/worth-query/crates/worth-query-publication",
+]
+forbidden_identifiers = ["program_publication_access"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 9.17.4: only worth-query-publication may issue execution's program-output progression access"
+
 [[rule_contracts.query_audience.facade_surfaces]]
 label = "worth-query-host::provisional_aftermath"
 source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"

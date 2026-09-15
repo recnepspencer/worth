@@ -4,10 +4,9 @@ use std::marker::PhantomData;
 use crate::application_schema::ApplicationSchema;
 
 use super::{
-    ApplicationConnectionDeclaration, ApplicationFeature, ApplicationFeatureDeclaration,
-    ApplicationInputPort, ApplicationLocalRuleRef, ApplicationOccurrenceConnectionBinding,
-    ApplicationOutputPort, ApplicationProgramIdentity, ApplicationProgramRuleDeclaration,
-    ApplicationSharedRuleRef,
+    ApplicationConnectionDeclaration, ApplicationFeatureDeclaration, ApplicationOutputGraphShape,
+    ApplicationProgramFeaturesShape, ApplicationProgramIdentity, ApplicationProgramRuleDeclaration,
+    ApplicationProgramRulesShape,
 };
 
 /// Complete authored static program definition.
@@ -18,199 +17,54 @@ where
     /// Exact root contribution tuple whose generated slots implement this
     /// program. Installation must consume this tuple before exposing a root.
     type Contributions;
-    /// Typed execution connections lowered by the host audience.
-    type Connections;
-    type DependentConnection;
+    /// Complete feature inventory and each feature's authored input ports.
+    type Features: ApplicationProgramFeaturesShape<Schema>;
+    /// Complete transitive output topology used by the installed executor.
+    type OutputGraph: super::ApplicationOutputGraphShape<Schema>;
+    /// Complete scoped invariant inventory owned by this composition.
+    type Rules: ApplicationProgramRulesShape<Schema>;
     const IDENTITY: ApplicationProgramIdentity;
-
-    fn features() -> &'static [ApplicationFeatureDeclaration];
 }
-
-pub struct ApplicationProgramConnectionRequired;
-pub struct ApplicationProgramDependentConnectionRequired;
-pub struct ApplicationProgramLocalRuleRequired;
-pub struct ApplicationProgramSharedRuleRequired;
-pub struct ApplicationProgramComplete;
 
 /// Phase 1 authoring progression. Validation is unavailable until its typed
 /// required connection has been supplied.
-pub struct ApplicationProgramAuthoring<
-    Schema,
-    Program,
-    State = ApplicationProgramConnectionRequired,
-> {
-    connections: Vec<ApplicationConnectionDeclaration>,
-    local_rule: Option<ApplicationProgramRuleDeclaration>,
-    shared_rule: Option<ApplicationProgramRuleDeclaration>,
-    marker: PhantomData<fn() -> (Schema, Program, State)>,
+pub struct ApplicationProgramAuthoring<Schema, Program> {
+    marker: PhantomData<fn() -> (Schema, Program)>,
 }
 
-impl<Schema, Program>
-    ApplicationProgramAuthoring<Schema, Program, ApplicationProgramConnectionRequired>
+impl<Schema, Program> ApplicationProgramAuthoring<Schema, Program>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
     pub const fn begin() -> Self {
         Self {
-            connections: Vec::new(),
-            local_rule: None,
-            shared_rule: None,
             marker: PhantomData,
         }
     }
-
-    pub fn connect<SourceFeature, SourcePort, TargetFeature, TargetPort>(
-        self,
-        connection: super::ApplicationConnectionRef<
-            Schema,
-            SourceFeature,
-            SourcePort,
-            TargetFeature,
-            TargetPort,
-            Program::Connections,
-        >,
-    ) -> ApplicationProgramAuthoring<Schema, Program, ApplicationProgramDependentConnectionRequired>
-    where
-        SourceFeature: ApplicationFeature<Schema>,
-        TargetFeature: ApplicationFeature<Schema>,
-        SourcePort: ApplicationOutputPort<Schema, SourceFeature>,
-        TargetPort: ApplicationInputPort<
-            Schema,
-            TargetFeature,
-            Value = <SourcePort as ApplicationOutputPort<Schema, SourceFeature>>::Value,
-        >,
-        Program::Connections:
-            ApplicationOccurrenceConnectionBinding<Schema, SourceFeature, TargetFeature>,
-    {
-        ApplicationProgramAuthoring {
-            connections: vec![connection.into_declaration()],
-            local_rule: None,
-            shared_rule: None,
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<Schema, Program>
-    ApplicationProgramAuthoring<Schema, Program, ApplicationProgramDependentConnectionRequired>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-{
-    pub fn connect_dependent<SourceFeature, SourcePort, TargetFeature, TargetPort>(
-        mut self,
-        connection: super::ApplicationConnectionRef<
-            Schema,
-            SourceFeature,
-            SourcePort,
-            TargetFeature,
-            TargetPort,
-            Program::DependentConnection,
-        >,
-    ) -> ApplicationProgramAuthoring<Schema, Program, ApplicationProgramLocalRuleRequired>
-    where
-        SourceFeature: ApplicationFeature<Schema>,
-        TargetFeature: ApplicationFeature<Schema>,
-        SourcePort: ApplicationOutputPort<Schema, SourceFeature>,
-        TargetPort: ApplicationInputPort<
-            Schema,
-            TargetFeature,
-            Value = <SourcePort as ApplicationOutputPort<Schema, SourceFeature>>::Value,
-        >,
-        Program::DependentConnection:
-            ApplicationOccurrenceConnectionBinding<Schema, SourceFeature, TargetFeature>,
-    {
-        self.connections.push(connection.into_declaration());
-        ApplicationProgramAuthoring {
-            connections: self.connections,
-            local_rule: None,
-            shared_rule: None,
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<Schema, Program>
-    ApplicationProgramAuthoring<Schema, Program, ApplicationProgramLocalRuleRequired>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-{
-    pub fn local_rule<Feature, Invariant>(
-        self,
-        rule: ApplicationLocalRuleRef<Schema, Feature, Invariant>,
-        execution_point: crate::application_schema::ApplicationInvariantExecutionPoint,
-    ) -> ApplicationProgramAuthoring<Schema, Program, ApplicationProgramSharedRuleRequired>
-    where
-        Feature: ApplicationFeature<Schema>,
-        Invariant: crate::application_schema::ApplicationInvariantMarkerIdentity<Schema>,
-    {
-        ApplicationProgramAuthoring {
-            connections: self.connections,
-            local_rule: Some(rule.declaration(execution_point)),
-            shared_rule: None,
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<Schema, Program>
-    ApplicationProgramAuthoring<Schema, Program, ApplicationProgramSharedRuleRequired>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-{
-    pub fn shared_rule<Invariant>(
-        self,
-        rule: ApplicationSharedRuleRef<Schema, Invariant>,
-        execution_point: crate::application_schema::ApplicationInvariantExecutionPoint,
-    ) -> ApplicationProgramAuthoring<Schema, Program, ApplicationProgramComplete>
-    where
-        Invariant: crate::application_schema::ApplicationInvariantMarkerIdentity<Schema>,
-    {
-        ApplicationProgramAuthoring {
-            connections: self.connections,
-            local_rule: self.local_rule,
-            shared_rule: Some(rule.declaration(execution_point)),
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<Schema, Program> ApplicationProgramAuthoring<Schema, Program, ApplicationProgramComplete>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-{
     /// ```compile_fail
     /// use worth_query_declaration::facade::{application_program::*, application_schema::ApplicationSchema};
     /// fn missing_connection<Schema, Program>()
     /// where Schema: ApplicationSchema, Program: ApplicationProgramDefinition<Schema> {
-    ///     let _ = ApplicationProgramAuthoring::<Schema, Program>::begin().validated_program();
+    ///     type Missing = ApplicationOutputLeaf;
+    ///     fn require_graph<S: ApplicationSchema, G: ApplicationOutputGraphShape<S>>() {}
+    ///     require_graph::<Schema, Missing>();
     /// }
     /// ```
     ///
     /// ```compile_fail
     /// use worth_query_declaration::facade::{application_program::*, application_schema::ApplicationSchema};
-    /// fn string_is_not_a_connection<Schema, Program>()
-    /// where Schema: ApplicationSchema, Program: ApplicationProgramDefinition<Schema> {
-    ///     let _ = ApplicationProgramAuthoring::<Schema, Program>::begin().connect("source -> target");
+    /// fn string_is_not_a_connection<Schema>()
+    /// where Schema: ApplicationSchema {
+    ///     fn require_graph<S: ApplicationSchema, G: ApplicationOutputGraphShape<S>>() {}
+    ///     require_graph::<Schema, &'static str>();
     /// }
     /// ```
     pub fn validated_program(
         self,
     ) -> Result<ValidatedApplicationProgram<Schema, Program>, ApplicationProgramValidationDenial>
     {
-        validate::<Schema, Program>(
-            self.connections,
-            [
-                self.local_rule
-                    .expect("complete authoring retains its local rule"),
-                self.shared_rule
-                    .expect("complete authoring retains its shared rule"),
-            ],
-        )
+        validate::<Schema, Program>(Program::OutputGraph::connections(), Program::Rules::rules())
     }
 }
 
@@ -222,6 +76,8 @@ pub enum ApplicationProgramValidationDenialKind {
     DanglingFeature,
     MissingRequiredInput,
     DuplicateInputBinding,
+    UndeclaredInput,
+    UnexportedCrossInstanceConnection,
     DuplicateRule,
 }
 
@@ -255,9 +111,9 @@ impl std::error::Error for ApplicationProgramValidationDenial {}
 /// Validated immutable program meaning consumed by installation.
 pub struct ValidatedApplicationProgram<Schema, Program> {
     identity: ApplicationProgramIdentity,
-    features: &'static [ApplicationFeatureDeclaration],
+    features: Box<[ApplicationFeatureDeclaration]>,
     connections: Box<[ApplicationConnectionDeclaration]>,
-    rules: [ApplicationProgramRuleDeclaration; 2],
+    rules: Box<[ApplicationProgramRuleDeclaration]>,
     marker: PhantomData<fn() -> (Schema, Program)>,
 }
 
@@ -265,8 +121,8 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
     pub fn identity(&self) -> &ApplicationProgramIdentity {
         &self.identity
     }
-    pub const fn features(&self) -> &'static [ApplicationFeatureDeclaration] {
-        self.features
+    pub fn features(&self) -> &[ApplicationFeatureDeclaration] {
+        &self.features
     }
     pub fn connections(&self) -> &[ApplicationConnectionDeclaration] {
         &self.connections
@@ -278,31 +134,41 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
 
 fn validate<Schema, Program>(
     connections: Vec<ApplicationConnectionDeclaration>,
-    rules: [ApplicationProgramRuleDeclaration; 2],
+    rules: Vec<ApplicationProgramRuleDeclaration>,
 ) -> Result<ValidatedApplicationProgram<Schema, Program>, ApplicationProgramValidationDenial>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
     require_identity(Program::IDENTITY.as_str())?;
-    let features = Program::features();
+    let features = Program::Features::features();
     let mut feature_ids = BTreeSet::new();
-    for feature in features {
+    for feature in &features {
+        require_identity(feature.composition_instance())?;
         require_identity(feature.identity())?;
-        if !feature_ids.insert(feature.identity()) {
+        if !feature_ids.insert((feature.composition_instance(), feature.identity())) {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::DuplicateFeature,
                 feature.identity(),
             ));
         }
-        for input in feature.required_inputs() {
-            require_identity(input)?;
+        let mut input_ids = BTreeSet::new();
+        for input in feature.inputs() {
+            require_identity(input.identity())?;
+            if !input_ids.insert(input.identity()) {
+                return Err(denial(
+                    ApplicationProgramValidationDenialKind::DuplicateInputBinding,
+                    format!("{}.{}", feature.identity(), input.identity()),
+                ));
+            }
         }
     }
     let mut rule_ids = BTreeSet::new();
     for rule in &rules {
+        require_identity(rule.composition_instance())?;
         require_identity(rule.identity())?;
         if !rule_ids.insert((
+            rule.composition_instance(),
             rule.identity(),
             rule.major(),
             rule.minor(),
@@ -313,10 +179,13 @@ where
                 rule.identity(),
             ));
         }
-        if rule
+        let scope_exists = features
+            .iter()
+            .any(|feature| feature.composition_instance() == rule.composition_instance());
+        let owner_exists = rule
             .local_owner()
-            .is_some_and(|owner| !feature_ids.contains(owner))
-        {
+            .is_none_or(|owner| feature_ids.contains(&(rule.composition_instance(), owner)));
+        if !scope_exists || !owner_exists {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::DanglingFeature,
                 rule.identity(),
@@ -326,33 +195,72 @@ where
     let mut connection_ids = BTreeSet::new();
     let mut bound_inputs = BTreeSet::new();
     for connection in &connections {
+        require_identity(connection.source_instance())?;
+        require_identity(connection.target_instance())?;
         require_identity(connection.identity())?;
         require_identity(connection.source_port())?;
         require_identity(connection.target_port())?;
-        if !connection_ids.insert(connection.identity()) {
+        if !connection_ids.insert((
+            connection.source_instance(),
+            connection.target_instance(),
+            connection.identity(),
+        )) {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::DuplicateConnection,
                 connection.identity(),
             ));
         }
-        if !feature_ids.contains(connection.source_feature())
-            || !feature_ids.contains(connection.target_feature())
+        if !feature_ids.contains(&(connection.source_instance(), connection.source_feature()))
+            || !feature_ids.contains(&(connection.target_instance(), connection.target_feature()))
         {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::DanglingFeature,
                 connection.identity(),
             ));
         }
-        if !bound_inputs.insert((connection.target_feature(), connection.target_port())) {
+        if connection.source_instance() != connection.target_instance()
+            && !connection.exports_across_instances()
+        {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::UnexportedCrossInstanceConnection,
+                connection.identity(),
+            ));
+        }
+        let target = features
+            .iter()
+            .find(|feature| {
+                feature.composition_instance() == connection.target_instance()
+                    && feature.identity() == connection.target_feature()
+            })
+            .expect("the target feature was proven present");
+        if !target.inputs().iter().any(|input| {
+            input.identity() == connection.target_port()
+                && input.required() == connection.target_required()
+        }) {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::UndeclaredInput,
+                format!(
+                    "{}.{}",
+                    connection.target_feature(),
+                    connection.target_port()
+                ),
+            ));
+        }
+        if !bound_inputs.insert((
+            connection.target_instance(),
+            connection.target_feature(),
+            connection.target_port(),
+        )) {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::DuplicateInputBinding,
                 connection.target_port(),
             ));
         }
     }
-    for feature in features {
+    for feature in &features {
         for input in feature.required_inputs() {
-            if !bound_inputs.contains(&(feature.identity(), *input)) {
+            if !bound_inputs.contains(&(feature.composition_instance(), feature.identity(), input))
+            {
                 return Err(denial(
                     ApplicationProgramValidationDenialKind::MissingRequiredInput,
                     format!("{}.{input}", feature.identity()),
@@ -362,9 +270,9 @@ where
     }
     Ok(ValidatedApplicationProgram {
         identity: Program::IDENTITY.clone(),
-        features,
+        features: features.into_boxed_slice(),
         connections: connections.into_boxed_slice(),
-        rules,
+        rules: rules.into_boxed_slice(),
         marker: PhantomData,
     })
 }
