@@ -74,7 +74,7 @@ pub use product_operation::{
     WorthQueryGeneratedOutputInvariantAdmissionDenial, WorthQueryGeneratedOutputReconstruction,
     WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,
     WorthQueryGeneratedOutputRestorationFailure, WorthQueryGeneratedOutputRestorationFailureCause,
-    WorthQueryGeneratedOutputRestorationRecovery,
+    WorthQueryGeneratedOutputRestorationReceipt, WorthQueryGeneratedOutputRestorationRecovery,
     WorthQueryGeneratedOutputRestorationRecoveryFailure,
     WorthQueryGeneratedOutputRestorationRecoveryStage, WorthQueryGeneratedOutputSuspensionDenial,
     WorthQueryGeneratedOutputSuspensionFailure, WorthQueryGeneratedOutputSuspensionRecovery,

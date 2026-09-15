@@ -24,7 +24,8 @@ pub use suspension::{
 mod restoration;
 pub use restoration::{
     WorthQueryGeneratedOutputInvariantAdmissionDenial, WorthQueryGeneratedOutputRestorationFailure,
-    WorthQueryGeneratedOutputRestorationFailureCause, WorthQueryGeneratedOutputRestorationRecovery,
+    WorthQueryGeneratedOutputRestorationFailureCause, WorthQueryGeneratedOutputRestorationReceipt,
+    WorthQueryGeneratedOutputRestorationRecovery,
     WorthQueryGeneratedOutputRestorationRecoveryFailure,
     WorthQueryGeneratedOutputRestorationRecoveryStage, WorthQueryRestoredGeneratedOutput,
     WorthQueryUnpublishedGeneratedOutputRestoration,
@@ -74,14 +75,13 @@ impl WorthQuerySuspendedGeneratedOutput {
         &self.correspondence
     }
 
-    pub(super) fn matches_producer<Schema, Producer>(&self) -> bool
+    pub(super) fn matches_producer_binding<Schema, Producer>(&self) -> bool
     where
         Schema: ApplicationSchema,
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         self.producer.binding_type == TypeId::of::<Producer>()
             && self.producer.binding_identity == Producer::IDENTITY
-            && self.producer.provider_identity == Producer::Provider::SEMANTIC_IDENTITY
     }
 
     pub(super) fn matches_runtime<Schema>(

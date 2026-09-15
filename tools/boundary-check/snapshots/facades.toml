@@ -338,6 +338,7 @@ exports = [
     "WorthQueryGeneratedOutputReconstructionFailure",
     "WorthQueryGeneratedOutputRestorationFailure",
     "WorthQueryGeneratedOutputRestorationFailureCause",
+    "WorthQueryGeneratedOutputRestorationReceipt",
     "WorthQueryGeneratedOutputRestorationRecovery",
     "WorthQueryGeneratedOutputRestorationRecoveryFailure",
     "WorthQueryGeneratedOutputRestorationRecoveryStage",

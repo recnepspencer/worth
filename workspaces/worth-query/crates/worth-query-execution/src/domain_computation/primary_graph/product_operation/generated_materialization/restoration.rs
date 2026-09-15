@@ -4,12 +4,14 @@ use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 mod failure;
 mod invariant_admission;
+mod receipt;
 mod recovery;
 mod settlement;
 
 pub use failure::WorthQueryGeneratedOutputRestorationFailureCause;
 use failure::{preparation_failure_cause, restoration_failure};
 
+pub use receipt::WorthQueryGeneratedOutputRestorationReceipt;
 pub use recovery::{
     WorthQueryGeneratedOutputRestorationRecovery,
     WorthQueryGeneratedOutputRestorationRecoveryFailure,
@@ -25,7 +27,7 @@ use crate::domain_computation::primary_graph::{
 
 pub struct WorthQueryRestoredGeneratedOutput {
     branch: crate::basis::WorthQueryProductBranch,
-    commit: worth_relational::facade::history::RelationalCommitReceipt,
+    commit: WorthQueryGeneratedOutputRestorationReceipt,
 }
 
 impl WorthQueryRestoredGeneratedOutput {
@@ -33,7 +35,7 @@ impl WorthQueryRestoredGeneratedOutput {
         self.branch
     }
 
-    pub fn commit(&self) -> &worth_relational::facade::history::RelationalCommitReceipt {
+    pub fn commit(&self) -> &WorthQueryGeneratedOutputRestorationReceipt {
         &self.commit
     }
 }
@@ -135,7 +137,7 @@ where
                 WorthQueryGeneratedOutputRestorationFailureCause::ForeignRuntime,
             ));
         }
-        if !suspended.matches_producer::<Schema, Producer>() {
+        if !suspended.matches_producer_binding::<Schema, Producer>() {
             return Err(restoration_failure(
                 suspended,
                 WorthQueryGeneratedOutputRestorationFailureCause::WrongProducer,
@@ -279,7 +281,9 @@ where
                     );
                 Ok(WorthQueryRestoredGeneratedOutput {
                     branch,
-                    commit: restored.commit.clone(),
+                    commit: WorthQueryGeneratedOutputRestorationReceipt::new(
+                        restored.commit.clone(),
+                    ),
                 })
             }
             RuntimeWorldPublicationOutcome::NoEffect(no_effect) => Err(restoration_failure(

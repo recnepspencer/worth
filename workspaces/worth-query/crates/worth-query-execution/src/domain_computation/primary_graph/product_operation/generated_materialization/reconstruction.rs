@@ -137,7 +137,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryGeneratedOutputReconstructionDenial::ForeignRuntime,
             ));
         }
-        if !suspended.matches_producer::<Schema, Producer>() {
+        if !suspended.matches_producer_binding::<Schema, Producer>() {
             return Err(reconstruction_failure(
                 suspended,
                 WorthQueryGeneratedOutputReconstructionDenial::ForeignProducer,

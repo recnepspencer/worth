@@ -45,7 +45,9 @@ impl PublishedRestorationSettlement {
             );
         super::WorthQueryRestoredGeneratedOutput {
             branch: retry.branch,
-            commit: restored.commit.clone(),
+            commit: super::WorthQueryGeneratedOutputRestorationReceipt::new(
+                restored.commit.clone(),
+            ),
         }
     }
 }

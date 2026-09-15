@@ -33,7 +33,7 @@ pub use generated_materialization::{
     WorthQueryGeneratedOutputInvariantAdmissionDenial, WorthQueryGeneratedOutputReconstruction,
     WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,
     WorthQueryGeneratedOutputRestorationFailure, WorthQueryGeneratedOutputRestorationFailureCause,
-    WorthQueryGeneratedOutputRestorationRecovery,
+    WorthQueryGeneratedOutputRestorationReceipt, WorthQueryGeneratedOutputRestorationRecovery,
     WorthQueryGeneratedOutputRestorationRecoveryFailure,
     WorthQueryGeneratedOutputRestorationRecoveryStage, WorthQueryGeneratedOutputSuspensionDenial,
     WorthQueryGeneratedOutputSuspensionFailure, WorthQueryGeneratedOutputSuspensionRecovery,
