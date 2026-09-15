@@ -54,6 +54,10 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
         .start_required_outputs(&request, controls)
         .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()));
     let source_receipt = started.receipt().clone();
+    assert!(started
+        .required_output()
+        .settled_root_observation()
+        .is_none());
 
     for _ in 0..2 {
         assert!(matches!(
@@ -61,6 +65,23 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
             WorthQueryApplicationProgramOutputProgress::Pending
         ));
     }
+    let root_observation = started
+        .required_output_mut()
+        .settled_root_observation()
+        .expect("the root observation remains available while a dependent is pending");
+    let pending_root_commit = root_observation.selected_commit().clone();
+    assert_eq!(
+        request
+            .at(root_observation)
+            .query(PlanarOutputRead {
+                body_key: "anchor-c".to_owned(),
+            })
+            .execute()
+            .expect("the exposed root observation selects the exact root output")
+            .rows()[0]
+            .value,
+        length(3)
+    );
     assert_eq!(
         request
             .query(PlanarOutputRead {
@@ -97,6 +118,11 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
         }
     };
     assert_eq!(
+        &pending_root_commit,
+        settled.root_observation().selected_commit(),
+        "recovery preserves the exact root observed before interruption",
+    );
+    assert_eq!(
         settled
             .output_occurrences::<
                 PlanarFinalOutputFeature,
@@ -107,7 +133,12 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
             .collect::<Vec<_>>(),
         ["anchor-c", "anchor-a"]
     );
-    super::receipt_evidence::assert_exact_outputs(&settled);
+    super::receipt_evidence::assert_exact_outputs(
+        &settled,
+        recovered
+            .settled_root_observation()
+            .expect("recovery retains the exact settled root basis"),
+    );
     assert_eq!(
         request
             .at(settled.latest_observation())

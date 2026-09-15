@@ -146,6 +146,18 @@ where
         &self.result
     }
 
+    /// Borrows the in-progress program output handle for read-only status inspection.
+    pub const fn required_output(
+        &self,
+    ) -> &crate::application_entry::WorthQueryApplicationProgramOutputHandle<
+        'application,
+        Schema,
+        Program,
+        Inventory,
+    > {
+        &self.required_output
+    }
+
     pub fn required_output_mut(
         &mut self,
     ) -> &mut crate::application_entry::WorthQueryApplicationProgramOutputHandle<

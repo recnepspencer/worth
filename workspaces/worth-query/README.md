@@ -31,6 +31,8 @@ output. `root_observation()` identifies the committed root output;
 inventory outputs; and `output_occurrences::<Feature, Port, Demand>()` returns
 the exact typed output occurrences with their individual observations and
 immutable publication receipts.
+While dependent work remains pending, `settled_root_observation()` exposes the
+already-settled root basis without consuming the program handle.
 
 If a caller drops a handle before settlement, Query retains the exact root
 demand under the source receipt. Recovery supplies no reconstructed demand or

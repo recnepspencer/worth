@@ -1,5 +1,6 @@
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationProgramOutputOccurrence, WorthQueryApplicationProgramOutputSettlement,
+    WorthQueryApplicationReadObservation,
 };
 use worth_query_topology_entry::{
     PlanarFinalBodyOutput, PlanarFinalOutputDemand, PlanarFinalOutputFeature,
@@ -13,7 +14,19 @@ type Settlement = WorthQueryApplicationProgramOutputSettlement<
 type Occurrence<'a> =
     WorthQueryApplicationProgramOutputOccurrence<'a, PlanarFinalOutputDemand>;
 
-pub(super) fn assert_exact_outputs(settlement: &Settlement) {
+pub(super) fn assert_exact_outputs(
+    settlement: &Settlement,
+    retained_root: &WorthQueryApplicationReadObservation,
+) {
+    assert_eq!(
+        retained_root.selected_commit(),
+        settlement.root_observation().selected_commit(),
+    );
+    assert_ne!(
+        retained_root.selected_commit(),
+        settlement.latest_observation().selected_commit(),
+        "the retained root basis is not replaced by the latest dependent output",
+    );
     let occurrences = settlement
         .output_occurrences::<
             PlanarFinalOutputFeature,

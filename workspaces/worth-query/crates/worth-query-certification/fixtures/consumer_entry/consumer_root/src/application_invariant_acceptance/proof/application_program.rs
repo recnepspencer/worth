@@ -113,6 +113,10 @@ pub(super) fn performed_source_settles_required_output(
     let mut performed = performed
         .start_required_outputs(&request, controls)
         .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()));
+    assert!(performed
+        .required_output()
+        .settled_root_observation()
+        .is_none());
     assert!(matches!(
         performed
             .required_output_mut()
@@ -207,7 +211,13 @@ pub(super) fn performed_source_settles_required_output(
             .collect::<Vec<_>>(),
         ["anchor-a", "anchor-b"]
     );
-    receipt_evidence::assert_exact_outputs(&original_settlement);
+    receipt_evidence::assert_exact_outputs(
+        &original_settlement,
+        performed
+            .required_output()
+            .settled_root_observation()
+            .expect("the completed handle retains the exact root basis"),
+    );
 
     let latest_commit = original_settlement
         .output_observations::<PlanarFinalOutputFeature, PlanarFinalBodyOutput>()

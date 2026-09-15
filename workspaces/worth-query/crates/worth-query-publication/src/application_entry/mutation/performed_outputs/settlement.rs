@@ -81,6 +81,7 @@ where
         &self.basis
     }
 
+    /// The exact observation at which the program root output settled.
     pub fn root_observation(
         &self,
     ) -> &crate::application_entry::WorthQueryApplicationReadObservation {

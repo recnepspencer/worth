@@ -1,4 +1,5 @@
 mod connection_plan;
+mod inventory;
 mod node;
 mod settlement;
 pub use settlement::*;
@@ -16,6 +17,7 @@ use worth_query_execution::facade::application_installation::WorthQueryProgramAp
 use worth_query_installation::facade::WorthQueryInstalledProgramInventoryPosture;
 
 use connection_plan::ErasedProgramConnection;
+use inventory::inventory_closure;
 use node::{runtime_matches, ErasedProgramNode, ErasedProgramSettlement, TypedProgramNode};
 
 #[doc(hidden)]
@@ -155,6 +157,16 @@ where
             .ok_or(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Closed)?
             .notifications()
             .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)
+    }
+
+    /// Returns the exact root observation once the root has settled, even while
+    /// dependent inventory work remains pending.
+    pub fn settled_root_observation(
+        &self,
+    ) -> Option<&crate::application_entry::WorthQueryApplicationReadObservation> {
+        self.settlements
+            .first()
+            .map(|settlement| &settlement.observation)
     }
 
     pub fn advance(
@@ -349,47 +361,4 @@ where
             }
         }
     }
-}
-
-fn inventory_closure<Schema, Program, Inventory>(
-    application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-) -> Result<
-    (BTreeSet<&'static str>, BTreeSet<&'static str>),
-    crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
->
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-    Inventory: ApplicationProgramInventoryIdentity,
-{
-    let inventory = application
-        .installed_program()
-        .inventory::<Inventory>()
-        .ok_or(
-            crate::application_entry::WorthQueryRequiredOutputPreparationDenial::MissingInventory,
-        )?;
-    let inventory_feature_types = inventory
-        .outputs()
-        .iter()
-        .map(|output| output.feature_type())
-        .collect::<BTreeSet<_>>();
-    let required_types = application
-        .installed_program()
-        .inventory_feature_closure::<Inventory>()
-        .expect("the inventory was resolved above");
-    let identities = application
-        .installed_program()
-        .features()
-        .iter()
-        .filter(|feature| required_types.contains(&feature.type_id()))
-        .map(|feature| feature.identity())
-        .collect();
-    let inventory_features = application
-        .installed_program()
-        .features()
-        .iter()
-        .filter(|feature| inventory_feature_types.contains(&feature.type_id()))
-        .map(|feature| feature.identity())
-        .collect();
-    Ok((identities, inventory_features))
 }
