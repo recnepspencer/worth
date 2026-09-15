@@ -135,6 +135,17 @@ where
         MatchingObserverSet::new(observers)
     }
 
+    /// Every node with at least one live observer, in node order.
+    ///
+    /// Cost: O(indexed nodes). `unsubscribe` removes index entries that
+    /// become empty, so this never yields a node without observers.
+    pub fn observed_node_ids(&self) -> impl Iterator<Item = NodeId> + '_ {
+        self.observers_by_node
+            .iter()
+            .filter(|(_, ids)| !ids.is_empty())
+            .map(|(node, _)| *node)
+    }
+
     pub fn has_matching_observers_for_node(&self, node: NodeId) -> bool {
         self.observers_by_node
             .get(&node)

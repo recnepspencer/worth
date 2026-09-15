@@ -172,11 +172,13 @@ impl SignalGraph {
             .ok()
             .flatten()
             .map(|causality| causality.kind.clone());
+        let performed_baseline = self.invalidation_performed_counters();
         self.observation.diagnostics.note_change_input(
             node,
             aspect,
             changed_regions,
             causality_kind,
+            performed_baseline,
         );
     }
 

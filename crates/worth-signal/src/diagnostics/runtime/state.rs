@@ -120,6 +120,30 @@ pub(crate) struct DiagnosticsState {
     observation_activation_mask: u8,
     #[serde(skip)]
     lineage_custody: lineage_publication::LineageRetentionCustody,
+    /// Whether a `SignalTransaction` is open on this graph and whether it has
+    /// already recorded its flow. Runtime-only: a transaction never spans a
+    /// serialized snapshot.
+    #[serde(skip, default)]
+    transaction_flow_scope: TransactionFlowScope,
+}
+
+/// One transaction is one flow. `latest_flow()` describes the most recent
+/// committed transaction: its change input, the invalidation it caused, and
+/// every evaluation it ran for that change. A transaction may run several
+/// executions (`evaluate_dirty`, then the demand pass that settles watched
+/// and standing-demand nodes, then any read inside the transaction); the
+/// first records the flow and the rest extend it. Outside a transaction an
+/// execution is its own flow, as before.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) enum TransactionFlowScope {
+    /// No transaction is open: each execution completes its own flow.
+    #[default]
+    Closed,
+    /// A transaction is open and no execution has recorded its flow yet.
+    Open,
+    /// The open transaction has recorded its flow; later executions in the
+    /// same transaction extend it.
+    OpenWithFlow,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -128,4 +152,8 @@ struct PendingFlowInput {
     changed_aspects: PersistentOrdSet<u8>,
     changed_region_count: u32,
     causality_kind: Option<Arc<String>>,
+    /// Performed invalidation counters as they stood when this flow's first
+    /// change input was noted. The flow's direct-hop invalidation summary is
+    /// the delta between this baseline and the counters at flow completion.
+    performed_baseline: crate::data::telemetry::SignalInvalidationRealizedCounters,
 }

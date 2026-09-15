@@ -275,6 +275,7 @@ export interface WorkerRuntimeBridge {
   restoreSnapshotEnvelopePortableWire(snapshot: string): Promise<unknown>;
   exportWorkerRuntimeEnvelopeWire(): Promise<string>;
   exportWorkerRuntimeEnvelopePortableWire(): Promise<string>;
+  discardRestoreToken(token: string): Promise<boolean>;
   admitWorkerRuntimeEnvelopeImportWire(
     envelope: string,
   ): Promise<WorkerRuntimeEnvelopeImportReport>;
@@ -334,6 +335,9 @@ export interface WorkerFirstHistoryFacade {
   snapshot(): Promise<WorkerSnapshotEnvelopeArtifact>;
   restore_snapshot(snapshot: RuntimeSnapshotEnvelope): Promise<unknown>;
   restore_exact_snapshot(snapshot: WorkerSnapshotEnvelopeArtifact): Promise<unknown>;
+  discard_exact_artifact(
+    artifact: WorkerSnapshotEnvelopeArtifact | WorkerSnapshotArtifact,
+  ): Promise<boolean>;
   current_branch(): Promise<RuntimeBranchHandle>;
   branches(): Promise<ReadonlyArray<RuntimeBranchHandle>>;
   create_branch(name: string): Promise<RuntimeBranchHandle>;
@@ -392,6 +396,7 @@ export interface WorkerFirstAdaptersFacade {
   restoreExactRuntimeEnvelope(
     envelope: WorkerFirstRuntimeEnvelopeArtifact,
   ): Promise<WorkerRuntimeEnvelopeImportReport>;
+  discardExactRuntimeEnvelope(envelope: WorkerFirstRuntimeEnvelopeArtifact): Promise<boolean>;
   runtimeProofReport(): Promise<RuntimeProofReport>;
   hostCapabilityTransportReport(
     envelope?: WorkerFirstRuntimeEnvelopeArtifact | RuntimeEnvelope,

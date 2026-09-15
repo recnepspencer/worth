@@ -32,6 +32,50 @@ pub struct ExecutionReportSummary {
 }
 
 impl ExecutionReportSummary {
+    /// Adds a later execution report of the same flow.
+    pub fn absorb(&mut self, other: ExecutionReportSummary) {
+        self.stage_count = self.stage_count.saturating_add(other.stage_count);
+        self.task_count = self.task_count.saturating_add(other.task_count);
+        self.tasks_executed = self.tasks_executed.saturating_add(other.tasks_executed);
+        self.tasks_pruned = self.tasks_pruned.saturating_add(other.tasks_pruned);
+        self.tasks_validated_clean = self
+            .tasks_validated_clean
+            .saturating_add(other.tasks_validated_clean);
+        self.tasks_deferred_by_condition = self
+            .tasks_deferred_by_condition
+            .saturating_add(other.tasks_deferred_by_condition);
+        self.tasks_reverted_clean_by_condition = self
+            .tasks_reverted_clean_by_condition
+            .saturating_add(other.tasks_reverted_clean_by_condition);
+        self.tasks_satisfied_by_memoization = self
+            .tasks_satisfied_by_memoization
+            .saturating_add(other.tasks_satisfied_by_memoization);
+        self.tasks_with_suppressed_propagation = self
+            .tasks_with_suppressed_propagation
+            .saturating_add(other.tasks_with_suppressed_propagation);
+        self.prepared_evaluations_produced = self
+            .prepared_evaluations_produced
+            .saturating_add(other.prepared_evaluations_produced);
+        self.prepared_evaluations_applied = self
+            .prepared_evaluations_applied
+            .saturating_add(other.prepared_evaluations_applied);
+        self.dependency_capture_updates = self
+            .dependency_capture_updates
+            .saturating_add(other.dependency_capture_updates);
+        self.semantic_segment_count = self
+            .semantic_segment_count
+            .saturating_add(other.semantic_segment_count);
+        self.temporal_summary.absorb(other.temporal_summary);
+        for (outcome, count) in other.task_outcome_counts {
+            let entry = self.task_outcome_counts.entry(outcome).or_insert(0);
+            *entry = entry.saturating_add(count);
+        }
+        for (outcome, count) in other.stage_outcome_counts {
+            let entry = self.stage_outcome_counts.entry(outcome).or_insert(0);
+            *entry = entry.saturating_add(count);
+        }
+    }
+
     pub fn from_report(report: &ExecutionReport, profile: DiagnosticsTier) -> Self {
         let mut task_outcome_counts = TaskOutcomeCounts::new();
         let mut stage_outcome_counts = StageOutcomeCounts::new();

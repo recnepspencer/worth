@@ -56,6 +56,16 @@ Core line reads:
 
 See [Resource Line](./resource-line.md) for result shapes and lifecycle rules.
 
+Namespace-wide operations:
+
+- `signals.resource.invalidateAll()` marks every materialized line of every
+  family stale (`manualRuntimeInvalidateAll`, scope `runtimeAll`) and returns
+  the count;
+- `signals.resource.refreshAll()` starts a refresh on every materialized line
+  and returns the count.
+
+See [Invalidation And Refresh](../resources/caching/invalidation-and-refresh.md).
+
 ## Patch, Deliver, And Reconcile
 
 Patch-capable detail, collection, and paged lines expose:

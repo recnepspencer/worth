@@ -12,7 +12,14 @@ export function comparablePerformanceSummary(summary) {
       key.startsWith("hostCapability") ||
       key === "activeCallbackCount" ||
       key === "activeComputeCallbackCount" ||
-      key.startsWith("computeCallback")
+      key.startsWith("computeCallback") ||
+      // Executor usage counts how many execution runs this runtime has
+      // performed. An exact restore carries the source runtime's count; a
+      // portable rebuild starts at zero and adds its own refresh reads. Like
+      // timings, that describes how the runtime got here, not the graph it
+      // holds, so it is not part of cross-deployment surface parity.
+      key === "serialExecutorUsageCount" ||
+      key === "parallelExecutorUsageCount"
     ) {
       continue;
     }
@@ -42,6 +49,17 @@ export function comparableGraphSummary(summary) {
       || key === "graph_storage_compaction_count"
       || key === "graph_storage_snapshot_rewrites"
       || key === "graph_storage_subscriber_segments_rewritten"
+      // Rewritten dependency segments are counted only by storage compaction, like
+      // the compaction count and subscriber segments above: when compaction ran
+      // depends on the run history, not on the graph it holds.
+      || key === "graph_storage_dependency_segments_rewritten"
+      // Executor usage and plans built count execution runs, not graph truth: a
+      // worker-first root runs the executor and planner for every cached artifact it
+      // refreshes, a compatibility runtime runs them per direct read. Same exclusion
+      // as the performance summary. Stages built and tasks scheduled still compare.
+      || key === "serial_executor_usage_count"
+      || key === "parallel_executor_usage_count"
+      || key === "plans_built"
     ) {
       continue;
     }

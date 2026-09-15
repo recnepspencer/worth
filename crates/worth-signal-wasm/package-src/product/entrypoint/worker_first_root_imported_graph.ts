@@ -255,11 +255,12 @@ class WorkerFirstRootImportedGraph {
   exportSnapshot() {
     this.#requireActive("exportSnapshot");
     const context = this.#rootSession.currentImportContext();
+    const runtimeEnvelope = context.requireRuntimeEnvelopeArtifact();
     return buildImportedGraphSnapshotArtifact({
       definition: this.exportDefinition(),
-      runtimeEnvelope: context.runtimeEnvelopeArtifact,
+      runtimeEnvelope,
       snapshotEnvelope: context.snapshotEnvelope,
-      restoreMode: context.runtimeEnvelopeArtifact.runtimeEnvelopeRestoreMode,
+      restoreMode: runtimeEnvelope.runtimeEnvelopeRestoreMode,
       contractHistory: this.#snapshot.contractHistory,
       importPosture: this.importPosture(),
     });

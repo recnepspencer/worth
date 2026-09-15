@@ -96,6 +96,17 @@ Transaction methods:
 All handles in one transaction must belong to the same runtime. This boundary
 coordinates signal writes; it is not a remote database transaction.
 
+Host tip ingress (`commitHostTipAndNotify(tipWrites)`,
+`applyCommittedTipWorkerBatch(tipWrites)`, `publishAuthoredTipProjection(ids)`,
+`settleAuthoredWork()`) is present on the root and on scoped namespaces of
+every deployment. Worker-first advances the tips, notifies observers once,
+and follows with exactly one worker batch. `mainThreadCompatibility` applies
+the same writes in one transaction and projects dependents synchronously,
+so its `HostTipCommitResult.projectedReadableIds` is empty, the worker batch
+only validates epochs (a stale batch throws), and `settleAuthoredWork()`
+resolves immediately. Line bindings and forms use this one path on both
+deployments instead of N independent `signal.set()` calls.
+
 ## Scopes And Published Graphs
 
 ```ts
@@ -167,7 +178,7 @@ capabilities. The assertion throws with the exact missing capability names.
 | Method | Status | Purpose |
 | --- | --- | --- |
 | `specialist()` | Compatibility-only | Dirty evaluation, graph summaries, and version reads. |
-| `adapters()` | Mixed specialist boundary | Runtime envelope export/replace/restore and transport proof reports. |
+| `adapters()` | Mixed specialist boundary | Runtime envelope export/replace/restore (`exportRuntimeEnvelope()` is root-branch only; release an abandoned export with `discardExactRuntimeEnvelope(envelope)`) and transport proof reports. |
 | `compatibilityApp()` | Compatibility-only | Lower-level `SignalApp`. |
 | `compatibilityRuntime()` | Compatibility-only | Lower-level `SignalRuntime`. |
 

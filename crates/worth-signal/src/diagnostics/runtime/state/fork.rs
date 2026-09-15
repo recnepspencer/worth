@@ -53,6 +53,7 @@ impl DiagnosticsState {
             latest_invalidation_trace_records,
             observation_activation_mask,
             lineage_custody,
+            transaction_flow_scope,
         } = self;
         Self {
             request_mirror: *request_mirror,
@@ -98,6 +99,7 @@ impl DiagnosticsState {
             latest_invalidation_planning_estimate: latest_invalidation_planning_estimate.clone(),
             latest_invalidation_trace_records: latest_invalidation_trace_records.clone(),
             observation_activation_mask: *observation_activation_mask,
+            transaction_flow_scope: *transaction_flow_scope,
             lineage_custody: lineage_custody.clone(),
         }
     }
@@ -110,6 +112,7 @@ impl PendingFlowInput {
             changed_aspects,
             changed_region_count,
             causality_kind,
+            performed_baseline,
         } = self;
         Self {
             changed_nodes: match resources.as_deref_mut() {
@@ -122,6 +125,7 @@ impl PendingFlowInput {
             },
             changed_region_count: *changed_region_count,
             causality_kind: causality_kind.clone(),
+            performed_baseline: *performed_baseline,
         }
     }
 }

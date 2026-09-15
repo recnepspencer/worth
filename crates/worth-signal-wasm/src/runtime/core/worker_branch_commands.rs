@@ -103,6 +103,7 @@ impl RuntimeCore {
             let store = self.store.clone();
             let dense_grids = self.dense_grids.clone();
             let evaluator = self.evaluator();
+            let standing_demand = self.standing_demand_nodes();
             let dependency_patches = Arc::new(Mutex::new(
                 None::<(Vec<PendingCallbackDependencyPatch>, u64)>,
             ));
@@ -112,6 +113,7 @@ impl RuntimeCore {
                     .advance_signal_branch(&mut self.store, &native_basis, move |tx| {
                         apply_set_changes(tx, &store, &dense_grids, &changes)?;
                         tx.evaluate_dirty(&evaluator)?;
+                        tx.evaluate_demand(&evaluator, &standing_demand)?;
                         let patches = apply_pending_dependency_patches_in_transaction(tx, &store)?;
                         *dependency_patches_for_tx.lock().map_err(|_| {
                             SignalError::internal("dependency patch receipt mutex poisoned")

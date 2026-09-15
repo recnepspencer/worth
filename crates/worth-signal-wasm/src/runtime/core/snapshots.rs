@@ -47,19 +47,31 @@ impl RuntimeCore {
     ) -> Result<(), WorthSignalJsError> {
         self.ensure_callback_snapshot_availability(&envelope.state)?;
         let snapshot_key = runtime_snapshot_key(&envelope.snapshot);
-        let active_branch_id = self.runtime.current_branch().id.0;
-        if envelope.snapshot.meta.branch_id.0 != active_branch_id {
-            return Err(WorthSignalJsError::invalid_input(format!(
-                "runtime snapshot restore targets branch `{}` while active branch is `{active_branch_id}`",
-                envelope.snapshot.meta.branch_id.0
-            )));
-        }
+        // Every denial is decided before the branch switch below, so a
+        // refused restore leaves the active branch where it was.
         let admitted_snapshot = self
             .admitted_runtime_snapshots
             .get(&snapshot_key)
             .ok_or_else(|| unavailable_snapshot(snapshot_key))?;
         require_exact_snapshot_payload(&envelope.snapshot, admitted_snapshot.snapshot())?;
-        let basis = self.native_branch_basis_by_id(active_branch_id)?;
+        let target_branch_id = envelope.snapshot.meta.branch_id.0;
+        if target_branch_id != self.runtime.current_branch().id.0 {
+            // A runtime snapshot belongs to the branch it was captured on.
+            // Restoring it reactivates that branch first, so a snapshot taken
+            // before a branch was created, switched to, or merged remains
+            // restorable afterwards.
+            self.switch_branch(target_branch_id).map_err(|error| {
+                WorthSignalJsError::invalid_input(format!(
+                    "runtime snapshot restore targets branch `{target_branch_id}` which cannot be reactivated: {}",
+                    error.message
+                ))
+            })?;
+        }
+        let admitted_snapshot = self
+            .admitted_runtime_snapshots
+            .get(&snapshot_key)
+            .ok_or_else(|| unavailable_snapshot(snapshot_key))?;
+        let basis = self.native_branch_basis_by_id(target_branch_id)?;
         self.runtime
             .restore_signal_branch(&basis, admitted_snapshot)
             .map_err(|error| {

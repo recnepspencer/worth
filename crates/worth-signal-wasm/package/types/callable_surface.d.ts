@@ -516,6 +516,8 @@ export interface CallableSignalAdapters {
   exportRuntimeEnvelope(): RuntimeEnvelopeArtifact;
   replaceRuntimeEnvelope(envelope: RuntimeEnvelope): Promise<void>;
   restoreExactRuntimeEnvelope(envelope: RuntimeEnvelopeArtifact): Promise<void>;
+  /** Release the artifact's pending exact restore token; `false` when it is no longer pending. */
+  discardExactRuntimeEnvelope(envelope: RuntimeEnvelopeArtifact): boolean | Promise<boolean>;
   runtimeProofReport(): RuntimeProofReport;
   hostCapabilityTransportReport(envelope?: RuntimeEnvelope): HostCapabilityTransportReport;
   free(): void;
@@ -553,6 +555,10 @@ export interface CallableSignalHistory {
   snapshot(): RuntimeSnapshotEnvelopeArtifact;
   restore_snapshot(snapshot: RuntimeSnapshotEnvelope): void | Promise<void>;
   restore_exact_snapshot(snapshot: RuntimeSnapshotEnvelopeArtifact): void | Promise<void>;
+  /** Release the artifact's pending exact restore token; `false` when it is no longer pending. */
+  discard_exact_artifact(
+    artifact: RuntimeSnapshotEnvelopeArtifact | RuntimeSnapshotArtifactWithWire,
+  ): boolean | Promise<boolean>;
   current_branch(): RuntimeBranchHandle;
   branches(): ReadonlyArray<RuntimeBranchHandle>;
   create_branch(name: string): RuntimeBranchHandle | Promise<RuntimeBranchHandle>;

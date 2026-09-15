@@ -105,9 +105,6 @@ where
             ),
         );
         let mut branch_state = self.capture_heavy_branch_state()?;
-        branch_state
-            .mutation_ledger_mut()
-            .clear_all(Some(snapshot.meta.snapshot_id));
         self.branches
             .set_branch_head_snapshot(branch_id, snapshot.meta.snapshot_id);
         self.project_branch_catalog();
@@ -116,7 +113,9 @@ where
         self.branches
             .project_catalog(branch_id, &mut snapshot.diagnostic_graph);
         self.branches.insert_snapshot(
-            SnapshotBranchState::from_branch_state(&branch_state).packet(snapshot.meta.snapshot_id),
+            SnapshotBranchState::from_branch_state(&branch_state)
+                .with_snapshot_ledger_boundary(snapshot.meta.snapshot_id)
+                .packet(snapshot.meta.snapshot_id),
         );
         self.branches.observe_active_branch_state(&branch_state);
         self.branches
@@ -277,10 +276,9 @@ where
                     ),
                 ),
             };
-            state
-                .mutation_ledger_mut()
-                .clear_all(Some(snapshot.meta.snapshot_id));
-            (snapshot, SnapshotBranchState::from_branch_state(state))
+            let snapshot_state = SnapshotBranchState::from_branch_state(state)
+                .with_snapshot_ledger_boundary(snapshot.meta.snapshot_id);
+            (snapshot, snapshot_state)
         }) else {
             return Err(SignalError::unknown_branch(Some(branch.id), branch.name));
         };

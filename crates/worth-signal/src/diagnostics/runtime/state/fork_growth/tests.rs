@@ -13,7 +13,7 @@ fn fixture(population: usize, payload: usize) -> DiagnosticsState {
     let mut state = DiagnosticsState::default();
     for index in 0..population {
         let node = graph.node().build();
-        state.note_change_input(node, Aspect::new(3), &[], Some("cause".repeat(payload)));
+        state.note_change_input(node, Aspect::new(3), &[], Some("cause".repeat(payload)), Default::default());
         let id = SignalBranchId(index as u64 + 1);
         state.branch_catalog.insert(
             id,

@@ -18,6 +18,8 @@ import {
   createTimedOutLineStatus,
 } from "../state/line_status_value.js";
 import { areLineValuesSemanticallyEqual } from "../state/line_value_semantic_equality.js";
+import { canonicalizeLineValue } from "../state/line_value_canonical_json.js";
+import { readLineRejectionMessage } from "../state/line_rejection_message.js";
 import { recordLineHistoryEntry } from "../history/record_line_history_entry.js";
 import {
   prepareMutationResponsePlanIfDeclared,
@@ -212,37 +214,34 @@ function applyFulfilledReload(
   submittedTargets = null,
   submittedIdentityMigration = null,
 ) {
-  const visibleValueChanged =
-    loaded.hasVisibleValue
-    && !areLineValuesSemanticallyEqual(loaded.value, previousValue);
-  const status = createFulfilledLineStatus(operation);
-  const freshness = createFreshnessFromPolicy(reload.policy);
-  const nextDiagnostics = createReloadFulfilledDiagnostics(
-    readLineBindingState(materialization.binding).diagnostics,
-    operation,
-    loaded.processing,
-    loaded.upload,
-    loaded.download,
-    visibleValueChanged,
-    retryAttempts,
-  );
-  const finalizedDiagnostics =
-    finalizeFulfilledDiagnostics === null
-      ? nextDiagnostics
-      : finalizeFulfilledDiagnostics(nextDiagnostics);
-  const preparedMutationResponse = prepareMutationResponsePlanIfDeclared(
-    materialization.lineIdentity,
-    requestDescriptor,
-    finalizedDiagnostics,
-    reload.mutationResponseDeclaration,
-    loaded.value,
-    submittedTargets,
-    submittedIdentityMigration,
-  );
+  // Everything that can refuse the loaded value runs before the line state
+  // moves. A refusal (for example a value JSON cannot represent) is a failed
+  // reload: the line settles rejected with the reason so status, history,
+  // and every settlement waiter see it. Without this, a throw on the async
+  // path would escape the promise callback and leave the line pending
+  // forever.
+  let prepared;
+  try {
+    prepared = prepareFulfilledReloadCommit(
+      materialization,
+      reload,
+      requestDescriptor,
+      operation,
+      previousValue,
+      loaded,
+      retryAttempts,
+      finalizeFulfilledDiagnostics,
+      submittedTargets,
+      submittedIdentityMigration,
+    );
+  } catch (error) {
+    return applyRejectedReload(materialization, operation, error);
+  }
+  const { value, status, freshness, preparedMutationResponse } = prepared;
   replaceLineBindingState(materialization.binding, {
     ...readLineBindingState(materialization.binding),
-    value: loaded.value,
-    canonicalValue: loaded.value,
+    value,
+    canonicalValue: value,
     processing: loaded.processing,
     upload: loaded.upload,
     download: loaded.download,
@@ -266,14 +265,57 @@ function applyFulfilledReload(
   return status;
 }
 
+function prepareFulfilledReloadCommit(
+  materialization,
+  reload,
+  requestDescriptor,
+  operation,
+  previousValue,
+  loaded,
+  retryAttempts,
+  finalizeFulfilledDiagnostics,
+  submittedTargets,
+  submittedIdentityMigration,
+) {
+  const value = canonicalizeLineValue(loaded.value);
+  const visibleValueChanged =
+    loaded.hasVisibleValue
+    && !areLineValuesSemanticallyEqual(value, previousValue);
+  const status = createFulfilledLineStatus(operation);
+  const freshness = createFreshnessFromPolicy(reload.policy);
+  const nextDiagnostics = createReloadFulfilledDiagnostics(
+    readLineBindingState(materialization.binding).diagnostics,
+    operation,
+    loaded.processing,
+    loaded.upload,
+    loaded.download,
+    visibleValueChanged,
+    retryAttempts,
+  );
+  const finalizedDiagnostics =
+    finalizeFulfilledDiagnostics === null
+      ? nextDiagnostics
+      : finalizeFulfilledDiagnostics(nextDiagnostics);
+  const preparedMutationResponse = prepareMutationResponsePlanIfDeclared(
+    materialization.lineIdentity,
+    requestDescriptor,
+    finalizedDiagnostics,
+    reload.mutationResponseDeclaration,
+    value,
+    submittedTargets,
+    submittedIdentityMigration,
+  );
+  return Object.freeze({ value, status, freshness, preparedMutationResponse });
+}
+
 function applyRejectedReload(materialization, operation, error) {
   const failure = normalizeReloadFailure(error);
   const previousState = readLineBindingState(materialization.binding);
   const hasVisibleValue = previousState.value !== null;
-  const message =
-    failure.error instanceof Error
-      ? failure.error.message
-      : "resource refresh failed";
+  const message = readLineRejectionMessage(
+    failure.error,
+    "resource refresh failed",
+  );
   const status = createRejectedLineStatus(operation, message, hasVisibleValue);
   const freshness = createRejectedFreshness(operation);
   const diagnostics = createReloadRejectedDiagnostics(

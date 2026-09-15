@@ -46,6 +46,7 @@ impl RuntimeCore {
         let previous = self.lock_store()?.clone();
         let store = self.store.clone();
         let evaluator = self.evaluator();
+        let standing_demand = self.standing_demand_nodes();
 
         let branch = self.runtime.current_branch();
         let basis = self.native_branch_basis(branch)?;
@@ -66,6 +67,7 @@ impl RuntimeCore {
                     tx.mark_changed_with_regions(node, *aspect, &changed_regions)?;
                 }
                 tx.evaluate_dirty(&evaluator)?;
+                tx.evaluate_demand(&evaluator, &standing_demand)?;
                 Ok(())
             });
 

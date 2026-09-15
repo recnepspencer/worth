@@ -41,6 +41,11 @@ export function createWorkerFirstHistoryFacade(session) {
       }
       return session.bridge.restoreSnapshotEnvelopeWire(restoreToken);
     },
+    discard_exact_artifact(artifact) {
+      return session.bridge.discardRestoreToken(
+        exactArtifactRestoreToken(artifact, "history.discard_exact_artifact"),
+      );
+    },
     current_branch() {
       return session.bridge.currentBranch();
     },
@@ -172,6 +177,16 @@ export function createWorkerFirstHistoryFacade(session) {
     runtimeProofReportPromise ??= session.bridge.runtimeProofReport();
     return runtimeProofReportPromise;
   }
+}
+
+function exactArtifactRestoreToken(artifact, operation) {
+  const restoreToken = artifact?.snapshotEnvelopeRestoreToken ?? artifact?.snapshotRestoreToken;
+  if (typeof restoreToken !== "string") {
+    throw new TypeError(
+      `${operation} expects an artifact returned by history.snapshot(), history.branch_snapshot(), or history.branch_snapshot_envelope()`,
+    );
+  }
+  return restoreToken;
 }
 
 function throwWorkerFirstHistoryUnavailable(operation) {

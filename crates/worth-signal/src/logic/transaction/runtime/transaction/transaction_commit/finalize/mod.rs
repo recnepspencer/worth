@@ -37,6 +37,11 @@ where
     ) -> (TransactionResult, Option<crate::data::error::SignalError>) {
         let (outcome, rollback_error) =
             self.restore_baseline_if_requested(restore_baseline, outcome);
+        // Every commit, rollback, and failure path finalizes here: the
+        // transaction's flow is complete, so a later execution starts its own.
+        self.graph
+            .diagnostics_state_mut()
+            .close_transaction_flow_scope();
         let mut captured = self.capture_finalization_boundary(outcome, touched_nodes, commit_nanos);
         self.finalize_result_accounting(&mut captured.result);
         (

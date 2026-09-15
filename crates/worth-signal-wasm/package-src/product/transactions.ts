@@ -355,6 +355,14 @@ export function wrapAdapters(rawAdapters, hostCapabilities) {
       }
       return rawAdapters.replace_runtime_envelope_wire(envelope.runtimeEnvelopeRestoreToken);
     },
+    discardExactRuntimeEnvelope(envelope) {
+      if (typeof envelope?.runtimeEnvelopeRestoreToken !== "string") {
+        throw new TypeError(
+          "adapters.discardExactRuntimeEnvelope expects an artifact returned by adapters.exportRuntimeEnvelope()",
+        );
+      }
+      return rawAdapters.discard_restore_token(envelope.runtimeEnvelopeRestoreToken);
+    },
     runtimeProofReport() {
       return rawAdapters.runtime_proof_report();
     },

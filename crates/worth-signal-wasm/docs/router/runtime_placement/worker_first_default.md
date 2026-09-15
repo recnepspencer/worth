@@ -48,6 +48,10 @@ Form field mutations may return thenables under worker-first — await those (or
 call `settleAuthoredWork`) before submit paths that assume published
 summary/input truth on the worker.
 
+The same host tip methods exist on `mainThreadCompatibility`, where the
+runtime applies the tip writes in one synchronous transaction; application
+code does not need a deployment branch to reach them.
+
 ## The Honest Boundary
 
 The browser host observes `location`, `popstate`, clicks, and external

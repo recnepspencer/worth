@@ -21,7 +21,7 @@ pub(super) struct RetainedFlow {
     observation: Option<Arc<ObservationBoundarySummary>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 struct FlowPayload {
     profile: DiagnosticsTier,
     change: ChangeInputSummary,
@@ -97,6 +97,46 @@ impl RetainedFlow {
 
     pub(super) fn record_observation(&mut self, observation: Arc<ObservationBoundarySummary>) {
         self.observation = Some(observation);
+    }
+
+    /// Folds a later execution of the same transaction into this flow.
+    ///
+    /// Cost: O(fields) plus O(stage widths + cause samples) up to
+    /// `detail_limit`; the payload is copied once when it is shared with a
+    /// retained snapshot.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn extend_with_execution(
+        &mut self,
+        change: ChangeInputSummary,
+        invalidation: InvalidationSummary,
+        planning: PlanningSummary,
+        precompute: PrecomputeSummary,
+        apply: ApplySummary,
+        cause_samples: Vec<FlowCauseSample>,
+        explanation: Option<ExplanationSummary>,
+        detail_limit: usize,
+    ) {
+        let payload = Arc::make_mut(&mut self.payload);
+        payload.change = change;
+        payload.invalidation = invalidation;
+        payload.planning.absorb(planning, detail_limit);
+        payload.precompute.absorb(precompute);
+        payload.apply.absorb(apply);
+        for sample in cause_samples {
+            if payload.cause_samples.len() >= detail_limit {
+                break;
+            }
+            if !payload
+                .cause_samples
+                .iter()
+                .any(|existing| existing.node == sample.node)
+            {
+                payload.cause_samples.push(sample);
+            }
+        }
+        if payload.explanation.is_none() {
+            payload.explanation = explanation;
+        }
     }
 
     pub(super) fn attach_event_epochs(&mut self, event_epochs: Vec<EventEpochSummary>) {

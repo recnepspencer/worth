@@ -15,7 +15,7 @@
       "canonicalDocs": ["getting-started/installation", "api-reference/construction", "reference/package-entrypoints-and-contracts", "api-reference/compatibility-surface"],
       "truthOwners": ["package-src/index.ts"],
       "evidence": ["package/product/signals_runtime/entrypoint/construction/explicit_compatibility_construction.test.mjs"],
-      "baseline": { "declarationCount": 1, "directMemberCount": 0, "signatureDigest": "d4c793157805712e130dca60050980614855c50745ad3abab492ee5e42fe4cdd", "declarationFileCount": 1, "declarationFileDigest": "c8e1761c5e11c38cd7ba47442659fce262dfcca50ff7a29f56beb8bbce4ec326" }
+      "baseline": { "declarationCount": 1, "directMemberCount": 0, "signatureDigest": "d4c793157805712e130dca60050980614855c50745ad3abab492ee5e42fe4cdd", "declarationFileCount": 1, "declarationFileDigest": "b7350ced44516001c7cdbd04e380b41255f25f91f2f31be18779bde03a5cbeb1" }
     },
     {
       "id": "core.model",
@@ -35,8 +35,8 @@
       "id": "core.callable",
       "title": "Callable Signals",
       "entrypoints": ["root"],
-      "sourcePrefixes": ["package/types/callable_surface.d.ts"],
-      "filePrefixes": ["package/types/callable_surface.d.ts", "package/types/worker_runtime_bridge"],
+      "sourcePrefixes": ["package/types/callable_surface.d.ts", "package/types/host_tip_surface.d.ts"],
+      "filePrefixes": ["package/types/callable_surface.d.ts", "package/types/host_tip_surface.d.ts", "package/types/worker_runtime_bridge"],
       "status": "stable",
       "guideStatus": "current",
       "referenceStatus": "incomplete",
@@ -44,9 +44,8 @@
       "truthOwners": ["package-src/product/signals.ts", "package-src/product/authoring", "package-src/product/entrypoint/construction"],
       "evidence": [
         "package/product/signals_runtime/authoring/opaque_authoring_equivalence.test.mjs",
-        "package/product/signals_runtime/entrypoint/construction/create_signals_assets_admission.test.mjs"
-      ],
-      "baseline": { "declarationCount": 86, "directMemberCount": 329, "signatureDigest": "97176851b2a8c890059eec7f7d762547babffb151a12cddd7a2ca814d695de2a", "declarationFileCount": 5, "declarationFileDigest": "c96ee6522cde7615c62ba8b0a9ffcd2a2b3246b3fa12e901740a3cb51725d2bf" }
+        "package/product/signals_runtime/entrypoint/construction/create_signals_assets_admission.test.mjs", "package/product/signals_runtime/authoring/compatibility_host_tip_commit.test.mjs"],
+      "baseline": { "declarationCount": 88, "directMemberCount": 339, "signatureDigest": "10745ac80e240beab798bb02691f64acaaa2f42e21312fa76fc7a88294f2da42", "declarationFileCount": 6, "declarationFileDigest": "65d1c7cf527f2fac69f2e57f7cda94cf80bb0adb9355bb9f16430b52a33743ad" }
     },
     {
       "id": "core.graphs",
@@ -74,7 +73,7 @@
       "canonicalDocs": ["core/diagnostics", "reference/support-status"],
       "truthOwners": ["src/boundary/diagnostics.rs", "src/runtime/core/diagnostics", "package-src/product/canonical_diagnostic_digest.ts"],
       "evidence": ["package/product/signals_runtime/entrypoint/sessions/worker_first_diagnostics.test.mjs"],
-      "baseline": { "declarationCount": 124, "directMemberCount": 765, "signatureDigest": "c2477ad0de1edb9fe72d9b8c376a35c5325ee537266b9e435f42148304ee5151", "declarationFileCount": 1, "declarationFileDigest": "a52271f9b00b65ef3e08c7a95b05ec5b26243d1f13957f2acf9ec540eb5ea3ab" }
+      "baseline": { "declarationCount": 126, "directMemberCount": 772, "signatureDigest": "6db11d5ecdd709644b6fcfd69199d520c9ffd6d904e421974c51b467bc4fcbb4", "declarationFileCount": 1, "declarationFileDigest": "c4881e8c44d55a430432ab0037ad009d475599d269d96f13a832113fc47c644a" }
     },
     {
       "id": "core.history",
@@ -102,7 +101,7 @@
       "canonicalDocs": ["resources/index", "api-reference/resources", "api-reference/resource-family-authoring", "api-reference/resource-line"],
       "truthOwners": ["package-src/product/resource", "package-src/product/api"],
       "evidence": ["package/product/resource.runtime.test.mjs"],
-      "baseline": { "declarationCount": 378, "directMemberCount": 1275, "signatureDigest": "7b8560aa63f25b124a7001525f0b9a730c29c523f4556b0a3daa7223e3c3fb3f", "declarationFileCount": 55, "declarationFileDigest": "4e3233f98d73c89bb96647fdb071d32b9d1bae48fc303b1d65355a9d9d2e1f4e" }
+      "baseline": { "declarationCount": 378, "directMemberCount": 1278, "signatureDigest": "c641957b0cb2e46c6983f04ef44ebbd10aed3aacf77d56719870ab7b63d88b69", "declarationFileCount": 56, "declarationFileDigest": "d1cae75fcb23e20fbe768d032836e6b6cf3183bc3363556ba38b9323404ba653" }
     },
     {
       "id": "forms",
@@ -116,7 +115,7 @@
       "canonicalDocs": ["forms/index", "forms/getting-started/your-first-form", "forms/state/README", "forms/validation/README", "forms/availability/README", "forms/actions/README", "forms/steps/README", "forms/layout/README", "forms/resource-backed/README", "forms/lifecycle/README", "forms/collaboration/README", "forms/diagnostics/README", "api-reference/forms", "api-reference/form-export-catalog"],
       "truthOwners": ["package-src/product/forms"],
       "evidence": ["package/product/signals_runtime/forms/closeout/full_forms_hostile_convergence.test.mjs", "package/product/documentation/form_export_catalog.test.mjs"],
-      "baseline": { "declarationCount": 234, "directMemberCount": 1326, "signatureDigest": "582c923271ae1ef7cad9118ee50af8f6c6342398dc63cd7d15725023985b396e", "declarationFileCount": 39, "declarationFileDigest": "0a98fbd41921031307e15c3c9eb5bde2a38b2b771bfe3dd287b850c74a20e9f2" }
+      "baseline": { "declarationCount": 234, "directMemberCount": 1326, "signatureDigest": "4950f1f6880baee132f41ae25726595ea1487b1f45b981d52a71959731b3e308", "declarationFileCount": 39, "declarationFileDigest": "951480aa843d2336b2aa49f56e11a099efa3f72467e949072c9168764bee1123" }
     },
     {
       "id": "router",
@@ -158,7 +157,7 @@
       "canonicalDocs": ["api-reference/compatibility-surface", "reference/package-entrypoints-and-contracts", "reference/support-status"],
       "truthOwners": ["package-src/raw_surface.ts", "src/lib.rs"],
       "evidence": ["package/product/signals_runtime/entrypoint/construction/explicit_compatibility_construction.test.mjs"],
-      "baseline": { "declarationCount": 11, "directMemberCount": 169, "signatureDigest": "61ec630f86dce001b1fea10b9db68a44974160182543f25f7663c236a7f3d447", "declarationFileCount": 1, "declarationFileDigest": "6b0c4ebef71cb1a90c671303ab6a84565200e0bfea492c687493a7319942b9b3" }
+      "baseline": { "declarationCount": 11, "directMemberCount": 171, "signatureDigest": "1c43d06448d5f1b982085fc05045b5026fb8fdebaff921bf85263e524ecabfa0", "declarationFileCount": 1, "declarationFileDigest": "a14c05a79f046612759f4e2dcf88fff8a47c41830106e0b1175ae8d895da9050" }
     },
     {
       "id": "compatibility.raw-entrypoint",
@@ -172,7 +171,7 @@
       "canonicalDocs": ["api-reference/compatibility-surface", "reference/package-entrypoints-and-contracts", "reference/support-status"],
       "truthOwners": ["package-src/raw_surface.ts", "src/lib.rs"],
       "evidence": ["package/product/signals_runtime/entrypoint/construction/explicit_compatibility_construction.test.mjs"],
-      "baseline": { "declarationCount": 54, "directMemberCount": 536, "signatureDigest": "53800f871e62b14d72b8102fc61b36713ab285640aa9d583c7fc1725c95a6e95", "declarationFileCount": 1, "declarationFileDigest": "a6a2ced8ad9dca77402c8ab23a4e30ad6a8720de0fa4c2b458877de45707fe24" }
+      "baseline": { "declarationCount": 58, "directMemberCount": 542, "signatureDigest": "62b287ebd1f49e7da3342ceda8596885f47fde7a25e77db9a3a447b855217a80", "declarationFileCount": 1, "declarationFileDigest": "a6a2ced8ad9dca77402c8ab23a4e30ad6a8720de0fa4c2b458877de45707fe24" }
     },
     {
       "id": "react",

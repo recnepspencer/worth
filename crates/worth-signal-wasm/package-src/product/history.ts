@@ -49,6 +49,16 @@ function snapshotRestoreToken(snapshot) {
   return snapshot?.snapshotRestoreToken;
 }
 
+function exactArtifactRestoreToken(artifact, operation) {
+  const restoreToken = artifact?.snapshotEnvelopeRestoreToken ?? artifact?.snapshotRestoreToken;
+  if (typeof restoreToken !== "string") {
+    throw new TypeError(
+      `${operation} expects an artifact returned by history.snapshot(), history.branch_snapshot(), or history.branch_snapshot_envelope()`,
+    );
+  }
+  return restoreToken;
+}
+
 function normalizeBranchId(value, operation) {
   if (typeof value === "bigint") {
     if (value < 0n) {
@@ -152,6 +162,11 @@ export function wrapHistory(rawHistory) {
       return withHistoryMutationNotification(
         rawHistory.restore_snapshot_wire(restoreToken),
         listeners,
+      );
+    },
+    discard_exact_artifact(artifact) {
+      return rawHistory.discard_restore_token(
+        exactArtifactRestoreToken(artifact, "history.discard_exact_artifact"),
       );
     },
     current_branch() {

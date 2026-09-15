@@ -25,6 +25,34 @@ pub struct EvaluationPlanSummary {
 }
 
 impl EvaluationPlanSummary {
+    /// Adds a later plan of the same flow: counts sum, the widest stage
+    /// wins, stage widths append up to `detail_limit`, and task reasons are
+    /// counted together.
+    pub fn absorb(&mut self, other: EvaluationPlanSummary, detail_limit: usize) {
+        self.requested_target_count = self
+            .requested_target_count
+            .saturating_add(other.requested_target_count);
+        self.stage_count = self.stage_count.saturating_add(other.stage_count);
+        self.task_count = self.task_count.saturating_add(other.task_count);
+        self.max_stage_width = self.max_stage_width.max(other.max_stage_width);
+        self.contract_pruned_count = self
+            .contract_pruned_count
+            .saturating_add(other.contract_pruned_count);
+        let room = detail_limit.saturating_sub(self.stage_widths.len());
+        self.stage_widths
+            .extend(other.stage_widths.into_iter().take(room));
+        self.direct_request_count = self
+            .direct_request_count
+            .saturating_add(other.direct_request_count);
+        self.transitive_task_count = self
+            .transitive_task_count
+            .saturating_add(other.transitive_task_count);
+        for (reason, count) in other.task_reason_counts {
+            let entry = self.task_reason_counts.entry(reason).or_insert(0);
+            *entry = entry.saturating_add(count);
+        }
+    }
+
     pub fn from_plan(plan: &EvaluationPlan, profile: DiagnosticsTier) -> Self {
         Self::from_components(
             plan.summary.requested_target_count,

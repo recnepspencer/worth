@@ -1,3 +1,5 @@
+use worth_signal::facade::NodeId;
+
 use crate::boundary::errors::WorthSignalJsError;
 use crate::recipe::model::RecipeSpec;
 
@@ -33,6 +35,22 @@ impl RuntimeCore {
             self.web_signals.insert(output_id, WebSignalKind::Output);
         }
         Ok(())
+    }
+
+    /// Nodes of every published output, in id order.
+    ///
+    /// Published outputs are standing demand: the host reads them after each
+    /// commit, so a committing transaction settles the ones its change
+    /// reaches (`SignalTransaction::evaluate_demand`). Otherwise the committed
+    /// truth digest would exclude a value the first post-commit read then
+    /// computes, and delivery would carry a different truth than the commit.
+    /// Cost: O(published outputs) per transaction.
+    pub(crate) fn standing_demand_nodes(&self) -> Vec<NodeId> {
+        self.web_signals
+            .iter()
+            .filter(|(_, kind)| matches!(kind, WebSignalKind::Output))
+            .filter_map(|(id, _)| self.catalog.get(id).map(|entry| entry.node))
+            .collect()
     }
 
     pub(crate) fn is_web_output_signal(&self, id: &str) -> bool {

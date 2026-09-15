@@ -18,6 +18,9 @@ const INPUT_BASELINE_VALUES = new WeakMap();
 const SIGNAL_CLEANUP_CALLBACKS = new WeakMap();
 const INPUT_WRITE_OBSERVERS = new WeakMap();
 const INPUT_RESET_PREPARERS = new WeakMap();
+// rawSignals -> Map<inputId, product input handle>. Lets the compatibility
+// host tip surface resolve batch writes by id without a raw-runtime lookup.
+const INPUT_HANDLES_BY_RUNTIME = new WeakMap();
 
 function describeHandleKind(target) {
   if (!target || typeof target !== "function") {
@@ -308,6 +311,7 @@ export function wrapReadableSignal(rawHandle, rawSignals, kind = "signal", debug
 export function wrapInputSignal(rawHandle, rawSignals, baselineValue, debugName = null) {
   const signal = wrapReadableSignal(rawHandle, rawSignals, "input", debugName);
   INPUT_BASELINE_VALUES.set(signal, cloneSignalValue(baselineValue));
+  registerInputHandle(rawSignals, signal);
   Object.defineProperty(signal, "set", {
     enumerable: false,
     value(nextValue) {
@@ -359,6 +363,25 @@ export function wrapInputSignal(rawHandle, rawSignals, baselineValue, debugName 
     },
   });
   return signal;
+}
+
+function registerInputHandle(rawSignals, signal) {
+  let handlesById = INPUT_HANDLES_BY_RUNTIME.get(rawSignals);
+  if (!handlesById) {
+    handlesById = new Map();
+    INPUT_HANDLES_BY_RUNTIME.set(rawSignals, handlesById);
+  }
+  const id = signal.id;
+  handlesById.set(id, signal);
+  registerSignalCleanup(signal, () => {
+    if (handlesById.get(id) === signal) {
+      handlesById.delete(id);
+    }
+  });
+}
+
+export function lookupInputSignalHandle(rawSignals, id) {
+  return INPUT_HANDLES_BY_RUNTIME.get(rawSignals)?.get(id) ?? null;
 }
 
 export function registerSignalCleanup(signal, cleanup) {

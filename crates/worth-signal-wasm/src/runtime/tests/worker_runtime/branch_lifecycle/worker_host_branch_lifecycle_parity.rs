@@ -212,38 +212,38 @@ fn worker_runtime_branch_restore_uses_branch_local_snapshot_identity() {
         .branch_snapshot(compatibility_feature.id.0)
         .unwrap();
 
-    let worker_denial = worker_shell
-        .restore_snapshot(worker_baseline_snapshot.clone())
-        .unwrap_err();
-    let compatibility_denial = compatibility_runtime
-        .restore_snapshot(compatibility_baseline_snapshot.clone())
-        .unwrap_err();
-    assert!(worker_denial.message.contains("while active branch"));
-    assert!(compatibility_denial.message.contains("while active branch"));
-    assert_eq!(worker_shell.current_branch().id, worker_feature.id);
-    assert_eq!(
-        compatibility_runtime.current_branch().id,
-        compatibility_feature.id
-    );
-    assert_eq!(
-        worker_shell.read_value("counter").unwrap(),
-        SignalValue::Number(11.0)
-    );
-
-    worker_shell.switch_branch(worker_main.id.0).unwrap();
-    compatibility_runtime
-        .switch_branch(compatibility_main.id.0)
-        .unwrap();
+    // Restoring the main baseline from the feature branch reactivates main
+    // on both deployments and leaves the feature branch's truth alone.
     worker_shell
         .restore_snapshot(worker_baseline_snapshot)
         .unwrap();
     compatibility_runtime
         .restore_snapshot(compatibility_baseline_snapshot)
         .unwrap();
+    assert_eq!(worker_shell.current_branch().id, worker_main.id);
+    assert_eq!(
+        compatibility_runtime.current_branch().id,
+        compatibility_main.id
+    );
+    assert_eq!(
+        worker_shell.read_value("counter").unwrap(),
+        compatibility_runtime.read_value("counter").unwrap()
+    );
+    assert_ne!(
+        worker_shell.read_value("counter").unwrap(),
+        SignalValue::Number(11.0),
+        "main holds its baseline, not the feature edit"
+    );
+
     worker_shell.switch_branch(worker_feature.id.0).unwrap();
     compatibility_runtime
         .switch_branch(compatibility_feature.id.0)
         .unwrap();
+    assert_eq!(
+        worker_shell.read_value("counter").unwrap(),
+        SignalValue::Number(11.0),
+        "the feature branch kept its edit across the main restore"
+    );
     let restored_worker_feature = worker_shell
         .restore_branch_snapshot(worker_feature.id.0, worker_feature_snapshot)
         .unwrap();

@@ -261,6 +261,30 @@ test("default worker-first root exposes synchronous cached diagnostics, history,
     );
     assert.equal(workerSignals.read(outputId), compatibilityImportedSignals.read(outputId));
 
+    // Exact runtime restore artifacts are root-branch evidence on both deployments: while the
+    // proof branch is still active, every exact export refuses with the same denial, and
+    // definitions stay readable.
+    assert.deepEqual(
+      comparableRuntimeBranch(workerSignals.history().current_branch()),
+      comparableRuntimeBranch(compatibilityImportedSignals.history().current_branch()),
+    );
+    assert.notEqual(workerSignals.history().current_branch().parent_branch_id, null);
+    assert.throws(() => workerSignals.adapters().exportRuntimeEnvelope(), { code: "invalidInput" });
+    assert.throws(
+      () => compatibilityImportedSignals.adapters().exportRuntimeEnvelope(),
+      { code: "invalidInput" },
+    );
+    assert.throws(() => importedGraph.exportSnapshot(), { code: "invalidInput" });
+    assert.throws(() => compatibilityImportedGraph.exportSnapshot(), { code: "invalidInput" });
+    assert.deepEqual(
+      workerSignals.adapters().exportDefinitions(),
+      compatibilityImportedSignals.adapters().exportDefinitions(),
+    );
+    await workerSignals.history().switch_branch(0);
+    compatibilityImportedSignals.history().switch_branch(0);
+    assert.equal(workerSignals.history().current_branch().parent_branch_id, null);
+    assert.equal(workerSignals.read(outputId), compatibilityImportedSignals.read(outputId));
+
     assert.deepEqual(
       workerSignals.adapters().exportDefinitions(),
       compatibilityImportedSignals.adapters().exportDefinitions(),
