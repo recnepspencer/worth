@@ -1,7 +1,7 @@
 //! One-operation compilation authority shared by install and reinstallation.
 
 mod capability_demand;
-mod invariant_applicability;
+mod invariant_selection;
 use capability_demand::{operation_capability_count, progression_support_fact_count};
 
 use worth_query_declaration::facade::application_aftermath::PortableApplicationAftermathContract;
@@ -235,7 +235,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 else {
                     return None;
                 };
-                invariant_applicability::overlaps(&touches, applicability).then(|| {
+                invariant_selection::requires(&touches, required_groups).then(|| {
                     WorthQueryInstalledApplicationInvariantDescriptor::from_installed_parts(
                         invariant.clone(),
                         *major,
