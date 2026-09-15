@@ -7,6 +7,8 @@ import "./resource_runtime/authoring/response/api_response_detail_field_contract
 import "./resource_runtime/authoring/response/api_response_detail_json_path_contract_builder.test.mjs";
 import "./resource_runtime/authoring/response/api_response_detail_region_contract_builder.test.mjs";
 import "./resource_runtime/authoring/response/fallback/mutation_response_fallback_honesty.test.mjs";
+import "./resource_runtime/authoring/response/mutation_response_payload_classification.test.mjs";
+import "./resource_runtime/authoring/response/loaded_value_json_form.test.mjs";
 import "./resource_runtime/authoring/response/create/create_response_collection_placement.test.mjs";
 import "./resource_runtime/authoring/response/create/create_response_connection_tuple_placement.test.mjs";
 import "./resource_runtime/authoring/response/create/create_response_detail_materialization.test.mjs";

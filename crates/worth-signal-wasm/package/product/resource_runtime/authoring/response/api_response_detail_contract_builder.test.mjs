@@ -329,10 +329,13 @@ test("mutation response planning denies accessor-backed payloads before visible 
       },
     });
 
-    assert.throws(
-      () => saveUser.line({ userId: "u1", body: { name: "Unsafe" } }),
-      /accessor-backed property "name"/,
-    );
+    const line = saveUser.line({ userId: "u1", body: { name: "Unsafe" } });
+    // The refusal is a rejected settlement, not a thrown error: the same
+    // outcome an asynchronous load gets, and the getter was never invoked.
+    assert.equal(line.status().kind, "rejected");
+    assert.match(line.status().message, /accessor-backed property "name"/);
+    assert.equal(line.value(), null);
+    assert.equal(line.mutationResponse(), null);
     assert.equal(getterCalls, 0);
   } finally {
     await runtime.cleanup();

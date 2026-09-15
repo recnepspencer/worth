@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promis
 import { stripTypeScriptTypes } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { after } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
@@ -21,13 +22,37 @@ const cachedSignalsModuleTempDirs =
   signalsModuleGlobal.__WorthCachedSignalsModuleTempDirs ?? new Set();
 signalsModuleGlobal.__WorthCachedSignalsModuleTempDirs = cachedSignalsModuleTempDirs;
 
+// Every root created through the loaded module. A worker-first root owns a
+// worker thread; a test that fails before terminating its root would keep
+// the test runner's child process alive forever, which stalls the whole run
+// instead of reporting the failure. Roots still alive when the file's tests
+// are done are terminated here (termination is idempotent on every root).
+const liveSignalsRoots =
+  signalsModuleGlobal.__WorthLiveSignalsRoots ?? new Set();
+signalsModuleGlobal.__WorthLiveSignalsRoots = liveSignalsRoots;
+
 if (!signalsModuleGlobal.__WorthCachedSignalsModuleCleanupInstalled) {
   process.once("exit", () => {
     for (const tempDir of cachedSignalsModuleTempDirs) {
       rmSync(tempDir, { recursive: true, force: true });
     }
   });
+  after(async () => {
+    const roots = [...liveSignalsRoots];
+    liveSignalsRoots.clear();
+    for (const root of roots) {
+      await root.terminate();
+    }
+  });
   signalsModuleGlobal.__WorthCachedSignalsModuleCleanupInstalled = true;
+}
+
+function trackSignalsRoots(createRoot) {
+  return async function createTrackedSignalsRoot(...args) {
+    const root = await createRoot(...args);
+    liveSignalsRoots.add(root);
+    return root;
+  };
 }
 
 export async function loadSignalsModule(options = {}) {
@@ -106,10 +131,14 @@ async function loadSignalsModuleIntoCachedTempDir(options, cacheKey) {
           ).href
         ),
       ]);
-    return {
+    const loaded = {
       ...loadedSignals,
       ...loadedEntrypointConstruction,
       ...loadedWorkerRuntimeBridge,
+    };
+    return {
+      ...loaded,
+      createSignals: trackSignalsRoots(loaded.createSignals),
       importProductModule(relativePath) {
         return import(
           pathToFileURL(

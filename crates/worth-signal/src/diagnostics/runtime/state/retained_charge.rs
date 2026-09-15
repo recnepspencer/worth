@@ -53,6 +53,7 @@ impl DiagnosticsState {
             latest_invalidation_trace_records,
             observation_activation_mask: _,
             lineage_custody,
+            transaction_flow_scope: _,
         } = self;
         prepare_index_histories(replay_events_by_branch, work)?;
         prepare_index_histories(replay_events_by_node, work)?;
@@ -109,6 +110,8 @@ impl PendingFlowInput {
             changed_aspects,
             changed_region_count: _,
             causality_kind,
+            // Copy-sized counter snapshot: no retained heap.
+            performed_baseline: _,
         } = self;
         changed_nodes
             .prepare_retained_charge(work)?

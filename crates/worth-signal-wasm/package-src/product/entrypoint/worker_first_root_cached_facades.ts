@@ -60,7 +60,10 @@ export function createRootDiagnosticsFacade(rootSession) {
       return diagnosticsContextOrLive(rootSession).recentHistory;
     },
     hostCapabilityReport() {
-      rootSession.requireActiveDiagnostics("diagnostics.hostCapabilityReport");
+      // Host-side evidence: the report is built from this root's own
+      // authored callbacks and the denials its detached handles recorded,
+      // never from the worker. It stays readable after terminate() so the
+      // denials a detached handle produced can be inspected afterwards.
       return rootSession.hostCapabilityReport();
     },
     subscribe(listener) {
@@ -75,13 +78,22 @@ export function createRootAdaptersFacade(rootSession) {
       return rootSession.currentImportContext().runtimeDefinitionEnvelope;
     },
     exportRuntimeEnvelope() {
-      return rootSession.currentImportContext().runtimeEnvelopeArtifact;
+      return rootSession.currentImportContext().requireRuntimeEnvelopeArtifact();
     },
     async replaceRuntimeEnvelope(envelope) {
       return rootSession.replaceRuntimeEnvelope(envelope);
     },
     async restoreExactRuntimeEnvelope(envelope) {
       return rootSession.restoreExactRuntimeEnvelope(envelope);
+    },
+    discardExactRuntimeEnvelope(envelope) {
+      const restoreToken = envelope?.runtimeEnvelopeRestoreToken;
+      if (typeof restoreToken !== "string") {
+        throw new TypeError(
+          "adapters.discardExactRuntimeEnvelope expects an artifact returned by adapters.exportRuntimeEnvelope()",
+        );
+      }
+      return rootSession.bridge().discardRestoreToken(restoreToken);
     },
     runtimeProofReport() {
       return rootSession.currentImportContext().runtimeProofReport;

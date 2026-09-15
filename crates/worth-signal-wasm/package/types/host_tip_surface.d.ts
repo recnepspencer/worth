@@ -1,6 +1,16 @@
 /**
- * Host tip ingress surfaces for worker-first.
- * Paint follows tip notify; settleAuthoredWork remains the handoff drain.
+ * Host tip ingress surfaces, present on every deployment.
+ *
+ * Worker-first: host tips advance immediately, observers are notified once,
+ * and exactly one worker batch follows. Paint follows tip notify;
+ * settleAuthoredWork remains the handoff drain.
+ *
+ * Main-thread compatibility: the runtime applies the same writes in one
+ * transaction and projects dependents synchronously inside it, so
+ * `projectedReadableIds` is empty, `applyCommittedTipWorkerBatch` only
+ * validates epochs (a stale batch throws), and `settleAuthoredWork` resolves
+ * immediately. Line bindings and forms use this one tip-batch path in both
+ * deployments instead of N independent `signal.set()` calls.
  */
 
 export interface HostTipWrite {

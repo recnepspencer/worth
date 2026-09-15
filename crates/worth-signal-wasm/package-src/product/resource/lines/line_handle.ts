@@ -19,6 +19,7 @@ import { createLineSignalLocalTruthHandle } from "./reads/line_signal_local_trut
 import { createLineView } from "./line_view_factory.js";
 import { requireCurrentMaterialization } from "./state/line_handle_helpers.js";
 import { readLineBindingState } from "./state/line_binding_state.js";
+import { createTimedOutLineStatus } from "./state/line_status_value.js";
 import { createResourceViewHandle } from "../views/view_handle.js";
 
 function isPartialConfirmationKind(confirmationKind) {
@@ -65,6 +66,32 @@ function readAwaitSettlementResult(lineBacking) {
     freshness,
     diagnosticsSummary,
     mutationResponse,
+    confirmationKind: null,
+  });
+}
+
+// The waiter's deadline elapsed while the line is still pending. This is the
+// waiter's result, not the line's: the line keeps its pending status and
+// settles later like any other pending reload. `status` reports the pending
+// operation and continuity as timed out so callers branch on `resultKind`
+// exactly as they do for a policy timeout.
+function readAwaitSettlementTimedOutResult(lineBacking) {
+  const materialization = requireCurrentMaterialization(lineBacking);
+  requireActiveLine(materialization, "awaitSettlement");
+  const pending = readLineStatus(materialization);
+  const diagnostics = readLineBindingState(materialization.binding).diagnostics;
+  return Object.freeze({
+    resultKind: "timedOut",
+    status: createTimedOutLineStatus(
+      pending.operation,
+      pending.continuity === "preservedVisibleValue",
+    ),
+    summary: readLineSummary(materialization),
+    freshness: readLineFreshness(materialization),
+    diagnosticsSummary: readLineDiagnosticsSummary(materialization),
+    mutationResponse: "lastMutationResponsePlan" in diagnostics
+      ? diagnostics.lastMutationResponsePlan
+      : null,
     confirmationKind: null,
   });
 }
@@ -142,6 +169,33 @@ function awaitLineSettlement(lineBacking, activeWaiterFailures, options = {}) {
       );
     }
 
+    // A deadline is a deadline: the timed-out result never waits on authored
+    // work, even when `drainAuthoredWork` was requested for the settled case.
+    function finishTimedOut() {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      cleanup();
+      resolve(readAwaitSettlementTimedOutResult(lineBacking));
+    }
+
+    function observeDeadline() {
+      if (finished) {
+        return;
+      }
+      try {
+        const settled = readAwaitSettlementResult(lineBacking);
+        if (settled !== null) {
+          finish(settled);
+          return;
+        }
+        finishTimedOut();
+      } catch (error) {
+        fail(error);
+      }
+    }
+
     function bindCurrentStatusSignal() {
       const materialization = requireCurrentMaterialization(lineBacking);
       requireActiveLine(materialization, "awaitSettlement");
@@ -183,9 +237,7 @@ function awaitLineSettlement(lineBacking, activeWaiterFailures, options = {}) {
       activeWaiterFailures.add(fail);
       bindCurrentStatusSignal();
       if (typeof options.timeoutMs === "number" && options.timeoutMs >= 0) {
-        timeoutHandle = setTimeout(() => {
-          fail(new Error("Timed out waiting for resource line settlement."));
-        }, options.timeoutMs);
+        timeoutHandle = setTimeout(observeDeadline, options.timeoutMs);
       }
       observeSettlement();
     } catch (error) {

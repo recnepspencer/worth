@@ -114,7 +114,8 @@ export interface ResourceLineStaleFreshness {
     | "deliveryInvalidate"
     | "manualLineInvalidate"
     | "manualFamilyInvalidate"
-    | "manualFamilyInvalidateAll";
+    | "manualFamilyInvalidateAll"
+    | "manualRuntimeInvalidateAll";
 }
 
 export type ResourceLineFreshness =

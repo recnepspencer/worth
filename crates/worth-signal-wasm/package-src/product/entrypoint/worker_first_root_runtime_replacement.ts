@@ -20,6 +20,9 @@ export function createWorkerFirstRootRuntimeReplacement(deps) {
         );
         await deps.observations.clearContext(deps.bridge);
         await deps.hostCapabilities.replayCurrentIngress();
+        // The live diagnostics describe the runtime that now exists, not the
+        // one that was replaced.
+        await deps.publishDiagnosticsChanged();
       }
       return report;
     },
@@ -43,6 +46,7 @@ export function createWorkerFirstRootRuntimeReplacement(deps) {
         );
         await deps.observations.clearContext(deps.bridge);
         await deps.hostCapabilities.replayCurrentIngress();
+        await deps.publishDiagnosticsChanged();
       }
       return report;
     },

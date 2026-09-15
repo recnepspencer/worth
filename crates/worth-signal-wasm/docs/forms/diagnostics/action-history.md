@@ -72,7 +72,9 @@ console.log(form.debugAction("submit"));
 - action attempt history tells you whether a plan was accepted or denied
 - action execution history tells you what happened after execution started
 - `debugAction(actionId)` gives you the current plan, nearby blockers, and the
-  filtered attempt/execution history for one action
+  filtered attempt/execution history for one action; its `verification` and
+  `digest` fields are computed on first access, so reading `pending` or
+  `latestExecution` on every render never rebuilds the verification package
 - `form.diagnosticsSummary().histories.actionAttempts` and
   `actionExecutions` show retained counts
 

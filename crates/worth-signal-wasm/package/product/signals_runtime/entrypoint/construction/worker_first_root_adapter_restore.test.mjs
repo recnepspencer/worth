@@ -67,6 +67,7 @@ test("default worker-first root adapters restore runtime envelopes, preserve tru
     await reimportedAfterPortable.ready();
     assert.equal(workerSignals.read(outputId), 18);
     const workerChangedArtifact = workerSignals.adapters().exportRuntimeEnvelope();
+    const summaryBeforeExact = workerSignals.diagnostics().summaryNow();
 
     const exactImport = await workerSignals.adapters().restoreExactRuntimeEnvelope(workerChangedArtifact);
     assert.equal(exactImport.importOutcome, "AdmittedExact");
@@ -74,10 +75,12 @@ test("default worker-first root adapters restore runtime envelopes, preserve tru
       () => reimportedAfterPortable.read(),
       /replaced the active imported graph runtime/,
     );
-    assert.throws(
-      () => workerSignals.diagnostics().summaryNow(),
-      /active imported graph/,
-    );
+    // The imported graph handle is gone, but the root's live diagnostics
+    // describe the runtime that now exists: the exactly restored one, which
+    // has the same graph the replaced import had.
+    const summaryAfterExact = workerSignals.diagnostics().summaryNow();
+    assert.equal(summaryAfterExact.active_node_count, summaryBeforeExact.active_node_count);
+    assert.equal(summaryAfterExact.dependency_edge_count, summaryBeforeExact.dependency_edge_count);
 
     const reimportedAfterExact = workerSignals.importGraph(definition, changedSnapshot);
     await reimportedAfterExact.ready();

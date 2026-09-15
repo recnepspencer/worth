@@ -203,6 +203,10 @@ class WorkerRuntimeBridge {
     return this.#request("exportWorkerRuntimeEnvelopeWire");
   }
 
+  discardRestoreToken(token) {
+    return this.#request("discardRestoreToken", token);
+  }
+
   exportWorkerRuntimeEnvelopePortableWire() {
     return this.#request("exportWorkerRuntimeEnvelopePortableWire");
   }

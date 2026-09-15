@@ -122,6 +122,7 @@ class WorkerFirstRootSession {
       authoredRuntime: this.#authoredRuntime,
       hostCapabilities: this.#hostCapabilities,
       invalidateActiveImport: (message) => this.#invalidateActiveImport(message),
+      publishDiagnosticsChanged: () => this.publishDiagnosticsChanged(),
     });
     this.#bootstrap = this.#bootstrapBridge();
     this.#terminated = false;

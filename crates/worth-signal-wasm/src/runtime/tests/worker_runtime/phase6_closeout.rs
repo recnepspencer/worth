@@ -34,6 +34,7 @@ fn certify_same_runtime_restore(shell: &mut WorkerRuntimeShell) {
 }
 
 fn certify_checkpoint_retained_history(shell: &mut WorkerRuntimeShell) {
+    let main_branch = shell.branch_truth_envelope().unwrap();
     let branch = shell
         .create_branch("phase6-checkpoint-feature".to_owned())
         .unwrap();
@@ -50,6 +51,9 @@ fn certify_checkpoint_retained_history(shell: &mut WorkerRuntimeShell) {
     shell
         .certify_worker_replay_checkpoint_retained_history()
         .unwrap();
+    // Exact restore artifacts are exported from the root branch; the
+    // checkpoint story ends back on it like the restore story does.
+    shell.switch_branch(main_branch.branch_id).unwrap();
 }
 
 fn certify_import_export_callback_unavailability(shell: &mut WorkerRuntimeShell) {

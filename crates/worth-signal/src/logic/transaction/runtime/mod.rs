@@ -8,7 +8,7 @@ pub(crate) use state::TemporalRuntimeState;
 
 pub use computation::{DefinedComputation, DefinedKeyedComputation, Recipe};
 pub use config::SignalRuntimeConfig;
-pub use execution::{RuntimeExecutionRequest, TransactionExecutionRequest};
+pub use execution::{ObservedDemandSummary, RuntimeExecutionRequest, TransactionExecutionRequest};
 pub(crate) use state::admit_signal_observation_request;
 pub(crate) use state::RuntimeObservationRegistry;
 pub(crate) use state::SignalCanonicalCallerUnwind;

@@ -106,7 +106,7 @@ function createMaterializedLine(
     invalidateNamespace = false,
   } = {}) {
     if (invalidateNamespace) {
-      resourceLineEpoch.invalidateAll();
+      resourceLineEpoch.advanceVersion();
     }
     return lineBacking.forceRematerialize(
       () =>

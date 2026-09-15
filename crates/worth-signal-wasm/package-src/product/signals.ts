@@ -1,3 +1,8 @@
+import {
+  applyCompatibilityCommittedTipBatch,
+  commitCompatibilityHostTip,
+  publishCompatibilityAuthoredTipProjection,
+} from "./authoring/compatibility_host_tip.js";
 import { withComputedCallbackFrame } from "./callback_frames.js";
 import { buildControllerContract } from "./controllers.js";
 import { createHostCapabilities } from "./host_capabilities.js";
@@ -55,6 +60,19 @@ export function wrapSignals(rawSignals, options) {
   const hostCapabilities = createHostCapabilities(rawSignals, options);
   let diagnostics = null;
   let history = null;
+  let authoredSettleInvocations = 0;
+  // Releasing the runtime is idempotent: terminate(), free() and
+  // Symbol.dispose all release once, and a second release after any of them
+  // is a no-op rather than a second free() into the wasm handle.
+  let released = false;
+  function releaseRuntime(releaseRaw) {
+    if (released) {
+      return;
+    }
+    released = true;
+    hostCapabilities.dispose();
+    releaseRaw();
+  }
   const contract = createSignalsRuntimeContract({
     surfaceFamily: "mainThreadCompatibilityCallable",
     deployment: "mainThreadCompatibility",
@@ -335,21 +353,39 @@ export function wrapSignals(rawSignals, options) {
     },
     compatibilityApp: rawSignals.compatibilityApp.bind(rawSignals),
     compatibilityRuntime: rawSignals.compatibilityRuntime.bind(rawSignals),
+    // Host tip surface (see host_tip_surface.d.ts). The compatibility runtime
+    // applies tips synchronously, so the authored-work drain resolves at once;
+    // the invocation counter exists so proofs can assert it was (not) called.
+    settleAuthoredWork() {
+      authoredSettleInvocations += 1;
+      return Promise.resolve();
+    },
+    authoredSettleInvocationCount() {
+      return authoredSettleInvocations;
+    },
+    commitHostTipAndNotify(tipWrites) {
+      return commitCompatibilityHostTip(rawSignals, tipWrites);
+    },
+    applyCommittedTipWorkerBatch(tipWrites) {
+      return applyCompatibilityCommittedTipBatch(rawSignals, tipWrites);
+    },
+    publishAuthoredTipProjection(changedIds) {
+      publishCompatibilityAuthoredTipProjection(rawSignals, changedIds);
+    },
     async terminate() {
-      hostCapabilities.dispose();
-      rawSignals.free();
+      releaseRuntime(() => rawSignals.free());
     },
     free() {
-      hostCapabilities.dispose();
-      rawSignals.free();
+      releaseRuntime(() => rawSignals.free());
     },
     [Symbol.dispose]() {
-      hostCapabilities.dispose();
-      if (typeof rawSignals[Symbol.dispose] === "function") {
-        rawSignals[Symbol.dispose]();
-        return;
-      }
-      rawSignals.free();
+      releaseRuntime(() => {
+        if (typeof rawSignals[Symbol.dispose] === "function") {
+          rawSignals[Symbol.dispose]();
+          return;
+        }
+        rawSignals.free();
+      });
     },
     [RAW_SIGNALS]: rawSignals,
   };

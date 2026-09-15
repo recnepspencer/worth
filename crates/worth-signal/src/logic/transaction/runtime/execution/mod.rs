@@ -5,4 +5,4 @@ mod transaction_evaluation;
 mod transaction_keyed;
 
 pub use runtime_execution::RuntimeExecutionRequest;
-pub use transaction_evaluation::TransactionExecutionRequest;
+pub use transaction_evaluation::{ObservedDemandSummary, TransactionExecutionRequest};

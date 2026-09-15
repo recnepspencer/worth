@@ -38,13 +38,22 @@ export function createWorkerFirstAdaptersFacade(workerFirstSession) {
       }
       return workerFirstSession.bridge.admitWorkerRuntimeEnvelopeImportWire(restoreToken);
     },
+    discardExactRuntimeEnvelope(envelope) {
+      const restoreToken = envelope?.runtimeEnvelopeRestoreToken;
+      if (typeof restoreToken !== "string") {
+        throw new TypeError(
+          "worker-first adapters.discardExactRuntimeEnvelope(...) requires an artifact returned by exportRuntimeEnvelope()",
+        );
+      }
+      return workerFirstSession.bridge.discardRestoreToken(restoreToken);
+    },
     runtimeProofReport() {
       return workerFirstSession.bridge.runtimeProofReport();
     },
     async hostCapabilityTransportReport(envelope) {
       const definitions =
         envelope?.definitions
-        ?? (await workerFirstSession.bridge.exportDefinitions()).definitions;
+        ?? (await workerFirstSession.bridge.exportDefinitions());
       return buildHostCapabilityTransportReport(definitions?.unavailableCallbacks);
     },
   });

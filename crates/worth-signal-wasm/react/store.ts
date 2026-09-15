@@ -6,6 +6,7 @@ import type {
   SignalsDiagnosticsSnapshot,
   SignalsLike,
 } from "./model.js";
+import { sameSignalSnapshot } from "./signal_snapshot_equality.js";
 
 type SignalEntry = {
   id: string;
@@ -218,15 +219,27 @@ export function createReactSignalsStore<TSignals extends SignalsLike>(
 
   function getSignalSnapshot(target: SignalHandleLike | string): unknown {
     const entry = ensureSignalEntry(target);
-    // Always enter root read before serving a cached snapshot. importGraph
-    // supersession (and foreign-handle attacks) can invalidate authority without
-    // a per-signal watch notice; sticky React cache must not zombie-serve truth.
-    if (entry.listeners.size === 0 || entry.snapshotVersion !== entry.version) {
-      entry.snapshot = readSignalValue(signals, entry.target);
-      entry.snapshotVersion = entry.version;
-    } else {
+    // Every snapshot read enters root read first. importGraph supersession (and
+    // foreign-handle attacks) invalidate authority without a per-signal watch
+    // notice; the root read throws for them, so a cached snapshot can never
+    // zombie-serve truth.
+    if (entry.listeners.size > 0 && entry.snapshotVersion === entry.version) {
+      // Subscribed and current: the watch is the change channel, the read is
+      // only the authority check, and React keeps the cached reference.
       signals.read(entry.target);
+      return entry.snapshot;
     }
+    const fresh = readSignalValue(signals, entry.target);
+    // Unsubscribed (React reads before it subscribes, twice in development) or
+    // invalidated by a watch notice: adopt the fresh value, but keep the cached
+    // reference when the value did not change so `useSyncExternalStore` sees a
+    // stable snapshot instead of a new object per render.
+    if (entry.snapshotVersion !== -1 && sameSignalSnapshot(entry.snapshot, fresh)) {
+      entry.snapshotVersion = entry.version;
+      return entry.snapshot;
+    }
+    entry.snapshot = fresh;
+    entry.snapshotVersion = entry.version;
     return entry.snapshot;
   }
 

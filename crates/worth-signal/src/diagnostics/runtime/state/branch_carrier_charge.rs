@@ -82,6 +82,7 @@ impl DiagnosticsState {
             next_lineage_artifact_id: _,
             next_lineage_sequence: _,
             observation_activation_mask: _,
+            transaction_flow_scope: _,
             lineage_custody,
             replay_events_by_branch,
             replay_events_by_node,
@@ -196,6 +197,7 @@ mod tests {
             changed_aspects: Default::default(),
             changed_region_count: 0,
             causality_kind: None,
+            performed_baseline: Default::default(),
         });
         assert_eq!(
             carrier.retained_branch_carrier_charge(&mut Preparation::new(1_000)),

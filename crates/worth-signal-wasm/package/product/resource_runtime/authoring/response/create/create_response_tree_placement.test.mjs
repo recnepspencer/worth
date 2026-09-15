@@ -63,25 +63,29 @@ test("create responses deny tree insert when the declared parent path does not e
     const line = treeTasks.line({});
     const before = structuredClone(line.value());
 
-    assert.throws(
-      () =>
-        runtime.signals.api({}).url("/tasks")
-          .response(runtime.signals.resource.response.detail()())
-          .create({
-            reconciles: [{
-              family: treeTasks,
-              params: () => ({}),
-              fallback: "placementUnavailable",
-              collection: { kind: "insert", placement: "append" },
-            }],
-            load: ({ body }) => body,
-          })
-          .line({
-            body: { id: "task:2", title: "Second", children: [] },
-          })
-          .mutationResponse(),
+    const created = runtime.signals.api({}).url("/tasks")
+      .response(runtime.signals.resource.response.detail()())
+      .create({
+        reconciles: [{
+          family: treeTasks,
+          params: () => ({}),
+          fallback: "placementUnavailable",
+          collection: { kind: "insert", placement: "append" },
+        }],
+        load: ({ body }) => body,
+      })
+      .line({
+        body: { id: "task:2", title: "Second", children: [] },
+      });
+
+    // The denial settles the write line rejected with the reason; the target
+    // tree is untouched.
+    assert.equal(created.status().kind, "rejected");
+    assert.match(
+      created.status().message,
       /tree parent path "missing-parent" to resolve an existing parent node/,
     );
+    assert.equal(created.mutationResponse(), null);
 
     assert.deepEqual(line.value(), before);
     assert.equal(line.diagnostics().lastEffect, null);

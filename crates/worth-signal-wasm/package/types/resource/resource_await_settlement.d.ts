@@ -17,8 +17,12 @@ import type {
 
 export interface ResourceLineAwaitSettlementOptions {
   /**
-   * Failure-only deadline while waiting for this line's tip status to leave
-   * pending. Not a paint barrier — UI freshness follows tip notify.
+   * Deadline while waiting for this line's tip status to leave pending. When
+   * it elapses first the promise resolves with `resultKind: "timedOut"` and a
+   * `timedOut` status for the pending operation; it never rejects for time.
+   * The line itself is unaffected: it stays pending and settles later, and a
+   * new `awaitSettlement()` call observes that settlement. Not a paint
+   * barrier — UI freshness follows tip notify.
    */
   readonly timeoutMs?: number;
   /**
@@ -47,6 +51,12 @@ export interface ResourceLineAwaitSettlementFulfilledResult<
   readonly confirmationKind: ResourceMutationResponseConfirmationKind | null;
 }
 
+/**
+ * `rejected` is the line's own settlement. `timedOut` is either the line's
+ * policy timeout (the line status is `timedOut`) or the waiter's `timeoutMs`
+ * deadline (the line status is still `pending`); `status.operation` names the
+ * operation in both cases.
+ */
 export interface ResourceLineAwaitSettlementFailedResult<TParams = unknown> {
   readonly resultKind: "rejected" | "timedOut";
   readonly status: ResourceLineRejectedStatus | ResourceLineTimedOutStatus;

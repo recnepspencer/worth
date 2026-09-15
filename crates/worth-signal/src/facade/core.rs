@@ -1,3 +1,4 @@
+mod diagnostics_views;
 mod invalidation;
 
 pub use crate::data::aspect::{
@@ -229,6 +230,7 @@ pub use crate::data::temporal::{
 pub use crate::data::trace::TraceSummary;
 pub use crate::logic::evaluation::ConditionEvaluationContext;
 pub use crate::logic::invalidation::mark_dirty_batch;
+pub use diagnostics_views::refresh_retained_diagnostics_views;
 pub use invalidation::{
     mark_changed, mark_changed_with_regions, mark_dirty, mark_dirty_with_regions,
 };

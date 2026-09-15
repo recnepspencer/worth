@@ -2,6 +2,7 @@ import "./resource_runtime/lifecycle/history_honesty.test.mjs";
 import "./resource_runtime/lifecycle/async_first_history_parity.test.mjs";
 import "./resource_runtime/lifecycle/initial_async_materialization.test.mjs";
 import "./resource_runtime/lifecycle/invalidation.test.mjs";
+import "./resource_runtime/lifecycle/runtime_invalidation.test.mjs";
 import "./resource_runtime/lifecycle/invalidation_overlap.test.mjs";
 import "./resource_runtime/lifecycle/diagnostics/refresh_diagnostics.test.mjs";
 import "./resource_runtime/lifecycle/lifecycle_and_refresh.test.mjs";

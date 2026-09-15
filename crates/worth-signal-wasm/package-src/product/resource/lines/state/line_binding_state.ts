@@ -126,6 +126,18 @@ function publishLineBindingState(binding, nextState, previousState = null) {
     epochAtWrite: tipEpoch.epochById?.get?.(write.id),
   }));
   void lineScope.applyCommittedTipWorkerBatch(stampedWrites);
+
+  // The readable computed is the runtime's copy of the line's value: graph
+  // outputs, watches and history (replay frames, lineage) all key on it. It
+  // is evaluated with every published value so the runtime holds the truth
+  // the line claims, instead of waiting for a reader that may never come and
+  // leaving history empty. `get()` (not `peek()`: peek returns the cached
+  // value without evaluating) is frame-free here: the tip commit above is a
+  // mutation, which is denied inside any computed callback frame, so no
+  // frame can be open at this point on either deployment.
+  if (tipWrites.some((write) => write.signal === binding.valueSignal)) {
+    binding.readableValueSignal.get();
+  }
 }
 
 export {

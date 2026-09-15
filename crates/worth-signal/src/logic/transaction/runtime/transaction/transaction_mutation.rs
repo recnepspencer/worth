@@ -170,6 +170,23 @@ where
         self.apply_result(result)
     }
 
+    /// Installs the dependency set an evaluation inside this transaction
+    /// discovered for `node`, without invalidating the value it produced.
+    /// See `SignalGraph::set_evaluated_dependencies`; the rollback packet
+    /// retains the original node image exactly as `set_dependencies` does.
+    pub fn set_evaluated_dependencies(
+        &mut self,
+        node: NodeId,
+        dependencies: impl IntoIterator<Item = DependencyEdge>,
+    ) -> Result<(), SignalError> {
+        self.ensure_rollback_packets();
+        self.scratch
+            .graph_patches
+            .stage_original(self.graph, node)?;
+        let result = self.graph.set_evaluated_dependencies(node, dependencies);
+        self.apply_result(result)
+    }
+
     pub fn batch_changes<'tx>(&'tx mut self) -> BatchChangeSession<'tx, 'a, D, I, E, Ctx, T> {
         BatchChangeSession::new(self)
     }

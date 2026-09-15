@@ -76,6 +76,11 @@ where
         self.observations().matching_observers_for_node(node)
     }
 
+    /// Every node with at least one live observer, in node order.
+    pub fn observed_node_ids(&self) -> Vec<NodeId> {
+        self.observations().observed_node_ids().collect()
+    }
+
     /// Reset the runtime to the named diagnostics tier preset.
     ///
     /// This is a convenience for switching back to a stock posture.

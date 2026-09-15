@@ -200,7 +200,9 @@ durable, collaborative, or authoritative over server truth.
 3. Keep the ID-to-meaning mapping beside the domain model and reuse it at
    declaration, read, and write boundaries.
 4. Prime or observe derived nodes before expecting them to appear as active
-   subscribers in diagnostics.
+   subscribers in diagnostics. Published outputs are standing demand and
+   recompute at commit when an aspect write reaches them; other computeds
+   recompute on their next read.
 5. Test negative space: prove that unrelated subscribers were *not*
    invalidated.
 

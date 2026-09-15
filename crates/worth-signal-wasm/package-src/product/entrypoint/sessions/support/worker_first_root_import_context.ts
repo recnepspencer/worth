@@ -1,4 +1,7 @@
-import { normalizeWorkerRuntimeEnvelope } from "../../bridge/worker_runtime_envelope_normalization.js";
+import {
+  normalizeWorkerRuntimeDefinitionEnvelope,
+  normalizeWorkerRuntimeEnvelope,
+} from "../../bridge/worker_runtime_envelope_normalization.js";
 import {
   createWorkerFirstSnapshotArtifact,
   createWorkerFirstSnapshotEnvelopeArtifact,
@@ -10,11 +13,23 @@ export async function buildActiveImportContext(bridge, definition, snapshot) {
   const outputSourceIds = definition.descriptors.map((descriptor) => descriptor.sourceId);
   const signalIds = [...new Set([...inputIds, ...outputIds, ...outputSourceIds])];
   const branchesPromise = bridge.branches();
+  const currentBranchPromise = bridge.currentBranch();
+  // Exact runtime restore artifacts are root-branch evidence: the runtime refuses to mint
+  // them while a child branch is active, so the context only asks for them on the root branch
+  // and records the denial otherwise. Definitions have no branch preflight and stay cached.
+  const exactRuntimeArtifactsPromise = currentBranchPromise.then((branch) => (
+    branch.parent_branch_id === null
+      ? Promise.all([
+        bridge.exportWorkerRuntimeEnvelope(),
+        bridge.exportWorkerRuntimeEnvelopeWire(),
+        bridge.exportWorkerRuntimeEnvelopePortableWire(),
+      ])
+      : null
+  ));
   const [
-    runtimeEnvelope,
+    runtimeDefinitionEnvelope,
     snapshotEnvelopeArtifact,
-    runtimeEnvelopeRestoreToken,
-    runtimeEnvelopePortableWire,
+    exactRuntimeArtifacts,
     diagnosticsSummaryPacket,
     diagnosticsHistoryPacket,
     signalReadbackPacket,
@@ -39,16 +54,15 @@ export async function buildActiveImportContext(bridge, definition, snapshot) {
     branchSnapshotEnvelopes,
     branchStateProofs,
   ] = await Promise.all([
-    bridge.exportWorkerRuntimeEnvelope(),
+    bridge.exportDefinitions(),
     bridge.exportWorkerSnapshotEnvelopeArtifact(),
-    bridge.exportWorkerRuntimeEnvelopeWire(),
-    bridge.exportWorkerRuntimeEnvelopePortableWire(),
+    exactRuntimeArtifactsPromise,
     bridge.readDiagnosticsSummary(),
     bridge.readDiagnosticsHistory(),
     bridge.readSignals({ signalIds }),
     bridge.readVersions(signalIds),
     bridge.health(),
-    bridge.currentBranch(),
+    currentBranchPromise,
     branchesPromise,
     bridge.latestFlow(),
     bridge.latestObservation(),
@@ -78,7 +92,15 @@ export async function buildActiveImportContext(bridge, definition, snapshot) {
       workerBranches.map(async (branch) => [branch.id, await bridge.branchStateProof(branch.id)]),
     )),
   ]);
-  const normalizedRuntimeEnvelope = normalizeWorkerRuntimeEnvelope(runtimeEnvelope);
+  const definitions = normalizeWorkerRuntimeDefinitionEnvelope(runtimeDefinitionEnvelope);
+  const runtimeEnvelopeArtifact = exactRuntimeArtifacts === null
+    ? null
+    : Object.freeze({
+      ...normalizeWorkerRuntimeEnvelope(exactRuntimeArtifacts[0]),
+      runtimeEnvelopeRestoreToken: exactRuntimeArtifacts[1],
+      runtimeEnvelopeRestoreMode: "SameRuntimeExact",
+      runtimeEnvelopePortableWire: exactRuntimeArtifacts[2],
+    });
   return Object.freeze({
     definition,
     snapshot,
@@ -89,18 +111,19 @@ export async function buildActiveImportContext(bridge, definition, snapshot) {
       definition.descriptors.map((descriptor) => [descriptor.sourceId, descriptor]),
     ),
     sourceDefinitionById: new Map(
-      (normalizedRuntimeEnvelope.definitions.sources ?? []).map((source) => [source.id, source]),
+      (definitions.sources ?? []).map((source) => [source.id, source]),
     ),
     recipeDefinitionById: new Map(
-      (normalizedRuntimeEnvelope.definitions.recipes ?? []).map((recipe) => [recipe.id, recipe]),
+      (definitions.recipes ?? []).map((recipe) => [recipe.id, recipe]),
     ),
-    runtimeDefinitionEnvelope: normalizedRuntimeEnvelope.definitions,
-    runtimeEnvelopeArtifact: Object.freeze({
-      ...normalizedRuntimeEnvelope,
-      runtimeEnvelopeRestoreToken,
-      runtimeEnvelopeRestoreMode: "SameRuntimeExact",
-      runtimeEnvelopePortableWire,
-    }),
+    runtimeDefinitionEnvelope: definitions,
+    runtimeEnvelopeArtifact,
+    requireRuntimeEnvelopeArtifact() {
+      if (runtimeEnvelopeArtifact === null) {
+        throw workerFirstRootBranchExactExportDenial(currentBranch);
+      }
+      return runtimeEnvelopeArtifact;
+    },
     snapshotEnvelope: createWorkerFirstSnapshotEnvelopeArtifact(snapshotEnvelopeArtifact),
     diagnosticsSummary: diagnosticsSummaryPacket.summary,
     diagnosticsHistory: diagnosticsHistoryPacket.history,
@@ -145,6 +168,18 @@ export async function buildActiveImportContext(bridge, definition, snapshot) {
     ),
     branchStateProofByBranchId: workerFirstBranchMap(branchStateProofs),
   });
+}
+
+// Mirrors the denial the worker runtime raises for exact runtime envelope exports on a child
+// branch, so callers see the same error whether the artifact is cached or minted on demand.
+function workerFirstRootBranchExactExportDenial(currentBranch) {
+  const error = new Error(
+    "exact runtime restore artifacts require the root branch to be active"
+    + ` (branch ${currentBranch.id} "${currentBranch.name}" is active; switch to its root branch first)`,
+  );
+  error.name = "WorkerRuntimeBridgeError";
+  error.code = "invalidInput";
+  return error;
 }
 
 function workerFirstBranchMap(entries) {

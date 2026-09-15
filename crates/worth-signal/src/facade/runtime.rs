@@ -117,6 +117,7 @@ pub use crate::logic::transaction::RuntimeHistory as History;
 #[cfg(test)]
 pub use crate::logic::transaction::SignalRuntimeConfig;
 pub use crate::logic::transaction::SignalRuntimeConfig as RuntimeConfig;
+pub use crate::logic::transaction::ObservedDemandSummary;
 pub use crate::logic::transaction::TransactionExecutionRequest as TransactionRunRequest;
 #[cfg(test)]
 pub use crate::logic::transaction::{

@@ -1,8 +1,36 @@
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+
+const wasmBindgenGlueFileName = "worth_signal_wasm_bg.js";
+
+/**
+ * Reads the public export names of the wasm-bindgen glue so the entry re-exports
+ * exactly what the crate exposes. A hard-coded list silently went stale when the
+ * crate gained `discardRestoreToken`, which made `raw_surface.js` fail to link.
+ */
+export async function readWasmBindgenPublicExportNames(pkgDir) {
+  const glueSource = await readFile(path.join(pkgDir, wasmBindgenGlueFileName), "utf8");
+  const names = new Set();
+  for (const match of glueSource.matchAll(
+    /^export\s+(?:async\s+)?(?:function|class)\s+([A-Za-z_$][\w$]*)/gmu,
+  )) {
+    const name = match[1];
+    // `__wbg_*` / `__wbindgen_*` are wasm import shims, never part of the surface.
+    if (!name.startsWith("__")) {
+      names.add(name);
+    }
+  }
+  if (names.size === 0) {
+    throw new Error(
+      `worth-signals-wasm: found no public exports in ${wasmBindgenGlueFileName}; was wasm-pack run with --target bundler?`,
+    );
+  }
+  return [...names].sort((left, right) => left.localeCompare(right, "en"));
+}
 
 /** Writes the bundler-compatible WASM JS entry with HTML-as-WASM diagnostics. */
 export async function writeBundlerCompatibleWasmEntrypoint(pkgDir) {
+  const publicExportNames = await readWasmBindgenPublicExportNames(pkgDir);
   const source = `/* @ts-self-types="./worth_signal_wasm.d.ts" */
 
 import * as imports from "./worth_signal_wasm_bg.js";
@@ -106,7 +134,7 @@ function assertWasmMagic(bytes, sourceLabel) {
 
 export default init;
 export {
-    ComputedSignal, DisposableHandle, InputSignal, OutputSignal, SignalAdapters, SignalApp, SignalDiagnostics, SignalHistory, SignalRuntime, SignalSpecialist, SignalWorkerRuntime, Signals, SignalsTransaction, createSignals, WorthSignalCoreProfile, WorthSignalMaxAspects, start
+    ${publicExportNames.join(", ")}
 } from "./worth_signal_wasm_bg.js";
 `;
   await writeFile(path.join(pkgDir, "worth_signal_wasm.js"), source, "utf8");

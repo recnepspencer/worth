@@ -83,6 +83,7 @@ fn publish_definition_envelope_parts_with_callback_reattachments(
     required_callback_ids: &BTreeSet<String>,
     reattachments_by_id: &mut BTreeMap<String, DefinitionEnvelopeCallbackReattachment>,
 ) -> Result<(), WorthSignalJsError> {
+    let worker_public_output_ids = envelope.worker_public_output_ids;
     for family in envelope.source_families {
         runtime.define_source_family(family)?;
     }
@@ -130,6 +131,7 @@ fn publish_definition_envelope_parts_with_callback_reattachments(
             }
         }
     }
+    runtime.mark_worker_public_outputs(worker_public_output_ids)?;
     Ok(())
 }
 
@@ -150,11 +152,17 @@ fn publish_callback_free_definition_envelope(
     publish_planned_callback_free_definition_envelope_parts(runtime, envelope, plan)
 }
 
+/// Publishes every part of a callback-free definition envelope, including
+/// its public output marks. `worker_public_output_ids` is part of the
+/// definition: a runtime built from an envelope must treat the same recipes
+/// as published outputs (standing demand at commit) as the runtime that
+/// exported it, or the two commit different truths for the same transaction.
 fn publish_planned_callback_free_definition_envelope_parts(
     runtime: &mut RuntimeCore,
     envelope: RuntimeDefinitionEnvelope,
     publication_plan: DefinitionPublicationPlan,
 ) -> Result<(), WorthSignalJsError> {
+    let worker_public_output_ids = envelope.worker_public_output_ids;
     for family in envelope.source_families {
         runtime.define_source_family(family)?;
     }
@@ -182,6 +190,7 @@ fn publish_planned_callback_free_definition_envelope_parts(
         })?;
         runtime.define_recipe(recipe)?;
     }
+    runtime.mark_worker_public_outputs(worker_public_output_ids)?;
     Ok(())
 }
 

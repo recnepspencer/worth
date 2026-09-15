@@ -1732,6 +1732,7 @@ dependencies = [
  "sha2",
  "trybuild",
  "wasm-bindgen",
+ "worth-foundational",
  "worth-proof",
  "worth-signal",
 ]

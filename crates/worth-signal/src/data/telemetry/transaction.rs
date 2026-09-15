@@ -70,4 +70,15 @@ pub struct TransactionTelemetry {
     pub observation_classification_breadth: u64,
     pub delivered_observation_count: u64,
     pub rollback_suppressed_observation_count: u64,
+    /// Nodes visited while walking subscribers forward from a transaction's
+    /// staged candidates to find the observed nodes it impacted
+    /// (`SignalTransaction::evaluate_observed_demand`). Bounded by the
+    /// downstream reach of the change.
+    pub observed_demand_reach_visits: u64,
+    /// Observed nodes an `evaluate_observed_demand` pass selected as demand
+    /// targets because a staged candidate reaches them.
+    pub observed_demand_targets: u64,
+    /// Settlement passes `evaluate_observed_demand` ran (one pass evaluates
+    /// every non-clean node upstream of each target in dependency order).
+    pub observed_demand_passes: u64,
 }

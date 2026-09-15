@@ -76,8 +76,13 @@ import type {
   WorkerRuntimeShellLock,
 } from "./worker_runtime_bridge.js";
 
-/** Release one unused single-use exact restore token. */
+/**
+ * Release one pending exact restore artifact. `false` when the token is not
+ * pending in this realm (unknown, consumed, discarded, or evicted).
+ */
 export function discardRestoreToken(token: string): boolean;
+/** How many exact restore artifacts this realm currently holds (at most 64). */
+export function pendingRestoreTokenCount(): number;
 
 export class InputSignal {
   private constructor();
@@ -184,6 +189,7 @@ export class SignalHistory {
   snapshot(): RuntimeSnapshotEnvelope;
   snapshot_wire(): string;
   snapshot_portable_wire(): string;
+  discard_restore_token(token: string): boolean;
   restore_snapshot(snapshot: RuntimeSnapshotEnvelope): void;
   restore_snapshot_wire(snapshot: string): void;
   restore_snapshot_portable_wire(snapshot: string): void;
@@ -232,6 +238,7 @@ export class SignalAdapters {
   export_definitions(): RuntimeDefinitionEnvelope;
   export_runtime_envelope(): RuntimeEnvelope;
   export_runtime_envelope_wire(): string;
+  discard_restore_token(token: string): boolean;
   export_runtime_envelope_portable_wire(): string;
   replace_runtime_envelope(envelope: RuntimeEnvelope): void;
   replace_runtime_envelope_wire(envelope: string): void;
@@ -300,6 +307,7 @@ export class SignalWorkerRuntime {
     snapshotEnvelopePortableWire: string;
   };
   exportWorkerSnapshotEnvelopeWire(): string;
+  discardRestoreToken(token: string): boolean;
   exportWorkerSnapshotEnvelopePortableWire(): string;
   exportWorkerRuntimeEnvelopePortableWire(): string;
   admitWorkerRuntimeEnvelopeImport(envelope: RuntimeEnvelope): unknown;

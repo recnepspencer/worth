@@ -1,6 +1,7 @@
 use crate::runtime::tests::support::*;
 use crate::runtime::worker_host::{
-    WorkerObservationDeliveryAttachRequest, WorkerPortableGraphPublication, WorkerRuntimeShell,
+    publish_definition_envelope_into_worker_runtime, WorkerObservationDeliveryAttachRequest,
+    WorkerPortableGraphPublication, WorkerRuntimeShell,
 };
 
 pub(in crate::runtime::tests::worker_runtime) fn portable_counter_publication(
@@ -60,26 +61,19 @@ pub(in crate::runtime::tests::worker_runtime) fn double_counter_observation_atta
     }
 }
 
+/// Publishes `portable_counter_publication()` into a compatibility runtime
+/// through the same definition-envelope path the worker host uses, so the
+/// compatibility graph (including its public output marks) is the worker
+/// graph by construction rather than a hand-copied approximation of it.
 pub(in crate::runtime::tests::worker_runtime) fn define_portable_counter_graph(
     runtime: &mut RuntimeCore,
 ) {
-    runtime
-        .define_source(SourceSpec {
-            id: "counter".to_owned(),
-            initial: SignalValue::Number(1.0),
-            produces_aspects: None,
-        })
-        .unwrap();
-    runtime
-        .define_recipe(RecipeSpec {
-            id: "doubleCounter".to_owned(),
-            reads: vec![RecipeReadSpec::LegacyId("counter".to_owned())],
-            expr: Expr::Sum {
-                args: vec![read("counter"), read("counter")],
-            },
-            when: None,
-            identity: Some(IdentitySpec::Exact),
-            produces_aspects: None,
-        })
-        .unwrap();
+    let summary = publish_definition_envelope_into_worker_runtime(
+        runtime,
+        portable_counter_publication().into_definition_envelope(),
+    )
+    .unwrap();
+    assert_eq!(summary.published_source_count, 1);
+    assert_eq!(summary.published_recipe_count, 1);
+    assert!(runtime.is_web_output_signal("doubleCounter"));
 }
