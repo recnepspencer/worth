@@ -141,10 +141,10 @@ fn validate_rules(
     features: &[ApplicationFeatureDeclaration],
     rules: &[super::ApplicationProgramRuleDeclaration],
 ) -> Result<(), ApplicationProgramValidationDenial> {
-    let feature_ids = features
+    let feature_postures = features
         .iter()
-        .map(ApplicationFeatureDeclaration::identity)
-        .collect::<BTreeSet<_>>();
+        .map(|feature| (feature.identity(), feature.posture()))
+        .collect::<BTreeMap<_, _>>();
     let mut rule_ids = BTreeSet::new();
     for rule in rules {
         require_identity(rule.identity())?;
@@ -160,9 +160,15 @@ fn validate_rules(
         }
         if rule
             .local_owner()
-            .is_some_and(|owner| !feature_ids.contains(owner))
+            .is_some_and(|owner| !feature_postures.contains_key(owner))
         {
             return Err(denial(Kind::DanglingFeature, rule.identity()));
+        }
+        if rule.local_owner().is_some_and(|owner| {
+            rule.posture() == super::ApplicationProgramRulePosture::Available
+                && feature_postures.get(owner) == Some(&ApplicationFeaturePosture::Unavailable)
+        }) {
+            return Err(denial(Kind::AvailabilityMismatch, rule.identity()));
         }
     }
     Ok(())
@@ -235,7 +241,12 @@ fn validate_inventories(
         }
     }
     let mut closure = inventory_features;
-    closure.extend(rules.iter().filter_map(|rule| rule.local_owner()));
+    closure.extend(
+        rules
+            .iter()
+            .filter(|rule| rule.posture() == super::ApplicationProgramRulePosture::Available)
+            .filter_map(|rule| rule.local_owner()),
+    );
     loop {
         let before = closure.len();
         for connection in connections {

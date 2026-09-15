@@ -12,6 +12,21 @@ declaration validator rejects dangling or same-name foreign types, cycles,
 fan-in, unavailable work in an available closure, and connection roles the
 program scheduler cannot execute.
 
+Rules use the same explicit availability model as features and connections.
+`ApplicationProgramUnavailableLocalRule` and
+`ApplicationProgramUnavailableSharedRule` reserve typed future rule meaning in
+the validated graph without claiming that its invariant provider is installed.
+Installation requires every available rule and retains unavailable declarations
+for program inspection. It rejects an unavailable declaration once the matching
+provider is installed, forcing the program posture to advance with its schema.
+Provider presence matches the declared identifier, revision, and execution point,
+so a planned next revision may coexist with an installed current revision. An
+available local rule owned by an unavailable feature is an availability mismatch.
+
+Pre-1.0 API note: this capability adds the
+`UnavailableRuleInstalled` installation-denial kind. Exhaustive consumers must
+handle that new variant.
+
 The host installs the validated program together with its schema. A performed
 source mutation selects an installed output inventory and root connection by
 type:

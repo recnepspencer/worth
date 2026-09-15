@@ -185,6 +185,18 @@ impl ApplicationInvariantMarkerIdentity<Schema> for Rule {
 }
 
 type Rules = (ApplicationProgramSharedRule<Rule, AtCommitBoundary>,);
+type UnavailableRules = (
+    ApplicationProgramUnavailableLocalRule<Source, Rule, AtCommitBoundary>,
+    ApplicationProgramUnavailableSharedRule<Rule, AtCommitBoundary>,
+);
+type OrphanUnavailableLocalRule =
+    (ApplicationProgramUnavailableLocalRule<OtherSource, Rule, AtCommitBoundary>,);
+type DuplicatePostureRules = (
+    ApplicationProgramSharedRule<Rule, AtCommitBoundary>,
+    ApplicationProgramUnavailableSharedRule<Rule, AtCommitBoundary>,
+);
+type AvailableRuleForUnavailableFeature =
+    (ApplicationProgramLocalRule<Source, Rule, AtCommitBoundary>,);
 
 macro_rules! program {
     ($name:ident, $features:ty, $connections:ty, $inventories:ty) => {
@@ -290,6 +302,50 @@ impl ApplicationProgramDefinition<Schema> for NoRules {
     type Rules = ();
     type Inventories = (InventoryNode,);
     const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new("NoRules");
+}
+
+struct PlannedUnavailableRule;
+impl ApplicationProgramDefinition<Schema> for PlannedUnavailableRule {
+    type Contributions = ();
+    type Features = (SourceNode, TargetNode);
+    type Connections = (Connection,);
+    type Rules = UnavailableRules;
+    type Inventories = (InventoryNode,);
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("PlannedUnavailableRule");
+}
+
+struct AvailableOnlyByUnavailableRule;
+impl ApplicationProgramDefinition<Schema> for AvailableOnlyByUnavailableRule {
+    type Contributions = ();
+    type Features = (SourceNode, OtherSourceNode, TargetNode);
+    type Connections = (Connection,);
+    type Rules = OrphanUnavailableLocalRule;
+    type Inventories = (InventoryNode,);
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("AvailableOnlyByUnavailableRule");
+}
+
+struct DuplicateRulePostures;
+impl ApplicationProgramDefinition<Schema> for DuplicateRulePostures {
+    type Contributions = ();
+    type Features = (SourceNode, TargetNode);
+    type Connections = (Connection,);
+    type Rules = DuplicatePostureRules;
+    type Inventories = (InventoryNode,);
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("DuplicateRulePostures");
+}
+
+struct AvailableRuleOnUnavailableFeature;
+impl ApplicationProgramDefinition<Schema> for AvailableRuleOnUnavailableFeature {
+    type Contributions = ();
+    type Features = (UnavailableSourceNode,);
+    type Connections = ();
+    type Rules = AvailableRuleForUnavailableFeature;
+    type Inventories = (UnavailableInventoryNode,);
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("AvailableRuleOnUnavailableFeature");
 }
 
 mod impostors;

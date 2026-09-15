@@ -9,6 +9,24 @@ fn finite_typed_program_validates() {
     assert_eq!(program.inventories().len(), 1);
     assert!(validate_application_program::<Schema, NoRules>().is_ok());
     assert!(validate_application_program::<Schema, PlannedUnavailable>().is_ok());
+    let unavailable_rule =
+        validate_application_program::<Schema, PlannedUnavailableRule>().unwrap();
+    assert!(unavailable_rule
+        .rules()
+        .iter()
+        .all(|rule| rule.posture() == ApplicationProgramRulePosture::Unavailable));
+    assert_eq!(
+        denial::<AvailableOnlyByUnavailableRule>().kind(),
+        ApplicationProgramValidationDenialKind::OrphanFeature,
+    );
+    assert_eq!(
+        denial::<DuplicateRulePostures>().kind(),
+        ApplicationProgramValidationDenialKind::DuplicateRule,
+    );
+    assert_eq!(
+        denial::<AvailableRuleOnUnavailableFeature>().kind(),
+        ApplicationProgramValidationDenialKind::AvailabilityMismatch,
+    );
 }
 
 #[test]

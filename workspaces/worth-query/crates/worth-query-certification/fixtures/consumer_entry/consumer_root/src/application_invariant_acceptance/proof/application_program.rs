@@ -46,6 +46,7 @@ pub(super) fn lifecycle_proofs(
         ConsumerSchema,
     >,
 ) {
+    installation::assert_rule_provider_postures();
     authority_identity::forged_inventory_is_denied_before_publication(foreign);
     authority_identity::unavailable_inventory_is_denied_before_publication();
     custody::abandoned_and_superseded_preparations_are_bounded(foreign);

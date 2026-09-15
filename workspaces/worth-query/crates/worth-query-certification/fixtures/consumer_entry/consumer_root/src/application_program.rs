@@ -4,8 +4,10 @@ use worth_query_decl::facade::application_program::{
     ApplicationProgramDependentConnection, ApplicationProgramFeature, ApplicationProgramIdentity,
     ApplicationProgramInventory, ApplicationProgramInventoryIdentity, ApplicationProgramLocalRule,
     ApplicationProgramOutput, ApplicationProgramRequiredConnection, ApplicationProgramSharedRule,
-    ApplicationProgramUnavailableConnection, AtCommitBoundary,
+    ApplicationProgramUnavailableConnection, ApplicationProgramUnavailableSharedRule,
+    AtCommitBoundary,
 };
+use worth_query_decl::facade::application_schema::ApplicationInvariantMarkerIdentity;
 use worth_query_parameter_entry::{ParameterFeature, PositiveParameterCount};
 use worth_query_topology_entry::{
     PlanarBodyInput, PlanarBodyOutput, PlanarDerivedBodyInput, PlanarDerivedBodyOutput,
@@ -18,6 +20,8 @@ use crate::ConsumerSchema;
 
 pub struct ConsumerProgram;
 pub struct UnavailableConsumerProgram;
+pub struct MissingRuleProviderProgram;
+pub struct StaleUnavailableRuleProgram;
 pub struct ConsumerOutputs;
 
 impl ApplicationProgramInventoryIdentity for ConsumerOutputs {
@@ -93,6 +97,35 @@ type ProgramRules = (
     ApplicationProgramLocalRule<ParameterFeature, PositiveParameterCount, AtCommitBoundary>,
     ApplicationProgramSharedRule<PositivePlanarTurn, AtCommitBoundary>,
 );
+pub struct PlannedFutureRule;
+impl ApplicationInvariantMarkerIdentity<ConsumerSchema> for PlannedFutureRule {
+    const IDENTIFIER: &'static str = "PlannedFutureRule";
+    const MAJOR: u16 = 1;
+    const MINOR: u16 = 0;
+}
+pub struct PlannedPositivePlanarTurnV2;
+impl ApplicationInvariantMarkerIdentity<ConsumerSchema> for PlannedPositivePlanarTurnV2 {
+    const IDENTIFIER: &'static str =
+        <PositivePlanarTurn as ApplicationInvariantMarkerIdentity<ConsumerSchema>>::IDENTIFIER;
+    const MAJOR: u16 =
+        <PositivePlanarTurn as ApplicationInvariantMarkerIdentity<ConsumerSchema>>::MAJOR + 1;
+    const MINOR: u16 = 0;
+}
+type UnavailableProgramRules = (
+    ApplicationProgramLocalRule<ParameterFeature, PositiveParameterCount, AtCommitBoundary>,
+    ApplicationProgramSharedRule<PositivePlanarTurn, AtCommitBoundary>,
+    ApplicationProgramUnavailableSharedRule<PlannedFutureRule, AtCommitBoundary>,
+    ApplicationProgramUnavailableSharedRule<PlannedPositivePlanarTurnV2, AtCommitBoundary>,
+);
+type MissingRuleProviderRules = (
+    ApplicationProgramLocalRule<ParameterFeature, PositiveParameterCount, AtCommitBoundary>,
+    ApplicationProgramSharedRule<PositivePlanarTurn, AtCommitBoundary>,
+    ApplicationProgramSharedRule<PlannedFutureRule, AtCommitBoundary>,
+);
+type StaleUnavailableRuleRules = (
+    ApplicationProgramLocalRule<ParameterFeature, PositiveParameterCount, AtCommitBoundary>,
+    ApplicationProgramUnavailableSharedRule<PositivePlanarTurn, AtCommitBoundary>,
+);
 type ProgramInventories = (
     ApplicationProgramInventory<
         ConsumerOutputs,
@@ -124,10 +157,42 @@ impl ApplicationProgramDefinition<ConsumerSchema> for UnavailableConsumerProgram
         ParameterProgramFeature,
     );
     type Connections = UnavailableProgramConnections;
-    type Rules = ProgramRules;
+    type Rules = UnavailableProgramRules;
     type Inventories = ProgramInventories;
     const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
         "worth.query.certification.unavailable-consumer-program.v1",
+    );
+}
+
+impl ApplicationProgramDefinition<ConsumerSchema> for MissingRuleProviderProgram {
+    type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
+    type Features = (
+        SourceFeature,
+        OutputFeature,
+        FinalFeature,
+        ParameterProgramFeature,
+    );
+    type Connections = ProgramConnections;
+    type Rules = MissingRuleProviderRules;
+    type Inventories = ProgramInventories;
+    const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
+        "worth.query.certification.missing-rule-provider-program.v1",
+    );
+}
+
+impl ApplicationProgramDefinition<ConsumerSchema> for StaleUnavailableRuleProgram {
+    type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
+    type Features = (
+        SourceFeature,
+        OutputFeature,
+        FinalFeature,
+        ParameterProgramFeature,
+    );
+    type Connections = ProgramConnections;
+    type Rules = StaleUnavailableRuleRules;
+    type Inventories = ProgramInventories;
+    const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
+        "worth.query.certification.stale-unavailable-rule-program.v1",
     );
 }
 
@@ -139,4 +204,24 @@ pub fn validated_unavailable_program() -> Result<
     worth_query_decl::facade::application_program::ApplicationProgramValidationDenial,
 > {
     validate_application_program::<ConsumerSchema, UnavailableConsumerProgram>()
+}
+
+pub fn validated_missing_rule_provider_program() -> Result<
+    worth_query_decl::facade::application_program::ValidatedApplicationProgram<
+        ConsumerSchema,
+        MissingRuleProviderProgram,
+    >,
+    worth_query_decl::facade::application_program::ApplicationProgramValidationDenial,
+> {
+    validate_application_program::<ConsumerSchema, MissingRuleProviderProgram>()
+}
+
+pub fn validated_stale_unavailable_rule_program() -> Result<
+    worth_query_decl::facade::application_program::ValidatedApplicationProgram<
+        ConsumerSchema,
+        StaleUnavailableRuleProgram,
+    >,
+    worth_query_decl::facade::application_program::ApplicationProgramValidationDenial,
+> {
+    validate_application_program::<ConsumerSchema, StaleUnavailableRuleProgram>()
 }

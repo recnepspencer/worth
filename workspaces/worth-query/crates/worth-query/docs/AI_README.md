@@ -50,6 +50,16 @@ Each arrow is a proof transition. A later product may retain evidence from an
 earlier product, but no caller may reconstruct the later product from fields,
 identifiers, or equivalent-looking reports.
 
+Static application programs may include explicitly unavailable features,
+connections, and invariant rules so a product can install one typed destination
+graph while its implementation advances. Unavailable rules remain inspectable
+declarations and do not claim an installed invariant provider. Available rules
+must match an installed invariant's identifier, contract revision, and execution
+point before the program installs. An unavailable rule whose provider is already
+installed is rejected as a stale declaration.
+Provider presence is revision-specific, so an explicitly unavailable next rule
+revision may be planned while the current revision remains installed.
+
 ### Authority owners
 
 | Owner | Owns | Does not own |

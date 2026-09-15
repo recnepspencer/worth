@@ -4,7 +4,7 @@ use worth_query_declaration::facade::application_program::{
     ApplicationConnectionDeclaration, ApplicationFeatureDeclaration, ApplicationFeaturePosture,
     ApplicationProgramDefinition, ApplicationProgramIdentity,
     ApplicationProgramInventoryDeclaration, ApplicationProgramInventoryIdentity,
-    ApplicationProgramRuleDeclaration, ValidatedApplicationProgram,
+    ApplicationProgramRuleDeclaration, ApplicationProgramRulePosture, ValidatedApplicationProgram,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaBindingIdentity,
@@ -20,6 +20,7 @@ pub struct WorthQueryApplicationProgramInstallationDenial {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationProgramInstallationDenialKind {
     MissingInstalledRule,
+    UnavailableRuleInstalled,
     ConnectionIdentityMismatch,
     IncompleteExecutionBindings,
     RootDemandMismatch,
@@ -68,6 +69,23 @@ fn require_installed_rule(
         });
     }
     Ok(())
+}
+
+fn require_rule_provider(
+    identity: &str,
+    posture: ApplicationProgramRulePosture,
+    installed: bool,
+) -> Result<(), WorthQueryApplicationProgramInstallationDenial> {
+    match posture {
+        ApplicationProgramRulePosture::Available => require_installed_rule(identity, installed),
+        ApplicationProgramRulePosture::Unavailable if installed => {
+            Err(WorthQueryApplicationProgramInstallationDenial::new(
+                WorthQueryApplicationProgramInstallationDenialKind::UnavailableRuleInstalled,
+                identity,
+            ))
+        }
+        ApplicationProgramRulePosture::Unavailable => Ok(()),
+    }
 }
 
 /// Installed program meaning affine to one schema installation.
@@ -210,7 +228,7 @@ where
                     && candidate.minor() == rule.minor()
                     && candidate.execution_point() == rule.execution_point()
             });
-        require_installed_rule(rule.identity(), installed)?;
+        require_rule_provider(rule.identity(), rule.posture(), installed)?;
     }
     Ok(WorthQueryInstalledApplicationProgram {
         identity: program.identity().clone(),
@@ -236,5 +254,31 @@ mod tests {
             WorthQueryApplicationProgramInstallationDenialKind::MissingInstalledRule
         );
         assert_eq!(denial.subject(), "missing-rule");
+    }
+
+    #[test]
+    fn rule_posture_requires_exact_provider_presence() {
+        assert!(
+            require_rule_provider("available", ApplicationProgramRulePosture::Available, true,)
+                .is_ok()
+        );
+        assert!(require_rule_provider(
+            "planned",
+            ApplicationProgramRulePosture::Unavailable,
+            false,
+        )
+        .is_ok());
+        assert_eq!(
+            require_rule_provider("missing", ApplicationProgramRulePosture::Available, false,)
+                .unwrap_err()
+                .kind(),
+            WorthQueryApplicationProgramInstallationDenialKind::MissingInstalledRule,
+        );
+        assert_eq!(
+            require_rule_provider("stale", ApplicationProgramRulePosture::Unavailable, true,)
+                .unwrap_err()
+                .kind(),
+            WorthQueryApplicationProgramInstallationDenialKind::UnavailableRuleInstalled,
+        );
     }
 }

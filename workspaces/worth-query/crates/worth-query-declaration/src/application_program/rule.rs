@@ -34,6 +34,13 @@ pub struct ApplicationProgramRuleDeclaration {
     minor: u16,
     execution_point: ApplicationInvariantExecutionPoint,
     local_owner: Option<&'static str>,
+    posture: ApplicationProgramRulePosture,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ApplicationProgramRulePosture {
+    Available,
+    Unavailable,
 }
 
 impl ApplicationProgramRuleDeclaration {
@@ -51,6 +58,14 @@ impl ApplicationProgramRuleDeclaration {
     }
     pub const fn local_owner(&self) -> Option<&'static str> {
         self.local_owner
+    }
+    pub const fn posture(&self) -> ApplicationProgramRulePosture {
+        self.posture
+    }
+
+    const fn unavailable(mut self) -> Self {
+        self.posture = ApplicationProgramRulePosture::Unavailable;
+        self
     }
 }
 
@@ -81,6 +96,7 @@ where
             minor: Invariant::MINOR,
             execution_point,
             local_owner: Some(Feature::IDENTITY),
+            posture: ApplicationProgramRulePosture::Available,
         }
     }
 }
@@ -122,6 +138,7 @@ where
             minor: Invariant::MINOR,
             execution_point,
             local_owner: None,
+            posture: ApplicationProgramRulePosture::Available,
         }
     }
 }
@@ -140,6 +157,12 @@ pub struct ApplicationProgramLocalRule<Feature, Invariant, Point>(
     PhantomData<fn() -> (Feature, Invariant, Point)>,
 );
 pub struct ApplicationProgramSharedRule<Invariant, Point>(PhantomData<fn() -> (Invariant, Point)>);
+pub struct ApplicationProgramUnavailableLocalRule<Feature, Invariant, Point>(
+    PhantomData<fn() -> (Feature, Invariant, Point)>,
+);
+pub struct ApplicationProgramUnavailableSharedRule<Invariant, Point>(
+    PhantomData<fn() -> (Invariant, Point)>,
+);
 
 pub trait ApplicationProgramRuleNode<Schema>
 where
@@ -170,6 +193,35 @@ where
 {
     fn declaration() -> ApplicationProgramRuleDeclaration {
         ApplicationSharedRuleRef::<Schema, Invariant>::new().declaration(Point::POINT)
+    }
+}
+
+impl<Schema, Feature, Invariant, Point> ApplicationProgramRuleNode<Schema>
+    for ApplicationProgramUnavailableLocalRule<Feature, Invariant, Point>
+where
+    Schema: ApplicationSchema,
+    Feature: ApplicationFeature<Schema>,
+    Invariant: ApplicationInvariantMarkerIdentity<Schema>,
+    Point: ApplicationProgramExecutionPoint,
+{
+    fn declaration() -> ApplicationProgramRuleDeclaration {
+        ApplicationLocalRuleRef::<Schema, Feature, Invariant>::new()
+            .declaration(Point::POINT)
+            .unavailable()
+    }
+}
+
+impl<Schema, Invariant, Point> ApplicationProgramRuleNode<Schema>
+    for ApplicationProgramUnavailableSharedRule<Invariant, Point>
+where
+    Schema: ApplicationSchema,
+    Invariant: ApplicationInvariantMarkerIdentity<Schema>,
+    Point: ApplicationProgramExecutionPoint,
+{
+    fn declaration() -> ApplicationProgramRuleDeclaration {
+        ApplicationSharedRuleRef::<Schema, Invariant>::new()
+            .declaration(Point::POINT)
+            .unavailable()
     }
 }
 

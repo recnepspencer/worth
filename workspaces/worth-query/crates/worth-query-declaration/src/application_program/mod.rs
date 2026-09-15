@@ -41,7 +41,8 @@ pub use program::{
 };
 pub use rule::{
     ApplicationLocalRuleRef, ApplicationProgramExecutionPoint, ApplicationProgramLocalRule,
-    ApplicationProgramRuleDeclaration, ApplicationProgramRuleNode, ApplicationProgramRuleSet,
-    ApplicationProgramSharedRule, ApplicationSharedRuleRef, AtCommitBoundary, AtMutationSensitive,
-    AtSnapshotPublication,
+    ApplicationProgramRuleDeclaration, ApplicationProgramRuleNode, ApplicationProgramRulePosture,
+    ApplicationProgramRuleSet, ApplicationProgramSharedRule,
+    ApplicationProgramUnavailableLocalRule, ApplicationProgramUnavailableSharedRule,
+    ApplicationSharedRuleRef, AtCommitBoundary, AtMutationSensitive, AtSnapshotPublication,
 };
