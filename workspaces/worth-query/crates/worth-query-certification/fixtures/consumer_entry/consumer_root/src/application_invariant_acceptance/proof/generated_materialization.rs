@@ -18,6 +18,8 @@ use worth_query_topology_entry::{
 use super::{length, mutate, Request};
 use crate::ConsumerSchema;
 
+mod successor;
+
 pub(super) fn typed_reconstruction_preserves_query_authority(
     application: &WorthQueryPrimaryGraphApplicationRuntime<ConsumerSchema>,
     foreign: &WorthQueryPrimaryGraphApplicationRuntime<ConsumerSchema>,
@@ -38,6 +40,15 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         panic!("the reconstruction source cycle must publish: {outcome:?}")
     };
     let branch = receipt.product_branch();
+    let stale_source = request
+        .query(PlanarRead {
+            body_key: "anchor-a".to_owned(),
+        })
+        .execute()
+        .expect("the producer source query is admitted")
+        .observed_sources()[0]
+        .clone();
+    successor::publish_unrelated(request, branch);
     let retained_result = request
         .query(PlanarRead {
             body_key: "anchor-a".to_owned(),
@@ -54,6 +65,7 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         .observed_sources()[0]
         .clone();
     let retained = read(request, &vertices[0].body_key);
+    successor::require_stale_source_denial(application, scope, branch, stale_source);
     match application
         .on_branch(branch)
         .select()
@@ -76,7 +88,11 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         .suspend_current_generated_output::<InitialPlanarProducer<ConsumerSchema>>(scope, source)
     {
         Err(worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionFailure::ProductUnpublished(recovery)) => recovery,
-        _ => panic!("the injected owner failure must retain opaque suspension recovery"),
+        Err(failure) => panic!(
+            "the injected owner failure must retain opaque suspension recovery; got {}",
+            successor::failure_name(&failure)
+        ),
+        Ok(_) => panic!("the injected owner failure unexpectedly published"),
     };
     assert_eq!(recovery.product_branch(), branch);
     assert_eq!(read(request, &vertices[0].body_key), retained);
