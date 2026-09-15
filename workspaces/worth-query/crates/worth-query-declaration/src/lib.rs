@@ -38,6 +38,7 @@ mod portable_identity_macro;
 mod application_aftermath;
 mod application_capability;
 mod application_operation;
+mod application_program;
 mod application_query;
 #[macro_use]
 mod application_contribution_macro;

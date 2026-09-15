@@ -1,10 +1,10 @@
 //! Declaration-audience surface: exact re-exports from declaration authority.
 
 pub use worth_query_declaration::facade::{
-    application_aftermath, application_capability, application_operation, application_query,
-    application_schema, authentication, authoring, binding, branch, canonicalization, collection,
-    diagnostics, identity, identity_authority, portable_identity, schema_view, typed, validation,
-    view_declaration,
+    application_aftermath, application_capability, application_operation, application_program,
+    application_query, application_schema, authentication, authoring, binding, branch,
+    canonicalization, collection, diagnostics, identity, identity_authority, portable_identity,
+    schema_view, typed, validation, view_declaration,
 };
 pub use worth_query_declaration::{
     worth_query_ability, worth_query_application, worth_query_application_contribution,

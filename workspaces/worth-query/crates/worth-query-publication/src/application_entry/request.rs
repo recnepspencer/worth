@@ -11,6 +11,8 @@ use super::{
 };
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+mod program_outputs;
+
 /// Borrowed ordinary-request context. Construction selects no World state and
 /// resolves no application principal.
 pub struct WorthQueryApplicationRequest<'application, 'principal, 'scope, Schema> {
@@ -167,6 +169,23 @@ where
             self.branch,
             std::sync::Arc::clone(&self.observation),
             intent,
+        )
+    }
+
+    pub fn demand<Demand>(
+        &self,
+        demand: Demand,
+    ) -> WorthQueryApplicationOutputDemandRequest<'application, 'principal, 'scope, Schema, Demand>
+    where
+        Demand: worth_query_execution::facade::application_contribution::WorthQueryApplicationOutputDemand<Schema>,
+    {
+        WorthQueryApplicationOutputDemandRequest::new_at(
+            self.application,
+            self.principal,
+            self.scope,
+            self.branch,
+            std::sync::Arc::clone(&self.observation),
+            demand,
         )
     }
 }

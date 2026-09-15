@@ -71,6 +71,9 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
             .pending_application_retired_product_occurrences()
         {
             self.application
+                .output_demands
+                .release_product_occurrence(occurrence.incarnation());
+            self.application
                 .primary_provider
                 .release_product_occurrence_retention(
                     occurrence.branch(),

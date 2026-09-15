@@ -56,6 +56,7 @@ where
     const IDENTITY: &'static str;
     const HANDLER_IDENTITY: &'static str;
     const IDEMPOTENCY_IDENTITY: &'static str;
+    const REQUIRES_APPLICATION_PROGRAM: bool = false;
     const CANDIDATES: ApplicationCandidateRequirements;
 
     fn idempotency_key_identity(key: &Self::IdempotencyKey) -> [u8; 32];
@@ -88,6 +89,7 @@ where
             ApplicationOperationRef::<Schema, Self::Operation, Self::Input>::from_declaration();
         let field = Self::scope_field();
         ApplicationMutationBindingDescriptor::new::<
+            Self,
             Self::InputBinding,
             Self::ResultBinding,
             Self::Operation,
@@ -110,6 +112,7 @@ where
             ),
             ApplicationMutationPrincipalBindingContract::from_reference(Self::principal_binding()),
             Self::CANDIDATES,
+            Self::REQUIRES_APPLICATION_PROGRAM,
         )
     }
 }

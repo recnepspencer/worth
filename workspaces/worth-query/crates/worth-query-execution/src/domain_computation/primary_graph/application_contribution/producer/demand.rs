@@ -18,6 +18,7 @@ type FamilySourceQuery<Schema, Family> =
 mod disclosure;
 mod progression;
 mod readiness_delivery;
+mod scheduling_progression;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
@@ -26,6 +27,9 @@ pub enum WorthQueryOutputDemandDenialKind {
     AmbiguousApplicableProducer,
     ProducerUnavailable,
     SchedulingRejected,
+    SchedulingDeferred,
+    PublicationStale,
+    NoEffect,
     Superseded,
     Cancelled,
     TimedOut,
@@ -36,6 +40,7 @@ pub enum WorthQueryOutputDemandDenialKind {
     ForeignSettlement,
     RetainedBasisUnavailable,
     Closed,
+    DuplicatePerformedSource,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

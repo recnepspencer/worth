@@ -2,8 +2,14 @@
 
 mod denial;
 mod limits;
+mod program;
 pub use denial::WorthQueryInMemoryApplicationDenial;
 pub use limits::WorthQueryInMemoryApplicationLimits;
+pub use program::{
+    in_memory_program, WorthQueryAdmittedProgramDependentOutput,
+    WorthQueryAdmittedProgramRootOutput, WorthQueryProgramApplicationRuntime,
+    WorthQueryProgramRootOutputAdvance, WorthQuerySettledProgramRootOutput,
+};
 
 use super::application_contribution::{
     WorthQueryApplicationContributionTuple, WorthQueryConfiguredApplicationContributions,
@@ -36,6 +42,23 @@ pub fn in_memory<Schema>(
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
+) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
+where
+    Schema: ApplicationSchemaComposition,
+    Schema::Contributions: WorthQueryApplicationContributionTuple<Schema>,
+{
+    in_memory_with_program(declaration, configuration, limits, initial_state, false)
+}
+
+pub(super) fn in_memory_with_program<Schema>(
+    declaration: ApplicationSchemaDeclaration<Schema>,
+    configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+    limits: WorthQueryInMemoryApplicationLimits,
+    initial_state: impl FnOnce(
+        &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+        &WorthQueryInstalledApplicationSchema<Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
+    allow_program_required: bool,
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -77,6 +100,16 @@ where
     .map_err(Denial::Contributions)?;
     let (invariants, handlers, producers, conditionals) =
         configured.into_parts().map_err(Denial::Contributions)?;
+    if !allow_program_required {
+        if let Some(binding) = installed
+            .installed_mutation_binding_inventory()
+            .find(|binding| binding.requires_application_program())
+        {
+            return Err(Denial::ApplicationProgramRequired(
+                binding.identity().to_owned(),
+            ));
+        }
+    }
     let mut graph = authority
         .prepare_primary_graph_with_invariants(&runtime, &installed, limits.world, invariants)
         .map_err(Denial::Graph)?;

@@ -12,6 +12,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryPrimaryGraphFaul
     RelationalInvariantViolation,
     FailedPostCommitSnapshot,
     DelayedOutputReadinessDelivery,
+    FailedOutputReadinessEvaluation,
     #[cfg(test)]
     UndeclaredApplicationTouch,
     #[cfg(test)]
@@ -94,6 +95,7 @@ const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::RelationalInvariantViolation => 1 << 5,
         WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot => 1 << 7,
         WorthQueryPrimaryGraphFault::DelayedOutputReadinessDelivery => 1 << 9,
+        WorthQueryPrimaryGraphFault::FailedOutputReadinessEvaluation => 1 << 10,
         #[cfg(test)]
         WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch => 1 << 6,
         #[cfg(test)]

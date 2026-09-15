@@ -11,9 +11,9 @@ use crate::domain_computation::primary_graph::{
 
 /// Owner-retained result of one settled output demand.
 ///
-/// The retained World observation is the authority for later exact reads. The
-/// receipt remains descriptive publication evidence and is never used to
-/// reconstruct or search for the selected occurrence.
+/// The retained World observation is the authority for exact reads while a
+/// settlement is held. After compaction, the receipt identifies the same
+/// committed lineage so the owner can reacquire its still-current occurrence.
 pub struct WorthQueryOutputDemandSettlement {
     runtime_authority: u64,
     schema_binding: ApplicationSchemaBindingIdentity,
@@ -23,6 +23,17 @@ pub struct WorthQueryOutputDemandSettlement {
 }
 
 impl WorthQueryOutputDemandSettlement {
+    pub(in crate::domain_computation::primary_graph) fn belongs_to<Schema>(
+        &self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> bool
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        self.runtime_authority == runtime.runtime.authority_identity().as_u64()
+            && self.schema_binding == runtime.installed_schema.binding_identity()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn from_commit<Schema>(
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         receipt: WorthQueryApplicationCommitReceipt,
@@ -59,6 +70,19 @@ impl WorthQueryOutputDemandSettlement {
         self.readiness_delivery.as_ref()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn completion(
+        &self,
+    ) -> super::registry::WorthQueryCompletedOutputDemand {
+        super::registry::WorthQueryCompletedOutputDemand {
+            receipt: self.receipt.clone(),
+            readiness: self
+                .readiness_delivery
+                .as_ref()
+                .expect("a settled output retains readiness completion")
+                .clone(),
+        }
+    }
+
     #[doc(hidden)]
     pub fn retained_read(&self) -> Arc<WorthQueryApplicationReadObservation> {
         Arc::clone(&self.observation)
@@ -67,6 +91,7 @@ impl WorthQueryOutputDemandSettlement {
 
 /// Query-owned evidence that a fresh output patch reached its declared
 /// readiness conditional and produced a Signal successor.
+#[derive(Clone)]
 pub struct WorthQueryOutputReadinessDeliveryEvidence {
     conditional_successor: bool,
     truth_targets_admitted: usize,

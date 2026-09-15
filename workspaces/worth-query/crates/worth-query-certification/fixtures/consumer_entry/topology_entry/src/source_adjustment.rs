@@ -1,11 +1,10 @@
 use std::marker::PhantomData;
 
-use worth_query_consumer_values::{
-    PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength,
-};
+use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength};
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes, worth_query_structured_value_binding,
+    worth_query_operation_reads, worth_query_operation_writes,
+    worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
@@ -61,6 +60,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.planar-source-adjustment-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.planar-source-adjustment-command.v1";
+    const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 1024, 4096);
 
     fn idempotency_key_identity(key: &u64) -> [u8; 32] {

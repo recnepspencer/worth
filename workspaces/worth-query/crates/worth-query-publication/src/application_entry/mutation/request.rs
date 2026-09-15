@@ -7,7 +7,20 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
 
-pub struct WorthQueryApplicationMutationRequest<'application, 'principal, 'scope, Schema, Intent>
+#[doc(hidden)]
+pub struct WorthQueryMutationSourceUnprepared;
+
+#[doc(hidden)]
+pub struct WorthQueryMutationSourcePrepared;
+
+pub struct WorthQueryApplicationMutationRequest<
+    'application,
+    'principal,
+    'scope,
+    Schema,
+    Intent,
+    SourcePreparation = WorthQueryMutationSourceUnprepared,
+>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -22,6 +35,7 @@ where
             <<Intent::Binding as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
     >,
+    source_preparation: std::marker::PhantomData<SourcePreparation>,
 }
 
 pub struct WorthQueryApplicationMutationRequestWithIdempotency<
@@ -31,12 +45,19 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
     'key,
     Schema,
     Intent,
+    SourcePreparation = WorthQueryMutationSourceUnprepared,
 > where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
 {
-    pub(super) request:
-        WorthQueryApplicationMutationRequest<'application, 'principal, 'scope, Schema, Intent>,
+    pub(super) request: WorthQueryApplicationMutationRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Intent,
+        SourcePreparation,
+    >,
     pub(super) key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
 }
 
@@ -60,19 +81,48 @@ where
             branch,
             intent,
             source: None,
+            source_preparation: std::marker::PhantomData,
         }
     }
 
     pub fn expect_source(
-        mut self,
+        self,
         source: worth_query_execution::facade::primary_graph::WorthQueryObservedSource<
             <<Intent::Binding as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
-    ) -> Self {
-        self.source = Some(source);
-        self
+    ) -> WorthQueryApplicationMutationRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Intent,
+        WorthQueryMutationSourcePrepared,
+    > {
+        WorthQueryApplicationMutationRequest {
+            application: self.application,
+            principal: self.principal,
+            scope: self.scope,
+            branch: self.branch,
+            intent: self.intent,
+            source: Some(source),
+            source_preparation: std::marker::PhantomData,
+        }
     }
+}
 
+impl<'application, 'principal, 'scope, Schema, Intent, SourcePreparation>
+    WorthQueryApplicationMutationRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Intent,
+        SourcePreparation,
+    >
+where
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema>,
+{
     pub fn idempotency<'key>(
         self,
         key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
@@ -83,6 +133,7 @@ where
         'key,
         Schema,
         Intent,
+        SourcePreparation,
     > {
         WorthQueryApplicationMutationRequestWithIdempotency { request: self, key }
     }

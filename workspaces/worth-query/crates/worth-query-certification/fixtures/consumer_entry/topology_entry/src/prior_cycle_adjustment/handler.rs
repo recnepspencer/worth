@@ -9,8 +9,8 @@ pub(super) mod decision;
 
 pub struct PriorCycleAdjustmentHandler;
 
-impl<Schema: TopologySchemaBinding>
-    OperationHandler<Schema, PriorCycleAdjustmentBinding<Schema>> for PriorCycleAdjustmentHandler
+impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PriorCycleAdjustmentBinding<Schema>>
+    for PriorCycleAdjustmentHandler
 {
     fn decide(
         &self,

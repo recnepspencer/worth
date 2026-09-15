@@ -271,6 +271,7 @@ fn topology_configuration(calls: &Arc<AtomicUsize>) -> TopologyConfiguration {
         setup_calls: Arc::clone(calls),
         invariant_calls: Arc::new(AtomicUsize::new(0)),
         invariant_probe: Arc::new(AtomicUsize::new(0)),
+        producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
     }
 }
 
@@ -292,7 +293,7 @@ fn assert_contribution_denial<Schema>(
 ) {
     match result {
         Err(WorthQueryInMemoryApplicationDenial::Contributions(denial)) => {
-            assert_eq!(denial.kind(), expected)
+            assert_eq!(denial.kind(), expected, "{denial:?}")
         }
         Err(other) => panic!("expected contribution denial {expected:?}, got {other:?}"),
         Ok(_) => panic!("invalid contribution setup published an application"),

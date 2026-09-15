@@ -24,6 +24,11 @@ pub use live::{
 pub use mutation::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequest,
     WorthQueryApplicationMutationRequestWithIdempotency,
+    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputHandle,
+    WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
+    WorthQueryMutationSourcePrepared, WorthQueryPerformedApplicationMutation,
+    WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
+    WorthQueryRequiredOutputStartFailure, WorthQueryStartedRequiredOutputs,
 };
 pub use query::WorthQueryApplicationQueryRequest;
 pub use request::{

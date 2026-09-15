@@ -36,6 +36,7 @@ pub use access_receipt::{
 };
 pub use admitted_result::{
     WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationOutputDemandDisclosure,
+    WorthQueryApplicationOutputDemandSource,
 };
 pub use authorization_work::WorthQueryApplicationAuthorizationWorkEvidence;
 #[cfg(test)]

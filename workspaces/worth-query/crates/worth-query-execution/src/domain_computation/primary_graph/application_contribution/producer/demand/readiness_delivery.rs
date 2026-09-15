@@ -47,24 +47,39 @@ where
         let delivery = match outcome {
             Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivery)) => delivery,
             Ok(outcome) => {
-                let result = Err(denial(
-                    WorthQueryOutputDemandDenialKind::SchedulingRejected,
-                    format!("{producer_identity}: readiness delivery returned {outcome:?}"),
+                let detail = format!("{producer_identity}: readiness delivery returned {outcome:?}");
+                let change = outcome
+                    .into_retry_change()
+                    .expect("non-success delivery returns its performed change");
+                self.output_demands.finish_delivery_pending(
+                    interest,
+                    crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputDelivery {
+                        receipt,
+                        change,
+                    },
+                );
+                return Err(denial(
+                    WorthQueryOutputDemandDenialKind::SchedulingDeferred,
+                    detail,
                 ));
-                self.output_demands.finish(interest, &result);
-                return result.map(WorthQueryOutputDemandAdvance::Settled);
             }
             Err(delivery_denial) => {
-                let result = Err(denial(
+                let failure = denial(
                     WorthQueryOutputDemandDenialKind::SchedulingRejected,
                     format!(
                         "{producer_identity}: readiness delivery denied ({:?}): {}",
                         delivery_denial.kind(),
                         delivery_denial.detail(),
                     ),
-                ));
-                self.output_demands.finish(interest, &result);
-                return result.map(WorthQueryOutputDemandAdvance::Settled);
+                );
+                self.output_demands.finish_delivery_pending(
+                    interest,
+                    crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputDelivery {
+                        receipt,
+                        change: delivery_denial.into_change(),
+                    },
+                );
+                return Err(failure);
             }
         };
         if !delivery.has_conditional_successor() {
@@ -87,21 +102,40 @@ where
             self.output_demands.finish(interest, &result);
             return result.map(WorthQueryOutputDemandAdvance::Settled);
         }
+        self.finish_output_readiness_evaluation::<Family>(
+            interest,
+            producer_identity,
+            crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputReadiness {
+                receipt,
+                delivery,
+            },
+        )
+    }
+
+    pub(super) fn finish_output_readiness_evaluation<Family>(
+        &self,
+        interest: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandInterest,
+        producer_identity: &str,
+        pending: crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputReadiness,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
         let readiness = match self.evaluate_current_output_readiness(
             producer_identity,
-            &receipt,
-            Some(&delivery),
+            &pending.receipt,
+            Some(&pending.delivery),
         ) {
             Ok(readiness) => readiness,
             Err(denial) => {
-                let result = Err(denial);
-                self.output_demands.finish(interest, &result);
-                return result.map(WorthQueryOutputDemandAdvance::Settled);
+                self.output_demands
+                    .finish_readiness_pending(interest, pending);
+                return Err(denial);
             }
         };
         let result = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_commit(
             self,
-            receipt,
+            pending.receipt,
             readiness,
         );
         self.output_demands.finish(interest, &result);
@@ -117,6 +151,15 @@ where
         crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence,
         WorthQueryOutputDemandDenial,
     >{
+        if self
+            .primary_provider
+            .take_failed_output_readiness_evaluation()
+        {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::SchedulingDeferred,
+                format!("{producer_identity}: injected transient readiness evaluation failure"),
+            ));
+        }
         let route = self
             .output_readiness_routes
             .get(producer_identity)

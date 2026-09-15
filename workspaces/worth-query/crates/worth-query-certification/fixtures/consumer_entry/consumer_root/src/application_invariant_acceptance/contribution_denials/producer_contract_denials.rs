@@ -357,6 +357,7 @@ fn foreign_source_selector_is_denied_before_initial_state() {
         setup_calls: counter(),
         invariant_calls: counter(),
         invariant_probe: counter(),
+        producer_authorization_denials: counter(),
     };
     let result = application_installation::in_memory::<ForeignOperationSchema>(
         ForeignOperationSchema::declaration().unwrap(),

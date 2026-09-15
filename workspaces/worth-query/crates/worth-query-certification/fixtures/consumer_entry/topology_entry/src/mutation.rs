@@ -117,11 +117,11 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationOutputContract<Schema> fo
         >(
             "anchor", ApplicationMutationOutputPosture::Preserve
         )];
-    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[
-        ApplicationMutationOutputRoleFamilyDescriptor::for_entity::<Schema, Body>(
-            "created.",
-            ApplicationMutationOutputPostureSet::CREATE,
-            0,
-        ),
-    ];
+    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
+        &[ApplicationMutationOutputRoleFamilyDescriptor::for_entity::<
+            Schema,
+            Body,
+        >(
+            "created.", ApplicationMutationOutputPostureSet::CREATE, 0
+        )];
 }

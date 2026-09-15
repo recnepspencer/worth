@@ -20,6 +20,10 @@ pub mod application_operation {
     pub use crate::application_operation::*;
 }
 
+pub mod application_program {
+    pub use crate::application_program::*;
+}
+
 pub mod authentication {
     pub use crate::authentication::*;
 }

@@ -21,6 +21,7 @@ pub struct TopologyConfiguration {
     pub setup_calls: Arc<AtomicUsize>,
     pub invariant_calls: Arc<AtomicUsize>,
     pub invariant_probe: Arc<AtomicUsize>,
+    pub producer_authorization_denials: Arc<AtomicUsize>,
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
@@ -32,8 +33,10 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         contracts.producer::<InitialPlanarProducer<Schema>>()?;
+        contracts.producer::<super::PlanarFinalOutputProducer<Schema>>()?;
         contracts.producer::<super::AlternatePlanarOutputProducer<Schema>>()?;
         contracts.conditional::<InitialPlanarReadiness<Schema>>()?;
+        contracts.conditional::<super::PlanarFinalOutputReadiness<Schema>>()?;
         contracts.conditional::<super::AlternatePlanarReadiness<Schema>>()?;
         Ok(())
     }
@@ -55,6 +58,9 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
             },
         )?;
         setup.handler::<PlanarMutationBinding<Schema>, _>(PlanarHandler)?;
+        setup.handler::<super::FinalPlanarMutationBinding<Schema>, _>(
+            super::FinalPlanarMutationHandler,
+        )?;
         setup.handler::<super::AlternatePlanarOutputBinding<Schema>, _>(
             super::AlternatePlanarOutputHandler,
         )?;
@@ -64,11 +70,17 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         setup.handler::<super::PlanarSourceAdjustmentBinding<Schema>, _>(
             super::PlanarSourceAdjustmentHandler,
         )?;
-        setup.producer::<InitialPlanarProducer<Schema>>(super::InitialPlanarProvider)?;
+        setup.producer::<InitialPlanarProducer<Schema>>(super::InitialPlanarProvider::new(
+            configuration.producer_authorization_denials,
+        ))?;
+        setup.producer::<super::PlanarFinalOutputProducer<Schema>>(
+            super::PlanarFinalOutputProvider,
+        )?;
         setup.producer::<super::AlternatePlanarOutputProducer<Schema>>(
             super::AlternatePlanarOutputProvider,
         )?;
         setup.conditional::<InitialPlanarReadiness<Schema>>(())?;
+        setup.conditional::<super::PlanarFinalOutputReadiness<Schema>>(())?;
         setup.conditional::<super::AlternatePlanarReadiness<Schema>>(())?;
         setup.handler::<super::VertexReplacementBinding<Schema>, _>(super::VertexReplacementHandler)
     }

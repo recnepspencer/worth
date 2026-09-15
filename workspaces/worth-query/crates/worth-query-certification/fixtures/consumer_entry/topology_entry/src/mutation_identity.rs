@@ -33,6 +33,11 @@ pub fn input_identity(input: &PlanarMutation) -> [u8; 32] {
                 );
             }
         }
+        PlanarOperation::PublishDerivedOutput(output) => {
+            bytes.push(4);
+            text(&mut bytes, &output.body_key);
+            bytes.extend_from_slice(&PositiveLength::get(&output.value).to_be_bytes());
+        }
         PlanarOperation::RetargetSuccessor {
             source_key,
             previous_target_key,

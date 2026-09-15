@@ -4,8 +4,9 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_execution::facade::primary_graph::{
     HandlerResult, MutationHandlerExecutionDenial, WorthQueryAdmittedApplicationOperation,
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationIdempotencyResolution,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
+    WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -14,7 +15,7 @@ use super::{
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 
-impl<'application, 'principal, 'scope, 'key, Schema, Intent>
+impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
         'application,
         'principal,
@@ -22,6 +23,7 @@ impl<'application, 'principal, 'scope, 'key, Schema, Intent>
         'key,
         Schema,
         Intent,
+        SourcePreparation,
     >
 where
     Schema: ApplicationSchema,
@@ -33,7 +35,7 @@ where
         >,
 {
     pub fn execute(
-        mut self,
+        self,
     ) -> Result<
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -41,6 +43,39 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
+        self.execute_with_commit(false, |application, program, idempotency| {
+            application.compare_and_commit_application(program, idempotency)
+        })
+    }
+
+    pub(super) fn execute_with_commit(
+        mut self,
+        retain_output_demand_observation: bool,
+        commit: impl FnOnce(
+            &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+            WorthQueryApplicationEffectProgram<
+                Schema,
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Input,
+                <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+            >,
+            WorthQueryApplicationIdempotencyBinding,
+        ) -> WorthQueryApplicationCommitOutcome,
+    ) -> Result<
+        WorthQueryApplicationMutationOutcome<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
+        >,
+        WorthQueryApplicationRequestMutationDenial,
+    > {
+        if !retain_output_demand_observation
+            && self
+                .request
+                .application
+                .requires_application_program::<Intent::Binding>()
+        {
+            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
+        }
         let prepared = super::authorization::prepare(&mut self)?;
         let admission = prepared.admission;
         let idempotency = prepared.idempotency;
@@ -71,11 +106,7 @@ where
         };
         let (program, result) = completed.into_parts();
         Ok(
-            match self
-                .request
-                .application
-                .compare_and_commit_application(program, idempotency)
-            {
+            match commit(self.request.application, program, idempotency) {
                 WorthQueryApplicationCommitOutcome::Committed(receipt) => {
                     WorthQueryApplicationMutationOutcome::Committed { receipt, result }
                 }

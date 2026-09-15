@@ -41,6 +41,9 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             .begin_product_branch_close(self.branch, WorthQueryProductBranchCloseScope::Application)
             .map_err(WorthQueryApplicationProductBranchCloseDenial::Product)?;
         self.application
+            .output_demands
+            .release_product_occurrence(pending.occurrence().incarnation());
+        self.application
             .primary_provider
             .release_product_occurrence_retention(
                 pending.occurrence().branch(),

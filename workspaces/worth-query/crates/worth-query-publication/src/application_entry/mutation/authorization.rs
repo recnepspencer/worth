@@ -34,8 +34,16 @@ where
     pub(super) idempotency: WorthQueryApplicationIdempotencyBinding,
 }
 
-pub(super) fn prepare<Schema, Intent>(
-    request: &mut WorthQueryApplicationMutationRequestWithIdempotency<'_, '_, '_, '_, Schema, Intent>,
+pub(super) fn prepare<Schema, Intent, SourcePreparation>(
+    request: &mut WorthQueryApplicationMutationRequestWithIdempotency<
+        '_,
+        '_,
+        '_,
+        '_,
+        Schema,
+        Intent,
+        SourcePreparation,
+    >,
 ) -> Result<PreparedMutation<Schema, IntentBinding<Schema, Intent>>, WorthQueryApplicationRequestMutationDenial>
 where
     Schema: ApplicationSchema,

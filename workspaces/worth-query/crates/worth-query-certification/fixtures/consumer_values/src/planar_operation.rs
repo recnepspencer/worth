@@ -20,9 +20,16 @@ pub struct PlanarCurrentOutputExpectation {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PlanarDerivedOutput {
+    pub body_key: String,
+    pub value: PositiveLength,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PlanarOperation {
     CreateCycle(Vec<PlanarVertex>),
     Adjust(Vec<PlanarAdjustment>),
+    PublishDerivedOutput(PlanarDerivedOutput),
     RetargetSuccessor {
         source_key: String,
         previous_target_key: String,

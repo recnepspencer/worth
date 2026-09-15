@@ -3,8 +3,8 @@ use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, 
 use worth_query_decl::facade::application_operation::ApplicationCandidateRequirements;
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole,
-    WorthQueryCreateOutput, WorthQueryCurrentOutputRole, WorthQueryCurrentOutputSelection,
+    WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
+    WorthQueryCurrentOutputRole, WorthQueryCurrentOutputSelection,
 };
 
 pub struct PlanarHandler;
@@ -44,6 +44,20 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarMutationBindi
                         }
                         Err(error) => return HandlerResult::ExecutionDenied(error),
                     }
+                }
+            }
+            PlanarOperation::PublishDerivedOutput(output) => {
+                let entity =
+                    match reader.resolve_entity(BodyKey::reference(), output.body_key.clone()) {
+                        Ok(entity) => entity,
+                        Err(error) => return HandlerResult::ExecutionDenied(error),
+                    };
+                match reader.field(&entity, Length::reference()) {
+                    Ok(Some(_)) => {}
+                    Ok(None) => {
+                        return HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate)
+                    }
+                    Err(error) => return HandlerResult::ExecutionDenied(error),
                 }
             }
             PlanarOperation::RetargetSuccessor {
@@ -91,10 +105,9 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarMutationBindi
             }
             PlanarOperation::VerifyCurrentOutputs(expectations) => {
                 for expectation in expectations {
-                    let producer = match reader.resolve_entity(
-                        BodyKey::reference(),
-                        expectation.producer_key.clone(),
-                    ) {
+                    let producer = match reader
+                        .resolve_entity(BodyKey::reference(), expectation.producer_key.clone())
+                    {
                         Ok(entity) => entity,
                         Err(error) => return HandlerResult::ExecutionDenied(error),
                     };
@@ -147,6 +160,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarMutationBindi
                 vertices.len().saturating_mul(4),
             ),
             PlanarOperation::Adjust(adjustments) => (0, 0, 0, adjustments.len()),
+            PlanarOperation::PublishDerivedOutput(_) => (0, 0, 0, 1),
             PlanarOperation::RetargetSuccessor { .. } => (0, 1, 1, 0),
             PlanarOperation::VerifyCurrentOutputs(_) => (0, 0, 0, 0),
         };
@@ -175,7 +189,9 @@ fn author<Schema: TopologySchemaBinding>(
         .map_err(HandlerExecutionDenial::new)?;
     writer
         .preserve_output(
-            worth_query_host::facade::primary_graph::WorthQueryApplicationOutputRole::from_static("anchor"),
+            worth_query_host::facade::primary_graph::WorthQueryApplicationOutputRole::from_static(
+                "anchor",
+            ),
             &anchor,
         )
         .map_err(HandlerExecutionDenial::new)?;
@@ -237,6 +253,15 @@ fn author<Schema: TopologySchemaBinding>(
                     .map_err(HandlerExecutionDenial::new)?;
             }
             Ok(adjustments.len())
+        }
+        PlanarOperation::PublishDerivedOutput(output) => {
+            let entity = writer
+                .resolve_entity(BodyKey::reference(), output.body_key.clone())
+                .map_err(HandlerExecutionDenial::new)?;
+            writer
+                .write_field(&entity, Length::reference(), output.value)
+                .map_err(HandlerExecutionDenial::new)?;
+            Ok(1)
         }
         PlanarOperation::RetargetSuccessor {
             source_key,
