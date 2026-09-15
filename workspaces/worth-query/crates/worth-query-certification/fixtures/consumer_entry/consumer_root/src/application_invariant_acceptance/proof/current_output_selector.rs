@@ -12,13 +12,19 @@ use worth_query_host::facade::{
         WorthQueryCurrentOutputDenialKind,
     },
 };
+use worth_query_topology_entry::AlternatePlanarOutput;
 use worth_query_topology_entry::PlanarMutation;
 use worth_query_topology_entry::PlanarSourceAdjustment;
-use worth_query_topology_entry::AlternatePlanarOutput;
 
 use super::{length, output_correspondence::observed_source, read_y, Request};
 
-pub(super) fn producer_qualified_selection_is_current(request: &Request<'_>) {
+pub(super) fn producer_qualified_selection_is_current(
+    request: &Request<'_>,
+    application: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
+        crate::ConsumerSchema,
+        crate::ConsumerProgram,
+    >,
+) {
     publish_no_change(request, "anchor-a", &["anchor-a"], 960);
     publish_no_change(request, "sibling-a", &["sibling-a"], 961);
 
@@ -29,7 +35,10 @@ pub(super) fn producer_qualified_selection_is_current(request: &Request<'_>) {
     )
     .expect("two producer selections reach the installed handler");
     assert!(
-        matches!(outcome, WorthQueryApplicationMutationOutcome::Committed { .. }),
+        matches!(
+            outcome,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ),
         "a producer-qualified cache must not alias two same-family producers: {outcome:?}"
     );
 
@@ -47,7 +56,10 @@ pub(super) fn producer_qualified_selection_is_current(request: &Request<'_>) {
     let duplicate = execute_verification(request, &[expectation("anchor-b")], 969)
         .expect("duplicate correspondence targets reach the installed handler");
     assert!(
-        matches!(duplicate, WorthQueryApplicationMutationOutcome::Committed { .. }),
+        matches!(
+            duplicate,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ),
         "two correspondences for one entity remain one unique output: {duplicate:?}"
     );
 
@@ -62,7 +74,13 @@ pub(super) fn producer_qualified_selection_is_current(request: &Request<'_>) {
     ));
 
     publish_no_change(request, "anchor-a", &["anchor-a"], 964);
-    adjust_source(request, "anchor-a", read_y(request, "anchor-a") + 1, 965);
+    adjust_source(
+        request,
+        application,
+        "anchor-a",
+        read_y(request, "anchor-a") + 1,
+        965,
+    );
     let before = request
         .query(worth_query_topology_entry::PlanarRead {
             body_key: "anchor-a".to_owned(),
@@ -113,18 +131,16 @@ fn publish_alternate(request: &Request<'_>, scope_key: &str, output_key: &str, c
         .idempotency(&command)
         .execute()
         .expect("the alternate output reaches its real public mutation owner");
-    assert!(matches!(
-        outcome,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
-    ), "alternate output must commit: {outcome:?}");
+    assert!(
+        matches!(
+            outcome,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ),
+        "alternate output must commit: {outcome:?}"
+    );
 }
 
-fn publish_no_change(
-    request: &Request<'_>,
-    scope_key: &str,
-    observed_keys: &[&str],
-    command: u64,
-) {
+fn publish_no_change(request: &Request<'_>, scope_key: &str, observed_keys: &[&str], command: u64) {
     let adjustments = observed_keys
         .iter()
         .map(|key| PlanarAdjustment {
@@ -135,7 +151,16 @@ fn publish_no_change(
     publish(request, scope_key, adjustments, command);
 }
 
-fn adjust_source(request: &Request<'_>, scope_key: &str, y: u64, command: u64) {
+fn adjust_source(
+    request: &Request<'_>,
+    application: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
+        crate::ConsumerSchema,
+        crate::ConsumerProgram,
+    >,
+    scope_key: &str,
+    y: u64,
+    command: u64,
+) {
     let source = observed_source(request, scope_key);
     let outcome = request
         .mutate(PlanarSourceAdjustment {
@@ -144,12 +169,12 @@ fn adjust_source(request: &Request<'_>, scope_key: &str, y: u64, command: u64) {
         })
         .expect_source(source)
         .idempotency(&command)
-        .execute()
+        .execute_performed(application)
         .expect("the independent source adjustment reaches its real mutation owner");
     assert!(matches!(
         outcome,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
-    ), "independent source adjustment must commit: {outcome:?}");
+        worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome::Performed(_)
+    ));
 }
 
 fn publish(

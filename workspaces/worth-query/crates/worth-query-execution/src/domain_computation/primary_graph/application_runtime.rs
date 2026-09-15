@@ -127,11 +127,23 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) next_output_producer_attempt: AtomicU64,
     pub(super) next_application_mutation_partition: AtomicU32,
     pub(super) output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
+    pub(super) program_required_bindings: std::collections::BTreeSet<std::any::TypeId>,
     pub(super) installed_conditionals:
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub fn requires_application_program<Binding>(&self) -> bool
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+    {
+        self.program_required_bindings
+            .contains(&std::any::TypeId::of::<Binding>())
+    }
+
     pub(super) fn issue_application_mutation_partition(
         &self,
     ) -> Option<worth_relational::facade::identity::PartitionId> {

@@ -190,8 +190,12 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         calls.fetch_add(1, Ordering::SeqCst);
         install_topology_behavior(setup)?;
-        setup.producer::<InitialPlanarProducer<Schema>>(InitialPlanarProvider)?;
-        setup.producer::<InitialPlanarProducer<Schema>>(InitialPlanarProvider)
+        setup.producer::<InitialPlanarProducer<Schema>>(InitialPlanarProvider::new(Arc::new(
+            AtomicUsize::new(0),
+        )))?;
+        setup.producer::<InitialPlanarProducer<Schema>>(InitialPlanarProvider::new(Arc::new(
+            AtomicUsize::new(0),
+        )))
     }
 }
 
@@ -286,7 +290,8 @@ fn declare_planar_producers<Schema: TopologySchemaBinding>(
 > {
     contracts
         .producer::<InitialPlanarProducer<Schema>>()?
-        .producer::<worth_query_topology_entry::AlternatePlanarOutputProducer<Schema>>()
+        .producer::<worth_query_topology_entry::AlternatePlanarOutputProducer<Schema>>()?
+        .producer::<worth_query_topology_entry::PlanarFinalOutputProducer<Schema>>()
 }
 
 fn install_topology_behavior<Schema: TopologySchemaBinding>(
@@ -300,6 +305,9 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
         },
     )?;
     setup.handler::<PlanarMutationBinding<Schema>, _>(PlanarHandler)?;
+    setup.handler::<worth_query_topology_entry::FinalPlanarMutationBinding<Schema>, _>(
+        worth_query_topology_entry::FinalPlanarMutationHandler,
+    )?;
     setup.handler::<worth_query_topology_entry::AlternatePlanarOutputBinding<Schema>, _>(
         worth_query_topology_entry::AlternatePlanarOutputHandler,
     )?;
@@ -314,5 +322,8 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
     )?;
     setup.producer::<worth_query_topology_entry::AlternatePlanarOutputProducer<Schema>>(
         worth_query_topology_entry::AlternatePlanarOutputProvider,
+    )?;
+    setup.producer::<worth_query_topology_entry::PlanarFinalOutputProducer<Schema>>(
+        worth_query_topology_entry::PlanarFinalOutputProvider,
     )
 }

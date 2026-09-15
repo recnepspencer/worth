@@ -19,8 +19,7 @@ use super::{
 };
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::{
-    HandlerResult, MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
+    HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationNoEffectCause,
     WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
@@ -28,6 +27,9 @@ use crate::domain_computation::primary_graph::{
 };
 
 use super::demand::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
+
+mod denial;
+use denial::{denial, execution_failed, failed};
 
 type SourceBinding<Schema, Binding> =
     <<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source;
@@ -352,7 +354,7 @@ where
         | WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => Ok(receipt),
         WorthQueryApplicationCommitOutcome::Stale(_)
         | WorthQueryApplicationCommitOutcome::ProductStale(_) => Err(denial(
-            WorthQueryOutputDemandDenialKind::Superseded,
+            WorthQueryOutputDemandDenialKind::PublicationStale,
             Binding::IDENTITY,
         )),
         WorthQueryApplicationCommitOutcome::Cancelled => Err(denial(
@@ -375,43 +377,10 @@ where
             if commit_denial.kind() == WorthQueryApplicationCommitDenialKind::ProductBasisStale =>
         {
             Err(denial(
-                WorthQueryOutputDemandDenialKind::Superseded,
+                WorthQueryOutputDemandDenialKind::PublicationStale,
                 Binding::IDENTITY,
             ))
         }
         outcome => Err(failed(Binding::IDENTITY, outcome)),
     }
-}
-
-fn execution_failed(
-    subject: &str,
-    error: MutationHandlerExecutionDenial,
-) -> WorthQueryOutputDemandDenial {
-    if matches!(
-        error,
-        MutationHandlerExecutionDenial::Attempt(ref denial)
-            if matches!(
-                denial.kind(),
-                WorthQueryApplicationAttemptDenialKind::SourceChanged
-                    | WorthQueryApplicationAttemptDenialKind::SourceRetired
-            )
-    ) {
-        denial(WorthQueryOutputDemandDenialKind::Superseded, subject)
-    } else {
-        failed(subject, error)
-    }
-}
-
-fn failed(subject: &str, error: impl std::fmt::Debug) -> WorthQueryOutputDemandDenial {
-    denial(
-        WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-        format!("{subject}: {error:?}"),
-    )
-}
-
-fn denial(
-    kind: WorthQueryOutputDemandDenialKind,
-    subject: impl Into<String>,
-) -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(kind, subject)
 }

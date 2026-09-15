@@ -83,6 +83,7 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     Idempotency,
     Handler,
     SourceExpectation,
+    ApplicationProgramRequired,
 }
 
 #[derive(Debug)]
@@ -97,6 +98,7 @@ pub enum WorthQueryApplicationRequestMutationDenial {
     SourceExpectation(
         worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenial,
     ),
+    ApplicationProgramRequired,
 }
 
 impl WorthQueryApplicationRequestMutationDenial {
@@ -119,6 +121,9 @@ impl WorthQueryApplicationRequestMutationDenial {
             Self::Handler(_) => WorthQueryApplicationRequestMutationDenialKind::Handler,
             Self::SourceExpectation(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::SourceExpectation
+            }
+            Self::ApplicationProgramRequired => {
+                WorthQueryApplicationRequestMutationDenialKind::ApplicationProgramRequired
             }
         }
     }

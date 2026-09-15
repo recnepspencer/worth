@@ -58,6 +58,11 @@ where
             graph.bridge.conditional_operations(),
         ),
     );
+    let program_required_bindings = installed_schema
+        .installed_mutation_binding_inventory()
+        .filter(|binding| binding.requires_application_program())
+        .map(|binding| binding.binding_type())
+        .collect();
     // One clock, shared. The registry hands it back to any handle that needs to
     // re-check its own deadline, which is why no recovery transition takes a
     // clock argument (R8.31).
@@ -96,6 +101,7 @@ where
         next_output_producer_attempt: std::sync::atomic::AtomicU64::new(1),
         next_application_mutation_partition: std::sync::atomic::AtomicU32::new(1),
         output_demands: Default::default(),
+        program_required_bindings,
         installed_conditionals: Default::default(),
     })
 }

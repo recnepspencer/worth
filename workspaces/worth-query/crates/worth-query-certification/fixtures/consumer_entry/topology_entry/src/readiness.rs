@@ -82,16 +82,16 @@ impl<Schema: TopologySchemaBinding>
             .bind_output_readiness::<InitialPlanarProducer<Schema>, _, _, _, _, _, _>(node, 0)
     }
 }
-fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
+pub(super) fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
     PlanarReadinessDomain,
     PlanarReadinessOperation,
     PlanarReadinessFamily,
 > {
-    let dependency = body_key_dependency();
+    let dependency = output_change_dependency();
     application_contribution::WorthQueryOutputReadinessContractBuilder::new(
         domain::WorthQueryDomainOperationIdentity::new("planar-output-readiness", 1),
         "planar-output-ready",
-        body_key_projection(),
+        output_change_projection(),
         canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("planar-readiness").unwrap(),
@@ -99,20 +99,20 @@ fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
         128,
         "planar-readiness-v1",
     )
-    .semantic_reads([body_key_projection()])
+    .semantic_reads([output_change_projection()])
     .dependencies([dependency.clone()])
     .readiness_dependencies([dependency])
     .build()
     .expect("planar readiness declaration is canonical")
 }
 
-pub(super) fn body_key_dependency() -> domain::WorthQuerySemanticTruthDependency {
+pub(super) fn output_change_dependency() -> domain::WorthQuerySemanticTruthDependency {
     domain::WorthQuerySemanticTruthDependency::new(
         domain::WorthQueryConditionalGraphReadRole::new("primary").unwrap(),
-        body_key_contract(),
-        body_key_mask(),
+        output_contract(),
+        output_change_mask(),
         domain::AspectBinding::EntityField {
-            field: domain::FieldKey::new("BodyKey").unwrap(),
+            field: domain::FieldKey::new("Geometry").unwrap(),
         },
         domain::WorthQuerySemanticLocality::SourceRecord,
         [domain::AuthoritativeAspectChangeKind::FieldSet],
@@ -120,7 +120,7 @@ pub(super) fn body_key_dependency() -> domain::WorthQuerySemanticTruthDependency
     .unwrap()
 }
 
-fn body_key_contract() -> domain::AspectContract {
+fn output_contract() -> domain::AspectContract {
     let field = |name, scalar| {
         domain::FieldDeclaration::new(
             domain::FieldKey::new(name).unwrap(),
@@ -132,38 +132,37 @@ fn body_key_contract() -> domain::AspectContract {
         .unwrap()
     };
     domain::AspectContract::struct_aspect(
-        domain::AspectKey::new("PlanarPosition").unwrap(),
-        domain::AspectIdentity(0x9174_1011),
+        domain::AspectKey::new("Geometry").unwrap(),
+        domain::AspectIdentity(0x9174_1001),
         domain::AspectContractRevision(1),
-        domain::StructAspectShape::new([
-            field("BodyKey", domain::ScalarAspectType::String),
-            field("PositionX", domain::ScalarAspectType::UInt64),
-            field("PositionY", domain::ScalarAspectType::UInt64),
-        ])
-        .unwrap(),
+        domain::StructAspectShape::new([field("Length", domain::ScalarAspectType::UInt64)])
+            .unwrap(),
     )
 }
 
-fn body_key_mask() -> domain::AspectMask<domain::ProjectionMask> {
+fn output_change_mask() -> domain::AspectMask<domain::ProjectionMask> {
     domain::AspectMask::new([domain::CanonicalFieldPath::single(
-        domain::FieldKey::new("BodyKey").unwrap(),
+        domain::FieldKey::new("Length").unwrap(),
     )])
 }
 
-pub(super) fn body_key_projection() -> domain::WorthQueryOperationNativeProjectionContract {
-    domain::WorthQueryOperationNativeProjectionContract::new(body_key_contract(), body_key_mask())
-        .unwrap()
+pub(super) fn output_change_projection() -> domain::WorthQueryOperationNativeProjectionContract {
+    domain::WorthQueryOperationNativeProjectionContract::new(
+        output_contract(),
+        output_change_mask(),
+    )
+    .unwrap()
 }
 
-pub(super) fn canonical_query() -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle
-{
+pub(super) fn canonical_query(
+) -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle {
     let query = DetailQueryBuilder::new(RootEntityKey::new("Body").unwrap())
-        .project(AspectFieldSelector::new("PlanarPosition", "BodyKey").unwrap())
+        .project(AspectFieldSelector::new("Geometry", "Length").unwrap())
         .build()
         .unwrap()
         .into_raw();
     let shape = DetailResultShapeBuilder::new()
-        .field(AuthoredResultShapeField::new("PlanarPosition", "BodyKey", "body_key").unwrap())
+        .field(AuthoredResultShapeField::new("Geometry", "Length", "length").unwrap())
         .build()
         .unwrap()
         .into_raw();

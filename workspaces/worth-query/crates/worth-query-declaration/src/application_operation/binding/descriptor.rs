@@ -70,6 +70,7 @@ impl ApplicationMutationHandlerMetadata {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ApplicationMutationBindingDescriptor {
+    binding_type: TypeId,
     description: ApplicationMutationDescription,
     denial_binding_type: TypeId,
     identity: String,
@@ -91,11 +92,13 @@ pub struct ApplicationMutationBindingDescriptor {
     principal: ApplicationMutationPrincipalBindingContract,
     candidates: ApplicationCandidateRequirements,
     source_query_identifier: Option<String>,
+    requires_application_program: bool,
 }
 
 impl ApplicationMutationBindingDescriptor {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new<
+        Binding,
         InputBinding,
         ResultBinding,
         Operation,
@@ -114,8 +117,10 @@ impl ApplicationMutationBindingDescriptor {
         scope: ApplicationMutationScopeContract,
         principal: ApplicationMutationPrincipalBindingContract,
         candidates: ApplicationCandidateRequirements,
+        requires_application_program: bool,
     ) -> Self
     where
+        Binding: 'static,
         InputBinding: ApplicationStructuredValueBinding,
         ResultBinding: ApplicationStructuredValueBinding,
         Operation: 'static,
@@ -159,6 +164,7 @@ impl ApplicationMutationBindingDescriptor {
             },
         );
         Self {
+            binding_type: TypeId::of::<Binding>(),
             description,
             denial_binding_type: TypeId::of::<DenialBinding>(),
             identity: identity.to_owned(),
@@ -184,6 +190,7 @@ impl ApplicationMutationBindingDescriptor {
             principal,
             candidates,
             source_query_identifier: SourceExpectation::QUERY_IDENTIFIER.map(str::to_owned),
+            requires_application_program,
         }
     }
 
@@ -269,5 +276,13 @@ impl ApplicationMutationBindingDescriptor {
 
     pub fn source_query_identifier(&self) -> Option<&str> {
         self.source_query_identifier.as_deref()
+    }
+
+    pub const fn binding_type(&self) -> TypeId {
+        self.binding_type
+    }
+
+    pub const fn requires_application_program(&self) -> bool {
+        self.requires_application_program
     }
 }

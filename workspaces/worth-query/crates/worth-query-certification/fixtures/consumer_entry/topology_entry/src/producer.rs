@@ -1,6 +1,10 @@
 use std::marker::PhantomData;
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
 
-use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation};
+use worth_query_consumer_values::{PlanarDerivedOutput, PlanarOperation};
 use worth_query_decl::facade::application_schema::ApplicationInvariantExecutionPoint;
 use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
@@ -35,7 +39,17 @@ impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for P
     }
 }
 
-pub struct InitialPlanarProvider;
+pub struct InitialPlanarProvider {
+    authorization_denials: Arc<AtomicUsize>,
+}
+
+impl InitialPlanarProvider {
+    pub fn new(authorization_denials: Arc<AtomicUsize>) -> Self {
+        Self {
+            authorization_denials,
+        }
+    }
+}
 
 impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, InitialPlanarProducer<Schema>>
@@ -44,7 +58,17 @@ impl<Schema: TopologySchemaBinding>
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.planar-initial-provider.v1";
 
     fn operation_input(&self, source: &super::PlanarReadResult) -> super::PlanarMutation {
-        planar_producer_input(source)
+        let mut input = planar_producer_input(source);
+        if self
+            .authorization_denials
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |remaining| {
+                remaining.checked_sub(1)
+            })
+            .is_ok()
+        {
+            input.scope_key.push_str(":authorization-denied");
+        }
+        input
     }
 
     fn idempotency_key(&self, _: &super::PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
@@ -82,20 +106,22 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
 pub fn planar_producer_input(source: &super::PlanarReadResult) -> super::PlanarMutation {
     super::PlanarMutation {
         scope_key: source.body_key.clone(),
-        operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
+        operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {
             body_key: source.body_key.clone(),
-            replacement_y: source.y,
-        }]),
+            value: worth_query_consumer_values::PositiveLength::new(
+                worth_query_consumer_values::PositiveLength::get(&source.y) + 1,
+            )
+            .expect("a positive planar source has a positive successor"),
+        }),
         validator_work: 4_096,
     }
 }
 
 pub fn planar_source_key(source_identity: &[u8; 32]) -> u64 {
-    u64::from_le_bytes(
-        source_identity[..8]
-            .try_into()
-            .expect("fixed source identity"),
-    )
+    source_identity
+        .chunks_exact(8)
+        .map(|chunk| u64::from_le_bytes(chunk.try_into().expect("eight-byte identity chunk")))
+        .fold(0, u64::wrapping_add)
 }
 
 pub const fn planar_producer_resources() -> WorthQueryProducerDemandResources {

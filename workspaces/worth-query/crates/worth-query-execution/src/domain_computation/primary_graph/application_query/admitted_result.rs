@@ -92,6 +92,14 @@ pub struct WorthQueryApplicationOutputDemandDisclosure<Query> {
     receipt: WorthQueryApplicationQueryAccessReceipt,
 }
 
+/// Owner-issued pairing of disclosed projection values with their exact source
+/// evidence. Consumers can inspect values but cannot substitute them before
+/// required-output admission.
+pub struct WorthQueryApplicationOutputDemandSource<Query, QueryResult> {
+    rows: Vec<QueryResult>,
+    disclosure: WorthQueryApplicationOutputDemandDisclosure<Query>,
+}
+
 impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult> {
     pub(super) fn new(
         rows: Vec<QueryResult>,
@@ -143,6 +151,44 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
                 receipt: self.receipt,
             },
         )
+    }
+
+    pub fn into_output_demand_source(
+        self,
+    ) -> WorthQueryApplicationOutputDemandSource<Query, QueryResult> {
+        let (rows, disclosure) = self.into_parts();
+        WorthQueryApplicationOutputDemandSource { rows, disclosure }
+    }
+}
+
+impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryResult> {
+    pub fn rows(&self) -> &[QueryResult] {
+        &self.rows
+    }
+
+    pub fn observed_sources(&self) -> &[super::WorthQueryObservedSource<Query>] {
+        self.disclosure.observed_sources()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn into_single_source(
+        self,
+    ) -> Option<(QueryResult, super::WorthQueryObservedSource<Query>)> {
+        let (mut sources, _, _) = self.disclosure.into_parts();
+        let mut rows = self.rows.into_iter();
+        let pair = (rows.next()?, sources.pop()?);
+        (rows.next().is_none() && sources.is_empty()).then_some(pair)
+    }
+
+    pub fn receipt(&self) -> &WorthQueryApplicationQueryAccessReceipt {
+        &self.disclosure.receipt
+    }
+
+    pub fn into_disclosure(self) -> WorthQueryApplicationOutputDemandDisclosure<Query> {
+        self.disclosure
+    }
+
+    pub fn into_rows(self) -> Vec<QueryResult> {
+        self.rows
     }
 }
 

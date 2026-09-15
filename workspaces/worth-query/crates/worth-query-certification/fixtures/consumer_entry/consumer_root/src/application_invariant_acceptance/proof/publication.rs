@@ -4,8 +4,8 @@ use worth_query_host::facade::{
         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestQueryDenial,
     },
     primary_graph::{
-        WorthQueryApplicationOutputRole, WorthQueryEntityResolutionDenialKind,
-        WorthQueryCreateOutput, WorthQueryPreserveOutput,
+        WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
+        WorthQueryEntityResolutionDenialKind, WorthQueryPreserveOutput,
     },
 };
 use worth_query_topology_entry::{Body, PlanarMutation, PlanarMutationBinding, PlanarRead};

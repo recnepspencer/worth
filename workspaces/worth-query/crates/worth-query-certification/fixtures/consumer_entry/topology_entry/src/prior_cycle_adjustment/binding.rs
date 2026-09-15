@@ -1,7 +1,5 @@
 use super::*;
-use crate::{
-    ConsumerPrincipalBinding, ExternalPrincipalMapping, PlanarMutationScope, Principal,
-};
+use crate::{ConsumerPrincipalBinding, ExternalPrincipalMapping, PlanarMutationScope, Principal};
 use std::marker::PhantomData;
 use worth_query_decl::facade::{application_operation::*, application_schema::*};
 

@@ -59,6 +59,11 @@ pub struct WorthQueryApplicationOutputDemandRequest<
     pub(super) principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(super) scope: &'scope WorthQueryRequestScope,
     pub(super) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
+    pub(super) observation: Option<
+        std::sync::Arc<
+            worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
+        >,
+    >,
     pub(super) demand: Demand,
     pub(super) controls: Option<WorthQueryOutputDemandControls>,
 }
@@ -81,6 +86,28 @@ where
             principal,
             scope,
             branch,
+            observation: None,
+            demand,
+            controls: None,
+        }
+    }
+
+    pub(in crate::application_entry) fn new_at(
+        application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        scope: &'scope WorthQueryRequestScope,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
+        observation: std::sync::Arc<
+            worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
+        >,
+        demand: Demand,
+    ) -> Self {
+        Self {
+            application,
+            principal,
+            scope,
+            branch,
+            observation: Some(observation),
             demand,
             controls: None,
         }

@@ -6,6 +6,7 @@ pub use crate::domain_computation::{
 mod application_attempt;
 mod application_contribution;
 mod application_output_demand;
+mod application_program;
 pub use application_contribution::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationConditionalBinding,
     WorthQueryApplicationConditionalPackageContract,
@@ -25,6 +26,11 @@ pub use application_contribution::{
 pub use application_output_demand::{
     WorthQueryOutputDemandNotifications, WorthQueryOutputDemandSettlement,
     WorthQueryOutputReadinessDeliveryEvidence,
+};
+pub use application_program::{
+    WorthQueryApplicationDependentOutputConnection, WorthQueryApplicationRequiredOutputConnection,
+    WorthQueryPreparedRequiredOutputSource, WorthQueryRequiredOutputConnectionDenial,
+    WorthQueryRequiredOutputSourcePreparationFailure,
 };
 mod application_branch;
 pub(crate) mod application_discovery;
@@ -183,7 +189,7 @@ pub(in crate::domain_computation) use application_branch::primary_truth_branch_i
 pub use application_query::{
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
     WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationAuthorizationWorkEvidence,
-    WorthQueryApplicationOutputDemandDisclosure,
+    WorthQueryApplicationOutputDemandDisclosure, WorthQueryApplicationOutputDemandSource,
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisObservation,
     WorthQueryApplicationBasisSelectionIdentity,
     WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseReceipt,

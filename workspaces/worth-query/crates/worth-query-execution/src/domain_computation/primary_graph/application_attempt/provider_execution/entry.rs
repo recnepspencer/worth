@@ -25,6 +25,42 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if program
+            .output_correspondence
+            .binding_type()
+            .is_some_and(|binding| self.program_required_bindings.contains(&binding))
+        {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            );
+        }
+        self.compare_and_commit_application_with_output_observation(program, idempotency, false)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_required_output_source<
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
+        self.compare_and_commit_application_with_output_observation(program, idempotency, true)
+    }
+
+    fn compare_and_commit_application_with_output_observation<Operation, Input, Scope>(
+        &self,
+        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        retain_output_observation: bool,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
         if program.read_set.admission.has_elevation_lifecycle_binding() {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::elevation_transition_required(),
@@ -52,6 +88,11 @@ where
                 WorthQueryApplicationCommitDenial::capability_revocation_required(),
             );
         }
+        let program = if retain_output_observation {
+            program.with_output_demand_observation()
+        } else {
+            program
+        };
         self.compare_and_commit_application_inner(program, idempotency)
     }
 

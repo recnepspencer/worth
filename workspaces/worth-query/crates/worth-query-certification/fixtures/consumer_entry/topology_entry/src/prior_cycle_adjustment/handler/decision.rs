@@ -23,9 +23,7 @@ pub(super) fn observe_prior_cycle<Schema: TopologySchemaBinding>(
             WorthQueryApplicationOutputRoleFamily::from_static("created."),
         ) {
         Ok(Some(prior)) => prior,
-        Ok(None) => {
-            return HandlerResult::DomainDenied(PriorCycleAdjustmentDenial::NoPriorCycle)
-        }
+        Ok(None) => return HandlerResult::DomainDenied(PriorCycleAdjustmentDenial::NoPriorCycle),
         Err(error) => return HandlerResult::ExecutionDenied(error),
     };
     if prior.is_empty() {
@@ -36,9 +34,7 @@ pub(super) fn observe_prior_cycle<Schema: TopologySchemaBinding>(
         let current_y = match reader.field(member.identity(), PositionY::reference()) {
             Ok(Some(value)) => value,
             Ok(None) => {
-                return HandlerResult::DomainDenied(
-                    PriorCycleAdjustmentDenial::MissingCoordinate,
-                )
+                return HandlerResult::DomainDenied(PriorCycleAdjustmentDenial::MissingCoordinate)
             }
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };

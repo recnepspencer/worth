@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 mod contribution;
+mod parameter_invariant;
+pub use parameter_invariant::{parameter_count_invariant, PositiveParameterCount};
 
 use worth_query_consumer_values::PositiveCount;
 use worth_query_decl::facade::{
@@ -9,6 +11,14 @@ use worth_query_decl::facade::{
 };
 
 pub trait ParameterSchemaBinding: ApplicationSchema {}
+
+pub struct ParameterFeature;
+
+impl<Schema: ParameterSchemaBinding>
+    worth_query_decl::facade::application_program::ApplicationFeature<Schema> for ParameterFeature
+{
+    const IDENTITY: &'static str = "worth.query.certification.parameter-feature.v1";
+}
 
 worth_query_value_binding! {
     pub ParameterCountBinding for PositiveCount {
@@ -44,6 +54,7 @@ worth_query_application_contribution! {
                     ParameterValue::reference::<Schema>(),
                 )
                 .field(Parameter::reference::<Schema>(), Count::reference::<Schema>())
+                .invariant(parameter_count_invariant::<Schema>())
         }
     }
 }

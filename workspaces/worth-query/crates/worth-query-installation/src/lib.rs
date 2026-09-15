@@ -12,6 +12,7 @@ mod application_aftermath;
 mod application_capability;
 mod application_operation;
 mod application_principal_binding;
+mod application_program;
 mod application_query;
 mod application_schema;
 mod authority_cryptography;
@@ -167,6 +168,10 @@ pub mod facade {
     pub use crate::application_principal_binding::{
         WorthQueryInstalledPrincipalBinding, WorthQueryPrincipalBindingInstallationDenial,
         WorthQueryPrincipalBindingInstallationDenialKind,
+    };
+    pub use crate::application_program::{
+        install_application_program, WorthQueryApplicationProgramInstallationDenial,
+        WorthQueryInstalledApplicationProgram,
     };
     pub use crate::application_query::{
         prepare_canonical_read_graph_planning_basis, WorthQueryApplicationCanonicalArtifact,

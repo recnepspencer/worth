@@ -1,6 +1,9 @@
 #![forbid(unsafe_code)]
 
 mod application_invariant_acceptance;
+mod application_program;
+
+pub use application_program::ConsumerProgram;
 
 use worth_query_consumer_values::PositiveLength;
 use worth_query_decl::facade::application_schema::{
@@ -46,7 +49,7 @@ fn run() {
         .expect("the root-owned contributions form one closed schema declaration");
 
     assert_eq!(declaration.contributions().len(), 2);
-    assert_eq!(declaration.erased().members().len(), 82);
+    assert_eq!(declaration.erased().members().len(), 98);
     assert_ne!(
         TopologyLengthBinding::IDENTITY,
         ParameterCountBinding::IDENTITY

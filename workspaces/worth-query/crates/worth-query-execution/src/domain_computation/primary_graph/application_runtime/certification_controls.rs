@@ -21,6 +21,21 @@ where
             .delay_next_output_readiness_delivery_for_test();
     }
 
+    /// Fails one readiness evaluation after performed-change delivery.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn fail_next_output_readiness_evaluation_for_test(&self) {
+        self.primary_provider
+            .fail_next_output_readiness_evaluation_for_test();
+    }
+
+    /// Counts performed sources awaiting their required-output admission owner.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn prepared_required_output_source_count_for_test(&self) -> usize {
+        self.output_demands.prepared_source_count()
+    }
+
     /// Observes the currently bound primary Bridge truth snapshot.
     #[doc(hidden)]
     #[cfg(feature = "test-primary-graph-faults")]

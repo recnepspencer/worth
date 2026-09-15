@@ -124,5 +124,6 @@ const fn mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::DelayedOutputReadinessDelivery => 1 << 9,
         WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch => 1 << 6,
         WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
+        WorthQueryPrimaryGraphFault::FailedOutputReadinessEvaluation => 1 << 10,
     }
 }

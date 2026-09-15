@@ -143,6 +143,28 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
+    pub(in crate::domain_computation::primary_graph) fn selected_product_commit(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::CompositeCommitIdentity> {
+        match &self.selection {
+            WorthQueryApplicationBasisSelectionIdentity::Product(product) => {
+                Some(product.selected_commit())
+            }
+            WorthQueryApplicationBasisSelectionIdentity::Relational => None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn selected_product_occurrence(
+        &self,
+    ) -> Option<worth_runtime_world::facade::ProductBranchIncarnation> {
+        match &self.selection {
+            WorthQueryApplicationBasisSelectionIdentity::Product(product) => {
+                Some(product.lifecycle_incarnation())
+            }
+            WorthQueryApplicationBasisSelectionIdentity::Relational => None,
+        }
+    }
+
     pub(in crate::domain_computation) fn validate_completeness(
         &self,
         subject: &str,

@@ -28,6 +28,7 @@ pub enum WorthQueryApplicationCommitDenialKind {
     MandatoryReviewProgramMismatch,
     DelegationActivationRequired,
     CapabilityRevocationRequired,
+    ApplicationProgramRequired,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -276,6 +277,16 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::CapabilityRevocationRequired,
             stage: WorthQueryApplicationCommitDenialStage::DelegationTransition,
+            detail: None,
+            custom_invariant: None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt) const fn application_program_required(
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
             detail: None,
             custom_invariant: None,
         }

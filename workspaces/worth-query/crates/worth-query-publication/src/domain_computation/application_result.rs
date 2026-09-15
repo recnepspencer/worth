@@ -1,5 +1,7 @@
 use worth_query_execution::facade::primary_graph::WorthQueryAdmittedDisclosedApplicationResult;
-use worth_query_execution::facade::primary_graph::WorthQueryApplicationOutputDemandDisclosure;
+use worth_query_execution::facade::primary_graph::{
+    WorthQueryApplicationOutputDemandDisclosure, WorthQueryApplicationOutputDemandSource,
+};
 
 mod basis;
 mod disclosure;
@@ -26,8 +28,7 @@ pub use terminal_release::{
 /// Publication-owned result whose input was already governed before domain
 /// projection. Publication performs no field-policy decision or redaction.
 pub struct WorthQueryPublishedApplicationResult<Query, QueryResult> {
-    rows: Vec<QueryResult>,
-    demand_disclosure: WorthQueryApplicationOutputDemandDisclosure<Query>,
+    source: WorthQueryApplicationOutputDemandSource<Query, QueryResult>,
     receipt: WorthQueryApplicationQueryPublicationReceipt,
 }
 
@@ -65,17 +66,13 @@ pub fn publish_application_result<Query, QueryResult>(
     admitted: WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult>,
 ) -> WorthQueryPublishedApplicationResult<Query, QueryResult> {
     let receipt = WorthQueryApplicationQueryPublicationReceipt::from_terminal(admitted.receipt());
-    let (rows, demand_disclosure) = admitted.into_parts();
-    WorthQueryPublishedApplicationResult {
-        rows,
-        demand_disclosure,
-        receipt,
-    }
+    let source = admitted.into_output_demand_source();
+    WorthQueryPublishedApplicationResult { source, receipt }
 }
 
 impl<Query, QueryResult> WorthQueryPublishedApplicationResult<Query, QueryResult> {
     pub fn rows(&self) -> &[QueryResult] {
-        &self.rows
+        self.source.rows()
     }
 
     pub const fn receipt(&self) -> &WorthQueryApplicationQueryPublicationReceipt {
@@ -85,16 +82,22 @@ impl<Query, QueryResult> WorthQueryPublishedApplicationResult<Query, QueryResult
     pub fn observed_sources(
         &self,
     ) -> &[worth_query_execution::facade::primary_graph::WorthQueryObservedSource<Query>] {
-        self.demand_disclosure.observed_sources()
+        self.source.observed_sources()
     }
 
     pub fn into_output_demand_disclosure(
         self,
     ) -> WorthQueryApplicationOutputDemandDisclosure<Query> {
-        self.demand_disclosure
+        self.source.into_disclosure()
     }
 
     pub fn into_rows(self) -> Vec<QueryResult> {
-        self.rows
+        self.source.into_rows()
+    }
+
+    pub(crate) fn into_output_demand_source(
+        self,
+    ) -> WorthQueryApplicationOutputDemandSource<Query, QueryResult> {
+        self.source
     }
 }

@@ -132,13 +132,14 @@ pub(in crate::domain_computation::primary_graph) fn schedule_output_producer(
     bridge: &BridgeSealedRuntimeAssembly,
     lowering: &Arc<BridgeInstalledConditionalLowering>,
     truth: &super::super::super::conditional_operation::WorthQueryConditionalTruthBasis,
+    signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
     query_binding_identity: &str,
     query_identity: u64,
     execution_identity: &str,
     attempt: u64,
 ) -> Result<WorthQueryConditionalSignalDecision, String> {
     let signal_basis = bridge
-        .admit_exact_conditional_signal_basis(lowering, truth.signal_basis())
+        .admit_exact_conditional_signal_basis(lowering, signal_basis)
         .map_err(|denial| format!("{:?}: {}", denial.kind(), denial.detail()))?;
     let mut compute = ProducerSignalComputeContext { attempt };
     let evidence = bridge

@@ -7,7 +7,7 @@ pub use planar_replacement::{
 };
 
 pub use planar_operation::{
-    PlanarAdjustment, PlanarAdjustmentResult, PlanarCurrentOutputExpectation,
+    PlanarAdjustment, PlanarAdjustmentResult, PlanarCurrentOutputExpectation, PlanarDerivedOutput,
     PlanarMutationDenial, PlanarOperation, PlanarVertex,
 };
 

@@ -1,5 +1,5 @@
 use super::{authentication, resources, seed};
-use crate::ConsumerSchema;
+use crate::{ConsumerProgram, ConsumerSchema};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -12,15 +12,50 @@ use worth_query_host::facade::{
 use worth_query_topology_entry::{ConsumerPrincipalBinding, TopologyConfiguration};
 
 pub(super) struct ConsumerWorld {
-    pub(super) application: primary_graph::WorthQueryPrimaryGraphApplicationRuntime<ConsumerSchema>,
+    pub(super) application:
+        installation::WorthQueryProgramApplicationRuntime<ConsumerSchema, ConsumerProgram>,
     pub(super) invariant_calls: Arc<AtomicUsize>,
     pub(super) invariant_probe: Arc<AtomicUsize>,
+    pub(super) producer_authorization_denials: Arc<AtomicUsize>,
 }
 
 pub(super) fn install(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
 ) -> ConsumerWorld {
     install_with_candidate_bytes(foreign, 8192)
+}
+
+pub(super) fn assert_plain_installation_requires_program() {
+    let configuration = (
+        TopologyConfiguration {
+            setup_calls: Arc::new(AtomicUsize::new(0)),
+            invariant_calls: Arc::new(AtomicUsize::new(0)),
+            invariant_probe: Arc::new(AtomicUsize::new(0)),
+            producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+        },
+        Arc::new(AtomicUsize::new(0)),
+    );
+    let limits = WorthQueryInMemoryApplicationLimits::new(
+        resources::world_resources(),
+        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
+        runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
+        primary_graph::SignalConditionalEvaluationBudget::development(),
+    );
+    let result = installation::in_memory::<ConsumerSchema>(
+        ConsumerSchema::declaration().expect("the contributed declaration is valid"),
+        configuration,
+        limits,
+        |_, _| Ok(()),
+    );
+    let Err(installation::WorthQueryInMemoryApplicationDenial::ApplicationProgramRequired(binding)) =
+        result
+    else {
+        panic!("plain installation must reject a program-required source binding")
+    };
+    assert_eq!(
+        binding,
+        "worth.query.certification.planar-source-adjustment.v1"
+    );
 }
 
 pub(super) fn install_with_candidate_bytes(
@@ -46,11 +81,13 @@ fn install_with_resource_bytes(
     let parameter_calls = Arc::new(AtomicUsize::new(0));
     let invariant_calls = Arc::new(AtomicUsize::new(0));
     let invariant_probe = Arc::new(AtomicUsize::new(0));
+    let producer_authorization_denials = Arc::new(AtomicUsize::new(0));
     let configuration = (
         TopologyConfiguration {
             setup_calls: Arc::clone(&topology_calls),
             invariant_calls: Arc::clone(&invariant_calls),
             invariant_probe: Arc::clone(&invariant_probe),
+            producer_authorization_denials: Arc::clone(&producer_authorization_denials),
         },
         Arc::clone(&parameter_calls),
     );
@@ -66,7 +103,9 @@ fn install_with_resource_bytes(
             .unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
-    let application = installation::in_memory::<ConsumerSchema>(
+    let application = installation::in_memory_program::<ConsumerSchema, ConsumerProgram>(
+        crate::application_program::validated_program()
+            .expect("the application program is complete"),
         ConsumerSchema::declaration().expect("the contributed declaration is valid"),
         configuration,
         limits,
@@ -93,6 +132,7 @@ fn install_with_resource_bytes(
         application,
         invariant_calls,
         invariant_probe,
+        producer_authorization_denials,
     }
 }
 fn reject_foreign_invariant_factory(

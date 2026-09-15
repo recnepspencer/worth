@@ -3,21 +3,22 @@ use std::marker::PhantomData;
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes, worth_query_structured_value_binding,
+    worth_query_operation_reads, worth_query_operation_writes,
+    worth_query_structured_value_binding,
 };
+use worth_query_host::facade::application_contribution;
 use worth_query_host::facade::{
     application_contribution::{
         WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
         WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
         WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
     },
+    domain,
     primary_graph::{
         CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
         WorthQueryApplicationOutputRole,
     },
-    domain,
 };
-use worth_query_host::facade::application_contribution;
 
 use super::*;
 
@@ -170,8 +171,10 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
         if let Err(error) = writer.write_field(&anchor, PositionY::reference(), y) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
-        match writer.preserve_output(WorthQueryApplicationOutputRole::from_static("anchor"), &anchor)
-        {
+        match writer.preserve_output(
+            WorthQueryApplicationOutputRole::from_static("anchor"),
+            &anchor,
+        ) {
             Ok(()) => HandlerResult::Completed(PlanarAdjustmentResult {
                 changed_vertices: 0,
             }),
@@ -281,8 +284,7 @@ impl<Schema: TopologySchemaBinding>
     type Configuration = ();
     type Installed = ();
 
-    const IDENTITY: &'static str =
-        "worth.query.certification.alternate-planar-output-readiness.v1";
+    const IDENTITY: &'static str = "worth.query.certification.alternate-planar-output-readiness.v1";
     const REQUIRED_PRODUCERS: &'static [&'static str] =
         &["worth.query.certification.alternate-planar-producer.v1"];
 
@@ -299,8 +301,10 @@ impl<Schema: TopologySchemaBinding>
         _: (),
         _: &application_contribution::WorthQueryApplicationConditionalProducerAccess<'_, Schema>,
         installation: &mut worth_query_host::facade::primary_graph::WorthQueryConditionalApplicationRuntimeInstallation<Schema>,
-    ) -> Result<(), worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenial>
-    {
+    ) -> Result<
+        (),
+        worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
+    > {
         let operation = installation
             .installed_schema()
             .installed_operation(PublishAlternatePlanarOutput::reference::<Schema>())
@@ -311,15 +315,10 @@ impl<Schema: TopologySchemaBinding>
             .unwrap()
             .bind_node(AlternatePlanarReadyNode::reference())
             .unwrap();
-        installation.bind_output_readiness::<
-            AlternatePlanarOutputProducer<Schema>,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-        >(node, 0)
+        installation
+            .bind_output_readiness::<AlternatePlanarOutputProducer<Schema>, _, _, _, _, _, _>(
+                node, 0,
+            )
     }
 }
 
@@ -328,11 +327,11 @@ fn alternate_readiness_definition() -> domain::WorthQueryDomainOperationDefiniti
     AlternateReadinessOperation,
     AlternateReadinessFamily,
 > {
-    let dependency = super::readiness::body_key_dependency();
+    let dependency = super::readiness::output_change_dependency();
     application_contribution::WorthQueryOutputReadinessContractBuilder::new(
         domain::WorthQueryDomainOperationIdentity::new("alternate-planar-output-readiness", 1),
         "alternate-planar-output-ready",
-        super::readiness::body_key_projection(),
+        super::readiness::output_change_projection(),
         super::readiness::canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("alternate-planar-readiness").unwrap(),
@@ -340,7 +339,7 @@ fn alternate_readiness_definition() -> domain::WorthQueryDomainOperationDefiniti
         128,
         "alternate-planar-readiness-v1",
     )
-    .semantic_reads([super::readiness::body_key_projection()])
+    .semantic_reads([super::readiness::output_change_projection()])
     .dependencies([dependency.clone()])
     .readiness_dependencies([dependency])
     .build()
