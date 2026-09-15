@@ -5,7 +5,8 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
 };
 use worth_query_topology_entry::{
-    PlanarOutputDemand, PlanarOutputRead, PlanarRead, PlanarSourceAdjustment,
+    PlanarOutputDemand, PlanarOutputRead, PlanarOutputToAlternateFinalConnection,
+    PlanarOutputToFinalConnection, PlanarRead, PlanarSourceAdjustment,
 };
 
 use super::super::super::{authentication, installation, seed::length};
@@ -96,14 +97,25 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
         }
     };
-    assert_eq!(settled.dependent_count(), 2);
     assert_eq!(
         settled
-            .dependents()
-            .iter()
+            .outputs_for::<ConsumerSchema, PlanarOutputToFinalConnection>()
+            .count(),
+        1
+    );
+    assert_eq!(
+        settled
+            .outputs_for::<ConsumerSchema, PlanarOutputToFinalConnection>()
             .map(|(demand, _)| demand.body_key())
             .collect::<Vec<_>>(),
-        ["anchor-c", "anchor-a"]
+        ["anchor-c"]
+    );
+    assert_eq!(
+        settled
+            .outputs_for::<ConsumerSchema, PlanarOutputToAlternateFinalConnection>()
+            .map(|(demand, _)| demand.body_key())
+            .collect::<Vec<_>>(),
+        ["anchor-a"]
     );
     assert_eq!(
         request

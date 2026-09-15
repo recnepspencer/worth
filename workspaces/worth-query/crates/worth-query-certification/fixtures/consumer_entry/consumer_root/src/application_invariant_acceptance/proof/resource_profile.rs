@@ -80,7 +80,10 @@ pub(super) fn source_footprint_bytes_beyond_host_limit_are_denied(
         denial.kind(),
         WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded
     );
-    assert_eq!(denial.subject(), "root/relation[0]/relation[0]/field[0]");
+    // The current tree materializer reserves each relation's immediate row
+    // vector before descending into its fields. This budget therefore fails at
+    // the first relation allocation, rather than at a later descendant field.
+    assert_eq!(denial.subject(), "root/relation[0]");
     assert_eq!(
         world
             .application

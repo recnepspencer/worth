@@ -1,6 +1,7 @@
 use crate::domain_computation::primary_graph::WorthQueryApplicationRequiredOutputConnection;
 use worth_query_declaration::facade::application_program::{
-    ApplicationProgramDefinition, ValidatedApplicationProgram,
+    ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
+    ValidatedApplicationProgram,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaComposition, ApplicationSchemaDeclaration,
@@ -20,14 +21,22 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
 };
 pub use demand::{
-    WorthQueryAdmittedProgramDependentOutput, WorthQueryAdmittedProgramRootOutput,
-    WorthQueryProgramRootOutputAdvance, WorthQuerySettledProgramRootOutput,
+    WorthQueryAdmittedProgramOutput, WorthQueryProgramOutputAdvance, WorthQueryProgramRootDemand,
+    WorthQuerySettledProgramOutput,
 };
+
+type RootConnectionRef<Schema, Program> =
+    <<Program as ApplicationProgramDefinition<Schema>>::OutputGraph as ApplicationOutputGraphShape<
+        Schema,
+    >>::RootConnection;
+type RootConnection<Schema, Program> =
+    <RootConnectionRef<Schema, Program> as ApplicationConnectionShape<Schema>>::Binding;
 
 /// Runtime paired with the exact validated program that governed installation.
 pub struct WorthQueryProgramApplicationRuntime<Schema, Program> {
     runtime: WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     program: WorthQueryInstalledApplicationProgram<Schema, Program>,
+    connection_types: Box<[std::any::TypeId]>,
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
@@ -39,6 +48,11 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         &self,
     ) -> &WorthQueryInstalledApplicationProgram<Schema, Program> {
         &self.program
+    }
+
+    pub(crate) fn contains_connection_type<Connection: 'static>(&self) -> bool {
+        self.connection_types
+            .contains(&std::any::TypeId::of::<Connection>())
     }
 }
 
@@ -64,7 +78,8 @@ pub fn in_memory_program<Schema, Program>(
 where
     Schema: ApplicationSchemaComposition<Contributions = Program::Contributions>,
     Program: ApplicationProgramDefinition<Schema>,
-    Program::Connections: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
+    RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     let mut runtime =
@@ -74,11 +89,14 @@ where
     runtime
         .program_required_bindings
         .insert(std::any::TypeId::of::<
-            <Program::Connections as WorthQueryApplicationRequiredOutputConnection<Schema>>::Source,
+            <RootConnection<Schema, Program> as WorthQueryApplicationRequiredOutputConnection<
+                Schema,
+            >>::Source,
         >());
     Ok(WorthQueryProgramApplicationRuntime {
         runtime,
         program: installed,
+        connection_types: Program::OutputGraph::connection_types().into_boxed_slice(),
     })
 }
 
@@ -86,7 +104,8 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
-    Program::Connections: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
+    RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
     pub fn compare_and_commit_required_output_source<Source>(
         &self,
@@ -113,7 +132,7 @@ where
         Source: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
             Schema,
         >,
-        Program::Connections:
+        RootConnection<Schema, Program>:
             WorthQueryApplicationRequiredOutputConnection<Schema, Source = Source>,
         Source::Input: Clone + Send + Sync + 'static,
     {

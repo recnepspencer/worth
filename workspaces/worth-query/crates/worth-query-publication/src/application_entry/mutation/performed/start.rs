@@ -6,12 +6,15 @@ where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
-    Program::Connections:
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
+    RootConnection<Schema, Program>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
-    Program::DependentConnection:
-        worth_query_execution::facade::primary_graph::WorthQueryApplicationDependentOutputConnection<
+    ProgramRootEdges<Schema, Program>:
+        crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
+            'application,
             Schema,
-            RootDemand = ProgramDemand<Schema, Program>,
+            Program,
+            ProgramDemand<Schema, Program>,
         >,
     ProgramDemand<Schema, Program>: Clone,
     <DemandSource<Schema, Program> as ApplicationQueryBinding<Schema>>::Input:

@@ -93,6 +93,12 @@ impl WorthQueryOutputDemandSettlement {
 /// readiness conditional and produced a Signal successor.
 #[derive(Clone)]
 pub struct WorthQueryOutputReadinessDeliveryEvidence {
+    // `from_execution` is reached only after the installed producer boundary
+    // returned the receipt whose readiness is evaluated.
+    producer_contacts: usize,
+    // A Bridge delivery contact exists only when that receipt carried a fresh
+    // performed change into readiness evaluation.
+    delivery_contacts: usize,
     conditional_successor: bool,
     truth_targets_admitted: usize,
     signal_seeds_emitted: usize,
@@ -107,6 +113,8 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
         execution: &worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
     ) -> Self {
         Self {
+            producer_contacts: 1,
+            delivery_contacts: usize::from(delivery.is_some()),
             conditional_successor: delivery.is_some_and(|receipt| receipt.has_conditional_successor()),
             truth_targets_admitted: delivery.map_or(0, |receipt| receipt.truth_targets_admitted()),
             signal_seeds_emitted: delivery.map_or(0, |receipt| receipt.signal_seeds_emitted()),
@@ -114,6 +122,14 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
             signal_decision: crate::domain_computation::primary_graph::conditional_operation::classify_bridge_signal(execution),
             semantic_observation_reads: execution.semantic_observation_reads(),
         }
+    }
+
+    pub const fn producer_contact_count(&self) -> usize {
+        self.producer_contacts
+    }
+
+    pub const fn delivery_contact_count(&self) -> usize {
+        self.delivery_contacts
     }
 
     pub const fn has_conditional_successor(&self) -> bool {
