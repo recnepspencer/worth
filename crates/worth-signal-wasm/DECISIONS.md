@@ -136,7 +136,17 @@ without asking, why, and how it is enforced.
 ## Pre-existing state of master (not introduced here)
 
 - Native `cargo test -p worth-signal --lib` has 59 failing tests on master;
-  the set is unchanged on this branch (compared by name).
+  the set is unchanged on this branch (compared by name). Bisected 2026-09-15:
+  at 7092e1dea9 (2026-09-05) the suite has 1 failure
+  (`tests::performance_profiles::measured_pressure::measured_idle_versus_introspective_records_diagnostic_pressure_benefit`);
+  from 5229d891f1 (2026-09-08, milestone 9.17.3 phase 1) through 63fa9d7efe the
+  lib test target does not compile (test files reference private
+  `SetMergeTraversal` fields and a private budget helper); 08662b580c
+  (2026-09-13) restores the compile and is the first commit where the other 58
+  are observable. The output-commit ordinal reservation that most of them trip
+  (`cause_sets.rs` `publish_output_commit_ordinal` debug assertion, reserved 1
+  vs expected 2) was added inside that range. Not fixed here: it is native
+  runtime work outside the wasm surface this branch changes.
 - On master, 6 of 8 signals-runtime suites had failures, including
   `worker_first_callable_root_surfaces.test.mjs` failing at its first
   assertion; commits e736170e24 / f9b8129728 / 221861e0d4 are where those
