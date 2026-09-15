@@ -148,8 +148,7 @@ fn validate_result_and_root_selection(
     {
         return Err(ApplicationQueryDefinitionDenial::ResultQueryMismatch);
     }
-    let mut slots = BTreeSet::new();
-    if !shape_slots_are_unique(definition.result_shape(), &mut slots) {
+    if !shape_slots_are_unique(definition.result_shape()) {
         return Err(ApplicationQueryDefinitionDenial::DuplicateResultSlot);
     }
     Ok(())

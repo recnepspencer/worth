@@ -37,10 +37,8 @@ pub(super) fn query_is_consistent(shape: &ApplicationQueryResultShape, query_typ
         })
 }
 
-pub(super) fn slots_are_unique<'a>(
-    shape: &'a ApplicationQueryResultShape,
-    slots: &mut BTreeSet<&'a str>,
-) -> bool {
+pub(super) fn slots_are_unique(shape: &ApplicationQueryResultShape) -> bool {
+    let mut slots = BTreeSet::new();
     shape
         .fields()
         .iter()
@@ -48,7 +46,7 @@ pub(super) fn slots_are_unique<'a>(
         && shape.relations().iter().all(|relation| {
             !relation.slot_type().is_empty()
                 && slots.insert(relation.slot_type())
-                && slots_are_unique(relation.nested_shape(), slots)
+                && slots_are_unique(relation.nested_shape())
         })
 }
 
