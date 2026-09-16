@@ -151,6 +151,7 @@ where
             self,
             crate::basis::WorthQueryProductObservationLease::new(observation.clone()),
         );
+        let product_occurrence = observation.lifecycle_incarnation();
         let predecessor_source_identity = receipt.idempotency_binding().source_identity();
         let source_commit = self.output_demands.retain_performed_source(
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryPerformedOutputDemandSource {
@@ -166,7 +167,8 @@ where
             crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource {
                 runtime_authority: self.runtime.authority_identity().as_u64(),
                 source_commit,
-                source_scope,
+                product_occurrence,
+                authorization_scope: source_scope,
                 owner: self.output_demands.clone(),
             },
             retained,
@@ -191,12 +193,11 @@ where
                 "prepared output source query did not return one owner-paired occurrence",
             ));
         };
-        if prepared.runtime_authority != self.runtime.authority_identity().as_u64()
-            || observed.selected_product_commit() != Some(&prepared.source_commit)
-            || crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
-                observed.footprint.root,
-            ) != prepared.source_scope
-        {
+        if !prepared_source_carrier_matches(
+            self.runtime.authority_identity().as_u64(),
+            prepared,
+            observed,
+        ) {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
                 "prepared output source does not match its committed carrier",
@@ -235,12 +236,11 @@ where
                 "required-output source query did not return one owner-paired occurrence",
             )
         })?;
-        if prepared.runtime_authority != self.runtime.authority_identity().as_u64()
-            || observed_source.selected_product_commit() != Some(&prepared.source_commit)
-            || crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
-                observed_source.footprint.root,
-            ) != prepared.source_scope
-        {
+        if !prepared_source_carrier_matches(
+            self.runtime.authority_identity().as_u64(),
+            prepared,
+            &observed_source,
+        ) {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
                 "prepared source does not match the admitted output occurrence",
@@ -349,4 +349,17 @@ where
             interest: Some(interest),
         })
     }
+}
+
+fn prepared_source_carrier_matches<Query>(
+    runtime_authority: u64,
+    prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
+    observed: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
+) -> bool {
+    prepared.runtime_authority == runtime_authority
+        && observed.selected_product_commit() == Some(&prepared.source_commit)
+        && observed.selected_product_occurrence() == Some(prepared.product_occurrence)
+        && crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
+            observed.model_root,
+        ) == prepared.authorization_scope
 }

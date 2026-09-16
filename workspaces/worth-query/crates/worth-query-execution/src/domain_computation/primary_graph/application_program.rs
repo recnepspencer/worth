@@ -58,7 +58,9 @@ pub struct WorthQueryPreparedRequiredOutputSource {
     pub(in crate::domain_computation::primary_graph) runtime_authority: u64,
     pub(in crate::domain_computation::primary_graph) source_commit:
         worth_runtime_world::facade::CompositeCommitIdentity,
-    pub(in crate::domain_computation::primary_graph) source_scope:
+    pub(in crate::domain_computation::primary_graph) product_occurrence:
+        worth_runtime_world::facade::ProductBranchIncarnation,
+    pub(in crate::domain_computation::primary_graph) authorization_scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     pub(in crate::domain_computation::primary_graph) owner:
         super::application_output_demand::WorthQueryOutputDemandRegistry,
