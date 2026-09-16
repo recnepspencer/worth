@@ -10,7 +10,7 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn bind_prepared_output_source(
         &self,
         source_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
-        current_source_identity: [u8; 32],
+        output_source_identity: [u8; 32],
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let mut state = self
             .state
@@ -27,25 +27,10 @@ impl WorthQueryOutputDemandRegistry {
             ));
         };
         let source = &state.prepared_sources[source_index].1;
-        if source.current_source_identity.is_some() {
+        if source.output_source_identity.is_some() {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
                 "prepared source identity is already bound",
-            ));
-        }
-        if source
-            .predecessor_source_identity
-            .is_some_and(|predecessor| {
-                !WorthQueryOutputDemandKey::source_same_occurrence(
-                    &predecessor,
-                    &current_source_identity,
-                ) || WorthQueryOutputDemandKey::source_revision(&current_source_identity)
-                    < WorthQueryOutputDemandKey::source_revision(&predecessor)
-            })
-        {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                "current output source is not the retained predecessor's successor",
             ));
         }
         let source_occurrence = source.receipt.product_branch().occurrence();
@@ -58,12 +43,12 @@ impl WorthQueryOutputDemandRegistry {
                 index != source_index
                     && candidate.receipt.product_branch().occurrence() == source_occurrence
                     && candidate.receipt.principal_scope().scope() == source_scope
-                    && candidate.current_source_identity.is_some_and(|bound| {
+                    && candidate.output_source_identity.is_some_and(|bound| {
                         WorthQueryOutputDemandKey::source_same_occurrence(
                             &bound,
-                            &current_source_identity,
+                            &output_source_identity,
                         ) && WorthQueryOutputDemandKey::source_revision(&bound)
-                            >= WorthQueryOutputDemandKey::source_revision(&current_source_identity)
+                            >= WorthQueryOutputDemandKey::source_revision(&output_source_identity)
                     })
             })
         {
@@ -82,12 +67,12 @@ impl WorthQueryOutputDemandRegistry {
             let older = index != source_index
                 && prepared.1.receipt.product_branch().occurrence() == source_occurrence
                 && prepared.1.receipt.principal_scope().scope() == source_scope
-                && prepared.1.current_source_identity.is_some_and(|bound| {
+                && prepared.1.output_source_identity.is_some_and(|bound| {
                     WorthQueryOutputDemandKey::source_same_occurrence(
                         &bound,
-                        &current_source_identity,
+                        &output_source_identity,
                     ) && WorthQueryOutputDemandKey::source_revision(&bound)
-                        < WorthQueryOutputDemandKey::source_revision(&current_source_identity)
+                        < WorthQueryOutputDemandKey::source_revision(&output_source_identity)
                 });
             if older {
                 superseded.push(prepared.0);
@@ -109,7 +94,7 @@ impl WorthQueryOutputDemandRegistry {
             &mut state,
             source_occurrence,
             source_scope,
-            &current_source_identity,
+            &output_source_identity,
         );
         state
             .prepared_sources
@@ -117,7 +102,7 @@ impl WorthQueryOutputDemandRegistry {
             .find(|(commit, _)| commit == source_commit)
             .expect("the bound custody was retained above")
             .1
-            .current_source_identity = Some(current_source_identity);
+            .output_source_identity = Some(output_source_identity);
         Ok(())
     }
 

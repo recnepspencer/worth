@@ -151,14 +151,12 @@ where
             crate::basis::WorthQueryProductObservationLease::new(observation.clone()),
         );
         let product_occurrence = observation.lifecycle_incarnation();
-        let predecessor_source_identity = receipt.idempotency_binding().source_identity();
         let source_commit = self.output_demands.retain_performed_source(
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryPerformedOutputDemandSource {
                 receipt,
                 change,
                 observation,
-                predecessor_source_identity,
-                current_source_identity: None,
+                output_source_identity: None,
             },
             preparation,
         )?;
