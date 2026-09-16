@@ -8,19 +8,6 @@ use super::{
     ApplicationInputPort, ApplicationOccurrenceConnectionBinding, ApplicationOutputPort,
 };
 
-pub type ApplicationProgramRootConnectionRef<Schema, Program> =
-    <<Program as super::ApplicationProgramDefinition<Schema>>::OutputGraph as ApplicationOutputGraphShape<
-        Schema,
-    >>::RootConnection;
-pub type ApplicationProgramRootConnection<Schema, Program> = <ApplicationProgramRootConnectionRef<
-    Schema,
-    Program,
-> as ApplicationConnectionShape<Schema>>::Binding;
-pub type ApplicationProgramRootEdges<Schema, Program> =
-    <<Program as super::ApplicationProgramDefinition<Schema>>::OutputGraph as ApplicationOutputGraphShape<
-        Schema,
-    >>::Dependents;
-
 /// Typed shape of the required-output graph rooted at one performed action.
 pub struct ApplicationOutputGraph<RootConnection, Dependents> {
     marker: PhantomData<fn() -> (RootConnection, Dependents)>,

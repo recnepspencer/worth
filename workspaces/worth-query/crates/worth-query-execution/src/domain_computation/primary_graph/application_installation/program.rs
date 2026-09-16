@@ -1,7 +1,8 @@
 use crate::domain_computation::primary_graph::WorthQueryApplicationRequiredOutputConnection;
 use worth_query_declaration::facade::application_program::{
-    ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
-    ValidatedApplicationProgram,
+    ApplicationConnectionShape, ApplicationOutputGraph, ApplicationOutputGraphShape,
+    ApplicationProgramDefinition, ApplicationProgramOutputRootsShape, ApplicationProgramOutputs,
+    ApplicationProgramOutputsShape, ValidatedApplicationProgram,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaComposition, ApplicationSchemaDeclaration,
@@ -25,18 +26,62 @@ pub use demand::{
     WorthQuerySettledProgramOutput,
 };
 
-type RootConnectionRef<Schema, Program> =
-    <<Program as ApplicationProgramDefinition<Schema>>::OutputGraph as ApplicationOutputGraphShape<
-        Schema,
-    >>::RootConnection;
-type RootConnection<Schema, Program> =
-    <RootConnectionRef<Schema, Program> as ApplicationConnectionShape<Schema>>::Binding;
+type RootConnectionRef<Schema, Root> =
+    <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;
+type RootConnection<Schema, Root> =
+    <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::Binding;
+
+pub trait WorthQueryApplicationProgramRoots<Schema>
+where
+    Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
+{
+    fn append_required_bindings(bindings: &mut std::collections::BTreeSet<std::any::TypeId>);
+}
+
+impl<Schema, Root, Dependents> WorthQueryApplicationProgramRoots<Schema>
+    for ApplicationOutputGraph<Root, Dependents>
+where
+    Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
+    Self: ApplicationOutputGraphShape<Schema>,
+    RootConnection<Schema, Self>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+{
+    fn append_required_bindings(bindings: &mut std::collections::BTreeSet<std::any::TypeId>) {
+        bindings.insert(std::any::TypeId::of::<
+            <RootConnection<Schema, Self> as WorthQueryApplicationRequiredOutputConnection<
+                Schema,
+            >>::Source,
+        >());
+    }
+}
+
+impl<Schema, Left, Right> WorthQueryApplicationProgramRoots<Schema> for (Left, Right)
+where
+    Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
+    Left: WorthQueryApplicationProgramRoots<Schema>,
+    Right: WorthQueryApplicationProgramRoots<Schema>,
+{
+    fn append_required_bindings(bindings: &mut std::collections::BTreeSet<std::any::TypeId>) {
+        Left::append_required_bindings(bindings);
+        Right::append_required_bindings(bindings);
+    }
+}
+
+impl<Schema, Roots> WorthQueryApplicationProgramRoots<Schema> for ApplicationProgramOutputs<Roots>
+where
+    Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
+    Roots: ApplicationProgramOutputRootsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
+{
+    fn append_required_bindings(bindings: &mut std::collections::BTreeSet<std::any::TypeId>) {
+        Roots::append_required_bindings(bindings);
+    }
+}
 
 /// Runtime paired with the exact validated program that governed installation.
 pub struct WorthQueryProgramApplicationRuntime<Schema, Program> {
     runtime: WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     program: WorthQueryInstalledApplicationProgram<Schema, Program>,
     connection_types: Box<[std::any::TypeId]>,
+    root_graph_types: Box<[std::any::TypeId]>,
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
@@ -53,6 +98,15 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
     pub(crate) fn contains_connection_type<Connection: 'static>(&self) -> bool {
         self.connection_types
             .contains(&std::any::TypeId::of::<Connection>())
+    }
+
+    pub fn contains_output_root<Root>(&self) -> bool
+    where
+        Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
+        Root: ApplicationOutputGraphShape<Schema>,
+    {
+        self.root_graph_types
+            .contains(&std::any::TypeId::of::<Root>())
     }
 }
 
@@ -78,25 +132,20 @@ pub fn in_memory_program<Schema, Program>(
 where
     Schema: ApplicationSchemaComposition<Contributions = Program::Contributions>,
     Program: ApplicationProgramDefinition<Schema>,
-    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
-    RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Program::Outputs:
+        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     let mut runtime =
         in_memory_with_program(declaration, configuration, limits, initial_state, true)?;
     let installed = install_application_program(program, runtime.installed_schema())
         .map_err(WorthQueryInMemoryApplicationDenial::Program)?;
-    runtime
-        .program_required_bindings
-        .insert(std::any::TypeId::of::<
-            <RootConnection<Schema, Program> as WorthQueryApplicationRequiredOutputConnection<
-                Schema,
-            >>::Source,
-        >());
+    Program::Outputs::append_required_bindings(&mut runtime.program_required_bindings);
     Ok(WorthQueryProgramApplicationRuntime {
         runtime,
         program: installed,
-        connection_types: Program::OutputGraph::connection_types().into_boxed_slice(),
+        connection_types: Program::Outputs::connection_types().into_boxed_slice(),
+        root_graph_types: Program::Outputs::root_graph_types().into_boxed_slice(),
     })
 }
 
@@ -104,11 +153,11 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
-    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
-    RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Program::Outputs: ApplicationProgramOutputsShape<Schema>,
 {
-    pub fn compare_and_commit_required_output_source<Source>(
+    pub fn compare_and_commit_required_output_source<Root, Source>(
         &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         program: crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram<
             Schema,
             Source::Operation,
@@ -132,7 +181,8 @@ where
         Source: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
             Schema,
         >,
-        RootConnection<Schema, Program>:
+        Root: ApplicationOutputGraphShape<Schema>,
+        RootConnection<Schema, Root>:
             WorthQueryApplicationRequiredOutputConnection<Schema, Source = Source>,
         Source::Input: Clone + Send + Sync + 'static,
     {

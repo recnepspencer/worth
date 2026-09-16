@@ -5,8 +5,9 @@ use worth_query_decl::facade::application_program::{
     ApplicationFeatureLeaf, ApplicationFeatureList, ApplicationFeatureRef, ApplicationInputPort,
     ApplicationLocalRuleRef, ApplicationOccurrenceConnectionBinding, ApplicationOutputEdge,
     ApplicationOutputGraph, ApplicationOutputLeaf, ApplicationProgramAuthoring,
-    ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationRootComposition,
-    ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList, ApplicationSharedRuleRef,
+    ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
+    ApplicationRootComposition, ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList,
+    ApplicationSharedRuleRef,
 };
 use worth_query_parameter_entry::{ParameterFeature, PositiveParameterCount};
 use worth_query_topology_entry::{
@@ -20,6 +21,12 @@ use worth_query_topology_entry::{
 };
 
 use crate::ConsumerSchema;
+
+mod roots;
+pub use roots::{
+    ConsumerProgramRoot, ConsumerSecondaryProgramRoot, ConsumerTruncatedProgramRoot,
+    ConsumerUndeclaredProgramRoot, SecondaryPlanarRoot,
+};
 
 pub struct ConsumerProgram;
 struct MissingRequiredInputProgram;
@@ -180,7 +187,8 @@ type MissingRequiredInputRules = ApplicationRuleList<
 impl ApplicationProgramDefinition<ConsumerSchema> for MissingRequiredInputProgram {
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Features = MissingRequiredInputFeatures;
-    type OutputGraph = ApplicationOutputGraph<PlanarConnection, ApplicationOutputLeaf>;
+    type Outputs =
+        ApplicationProgramOutputs<ApplicationOutputGraph<PlanarConnection, ApplicationOutputLeaf>>;
     type Rules = MissingRequiredInputRules;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.missing-required-input.v1");
@@ -200,7 +208,8 @@ type DuplicateFeatureFeatures = ApplicationFeatureList<
 impl ApplicationProgramDefinition<ConsumerSchema> for DuplicateFeatureProgram {
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Features = DuplicateFeatureFeatures;
-    type OutputGraph = ApplicationOutputGraph<PlanarConnection, ApplicationOutputLeaf>;
+    type Outputs =
+        ApplicationProgramOutputs<ApplicationOutputGraph<PlanarConnection, ApplicationOutputLeaf>>;
     type Rules = MissingRequiredInputRules;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.duplicate-feature.v1");
@@ -226,7 +235,9 @@ type UndeclaredInputConnection = ApplicationConnectionRef<
 impl ApplicationProgramDefinition<ConsumerSchema> for UndeclaredInputProgram {
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Features = UndeclaredInputFeatures;
-    type OutputGraph = ApplicationOutputGraph<UndeclaredInputConnection, ApplicationOutputLeaf>;
+    type Outputs = ApplicationProgramOutputs<
+        ApplicationOutputGraph<UndeclaredInputConnection, ApplicationOutputLeaf>,
+    >;
     type Rules = MissingRequiredInputRules;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.undeclared-input.v1");
@@ -261,9 +272,11 @@ type UnexportedCrossInstanceConnection = ApplicationConnectionInstanceRef<
 impl ApplicationProgramDefinition<ConsumerSchema> for UnexportedCrossInstanceProgram {
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Features = UnexportedCrossInstanceFeatures;
-    type OutputGraph = ApplicationOutputGraph<
-        PlanarConnection,
-        ApplicationOutputEdge<UnexportedCrossInstanceConnection, ApplicationOutputLeaf>,
+    type Outputs = ApplicationProgramOutputs<
+        ApplicationOutputGraph<
+            PlanarConnection,
+            ApplicationOutputEdge<UnexportedCrossInstanceConnection, ApplicationOutputLeaf>,
+        >,
     >;
     type Rules = MissingRequiredInputRules;
     const IDENTITY: ApplicationProgramIdentity =
@@ -298,7 +311,21 @@ type ConsumerFeatures = ApplicationFeatureList<
                         ApplicationFeatureRef<ConsumerSchema, PlanarAlternateSummaryFeature>,
                         ApplicationFeatureList<
                             ApplicationFeatureRef<ConsumerSchema, ParameterFeature>,
-                            ApplicationFeatureLeaf,
+                            ApplicationFeatureList<
+                                ApplicationFeatureInstanceRef<
+                                    ConsumerSchema,
+                                    SecondaryPlanarRoot,
+                                    PlanarSourceFeature,
+                                >,
+                                ApplicationFeatureList<
+                                    ApplicationFeatureInstanceRef<
+                                        ConsumerSchema,
+                                        SecondaryPlanarRoot,
+                                        PlanarOutputFeature,
+                                    >,
+                                    ApplicationFeatureLeaf,
+                                >,
+                            >,
                         >,
                     >,
                 >,
@@ -319,19 +346,7 @@ type PlanarSummaryConnection = ApplicationConnectionRef<
 impl ApplicationProgramDefinition<ConsumerSchema> for ConsumerProgram {
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Features = ConsumerFeatures;
-    type OutputGraph = ApplicationOutputGraph<
-        PlanarConnection,
-        (
-            ApplicationOutputEdge<
-                PlanarDependentConnection,
-                ApplicationOutputEdge<PlanarSummaryConnection, ApplicationOutputLeaf>,
-            >,
-            ApplicationOutputEdge<
-                PlanarAlternateDependentConnection,
-                ApplicationOutputEdge<PlanarAlternateSummaryConnection, ApplicationOutputLeaf>,
-            >,
-        ),
-    >;
+    type Outputs = ApplicationProgramOutputs<(ConsumerProgramRoot, ConsumerSecondaryProgramRoot)>;
     type Rules = ConsumerRules;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.consumer-program.v1");

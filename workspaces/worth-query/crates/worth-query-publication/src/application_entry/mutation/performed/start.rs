@@ -1,33 +1,33 @@
 use super::*;
 
-impl<'application, Schema, Intent, Program>
-    WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program>
+impl<'application, Schema, Intent, Program, Root>
+    WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
-    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
-    RootConnection<Schema, Program>:
+    Root: ApplicationOutputGraphShape<Schema>,
+    RootConnection<Schema, Root>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
-    ProgramRootEdges<Schema, Program>:
+    Root::Dependents:
         crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
             'application,
             Schema,
             Program,
-            ProgramDemand<Schema, Program>,
+            ProgramDemand<Schema, Root>,
         >,
-    ProgramDemand<Schema, Program>: Clone,
-    <DemandSource<Schema, Program> as ApplicationQueryBinding<Schema>>::Input:
-        ApplicationQueryIntent<Schema, Binding = DemandSource<Schema, Program>>,
-    <DemandSource<Schema, Program> as ApplicationQueryBinding<Schema>>::ScopeBinding:
+    ProgramDemand<Schema, Root>: Clone,
+    <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
+        ApplicationQueryIntent<Schema, Binding = DemandSource<Schema, Root>>,
+    <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ScopeBinding:
         ApplicationQueryScopeResolution<
             Schema,
-            <DemandSource<Schema, Program> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
         >,
-    <<DemandSource<Schema, Program> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
+    <<DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
         WorthQueryApplicationProjection<
                 Schema,
-                <DemandSource<Schema, Program> as ApplicationQueryBinding<Schema>>::Query,
+                <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Query,
             > + Clone,
 {
     pub fn start_required_outputs<'principal, 'scope>(
@@ -40,8 +40,8 @@ where
         >,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Result<
-        WorthQueryStartedRequiredOutputs<'application, Schema, Intent, Program>,
-        WorthQueryRequiredOutputStartFailure<'application, Schema, Intent, Program>,
+        WorthQueryStartedRequiredOutputs<'application, Schema, Intent, Program, Root>,
+        WorthQueryRequiredOutputStartFailure<'application, Schema, Intent, Program, Root>,
     > {
         let Self {
             receipt,
@@ -89,7 +89,7 @@ where
         match request
             .demand(demand.clone())
             .controls(controls)
-            .start_performed(
+            .start_performed::<Program, Root>(
                 application,
                 &prepared,
                 source_result.into_output_demand_source(),

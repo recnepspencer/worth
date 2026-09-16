@@ -4,9 +4,9 @@ use std::marker::PhantomData;
 use crate::application_schema::ApplicationSchema;
 
 use super::{
-    ApplicationConnectionDeclaration, ApplicationFeatureDeclaration, ApplicationOutputGraphShape,
-    ApplicationProgramFeaturesShape, ApplicationProgramIdentity, ApplicationProgramRuleDeclaration,
-    ApplicationProgramRulesShape,
+    ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
+    ApplicationProgramFeaturesShape, ApplicationProgramIdentity, ApplicationProgramOutputsShape,
+    ApplicationProgramRuleDeclaration, ApplicationProgramRulesShape,
 };
 
 /// Complete authored static program definition.
@@ -20,7 +20,7 @@ where
     /// Complete feature inventory and each feature's authored input ports.
     type Features: ApplicationProgramFeaturesShape<Schema>;
     /// Complete transitive output topology used by the installed executor.
-    type OutputGraph: super::ApplicationOutputGraphShape<Schema>;
+    type Outputs: super::ApplicationProgramOutputsShape<Schema>;
     /// Complete scoped invariant inventory owned by this composition.
     type Rules: ApplicationProgramRulesShape<Schema>;
     const IDENTITY: ApplicationProgramIdentity;
@@ -47,7 +47,7 @@ where
     /// fn missing_connection<Schema, Program>()
     /// where Schema: ApplicationSchema, Program: ApplicationProgramDefinition<Schema> {
     ///     type Missing = ApplicationOutputLeaf;
-    ///     fn require_graph<S: ApplicationSchema, G: ApplicationOutputGraphShape<S>>() {}
+    ///     fn require_graph<S: ApplicationSchema, G: ApplicationProgramOutputsShape<S>>() {}
     ///     require_graph::<Schema, Missing>();
     /// }
     /// ```
@@ -56,7 +56,7 @@ where
     /// use worth_query_declaration::facade::{application_program::*, application_schema::ApplicationSchema};
     /// fn string_is_not_a_connection<Schema>()
     /// where Schema: ApplicationSchema {
-    ///     fn require_graph<S: ApplicationSchema, G: ApplicationOutputGraphShape<S>>() {}
+    ///     fn require_graph<S: ApplicationSchema, G: ApplicationProgramOutputsShape<S>>() {}
     ///     require_graph::<Schema, &'static str>();
     /// }
     /// ```
@@ -64,7 +64,7 @@ where
         self,
     ) -> Result<ValidatedApplicationProgram<Schema, Program>, ApplicationProgramValidationDenial>
     {
-        validate::<Schema, Program>(Program::OutputGraph::connections(), Program::Rules::rules())
+        validate::<Schema, Program>(Program::Outputs::connections(), Program::Rules::rules())
     }
 }
 

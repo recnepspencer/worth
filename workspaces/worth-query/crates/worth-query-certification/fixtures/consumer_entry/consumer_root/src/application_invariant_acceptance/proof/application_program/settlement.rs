@@ -66,7 +66,7 @@ pub(super) fn performed_source_settles_required_output(
         })
         .expect_source(source)
         .idempotency(&10_001)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
         .expect("the source edit reaches publication");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the fresh source publication must retain performed delivery")

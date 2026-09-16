@@ -41,7 +41,7 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
         })
         .expect_source(source)
         .idempotency(&10_018)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
         .expect("the source edit reaches its installed program");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source edit must be fresh")
@@ -84,7 +84,7 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
     drop(started);
 
     let mut recovered = request
-        .recover_required_outputs::<crate::ConsumerProgram>(
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
             PlanarOutputDemand::new("anchor-c"),

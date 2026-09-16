@@ -1,6 +1,7 @@
 #[derive(Debug)]
 pub enum WorthQueryPerformedMutationExecutionDenial {
     ForeignProgram,
+    UndeclaredOutputRoot,
     MissingConnection,
     Connection(
         worth_query_execution::facade::primary_graph::WorthQueryRequiredOutputConnectionDenial,
@@ -11,6 +12,7 @@ pub enum WorthQueryPerformedMutationExecutionDenial {
 #[derive(Debug)]
 pub enum WorthQueryRequiredOutputPreparationDenial {
     ForeignProgram,
+    UndeclaredOutputRoot,
     MissingConnection,
     MissingPerformedDelivery,
     MissingSource,

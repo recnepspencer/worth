@@ -1,13 +1,11 @@
 use std::num::NonZeroUsize;
 
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationProgramOutputProgress,
-    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationRequestExt,
+    WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationPerformedMutationOutcome,
+    WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
     WorthQueryOutputDemandControls,
 };
-use worth_query_topology_entry::{
-    PlanarOutputRead, PlanarRead, PlanarSourceAdjustment,
-};
+use worth_query_topology_entry::{PlanarOutputRead, PlanarRead, PlanarSourceAdjustment};
 
 use super::super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
@@ -81,7 +79,7 @@ pub(super) fn duplicate_retry_does_not_schedule_again(
         .mutate(intent.clone())
         .expect_source(source.clone())
         .idempotency(&10_008)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
         .unwrap();
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the first source operation must perform")
@@ -93,7 +91,7 @@ pub(super) fn duplicate_retry_does_not_schedule_again(
         .mutate(intent)
         .expect_source(source)
         .idempotency(&10_008)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
         .unwrap();
     assert!(matches!(
         duplicate,
@@ -232,6 +230,7 @@ type Prepared<'a> =
         ConsumerSchema,
         PlanarSourceAdjustment,
         crate::ConsumerProgram,
+        crate::ConsumerProgramRoot,
     >;
 
 type Started<'a> = worth_query_host::facade::application_entry::WorthQueryStartedRequiredOutputs<
@@ -239,6 +238,7 @@ type Started<'a> = worth_query_host::facade::application_entry::WorthQueryStarte
     ConsumerSchema,
     PlanarSourceAdjustment,
     crate::ConsumerProgram,
+    crate::ConsumerProgramRoot,
 >;
 
 pub(super) fn perform<'a>(
@@ -265,7 +265,7 @@ fn prepare<'a>(
         })
         .expect_source(observed(request, key))
         .idempotency(&command)
-        .execute_performed(application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(application)
         .expect("the source operation reaches its installed program");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source operation must perform")

@@ -26,14 +26,12 @@ type SourceQuery<Schema, Demand> =
     <Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::Query;
 type SourceValue<Schema, Demand> =
     <<Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-type RootConnectionRef<Schema, Program> =
-    <<Program as ApplicationProgramDefinition<Schema>>::OutputGraph as ApplicationOutputGraphShape<
-        Schema,
-    >>::RootConnection;
-type RootConnection<Schema, Program> =
-    <RootConnectionRef<Schema, Program> as ApplicationConnectionShape<Schema>>::Binding;
-pub type WorthQueryProgramRootDemand<Schema, Program> =
-    <RootConnection<Schema, Program> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand;
+type RootConnectionRef<Schema, Root> =
+    <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;
+type RootConnection<Schema, Root> =
+    <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::Binding;
+pub type WorthQueryProgramRootDemand<Schema, Root> =
+    <RootConnection<Schema, Root> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand;
 type ConnectionBinding<Schema, Connection> =
     <Connection as ApplicationConnectionShape<Schema>>::Binding;
 type ConnectionDemand<Schema, Connection> =
@@ -113,30 +111,34 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
-    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
-    RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
-    pub fn recover_program_root_output(
+    pub fn recover_program_root_output<Root>(
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
-            SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
-            SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
+            SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
+            SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
         >,
         maximum_work: usize,
         maximum_retained_bytes: usize,
         source_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<
-        WorthQueryAdmittedProgramOutput<
-            Schema,
-            Program,
-            WorthQueryProgramRootDemand<Schema, Program>,
-        >,
+        WorthQueryAdmittedProgramOutput<Schema, Program, WorthQueryProgramRootDemand<Schema, Root>>,
         WorthQueryOutputDemandDenial,
-    > {
+    >
+    where
+        Root: ApplicationOutputGraphShape<Schema>,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    {
+        if !self.contains_output_root::<Root>() {
+            return Err(WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "selected output root is not installed for this program",
+            ));
+        }
         self.runtime
             .admit_recovered_output_demand::<
-                Family<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
+                Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
             >(
                 source,
                 maximum_work,
@@ -149,27 +151,33 @@ where
             })
     }
 
-    pub fn admit_performed_program_root_output(
+    pub fn admit_performed_program_root_output<Root>(
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
-            SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
-            SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
+            SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
+            SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
         >,
         maximum_work: usize,
         maximum_retained_bytes: usize,
         prepared: &WorthQueryPreparedRequiredOutputSource,
     ) -> Result<
-        WorthQueryAdmittedProgramOutput<
-            Schema,
-            Program,
-            WorthQueryProgramRootDemand<Schema, Program>,
-        >,
+        WorthQueryAdmittedProgramOutput<Schema, Program, WorthQueryProgramRootDemand<Schema, Root>>,
         WorthQueryOutputDemandDenial,
-    > {
+    >
+    where
+        Root: ApplicationOutputGraphShape<Schema>,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    {
+        if !self.contains_output_root::<Root>() {
+            return Err(WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "selected output root is not installed for this program",
+            ));
+        }
         self.runtime
             .admit_performed_output_demand::<
-                Family<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
+                Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
             >(source, maximum_work, maximum_retained_bytes, prepared)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,

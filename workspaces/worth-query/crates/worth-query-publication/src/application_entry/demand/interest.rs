@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
-    ApplicationProgramRootConnection,
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
@@ -33,7 +32,10 @@ type SourceQuery<Schema, Demand> =
 type SourceValue<Schema, Demand> = <<SourceBinding<Schema, Demand> as ApplicationQueryBinding<
     Schema,
 >>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-type RootConnection<Schema, Program> = ApplicationProgramRootConnection<Schema, Program>;
+type RootConnectionRef<Schema, Root> =
+    <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;
+type RootConnection<Schema, Root> =
+    <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::Binding;
 type ConnectionBinding<Schema, Connection> =
     <Connection as ApplicationConnectionShape<Schema>>::Binding;
 
@@ -79,7 +81,7 @@ where
         self.start_ordinary(source_result.into_output_demand_source())
     }
 
-    pub(in crate::application_entry) fn start_recovery<Program>(
+    pub(in crate::application_entry) fn start_recovery<Program, Root>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -89,8 +91,8 @@ where
     >
     where
         Program: ApplicationProgramDefinition<Schema>,
-        Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
-        RootConnection<Schema, Program>:
+        Root: ApplicationOutputGraphShape<Schema>,
+        RootConnection<Schema, Root>:
             WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
     {
         let source_result = self.query_source()?;
@@ -101,7 +103,7 @@ where
             .controls
             .map_or(1, |controls| controls.maximum_retained_bytes().get());
         let admitted = application
-            .recover_program_root_output(
+            .recover_program_root_output::<Root>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 source_result.into_output_demand_source(),
                 maximum_work,
@@ -191,7 +193,7 @@ where
         .map_err(WorthQueryApplicationOutputDemandDenial::Source)
     }
 
-    pub(in crate::application_entry) fn start_performed<Program>(
+    pub(in crate::application_entry) fn start_performed<Program, Root>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         prepared: &worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
@@ -205,8 +207,8 @@ where
     >
     where
         Program: ApplicationProgramDefinition<Schema>,
-        Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
-        RootConnection<Schema, Program>:
+        Root: ApplicationOutputGraphShape<Schema>,
+        RootConnection<Schema, Root>:
             WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
     {
         let maximum_work = self
@@ -216,7 +218,7 @@ where
             .controls
             .map_or(1, |controls| controls.maximum_retained_bytes().get());
         let admitted = application
-            .admit_performed_program_root_output(
+            .admit_performed_program_root_output::<Root>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 source_result,
                 maximum_work,

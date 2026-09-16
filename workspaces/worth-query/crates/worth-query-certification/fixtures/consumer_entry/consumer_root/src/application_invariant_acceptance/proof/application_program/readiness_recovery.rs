@@ -2,7 +2,9 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationOutputDemandProgress,
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
 };
-use worth_query_topology_entry::{PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarRead};
+use worth_query_topology_entry::{
+    PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarRead,
+};
 
 use super::super::super::{authentication, installation, seed::length};
 use super::lifecycle::{controls, perform};
@@ -48,7 +50,7 @@ pub(super) fn readiness_failure_recovers_exact_pending_output(
     drop(output);
 
     let mut recovered = request
-        .recover_required_outputs::<crate::ConsumerProgram>(
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
             PlanarOutputDemand::new("anchor-c"),
@@ -96,7 +98,10 @@ pub(super) fn preserved_noop_output_completes_readiness_without_a_signal_success
         .start()
         .expect("the initial output demand starts");
     loop {
-        match initial.advance(&request).expect("the initial output settles") {
+        match initial
+            .advance(&request)
+            .expect("the initial output settles")
+        {
             WorthQueryApplicationOutputDemandProgress::Pending => {}
             WorthQueryApplicationOutputDemandProgress::Settled(_) => break,
         }

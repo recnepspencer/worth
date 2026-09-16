@@ -1,16 +1,22 @@
-use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
+use std::num::NonZeroUsize;
+
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
+    WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
+};
 use worth_query_topology_entry::{PlanarRead, PlanarSourceAdjustment};
 
 use super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
 
-pub(super) mod lifecycle;
 mod custody;
 mod dependent_recovery;
+pub(super) mod lifecycle;
 mod owner_demand_boundary;
 mod program_contract;
-mod recovery;
 mod readiness_recovery;
+mod recovery;
+pub(super) mod root_selection;
 mod settlement;
 
 pub(super) fn performed_source_settles_required_output(
@@ -19,6 +25,146 @@ pub(super) fn performed_source_settles_required_output(
     >,
 ) {
     settlement::performed_source_settles_required_output(foreign);
+    secondary_root_settles_independently(foreign);
+}
+
+fn secondary_root_settles_independently(
+    foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
+        ConsumerSchema,
+    >,
+) {
+    let world = installation::install(foreign);
+    let scope = authentication::request_scope();
+    let adapter = authentication::admit(world.application.installed_schema());
+    let principal = authentication::block_on(adapter.authenticate(
+        authentication::LocalCredential::issued_for_model_owner(),
+        &scope,
+    ))
+    .expect("the multi-root application authenticates its principal");
+    let request = world.application.request(&principal, &scope);
+    let secondary_branch = world
+        .application
+        .branches()
+        .fork(world.application.current_world())
+        .components(|components| components.fork_relational().reuse_exact_signal_basis())
+        .create()
+        .expect("the sibling root receives a real product branch");
+    let secondary_request = world
+        .application
+        .request(&principal, &scope)
+        .on_branch(secondary_branch);
+    let primary_source = request
+        .query(PlanarRead {
+            body_key: "anchor-a".to_owned(),
+        })
+        .execute()
+        .expect("the primary root source is readable")
+        .observed_sources()[0]
+        .clone();
+    let primary_outcome = request
+        .mutate(PlanarSourceAdjustment {
+            scope_key: "anchor-a".to_owned(),
+            replacement_y: length(2),
+        })
+        .expect_source(primary_source)
+        .idempotency(&10_006)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .expect("the explicitly selected primary root reaches publication");
+    let WorthQueryApplicationPerformedMutationOutcome::Performed(primary_performed) =
+        primary_outcome
+    else {
+        panic!("the primary root must retain performed delivery")
+    };
+    let mut primary_started = primary_performed
+        .start_required_outputs(
+            &request,
+            WorthQueryOutputDemandControls::new(
+                NonZeroUsize::new(4_096).unwrap(),
+                NonZeroUsize::new(8_192).unwrap(),
+            ),
+        )
+        .unwrap_or_else(|failure| panic!("primary root starts: {:?}", failure.denial()));
+
+    let secondary_source = secondary_request
+        .query(PlanarRead {
+            body_key: "anchor-b".to_owned(),
+        })
+        .execute()
+        .expect("the secondary root source is readable")
+        .observed_sources()[0]
+        .clone();
+    let secondary_outcome = secondary_request
+        .mutate(PlanarSourceAdjustment {
+            scope_key: "anchor-b".to_owned(),
+            replacement_y: length(3),
+        })
+        .expect_source(secondary_source)
+        .idempotency(&10_009)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerSecondaryProgramRoot>(
+            &world.application,
+        )
+        .expect("the explicitly selected secondary root reaches publication");
+    let WorthQueryApplicationPerformedMutationOutcome::Performed(secondary_performed) =
+        secondary_outcome
+    else {
+        panic!("the secondary root must retain performed delivery")
+    };
+    let controls = WorthQueryOutputDemandControls::new(
+        NonZeroUsize::new(4_096).unwrap(),
+        NonZeroUsize::new(8_192).unwrap(),
+    );
+    let mut secondary_started = secondary_performed
+        .start_required_outputs(&secondary_request, controls)
+        .unwrap_or_else(|failure| panic!("secondary root starts: {:?}", failure.denial()));
+    loop {
+        match secondary_started
+            .required_output_mut()
+            .advance(&secondary_request)
+            .expect("the selected secondary root advances")
+        {
+            WorthQueryApplicationProgramOutputProgress::Pending => {}
+            WorthQueryApplicationProgramOutputProgress::Settled(_) => break,
+        }
+    }
+    loop {
+        match primary_started
+            .required_output_mut()
+            .advance(&request)
+            .expect("the primary root remains live while its sibling settles")
+        {
+            WorthQueryApplicationProgramOutputProgress::Pending => {}
+            WorthQueryApplicationProgramOutputProgress::Settled(_) => break,
+        }
+    }
+    assert_eq!(
+        request
+            .query(PlanarRead {
+                body_key: "anchor-a".to_owned(),
+            })
+            .execute()
+            .expect("the primary source mutation committed")
+            .rows()[0]
+            .y,
+        length(2)
+    );
+    assert_eq!(
+        secondary_request
+            .query(PlanarRead {
+                body_key: "anchor-b".to_owned(),
+            })
+            .execute()
+            .expect("the secondary source mutation committed")
+            .rows()[0]
+            .y,
+        length(3)
+    );
+    drop(secondary_started);
+    drop(primary_started);
+    world
+        .application
+        .on_branch(secondary_branch)
+        .close()
+        .expect("the sibling root branch closes after both roots settle");
 }
 
 pub(super) fn caller_disposal_before_progress_recovers(
@@ -55,49 +201,6 @@ pub(super) fn lifecycle_proofs(
         foreign,
     );
     owner_demand_boundary::raw_owner_guards(foreign);
-}
-
-pub(super) fn foreign_program_is_denied_before_publication(
-    foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
-        ConsumerSchema,
-    >,
-) {
-    let source_world = installation::install(foreign);
-    let other_world = installation::install(foreign);
-    let scope = authentication::request_scope();
-    let adapter = authentication::admit(source_world.application.installed_schema());
-    let principal = authentication::block_on(adapter.authenticate(
-        authentication::LocalCredential::issued_for_model_owner(),
-        &scope,
-    ))
-    .expect("the source application authenticates its principal");
-    let request = source_world.application.request(&principal, &scope);
-    let before = request
-        .query(PlanarRead {
-            body_key: "anchor-a".to_owned(),
-        })
-        .execute()
-        .expect("the source occurrence is readable");
-    let source = before.observed_sources()[0].clone();
-    let denial = request
-        .mutate(PlanarSourceAdjustment {
-            scope_key: "anchor-a".to_owned(),
-            replacement_y: length(2),
-        })
-        .expect_source(source)
-        .idempotency(&10_004)
-        .execute_performed(&other_world.application);
-    let Err(denial) = denial else {
-        panic!("foreign program meaning must be denied before source publication")
-    };
-    assert!(format!("{denial:?}").contains("ForeignProgram"));
-    let after = request
-        .query(PlanarRead {
-            body_key: "anchor-a".to_owned(),
-        })
-        .execute()
-        .expect("the source remains readable after denial");
-    assert_eq!(after.rows()[0].y, length(1));
 }
 
 pub(super) fn ordinary_source_publication_cannot_bypass_program(
