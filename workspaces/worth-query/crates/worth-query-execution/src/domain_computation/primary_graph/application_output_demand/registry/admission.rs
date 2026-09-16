@@ -59,7 +59,7 @@ impl WorthQueryOutputDemandRegistry {
             let stale_source = state.prepared_sources.iter().position(|(_, source)| {
                 source.receipt.product_branch().occurrence() == product_occurrence
                     && source.receipt.principal_scope().scope() == source_scope
-                    && source.output_source_identity.is_some_and(|bound| {
+                    && source.current_source_identity.is_some_and(|bound| {
                         WorthQueryOutputDemandKey::source_same_occurrence(&bound, &requested_source)
                             && WorthQueryOutputDemandKey::source_revision(&bound)
                                 < WorthQueryOutputDemandKey::source_revision(&requested_source)
@@ -82,13 +82,13 @@ impl WorthQueryOutputDemandRegistry {
             let retained_source = state.prepared_sources.iter().any(|(_, source)| {
                 source.receipt.product_branch().occurrence() == product_occurrence
                     && source.receipt.principal_scope().scope() == source_scope
-                    && source.output_source_identity == Some(requested_source)
+                    && source.current_source_identity == Some(requested_source)
             });
             if !retained_record && !retained_source {
                 let newer_source_is_retained = state.prepared_sources.iter().any(|(_, source)| {
                     source.receipt.product_branch().occurrence() == product_occurrence
                         && source.receipt.principal_scope().scope() == source_scope
-                        && source.output_source_identity.is_some_and(|bound| {
+                        && source.current_source_identity.is_some_and(|bound| {
                             WorthQueryOutputDemandKey::source_same_occurrence(
                                 &bound,
                                 &requested_source,
@@ -133,7 +133,7 @@ impl WorthQueryOutputDemandRegistry {
                         .find(|(_, source)| {
                             source.receipt.product_branch().occurrence() == product_occurrence
                                 && source.receipt.principal_scope().scope() == source_scope
-                                && source.output_source_identity == Some(requested_source)
+                                && source.current_source_identity == Some(requested_source)
                         })
                         .map(|(commit, _)| commit)
                 });
@@ -157,7 +157,7 @@ impl WorthQueryOutputDemandRegistry {
                         state.prepared_sources.iter().position(|(_, source)| {
                             source.receipt.product_branch().occurrence() == product_occurrence
                                 && source.receipt.principal_scope().scope() == source_scope
-                                && source.output_source_identity == Some(requested_source)
+                                && source.current_source_identity == Some(requested_source)
                         })
                     }
                     DemandAdmissionKind::Required => selected_commit.and_then(|selected| {
@@ -203,13 +203,21 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(prepared_index) = state
-            .prepared_sources
-            .iter()
-            .position(|(commit, _)| commit == source_commit)
-        else {
+        let Some(prepared_index) = state.prepared_sources.iter().position(|(commit, source)| {
+            commit == source_commit && source.current_source_identity == Some(key.source)
+        }) else {
             if let Some(denial) = state.retired_prepared_sources.get(source_commit) {
                 return Err(denial.clone());
+            }
+            if state
+                .prepared_sources
+                .iter()
+                .any(|(commit, _)| commit == source_commit)
+            {
+                return Err(WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    "performed source identity does not match its prepared publication",
+                ));
             }
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,

@@ -24,8 +24,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPerformedOutpu
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
     pub(in crate::domain_computation::primary_graph) observation:
         worth_runtime_world::facade::ProductBranchObservation,
-    pub(in crate::domain_computation::primary_graph) source_identity: [u8; 32],
-    pub(in crate::domain_computation::primary_graph) output_source_identity: Option<[u8; 32]>,
+    pub(in crate::domain_computation::primary_graph) predecessor_source_identity: Option<[u8; 32]>,
+    pub(in crate::domain_computation::primary_graph) current_source_identity: Option<[u8; 32]>,
 }
 
 #[derive(Clone)]

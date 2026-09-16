@@ -10,23 +10,114 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn bind_prepared_output_source(
         &self,
         source_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
-        output_source_identity: [u8; 32],
+        current_source_identity: [u8; 32],
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some((_, source)) = state
+        let Some(source_index) = state
             .prepared_sources
-            .iter_mut()
-            .find(|(commit, _)| commit == source_commit)
+            .iter()
+            .position(|(commit, _)| commit == source_commit)
         else {
-            return Err(WorthQueryOutputDemandDenial::new(
+            return Err(denial(
                 WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
                 "prepared source is absent or has already been consumed",
             ));
         };
-        source.output_source_identity = Some(output_source_identity);
+        let source = &state.prepared_sources[source_index].1;
+        if source.current_source_identity.is_some() {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
+                "prepared source identity is already bound",
+            ));
+        }
+        if source
+            .predecessor_source_identity
+            .is_some_and(|predecessor| {
+                !WorthQueryOutputDemandKey::source_same_occurrence(
+                    &predecessor,
+                    &current_source_identity,
+                ) || WorthQueryOutputDemandKey::source_revision(&current_source_identity)
+                    < WorthQueryOutputDemandKey::source_revision(&predecessor)
+            })
+        {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "current output source is not the retained predecessor's successor",
+            ));
+        }
+        let source_occurrence = source.receipt.product_branch().occurrence();
+        let source_scope = source.receipt.principal_scope().scope();
+        if state
+            .prepared_sources
+            .iter()
+            .enumerate()
+            .any(|(index, (_, candidate))| {
+                index != source_index
+                    && candidate.receipt.product_branch().occurrence() == source_occurrence
+                    && candidate.receipt.principal_scope().scope() == source_scope
+                    && candidate.current_source_identity.is_some_and(|bound| {
+                        WorthQueryOutputDemandKey::source_same_occurrence(
+                            &bound,
+                            &current_source_identity,
+                        ) && WorthQueryOutputDemandKey::source_revision(&bound)
+                            >= WorthQueryOutputDemandKey::source_revision(&current_source_identity)
+                    })
+            })
+        {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::Superseded,
+                "an equal or newer required-output source is already retained",
+            ));
+        }
+
+        let mut superseded = Vec::new();
+        let mut retained = Vec::with_capacity(state.prepared_sources.len());
+        for (index, prepared) in std::mem::take(&mut state.prepared_sources)
+            .into_iter()
+            .enumerate()
+        {
+            let older = index != source_index
+                && prepared.1.receipt.product_branch().occurrence() == source_occurrence
+                && prepared.1.receipt.principal_scope().scope() == source_scope
+                && prepared.1.current_source_identity.is_some_and(|bound| {
+                    WorthQueryOutputDemandKey::source_same_occurrence(
+                        &bound,
+                        &current_source_identity,
+                    ) && WorthQueryOutputDemandKey::source_revision(&bound)
+                        < WorthQueryOutputDemandKey::source_revision(&current_source_identity)
+                });
+            if older {
+                superseded.push(prepared.0);
+            } else {
+                retained.push(prepared);
+            }
+        }
+        state.prepared_sources = retained;
+        for commit in superseded {
+            state.retired_prepared_sources.insert(
+                commit,
+                denial(
+                    WorthQueryOutputDemandDenialKind::Superseded,
+                    "a newer required-output source replaced this custody",
+                ),
+            );
+        }
+        retire_stale_records(
+            &mut state,
+            source_occurrence,
+            source_scope,
+            &current_source_identity,
+        );
+        state
+            .prepared_sources
+            .iter_mut()
+            .find(|(commit, _)| commit == source_commit)
+            .expect("the bound custody was retained above")
+            .1
+            .current_source_identity = Some(current_source_identity);
         Ok(())
     }
 
@@ -38,14 +129,12 @@ impl WorthQueryOutputDemandRegistry {
     {
         let source_occurrence = performed_source.receipt.product_branch().occurrence();
         if preparation.occurrence != source_occurrence {
-            return Err(WorthQueryOutputDemandDenial::new(
+            return Err(denial(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
                 "required-output preparation belongs to another product occurrence",
             ));
         }
         let source_commit = performed_source.change.product_commit().clone();
-        let source_identity = performed_source.source_identity;
-        let source_scope = performed_source.receipt.principal_scope().scope();
         let mut state = self
             .state
             .lock()
@@ -53,9 +142,9 @@ impl WorthQueryOutputDemandRegistry {
         if state
             .source_preparations
             .get(&source_occurrence)
-            .is_none_or(|state| state.retired || state.active == 0)
+            .is_none_or(|preparation| preparation.retired || preparation.active == 0)
         {
-            return Err(WorthQueryOutputDemandDenial::new(
+            return Err(denial(
                 WorthQueryOutputDemandDenialKind::Closed,
                 "product occurrence retired before required-output custody transfer",
             ));
@@ -71,56 +160,11 @@ impl WorthQueryOutputDemandRegistry {
                     .is_some_and(|source| source.change.product_commit() == &source_commit)
             })
         {
-            return Err(WorthQueryOutputDemandDenial::new(
+            return Err(denial(
                 WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
                 "performed source is already retained by its output-demand owner",
             ));
         }
-        if state.prepared_sources.iter().any(|(_, source)| {
-            source.receipt.product_branch().occurrence() == source_occurrence
-                && source.receipt.principal_scope().scope() == source_scope
-                && WorthQueryOutputDemandKey::source_same_occurrence(
-                    &source.source_identity,
-                    &source_identity,
-                )
-                && WorthQueryOutputDemandKey::source_revision(&source.source_identity)
-                    > WorthQueryOutputDemandKey::source_revision(&source_identity)
-        }) {
-            return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::Superseded,
-                "a newer required-output source is already retained",
-            ));
-        }
-        let mut superseded = Vec::new();
-        state.prepared_sources.retain(|(commit, source)| {
-            let older = source.receipt.product_branch().occurrence() == source_occurrence
-                && source.receipt.principal_scope().scope() == source_scope
-                && WorthQueryOutputDemandKey::source_same_occurrence(
-                    &source.source_identity,
-                    &source_identity,
-                )
-                && WorthQueryOutputDemandKey::source_revision(&source.source_identity)
-                    < WorthQueryOutputDemandKey::source_revision(&source_identity);
-            if older {
-                superseded.push(commit.clone());
-            }
-            !older
-        });
-        for commit in superseded {
-            state.retired_prepared_sources.insert(
-                commit,
-                WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::Superseded,
-                    "a newer required-output source replaced this custody",
-                ),
-            );
-        }
-        retire_stale_records(
-            &mut state,
-            source_occurrence,
-            source_scope,
-            &source_identity,
-        );
         state
             .prepared_sources
             .push((source_commit.clone(), performed_source));
@@ -140,7 +184,7 @@ fn retire_stale_records(
             && WorthQueryOutputDemandKey::source_same_occurrence(&key.source, successor)
             && key.revision() < WorthQueryOutputDemandKey::source_revision(successor);
         if stale {
-            record.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
+            record.state = DemandState::Failed(denial(
                 WorthQueryOutputDemandDenialKind::Superseded,
                 &key.producer,
             ));
@@ -155,4 +199,11 @@ fn retire_stale_records(
             && key.revision() < WorthQueryOutputDemandKey::source_revision(successor);
         !stale || record.interests != 0
     });
+}
+
+fn denial(
+    kind: WorthQueryOutputDemandDenialKind,
+    subject: impl Into<String>,
+) -> WorthQueryOutputDemandDenial {
+    WorthQueryOutputDemandDenial::new(kind, subject)
 }
