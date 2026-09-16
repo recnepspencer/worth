@@ -50,6 +50,7 @@ where
             demand,
             prepared,
             retained_source,
+            mut source_bound,
         } = self;
         let retained_source =
             crate::application_entry::WorthQueryApplicationReadObservation::new(retained_source);
@@ -68,6 +69,7 @@ where
                         demand,
                         prepared,
                         retained_source: std::sync::Arc::clone(&retained_source.retained),
+                        source_bound,
                     },
                     denial: WorthQueryRequiredOutputPreparationDenial::SourceQuery(denial),
                 })
@@ -82,9 +84,32 @@ where
                     demand,
                     prepared,
                     retained_source: std::sync::Arc::clone(&retained_source.retained),
+                    source_bound,
                 },
                 denial: WorthQueryRequiredOutputPreparationDenial::MissingSource,
             });
+        }
+        let output_source = source_result.into_output_demand_source();
+        if !source_bound {
+            if let Err(denial) = application.bind_prepared_program_root_source::<Root>(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                &prepared,
+                &output_source,
+            ) {
+                return Err(WorthQueryRequiredOutputStartFailure {
+                    performed: Self {
+                        receipt,
+                        result,
+                        application,
+                        demand,
+                        prepared,
+                        retained_source: std::sync::Arc::clone(&retained_source.retained),
+                        source_bound,
+                    },
+                    denial: WorthQueryRequiredOutputPreparationDenial::DemandExecution(denial),
+                });
+            }
+            source_bound = true;
         }
         match request
             .demand(demand.clone())
@@ -92,7 +117,7 @@ where
             .start_performed::<Program, Root>(
                 application,
                 &prepared,
-                source_result.into_output_demand_source(),
+                output_source,
             )
         {
             Ok(required_output) => Ok(WorthQueryStartedRequiredOutputs {
@@ -113,6 +138,7 @@ where
                     demand,
                     prepared,
                     retained_source: std::sync::Arc::clone(&retained_source.retained),
+                    source_bound,
                 },
                 denial: WorthQueryRequiredOutputPreparationDenial::Demand(denial),
             }),

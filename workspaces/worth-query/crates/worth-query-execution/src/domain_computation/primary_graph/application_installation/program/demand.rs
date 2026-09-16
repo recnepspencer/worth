@@ -112,6 +112,28 @@ where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
 {
+    pub fn bind_prepared_program_root_source<Root>(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        prepared: &WorthQueryPreparedRequiredOutputSource,
+        source: &WorthQueryApplicationOutputDemandSource<
+            SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
+            SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
+        >,
+    ) -> Result<(), WorthQueryOutputDemandDenial>
+    where
+        Root: ApplicationOutputGraphShape<Schema>,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    {
+        if !self.contains_output_root::<Root>() {
+            return Err(WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "selected output root is not installed for this program",
+            ));
+        }
+        self.runtime.bind_prepared_output_source(prepared, source)
+    }
+
     pub fn recover_program_root_output<Root>(
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,

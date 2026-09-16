@@ -124,7 +124,6 @@ where
         WorthQueryOutputDemandDenial,
     > {
         let publication = receipt.committed_product_publication();
-        let source_scope = receipt.principal_scope().scope();
         let same_runtime =
             std::sync::Arc::ptr_eq(&change.root_identity, &self.product_runtime.root_identity());
         let same_publication = change.product_branch_identity() == publication.product_branch()
@@ -168,14 +167,16 @@ where
                 runtime_authority: self.runtime.authority_identity().as_u64(),
                 source_commit,
                 product_occurrence,
-                authorization_scope: source_scope,
                 owner: self.output_demands.clone(),
             },
             retained,
         ))
     }
 
-    pub fn bind_prepared_required_output_source<Query, Value>(
+    pub(in crate::domain_computation::primary_graph) fn bind_prepared_output_source<
+        Query,
+        Value,
+    >(
         &self,
         prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
         source: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
@@ -193,16 +194,11 @@ where
                 "prepared output source query did not return one owner-paired occurrence",
             ));
         };
-        if !prepared_source_carrier_matches(
+        validate_prepared_source_carrier(
             self.runtime.authority_identity().as_u64(),
             prepared,
             observed,
-        ) {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                "prepared output source does not match its committed carrier",
-            ));
-        }
+        )?;
         self.output_demands
             .bind_prepared_output_source(&prepared.source_commit, observed.idempotency_identity())
     }
@@ -236,16 +232,11 @@ where
                 "required-output source query did not return one owner-paired occurrence",
             )
         })?;
-        if !prepared_source_carrier_matches(
+        validate_prepared_source_carrier(
             self.runtime.authority_identity().as_u64(),
             prepared,
             &observed_source,
-        ) {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                "prepared source does not match the admitted output occurrence",
-            ));
-        }
+        )?;
         let profile_kind = Family::profile_kind(&source);
         self.admit_output_demand_with_source::<Family>(
             source,
@@ -351,15 +342,28 @@ where
     }
 }
 
-fn prepared_source_carrier_matches<Query>(
+fn validate_prepared_source_carrier<Query>(
     runtime_authority: u64,
     prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
     observed: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
-) -> bool {
-    prepared.runtime_authority == runtime_authority
-        && observed.selected_product_commit() == Some(&prepared.source_commit)
-        && observed.selected_product_occurrence() == Some(prepared.product_occurrence)
-        && crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
-            observed.model_root,
-        ) == prepared.authorization_scope
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    if prepared.runtime_authority != runtime_authority {
+        return Err(denial(
+            WorthQueryOutputDemandDenialKind::ForeignSource,
+            "prepared output source belongs to another Query runtime",
+        ));
+    }
+    if observed.selected_product_commit() != Some(&prepared.source_commit) {
+        return Err(denial(
+            WorthQueryOutputDemandDenialKind::ForeignSource,
+            "prepared output source belongs to another product commit",
+        ));
+    }
+    if observed.selected_product_occurrence() != Some(prepared.product_occurrence) {
+        return Err(denial(
+            WorthQueryOutputDemandDenialKind::ForeignSource,
+            "prepared output source belongs to another product occurrence",
+        ));
+    }
+    Ok(())
 }

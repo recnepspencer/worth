@@ -52,9 +52,8 @@ where
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
     Performed(WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program, Root>),
-    /// The source publication committed, while its required output could not
-    /// yet be admitted. The owner keeps any prepared delivery custody and the
-    /// caller still receives the exact source receipt and result.
+    /// The source publication committed before required-output custody could
+    /// be prepared. The caller still receives the exact receipt and result.
     RequiredOutputDenied {
         receipt: WorthQueryApplicationCommitReceipt,
         result: MutationResult<Schema, Intent>,
@@ -86,6 +85,7 @@ where
     retained_source: std::sync::Arc<
         worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
     >,
+    source_bound: bool,
 }
 
 impl<'application, Schema, Intent, Program, Root>
@@ -268,10 +268,6 @@ where
                 Schema,
             >>::demand_from_source(&self.request.intent)
             .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
-        let query_application = self.request.application;
-        let query_principal = self.request.principal;
-        let query_scope = self.request.scope;
-        let query_branch = self.request.branch;
         let preparation_failure = std::cell::RefCell::new(None);
         let prepared_source = std::cell::RefCell::new(None);
         let outcome = self
@@ -321,49 +317,6 @@ where
                 },
             );
         };
-        let retained_read = crate::application_entry::WorthQueryApplicationReadObservation::new(
-            std::sync::Arc::clone(&retained_source),
-        );
-        let request = crate::application_entry::WorthQueryApplicationRequest {
-            application: query_application,
-            principal: query_principal,
-            scope: query_scope,
-            branch: query_branch,
-        };
-        let output_source = match request
-            .at(&retained_read)
-            .query(demand.source_intent())
-            .execute()
-        {
-            Ok(source) => source.into_output_demand_source(),
-            Err(denial) => {
-                application
-                    .runtime()
-                    .discard_prepared_required_output_source(prepared);
-                return Ok(
-                    WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied {
-                        receipt,
-                        result,
-                        denial: WorthQueryRequiredOutputPreparationDenial::SourceQuery(denial),
-                    },
-                );
-            }
-        };
-        if let Err(denial) = application
-            .runtime()
-            .bind_prepared_required_output_source(&prepared, &output_source)
-        {
-            application
-                .runtime()
-                .discard_prepared_required_output_source(prepared);
-            return Ok(
-                WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied {
-                    receipt,
-                    result,
-                    denial: WorthQueryRequiredOutputPreparationDenial::DemandExecution(denial),
-                },
-            );
-        }
         Ok(WorthQueryApplicationPerformedMutationOutcome::Performed(
             WorthQueryPerformedApplicationMutation {
                 receipt,
@@ -372,6 +325,7 @@ where
                 demand,
                 prepared,
                 retained_source,
+                source_bound: false,
             },
         ))
     }
