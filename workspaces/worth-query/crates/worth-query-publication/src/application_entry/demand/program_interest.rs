@@ -55,6 +55,17 @@ pub(in crate::application_entry) struct WorthQueryApplicationProgramDemandHandle
     demand: Demand,
 }
 
+impl<Schema, Program, Demand> WorthQueryApplicationProgramDemandHandle<'_, Schema, Program, Demand>
+where
+    Schema: ApplicationSchema,
+    Program: ApplicationProgramDefinition<Schema>,
+    Demand: WorthQueryApplicationOutputDemand<Schema> + Clone,
+{
+    pub(in crate::application_entry) fn demand_clone(&self) -> Demand {
+        self.demand.clone()
+    }
+}
+
 impl<'application, Schema, Program, Demand>
     WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>
 where

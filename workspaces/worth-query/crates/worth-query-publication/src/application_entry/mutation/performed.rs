@@ -47,7 +47,8 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
-    Root: ApplicationOutputGraphShape<Schema>,
+    Root: ApplicationOutputGraphShape<Schema>
+        + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -73,7 +74,8 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
-    Root: ApplicationOutputGraphShape<Schema>,
+    Root: ApplicationOutputGraphShape<Schema>
+        + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -94,7 +96,8 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
-    Root: ApplicationOutputGraphShape<Schema>,
+    Root: ApplicationOutputGraphShape<Schema>
+        + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -110,7 +113,8 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
-    Root: ApplicationOutputGraphShape<Schema>,
+    Root: ApplicationOutputGraphShape<Schema>
+        + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -130,7 +134,8 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
-    Root: ApplicationOutputGraphShape<Schema>,
+    Root: ApplicationOutputGraphShape<Schema>
+        + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -159,7 +164,8 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
-    Root: ApplicationOutputGraphShape<Schema>,
+    Root: ApplicationOutputGraphShape<Schema>
+        + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -173,7 +179,8 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
-    Root: ApplicationOutputGraphShape<Schema>,
+    Root: ApplicationOutputGraphShape<Schema>
+        + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -234,7 +241,7 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
         Program::Outputs: ApplicationProgramOutputsShape<Schema>,
-        Root: ApplicationOutputGraphShape<Schema>,
+        Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>:
             WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
         <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:

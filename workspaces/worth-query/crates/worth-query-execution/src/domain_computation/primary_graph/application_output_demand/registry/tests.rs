@@ -10,6 +10,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 
+mod source_custody;
+
 fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnation {
     let world =
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
@@ -41,10 +43,9 @@ fn record(
         required: false,
         product_occurrence: occurrence,
         source_scope: None,
-        source_commit: None,
+        source_commits: Vec::new(),
         state,
         performed_source: None,
-        performed_source_accepted: false,
         wake: Arc::new(DemandWake {
             generation: Mutex::new(0),
             changed: Condvar::new(),
@@ -338,7 +339,10 @@ fn retiring_occurrence_removes_unheld_cached_work_and_marks_preparation_closed()
     let state = registry.state.lock().unwrap();
     assert!(!state.records.contains_key(&scheduled));
     assert!(state.source_preparations[&occurrence].retired);
-    assert!(state.prepared_sources.is_empty());
+    assert!(state
+        .source_custody
+        .values()
+        .all(|custody| custody.prepared_count() == 0));
     drop(state);
     drop(preparation);
     assert!(registry

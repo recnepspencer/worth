@@ -24,9 +24,10 @@ pub use feature::{
 pub use identity::ApplicationProgramIdentity;
 pub use instance::{ApplicationCompositionInstance, ApplicationRootComposition};
 pub use output_graph::{
-    ApplicationConnectionShape, ApplicationOutputChildrenShape, ApplicationOutputEdge,
-    ApplicationOutputEdgeShape, ApplicationOutputEdgesShape, ApplicationOutputGraph,
-    ApplicationOutputGraphShape, ApplicationOutputLeaf,
+    ApplicationConnectionShape, ApplicationDiscoveredOutputGraph, ApplicationDiscoveredOutputRoot,
+    ApplicationOutputChildrenShape, ApplicationOutputEdge, ApplicationOutputEdgeShape,
+    ApplicationOutputEdgesShape, ApplicationOutputGraph, ApplicationOutputGraphShape,
+    ApplicationOutputLeaf, ApplicationRequiredOutputRoot,
 };
 pub use program::{
     ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramValidationDenial,

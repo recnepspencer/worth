@@ -3,7 +3,8 @@ use std::marker::PhantomData;
 use crate::application_schema::ApplicationSchema;
 
 use super::{
-    ApplicationConnectionDeclaration, ApplicationOutputGraph, ApplicationOutputGraphShape,
+    ApplicationConnectionDeclaration, ApplicationDiscoveredOutputGraph, ApplicationOutputGraph,
+    ApplicationOutputGraphShape,
 };
 
 /// Complete set of independently startable output trees in one program.
@@ -69,8 +70,32 @@ impl<RootConnection, Dependents> sealed::ProgramOutputRootsShape
 {
 }
 
+impl<RootConnection, Dependents> sealed::ProgramOutputRootsShape
+    for ApplicationDiscoveredOutputGraph<RootConnection, Dependents>
+{
+}
+
 impl<Schema, RootConnection, Dependents> ApplicationProgramOutputRootsShape<Schema>
     for ApplicationOutputGraph<RootConnection, Dependents>
+where
+    Schema: ApplicationSchema,
+    Self: ApplicationOutputGraphShape<Schema>,
+{
+    fn append_connections(connections: &mut Vec<ApplicationConnectionDeclaration>) {
+        connections.extend(<Self as ApplicationOutputGraphShape<Schema>>::connections());
+    }
+
+    fn append_connection_types(connections: &mut Vec<std::any::TypeId>) {
+        connections.extend(<Self as ApplicationOutputGraphShape<Schema>>::connection_types());
+    }
+
+    fn append_root_graph_types(roots: &mut Vec<std::any::TypeId>) {
+        roots.push(std::any::TypeId::of::<Self>());
+    }
+}
+
+impl<Schema, RootConnection, Dependents> ApplicationProgramOutputRootsShape<Schema>
+    for ApplicationDiscoveredOutputGraph<RootConnection, Dependents>
 where
     Schema: ApplicationSchema,
     Self: ApplicationOutputGraphShape<Schema>,

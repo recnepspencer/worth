@@ -22,10 +22,13 @@ use worth_query_topology_entry::{
 
 use crate::ConsumerSchema;
 
+mod features;
 mod roots;
+use features::ConsumerFeatures;
 pub use roots::{
-    ConsumerProgramRoot, ConsumerSecondaryProgramRoot, ConsumerTruncatedProgramRoot,
-    ConsumerUndeclaredProgramRoot, SecondaryPlanarRoot,
+    ConsumerDiscoveredProgramRoot, ConsumerProgramRoot, ConsumerRequiredSharedRoot,
+    ConsumerSecondaryProgramRoot, ConsumerTruncatedProgramRoot, ConsumerUndeclaredProgramRoot,
+    DiscoveredPlanarRoot, RequiredSharedPlanarRoot, SecondaryPlanarRoot,
 };
 
 pub struct ConsumerProgram;
@@ -297,43 +300,6 @@ type ConsumerRules = ApplicationRuleList<
     >,
 >;
 
-type ConsumerFeatures = ApplicationFeatureList<
-    ApplicationFeatureRef<ConsumerSchema, PlanarSourceFeature>,
-    ApplicationFeatureList<
-        ApplicationFeatureRef<ConsumerSchema, PlanarOutputFeature>,
-        ApplicationFeatureList<
-            ApplicationFeatureRef<ConsumerSchema, PlanarFinalOutputFeature>,
-            ApplicationFeatureList<
-                ApplicationFeatureRef<ConsumerSchema, PlanarAlternateFinalOutputFeature>,
-                ApplicationFeatureList<
-                    ApplicationFeatureRef<ConsumerSchema, PlanarSummaryFeature>,
-                    ApplicationFeatureList<
-                        ApplicationFeatureRef<ConsumerSchema, PlanarAlternateSummaryFeature>,
-                        ApplicationFeatureList<
-                            ApplicationFeatureRef<ConsumerSchema, ParameterFeature>,
-                            ApplicationFeatureList<
-                                ApplicationFeatureInstanceRef<
-                                    ConsumerSchema,
-                                    SecondaryPlanarRoot,
-                                    PlanarSourceFeature,
-                                >,
-                                ApplicationFeatureList<
-                                    ApplicationFeatureInstanceRef<
-                                        ConsumerSchema,
-                                        SecondaryPlanarRoot,
-                                        PlanarOutputFeature,
-                                    >,
-                                    ApplicationFeatureLeaf,
-                                >,
-                            >,
-                        >,
-                    >,
-                >,
-            >,
-        >,
-    >,
->;
-
 type PlanarSummaryConnection = ApplicationConnectionRef<
     ConsumerSchema,
     PlanarFinalOutputFeature,
@@ -346,8 +312,14 @@ type PlanarSummaryConnection = ApplicationConnectionRef<
 impl ApplicationProgramDefinition<ConsumerSchema> for ConsumerProgram {
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Features = ConsumerFeatures;
-    type Outputs = ApplicationProgramOutputs<(ConsumerProgramRoot, ConsumerSecondaryProgramRoot)>;
+    type Outputs = ApplicationProgramOutputs<(
+        ConsumerProgramRoot,
+        (
+            ConsumerSecondaryProgramRoot,
+            (ConsumerDiscoveredProgramRoot, ConsumerRequiredSharedRoot),
+        ),
+    )>;
     type Rules = ConsumerRules;
     const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("worth.query.certification.consumer-program.v1");
+        ApplicationProgramIdentity::new("worth.query.certification.consumer-program.v2");
 }

@@ -4,8 +4,8 @@ mod application_invariant_acceptance;
 mod application_program;
 
 pub use application_program::{
-    ConsumerProgram, ConsumerProgramRoot, ConsumerSecondaryProgramRoot,
-    ConsumerTruncatedProgramRoot, ConsumerUndeclaredProgramRoot,
+    ConsumerDiscoveredProgramRoot, ConsumerProgram, ConsumerProgramRoot,
+    ConsumerSecondaryProgramRoot, ConsumerTruncatedProgramRoot, ConsumerUndeclaredProgramRoot,
 };
 
 use worth_query_consumer_values::PositiveLength;
@@ -52,7 +52,7 @@ fn run() {
         .expect("the root-owned contributions form one closed schema declaration");
 
     assert_eq!(declaration.contributions().len(), 2);
-    assert_eq!(declaration.erased().members().len(), 98);
+    assert_eq!(declaration.erased().members().len(), 100);
     assert_ne!(
         TopologyLengthBinding::IDENTITY,
         ParameterCountBinding::IDENTITY

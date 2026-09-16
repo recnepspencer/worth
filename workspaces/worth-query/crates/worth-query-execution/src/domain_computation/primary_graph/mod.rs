@@ -28,7 +28,8 @@ pub use application_output_demand::{
     WorthQueryOutputReadinessDeliveryEvidence,
 };
 pub use application_program::{
-    WorthQueryApplicationDependentOutputConnection, WorthQueryApplicationRequiredOutputConnection,
+    WorthQueryApplicationDependentOutputConnection,
+    WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationRequiredOutputConnection,
     WorthQueryPreparedRequiredOutputSource, WorthQueryRequiredOutputConnectionDenial,
     WorthQueryRequiredOutputSourcePreparationFailure,
 };

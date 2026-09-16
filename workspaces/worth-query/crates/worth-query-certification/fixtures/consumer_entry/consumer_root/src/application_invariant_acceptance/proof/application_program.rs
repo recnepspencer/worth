@@ -11,11 +11,13 @@ use crate::ConsumerSchema;
 
 mod custody;
 mod dependent_recovery;
+mod discovered;
 pub(super) mod lifecycle;
 mod owner_demand_boundary;
 mod program_contract;
 mod readiness_recovery;
 mod recovery;
+mod required_basis;
 pub(super) mod root_selection;
 mod settlement;
 
@@ -25,6 +27,18 @@ pub(super) fn performed_source_settles_required_output(
     >,
 ) {
     settlement::performed_source_settles_required_output(foreign);
+    discovered::performed_source_discovers_required_root(foreign);
+    discovered::isolated_source_settles_without_roots(foreign);
+    discovered::recovery::newer_discovered_source_retires_recovery(foreign);
+    discovered::recovery::foreign_runtime_cannot_recover_discovered_source(foreign);
+    discovered::recovery::interrupted_discovery_recovers_both_consumed_roots(foreign);
+    discovered::publication_lifecycle::unchanged_roots_join_new_publication(foreign);
+    discovered::publication_lifecycle::older_publication_starts_after_newer_root_binding(foreign);
+    discovered::publication_lifecycle::running_root_supersession_preserves_sibling(foreign);
+    discovered::publication_basis::joined_roots_discover_at_their_own_publication(foreign);
+    required_basis::joined_required_root_discovers_at_its_own_publication(foreign);
+    discovered::recovery::required_recovery_cannot_claim_discovered_custody(foreign);
+    discovered::publication_lifecycle::newer_publication_bounds_abandoned_discovery(foreign);
     secondary_root_settles_independently(foreign);
 }
 

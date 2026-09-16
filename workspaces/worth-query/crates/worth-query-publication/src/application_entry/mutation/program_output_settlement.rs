@@ -30,6 +30,12 @@ pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery> {
 }
 
 impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
+    pub fn root_receipt(
+        &self,
+    ) -> &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt {
+        self.root.receipt()
+    }
+
     pub fn root_observation(
         &self,
     ) -> &crate::application_entry::WorthQueryApplicationReadObservation {
@@ -132,6 +138,42 @@ pub struct ProgramOutputRecord {
 }
 
 impl ProgramOutputRecord {
+    pub(super) fn typed_for<Schema, Connection>(
+        &self,
+    ) -> Option<(
+        &Demand<Schema, Connection>,
+        &crate::application_entry::WorthQueryApplicationOutputDemandSettlement<
+            Query<Schema, Connection>,
+        >,
+    )>
+    where
+        Schema: ApplicationSchema,
+        Connection: WorthQueryApplicationDependentOutputConnection<Schema> + 'static,
+        Demand<Schema, Connection>: 'static,
+        Query<Schema, Connection>: 'static,
+    {
+        (self.connection_identity == Connection::IDENTITY).then(|| {
+            (
+                self.demand
+                    .downcast_ref::<Demand<Schema, Connection>>()
+                    .expect("a typed program output retains its declared demand"),
+                self.settlement
+                    .downcast_ref::<
+                        crate::application_entry::WorthQueryApplicationOutputDemandSettlement<
+                            Query<Schema, Connection>,
+                        >,
+                    >()
+                    .expect("a typed program output retains its declared settlement"),
+            )
+        })
+    }
+
+    pub(super) fn observation(
+        &self,
+    ) -> &crate::application_entry::WorthQueryApplicationReadObservation {
+        &self.observation
+    }
+
     pub(super) fn receipt(
         &self,
     ) -> &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt {

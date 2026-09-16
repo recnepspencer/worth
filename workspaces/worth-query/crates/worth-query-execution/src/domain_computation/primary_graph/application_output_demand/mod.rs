@@ -3,7 +3,8 @@ mod settlement;
 
 pub use registry::WorthQueryOutputDemandNotifications;
 pub(super) use registry::{
-    DemandAdmissionKind, WorthQueryOutputDemandAdvanceAdmission, WorthQueryOutputDemandInterest,
+    BoundOutputSource, DemandAdmissionKind, PreparedOutputRootKind,
+    WorthQueryOutputDemandAdvanceAdmission, WorthQueryOutputDemandInterest,
     WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry, WorthQueryOutputSchedulingResult,
     WorthQueryPendingOutputDelivery, WorthQueryPendingOutputReadiness,
     WorthQueryPerformedOutputDemandSource, WorthQueryRequiredOutputSourcePreparation,

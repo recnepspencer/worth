@@ -6,7 +6,7 @@ where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
-    Root: ApplicationOutputGraphShape<Schema>,
+    Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
     Root::Dependents:
@@ -106,7 +106,9 @@ where
                         retained_source: std::sync::Arc::clone(&retained_source.retained),
                         source_bound,
                     },
-                    denial: WorthQueryRequiredOutputPreparationDenial::DemandExecution(denial),
+                    denial: WorthQueryRequiredOutputPreparationDenial::Demand(
+                        crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
+                    ),
                 });
             }
             source_bound = true;
@@ -121,10 +123,12 @@ where
             )
         {
             Ok(required_output) => Ok(WorthQueryStartedRequiredOutputs {
-                receipt,
+                receipt: receipt.clone(),
                 result,
                 required_output: crate::application_entry::WorthQueryApplicationProgramOutputHandle::new(
                     application,
+                    receipt,
+                    retained_source,
                     required_output,
                     demand,
                     controls,

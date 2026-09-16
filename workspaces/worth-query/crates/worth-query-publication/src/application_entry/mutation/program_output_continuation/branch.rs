@@ -35,6 +35,7 @@ where
             SourceQuery<Schema, ParentDemand>,
         >,
         parent_authority: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
@@ -47,6 +48,7 @@ where
                 parent_demand,
                 parent_settlement,
                 parent_authority,
+                minimum_observation,
                 request,
                 controls,
             )?),
@@ -55,6 +57,7 @@ where
                 parent_demand,
                 parent_settlement,
                 parent_authority,
+                minimum_observation,
                 request,
                 controls,
             )?),

@@ -6,7 +6,7 @@ pub(super) fn assert_installed(
     connections: &[ApplicationConnectionDeclaration],
     rules: &[ApplicationProgramRuleDeclaration],
 ) {
-    assert_eq!(connections.len(), 6);
+    assert_eq!(connections.len(), 10);
     assert_eq!(rules.len(), 2);
     assert!(rules.iter().any(|rule| {
         rule.identity() == "PositiveParameterCount"

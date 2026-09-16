@@ -107,6 +107,27 @@ where
     ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial>;
 }
 
+/// A performed source whose required root demands are resolved by one typed
+/// query at that source publication's retained observation.
+pub trait WorthQueryApplicationDiscoveredOutputConnection<Schema>: Sized + 'static
+where
+    Schema: ApplicationSchema,
+{
+    type Source: ApplicationMutationBinding<Schema>;
+    type Discovery: ApplicationQueryIntent<Schema> + Clone + Send + Sync;
+    type Demand: WorthQueryApplicationOutputDemand<Schema>;
+
+    const IDENTITY: &'static str;
+
+    fn discovery_from_source(
+        source: &<Self::Source as ApplicationMutationBinding<Schema>>::Input,
+    ) -> Result<Self::Discovery, WorthQueryRequiredOutputConnectionDenial>;
+
+    fn demands_from_discovery(
+        discovery: &<<<Self::Discovery as ApplicationQueryIntent<Schema>>::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+    ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial>;
+}
+
 /// One typed transitive connection from a settled root output to every
 /// dependent output occurrence discovered at that exact retained result.
 pub trait WorthQueryApplicationDependentOutputConnection<Schema>: Sized + 'static

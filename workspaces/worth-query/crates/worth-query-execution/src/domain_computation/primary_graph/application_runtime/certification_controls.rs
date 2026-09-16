@@ -36,6 +36,13 @@ where
         self.output_demands.prepared_source_count()
     }
 
+    /// Counts retained source custody, including consumed roots awaiting program completion.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn retained_source_custody_count_for_test(&self) -> usize {
+        self.output_demands.retained_source_custody_count()
+    }
+
     /// Observes the currently bound primary Bridge truth snapshot.
     #[doc(hidden)]
     #[cfg(feature = "test-primary-graph-faults")]

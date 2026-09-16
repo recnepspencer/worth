@@ -22,13 +22,16 @@ pub use live::{
     WorthQueryApplicationLiveOpenRequestDenial, WorthQueryApplicationLiveSubscription,
 };
 pub use mutation::{
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequest,
-    WorthQueryApplicationMutationRequestWithIdempotency,
+    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryApplicationMutationOutcome,
+    WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputHandle,
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
-    WorthQueryApplicationProgramWork, WorthQueryMutationSourcePrepared,
-    WorthQueryPerformedApplicationMutation, WorthQueryPerformedMutationExecutionDenial,
-    WorthQueryRequiredOutputPreparationDenial, WorthQueryRequiredOutputStartFailure,
+    WorthQueryApplicationProgramWork, WorthQueryDiscoveredOutputStartFailure,
+    WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
+    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryMutationSourcePrepared,
+    WorthQueryPerformedApplicationMutation, WorthQueryPerformedDiscoveredApplicationMutation,
+    WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
+    WorthQueryRequiredOutputStartFailure, WorthQueryStartedDiscoveredOutputs,
     WorthQueryStartedRequiredOutputs,
 };
 pub use query::WorthQueryApplicationQueryRequest;

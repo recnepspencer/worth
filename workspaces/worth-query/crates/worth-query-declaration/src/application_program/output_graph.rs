@@ -13,6 +13,11 @@ pub struct ApplicationOutputGraph<RootConnection, Dependents> {
     marker: PhantomData<fn() -> (RootConnection, Dependents)>,
 }
 
+/// A performed action whose required root outputs are discovered at its retained commit.
+pub struct ApplicationDiscoveredOutputGraph<RootConnection, Dependents> {
+    marker: PhantomData<fn() -> (RootConnection, Dependents)>,
+}
+
 /// One transitive output edge and the edges that consume each of its outputs.
 pub struct ApplicationOutputEdge<Connection, Dependents> {
     marker: PhantomData<fn() -> (Connection, Dependents)>,
@@ -25,7 +30,12 @@ mod sealed {
     pub trait ConnectionShape {}
     pub trait OutputEdgesShape {}
     pub trait OutputChildrenShape<ParentFeature> {}
+    pub trait RequiredRootKind {}
+    pub trait DiscoveredRootKind {}
 }
+
+mod root_kinds;
+pub use root_kinds::{ApplicationDiscoveredOutputRoot, ApplicationRequiredOutputRoot};
 
 /// A fully typed authored connection that lowers without a repeated runtime
 /// connection inventory.
@@ -181,6 +191,17 @@ where
 
 impl<Schema, RootConnection, Dependents> ApplicationOutputGraphShape<Schema>
     for ApplicationOutputGraph<RootConnection, Dependents>
+where
+    Schema: ApplicationSchema,
+    RootConnection: ApplicationConnectionShape<Schema>,
+    Dependents: ApplicationOutputChildrenShape<Schema, RootConnection::TargetFeature>,
+{
+    type RootConnection = RootConnection;
+    type Dependents = Dependents;
+}
+
+impl<Schema, RootConnection, Dependents> ApplicationOutputGraphShape<Schema>
+    for ApplicationDiscoveredOutputGraph<RootConnection, Dependents>
 where
     Schema: ApplicationSchema,
     RootConnection: ApplicationConnectionShape<Schema>,

@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod admission;
+mod source_recovery;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

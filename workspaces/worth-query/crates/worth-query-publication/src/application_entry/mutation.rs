@@ -1,4 +1,5 @@
 mod authorization;
+mod discovered;
 mod execution;
 mod outcome;
 mod performed;
@@ -8,6 +9,12 @@ mod program_output_settlement;
 mod program_output_work;
 mod request;
 
+pub use discovered::{
+    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryDiscoveredOutputStartFailure,
+    WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
+    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryPerformedDiscoveredApplicationMutation,
+    WorthQueryStartedDiscoveredOutputs,
+};
 pub use outcome::WorthQueryApplicationMutationOutcome;
 pub use performed::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryPerformedApplicationMutation,

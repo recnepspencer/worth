@@ -1,6 +1,44 @@
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
+    pub(in crate::domain_computation::primary_graph) fn retain_program_source(
+        &self,
+        prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
+        root_kind: super::PreparedOutputRootKind,
+    ) -> Result<
+        crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+    > {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let custody = state.source_custody.get_mut(&prepared.source_commit).ok_or_else(|| {
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                "the program source publication no longer retains custody",
+            )
+        })?;
+        if custody.occurrence != prepared.product_occurrence || custody.root_kind != root_kind {
+            return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSource,
+                "the program source occurrence differs from its prepared custody",
+            ));
+        }
+        if let Some(denial) = &custody.retired {
+            return Err(denial.clone());
+        }
+        custody.token_count = custody.token_count.saturating_add(1);
+        Ok(
+            crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource {
+                runtime_authority: prepared.runtime_authority,
+                source_commit: prepared.source_commit.clone(),
+                product_occurrence: prepared.product_occurrence,
+                owner: self.clone(),
+            },
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph) fn discard_prepared_source(
         &self,
         source_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
@@ -9,10 +47,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state
-            .prepared_sources
-            .retain(|(commit, _)| commit != source_commit);
-        state.retired_prepared_sources.remove(source_commit);
+        state.source_custody.remove(source_commit);
     }
 
     pub(in crate::domain_computation::primary_graph) fn release_prepared_token(
@@ -23,7 +58,35 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.retired_prepared_sources.remove(source_commit);
+        if let Some(custody) = state.source_custody.get_mut(source_commit) {
+            custody.token_count = custody.token_count.saturating_sub(1);
+        }
+        state.prune_completed_custody();
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn complete_prepared_source(
+        &self,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    ) {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(custody) = state
+            .source_custody
+            .get_mut(receipt.committed_product_publication().composite_commit())
+        {
+            if custody
+                .source
+                .as_ref()
+                .is_some_and(|source| source.receipt == *receipt)
+            {
+                custody.completed = true;
+                custody.source = None;
+                custody.discovery = None;
+            }
+        }
+        state.prune_completed_custody();
     }
 
     pub(in crate::domain_computation::primary_graph) fn begin_source_preparation(
@@ -50,18 +113,12 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let prepared_sources = std::mem::take(&mut state.prepared_sources);
-        for (commit, source) in prepared_sources {
-            if source.receipt.product_branch().occurrence() == occurrence {
-                state.retired_prepared_sources.insert(
-                    commit,
-                    WorthQueryOutputDemandDenial::new(
-                        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
-                        "product occurrence retired before required-output custody was consumed",
-                    ),
-                );
-            } else {
-                state.prepared_sources.push((commit, source));
+        for custody in state.source_custody.values_mut() {
+            if custody.occurrence == occurrence {
+                custody.retire(WorthQueryOutputDemandDenial::new(
+                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
+                    "product occurrence retired before required-output custody was consumed",
+                ));
             }
         }
         if let Some(preparation) = state.source_preparations.get_mut(&occurrence) {
@@ -82,6 +139,7 @@ impl WorthQueryOutputDemandRegistry {
             record.wake.notify();
             true
         });
+        state.prune_completed_custody();
     }
 
     #[cfg(feature = "test-primary-graph-faults")]
@@ -89,7 +147,20 @@ impl WorthQueryOutputDemandRegistry {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .prepared_sources
+            .source_custody
+            .values()
+            .map(SourceCustody::prepared_count)
+            .sum()
+    }
+
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub(in crate::domain_computation::primary_graph) fn retained_source_custody_count(
+        &self,
+    ) -> usize {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .source_custody
             .len()
     }
 
@@ -158,6 +229,52 @@ impl WorthQueryOutputDemandRegistry {
         });
         if remove {
             state.records.remove(&interest.key);
+        }
+        state.prune_completed_custody();
+    }
+}
+
+impl DemandRegistryState {
+    pub(super) fn prune_completed_custody(&mut self) {
+        let prior_count = self.source_custody.len();
+        self.source_custody.retain(|commit, custody| {
+            if custody.token_count != 0 {
+                return true;
+            }
+            if custody.retired.is_some() {
+                return false;
+            }
+            let Some(bound) = &custody.bound_sources else {
+                return true;
+            };
+            let fully_superseded = !bound.is_empty()
+                && bound
+                    .iter()
+                    .all(|source| custody.source_denial(&source.identity).is_some());
+            if !custody.completed && !fully_superseded {
+                return true;
+            }
+            if !bound.iter().all(|source| {
+                custody.consumed_sources.contains(&source.identity)
+                    || custody.source_denial(&source.identity).is_some()
+            }) {
+                return true;
+            }
+            self.records.values().any(|record| {
+                record.source_commits.contains(commit)
+                    && (record.interests != 0
+                        || !matches!(
+                            record.state,
+                            DemandState::Completed(_) | DemandState::Failed(_)
+                        ))
+            })
+        });
+        if self.source_custody.len() != prior_count {
+            for record in self.records.values_mut() {
+                record
+                    .source_commits
+                    .retain(|commit| self.source_custody.contains_key(commit));
+            }
         }
     }
 }

@@ -56,7 +56,7 @@ where
     >
     where
         Program: ApplicationProgramDefinition<Schema>,
-        Root: ApplicationOutputGraphShape<Schema>,
+        Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
         Root::Dependents:
             crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
@@ -86,7 +86,7 @@ where
                 crate::application_entry::WorthQueryRequiredOutputPreparationDenial::UndeclaredOutputRoot,
             );
         }
-        let root = self
+        let (root, observation) = self
             .demand(root_demand.clone())
             .controls(controls)
             .start_recovery::<Program, Root>(application, source_receipt)
@@ -94,6 +94,8 @@ where
         Ok(
             crate::application_entry::WorthQueryApplicationProgramOutputHandle::new(
                 application,
+                source_receipt.clone(),
+                crate::application_entry::WorthQueryApplicationReadObservation::new(observation),
                 root,
                 root_demand,
                 controls,

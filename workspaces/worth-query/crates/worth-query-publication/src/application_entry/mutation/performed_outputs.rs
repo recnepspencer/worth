@@ -46,6 +46,9 @@ where
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
     application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    source_receipt:
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+    source_observation: crate::application_entry::WorthQueryApplicationReadObservation,
     root: Option<
         WorthQueryApplicationProgramDemandHandle<
             'application,
@@ -77,6 +80,8 @@ where
 {
     pub(in crate::application_entry) fn new(
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        source_receipt: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        source_observation: crate::application_entry::WorthQueryApplicationReadObservation,
         root: WorthQueryApplicationProgramDemandHandle<
             'application,
             Schema,
@@ -88,6 +93,8 @@ where
     ) -> Self {
         Self {
             application,
+            source_receipt,
+            source_observation,
             root: Some(root),
             root_demand,
             root_settlement: None,
@@ -176,6 +183,7 @@ where
                         &self.root_demand,
                         &settlement,
                         &authority,
+                        &self.source_observation,
                         request,
                         self.controls,
                     )?);
@@ -193,6 +201,10 @@ where
                 Ok(WorthQueryApplicationProgramOutputProgress::Pending)
             }
             ProgramOutputContinuationProgress::Settled { outputs, work } => {
+                self.application.complete_program_output_source(
+                    &worth_query_execution::publication_boundary::program_publication_access(),
+                    &self.source_receipt,
+                );
                 self.complete = true;
                 self.continuation = None;
                 let root = self
