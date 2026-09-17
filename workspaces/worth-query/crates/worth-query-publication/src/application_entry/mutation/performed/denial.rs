@@ -25,6 +25,9 @@ pub enum WorthQueryRequiredOutputPreparationDenial {
     Closed,
 }
 
+mod recovery_posture;
+pub use recovery_posture::WorthQueryRequiredOutputRecoveryPosture;
+
 impl std::fmt::Display for WorthQueryPerformedMutationExecutionDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(formatter, "performed mutation denied: {self:?}")

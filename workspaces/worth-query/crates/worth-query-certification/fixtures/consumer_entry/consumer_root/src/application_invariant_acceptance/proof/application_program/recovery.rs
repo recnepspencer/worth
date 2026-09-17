@@ -2,9 +2,8 @@ use std::num::NonZeroUsize;
 
 use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation, PlanarVertex};
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationPerformedMutationOutcome,
-    WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
-    WorthQueryOutputDemandControls,
+    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
+    WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
 };
 use worth_query_topology_entry::{
     PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarRead, PlanarSourceAdjustment,
@@ -12,6 +11,9 @@ use worth_query_topology_entry::{
 
 use super::super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
+
+mod settlement;
+pub(super) use settlement::settle_recovered;
 
 pub(super) fn caller_disposal_before_progress_recovers(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
@@ -179,6 +181,19 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .execute()
         .expect("the recovered transitive result remains readable");
     assert_eq!(row.rows()[0].value, length(4));
+    let completed = request
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            &source_receipt,
+            PlanarOutputDemand::new("anchor-b"),
+            controls,
+        )
+        .err()
+        .expect("settled output cannot be recovered as pending custody");
+    assert_eq!(
+        completed.recovery_posture(),
+        worth_query_host::facade::application_entry::WorthQueryRequiredOutputRecoveryPosture::Terminal,
+    );
     drop(ordinary);
 }
 
@@ -249,6 +264,10 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         )
         .err()
         .expect("a newer source revision cannot consume older prepared custody");
+    assert_eq!(
+        denial.recovery_posture(),
+        worth_query_host::facade::application_entry::WorthQueryRequiredOutputRecoveryPosture::Terminal,
+    );
     let worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
         worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
     ) = denial
@@ -309,6 +328,10 @@ pub(super) fn resource_denial_preserves_source_and_delivery(
         .start_required_outputs(&request, denied_controls)
         .err()
         .expect("insufficient derived resources deny required-output start");
+    assert_eq!(
+        failure.denial().recovery_posture(),
+        worth_query_host::facade::application_entry::WorthQueryRequiredOutputRecoveryPosture::Retryable,
+    );
     let worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
         worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
     ) = failure.denial()
@@ -356,31 +379,4 @@ fn output_controls() -> WorthQueryOutputDemandControls {
         NonZeroUsize::new(4_096).unwrap(),
         NonZeroUsize::new(8_192).unwrap(),
     )
-}
-
-pub(super) fn settle_recovered<'application>(
-    request: &'application worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
-        'application,
-        '_,
-        '_,
-        ConsumerSchema,
-    >,
-    body_key: &str,
-    controls: WorthQueryOutputDemandControls,
-) -> worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandSettlement<
-    <worth_query_topology_entry::PlanarReadBinding<ConsumerSchema> as worth_query_decl::facade::application_query::ApplicationQueryBinding<ConsumerSchema>>::Query,
->{
-    let mut recovered = request
-        .demand(PlanarOutputDemand::new(body_key))
-        .controls(controls)
-        .start()
-        .expect("owner custody is recoverable through the public demand entry");
-    loop {
-        match recovered.advance(request).unwrap_or_else(|denial| {
-            panic!("the recovered {body_key} required output advances: {denial:?}")
-        }) {
-            WorthQueryApplicationOutputDemandProgress::Pending => {}
-            WorthQueryApplicationOutputDemandProgress::Settled(settled) => return settled,
-        }
-    }
 }

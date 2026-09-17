@@ -260,6 +260,10 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn f
         )
         .err()
         .expect("another runtime cannot adopt owner custody");
+    assert_eq!(
+        denial.recovery_posture(),
+        worth_query_host::facade::application_entry::WorthQueryRequiredOutputRecoveryPosture::Terminal,
+    );
     let worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::DemandExecution(denial) = denial else {
         panic!("foreign recovery must preserve the custody denial")
     };

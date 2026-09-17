@@ -19,7 +19,8 @@ pub use outcome::WorthQueryApplicationMutationOutcome;
 pub use performed::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryPerformedApplicationMutation,
     WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
-    WorthQueryRequiredOutputStartFailure, WorthQueryStartedRequiredOutputs,
+    WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputStartFailure,
+    WorthQueryStartedRequiredOutputs,
 };
 pub use performed_outputs::WorthQueryApplicationProgramOutputHandle;
 pub use program_output_settlement::{

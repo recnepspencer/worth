@@ -31,8 +31,8 @@ pub use mutation::{
     WorthQueryDiscoveredProgramOutputSettlement, WorthQueryMutationSourcePrepared,
     WorthQueryPerformedApplicationMutation, WorthQueryPerformedDiscoveredApplicationMutation,
     WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
-    WorthQueryRequiredOutputStartFailure, WorthQueryStartedDiscoveredOutputs,
-    WorthQueryStartedRequiredOutputs,
+    WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputStartFailure,
+    WorthQueryStartedDiscoveredOutputs, WorthQueryStartedRequiredOutputs,
 };
 pub use query::WorthQueryApplicationQueryRequest;
 pub use request::{
