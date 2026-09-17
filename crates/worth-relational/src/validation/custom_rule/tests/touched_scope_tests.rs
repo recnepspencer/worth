@@ -118,7 +118,12 @@ fn touched_scope_tracks_planned_relation_endpoint_updates() {
         merged_intents: vec![intent],
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope(&runtime, &observation, Some(&merged_plan));
+    let prepared_scope = prepared_scope_with_access(
+        &runtime,
+        &observation,
+        Some(&merged_plan),
+        &test_access_contract(),
+    );
     let planner = test_scope_planner(
         &runtime,
         &observation,
@@ -179,7 +184,12 @@ fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() 
         merged_intents: vec![create_target, update_relation],
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope(&runtime, &observation, Some(&merged_plan));
+    let prepared_scope = prepared_scope_with_access(
+        &runtime,
+        &observation,
+        Some(&merged_plan),
+        &test_access_contract(),
+    );
     let planner = test_scope_planner(
         &runtime,
         &observation,
@@ -215,7 +225,12 @@ fn touched_scope_tracks_planned_relation_deletes() {
         merged_intents: vec![intent],
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope(&runtime, &observation, Some(&merged_plan));
+    let prepared_scope = prepared_scope_with_access(
+        &runtime,
+        &observation,
+        Some(&merged_plan),
+        &test_access_contract(),
+    );
     let planner = test_scope_planner(
         &runtime,
         &observation,
@@ -249,7 +264,12 @@ fn touched_scope_tracks_planned_entity_deletes() {
         merged_intents: vec![intent],
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope(&runtime, &observation, Some(&merged_plan));
+    let prepared_scope = prepared_scope_with_access(
+        &runtime,
+        &observation,
+        Some(&merged_plan),
+        &test_access_contract(),
+    );
     let planner = test_scope_planner(
         &runtime,
         &observation,

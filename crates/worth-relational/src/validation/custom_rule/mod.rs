@@ -1,5 +1,6 @@
 //! Runtime-bound custom invariant planning and execution.
 
+mod affected_record_filter;
 mod execution_context;
 mod registration;
 mod scope_planner;

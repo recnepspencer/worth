@@ -2,13 +2,15 @@ use std::collections::BTreeSet;
 
 use crate::identity::data::{EntityId, PartitionId};
 use crate::transactions::data::{
-    CreateIntent, EntityMutationIntent, EntityReference, MergedCommitPlan, MutationIntent,
-    RelationMutationIntent,
+    CreateIntent, EntityMutationIntent, MergedCommitPlan, MutationIntent, RelationMutationIntent,
+};
+use crate::validation::data::{
+    PlannedEntityCreate, PlannedRelationCreate, PlannedRelationEndpointUpdate, TouchedStructuralSet,
 };
 use crate::validation::engine::state_view::{InvariantStateView, VisibleRelationMetadata};
 
-use crate::validation::data::{
-    PlannedEntityCreate, PlannedRelationCreate, PlannedRelationEndpointUpdate, TouchedStructuralSet,
+use super::affected_record_filter::{
+    include_affected_entity, include_affected_reference, include_affected_relation,
 };
 
 pub(crate) fn collect_touched_structural_set(
@@ -30,12 +32,29 @@ pub(crate) fn collect_touched_structural_set(
     if let Some(ids) =
         state_view.touched_visible_entity_ids_with_budget(|units| work.try_charge(units))
     {
-        visible_entities.extend(ids);
+        for entity_id in ids {
+            include_affected_entity(
+                &mut visible_entities,
+                entity_id,
+                state_view,
+                before_image_view,
+                access,
+            );
+        }
     }
     if let Some(ids) =
         state_view.touched_visible_relation_ids_with_budget(|units| work.try_charge(units))
     {
-        visible_relations.extend(ids);
+        for relation_id in ids {
+            include_affected_relation(
+                &mut visible_entities,
+                &mut visible_relations,
+                relation_id,
+                state_view,
+                before_image_view,
+                access,
+            );
+        }
     }
 
     if let Some(plan) = merged_plan {
@@ -46,108 +65,235 @@ pub(crate) fn collect_touched_structural_set(
             intent.seed_touched_partitions(&mut touched_partitions);
             match intent {
                 MutationIntent::Create(CreateIntent::Entity(spec)) => {
-                    planned_entity_creates.push(PlannedEntityCreate::new(
-                        spec.partition_id,
-                        spec.kind_id,
-                        spec.client_key.clone(),
-                    ));
-                }
-                MutationIntent::Create(CreateIntent::EntityAspects(spec)) => {
-                    planned_entity_creates.push(PlannedEntityCreate::new(
-                        spec.partition_id,
-                        spec.kind_id,
-                        spec.client_key.clone(),
-                    ));
-                }
-                MutationIntent::Create(CreateIntent::BulkEntities(spec)) => {
-                    if !work.try_charge(spec.client_keys.len()) {
-                        break;
-                    }
-                    for client_key in spec.client_keys.iter() {
+                    if access.affects_entity(spec.kind_id) {
                         planned_entity_creates.push(PlannedEntityCreate::new(
                             spec.partition_id,
                             spec.kind_id,
-                            client_key.clone(),
+                            spec.client_key.clone(),
                         ));
+                    }
+                }
+                MutationIntent::Create(CreateIntent::EntityAspects(spec)) => {
+                    if access.affects_entity(spec.kind_id) {
+                        planned_entity_creates.push(PlannedEntityCreate::new(
+                            spec.partition_id,
+                            spec.kind_id,
+                            spec.client_key.clone(),
+                        ));
+                    }
+                }
+                MutationIntent::Create(CreateIntent::BulkEntities(spec)) => {
+                    if access.affects_entity(spec.kind_id) {
+                        if !work.try_charge(spec.client_keys.len()) {
+                            break;
+                        }
+                        for client_key in spec.client_keys.iter() {
+                            planned_entity_creates.push(PlannedEntityCreate::new(
+                                spec.partition_id,
+                                spec.kind_id,
+                                client_key.clone(),
+                            ));
+                        }
                     }
                 }
                 MutationIntent::Create(CreateIntent::Relation(spec)) => {
-                    include_existing_entity_reference(&mut visible_entities, &spec.source);
-                    include_existing_entity_reference(&mut visible_entities, &spec.target);
-                    planned_relation_creates.push(PlannedRelationCreate::new(
-                        spec.partition_id,
-                        spec.kind_id,
-                        spec.client_key.clone(),
-                        spec.source.clone(),
-                        spec.target.clone(),
-                    ));
-                }
-                MutationIntent::Create(CreateIntent::RelationAspects(spec)) => {
-                    include_existing_entity_reference(&mut visible_entities, &spec.source);
-                    include_existing_entity_reference(&mut visible_entities, &spec.target);
-                    planned_relation_creates.push(PlannedRelationCreate::new(
-                        spec.partition_id,
-                        spec.kind_id,
-                        spec.client_key.clone(),
-                        spec.source.clone(),
-                        spec.target.clone(),
-                    ));
-                }
-                MutationIntent::Create(CreateIntent::BulkRelations(spec)) => {
-                    if !work.try_charge(spec.client_keys.len()) {
-                        break;
-                    }
-                    for ((source, target), client_key) in
-                        spec.endpoints.iter().zip(spec.client_keys.iter())
-                    {
-                        include_existing_entity_reference(&mut visible_entities, source);
-                        include_existing_entity_reference(&mut visible_entities, target);
+                    include_affected_reference(
+                        &mut visible_entities,
+                        &spec.source,
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
+                    include_affected_reference(
+                        &mut visible_entities,
+                        &spec.target,
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
+                    if access.affects_relation(spec.kind_id) {
                         planned_relation_creates.push(PlannedRelationCreate::new(
                             spec.partition_id,
                             spec.kind_id,
-                            client_key.clone(),
-                            source.clone(),
-                            target.clone(),
+                            spec.client_key.clone(),
+                            spec.source.clone(),
+                            spec.target.clone(),
                         ));
                     }
                 }
+                MutationIntent::Create(CreateIntent::RelationAspects(spec)) => {
+                    include_affected_reference(
+                        &mut visible_entities,
+                        &spec.source,
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
+                    include_affected_reference(
+                        &mut visible_entities,
+                        &spec.target,
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
+                    if access.affects_relation(spec.kind_id) {
+                        planned_relation_creates.push(PlannedRelationCreate::new(
+                            spec.partition_id,
+                            spec.kind_id,
+                            spec.client_key.clone(),
+                            spec.source.clone(),
+                            spec.target.clone(),
+                        ));
+                    }
+                }
+                MutationIntent::Create(CreateIntent::BulkRelations(spec)) => {
+                    if !work.try_charge(spec.endpoints.len().saturating_mul(2)) {
+                        break;
+                    }
+                    for (source, target) in &spec.endpoints {
+                        include_affected_reference(
+                            &mut visible_entities,
+                            source,
+                            state_view,
+                            before_image_view,
+                            access,
+                        );
+                        include_affected_reference(
+                            &mut visible_entities,
+                            target,
+                            state_view,
+                            before_image_view,
+                            access,
+                        );
+                    }
+                    if access.affects_relation(spec.kind_id) {
+                        if !work.try_charge(spec.client_keys.len()) {
+                            break;
+                        }
+                        for ((source, target), client_key) in
+                            spec.endpoints.iter().zip(spec.client_keys.iter())
+                        {
+                            planned_relation_creates.push(PlannedRelationCreate::new(
+                                spec.partition_id,
+                                spec.kind_id,
+                                client_key.clone(),
+                                source.clone(),
+                                target.clone(),
+                            ));
+                        }
+                    }
+                }
                 MutationIntent::Entity(EntityMutationIntent::UpdateFields(spec)) => {
-                    visible_entities.insert(spec.entity_id);
+                    include_affected_entity(
+                        &mut visible_entities,
+                        spec.entity_id,
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
                 }
                 MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(spec)) => {
-                    visible_entities.insert(spec.entity_id);
+                    include_affected_entity(
+                        &mut visible_entities,
+                        spec.entity_id,
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
                 }
                 MutationIntent::Entity(EntityMutationIntent::Replace(spec)) => {
-                    visible_entities.insert(spec.entity_id);
+                    include_affected_entity(
+                        &mut visible_entities,
+                        spec.entity_id,
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
                 }
                 MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => {
-                    visible_entities.insert(spec.entity_id);
-                    planned_entity_deletes.push(spec.entity_id);
+                    if include_affected_entity(
+                        &mut visible_entities,
+                        spec.entity_id,
+                        state_view,
+                        before_image_view,
+                        access,
+                    ) {
+                        planned_entity_deletes.push(spec.entity_id);
+                    }
                 }
                 MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(spec)) => {
-                    visible_relations.insert(spec.relation_id);
-                    include_existing_entity_reference(&mut visible_entities, &spec.source);
-                    include_existing_entity_reference(&mut visible_entities, &spec.target);
-                    planned_relation_endpoint_updates.push(PlannedRelationEndpointUpdate::new(
+                    include_affected_relation(
+                        &mut visible_entities,
+                        &mut visible_relations,
                         spec.relation_id,
-                        spec.kind_id,
-                        spec.source.clone(),
-                        spec.target.clone(),
-                    ));
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
+                    include_affected_reference(
+                        &mut visible_entities,
+                        &spec.source,
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
+                    include_affected_reference(
+                        &mut visible_entities,
+                        &spec.target,
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
+                    if access.affects_relation(spec.kind_id) {
+                        planned_relation_endpoint_updates.push(PlannedRelationEndpointUpdate::new(
+                            spec.relation_id,
+                            spec.kind_id,
+                            spec.source.clone(),
+                            spec.target.clone(),
+                        ));
+                    }
                 }
                 MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(spec)) => {
-                    visible_relations.insert(spec.relation_id);
+                    include_affected_relation(
+                        &mut visible_entities,
+                        &mut visible_relations,
+                        spec.relation_id,
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
                 }
                 MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
-                    visible_relations.insert(spec.relation_id);
-                    planned_relation_deletes.push(spec.relation_id);
+                    if include_affected_relation(
+                        &mut visible_entities,
+                        &mut visible_relations,
+                        spec.relation_id,
+                        state_view,
+                        before_image_view,
+                        access,
+                    ) {
+                        planned_relation_deletes.push(spec.relation_id);
+                    }
                 }
                 MutationIntent::Materialization(intent) => match intent.record() {
                     crate::transactions::data::RecordRef::Entity(entity_id) => {
-                        visible_entities.insert(entity_id);
+                        include_affected_entity(
+                            &mut visible_entities,
+                            entity_id,
+                            state_view,
+                            before_image_view,
+                            access,
+                        );
                     }
                     crate::transactions::data::RecordRef::Relation(relation_id) => {
-                        visible_relations.insert(relation_id);
+                        include_affected_relation(
+                            &mut visible_entities,
+                            &mut visible_relations,
+                            relation_id,
+                            state_view,
+                            before_image_view,
+                            access,
+                        );
                     }
                 },
             }
@@ -216,15 +362,6 @@ pub(crate) fn collect_touched_structural_set(
         planned_relation_deletes.into(),
         planned_relation_endpoint_updates.into(),
     )
-}
-
-fn include_existing_entity_reference(
-    visible_entities: &mut BTreeSet<EntityId>,
-    entity_reference: &EntityReference,
-) {
-    if let EntityReference::Existing(entity_id) = entity_reference {
-        visible_entities.insert(*entity_id);
-    }
 }
 
 fn include_relation_metadata(
