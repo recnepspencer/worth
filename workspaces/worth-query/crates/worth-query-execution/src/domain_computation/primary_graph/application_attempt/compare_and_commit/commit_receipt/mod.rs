@@ -3,7 +3,6 @@
 mod committed_changes;
 mod construction;
 pub use committed_changes::WorthQueryApplicationCommittedChanges;
-mod output_source_identity;
 mod pending;
 mod projection;
 mod publication_source;

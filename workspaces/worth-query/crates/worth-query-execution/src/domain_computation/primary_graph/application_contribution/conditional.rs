@@ -68,6 +68,7 @@ where
 {
     type Configuration: 'static;
     type Installed: Send + Sync + 'static;
+    type Operation: 'static;
 
     const IDENTITY: &'static str;
     const REQUIRED_PRODUCERS: &'static [&'static str];
@@ -92,6 +93,7 @@ pub(super) struct DeclaredConditionalBinding {
 struct InstalledConditionalBinding {
     binding_type: TypeId,
     installed_type: TypeId,
+    operation_type: TypeId,
     value: Arc<dyn Any + Send + Sync>,
 }
 
@@ -114,6 +116,19 @@ impl<Schema> WorthQueryInstalledApplicationConditionalRegistry<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    pub(in crate::domain_computation::primary_graph) fn operation_types(
+        &self,
+    ) -> impl Iterator<Item = TypeId> + '_ {
+        self.entries.values().map(|entry| entry.operation_type)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn contains_operation<Operation: 'static>(
+        &self,
+    ) -> bool {
+        self.operation_types()
+            .any(|operation| operation == TypeId::of::<Operation>())
+    }
+
     pub fn binding<Binding>(&self) -> Option<Arc<Binding::Installed>>
     where
         Binding: WorthQueryApplicationConditionalBinding<Schema>,
@@ -171,6 +186,7 @@ where
         );
         installation.begin_application_binding_scope(
             declaration.contract.operation_binding(),
+            TypeId::of::<Binding::Operation>(),
             declaration.contract.node_identity().to_owned(),
             declaration.required_producers.clone(),
         );
@@ -185,6 +201,7 @@ where
         Ok(InstalledConditionalBinding {
             binding_type: TypeId::of::<Binding>(),
             installed_type: TypeId::of::<Binding::Installed>(),
+            operation_type: TypeId::of::<Binding::Operation>(),
             value: Arc::new(installed),
         })
     }

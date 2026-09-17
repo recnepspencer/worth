@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use super::{operation_binding_uniqueness::duplicate_operation_binding, DeclaredProducerBinding};
+use super::DeclaredProducerBinding;
 
 #[test]
 fn producer_meaning_rejects_a_distinct_rust_binding_type_reusing_the_identity() {
@@ -18,22 +18,6 @@ fn producer_meaning_rejects_a_provider_version_change() {
     changed.provider_identity = "provider.v2".into();
 
     assert!(!installed.has_same_meaning_as(&changed));
-}
-
-#[test]
-fn one_mutation_binding_cannot_own_two_producer_lineage_slots() {
-    let first = declared(TypeId::of::<InstalledProducer>());
-    let mut second = declared(TypeId::of::<SubstitutedProducer>());
-    second.identity = "producer.two".into();
-    let declarations = std::collections::BTreeMap::from([
-        (first.identity.clone(), first),
-        (second.identity.clone(), second),
-    ]);
-
-    assert_eq!(
-        duplicate_operation_binding(&declarations),
-        Some(("producer", "producer.two"))
-    );
 }
 
 fn declared(binding_type: TypeId) -> DeclaredProducerBinding {

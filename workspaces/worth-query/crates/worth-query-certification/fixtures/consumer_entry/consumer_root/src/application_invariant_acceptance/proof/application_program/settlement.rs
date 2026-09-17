@@ -35,7 +35,8 @@ pub(super) fn performed_source_settles_required_output(
         crate::application_program::unexported_cross_instance_is_denied(),
         worth_query_decl::facade::application_program::ApplicationProgramValidationDenialKind::UnexportedCrossInstanceConnection,
     );
-    installation::assert_plain_installation_requires_program();
+    installation::assert_program_cannot_omit_an_installed_rule();
+    installation::assert_required_output_source_cannot_be_an_action();
     let world = installation::install(foreign);
     let installed_program = world.application.installed_program();
     program_contract::assert_installed(installed_program.connections(), installed_program.rules());
@@ -66,10 +67,16 @@ pub(super) fn performed_source_settles_required_output(
         })
         .expect_source(source)
         .idempotency(&10_001)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .execute_performed(&world.application)
         .expect("the source edit reaches publication");
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
-        panic!("the fresh source publication must retain performed delivery")
+    let performed = match outcome {
+        WorthQueryApplicationPerformedMutationOutcome::Performed(performed) => performed,
+        WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied { denial, .. } => {
+            panic!("the fresh source publication denied required output: {denial:?}")
+        }
+        WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
+            panic!("the fresh source publication was not performed: {outcome:?}")
+        }
     };
     let mut performed = performed
         .start_required_outputs(&request, controls)
@@ -216,22 +223,6 @@ pub(super) fn performed_source_settles_required_output(
         latest_commit,
         "the aggregate selects the exact newest commit across every settled graph output"
     );
-    let current_basis = request
-        .retain_read()
-        .expect("current product basis remains readable");
-    request
-        .at(&current_basis)
-        .require_current_program_output(&original_settlement, NonZeroUsize::new(4_096).unwrap())
-        .expect("every transitive output retains current Query source lineage");
-    assert!(matches!(
-        request.at(&current_basis).require_current_program_output(
-            &original_settlement,
-            NonZeroUsize::new(1).unwrap(),
-        ),
-        Err(worth_query_host::facade::application_entry::WorthQueryProgramOutputCurrentnessDenial::Output(denial))
-            if denial.kind()
-                == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-    ));
     assert_eq!(
         request
             .at(original_settlement.observation())

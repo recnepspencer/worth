@@ -17,7 +17,7 @@ const FORBIDDEN_RESIDUE: [&str; 6] = [
     "AuthorityMarker",
 ];
 
-const FORBIDDEN_CUTOVER_RESIDUE: [&str; 10] = [
+const FORBIDDEN_CUTOVER_RESIDUE: [&str; 12] = [
     "WorthQueryRuntimeBuilder",
     "SignalGraph",
     "BridgeConditionalProviderSet",
@@ -28,6 +28,8 @@ const FORBIDDEN_CUTOVER_RESIDUE: [&str; 10] = [
     "replace_conditional_provider",
     "replace_named_clock",
     "invoke_conditional_operation",
+    "delegate_estate_capability(",
+    "revoke_estate_capability(",
 ];
 
 #[test]

@@ -26,7 +26,7 @@ impl InvariantExecutionSummary {
 
         for result in results {
             match &result.verdict {
-                InvariantVerdict::Pass => {}
+                InvariantVerdict::Pass | InvariantVerdict::NotApplicable => {}
                 InvariantVerdict::Advisory { .. } => {
                     advisory_count += 1;
                 }

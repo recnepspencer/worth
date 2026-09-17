@@ -31,7 +31,7 @@ use worth_query_topology_entry::{
     PositiveTurnRule, TopologyContribution, TopologySchemaBinding,
 };
 
-use super::{assert_contribution_denial, limits};
+use super::{assert_contribution_denial, limits, validated_denial_program};
 
 pub(super) fn run() {
     missing_provider_precedes_initializer();
@@ -74,7 +74,8 @@ producer_schema!(AmbiguousProducerSchema, AmbiguousProducerContribution);
 fn missing_provider_precedes_initializer() {
     let setup_calls = Arc::new(AtomicUsize::new(0));
     let seed_calls = Arc::new(AtomicUsize::new(0));
-    let result = application_installation::in_memory::<MissingProducerSchema>(
+    let result = application_installation::in_memory_program(
+        validated_denial_program::<MissingProducerSchema>(),
         MissingProducerSchema::declaration().unwrap(),
         (Arc::clone(&setup_calls), Arc::clone(&setup_calls)),
         limits(),
@@ -93,7 +94,8 @@ fn missing_provider_precedes_initializer() {
 
 fn duplicate_provider_is_denied() {
     let setup_calls = Arc::new(AtomicUsize::new(0));
-    let result = application_installation::in_memory::<DuplicateProducerSchema>(
+    let result = application_installation::in_memory_program(
+        validated_denial_program::<DuplicateProducerSchema>(),
         DuplicateProducerSchema::declaration().unwrap(),
         (Arc::clone(&setup_calls), Arc::clone(&setup_calls)),
         limits(),
@@ -108,7 +110,8 @@ fn duplicate_provider_is_denied() {
 
 fn ambiguous_applicability_precedes_callbacks() {
     let calls = Arc::new(AtomicUsize::new(0));
-    let result = application_installation::in_memory::<AmbiguousProducerSchema>(
+    let result = application_installation::in_memory_program(
+        validated_denial_program::<AmbiguousProducerSchema>(),
         AmbiguousProducerSchema::declaration().unwrap(),
         (Arc::clone(&calls), Arc::clone(&calls)),
         limits(),
@@ -305,6 +308,7 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
         },
     )?;
     setup.handler::<PlanarMutationBinding<Schema>, _>(PlanarHandler)?;
+    setup.handler::<worth_query_topology_entry::PlanarEditBinding<Schema>, _>(PlanarHandler)?;
     setup.handler::<worth_query_topology_entry::FinalPlanarMutationBinding<Schema>, _>(
         worth_query_topology_entry::FinalPlanarMutationHandler,
     )?;

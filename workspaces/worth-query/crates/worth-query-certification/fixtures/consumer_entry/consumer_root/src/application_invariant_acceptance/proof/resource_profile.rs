@@ -15,7 +15,7 @@ use super::{
     adjust, authentication, installation, output_correspondence::observed_source, read_y,
     source_version, ConsumerSchema,
 };
-use worth_query_topology_entry::PlanarRead;
+use worth_query_topology_entry::{PlanarEdit, PlanarRead};
 
 pub(super) fn candidate_bytes_beyond_host_limit_are_denied(
     foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>,
@@ -33,13 +33,13 @@ pub(super) fn candidate_bytes_beyond_host_limit_are_denied(
     let calls = world.invariant_calls.load(Ordering::SeqCst);
     assert_eq!(read_y(&request, "anchor-a"), 1);
 
-    // The ordinary world runs this exact adjustment with its 8192-byte host limit.
+    // The installed program runs this exact adjustment with its 8192-byte host limit.
     let input = adjust("anchor-a", 2, 4096);
     let outcome = request
-        .mutate(input)
+        .mutate(PlanarEdit(input))
         .expect_source(observed_source(&request, "anchor-a"))
         .idempotency(&10)
-        .execute();
+        .execute_in_program(&world.application);
     let Err(WorthQueryApplicationRequestMutationDenial::Authorization(denial)) = outcome else {
         panic!("8192 declared candidate bytes must exceed the 8191-byte host: {outcome:?}")
     };

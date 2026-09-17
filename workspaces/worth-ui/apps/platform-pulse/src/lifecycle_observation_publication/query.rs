@@ -4,8 +4,7 @@ use worth_ui::facade::app::{
 use worth_ui::facade::source::WorthUiFilesystemWatcherShutdownReceipt;
 use worth_ui_platform_pulse::observation_contract::{
     PlatformPulseIntentWatcherShutdownEvidence, PlatformPulseLifecycleObservationStream,
-    PlatformPulseLiveQueryResidue, PlatformPulseQueryProjectionEvidence,
-    PlatformPulseQueryProjectionResidue, PlatformPulseQueryShutdownEvidence,
+    PlatformPulseQueryProjectionEvidence, PlatformPulseQueryShutdownEvidence,
     PlatformPulseQueryWatcherShutdownEvidence,
 };
 
@@ -69,16 +68,6 @@ impl PlatformPulseObservationPublisher {
                 query_watcher.pending_event_count() as u64,
             ),
             query.owner_terminal(),
-            PlatformPulseLiveQueryResidue::new(
-                query.live_source_count() as u64,
-                query.live_attempt_count() as u64,
-                query.live_resource_count() as u64,
-                query.live_consumer_lease_count() as u64,
-            ),
-            PlatformPulseQueryProjectionResidue::new(
-                query.retained_projection_count() as u64,
-                query.projection_receipt_count() as u64,
-            ),
         );
         let intent = PlatformPulseIntentWatcherShutdownEvidence::new(
             intent_watcher.worker_joined(),

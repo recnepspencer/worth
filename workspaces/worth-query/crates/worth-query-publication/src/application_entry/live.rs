@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_schema::ApplicationStructuredVa
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationLiveCloseOutcome, WorthQueryApplicationLiveLease,
     WorthQueryApplicationLiveOutcome, WorthQueryApplicationProjection,
-    WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionDenialKind,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -23,6 +23,18 @@ type Principal<Schema, Intent> =
 type PrincipalIdentity<Schema, Intent> =
     <Binding<Schema, Intent> as ApplicationQueryBinding<Schema>>::PrincipalIdentity;
 type Scope<Schema, Intent> = <<Binding<Schema, Intent> as ApplicationQueryBinding<Schema>>::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope;
+type LiveLease<'application, Schema, Intent> = WorthQueryApplicationLiveLease<
+    'application,
+    Schema,
+    Query<Schema, Intent>,
+    Parameters<Schema, Intent>,
+    QueryResult<Schema, Intent>,
+    Principal<Schema, Intent>,
+    PrincipalIdentity<Schema, Intent>,
+    Scope<Schema, Intent>,
+    <Intent as ApplicationLiveQueryIntent<Schema>>::Target,
+    <Intent as ApplicationLiveQueryIntent<Schema>>::LiveCause,
+>;
 
 pub struct WorthQueryApplicationLiveLimits {
     pub(super) buffer_capacity: usize,
@@ -49,6 +61,12 @@ pub enum WorthQueryApplicationLiveOpenRequestDenial {
     RetainedBasis,
     BindingInstallation(
         worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial,
+    ),
+    CapabilityInstallation(
+        worth_query_installation::facade::WorthQueryApplicationCapabilityInstallationDenial,
+    ),
+    CapabilityAdmission(
+        worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationDenial,
     ),
     Limit(worth_query_installation::facade::WorthQueryApplicationQueryLimitDenial),
     ProductSelection(
@@ -85,18 +103,7 @@ where
 {
     application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     branch: worth_query_execution::facade::product::WorthQueryProductBranch,
-    lease: WorthQueryApplicationLiveLease<
-        'application,
-        Schema,
-        Query<Schema, Intent>,
-        Parameters<Schema, Intent>,
-        QueryResult<Schema, Intent>,
-        Principal<Schema, Intent>,
-        PrincipalIdentity<Schema, Intent>,
-        Scope<Schema, Intent>,
-        Intent::Target,
-        Intent::LiveCause,
-    >,
+    lease: LiveLease<'application, Schema, Intent>,
 }
 
 impl<'application, Schema, Intent>
@@ -106,21 +113,14 @@ where
     Intent: ApplicationLiveQueryIntent<Schema>,
     QueryResult<Schema, Intent>: WorthQueryApplicationProjection<Schema, Query<Schema, Intent>>,
 {
+    pub fn buffered_cause_count(&self) -> usize {
+        self.lease.buffered_cause_count()
+    }
+
     pub(super) const fn new(
         application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         branch: worth_query_execution::facade::product::WorthQueryProductBranch,
-        lease: WorthQueryApplicationLiveLease<
-            'application,
-            Schema,
-            Query<Schema, Intent>,
-            Parameters<Schema, Intent>,
-            QueryResult<Schema, Intent>,
-            Principal<Schema, Intent>,
-            PrincipalIdentity<Schema, Intent>,
-            Scope<Schema, Intent>,
-            Intent::Target,
-            Intent::LiveCause,
-        >,
+        lease: LiveLease<'application, Schema, Intent>,
     ) -> Self {
         Self {
             application,
@@ -142,6 +142,9 @@ where
         if self.branch != fresh_request.branch {
             return Err(WorthQueryApplicationLiveNextDenial::ForeignBranch);
         }
+        if let Some(outcome) = self.lease.observe_interruption(fresh_request.scope) {
+            return Ok(outcome);
+        }
         let binding = self
             .application
             .installed_schema()
@@ -152,14 +155,36 @@ where
             .on_branch(fresh_request.branch)
             .select()
             .map_err(WorthQueryApplicationLiveNextDenial::ProductSelection)?;
-        let principal = selected
-            .resolve_authenticated_principal(
-                binding.principal_binding(),
-                fresh_request.principal,
-                fresh_request.scope,
-                worth_query_execution::facade::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .map_err(WorthQueryApplicationLiveNextDenial::PrincipalResolution)?;
+        let principal = match selected.resolve_authenticated_principal(
+            binding.principal_binding(),
+            fresh_request.principal,
+            fresh_request.scope,
+            worth_query_execution::facade::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+        ) {
+            Ok(principal) => principal,
+            Err(denial) => match denial.kind() {
+                WorthQueryPrincipalResolutionDenialKind::Cancelled
+                | WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded => {
+                    return Ok(self
+                        .lease
+                        .observe_interruption(fresh_request.scope)
+                        .unwrap_or(WorthQueryApplicationLiveOutcome::Unavailable));
+                }
+                WorthQueryPrincipalResolutionDenialKind::ForeignRuntime
+                | WorthQueryPrincipalResolutionDenialKind::StaleInstalledSchema
+                | WorthQueryPrincipalResolutionDenialKind::ExpiredAuthentication
+                | WorthQueryPrincipalResolutionDenialKind::UnknownPrincipal
+                | WorthQueryPrincipalResolutionDenialKind::DisabledPrincipal
+                | WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipal
+                | WorthQueryPrincipalResolutionDenialKind::MissingPrincipalTarget
+                | WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipalTarget
+                | WorthQueryPrincipalResolutionDenialKind::WrongPrincipalTargetKind
+                | WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof => {
+                    return Ok(self.lease.terminate_stale_principal());
+                }
+                _ => return Err(WorthQueryApplicationLiveNextDenial::PrincipalResolution(denial)),
+            },
+        };
         Ok(self.lease.next(&principal, fresh_request.scope))
     }
 

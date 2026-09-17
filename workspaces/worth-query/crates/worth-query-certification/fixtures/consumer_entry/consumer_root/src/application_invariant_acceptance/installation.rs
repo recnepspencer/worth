@@ -25,7 +25,7 @@ pub(super) fn install(
     install_with_candidate_bytes(foreign, 8192)
 }
 
-pub(super) fn assert_plain_installation_requires_program() {
+pub(super) fn assert_program_cannot_omit_an_installed_rule() {
     let configuration = (
         TopologyConfiguration {
             setup_calls: Arc::new(AtomicUsize::new(0)),
@@ -41,21 +41,88 @@ pub(super) fn assert_plain_installation_requires_program() {
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
-    let result = installation::in_memory::<ConsumerSchema>(
+    let result = installation::in_memory_program(
+        crate::application_program::validated_omitted_installed_rule_program()
+            .expect("the omitted-rule program is declaration-valid"),
         ConsumerSchema::declaration().expect("the contributed declaration is valid"),
         configuration,
         limits,
-        |_, _| Ok(()),
+        |graph, installed| {
+            let principal = installed
+                .principal_binding(ConsumerPrincipalBinding::reference::<ConsumerSchema>())
+                .expect("the contributed principal mapping is installed");
+            graph.bind_principal(
+                &principal,
+                primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
+                1_u64,
+                authentication::external_identity(),
+                WorthQueryPrincipalMappingStatus::Enabled,
+            )
+        },
     );
-    let Err(installation::WorthQueryInMemoryApplicationDenial::ApplicationProgramRequired(binding)) =
-        result
-    else {
-        panic!("plain installation must reject a program-required source binding")
+    let denial = match result {
+        Err(installation::WorthQueryInMemoryApplicationDenial::Program(denial)) => denial,
+        Err(other) => panic!("expected omitted-rule denial, received {other}"),
+        Ok(_) => panic!("a program that omits an installed rule was accepted"),
     };
     assert_eq!(
-        binding,
-        "worth.query.certification.planar-source-adjustment.v1"
+        denial.subject(),
+        "undeclared installed rule: PositiveParameterCount"
     );
+}
+
+pub(super) fn assert_required_output_source_cannot_be_an_action() {
+    use worth_query_host::facade::declaration::application_program::ApplicationProgramAuthoring;
+
+    let configuration = (
+        TopologyConfiguration {
+            setup_calls: Arc::new(AtomicUsize::new(0)),
+            invariant_calls: Arc::new(AtomicUsize::new(0)),
+            invariant_probe: Arc::new(AtomicUsize::new(0)),
+            producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+        },
+        Arc::new(AtomicUsize::new(0)),
+    );
+    let limits = WorthQueryInMemoryApplicationLimits::new(
+        resources::world_resources(),
+        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
+        runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
+        primary_graph::SignalConditionalEvaluationBudget::development(),
+    );
+    let program = ApplicationProgramAuthoring::<
+        ConsumerSchema,
+        crate::application_program::RequiredSourceAsActionProgram,
+    >::begin()
+    .validated_program()
+    .expect("the overlapping action is declaration-valid");
+    let result = installation::in_memory_program(
+        program,
+        ConsumerSchema::declaration().unwrap(),
+        configuration,
+        limits,
+        |graph, installed| {
+            let principal = installed
+                .principal_binding(ConsumerPrincipalBinding::reference::<ConsumerSchema>())
+                .expect("the contributed principal mapping is installed");
+            graph.bind_principal(
+                &principal,
+                primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
+                1_u64,
+                authentication::external_identity(),
+                WorthQueryPrincipalMappingStatus::Enabled,
+            )
+        },
+    );
+    match result {
+        Err(installation::WorthQueryInMemoryApplicationDenial::RequiredOutputSourceAction(
+            binding,
+        )) => assert_eq!(
+            binding,
+            "worth.query.certification.planar-source-adjustment.v1"
+        ),
+        Err(other) => panic!("expected required-source action denial, received {other}"),
+        Ok(_) => panic!("required output source was admitted as an ordinary action"),
+    }
 }
 
 pub(super) fn install_with_candidate_bytes(

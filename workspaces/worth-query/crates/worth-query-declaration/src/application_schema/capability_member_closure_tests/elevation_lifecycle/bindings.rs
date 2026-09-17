@@ -11,11 +11,13 @@ pub(super) struct ReviewFacts;
 pub(super) struct ElevationIdentity;
 pub(super) struct ElevationReason;
 pub(super) struct ElevationStatus;
+pub(super) struct ElevationClosedAt;
 pub(super) struct ElevationNotBefore;
 pub(super) struct ElevationNotAfter;
 pub(super) struct ReviewIdentity;
 pub(super) struct ReviewKind;
 pub(super) struct ReviewStatus;
+pub(super) struct ReviewReviewedAt;
 pub(super) struct Requester;
 pub(super) struct Approver;
 pub(super) struct ElevationGrant;
@@ -42,11 +44,13 @@ declare_u64_field!(
     ElevationIdentity,
     ElevationReason,
     ElevationStatus,
+    ElevationClosedAt,
     ElevationNotBefore,
     ElevationNotAfter,
     ReviewIdentity,
     ReviewKind,
     ReviewStatus,
+    ReviewReviewedAt,
 );
 
 macro_rules! operation_identity {

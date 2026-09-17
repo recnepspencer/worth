@@ -121,6 +121,31 @@ impl UiRebindPlan {
             .find_map(|fact| fact.into_scalar_projection().ok())
     }
 
+    pub(crate) fn application_scalar_projection_fact_count(&self) -> usize {
+        self.scope
+            .as_ref()
+            .into_iter()
+            .flat_map(|scope| scope.facts())
+            .filter(|fact| {
+                fact.query()
+                    .and_then(
+                        crate::fact_contract::UiQueryChangedFact::application_scalar_projection,
+                    )
+                    .is_some()
+            })
+            .count()
+    }
+
+    pub(crate) fn into_application_scalar_projection_fact(
+        self,
+    ) -> Option<worth_ui_query_binding::UiApplicationScalarProjectionFactReceipt> {
+        self.scope?
+            .into_facts()
+            .into_vec()
+            .into_iter()
+            .find_map(|fact| fact.into_application_scalar_projection().ok())
+    }
+
     pub fn identity_decisions(&self) -> &[super::super::UiIdentityLifecycleEntry] {
         &self.identity_decisions
     }

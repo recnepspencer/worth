@@ -157,6 +157,13 @@ worth_query_decl::facade::worth_query_query_binding!(
     limits results 1_024, work 100_000
 );
 
+impl worth_query_decl::facade::application_query::ApplicationLiveQueryIntent<BankSchema>
+    for EstateEmergencyAccessActivityRequest
+{
+    type Target = EmergencyAccess;
+    type LiveCause = EstateEmergencyAccessActivityLiveCause;
+}
+
 pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefinition<
     BankSchema,
     EstateEmergencyAccessActivityQuery,

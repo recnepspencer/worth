@@ -9,6 +9,27 @@ pub(super) fn install(
 > {
     schema
         .operation(
+            ProgramRequiredOperation::reference()
+                .definition()
+                .no_external_effect()
+                .no_aftermath()
+                .finish(),
+        )
+        .operation_decision_fact_budget(ProgramRequiredOperation::reference(), 1)
+        .operation_projection_work_budget(ProgramRequiredOperation::reference(), 8)
+        .operation_requires_ability(
+            ProgramRequiredOperation::reference(),
+            ViewAccount::reference(),
+        )
+        .operation_write(
+            ProgramRequiredOperation::reference(),
+            AccountStatus::reference(),
+        )
+        .operation_read_field(
+            ProgramRequiredOperation::reference(),
+            AccountStatus::reference(),
+        )
+        .operation(
             TouchAccountOperation::reference()
                 .definition()
                 .no_external_effect()

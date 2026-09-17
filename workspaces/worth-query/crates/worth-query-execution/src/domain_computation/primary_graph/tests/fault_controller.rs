@@ -125,9 +125,5 @@ const fn mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch => 1 << 6,
         WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
         WorthQueryPrimaryGraphFault::FailedOutputReadinessEvaluation => 1 << 10,
-        #[cfg(feature = "test-primary-graph-faults")]
-        WorthQueryPrimaryGraphFault::ReadyReadSnapshotPressure => 1 << 11,
-        #[cfg(feature = "test-primary-graph-faults")]
-        WorthQueryPrimaryGraphFault::ReadinessSnapshotPressure => 1 << 12,
     }
 }

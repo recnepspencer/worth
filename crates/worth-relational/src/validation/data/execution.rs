@@ -74,6 +74,7 @@ impl InvariantFailureEffect {
 #[non_exhaustive]
 pub enum InvariantVerdict {
     Pass,
+    NotApplicable,
     Advisory {
         violation: InvariantViolation,
         advisory: InvariantAdvisory,
@@ -85,6 +86,7 @@ impl InvariantVerdict {
     pub const fn diagnostic_label(&self) -> &'static str {
         match self {
             Self::Pass => "pass",
+            Self::NotApplicable => "not_applicable",
             Self::Advisory { .. } => "advisory",
             Self::Violation(_) => "violation",
         }
@@ -194,6 +196,7 @@ pub struct InvariantCheckResult {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum InvariantDecisionKind {
     Passed,
+    NotApplicable,
     Advisory,
     Violated,
 }
@@ -239,6 +242,7 @@ impl InvariantCheckResult {
             witness: self.witness.clone(),
             decision: match self.verdict {
                 InvariantVerdict::Pass => InvariantDecisionKind::Passed,
+                InvariantVerdict::NotApplicable => InvariantDecisionKind::NotApplicable,
                 InvariantVerdict::Advisory { .. } => InvariantDecisionKind::Advisory,
                 InvariantVerdict::Violation(_) => InvariantDecisionKind::Violated,
             },

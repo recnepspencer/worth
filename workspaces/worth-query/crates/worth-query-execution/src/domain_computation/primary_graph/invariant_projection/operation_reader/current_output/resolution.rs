@@ -1,5 +1,6 @@
 use std::any::TypeId;
 use std::collections::HashSet;
+use std::hash::Hash;
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_query::{
@@ -11,6 +12,9 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::runtime::ProjectionAspectScope;
 use worth_relational::facade::storage::RecordLifecycleState;
+
+#[cfg(test)]
+mod tests;
 
 use super::{
     WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputRole,
@@ -60,8 +64,7 @@ where
             return Ok(WorthQueryCurrentOutputSelection::ObsoleteSource);
         }
         let correspondences = self.current_correspondences::<Family, Producer>(producer)?;
-        let mut identities = Vec::new();
-        let mut observed_entities = HashSet::new();
+        let mut entities = Vec::new();
         for correspondence in correspondences {
             self.require_current_output_budget(1, role.name())?;
             self.reader.work_budget.consume(1);
@@ -74,16 +77,23 @@ where
                         role.name(),
                     )
                 })?;
-            if let Some(entity) = entity.filter(|entity| observed_entities.insert(*entity)) {
-                identities.push(self.live_current_identity::<Entity>(role.name(), entity)?);
+            if let Some(entity) = entity {
+                entities.push(entity);
             }
         }
-        Ok(match identities.len() {
-            0 => WorthQueryCurrentOutputSelection::Missing,
-            1 => WorthQueryCurrentOutputSelection::Unique(
-                identities.pop().expect("one current output was observed"),
+        Ok(match classify_current_entities(entities) {
+            CurrentOutputCardinality::Missing => WorthQueryCurrentOutputSelection::Missing,
+            CurrentOutputCardinality::Unique(entity) => WorthQueryCurrentOutputSelection::Unique(
+                self.live_current_identity::<Entity>(role.name(), entity)?,
             ),
-            _ => WorthQueryCurrentOutputSelection::Ambiguous(identities),
+            CurrentOutputCardinality::Ambiguous(entities) => {
+                WorthQueryCurrentOutputSelection::Ambiguous(
+                    entities
+                        .into_iter()
+                        .map(|entity| self.live_current_identity::<Entity>(role.name(), entity))
+                        .collect::<Result<Vec<_>, _>>()?,
+                )
+            }
         })
     }
 
@@ -316,6 +326,28 @@ where
                     && self.reader.layout.entity_name(kind) == Some(Producer::IDENTIFIER)
             });
         Ok(live)
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum CurrentOutputCardinality<T> {
+    Missing,
+    Unique(T),
+    Ambiguous(Vec<T>),
+}
+
+fn classify_current_entities<T: Copy + Eq + Hash>(
+    entities: impl IntoIterator<Item = T>,
+) -> CurrentOutputCardinality<T> {
+    let mut seen = HashSet::new();
+    let mut unique = entities
+        .into_iter()
+        .filter(|entity| seen.insert(*entity))
+        .collect::<Vec<_>>();
+    match unique.len() {
+        0 => CurrentOutputCardinality::Missing,
+        1 => CurrentOutputCardinality::Unique(unique.pop().expect("one unique entity")),
+        _ => CurrentOutputCardinality::Ambiguous(unique),
     }
 }
 

@@ -15,8 +15,10 @@ struct WorthQueryProductPublicationCustody {
     live_successor_observation:
         Mutex<Option<worth_runtime_world::facade::ProductBranchObservation>>,
     output_demand_observation: Mutex<Option<worth_runtime_world::facade::ProductBranchObservation>>,
+    client_observation: Mutex<Option<worth_runtime_world::facade::ProductBranchObservation>>,
     retain_live_observation: bool,
     retain_output_demand_observation: bool,
+    retain_client_observation: bool,
     root_identity: Arc<WorthQueryProductRootIdentity>,
     _recovery_handle: ProductUnpublishedRecoveryHandle,
 }
@@ -39,6 +41,7 @@ impl WorthQueryReservedProductPublicationReceipt {
         recovery_handle: ProductUnpublishedRecoveryHandle,
         retain_live_observation: bool,
         retain_output_demand_observation: bool,
+        retain_client_observation: bool,
     ) -> Self {
         Self {
             custody: Arc::new(WorthQueryProductPublicationCustody {
@@ -46,8 +49,10 @@ impl WorthQueryReservedProductPublicationReceipt {
                 fresh_delivery_available: Mutex::new(true),
                 live_successor_observation: Mutex::new(None),
                 output_demand_observation: Mutex::new(None),
+                client_observation: Mutex::new(None),
                 retain_live_observation,
                 retain_output_demand_observation,
+                retain_client_observation,
                 root_identity,
                 _recovery_handle: recovery_handle,
             }),
@@ -72,6 +77,14 @@ impl WorthQueryReservedProductPublicationReceipt {
             *self
                 .custody
                 .output_demand_observation
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner) =
+                successor_observation.as_ref().cloned();
+        }
+        if self.custody.retain_client_observation {
+            *self
+                .custody
+                .client_observation
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner) = successor_observation;
         }
@@ -141,13 +154,14 @@ impl WorthQueryProductPublicationReceipt {
             .take()
     }
 
-    #[cfg(feature = "test-primary-graph-faults")]
-    pub(crate) fn has_output_demand_observation_for_test(&self) -> bool {
+    pub(crate) fn take_client_observation(
+        &self,
+    ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         self.custody
-            .output_demand_observation
+            .client_observation
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .is_some()
+            .take()
     }
 }
 

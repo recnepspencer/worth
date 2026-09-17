@@ -74,7 +74,7 @@ where
             return review_denied(Some(request_id), unavailable());
         }
         BankEstateMandatoryReviewOutcome::ProductUnpublished(_) => {
-            return review_denied(Some(request_id), unavailable());
+            return review_denied(Some(request_id), indeterminate());
         }
         BankEstateMandatoryReviewOutcome::Reviewed(authority) => {
             (authority, BankHttpCommitDisposition::Committed)

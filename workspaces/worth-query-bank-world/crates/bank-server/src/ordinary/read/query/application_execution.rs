@@ -1,24 +1,22 @@
 use bank_domain::queries::{
     AccountAuthorizedUsersQuery, AccountAuthorizedUsersQueryResult, AccountAuthorizedUsersRequest,
     AccountDetailQuery, AccountDetailRequest, AccountDiscoveryQuery, AccountDiscoveryRequest,
-    EstateCaseOverviewQuery, EstateCaseOverviewQueryBinding, EstateCaseOverviewRequest,
-    EstateCustomerDisclosure, EstateCustomerDisclosureQuery, EstateCustomerDisclosureRequest,
-    EstateEmergencyAccountDetails, EstateEmergencyAccountDetailsQuery,
-    EstateEmergencyAccountDetailsRequest, InstitutionAuditQuery, InstitutionAuditRequest,
-    PaymentDetailQuery, PaymentDetailRequest, PendingPaymentsQuery, PendingPaymentsRequest,
+    EstateCaseOverviewQuery, EstateCaseOverviewRequest, EstateEmergencyAccountDetails,
+    EstateEmergencyAccountDetailsQuery, EstateEmergencyAccountDetailsRequest,
+    InstitutionAuditQuery, InstitutionAuditRequest, PaymentDetailQuery, PaymentDetailRequest,
+    PendingPaymentsQuery, PendingPaymentsRequest,
 };
 use bank_domain::queries::{AccountSummaryQuery, AccountSummaryRequest};
 use bank_domain::reads::{
     AccountDetail, AccountSummary, EstateCaseOverview, InstitutionAuditView, PaymentSummary,
     VisibleAccount,
 };
-use bank_domain::schema::{BankSchema, EstateCaseIdentityField};
+use bank_domain::schema::BankSchema;
 use worth_query_host::facade::{
     application_entry::WorthQueryApplicationRequestExt,
     declaration::{
         application_query::{
-            ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryParameterSet,
-            ApplicationQueryScopeResolution,
+            ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
         },
         application_schema::ApplicationStructuredValueBinding,
     },
@@ -28,8 +26,7 @@ use worth_query_host::facade::{
 
 use super::BankReadyQuery;
 use crate::application_query::{
-    execute_estate_customer_disclosure, execute_estate_emergency_account_details,
-    BankAdmittedEstateEmergencyAccountDetailsHistorical,
+    execute_estate_emergency_account_details, BankAdmittedEstateEmergencyAccountDetailsHistorical,
     BankAdmittedEstateEmergencyAccountDetailsPreview, BankApplicationQueryDenial,
     BankEstateEmergencyAccountDetailsAdmission, BankPreviewSession,
 };
@@ -159,59 +156,17 @@ impl BankReadyQuery<'_, '_, EstateCaseOverviewRequest> {
         WorthQueryPublishedApplicationResult<EstateCaseOverviewQuery, EstateCaseOverview>,
         BankApplicationQueryDenial,
     > {
-        let application = self.runtime.application_runtime();
-        let selected = session.select(application, self.controls.maximum_work())?;
-        let query_binding = application
-            .installed_schema()
-            .installed_query_binding::<EstateCaseOverviewQueryBinding>()
-            .map_err(BankApplicationQueryDenial::from_installation)?;
-
-        let query = query_binding.query();
-        let scope = selected
-            .resolve_entity(
-                EstateCaseIdentityField::reference(),
-                self.query.estate(),
-                self.controls.request(),
-                worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+        self.runtime
+            .application_runtime()
+            .request(self.principal.external(), self.controls.request())
+            .at(session.observation())
+            .query(self.query)
+            .limits(
+                self.controls.maximum_result_count(),
+                self.controls.maximum_work(),
             )
-            .map_err(BankApplicationQueryDenial::from_scope_resolution)?;
-        let access =
-            worth_query_host::facade::primary_graph::WorthQueryApplicationQueryAccessContext::<
-                bank_domain::schema::BankSchema,
-                bank_domain::schema::Principal,
-                bank_domain::model::BankPrincipalId,
-                bank_domain::schema::EstateCase,
-            >::new(self.principal.query(), &scope);
-        let plan = selected
-            .admit_application_query(
-                query,
-                &access,
-                ApplicationQueryParameterSet::<EstateCaseOverviewQuery>::new(),
-                self.controls.application_query_controls(),
-            )
-            .map_err(BankApplicationQueryDenial::from_admission)?;
-        let result = application
-            .execute_application_query_one_shot(plan)
-            .map_err(BankApplicationQueryDenial::from_execution)?;
-        Ok(
-            worth_query_host::facade::publication::domain_computation::publish_application_result(
-                result.into_admitted_disclosed(),
-            ),
-        )
-    }
-}
-
-impl BankReadyQuery<'_, '_, EstateCustomerDisclosureRequest> {
-    pub fn execute(
-        self,
-    ) -> Result<
-        WorthQueryPublishedApplicationResult<
-            EstateCustomerDisclosureQuery,
-            EstateCustomerDisclosure,
-        >,
-        BankApplicationQueryDenial,
-    > {
-        execute_estate_customer_disclosure(self.runtime, self.principal, self.query, &self.controls)
+            .execute()
+            .map_err(BankApplicationQueryDenial::from_request_query)
     }
 }
 

@@ -18,7 +18,7 @@ pub mod test_control;
 
 pub use client::connection::{
     dispatch, inquire_admission_count, inquire_completed_effect_count, inquire_completed_notice,
-    inquire_notice, inquire_status, RailTransportFailure,
+    inquire_dispatch_contact_count, inquire_notice, inquire_status, RailTransportFailure,
 };
 pub use client::outcome::RailExchangeOutcome;
 pub use client::process_handle::{RailProcessHandle, RailSpawnError};

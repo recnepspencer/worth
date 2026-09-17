@@ -2,7 +2,6 @@ use super::super::{
     schedule_output_producer, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQuerySelectedApplicationProducer,
 };
-use super::bridge_denial::bridge_denial;
 use super::progression::denial;
 use crate::domain_computation::primary_graph::{
     application_output_demand::WorthQueryOutputSchedulingResult, WorthQueryObservedSource,
@@ -37,20 +36,13 @@ where
             Some(source) => self
                 .product_runtime
                 .lease_from_observation(source.observation.clone())
-                .and_then(|product| self.on_product(product)),
-            None => self.on_branch(branch).select(),
+                .map_err(|_| ())
+                .and_then(|product| self.on_product(product).map_err(|_| ())),
+            None => self.on_branch(branch).select().map_err(|_| ()),
         };
         let selected_branch = match selected_branch {
             Ok(selected) => selected,
-            Err(error) if error.is_transient() => {
-                return Ok(WorthQueryOutputSchedulingResult::Deferred)
-            }
-            Err(error) => {
-                return Err(WorthQueryOutputDemandDenial::product_selection(
-                    error,
-                    format!("{}: scheduling product selection", selected.identity),
-                ))
-            }
+            Err(()) => return Ok(WorthQueryOutputSchedulingResult::Deferred),
         };
         let truth = crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis::from_selected(selected_branch);
         if performed_source.is_some_and(|source| {
@@ -95,13 +87,7 @@ where
             attempt,
         ) {
             Ok(decision) => decision,
-            Err(error) => {
-                let denial = bridge_denial(&selected.identity, error);
-                if denial.kind() == WorthQueryOutputDemandDenialKind::SchedulingDeferred {
-                    return Ok(WorthQueryOutputSchedulingResult::Deferred);
-                }
-                return Err(denial);
-            }
+            Err(_) => return Ok(WorthQueryOutputSchedulingResult::Deferred),
         };
         use crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision as Decision;
         match decision {

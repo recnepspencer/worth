@@ -3,8 +3,7 @@ use super::WorthQueryPerformedRelationalProductChange;
 /// Delivery posture for a fresh World publication.
 ///
 /// Success consumes the performed-change authority. Every other posture
-/// returns that exact move-only authority so the caller can retain the
-/// publication even when delivery cannot continue.
+/// returns that exact move-only authority so the caller can retry it.
 #[derive(Debug)]
 pub enum WorthQueryPerformedRelationalProductChangeDeliveryOutcome {
     Success(worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt),
@@ -35,14 +34,7 @@ impl WorthQueryPerformedRelationalProductChangeDeliveryOutcome {
         matches!(self, Self::Success(_))
     }
 
-    pub const fn is_retryable(&self) -> bool {
-        matches!(
-            self,
-            Self::Deferred { .. } | Self::Stale { .. } | Self::RebindRequired { .. }
-        )
-    }
-
-    pub fn into_undelivered_change(self) -> Option<WorthQueryPerformedRelationalProductChange> {
+    pub fn into_retry_change(self) -> Option<WorthQueryPerformedRelationalProductChange> {
         match self {
             Self::Success(_) => None,
             Self::Denied { change, .. }

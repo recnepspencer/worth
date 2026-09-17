@@ -122,6 +122,10 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
 impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for AlternatePlanarOutput {
     type Binding = AlternatePlanarOutputBinding<Schema>;
 
+    fn input(&self) -> &Self {
+        self
+    }
+
     fn scope_binding(&self) -> PlanarMutationScope<Schema> {
         PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
     }
@@ -283,6 +287,7 @@ impl<Schema: TopologySchemaBinding>
 {
     type Configuration = ();
     type Installed = ();
+    type Operation = PublishAlternatePlanarOutput;
 
     const IDENTITY: &'static str = "worth.query.certification.alternate-planar-output-readiness.v1";
     const REQUIRED_PRODUCERS: &'static [&'static str] =

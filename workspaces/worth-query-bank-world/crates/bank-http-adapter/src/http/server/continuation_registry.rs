@@ -7,7 +7,7 @@ use bank_server::BankAccountActivityContinuation;
 use rand::distributions::{Alphanumeric, DistString};
 use rand::rngs::OsRng;
 
-use super::super::protocol::BankHttpAccountActivityPageOutcome;
+use super::super::protocol::{BankHttpAccountActivityPageOutcome, BankHttpDenial};
 
 const TOKEN_PREFIX: &str = "bank-continuation-v1_";
 
@@ -23,6 +23,8 @@ struct ContinuationRecord {
     account: AccountId,
     expires_at: Instant,
     state: ContinuationState,
+    initial_request_id: String,
+    initial_outcome: BankHttpAccountActivityPageOutcome,
     last_request_id: String,
     last_outcome: BankHttpAccountActivityPageOutcome,
 }
@@ -68,7 +70,7 @@ impl BankHttpContinuationRegistry {
         owner: &BankHttpAuthenticatedOwner,
         account: AccountId,
         request_id: &str,
-    ) -> Option<BankHttpAccountActivityPageOutcome> {
+    ) -> Option<(String, BankHttpAccountActivityPageOutcome)> {
         self.purge_expired();
         let key = InitialRequestIdentity {
             owner: owner.clone(),
@@ -78,7 +80,7 @@ impl BankHttpContinuationRegistry {
         let token = self.initial_requests.get(&key)?;
         self.records
             .get(token)
-            .map(|record| record.last_outcome.clone())
+            .map(|record| (token.clone(), record.initial_outcome.clone()))
     }
 
     pub(super) fn register_initial(
@@ -105,6 +107,8 @@ impl BankHttpContinuationRegistry {
                 account,
                 expires_at: Instant::now() + self.lifetime,
                 state,
+                initial_request_id: request_id.clone(),
+                initial_outcome: outcome.clone(),
                 last_request_id: request_id.clone(),
                 last_outcome: outcome.clone(),
             },
@@ -172,11 +176,26 @@ impl BankHttpContinuationRegistry {
         token: &str,
         request_id: String,
         outcome: BankHttpAccountActivityPageOutcome,
+        scrub_initial: bool,
     ) {
         if let Some(record) = self.records.get_mut(token) {
             record.state = ContinuationState::Terminal;
             record.last_request_id = request_id;
+            if let BankHttpAccountActivityPageOutcome::Denied { denial, .. } = &outcome {
+                if scrub_initial {
+                    record.initial_outcome = denied(record.initial_request_id.clone(), *denial);
+                }
+            }
             record.last_outcome = outcome;
+            record.expires_at = Instant::now() + self.lifetime;
+        }
+    }
+
+    pub(super) fn deny_protected_replay(&mut self, token: &str, denial: BankHttpDenial) {
+        if let Some(record) = self.records.get_mut(token) {
+            record.state = ContinuationState::Terminal;
+            record.initial_outcome = denied(record.initial_request_id.clone(), denial);
+            record.last_outcome = denied(record.last_request_id.clone(), denial);
             record.expires_at = Instant::now() + self.lifetime;
         }
     }
@@ -210,5 +229,12 @@ fn delivered(
         activity,
         continuation,
         publication,
+    }
+}
+
+fn denied(request_id: String, denial: BankHttpDenial) -> BankHttpAccountActivityPageOutcome {
+    BankHttpAccountActivityPageOutcome::Denied {
+        request_id: Some(request_id),
+        denial,
     }
 }

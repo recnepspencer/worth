@@ -1,6 +1,9 @@
 use super::*;
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PlanarOperation};
 use worth_query_decl::facade::application_operation::ApplicationCandidateRequirements;
+use worth_query_decl::facade::application_schema::{
+    OperationCreates, OperationLinks, OperationReads, OperationUnlinks, OperationWrites,
+};
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
@@ -8,13 +11,37 @@ use worth_query_host::facade::primary_graph::{
 };
 
 pub struct PlanarHandler;
-impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarMutationBinding<Schema>>
-    for PlanarHandler
+trait PlanarHandlerBinding<Schema: TopologySchemaBinding>:
+    worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+    Schema,
+    Input = PlanarMutation,
+    Decision = (),
+    Result = PlanarAdjustmentResult,
+    Denial = PlanarMutationDenial,
+    Output = PlanarOutputs,
+>
+{
+}
+
+impl<Schema: TopologySchemaBinding> PlanarHandlerBinding<Schema> for PlanarMutationBinding<Schema> {}
+impl<Schema: TopologySchemaBinding> PlanarHandlerBinding<Schema> for PlanarEditBinding<Schema> {}
+
+impl<Schema: TopologySchemaBinding, Binding: PlanarHandlerBinding<Schema>>
+    OperationHandler<Schema, Binding> for PlanarHandler
+where
+    Body: OperationReads<Binding::Operation> + OperationCreates<Binding::Operation>,
+    BodyKey: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
+    PositionX: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
+    PositionY: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
+    Length: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
+    PlanarSuccessor: OperationReads<Binding::Operation>
+        + OperationLinks<Binding::Operation>
+        + OperationUnlinks<Binding::Operation>,
 {
     fn decide(
         &self,
         input: &PlanarMutation,
-        reader: &mut DecisionReader<'_, '_, '_, Schema, PlanarMutationBinding<Schema>>,
+        reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<(), PlanarMutationDenial> {
         if let Err(error) = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
             return HandlerResult::ExecutionDenied(error);
@@ -170,7 +197,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarMutationBindi
         &self,
         input: &PlanarMutation,
         _: (),
-        writer: &mut CandidateWriter<'_, Schema, PlanarMutationBinding<Schema>>,
+        writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
         match author(input, writer) {
             Ok(changed_vertices) => {
@@ -180,10 +207,20 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarMutationBindi
         }
     }
 }
-fn author<Schema: TopologySchemaBinding>(
+fn author<Schema: TopologySchemaBinding, Binding: PlanarHandlerBinding<Schema>>(
     input: &PlanarMutation,
-    writer: &mut CandidateWriter<'_, Schema, PlanarMutationBinding<Schema>>,
-) -> Result<usize, HandlerExecutionDenial> {
+    writer: &mut CandidateWriter<'_, Schema, Binding>,
+) -> Result<usize, HandlerExecutionDenial>
+where
+    Body: OperationReads<Binding::Operation> + OperationCreates<Binding::Operation>,
+    BodyKey: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
+    PositionX: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
+    PositionY: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
+    Length: OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
+    PlanarSuccessor: OperationReads<Binding::Operation>
+        + OperationLinks<Binding::Operation>
+        + OperationUnlinks<Binding::Operation>,
+{
     let anchor = writer
         .resolve_entity(BodyKey::reference(), input.scope_key.clone())
         .map_err(HandlerExecutionDenial::new)?;
@@ -221,7 +258,7 @@ fn author<Schema: TopologySchemaBinding>(
                     )
                     .map_err(HandlerExecutionDenial::new)?;
                 let role = WorthQueryApplicationOutputRole::<
-                    PlanarMutationBinding<Schema>,
+                    Binding,
                     Body,
                     WorthQueryCreateOutput,
                 >::try_new(format!("created.{}", vertex.body_key))

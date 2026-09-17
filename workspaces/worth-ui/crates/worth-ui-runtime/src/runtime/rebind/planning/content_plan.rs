@@ -74,17 +74,25 @@ fn projected_query_content(
     super::UiRebindPlanningDenial,
 > {
     Ok(
-        match (query.scalar_projection(), query.collection_projection()) {
-            (Some(scalar), None) => Some((
+        match (
+            query.scalar_projection(),
+            query.application_scalar_projection(),
+            query.collection_projection(),
+        ) {
+            (Some(scalar), None, None) => Some((
                 scalar.core().projection_identity(),
                 UiProjectedSemanticContent::Scalar(project_scalar(scalar)),
             )),
-            (None, Some(collection)) => Some((
+            (None, Some(scalar), None) => Some((
+                scalar.projection_identity(),
+                UiProjectedSemanticContent::Scalar(project_application_scalar(scalar)),
+            )),
+            (None, None, Some(collection)) => Some((
                 collection.core().projection_identity(),
                 UiProjectedSemanticContent::Collection(collection::project_collection(collection)?),
             )),
-            (None, None) => None,
-            (Some(_), Some(_)) => unreachable!("a Query projection fact has one sealed shape"),
+            (None, None, None) => None,
+            _ => unreachable!("a Query projection fact has one sealed shape"),
         },
     )
 }
@@ -181,19 +189,28 @@ fn retain_projection_inputs(
         let Some(query) = fact.query() else {
             continue;
         };
-        let input = match (query.scalar_projection(), query.collection_projection()) {
-            (Some(scalar), None) => {
+        let input = match (
+            query.scalar_projection(),
+            query.application_scalar_projection(),
+            query.collection_projection(),
+        ) {
+            (Some(scalar), None, None) => {
                 projection_input(candidate, scalar.core().projection_identity(), |slot| {
                     scalar.intent_input_transition(slot)
                 })?
             }
-            (None, Some(collection)) => {
+            (None, Some(scalar), None) => {
+                projection_input(candidate, scalar.projection_identity(), |slot| {
+                    scalar.intent_input_transition(slot)
+                })?
+            }
+            (None, None, Some(collection)) => {
                 projection_input(candidate, collection.core().projection_identity(), |slot| {
                     collection.intent_input_transition(slot)
                 })?
             }
-            (None, None) => continue,
-            (Some(_), Some(_)) => unreachable!("a Query projection fact has one sealed shape"),
+            (None, None, None) => continue,
+            _ => unreachable!("a Query projection fact has one sealed shape"),
         };
         let projection = input.revision().projection_identity().clone();
         content
@@ -264,6 +281,27 @@ fn project_scalar(
             crate::mounting::UiMountedSemanticTextValueDirective::Preserve,
             stopped_label(receipt.kind()),
         ),
+    }
+}
+
+fn project_application_scalar(
+    fact: &worth_ui_query_binding::UiApplicationScalarProjectionFactReceipt,
+) -> (
+    crate::mounting::UiMountedSemanticTextValueDirective,
+    Arc<str>,
+) {
+    if fact.value().revision == 0 {
+        (
+            crate::mounting::UiMountedSemanticTextValueDirective::Clear,
+            Arc::from("PENDING"),
+        )
+    } else {
+        (
+            crate::mounting::UiMountedSemanticTextValueDirective::Replace(Arc::from(
+                fact.value().status.as_str(),
+            )),
+            Arc::from("CURRENT"),
+        )
     }
 }
 

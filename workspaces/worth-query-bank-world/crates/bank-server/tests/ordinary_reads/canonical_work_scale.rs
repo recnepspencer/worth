@@ -3,7 +3,8 @@ use std::time::Instant;
 use bank_domain::model::{BusinessId, Money};
 use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::InitiateBusinessPayment;
-use bank_server::{mutations, queries, BankMutationControls, BankMutationStatus, BankReadControls};
+use bank_server::{mutations, queries, BankMutationControls, BankReadControls};
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 use super::canonical_scale_fixture::canonical_scale_world;
 use super::fixture::{
@@ -80,7 +81,10 @@ fn guarded_candidate_fanout_is_visible_only_as_closed_public_work() {
             ))
             .execute();
         assert!(
-            matches!(outcome.status(), BankMutationStatus::Committed(_)),
+            matches!(
+                outcome.execution(),
+                Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+            ),
             "scale mutation {ordinal} must commit: {outcome:?}"
         );
     }

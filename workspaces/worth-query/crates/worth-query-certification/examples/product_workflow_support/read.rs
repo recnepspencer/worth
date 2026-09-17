@@ -73,6 +73,19 @@ pub fn read_selected<'runtime>(
     >,
     request: &'runtime WorthQueryRequestScope,
 ) -> String {
+    read_row(world, selected, principal, request).input
+}
+
+pub fn read_row<'runtime>(
+    world: &'runtime ExampleApplication,
+    selected: primary_graph::WorthQuerySelectedProductOperation<'runtime, TemporalHostSchema>,
+    principal: &'runtime primary_graph::WorthQueryAuthenticatedPrincipal<
+        TemporalHostSchema,
+        Principal,
+        u64,
+    >,
+    request: &'runtime WorthQueryRequestScope,
+) -> IntentQueryResult {
     let scope = selected
         .resolve_entity(
             IntentIdentityField::reference(),
@@ -99,7 +112,7 @@ pub fn read_selected<'runtime>(
         .runtime
         .execute_application_query_one_shot(admitted)
         .expect("the exact product read must execute");
-    result.rows()[0].input.clone()
+    result.rows()[0].clone()
 }
 
 pub fn product_identity(

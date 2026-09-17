@@ -28,7 +28,14 @@ worth_query_application_contribution! {
                 .application_query(crate::queries::estate_legal_compliance_definition())
                 .application_query_binding::<crate::queries::EstateLegalComplianceQueryBinding>()
                 .application_query(crate::queries::estate_mandatory_review_definition())
-                .application_query_binding::<crate::queries::EstateMandatoryReviewQueryBinding>();
+                .application_query_binding::<crate::queries::EstateMandatoryReviewQueryBinding>()
+                .application_mutation_binding::<crate::schema::NotifyEstateDeathMutationBinding>()
+                .application_mutation_binding::<crate::schema::RetransmitEstateDeathNoticeMutationBinding>()
+                .application_mutation_binding::<crate::schema::FreezeEstateAccountMutationBinding>()
+                .application_mutation_binding::<crate::schema::OpenEstateCaseMutationBinding>()
+                .application_mutation_binding::<crate::schema::RecognizeEstateExecutorMutationBinding>()
+                .application_mutation_binding::<crate::schema::ReleaseEstateMutationBinding>()
+                .application_mutation_binding::<crate::schema::DisburseEstateMutationBinding>();
             install_estate_ability_policies(schema)
         }
     }

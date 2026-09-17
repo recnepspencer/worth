@@ -29,3 +29,5 @@ mod platform_pulse_journey;
 mod platform_pulse_lifecycle;
 #[cfg(target_os = "windows")]
 mod platform_pulse_portal;
+#[cfg(target_os = "windows")]
+mod query_application_launch;

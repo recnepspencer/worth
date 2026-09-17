@@ -1,125 +1,63 @@
 use std::sync::Arc;
 
-use worth_query_host::facade::{admission, declaration, domain, primary_graph, runtime};
-
-use super::adapters::{
-    ClockController, ClockSource, ExampleClock, IdentityAdapter, IntentProjector, Invoker,
-    Predicate, PrincipalSource,
+use worth_query_host::facade::{
+    admission, application_installation, declaration, domain, primary_graph, runtime,
 };
-use super::contract::{self, TemporalReadyNode};
+
+use super::adapters::{ClockController, ClockSource, IdentityAdapter};
+use super::conditional_contribution::{
+    InstalledTemporalConditional, TemporalConditional, TemporalContributionConfiguration,
+};
+use super::program::{self, TemporalExampleProgram};
 use super::schema::*;
 
 pub struct ExampleApplication {
-    pub runtime: primary_graph::WorthQueryPrimaryGraphApplicationRuntime<TemporalHostSchema>,
-    pub clock: primary_graph::WorthQueryConditionalClockHandle<
+    pub runtime: application_installation::WorthQueryProgramApplicationRuntime<
         TemporalHostSchema,
-        TemporalReadyNode,
-        ExampleClock,
+        TemporalExampleProgram,
     >,
+    pub conditional: Arc<InstalledTemporalConditional>,
     pub clock_control: ClockController,
-    pub invariant:
-        Arc<primary_graph::WorthQueryApplicationInvariantProjectionAuthority<TemporalHostSchema>>,
 }
 
 impl ExampleApplication {
     pub fn publish(gate: &str) -> Self {
         let declaration = TemporalHostSchema::declaration().expect("the example schema is valid");
-        let conditional_binding = contract::conditional_binding();
-        let package = domain::WorthQueryPortableDomainPackage::new(
-            domain::WorthQueryPortableDomainIdentity::new("temporal_host_courtroom", 1, 0),
-        )
-        .application_schema(declaration.clone())
-        .domain_operation(contract::operation_definition().into_portable())
-        .conditional_application_operation(conditional_binding.clone())
-        .validate()
-        .expect("the example package is valid");
-        let admitted = domain::WorthQueryInstallationAdmissionProfile::new("host", "example")
-            .admit(package)
-            .expect("the example package is admissible");
-        let installation = runtime::WorthQueryExecutionRuntimeInstaller::new()
-            .install(
-                domain::WorthQueryInstallationGeneration::initial(),
-                [admitted],
-            )
-            .expect("the example package must install");
-        let (runtime, authority) = installation.into_parts();
-        let schema = runtime
-            .installed_packages()
-            .bind_application_schema(declaration)
-            .expect("the installed schema must bind");
-        let principal_binding = schema
-            .principal_binding(TemporalPrincipalBinding::reference())
-            .expect("the principal binding must install");
-        let authentication = admit_identity_adapter(&schema);
-        let operation = schema
-            .installed_operation(ExecuteTemporal::reference())
-            .expect("the temporal operation must install");
-        let query = schema
-            .certification_query(TemporalIntentQuery::reference())
-            .expect("the temporal query must install");
         let (clock_source, clock_control) = ClockSource::due();
+        let runtime = application_installation::in_memory_program(
+            program::validated_program(),
+            declaration,
+            (TemporalContributionConfiguration { clock_source },),
+            example_limits(),
+            |graph, installed| {
+                let principal_binding = installed
+                    .principal_binding(TemporalPrincipalBinding::reference())
+                    .expect("the temporal principal binding must install");
+                seed_graph(graph, &principal_binding, gate);
+                Ok(())
+            },
+        )
+        .expect("the validated temporal program must install");
         let conditional = runtime
-            .installed_packages()
-            .bind_conditional_application_operation(operation, &conditional_binding)
-            .expect("the conditional operation must bind")
-            .bind_node(TemporalReadyNode::reference())
-            .expect("the conditional node must bind")
-            .bind_host_predicate_provider(Predicate)
-            .expect("the predicate must bind")
-            .bind_named_clock::<ExampleClock, _>(clock_source)
-            .expect("the clock must bind")
-            .bind_temporal_intent_projection(
-                query,
-                declaration::application_query::ApplicationQueryParameterSet::new(),
-                IntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8)
-                    .expect("the temporal bounds are valid"),
-            )
-            .expect("the temporal projection must bind");
-        let mut graph = authority
-            .prepare_primary_graph(&runtime, &schema, product_world_resources())
-            .expect("the production graph and World owners must prepare");
-        seed_graph(&mut graph, &principal_binding, gate);
-        let invariant = Arc::new(graph.retain_invariant_projection_authority());
-        let execution = primary_graph::WorthQueryTemporalOperationExecution::with_authorization(
-            Arc::clone(&invariant),
-            Invoker,
-            IntentIdentityField::reference(),
-            IntentRevisionField::reference(),
-            IntentLifecycleField::reference(),
-            "active".to_owned(),
-            "completed".to_owned(),
-            primary_graph::WorthQueryPublicTemporalOperationAuthorization,
-        )
-        .expect("the temporal invocation must bind");
-        let reconstruction = primary_graph::WorthQueryTemporalReconstructionAccess::new(
-            principal_binding,
-            PrincipalSource::new(authentication),
-            IntentIdentityField::reference(),
-            "intent-1".to_owned(),
-        )
-        .expect("the temporal reconstruction source must bind");
-        let mut conditional_installation = graph
-            .conditional_application_runtime_installation(
-                runtime,
-                authority,
-                schema,
-                primary_graph::SignalConditionalEvaluationBudget::development(),
-            )
-            .expect("the conditional runtime must prepare");
-        let clock = conditional_installation
-            .bind_temporal_operation(conditional, execution, reconstruction)
-            .expect("the temporal operation must bind to its clock");
-        let runtime = conditional_installation
-            .publish()
-            .expect("the application runtime must publish");
+            .conditional::<TemporalConditional>()
+            .expect("the declared temporal conditional must install");
         Self {
             runtime,
-            clock,
+            conditional,
             clock_control,
-            invariant,
         }
     }
+}
+
+pub(crate) fn example_limits() -> application_installation::WorthQueryInMemoryApplicationLimits {
+    application_installation::WorthQueryInMemoryApplicationLimits::new(
+        product_world_resources(),
+        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)
+            .expect("valid candidate limits"),
+        runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
+            .expect("valid query limits"),
+        primary_graph::SignalConditionalEvaluationBudget::development(),
+    )
 }
 
 pub fn admit_identity_adapter(
@@ -141,7 +79,7 @@ pub fn admit_identity_adapter(
     .expect("the example identity adapter must be admitted")
 }
 
-fn seed_graph(
+pub(crate) fn seed_graph(
     graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<TemporalHostSchema>,
     principal_binding: &domain::WorthQueryInstalledPrincipalBinding<
         TemporalHostSchema,
@@ -185,7 +123,7 @@ fn seed_graph(
         .expect("the intent must seed");
 }
 
-fn product_world_resources() -> runtime::WorthQueryProductWorldResources {
+pub(crate) fn product_world_resources() -> runtime::WorthQueryProductWorldResources {
     runtime::WorthQueryProductWorldResources::install(
         runtime::RuntimeWorldBudgetInstallation {
             branches: runtime::RuntimeWorldBranchBudgetInstallation {

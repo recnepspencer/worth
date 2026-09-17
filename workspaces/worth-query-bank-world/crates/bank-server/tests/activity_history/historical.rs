@@ -1,13 +1,15 @@
 use std::num::NonZeroUsize;
 
-use bank_domain::model::Money;
+use bank_domain::model::{CustomerRole, Money};
 use bank_domain::proposals::BankIdempotencyKey;
-use bank_domain::schema::Deposit;
+use bank_domain::schema::{Deposit, GrantAccountAuthorization, RevokeAccountAuthorization};
 use bank_server::{
-    mutations, BankApplicationQueryDenial, BankMutationControls, BankMutationStatus,
+    mutations, BankApplicationQueryAdmissionDenialKind, BankApplicationQueryDenial,
+    BankMutationControls,
 };
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
-use super::fixture::{ordinary_read_world, OrdinaryReadFixture, OWNER, TELLER};
+use super::fixture::{ordinary_read_world, OrdinaryReadFixture, OWNER, STRANGER, TELLER, VIEWER};
 use super::support::request_scope;
 
 #[test]
@@ -84,7 +86,7 @@ fn commit_deposit(
     teller: &bank_server::BankAuthenticatedPrincipal,
     minor_units: i64,
     idempotency_key: &str,
-) -> bank_server::BankCommitReceipt {
+) -> worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt {
     let outcome = fixture
         .world
         .runtime
@@ -99,8 +101,105 @@ fn commit_deposit(
             BankIdempotencyKey::new(idempotency_key).unwrap(),
         ))
         .execute();
-    match outcome.into_status() {
-        BankMutationStatus::Committed(receipt) => receipt,
-        status => panic!("deposit must commit, got {status:?}"),
-    }
+    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) = outcome else {
+        panic!("deposit must commit, got {outcome:?}");
+    };
+    receipt
+}
+
+#[test]
+fn historical_read_rechecks_current_account_authorization() {
+    let fixture = ordinary_read_world("historical-current-authorization", 0);
+    let owner = fixture.authenticate(OWNER);
+    let viewer = fixture.authenticate(VIEWER);
+    let teller = fixture.authenticate(TELLER);
+    let commit = commit_deposit(&fixture, &teller, 1, "historical-before-revocation");
+    let read = |request: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope| {
+        fixture
+            .world
+            .runtime
+            .account_activity(fixture.personal_account)
+            .as_principal(&viewer)
+            .historical(
+                &commit,
+                NonZeroUsize::new(16).unwrap(),
+                NonZeroUsize::new(2_048).unwrap(),
+                request,
+            )
+    };
+    assert!(read(&request_scope()).is_ok());
+
+    let authorization = super::authorized_user_id(&fixture, &owner, VIEWER);
+    let revoked = fixture
+        .world
+        .runtime
+        .mutate(mutations::revoke_account_access(
+            RevokeAccountAuthorization {
+                account: fixture.personal_account,
+                authorization,
+            },
+        ))
+        .as_principal(&owner)
+        .controls(BankMutationControls::new(
+            request_scope(),
+            BankIdempotencyKey::new("historical-revoke-viewer").unwrap(),
+        ))
+        .execute();
+    assert!(matches!(
+        revoked,
+        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+    ));
+    let denied = read(&request_scope());
+    assert!(matches!(
+        denied,
+        Err(BankApplicationQueryDenial::Admission(denial))
+            if matches!(
+                denial.kind(),
+                BankApplicationQueryAdmissionDenialKind::Authorization(_)
+            )
+    ));
+}
+
+#[test]
+fn newly_granted_reader_can_read_an_earlier_commit() {
+    let fixture = ordinary_read_world("historical-new-viewer", 0);
+    let owner = fixture.authenticate(OWNER);
+    let stranger = fixture.authenticate(STRANGER);
+    let teller = fixture.authenticate(TELLER);
+    let commit = commit_deposit(&fixture, &teller, 1, "historical-before-grant");
+
+    let granted = fixture
+        .world
+        .runtime
+        .mutate(mutations::grant_account_access(GrantAccountAuthorization {
+            account: fixture.personal_account,
+            principal: super::fixture::principal_id(STRANGER),
+            role: CustomerRole::Viewer,
+        }))
+        .as_principal(&owner)
+        .controls(BankMutationControls::new(
+            request_scope(),
+            BankIdempotencyKey::new("historical-grant-new-viewer").unwrap(),
+        ))
+        .execute();
+    assert!(matches!(
+        granted,
+        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+    ));
+
+    let request = request_scope();
+    let historical = fixture
+        .world
+        .runtime
+        .account_activity(fixture.personal_account)
+        .as_principal(&stranger)
+        .historical(
+            &commit,
+            NonZeroUsize::new(16).unwrap(),
+            NonZeroUsize::new(2_048).unwrap(),
+            &request,
+        )
+        .expect("current authorization should admit the retained rows");
+    assert_eq!(historical.rows()[0].entries().len(), 3);
+    assert_eq!(historical.rows()[0].entries()[2].amount().minor_units(), 1);
 }

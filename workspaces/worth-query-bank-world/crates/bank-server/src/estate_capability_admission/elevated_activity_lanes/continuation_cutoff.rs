@@ -56,3 +56,57 @@ fn exact_support_loss_after_continuation_readmission_denies_before_payload() {
     assert_exact_revoked_alternate_active(&world);
     assert_resources_released(&world);
 }
+
+#[test]
+fn foreign_approval_cannot_open_or_resume_activity_pages() {
+    let world = activity_world("estate-emergency-activity-page-foreign-approval");
+    let foreign = activity_world("estate-emergency-activity-page-other-approval");
+    let denied_page = world
+        .fixture
+        .runtime
+        .query(activity_request())
+        .as_principal(&world.requester)
+        .controls(controls(1))
+        .page_with_approved_elevation(&foreign.approved);
+    let Err(BankApplicationQueryDenial::CapabilityAdmission(denial)) = denied_page else {
+        panic!("foreign approval must not open an activity page");
+    };
+    assert_eq!(
+        denial.kind(),
+        crate::BankAuthorizationDenialKind::ElevationApprovalRejected
+    );
+
+    let first = world
+        .fixture
+        .runtime
+        .query(activity_request())
+        .as_principal(&world.requester)
+        .controls(controls(1))
+        .page_with_approved_elevation(&world.approved)
+        .expect("own approval opens the first page");
+    let (_, continuation) = first.into_parts();
+    let continuation = continuation.expect("the second access should require another page");
+    let request = super::super::fixture::request_scope();
+    let denied_resume = world
+        .fixture
+        .runtime
+        .query(activity_request())
+        .as_principal(&world.requester)
+        .controls(controls(1))
+        .resume_with_approved_elevation(
+            &foreign.approved,
+            continuation,
+            WorthQueryApplicationQueryResumeControls::new(
+                std::num::NonZeroUsize::new(1).unwrap(),
+                std::num::NonZeroUsize::new(20_000).unwrap(),
+                &request,
+            ),
+        );
+    let Err(BankApplicationQueryDenial::CapabilityAdmission(denial)) = denied_resume else {
+        panic!("foreign approval must not resume an activity page");
+    };
+    assert_eq!(
+        denial.kind(),
+        crate::BankAuthorizationDenialKind::ElevationApprovalRejected
+    );
+}

@@ -63,6 +63,9 @@ impl UiQueryChangedFact {
             worth_ui_query_binding::UiProjectionObservation::Scalar(_) => {
                 UiQueryChangedFactKind::ScalarProjection
             }
+            worth_ui_query_binding::UiProjectionObservation::ApplicationScalar(_) => {
+                UiQueryChangedFactKind::ScalarProjection
+            }
             worth_ui_query_binding::UiProjectionObservation::Collection(observation) => {
                 UiQueryChangedFactKind::CollectionProjection {
                     changed_rows: observation.fact().changes().len(),
@@ -104,8 +107,22 @@ impl UiQueryChangedFact {
             ) => Some(observation.fact()),
             UiQueryChangedFactPayload::OperationLive(_)
             | UiQueryChangedFactPayload::Projection(
+                worth_ui_query_binding::UiProjectionObservation::ApplicationScalar(_),
+            )
+            | UiQueryChangedFactPayload::Projection(
                 worth_ui_query_binding::UiProjectionObservation::Collection(_),
             ) => None,
+        }
+    }
+
+    pub fn application_scalar_projection(
+        &self,
+    ) -> Option<&worth_ui_query_binding::UiApplicationScalarProjectionFactReceipt> {
+        match &self.payload {
+            UiQueryChangedFactPayload::Projection(
+                worth_ui_query_binding::UiProjectionObservation::ApplicationScalar(observation),
+            ) => Some(observation.fact()),
+            _ => None,
         }
     }
 
@@ -118,8 +135,25 @@ impl UiQueryChangedFact {
             ) => Some(observation.fact()),
             UiQueryChangedFactPayload::OperationLive(_)
             | UiQueryChangedFactPayload::Projection(
+                worth_ui_query_binding::UiProjectionObservation::ApplicationScalar(_),
+            )
+            | UiQueryChangedFactPayload::Projection(
                 worth_ui_query_binding::UiProjectionObservation::Scalar(_),
             ) => None,
+        }
+    }
+
+    pub(crate) fn into_application_scalar_projection(
+        self,
+    ) -> Result<worth_ui_query_binding::UiApplicationScalarProjectionFactReceipt, Box<Self>> {
+        match self.payload {
+            UiQueryChangedFactPayload::Projection(
+                worth_ui_query_binding::UiProjectionObservation::ApplicationScalar(observation),
+            ) => Ok(observation.into_fact()),
+            payload => Err(Box::new(Self {
+                kind: self.kind,
+                payload,
+            })),
         }
     }
 

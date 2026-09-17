@@ -14,11 +14,13 @@ use worth_query_host::facade::{
     },
 };
 use worth_query_topology_entry::{
-    Body, PlanarMutationBinding, PlanarQuery, PlanarRead, VertexReplacement,
-    VertexReplacementBinding,
+    Body, PlanarEditBinding, PlanarQuery, PlanarRead, VertexReplacement, VertexReplacementBinding,
 };
 
-use super::{adjust, length, mutate, read_y, require_planar_violation, source_version, Request};
+use super::{
+    adjust, length, mutate, read_y, require_planar_violation, source_version, ProgramApplication,
+    Request,
+};
 use crate::ConsumerSchema;
 
 mod source_aba;
@@ -28,13 +30,13 @@ use source_aba::{
     require_nested_aspect_aba_denial,
 };
 
-pub(super) fn run(request: &Request<'_>) {
-    let anchor = preserved_identity(request, "anchor-a", 2, 400);
-    let retired = preserved_identity(request, "anchor-b", 1, 401);
+pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
+    let anchor = preserved_identity(request, application, "anchor-a", 2, 400);
+    let retired = preserved_identity(request, application, "anchor-b", 1, 401);
     let input = replacement("anchor-b", "replacement-b", 11, 1);
     let source = observed_source(request, "anchor-a");
-    require_missing_source(request, input.clone(), 405);
-    let sibling = mutate(request, adjust("sibling-a", 22, 4096), 406);
+    require_missing_source(request, application, input.clone(), 405);
+    let sibling = mutate(request, application, adjust("sibling-a", 22, 4096), 406);
     assert!(matches!(
         sibling,
         WorthQueryApplicationMutationOutcome::Committed { .. }
@@ -43,7 +45,7 @@ pub(super) fn run(request: &Request<'_>) {
         .mutate(input.clone())
         .expect_source(source.clone())
         .idempotency(&402_u64)
-        .execute()
+        .execute_in_program(application)
         .unwrap();
     let WorthQueryApplicationMutationOutcome::Committed {
         mut receipt,
@@ -103,7 +105,7 @@ pub(super) fn run(request: &Request<'_>) {
         .mutate(input.clone())
         .expect_source(source)
         .idempotency(&402_u64)
-        .execute()
+        .execute_in_program(application)
         .unwrap();
     let WorthQueryApplicationMutationOutcome::AlreadyCommitted(mut recovered) = recovered else {
         panic!("retry must recover the original replacement publication")
@@ -117,7 +119,7 @@ pub(super) fn run(request: &Request<'_>) {
         .mutate(input)
         .expect_source(observed_source(request, "anchor-a"))
         .idempotency(&402_u64)
-        .execute()
+        .execute_in_program(application)
         .unwrap();
     assert!(matches!(
         drift,
@@ -130,7 +132,7 @@ pub(super) fn run(request: &Request<'_>) {
     // A later independent command resolves the replacement key through its own
     // selected decision read and preserves the actual owner-issued identity.
     assert_eq!(
-        preserved_identity(request, "replacement-b", 1, 403),
+        preserved_identity(request, application, "replacement-b", 1, 403),
         created
     );
 
@@ -139,7 +141,7 @@ pub(super) fn run(request: &Request<'_>) {
         .mutate(replacement("replacement-b", "rejected-replacement", 1, 12))
         .expect_source(observed_source(request, "anchor-a"))
         .idempotency(&404_u64)
-        .execute()
+        .execute_in_program(application)
         .unwrap();
     require_planar_violation(malformed);
     assert_eq!(source_version(request), before);
@@ -149,14 +151,15 @@ pub(super) fn run(request: &Request<'_>) {
     assert_eq!(read_y(request, "sibling-a"), 22);
     require_absent(request, "rejected-replacement");
 
-    require_aspect_aba_denial(request);
-    require_child_aspect_aba_denial(request);
-    require_nested_aspect_aba_denial(request);
-    require_adjacency_aba_denial(request);
+    require_aspect_aba_denial(request, application);
+    require_child_aspect_aba_denial(request, application);
+    require_nested_aspect_aba_denial(request, application);
+    require_adjacency_aba_denial(request, application);
 }
 
 pub(super) fn require_foreign_source(
     request: &Request<'_>,
+    application: &ProgramApplication,
     source: worth_query_host::facade::primary_graph::WorthQueryObservedSource<PlanarQuery>,
 ) {
     let denial = request
@@ -168,7 +171,7 @@ pub(super) fn require_foreign_source(
         ))
         .expect_source(source)
         .idempotency(&412_u64)
-        .execute()
+        .execute_in_program(application)
         .expect_err("an observation from another application cannot authorize this mutation");
     let WorthQueryApplicationRequestMutationDenial::SourceExpectation(denial) = denial else {
         panic!("foreign source must retain its exact denial family: {denial:?}")
@@ -180,11 +183,16 @@ pub(super) fn require_foreign_source(
     require_absent(request, "foreign-source-must-not-publish");
 }
 
-fn require_missing_source(request: &Request<'_>, input: VertexReplacement, command: u64) {
+fn require_missing_source(
+    request: &Request<'_>,
+    application: &ProgramApplication,
+    input: VertexReplacement,
+    command: u64,
+) {
     let denial = request
         .mutate(input)
         .idempotency(&command)
-        .execute()
+        .execute_in_program(application)
         .expect_err("a source-bound mutation cannot execute without its observation");
     let WorthQueryApplicationRequestMutationDenial::SourceExpectation(denial) = denial else {
         panic!("missing source must retain its exact denial family: {denial:?}")
@@ -234,17 +242,23 @@ pub(super) fn observed_source(
         .clone()
 }
 
-fn preserved_identity(request: &Request<'_>, key: &str, y: u64, command: u64) -> EntityId {
+fn preserved_identity(
+    request: &Request<'_>,
+    application: &ProgramApplication,
+    key: &str,
+    y: u64,
+    command: u64,
+) -> EntityId {
     let mut input = adjust(key, y, 4096);
     input.scope_key = key.to_owned();
-    let outcome = mutate(request, input, command);
+    let outcome = mutate(request, application, input, command);
     let WorthQueryApplicationMutationOutcome::Committed { receipt, .. } = outcome else {
         panic!("the identity observation must come from a real selected command: {outcome:?}")
     };
     receipt
         .output_correspondence()
         .entity(WorthQueryApplicationOutputRole::<
-            PlanarMutationBinding<ConsumerSchema>,
+            PlanarEditBinding<ConsumerSchema>,
             Body,
             WorthQueryPreserveOutput,
         >::from_static("anchor"))

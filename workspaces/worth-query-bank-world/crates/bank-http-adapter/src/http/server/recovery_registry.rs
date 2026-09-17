@@ -2,7 +2,10 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use bank_domain::estate::EstateAction;
-use bank_server::BankCommitRecoveryHandle;
+use bank_server::{
+    BankCommitRecoveryHandle, BankIdentityRuntime, BankRecoveryExpiryEvaluation,
+    BankRecoverySafeRetryDenial, BankRecoverySafeRetryReceipt,
+};
 use rand::distributions::{Alphanumeric, DistString};
 use rand::rngs::OsRng;
 
@@ -11,8 +14,8 @@ use super::authenticated_owner::BankHttpAuthenticatedOwner;
 mod commit;
 mod state;
 
-pub(super) use state::{BankHttpCommitReplay, BankHttpRecoveryRegistration};
-use state::{CommitReplayKey, RecoveryRecord};
+pub(super) use state::{BankHttpCommitReplay, BankHttpRecoveryRegistration, BankHttpRecoveryRetry};
+use state::{CommitReplayKey, RecoveryRecord, RecoveryRetryResult};
 
 const TOKEN_PREFIX: &str = "bank-recovery-v1_";
 
@@ -59,13 +62,58 @@ impl BankHttpRecoveryRegistry {
         owner: &BankHttpAuthenticatedOwner,
         token: &str,
     ) -> Option<BankHttpRecoveryInspection<'_>> {
-        self.purge_expired();
         let record = self.records.get(token)?;
         (&record.owner == owner).then_some(())?;
         Some(BankHttpRecoveryInspection {
-            handle: &record.handle,
+            handle: record.handle.as_ref()?,
             action: record.action,
         })
+    }
+
+    pub(super) fn retry(
+        &mut self,
+        owner: &BankHttpAuthenticatedOwner,
+        token: &str,
+        attempt: impl FnOnce(
+            BankCommitRecoveryHandle,
+            EstateAction,
+        )
+            -> Result<BankRecoverySafeRetryReceipt, BankRecoverySafeRetryDenial>,
+    ) -> BankHttpRecoveryRetry {
+        let Some(record) = self
+            .records
+            .get_mut(token)
+            .filter(|record| &record.owner == owner)
+        else {
+            return BankHttpRecoveryRetry::Missing;
+        };
+        if let Some(retried) = record.retried {
+            return BankHttpRecoveryRetry::Applied {
+                result: retried,
+                replay: true,
+            };
+        }
+        let Some(handle) = record.handle.take() else {
+            return BankHttpRecoveryRetry::Missing;
+        };
+        match attempt(handle, record.action) {
+            Ok(receipt) => {
+                let retried = RecoveryRetryResult {
+                    external_completion: receipt.is_external_completion(),
+                    fresh_attempt: receipt.has_fresh_attempt(),
+                };
+                record.retried = Some(retried);
+                BankHttpRecoveryRetry::Applied {
+                    result: retried,
+                    replay: false,
+                }
+            }
+            Err(denied) => {
+                let (denial, handle) = denied.into_parts();
+                record.handle = handle;
+                BankHttpRecoveryRetry::Denied(denial)
+            }
+        }
     }
 
     fn new_token(&self) -> String {
@@ -80,9 +128,27 @@ impl BankHttpRecoveryRegistry {
         }
     }
 
-    fn purge_expired(&mut self) {
+    pub(super) fn purge_expired(&mut self, runtime: &BankIdentityRuntime) {
         let now = Instant::now();
-        self.records.retain(|_, record| record.expires_at > now);
+        self.records.retain(|_, record| {
+            if record.expires_at > now {
+                return true;
+            }
+            let Some(handle) = record.handle.as_ref() else {
+                return true;
+            };
+            match runtime.evaluate_commit_recovery_expiry(handle) {
+                Ok(BankRecoveryExpiryEvaluation::Expired(decision)) => {
+                    let handle = record
+                        .handle
+                        .take()
+                        .expect("evaluated live recovery handle");
+                    let _ = runtime.expire_commit_recovery(handle, decision);
+                    false
+                }
+                Ok(BankRecoveryExpiryEvaluation::Current) | Err(_) => true,
+            }
+        });
         self.replay_tokens
             .retain(|_, token| self.records.contains_key(token));
     }

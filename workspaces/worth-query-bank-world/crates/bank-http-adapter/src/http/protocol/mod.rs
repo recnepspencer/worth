@@ -33,7 +33,7 @@ pub use elevation::{
 pub use mutation::{
     BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpMutationControls,
     BankHttpMutationFailureKind, BankHttpMutationOperation, BankHttpMutationOutcome,
-    BankHttpMutationRequest,
+    BankHttpMutationRequest, BankHttpProviderRecoveryKind,
 };
 pub use query_publication::{
     BankHttpQueryBasis, BankHttpQueryBasisPosture, BankHttpQueryCapabilityPurpose,
@@ -43,5 +43,6 @@ pub use query_publication::{
 pub use recovery::{
     BankHttpEstateNotificationOutcome, BankHttpEstateNotificationRequest,
     BankHttpRecoveryInspectionOutcome, BankHttpRecoveryPosture, BankHttpRecoveryRequest,
+    BankHttpRecoveryRetryDisposition, BankHttpRecoverySafeRetryOutcome, BankHttpRecoveryStatus,
     BankHttpRecoveryWork,
 };

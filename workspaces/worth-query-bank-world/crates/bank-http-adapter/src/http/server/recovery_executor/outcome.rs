@@ -1,10 +1,29 @@
-use bank_server::{BankMutationCommitOutcome, BankRecoveryPosture};
+use bank_server::{
+    BankCommitReceipt, BankIdentityRuntime, BankMutationCommitOutcome, BankRecoveryClaimStatus,
+    BankRecoveryDenial, BankRecoveryPosture,
+};
 
 use super::super::super::protocol::{
     BankHttpCommitDescription, BankHttpDenial, BankHttpDenialKind,
     BankHttpEstateDisbursementOutcome, BankHttpEstateNotificationOutcome, BankHttpNextAction,
-    BankHttpRecoveryInspectionOutcome, BankHttpRecoveryPosture,
+    BankHttpRecoveryInspectionOutcome, BankHttpRecoveryPosture, BankHttpRecoverySafeRetryOutcome,
+    BankHttpRecoveryStatus,
 };
+
+pub(super) fn omitted_recovery_status(
+    runtime: &BankIdentityRuntime,
+    receipt: &BankCommitReceipt,
+) -> Result<BankHttpRecoveryStatus, BankRecoveryDenial> {
+    Ok(match runtime.commit_recovery_claim_status(receipt)? {
+        BankRecoveryClaimStatus::Completed => BankHttpRecoveryStatus::Completed,
+        BankRecoveryClaimStatus::Unclaimed
+        | BankRecoveryClaimStatus::Live
+        | BankRecoveryClaimStatus::Consumed
+        | BankRecoveryClaimStatus::Expired
+        | BankRecoveryClaimStatus::Disposed
+        | BankRecoveryClaimStatus::ForceTerminated => BankHttpRecoveryStatus::OperatorRequired,
+    })
+}
 
 pub(super) fn commit_description(
     receipt: &bank_server::BankCommitReceipt,
@@ -15,6 +34,7 @@ pub(super) fn commit_description(
         expected_version_count: receipt.expected_version_count(),
         expected_fact_count: receipt.expected_fact_count(),
         provider_work_units: None,
+        invariant_work_units: None,
     }
 }
 
@@ -30,8 +50,11 @@ pub(super) const fn recovery_posture(posture: BankRecoveryPosture) -> BankHttpRe
 pub(super) fn commit_denial(outcome: BankMutationCommitOutcome) -> BankHttpDenial {
     match outcome {
         BankMutationCommitOutcome::ProductStale(_) => stale(),
-        BankMutationCommitOutcome::ProductUnpublished(_)
-        | BankMutationCommitOutcome::NoEffect(_) => unavailable(),
+        BankMutationCommitOutcome::ProductUnpublished(_) => BankHttpDenial::new(
+            BankHttpDenialKind::Unavailable,
+            BankHttpNextAction::ContactOperator,
+        ),
+        BankMutationCommitOutcome::NoEffect(_) => unavailable(),
         BankMutationCommitOutcome::Stale { .. } => stale(),
         BankMutationCommitOutcome::Cancelled => {
             BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry)
@@ -65,6 +88,13 @@ pub(super) fn inspection_denied(
     denial: BankHttpDenial,
 ) -> BankHttpRecoveryInspectionOutcome {
     BankHttpRecoveryInspectionOutcome::Denied { request_id, denial }
+}
+
+pub(super) fn safe_retry_denied(
+    request_id: Option<String>,
+    denial: BankHttpDenial,
+) -> BankHttpRecoverySafeRetryOutcome {
+    BankHttpRecoverySafeRetryOutcome::Denied { request_id, denial }
 }
 
 pub(super) fn disbursement_denied(

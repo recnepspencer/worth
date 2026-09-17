@@ -3,6 +3,7 @@ use bank_server::{
     BankApplicationProjectionDenialKind, BankApplicationQueryAdmissionDenialKind,
     BankApplicationQueryDenial, BankApplicationQueryParameterDenialKind,
     BankAuthorizationDenialKind, BankEntityResolutionDenialKind, BankGraphReadPlanReviewDenialKind,
+    BankProductSelectionDenialKind,
 };
 
 use super::super::protocol::{
@@ -11,6 +12,9 @@ use super::super::protocol::{
 
 pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial {
     match denial {
+        BankApplicationQueryDenial::RequestMode
+        | BankApplicationQueryDenial::LiveRetainedBasis
+        | BankApplicationQueryDenial::LiveControls(_) => malformed(),
         BankApplicationQueryDenial::Installation(_)
         | BankApplicationQueryDenial::CapabilityInstallation(_)
         | BankApplicationQueryDenial::PreviewSession(_)
@@ -18,13 +22,36 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         | BankApplicationQueryDenial::LiveOpen(_) => unavailable(),
         BankApplicationQueryDenial::PrincipalResolution(_) => stale(),
         BankApplicationQueryDenial::Limit(_) => exhausted(),
-        BankApplicationQueryDenial::ProductSelection(_) => stale(),
+        BankApplicationQueryDenial::ProductSelection(kind) => product_selection(kind),
         BankApplicationQueryDenial::HistoricalCommitUnavailable => stale(),
         BankApplicationQueryDenial::CapabilityAdmission(denial) => authorization(denial.kind()),
         BankApplicationQueryDenial::ScopeResolution(denial) => entity(denial.kind()),
         BankApplicationQueryDenial::Admission(denial) => admission(denial.kind()),
         BankApplicationQueryDenial::Execution(denial) => execution(denial.kind()),
         BankApplicationQueryDenial::OutputSettlement(kind) => output_settlement(kind),
+    }
+}
+
+fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
+    use BankProductSelectionDenialKind as Selection;
+    match kind {
+        Selection::ForeignOwner
+        | Selection::RetiredBranch
+        | Selection::IncarnationChanged
+        | Selection::ObservationRejected => stale(),
+        Selection::ObservationStatePoisoned => internal_denied(),
+        Selection::OwnerUnavailable
+        | Selection::ProductActivationUnavailable
+        | Selection::RelationalBasisUnavailable
+        | Selection::RelationalSnapshotUnavailable
+        | Selection::BridgeSourceUnavailable => unavailable(),
+        Selection::ActiveSnapshotCapacityExhausted { .. }
+        | Selection::RetentionCapacityExhausted => {
+            BankHttpDenial::new(Kind::ResourceExhausted, Next::Retry)
+        }
+        Selection::RetentionIdentityExhausted | Selection::SnapshotIdentityExhausted => {
+            BankHttpDenial::new(Kind::ResourceExhausted, Next::ContactOperator)
+        }
     }
 }
 
@@ -222,6 +249,7 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         Settlement::Cancelled => cancelled(),
         Settlement::TimedOut => deadline(),
         Settlement::Superseded
+        | Settlement::PublicationStale
         | Settlement::ForeignSource
         | Settlement::ForeignDemand
         | Settlement::ForeignSettlement
@@ -233,7 +261,10 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         Settlement::MissingApplicableProducer
         | Settlement::AmbiguousApplicableProducer
         | Settlement::ProducerUnavailable
-        | Settlement::SchedulingRejected => unavailable(),
+        | Settlement::SchedulingRejected
+        | Settlement::SchedulingDeferred
+        | Settlement::NoEffect => unavailable(),
+        Settlement::DuplicatePerformedSource => internal_denied(),
     }
 }
 

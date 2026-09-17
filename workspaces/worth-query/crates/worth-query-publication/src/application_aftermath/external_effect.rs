@@ -36,6 +36,7 @@ pub enum WorthQueryPublishedExternalEffectFailure {
         posture: WorthQueryPublishedUnsupportedProtocolVersionPosture,
     },
     UnknownProviderOutcome,
+    ObservationDerivationDenied,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -151,6 +152,9 @@ const fn publish_failure(
         Execution::UnknownProviderOutcome => {
             WorthQueryPublishedExternalEffectFailure::UnknownProviderOutcome
         }
+        Execution::ObservationDerivationDenied => {
+            WorthQueryPublishedExternalEffectFailure::ObservationDerivationDenied
+        }
     }
 }
 
@@ -195,6 +199,10 @@ mod tests {
             (
                 ExternalRailTransportFault::UnknownProviderOutcome,
                 WorthQueryPublishedExternalEffectFailure::UnknownProviderOutcome,
+            ),
+            (
+                ExternalRailTransportFault::ObservationDerivationDenied,
+                WorthQueryPublishedExternalEffectFailure::ObservationDerivationDenied,
             ),
         ];
 

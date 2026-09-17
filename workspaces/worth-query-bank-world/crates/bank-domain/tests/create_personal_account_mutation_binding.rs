@@ -85,7 +85,7 @@ fn personal_account_creation_binding_declares_its_complete_fixed_shape() {
     );
     assert_eq!(
         descriptor.candidates().resources().maximum_validator_work(),
-        8
+        16
     );
 }
 

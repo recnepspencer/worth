@@ -23,7 +23,7 @@ use bank_domain::model::{
     AccountId, AccountName, BankPrincipalId, BankSnapshotVersion, EmployeeAssignmentId,
     EmployeeRole, InstitutionId,
 };
-use bank_domain::proposals::BankSnapshotBuilder;
+use bank_domain::proposals::{BankIdempotencyKey, BankSnapshotBuilder};
 use bank_domain::schema::AccountStatus;
 use bank_external_rail::test_control::FaultScript;
 use bank_external_rail::RailProcessHandle;
@@ -31,7 +31,6 @@ use bank_server::{
     queries, BankCommitReceipt, BankEmployeeAssignmentSeed, BankMutationCommitOutcome,
     BankPrincipalSeed, BankReadControls, BankWorldSeed,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 use worth_query_host::facade::publication::application_aftermath::WorthQueryPublishedExternalEffectFailure;
 
 use super::external_effect_dispatch::rail_transport::{spawn_rail, BankEstateRailTransport};
@@ -61,7 +60,7 @@ fn mutation_free_external_effect_co_commits_outbox_recovers_lost_response_once()
     let status_before = world.notice_status();
     assert_eq!(status_before, DeathNoticeStatus::NotificationRequested);
 
-    let receipt = world.commit_with(binding);
+    let receipt = world.commit_with(binding.clone());
     assert!(
         receipt.co_committed_dispatch_outbox(),
         "declared external effect must co-commit its outbox even with zero domain writes"
@@ -91,7 +90,7 @@ fn mutation_free_external_effect_co_commits_outbox_recovers_lost_response_once()
 
 fn assert_equivalent_retry_skips_rail_and_unseen_request_consumes_sentinel(
     world: &MutationFreeWorld,
-    binding: WorthQueryApplicationIdempotencyBinding,
+    binding: BankIdempotencyKey,
     receipt: &BankCommitReceipt,
 ) {
     let correlation = world.transport.attempts()[0].clone();
@@ -144,7 +143,7 @@ fn assert_equivalent_retry_skips_rail_and_unseen_request_consumes_sentinel(
 }
 
 impl MutationFreeWorld {
-    fn commit_with(&self, binding: WorthQueryApplicationIdempotencyBinding) -> BankCommitReceipt {
+    fn commit_with(&self, binding: BankIdempotencyKey) -> BankCommitReceipt {
         let outcome = self.retransmit(binding);
         let BankMutationCommitOutcome::Committed(receipt) = outcome else {
             panic!("mutation-free retransmit must commit: {outcome:?}");
@@ -152,20 +151,17 @@ impl MutationFreeWorld {
         receipt
     }
 
-    fn retransmit(
-        &self,
-        binding: WorthQueryApplicationIdempotencyBinding,
-    ) -> BankMutationCommitOutcome {
+    fn retransmit(&self, binding: BankIdempotencyKey) -> BankMutationCommitOutcome {
         self.world
             .runtime
-            .retransmit_estate_death_notice(
+            .retransmit_estate_death_notice_with_key(
                 &self.authenticate_specialist(),
                 EstateAction::RetransmitDeathNotice {
                     estate: self.estate,
                     notice: self.notice,
                     subject: self.deceased,
                 },
-                binding,
+                &binding,
                 &request_scope(),
             )
             .expect("lawful retransmit should reach commit")
@@ -308,8 +304,8 @@ fn estate_world() -> BankEstateWorld {
         })
 }
 
-fn idempotency(identity: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([identity; 32], [identity + 1; 32])
+fn idempotency(identity: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("retransmit-death-notice-{identity}")).unwrap()
 }
 
 const INSTITUTION: InstitutionId = InstitutionId::new(1).unwrap();

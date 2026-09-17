@@ -325,8 +325,14 @@ fn publish_authorization_world(prepared: PreparedAuthorizationWorld) -> Authoriz
         authority,
         schema,
         binding,
-        bootstrap,
+        mut bootstrap,
     } = prepared;
+    let program_required = schema
+        .installed_mutation_binding::<ProgramRequiredMutationBinding>()
+        .unwrap();
+    bootstrap
+        .install_handler(&program_required, ProgramRequiredHandler)
+        .unwrap();
     let invariant = bootstrap.retain_invariant_projection_authority();
     let authorization_time = AuthorizationTimeController::default();
     let faults = std::sync::Arc::new(

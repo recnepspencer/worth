@@ -119,6 +119,7 @@ impl BoundedProjectionState {
             builder
                 .institution(institution_id)
                 .projected_account(account)
+                .projected_account_revision(id, revision)
         });
         self.accounts.insert(id, entity.clone());
         Ok(revision)

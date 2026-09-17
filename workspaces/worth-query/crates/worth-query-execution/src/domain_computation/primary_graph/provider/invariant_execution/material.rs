@@ -8,6 +8,8 @@ use super::super::application_attempt_state::WorthQueryStagedApplicationAttempt;
 pub(super) struct ApplicationInvariantCandidateMaterial {
     pub(super) semantic: ApplicationInvariantSemanticMaterial,
     pub(super) requirements: Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
+    pub(super) producer_required_invariants:
+        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     pub(super) batch: worth_relational::facade::transactions::WorkerIntentBatch,
     pub(super) branch: worth_relational::facade::history::BranchId,
     pub(super) product:
@@ -37,6 +39,7 @@ impl ApplicationInvariantCandidateMaterial {
         Ok(Self {
             semantic: ApplicationInvariantSemanticMaterial::from_staged(staged)?,
             requirements: staged.invariant_requirements().to_vec(),
+            producer_required_invariants: staged.producer_required_invariants(),
             batch: staged.batch().clone(),
             branch: staged.branch().clone(),
             product: staged.product_publication().clone(),

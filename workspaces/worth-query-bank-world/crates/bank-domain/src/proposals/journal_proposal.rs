@@ -41,7 +41,7 @@ pub(crate) fn append_balanced_transfer(
     );
     ensure_open(snapshot, debit)?;
     ensure_open(snapshot, credit)?;
-    snapshot.append_journal(entry.clone());
+    snapshot.append_proposed_journal(entry.clone())?;
     Ok(entry)
 }
 

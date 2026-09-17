@@ -12,6 +12,7 @@ use bank_domain::schema::{
 };
 use bank_server::{BankEmployeeAssignmentSeed, BankPrincipalSeed, BankWorldSeed};
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
 };
@@ -69,10 +70,20 @@ fn assert_public_creation(display_name: &str) {
         WorthQueryCreateOutput,
     >::from_static(CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT);
 
-    let first = request
+    let omitted_program = request
         .mutate(input.clone())
         .idempotency(&key)
         .execute()
+        .expect_err("a program-owned action must not publish through the ordinary path");
+    assert_eq!(
+        omitted_program.kind(),
+        WorthQueryApplicationRequestMutationDenialKind::ApplicationProgramRequired
+    );
+
+    let first = request
+        .mutate(input.clone())
+        .idempotency(&key)
+        .execute_in_program(world.runtime.application_program())
         .expect("the public mutation request should execute");
     let WorthQueryApplicationMutationOutcome::Committed {
         receipt: mut first_receipt,
@@ -108,7 +119,7 @@ fn assert_public_creation(display_name: &str) {
     let retry = request
         .mutate(input.clone())
         .idempotency(&key)
-        .execute()
+        .execute_in_program(world.runtime.application_program())
         .expect("the identical retry should execute");
     let WorthQueryApplicationMutationOutcome::AlreadyCommitted(mut retry_receipt) = retry else {
         panic!("the identical retry must recover the prior commit");
@@ -135,7 +146,7 @@ fn assert_public_creation(display_name: &str) {
             ..input
         })
         .idempotency(&key)
-        .execute()
+        .execute_in_program(world.runtime.application_program())
         .expect("the changed retry should resolve idempotency");
     assert!(matches!(
         changed,

@@ -27,7 +27,7 @@ use worth_query_topology_entry::{
     VertexReplacementBinding,
 };
 
-use super::{assert_contribution_denial, limits};
+use super::{assert_contribution_denial, limits, validated_denial_program};
 
 const INITIAL: WorthQueryProducerApplicability =
     WorthQueryProducerApplicability::new("planar", WorthQueryProducerLifecyclePosture::Initial);
@@ -326,7 +326,8 @@ impl ApplicationSchemaComposition for ForeignOperationSchema {
 }
 
 fn undeclared_output_role_is_denied_before_configuration() {
-    let result = application_installation::in_memory::<InvalidRoleSchema>(
+    let result = application_installation::in_memory_program(
+        validated_denial_program::<InvalidRoleSchema>(),
         InvalidRoleSchema::declaration().unwrap(),
         ((), Arc::new(AtomicUsize::new(0))),
         limits(),
@@ -339,7 +340,8 @@ fn undeclared_output_role_is_denied_before_configuration() {
 }
 
 fn missing_required_invariant_is_denied_before_initial_state() {
-    let result = application_installation::in_memory::<MissingInvariantSchema>(
+    let result = application_installation::in_memory_program(
+        validated_denial_program::<MissingInvariantSchema>(),
         MissingInvariantSchema::declaration().unwrap(),
         ((), Arc::new(AtomicUsize::new(0))),
         limits(),
@@ -359,7 +361,8 @@ fn foreign_source_selector_is_denied_before_initial_state() {
         invariant_probe: counter(),
         producer_authorization_denials: counter(),
     };
-    let result = application_installation::in_memory::<ForeignOperationSchema>(
+    let result = application_installation::in_memory_program(
+        validated_denial_program::<ForeignOperationSchema>(),
         ForeignOperationSchema::declaration().unwrap(),
         (topology, ()),
         limits(),

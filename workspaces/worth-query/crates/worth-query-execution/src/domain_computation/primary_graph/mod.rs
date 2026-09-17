@@ -18,19 +18,17 @@ pub use application_contribution::{
     WorthQueryInstalledApplicationConditionalRegistry,
     WorthQueryInstalledApplicationProducerRegistry, WorthQueryOutputDemandAdvance,
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadinessContractBuilder,
-    WorthQueryOutputReadinessContractDenial, WorthQueryProducerApplicability,
-    WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-    WorthQuerySelectedApplicationProducer,
+    WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
+    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
 };
 pub use application_output_demand::{
     WorthQueryOutputDemandNotifications, WorthQueryOutputDemandSettlement,
     WorthQueryOutputReadinessDeliveryEvidence,
 };
 pub use application_program::{
-    WorthQueryApplicationDependentOutputConnection,
-    WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationRequiredOutputConnection,
+    WorthQueryApplicationDependentOutputConnection, WorthQueryApplicationRequiredOutputConnection,
     WorthQueryPreparedRequiredOutputSource, WorthQueryRequiredOutputConnectionDenial,
     WorthQueryRequiredOutputSourcePreparationFailure,
 };
@@ -149,6 +147,7 @@ pub use application_attempt::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationRetainedCommitOutcome,
     WorthQueryApplicationNoEffectCause,
     WorthQueryApplicationCommitOutcomeIdentity,
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,

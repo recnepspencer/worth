@@ -38,6 +38,28 @@ pub(super) fn evaluate_registered_rule(
             prepared_execution,
             prepared_scope,
         ),
+        crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::CustomNotApplicable {
+            registration,
+            prepared_scope,
+            work,
+        } => {
+            let context = CustomInvariantExecutionContext::new(
+                runtime,
+                packet.observation,
+                packet.version_id,
+                packet.current_version_id,
+                prepared_scope,
+                work.clone(),
+                std::sync::Arc::new(registration.access_contract().clone()),
+            );
+            RegisteredInvariantEvaluation {
+                reported_rule: InvariantReportedRule::Custom(registration.descriptor().identity.clone()),
+                groups: registration.groups(),
+                cost: registration.cost_class(),
+                custom_provenance: Some(context.provenance()),
+                verdicts: vec![InvariantVerdict::NotApplicable],
+            }
+        }
     }
 }
 

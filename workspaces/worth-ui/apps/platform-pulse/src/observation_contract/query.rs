@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use worth_ui::facade::query_binding::{
-    UiPresentProjection, UiProjectionAvailability, UiProjectionObservation,
-    UiProjectionUnavailableKind, UiQueryObservationReportingProjection,
+    UiProjectionObservation, UiQueryObservationReportingProjection,
 };
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -29,25 +28,9 @@ pub struct PlatformPulseQueryWatcherShutdownEvidence {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct PlatformPulseLiveQueryResidue {
-    source_count: u64,
-    attempt_count: u64,
-    resource_count: u64,
-    consumer_lease_count: u64,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct PlatformPulseQueryProjectionResidue {
-    retained_projection_count: u64,
-    projection_receipt_count: u64,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PlatformPulseQueryShutdownEvidence {
     watcher: PlatformPulseQueryWatcherShutdownEvidence,
     owner_terminal: bool,
-    live: PlatformPulseLiveQueryResidue,
-    projection: PlatformPulseQueryProjectionResidue,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -73,67 +56,11 @@ impl PlatformPulseQueryWatcherShutdownEvidence {
     }
 }
 
-impl PlatformPulseLiveQueryResidue {
-    pub fn new(
-        source_count: u64,
-        attempt_count: u64,
-        resource_count: u64,
-        consumer_lease_count: u64,
-    ) -> Self {
-        Self {
-            source_count,
-            attempt_count,
-            resource_count,
-            consumer_lease_count,
-        }
-    }
-
-    pub fn source_count(self) -> u64 {
-        self.source_count
-    }
-
-    pub fn attempt_count(self) -> u64 {
-        self.attempt_count
-    }
-
-    pub fn resource_count(self) -> u64 {
-        self.resource_count
-    }
-
-    pub fn consumer_lease_count(self) -> u64 {
-        self.consumer_lease_count
-    }
-}
-
-impl PlatformPulseQueryProjectionResidue {
-    pub fn new(retained_projection_count: u64, projection_receipt_count: u64) -> Self {
-        Self {
-            retained_projection_count,
-            projection_receipt_count,
-        }
-    }
-
-    pub fn retained_projection_count(self) -> u64 {
-        self.retained_projection_count
-    }
-
-    pub fn projection_receipt_count(self) -> u64 {
-        self.projection_receipt_count
-    }
-}
-
 impl PlatformPulseQueryShutdownEvidence {
-    pub fn new(
-        watcher: PlatformPulseQueryWatcherShutdownEvidence,
-        owner_terminal: bool,
-        live: PlatformPulseLiveQueryResidue,
-        projection: PlatformPulseQueryProjectionResidue,
-    ) -> Self {
+    pub fn new(watcher: PlatformPulseQueryWatcherShutdownEvidence, owner_terminal: bool) -> Self {
         Self {
             watcher,
             owner_terminal,
-            live,
-            projection,
         }
     }
 
@@ -144,43 +71,26 @@ impl PlatformPulseQueryShutdownEvidence {
     pub fn owner_terminal(self) -> bool {
         self.owner_terminal
     }
-
-    pub fn live(self) -> PlatformPulseLiveQueryResidue {
-        self.live
-    }
-
-    pub fn projection(self) -> PlatformPulseQueryProjectionResidue {
-        self.projection
-    }
 }
 
 impl PlatformPulseQueryProjectionEvidence {
     pub fn from_observation(
         observation: &UiProjectionObservation,
     ) -> Result<Self, super::projection::PlatformPulseLifecycleObservationProjectionDenial> {
-        let UiProjectionObservation::Scalar(scalar) = observation else {
+        let UiProjectionObservation::ApplicationScalar(scalar) = observation else {
             return Err(
                 super::projection::PlatformPulseLifecycleObservationProjectionDenial::
                     QueryProjectionUnsupported,
             );
         };
         let fact = scalar.fact();
-        let (posture, native_value) = match fact.availability() {
-            UiProjectionAvailability::Unavailable(unavailable)
-                if unavailable.kind() == UiProjectionUnavailableKind::Pending =>
-            {
-                (PlatformPulseQueryProjectionPosture::Pending, None)
-            }
-            UiProjectionAvailability::Present(UiPresentProjection::Current(value)) => (
+        let (posture, native_value) = if fact.value().revision == 0 {
+            (PlatformPulseQueryProjectionPosture::Pending, None)
+        } else {
+            (
                 PlatformPulseQueryProjectionPosture::Current,
-                Some(value.as_str().to_owned()),
-            ),
-            _ => {
-                return Err(
-                    super::projection::PlatformPulseLifecycleObservationProjectionDenial::
-                        QueryProjectionUnsupported,
-                )
-            }
+                Some(fact.value().status.clone()),
+            )
         };
         let reporting = UiQueryObservationReportingProjection::from_observation(observation);
         Ok(Self {

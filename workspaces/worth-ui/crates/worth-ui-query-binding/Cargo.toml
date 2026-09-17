@@ -9,7 +9,7 @@ name = "worth_ui_query_binding"
 path = "src/lib.rs"
 
 [features]
-certification-construction = ["dep:worth-query-host"]
+certification-construction = []
 
 [lints]
 workspace = true
@@ -21,7 +21,7 @@ worth-proof.workspace = true
 worth-ui-host-contract = { path = "../worth-ui-host-contract" }
 worth-query = { path = "../../../worth-query/crates/worth-query" }
 worth-query-decl = { path = "../../../worth-query/crates/worth-query-decl" }
-worth-query-host = { path = "../../../worth-query/crates/worth-query-host", optional = true }
+worth-query-host = { path = "../../../worth-query/crates/worth-query-host" }
 worth-relational.workspace = true
 worth-runtime-bridge.workspace = true
 worth-signal.workspace = true

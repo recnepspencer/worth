@@ -4,8 +4,9 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::{WorthQueryRedoProgressionHandoff, WorthQueryUndoProgressionHandoff};
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -24,6 +25,11 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if self.has_installed_application_program() {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            );
+        }
         self.compare_and_commit_application_with_aftermath(
             program,
             idempotency,
@@ -42,6 +48,11 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if self.has_installed_application_program() {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            );
+        }
         self.compare_and_commit_application_with_aftermath(
             program,
             idempotency,

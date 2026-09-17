@@ -34,6 +34,10 @@ impl WorthQueryApplicationReadObservation {
         self.product.branch_identity()
     }
 
+    pub fn branch_incarnation(&self) -> worth_runtime_world::facade::ProductBranchIncarnation {
+        self.product.observation().lifecycle_incarnation()
+    }
+
     pub fn selected_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
         self.product.selected_commit()
     }

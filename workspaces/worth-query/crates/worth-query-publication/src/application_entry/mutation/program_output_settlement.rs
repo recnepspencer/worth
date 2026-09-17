@@ -30,19 +30,10 @@ pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery> {
 }
 
 impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
-    pub(in crate::application_entry) fn receipts(
+    pub const fn root(
         &self,
-    ) -> impl Iterator<
-        Item = &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
-    > {
-        std::iter::once(self.root.receipt())
-            .chain(self.outputs.iter().map(ProgramOutputRecord::receipt))
-    }
-
-    pub fn root_receipt(
-        &self,
-    ) -> &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt {
-        self.root.receipt()
+    ) -> &crate::application_entry::WorthQueryApplicationOutputDemandSettlement<RootQuery> {
+        &self.root
     }
 
     pub fn root_observation(
@@ -84,8 +75,10 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
         Demand<Schema, Connection>: 'static,
         Query<Schema, Connection>: 'static,
     {
-        self.outputs.iter().filter_map(|output| {
-            (output.connection_identity == Connection::IDENTITY).then(|| {
+        self.outputs
+            .iter()
+            .filter(|output| output.connection_identity == Connection::IDENTITY)
+            .map(|output| {
                 (
                     output
                         .demand
@@ -101,7 +94,6 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
                         .expect("a typed program output retains its declared settlement"),
                 )
             })
-        })
     }
 
     pub fn outputs_for_instance<'output, Schema, Connection>(
@@ -147,42 +139,6 @@ pub struct ProgramOutputRecord {
 }
 
 impl ProgramOutputRecord {
-    pub(super) fn typed_for<Schema, Connection>(
-        &self,
-    ) -> Option<(
-        &Demand<Schema, Connection>,
-        &crate::application_entry::WorthQueryApplicationOutputDemandSettlement<
-            Query<Schema, Connection>,
-        >,
-    )>
-    where
-        Schema: ApplicationSchema,
-        Connection: WorthQueryApplicationDependentOutputConnection<Schema> + 'static,
-        Demand<Schema, Connection>: 'static,
-        Query<Schema, Connection>: 'static,
-    {
-        (self.connection_identity == Connection::IDENTITY).then(|| {
-            (
-                self.demand
-                    .downcast_ref::<Demand<Schema, Connection>>()
-                    .expect("a typed program output retains its declared demand"),
-                self.settlement
-                    .downcast_ref::<
-                        crate::application_entry::WorthQueryApplicationOutputDemandSettlement<
-                            Query<Schema, Connection>,
-                        >,
-                    >()
-                    .expect("a typed program output retains its declared settlement"),
-            )
-        })
-    }
-
-    pub(super) fn observation(
-        &self,
-    ) -> &crate::application_entry::WorthQueryApplicationReadObservation {
-        &self.observation
-    }
-
     pub(super) fn receipt(
         &self,
     ) -> &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt {
@@ -210,7 +166,7 @@ impl ProgramOutputRecord {
         Demand<Schema, Connection::Binding>: 'static,
         Query<Schema, Connection::Binding>: 'static,
     {
-        let observation = settlement.observation().retained_clone();
+        let observation = settlement.observation().retain();
         let receipt = settlement.receipt().clone();
         let readiness_delivery = settlement.readiness_delivery().cloned();
         let declaration = Connection::declaration();

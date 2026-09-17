@@ -2,12 +2,13 @@ use bank_domain::{
     estate::{EmergencyAccessId, MandatoryReviewId},
     schema::{
         ApproveEstateEmergencyAccessOperation, BankSchema, CompleteEstateMandatoryReviewOperation,
-        EmergencyAccess, EmergencyAccessExpiresAtField, EmergencyAccessIdBinding,
-        EmergencyAccessIdentityField, EmergencyAccessIssuedAtField, EmergencyAccessReasonField,
-        EmergencyAccessStatusField, EmergencyApprover, EmergencyEstate, EmergencyGrant,
-        EmergencyRequester, EmergencyReview, EstateCase, MandatoryReview, MandatoryReviewIdBinding,
-        MandatoryReviewIdentityField, MandatoryReviewKindField, MandatoryReviewStatusField,
-        ReviewEstate, ReviewPrincipal, RevokeEstateEmergencyAccessOperation,
+        EmergencyAccess, EmergencyAccessClosedAtField, EmergencyAccessExpiresAtField,
+        EmergencyAccessIdBinding, EmergencyAccessIdentityField, EmergencyAccessIssuedAtField,
+        EmergencyAccessReasonField, EmergencyAccessStatusField, EmergencyApprover, EmergencyEstate,
+        EmergencyGrant, EmergencyRequester, EmergencyReview, EstateCase, MandatoryReview,
+        MandatoryReviewIdBinding, MandatoryReviewIdentityField, MandatoryReviewKindField,
+        MandatoryReviewReviewedAtField, MandatoryReviewStatusField, ReviewEstate, ReviewPrincipal,
+        RevokeEstateEmergencyAccessOperation,
     },
 };
 use worth_query_host::facade::{
@@ -66,6 +67,7 @@ pub(super) fn seal_close_lifecycle_facts(
     };
     let review = review_relation.to().clone();
     seal_lifecycle_fields(reader, &elevation, &review)?;
+    reader.require_decision_field(&elevation, EmergencyAccessClosedAtField::reference())?;
     seal_remaining_lifecycle_relations(reader, &elevation, &review, estate)
 }
 
@@ -78,7 +80,10 @@ pub(super) fn seal_review_lifecycle_facts(
     review: MandatoryReviewId,
     estate: &EstateIdentity,
 ) -> Result<(), BankEstateLifecycleProjectionDenial> {
-    seal_selected_lifecycle_facts(reader, access, review, estate)
+    seal_selected_lifecycle_facts(reader, access, review, estate)?;
+    let review = reader.resolve_entity(MandatoryReviewIdentityField::reference(), review)?;
+    reader.require_decision_field(&review, MandatoryReviewReviewedAtField::reference())?;
+    Ok(())
 }
 
 fn seal_selected_lifecycle_facts<Operation>(

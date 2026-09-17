@@ -128,40 +128,6 @@ where
         Ok(identity)
     }
 
-    /// Resolve an admitted identity if present, retaining its identity-field
-    /// dependency when found. Only an unknown identity becomes absence.
-    pub fn resolve_optional_entity<Entity, Aspect, Field, Value, Write, Unit>(
-        &mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        value: Value,
-    ) -> Result<Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
-    where
-        Field: OperationReads<Binding::Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        let identity = self
-            .reader()
-            .resolve_optional_entity(field, value)
-            .map_err(HandlerExecutionDenial::new)?;
-        if let Some(ref identity) = identity {
-            self.reader()
-                .require_decision_field(identity, field)
-                .map_err(HandlerExecutionDenial::new)?;
-        }
-        Ok(identity)
-    }
-
     /// Read a value while retaining its exact field dependency for the attempt.
     pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         &mut self,

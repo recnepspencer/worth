@@ -95,6 +95,7 @@ fn denied(request_id: Option<String>, denial: BankHttpDenial) -> BankHttpMutatio
             _ => BankHttpMutationFailureKind::Aborted,
         },
         stale_fact_count: None,
+        provider_recovery: None,
         denial,
     }
 }

@@ -10,7 +10,8 @@ use std::sync::Arc;
 use bank_domain::model::Money;
 use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::SendMoney;
-use bank_server::{mutations, BankMutationControls, BankMutationStatus};
+use bank_server::{mutations, BankMutationControls};
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 use super::external_effect_dispatch::rail_transport::{spawn_rail, BankEstateRailTransport};
 use crate::fixture::{ordinary_read_world, principal_id, OWNER, RECIPIENT};
@@ -50,7 +51,7 @@ fn ordinary_commit_pays_zero_aftermath_slots_while_machinery_is_live() {
             BankIdempotencyKey::new("ordinary-aftermath-cost-send").unwrap(),
         ))
         .execute();
-    let BankMutationStatus::Committed(receipt) = outcome.status() else {
+    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) = &outcome else {
         panic!("the lawful transfer must commit: {outcome:?}");
     };
     assert!(
@@ -59,15 +60,12 @@ fn ordinary_commit_pays_zero_aftermath_slots_while_machinery_is_live() {
     );
 
     assert!(
-        !receipt.co_committed_dispatch_outbox(),
+        receipt.dispatch_outbox().is_none(),
         "undeclared external effect writes no outbox"
     );
-    assert_eq!(
-        receipt.aftermath().external_effect(),
-        worth_query_host::facade::publication::application_aftermath::WorthQueryPublishedExternalEffectPosture::NotDeclared
-    );
+    assert!(receipt.external_dispatch().is_none());
     assert!(
-        !receipt.performed_preimage_retention_work(),
+        receipt.retained_preimage().is_none(),
         "an ordinary no-demand commit must build no footprint and scan no decision facts"
     );
 

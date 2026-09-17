@@ -26,40 +26,13 @@ factories, providers, and conditionals. Each entry owns its `Configuration` type
 The root lists its contributions once; the macro carries that same list into
 `ApplicationSchemaComposition::Contributions` and the host configuration tuple.
 
-This example uses the two separately compiled entries in the
-[public consumer fixture](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/main.rs).
-The configuration values, resource limits, authenticated principal, request
-scope, and initializer are supplied by the host:
-
-```rust,ignore
-use worth_query_decl::facade::worth_query_application;
-use worth_query_host::facade::{
-    application_entry::WorthQueryApplicationRequestExt,
-    application_installation as installation,
-};
-use worth_query_parameter_entry::{ParameterContribution, ParameterSchemaBinding};
-use worth_query_topology_entry::{TopologyContribution, TopologySchemaBinding};
-
-worth_query_application! {
-    pub ConsumerSchema {
-        owner: "worth.query.certification.consumer",
-        version: (1, 0),
-        contributions: [TopologyContribution, ParameterContribution],
-    }
-}
-impl TopologySchemaBinding for ConsumerSchema {}
-impl ParameterSchemaBinding for ConsumerSchema {}
-
-let application = installation::in_memory(
-    ConsumerSchema::declaration()?,
-    (topology_configuration, parameter_configuration),
-    limits,
-    initial_state,
-)?;
-let request = application.request(&external_principal, &request_scope);
-let outcome = request.mutate(planar_mutation).idempotency(command_id).execute();
-let published = request.query(planar_read).execute()?;
-```
+The [public consumer fixture](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/main.rs)
+checks separately compiled contributions and static program validation. The
+[ordinary product workflow](../worth-query-certification/examples/ordinary_product_workflow.rs)
+installs a validated program with `application_installation::in_memory_program`,
+admits its exact operation, publishes through `commit_for_program`, reads the
+successor, and closes conditional resources. Its source is the executable host
+entry example.
 
 `WorthQueryApplicationContributionContracts` and
 `WorthQueryApplicationContributionSetup` resolve installed bindings internally.
@@ -74,8 +47,8 @@ before invoking configuration. Missing handlers fail before `initial_state`;
 producer applicability and required invariant closure, conditional dependencies,
 and invariant factories are validated and installed before it runs. The initializer
 borrows the unpublished typed graph and its installed schema, seeds initial
-state, and returns a typed graph installation result. Successful construction
-returns `WorthQueryPrimaryGraphApplicationRuntime<Schema>`.
+state, and returns a typed graph installation result. Successful program
+construction returns `WorthQueryProgramApplicationRuntime<Schema, Program>`.
 
 `WorthQueryInMemoryApplicationLimits::new` accepts World resources, an application
 candidate profile, an application query profile, and a conditional evaluation

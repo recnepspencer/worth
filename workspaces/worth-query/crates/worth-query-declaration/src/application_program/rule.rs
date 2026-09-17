@@ -80,6 +80,15 @@ where
     fn append_rules(rules: &mut Vec<ApplicationProgramRuleDeclaration>);
 }
 
+impl<Schema> ApplicationProgramRulesShape<Schema> for ApplicationRuleLeaf
+where
+    Schema: ApplicationSchema,
+{
+    fn rules() -> Vec<ApplicationProgramRuleDeclaration> {
+        Vec::new()
+    }
+}
+
 impl<Schema, Rule, Tail> ApplicationProgramRulesShape<Schema> for ApplicationRuleList<Rule, Tail>
 where
     Schema: ApplicationSchema,

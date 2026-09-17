@@ -1,18 +1,17 @@
 use worth_runtime_bridge::facade::{
-    BridgeDeliveryReceipt, BridgeMappingId, BridgeMappingRegistration, BridgeWritebackEffectClass,
-    BridgeWritebackFamilyKind, BridgeWritebackOutcomeClass, CoarseRoutingMode, InvalidationSink,
-    MappingSelector, RuntimeBridge, RuntimeBridgeBuilder, SignalBridgeSinkError,
-    SignalInvalidationScope, SnapshotReadContract, TruthPatchScope, TruthWritebackAuthority,
-    TruthWritebackAuthorityError, TruthWritebackReceipt, TruthWritebackRequest,
+    BridgeMappingId, BridgeMappingRegistration, CoarseRoutingMode, MappingSelector, RuntimeBridge,
+    RuntimeBridgeBuilder, SignalInvalidationScope, SnapshotReadContract, TruthPatchScope,
 };
+
+use crate::query_bridge_support::{UiBridgeSignalSink, UiBridgeWritebackAuthority};
 
 pub(super) fn platform_pulse_bridge(
     source: worth_relational::facade::bridge::RuntimeBridgeRelationalSource,
 ) -> Result<RuntimeBridge, worth_runtime_bridge::facade::BridgeBuildError> {
-    let mut builder = RuntimeBridgeBuilder::new()
+    let builder = RuntimeBridgeBuilder::new()
         .with_relational_source(source)
-        .with_signal_sink(ExternalScalarSignalSink)
-        .with_writeback_authority(ExternalScalarWritebackAuthority)
+        .with_signal_sink(UiBridgeSignalSink)
+        .with_writeback_authority(UiBridgeWritebackAuthority)
         .register_mapping(BridgeMappingRegistration::new(
             BridgeMappingId::from_stable_name("worth-ui-external-scalar"),
             TruthPatchScope::for_entity_field(
@@ -30,48 +29,5 @@ pub(super) fn platform_pulse_bridge(
             SignalInvalidationScope::from_stable_name("worth-ui-external-scalar"),
             CoarseRoutingMode::Direct,
         ));
-    for (mapping, aspect_mapping) in crate::presentation_async::presentation_bridge_registrations()
-    {
-        builder = builder
-            .register_mapping(mapping)
-            .register_aspect_mapping(aspect_mapping);
-    }
     builder.build()
-}
-
-#[derive(Clone, Copy)]
-struct ExternalScalarSignalSink;
-
-impl InvalidationSink for ExternalScalarSignalSink {
-    fn deliver_invalidation(
-        &self,
-        delivery: worth_runtime_bridge::facade::BridgeSignalInvalidationDelivery,
-    ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
-        Ok(BridgeDeliveryReceipt::new(
-            delivery.invalidation_targets().len(),
-            delivery.source_snapshot().clone(),
-        ))
-    }
-}
-
-#[derive(Clone, Copy)]
-struct ExternalScalarWritebackAuthority;
-
-impl TruthWritebackAuthority for ExternalScalarWritebackAuthority {
-    fn execute_writeback(
-        &self,
-        request: TruthWritebackRequest,
-    ) -> Result<TruthWritebackReceipt, TruthWritebackAuthorityError> {
-        if request.family_kind() != BridgeWritebackFamilyKind::AspectReconciliation
-            || request.effect_class() != BridgeWritebackEffectClass::AspectReconciliation
-        {
-            return Err(TruthWritebackAuthorityError::new(
-                "Worth UI product authority admits only aspect-reconciliation writeback",
-            ));
-        }
-        Ok(TruthWritebackReceipt::new(
-            BridgeWritebackOutcomeClass::AuthoritativeCommit,
-            &request,
-        ))
-    }
 }

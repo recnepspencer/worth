@@ -9,6 +9,7 @@ pub use worth_ui_runtime::facade::entry::{
     WorthUiProjectionRegistrationError, WorthUiQueryViewRegistrationError,
 };
 pub use worth_ui_runtime::facade::query_binding::{
+    UiApplicationScalarProjectionObservation, UiApplicationScalarProjectionRegistration,
     UiCollectionCompleteness, UiCollectionContinuation, UiCollectionProjectionBinding,
     UiCollectionProjectionBindingAdmission, UiCollectionProjectionObservation,
     UiCollectionProjectionRegistration, UiCollectionProjectionRowReference,
@@ -29,19 +30,24 @@ pub use worth_ui_runtime::facade::query_binding::{
     WorthUiPresentationAsyncInstallation, WorthUiPresentationAsyncInstallationError,
     WorthUiPresentationQueryHostInstallationRequest, WorthUiProjectionField,
     WorthUiQueryBindingRegistrationDenial, WorthUiQueryBindingRegistrationDenialKind,
-    WorthUiQueryHostInstallationRequest, WorthUiQueryViewDeclarationDenial,
-    WorthUiQueryViewDefinition, WorthUiQueryViewIdentity, WorthUiQueryViewIdentityError,
-    WorthUiQueryViewLifecycle, WorthUiQueryViewRegistration, WorthUiQueryViewShape, WorthUiRecord,
-    WorthUiScalarProjectionActionAdvance, WorthUiScalarProjectionActionDenied,
-    WorthUiScalarProjectionActionEvidence, WorthUiScalarProjectionActionExecution,
+    WorthUiQueryViewDeclarationDenial, WorthUiQueryViewDefinition, WorthUiQueryViewIdentity,
+    WorthUiQueryViewIdentityError, WorthUiQueryViewLifecycle, WorthUiQueryViewRegistration,
+    WorthUiQueryViewShape, WorthUiRecord, WorthUiScalarProjectionActionEvidence,
+    WorthUiScalarProjectionActionPreconditionDenial, WorthUiScalarProjectionSourceRecord,
+    WorthUiStatusActionExecution, WorthUiStatusActionOutcome, WorthUiStatusActionRequest,
+    WorthUiStatusSourceOwner,
+};
+
+#[cfg(any(test, feature = "certification-support"))]
+pub use worth_ui_runtime::facade::query_binding::{
+    WorthUiQueryHostInstallationRequest, WorthUiScalarProjectionActionAdvance,
+    WorthUiScalarProjectionActionDenied, WorthUiScalarProjectionActionExecution,
     WorthUiScalarProjectionActionIndeterminate, WorthUiScalarProjectionActionInstallation,
     WorthUiScalarProjectionActionLiveOwner, WorthUiScalarProjectionActionOutcome,
-    WorthUiScalarProjectionActionPreconditionDenial,
     WorthUiScalarProjectionActionPublicationCompletion, WorthUiScalarProjectionActionRequest,
     WorthUiScalarProjectionAdvance, WorthUiScalarProjectionAdvanceError,
     WorthUiScalarProjectionHostCompletion, WorthUiScalarProjectionHostPlan,
     WorthUiScalarProjectionInstallation, WorthUiScalarProjectionInstallationError,
     WorthUiScalarProjectionLiveOwner, WorthUiScalarProjectionPublicationCompletion,
     WorthUiScalarProjectionSourceCloseError, WorthUiScalarProjectionSourceCloseReceipt,
-    WorthUiScalarProjectionSourceRecord,
 };

@@ -179,15 +179,6 @@ impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryRes
         (rows.next().is_none() && sources.is_empty()).then_some(pair)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_parts(
-        self,
-    ) -> (
-        Vec<QueryResult>,
-        WorthQueryApplicationOutputDemandDisclosure<Query>,
-    ) {
-        (self.rows, self.disclosure)
-    }
-
     pub fn receipt(&self) -> &WorthQueryApplicationQueryAccessReceipt {
         &self.disclosure.receipt
     }

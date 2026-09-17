@@ -11,10 +11,6 @@ pub(in crate::domain_computation) enum WorthQueryPrimaryGraphApplicationDecision
     ObservedSource {
         fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
     },
-    ApplicationObservedSource {
-        read_scope: worth_query_installation::facade::WorthQueryOperationGraphReadScope,
-        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
-    },
     Principal(WorthQueryPrincipalCurrentnessDependency),
     Authorization {
         session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
@@ -43,31 +39,6 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         Self::ObservedSource { fact }
     }
 
-    pub(in crate::domain_computation) fn retain_observed_source_role(
-        self,
-        source: super::super::application_attempt::WorthQueryApplicationObservedFact,
-    ) -> Result<Self, &'static str> {
-        match self {
-            Self::Application { read_scope, fact } if fact == source => {
-                Ok(Self::ApplicationObservedSource { read_scope, fact })
-            }
-            Self::ObservedSource { fact } if fact == source => Ok(Self::ObservedSource { fact }),
-            Self::ApplicationObservedSource { read_scope, fact } if fact == source => {
-                Ok(Self::ApplicationObservedSource { read_scope, fact })
-            }
-            _ => Err("decision facts disagree at one structural locator"),
-        }
-    }
-
-    pub(in crate::domain_computation) const fn is_application_decision(&self) -> bool {
-        matches!(
-            self,
-            Self::Application { .. }
-                | Self::ObservedSource { .. }
-                | Self::ApplicationObservedSource { .. }
-        )
-    }
-
     pub(in crate::domain_computation) fn authorization(
         requirement_ordinal: usize,
         dependency: crate::domain_computation::authorization::WorthQueryAuthorizationDecisionFact,
@@ -92,7 +63,6 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
             Self::Authorization { session, .. } => Some(*session),
             Self::Application { .. } => None,
             Self::ObservedSource { .. } => None,
-            Self::ApplicationObservedSource { .. } => None,
         }
     }
 
@@ -100,7 +70,6 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         match self {
             Self::Application { fact, .. } => fact.locator_identity(),
             Self::ObservedSource { fact } => fact.locator_identity(),
-            Self::ApplicationObservedSource { fact, .. } => fact.locator_identity(),
             Self::Principal(_) => "application-principal-currentness".to_string(),
             Self::Authorization { locator, .. } => locator.to_string(),
         }
@@ -110,9 +79,7 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         &self,
     ) -> Option<&super::super::application_attempt::WorthQueryApplicationObservedFact> {
         match self {
-            Self::ObservedSource { fact } | Self::ApplicationObservedSource { fact, .. } => {
-                Some(fact)
-            }
+            Self::ObservedSource { fact } => Some(fact),
             _ => None,
         }
     }
@@ -125,9 +92,6 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         match self {
             Self::Application { fact, .. } => fact.remains_equal_in(runtime, snapshot),
             Self::ObservedSource { fact } => fact.remains_equal_in(runtime, snapshot),
-            Self::ApplicationObservedSource { fact, .. } => {
-                fact.remains_equal_in(runtime, snapshot)
-            }
             Self::Principal(dependency) => dependency.remains_current_in(runtime, snapshot),
             Self::Authorization { decision, .. } => decision.remains_equal_in(runtime, snapshot),
         }

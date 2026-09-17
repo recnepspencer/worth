@@ -1,10 +1,12 @@
 use std::time::Duration;
 
-use bank_domain::estate::{
-    EmergencyAccessId, EmergencyAccessReason, EstateAction, EstateWorkflowStage, MandatoryReviewId,
-    RestrictedBankField,
+use bank_domain::{
+    estate::{
+        EmergencyAccessId, EmergencyAccessReason, EstateAction, EstateWorkflowStage,
+        MandatoryReviewId, RestrictedBankField,
+    },
+    proposals::BankIdempotencyKey,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
 use super::fixture::{
     capability_world, emergency_request_world, request_scope, GrantSpec,
@@ -40,10 +42,10 @@ fn public_bank_runtime_commits_exact_emergency_request_through_query() {
 
     let outcome = fixture
         .runtime
-        .request_estate_emergency_access(
+        .request_estate_emergency_access_with_key(
             &principal,
             action,
-            WorthQueryApplicationIdempotencyBinding::new([31; 32], [32; 32]),
+            &bank_idempotency(31),
             &request_scope(),
         )
         .expect("the public Bank runtime must reach Query's request progression");
@@ -80,10 +82,10 @@ fn governed_view_grant_cannot_substitute_for_request_command_authority() {
 
     let denial = fixture
         .runtime
-        .request_estate_emergency_access(
+        .request_estate_emergency_access_with_key(
             &principal,
             action,
-            WorthQueryApplicationIdempotencyBinding::new([41; 32], [42; 32]),
+            &bank_idempotency(41),
             &request_scope(),
         )
         .expect_err("a governed view grant must not authorize the request command");
@@ -116,10 +118,10 @@ fn request_command_grant_cannot_substitute_for_governed_upper_bound_authority() 
 
     let denial = fixture
         .runtime
-        .request_estate_emergency_access(
+        .request_estate_emergency_access_with_key(
             &principal,
             action,
-            WorthQueryApplicationIdempotencyBinding::new([51; 32], [52; 32]),
+            &bank_idempotency(51),
             &request_scope(),
         )
         .expect_err("a request command grant must not become governed view authority");
@@ -156,14 +158,14 @@ fn distinct_approver_commits_the_public_query_approval_transition() {
 
     let outcome = fixture
         .runtime
-        .approve_estate_emergency_access(
+        .approve_estate_emergency_access_with_key(
             &approver,
             requested,
             EstateAction::ApproveEmergencyAccess {
                 estate: ESTATE,
                 access: EmergencyAccessId::new(331).unwrap(),
             },
-            WorthQueryApplicationIdempotencyBinding::new([62; 32], [63; 32]),
+            &bank_idempotency(62),
             &request_scope(),
         )
         .expect("a distinct assigned employee should reach Query approval");
@@ -211,31 +213,32 @@ fn requester_cannot_approve_their_own_elevation() {
 
     fixture
         .runtime
-        .approve_estate_emergency_access(
+        .approve_estate_emergency_access_with_key(
             &requester,
             other_requested,
             EstateAction::ApproveEmergencyAccess {
                 estate: ESTATE,
                 access: EmergencyAccessId::new(343).unwrap(),
             },
-            WorthQueryApplicationIdempotencyBinding::new([77; 32], [78; 32]),
+            &bank_idempotency(77),
             &request_scope(),
         )
         .expect("the requester independently holds approval-command authority");
 
     let denial = fixture
         .runtime
-        .approve_estate_emergency_access(
+        .approve_estate_emergency_access_with_key(
             &requester,
             requested,
             EstateAction::ApproveEmergencyAccess {
                 estate: ESTATE,
                 access: EmergencyAccessId::new(341).unwrap(),
             },
-            WorthQueryApplicationIdempotencyBinding::new([72; 32], [73; 32]),
+            &bank_idempotency(72),
             &request_scope(),
         )
-        .expect_err("the distinct-actor rule must reject self approval");
+        .expect_err("the distinct-actor rule must reject self approval")
+        .into_denial();
     let BankEstateProgressionDenial::Authorization(denial) = denial else {
         panic!("self approval must fail during command authorization: {denial:?}");
     };
@@ -286,14 +289,14 @@ fn close_approved_elevation(
 ) -> BankEstateMandatoryReview {
     let close = fixture
         .runtime
-        .revoke_estate_emergency_access(
+        .revoke_estate_emergency_access_with_key(
             approver,
             approved,
             EstateAction::RevokeEmergencyAccess {
                 estate: ESTATE,
                 access: EmergencyAccessId::new(351).unwrap(),
             },
-            WorthQueryApplicationIdempotencyBinding::new([85; 32], [86; 32]),
+            &bank_idempotency(85),
             &request_scope(),
         )
         .expect("the approved elevation should reach Query close");
@@ -315,7 +318,7 @@ fn complete_required_review(
     let reviewer = fixture.authenticate_reviewer();
     let outcome = fixture
         .runtime
-        .complete_estate_mandatory_review(
+        .complete_estate_mandatory_review_with_key(
             &reviewer,
             mandatory,
             EstateAction::CompleteMandatoryReview {
@@ -323,7 +326,7 @@ fn complete_required_review(
                 access: EmergencyAccessId::new(351).unwrap(),
                 review: MandatoryReviewId::new(352).unwrap(),
             },
-            WorthQueryApplicationIdempotencyBinding::new([87; 32], [88; 32]),
+            &bank_idempotency(87),
             &request_scope(),
         )
         .expect("a distinct reviewer should reach Query review completion");
@@ -333,4 +336,8 @@ fn complete_required_review(
     assert!(reviewed.reviewer_differs_from_requester());
     assert!(reviewed.reviewer_differs_from_approver());
     assert_eq!(reviewed.review_changed_record_count(), 3);
+}
+
+fn bank_idempotency(seed: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("lifecycle-progression-{seed}")).unwrap()
 }

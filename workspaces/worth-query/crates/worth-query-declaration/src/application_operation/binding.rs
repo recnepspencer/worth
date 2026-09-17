@@ -12,7 +12,9 @@ pub use descriptor::{
     ApplicationMutationBindingDescriptor, ApplicationMutationHandlerMetadata,
     ApplicationMutationIdempotencyMetadata,
 };
-pub use intent::{ApplicationMutationBinding, ApplicationMutationIntent};
+pub use intent::{
+    ApplicationCapabilityMutationBinding, ApplicationMutationBinding, ApplicationMutationIntent,
+};
 pub use output::{
     ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
     ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleDescriptor,

@@ -1,9 +1,13 @@
-use bank_server::BankMutationCommitOutcome;
+use bank_server::{
+    BankMutationCommitOutcome, BankRecoveryDenialKind, BankRecoveryIdempotencyResolution,
+};
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 
-use super::super::super::protocol::{BankHttpCommitDisposition, BankHttpEstateNotificationOutcome};
+use super::super::super::protocol::{
+    BankHttpCommitDisposition, BankHttpEstateNotificationOutcome, BankHttpRecoveryStatus,
+};
 use super::super::authenticated_owner::BankHttpAuthenticatedOwner;
 use super::super::authentication::BankHttpApplicationAuthenticator;
 use super::super::recovery_registry::{
@@ -28,12 +32,21 @@ where
     };
     let owner = BankHttpAuthenticatedOwner::from_principal(&principal);
     match registry.notification_replay(&owner, &request.idempotency_key, request.action) {
-        BankHttpCommitReplay::Applied { commit, recovery } => {
+        BankHttpCommitReplay::Applied {
+            commit,
+            recovery,
+            completed,
+        } => {
             return BankHttpEstateNotificationOutcome::Applied {
                 request_id,
                 disposition: BankHttpCommitDisposition::AlreadyCommitted,
                 commit,
-                recovery,
+                recovery: Some(recovery),
+                recovery_status: if completed {
+                    BankHttpRecoveryStatus::Completed
+                } else {
+                    BankHttpRecoveryStatus::TokenIssued
+                },
             };
         }
         BankHttpCommitReplay::Conflicting => {
@@ -41,11 +54,28 @@ where
         }
         BankHttpCommitReplay::Missing => {}
     }
-    let Some(reservation) =
-        registry.reserve_notification(owner, request.idempotency_key.clone(), request.action)
-    else {
-        return notification_denied(Some(request_id), saturated());
-    };
+    let reservation =
+        registry.reserve_notification(owner, request.idempotency_key.clone(), request.action);
+    if reservation.is_none() {
+        let resolution = match application.runtime().resolve_estate_action_idempotency(
+            &principal,
+            request.action,
+            &request.idempotency_key,
+            &scope,
+        ) {
+            Ok(resolution) => resolution,
+            Err(denial) => return notification_denied(Some(request_id), estate_denial(denial)),
+        };
+        match resolution {
+            BankRecoveryIdempotencyResolution::AlreadyCommitted => {}
+            BankRecoveryIdempotencyResolution::IntentDrift => {
+                return notification_denied(Some(request_id), conflicting_idempotency_key());
+            }
+            BankRecoveryIdempotencyResolution::Unseen => {
+                return notification_denied(Some(request_id), saturated());
+            }
+        }
+    }
     let outcome = match application.runtime().notify_estate_death_with_key(
         &principal,
         request.action,
@@ -64,16 +94,50 @@ where
         }
         other => return notification_denied(Some(request_id), commit_denial(other)),
     };
+    let commit = commit_description(&receipt);
+    let Some(reservation) = reservation else {
+        let recovery_status = match omitted_recovery_status(application.runtime(), &receipt) {
+            Ok(status) => status,
+            Err(_) => return notification_denied(Some(request_id), unavailable()),
+        };
+        return BankHttpEstateNotificationOutcome::Applied {
+            request_id,
+            disposition,
+            commit,
+            recovery: None,
+            recovery_status,
+        };
+    };
     let handle = match application.runtime().open_commit_recovery(&receipt) {
         Ok(handle) => handle,
+        Err(denial)
+            if disposition == BankHttpCommitDisposition::AlreadyCommitted
+                && matches!(
+                    denial.kind(),
+                    BankRecoveryDenialKind::RecoveryAlreadyMinted
+                        | BankRecoveryDenialKind::AlreadyTerminal
+                ) =>
+        {
+            let recovery_status = match omitted_recovery_status(application.runtime(), &receipt) {
+                Ok(status) => status,
+                Err(_) => return notification_denied(Some(request_id), unavailable()),
+            };
+            return BankHttpEstateNotificationOutcome::Applied {
+                request_id,
+                disposition,
+                commit,
+                recovery: None,
+                recovery_status,
+            };
+        }
         Err(_) => return notification_denied(Some(request_id), unavailable()),
     };
-    let commit = commit_description(&receipt);
     let recovery = reservation.register(BankHttpRecoveryRegistration { commit, handle });
     BankHttpEstateNotificationOutcome::Applied {
         request_id,
         disposition,
         commit,
-        recovery,
+        recovery: Some(recovery),
+        recovery_status: BankHttpRecoveryStatus::TokenIssued,
     }
 }

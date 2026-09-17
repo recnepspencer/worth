@@ -70,7 +70,8 @@ impl<Schema, Operation, Input, Scope>
                 super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
-            output_currentness_facts: None,
+            retain_client_observation: false,
+            producer_required_invariants: &[],
         };
         validate_mandatory_review_program(&program)?;
         Ok(WorthQueryMandatoryReviewProgram { program })
@@ -177,6 +178,7 @@ fn validate_lifecycle_facts(
                 requested.review_status_field(),
                 requested.review_required_status(),
             ),
+            absent_fields: &[(binding.review(), binding.reviewed_at_field())],
             requester_relation: requested.requester_relation(),
             approver_relation: binding.approver_relation(),
             grant_relation: requested.grant_relation(),
@@ -208,10 +210,16 @@ fn review_effects(
         WorthQueryApplicationRealizedEffect::UpdateEntity {
             entity: binding.review_entity().to_owned(),
             entity_id: binding.review(),
-            fields: BTreeMap::from([(
-                binding.review_status_field().clone(),
-                binding.completed_status().clone(),
-            )]),
+            fields: BTreeMap::from([
+                (
+                    binding.review_status_field().clone(),
+                    binding.completed_status().clone(),
+                ),
+                (
+                    binding.reviewed_at_field().clone(),
+                    binding.reviewed_at().clone(),
+                ),
+            ]),
         },
         WorthQueryApplicationRealizedEffect::CreateRelation {
             kind: binding.reviewer_relation(),

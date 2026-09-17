@@ -97,10 +97,19 @@ impl TypedMutationPrecondition {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct TypedMutationPreconditions<Schema, Operation, Scope> {
     entries: Vec<TypedMutationPrecondition>,
     _marker: PhantomData<fn() -> (Schema, Operation, Scope)>,
+}
+
+impl<Schema, Operation, Scope> Clone for TypedMutationPreconditions<Schema, Operation, Scope> {
+    fn clone(&self) -> Self {
+        Self {
+            entries: self.entries.clone(),
+            _marker: PhantomData,
+        }
+    }
 }
 
 impl<Schema, Operation, Scope> Default for TypedMutationPreconditions<Schema, Operation, Scope> {

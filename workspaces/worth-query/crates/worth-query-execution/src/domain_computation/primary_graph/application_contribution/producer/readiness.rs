@@ -44,30 +44,30 @@ pub(in crate::domain_computation::primary_graph) fn evaluate_output_readiness(
     source_record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
     query_identity: u64,
     attempt: u64,
-) -> Result<
-    worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
-    worth_runtime_bridge::facade::BridgeConditionalDenial,
-> {
-    let signal_basis =
-        bridge.admit_exact_conditional_signal_basis(lowering, truth.signal_basis())?;
+) -> Result<worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence, String> {
+    let signal_basis = bridge
+        .admit_exact_conditional_signal_basis(lowering, truth.signal_basis())
+        .map_err(|denial| format!("{:?}: {}", denial.kind(), denial.detail()))?;
     let mut compute = QueryConditionalComputeContext {
         output_version: attempt,
     };
-    bridge.execute_for_source_record(
-        &signal_basis,
-        BridgeConditionalExecutionRequest {
-            lowering,
-            query_binding_identity: producer_identity,
-            query_capability_identity: query_identity,
-            snapshot_identity: truth.snapshot_projection(),
-            truth_branch_identity: Some(truth.branch_projection()),
-            bridge_snapshot_identity: Some(truth.snapshot()),
-            execution_identity: producer_identity,
-            attempt,
-        },
-        source_record,
-        &mut compute,
-    )
+    bridge
+        .execute_for_source_record(
+            &signal_basis,
+            BridgeConditionalExecutionRequest {
+                lowering,
+                query_binding_identity: producer_identity,
+                query_capability_identity: query_identity,
+                snapshot_identity: truth.snapshot_projection(),
+                truth_branch_identity: Some(truth.branch_projection()),
+                bridge_snapshot_identity: Some(truth.snapshot()),
+                execution_identity: producer_identity,
+                attempt,
+            },
+            source_record,
+            &mut compute,
+        )
+        .map_err(|denial| format!("{:?}: {}", denial.kind(), denial.detail()))
 }
 
 impl<Schema> super::WorthQueryInstalledApplicationProducerRegistry<Schema>

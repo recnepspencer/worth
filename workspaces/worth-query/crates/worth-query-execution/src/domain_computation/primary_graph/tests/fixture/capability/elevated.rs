@@ -49,17 +49,19 @@ pub enum CapabilityReviewKind {
 }
 
 worth_query_entity!(pub CapabilityElevation for IdentityExecutionSchema);
-worth_query_aspect!(pub CapabilityElevationFacts for IdentityExecutionSchema, CapabilityElevation; identity = AspectIdentity(0x91611038), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub CapabilityElevationFacts for IdentityExecutionSchema, CapabilityElevation; identity = AspectIdentity(0x91611038), revision = AspectContractRevision(2),);
 worth_query_field!(pub CapabilityElevationIdentity for IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub CapabilityElevationReason for IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: String => StringApplicationValueBinding, read_only, no_equality);
 worth_query_field!(pub CapabilityElevationStatusField for IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: CapabilityElevationStatus => CapabilityElevationStatusBinding, read_write, no_equality);
 worth_query_field!(pub CapabilityElevationNotBefore for IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: u64 => U64ApplicationValueBinding, read_write, no_equality);
 worth_query_field!(pub CapabilityElevationNotAfter for IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: u64 => U64ApplicationValueBinding, read_write, no_equality);
+worth_query_field!(pub CapabilityElevationClosedAt for IdentityExecutionSchema, CapabilityElevation, CapabilityElevationFacts: optional u64 => U64ApplicationValueBinding, read_write, no_equality);
 worth_query_entity!(pub CapabilityReview for IdentityExecutionSchema);
-worth_query_aspect!(pub CapabilityReviewFacts for IdentityExecutionSchema, CapabilityReview; identity = AspectIdentity(0x91611039), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub CapabilityReviewFacts for IdentityExecutionSchema, CapabilityReview; identity = AspectIdentity(0x91611039), revision = AspectContractRevision(2),);
 worth_query_field!(pub CapabilityReviewIdentity for IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub CapabilityReviewKindField for IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: CapabilityReviewKind => CapabilityReviewKindBinding, read_only, equality);
 worth_query_field!(pub CapabilityReviewStatusField for IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: CapabilityReviewStatus => CapabilityReviewStatusBinding, read_write, no_equality);
+worth_query_field!(pub CapabilityReviewReviewedAt for IdentityExecutionSchema, CapabilityReview, CapabilityReviewFacts: optional u64 => U64ApplicationValueBinding, read_write, no_equality);
 worth_query_relation!(pub CapabilityElevationRequester in IdentityExecutionSchema, Principal => CapabilityElevation; integrity = issued_lifecycle_relation());
 worth_query_relation!(pub CapabilityElevationApprover in IdentityExecutionSchema, Principal => CapabilityElevation; integrity = issued_lifecycle_relation());
 worth_query_relation!(pub CapabilityElevationGrant in IdentityExecutionSchema, CapabilityElevation => CapabilityGrant; integrity = issued_lifecycle_relation());

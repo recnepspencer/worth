@@ -52,6 +52,13 @@ impl WorthQueryStagedApplicationAttempt<'_> {
             .invariant_requirements()
     }
 
+    pub(in crate::domain_computation::primary_graph::provider) fn producer_required_invariants(
+        &self,
+    ) -> &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement]
+    {
+        self.attempt.producer_required_invariants()
+    }
+
     pub(in crate::domain_computation::primary_graph::provider) const fn validator_work_admission(
         &self,
     ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryCandidateValidatorWorkAdmission{

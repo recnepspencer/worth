@@ -6,15 +6,24 @@ use super::{
     ApplicationConnectionDeclaration, ApplicationConnectionIdentity,
     ApplicationConnectionInstanceRef, ApplicationConnectionRef, ApplicationFeature,
     ApplicationInputPort, ApplicationOccurrenceConnectionBinding, ApplicationOutputPort,
+    ApplicationProgramOutputShape,
 };
+
+pub type ApplicationProgramRootConnectionRef<Schema, Program> =
+    <<Program as super::ApplicationProgramDefinition<Schema>>::OutputGraph as ApplicationOutputGraphShape<
+        Schema,
+    >>::RootConnection;
+pub type ApplicationProgramRootConnection<Schema, Program> = <ApplicationProgramRootConnectionRef<
+    Schema,
+    Program,
+> as ApplicationConnectionShape<Schema>>::Binding;
+pub type ApplicationProgramRootEdges<Schema, Program> =
+    <<Program as super::ApplicationProgramDefinition<Schema>>::OutputGraph as ApplicationOutputGraphShape<
+        Schema,
+    >>::Dependents;
 
 /// Typed shape of the required-output graph rooted at one performed action.
 pub struct ApplicationOutputGraph<RootConnection, Dependents> {
-    marker: PhantomData<fn() -> (RootConnection, Dependents)>,
-}
-
-/// A performed action whose required root outputs are discovered at its retained commit.
-pub struct ApplicationDiscoveredOutputGraph<RootConnection, Dependents> {
     marker: PhantomData<fn() -> (RootConnection, Dependents)>,
 }
 
@@ -30,12 +39,7 @@ mod sealed {
     pub trait ConnectionShape {}
     pub trait OutputEdgesShape {}
     pub trait OutputChildrenShape<ParentFeature> {}
-    pub trait RequiredRootKind {}
-    pub trait DiscoveredRootKind {}
 }
-
-mod root_kinds;
-pub use root_kinds::{ApplicationDiscoveredOutputRoot, ApplicationRequiredOutputRoot};
 
 /// A fully typed authored connection that lowers without a repeated runtime
 /// connection inventory.
@@ -169,39 +173,16 @@ impl<
 {
 }
 
-pub trait ApplicationOutputGraphShape<Schema>: Sized + 'static
+pub trait ApplicationOutputGraphShape<Schema>: ApplicationProgramOutputShape<Schema>
 where
     Schema: ApplicationSchema,
 {
     type RootConnection: ApplicationConnectionShape<Schema>;
     type Dependents: ApplicationOutputEdgesShape<Schema>;
-
-    fn connections() -> Vec<ApplicationConnectionDeclaration> {
-        let mut connections = vec![Self::RootConnection::declaration()];
-        Self::Dependents::append_connections(&mut connections);
-        connections
-    }
-
-    fn connection_types() -> Vec<std::any::TypeId> {
-        let mut connections = vec![std::any::TypeId::of::<Self::RootConnection>()];
-        Self::Dependents::append_connection_types(&mut connections);
-        connections
-    }
 }
 
 impl<Schema, RootConnection, Dependents> ApplicationOutputGraphShape<Schema>
     for ApplicationOutputGraph<RootConnection, Dependents>
-where
-    Schema: ApplicationSchema,
-    RootConnection: ApplicationConnectionShape<Schema>,
-    Dependents: ApplicationOutputChildrenShape<Schema, RootConnection::TargetFeature>,
-{
-    type RootConnection = RootConnection;
-    type Dependents = Dependents;
-}
-
-impl<Schema, RootConnection, Dependents> ApplicationOutputGraphShape<Schema>
-    for ApplicationDiscoveredOutputGraph<RootConnection, Dependents>
 where
     Schema: ApplicationSchema,
     RootConnection: ApplicationConnectionShape<Schema>,

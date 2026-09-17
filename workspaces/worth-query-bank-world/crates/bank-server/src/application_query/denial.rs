@@ -17,7 +17,10 @@ pub use installation::{
     BankApplicationCapabilityInstallationDenialKind, BankApplicationQueryInstallationDenialKind,
 };
 
-use worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial;
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationHistorySelectionDenial, WorthQueryApplicationLiveOpenRequestDenial,
+    WorthQueryApplicationRequestQueryDenial,
+};
 use worth_query_host::facade::domain::{
     WorthQueryApplicationCapabilityInstallationDenial,
     WorthQueryApplicationQueryInstallationDenial, WorthQueryApplicationQueryLimitDenial,
@@ -48,6 +51,9 @@ pub enum BankApplicationOutputSettlementDenialKind {
     AmbiguousApplicableProducer,
     ProducerUnavailable,
     SchedulingRejected,
+    SchedulingDeferred,
+    PublicationStale,
+    NoEffect,
     Superseded,
     Cancelled,
     TimedOut,
@@ -58,6 +64,7 @@ pub enum BankApplicationOutputSettlementDenialKind {
     ForeignSettlement,
     RetainedBasisUnavailable,
     Closed,
+    DuplicatePerformedSource,
 }
 
 impl<Kind> BankApplicationQueryLaneDenial<Kind>
@@ -87,6 +94,9 @@ where
 
 #[derive(Debug)]
 pub enum BankApplicationQueryDenial {
+    RequestMode,
+    LiveRetainedBasis,
+    LiveControls(worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControlDenial),
     Installation(BankApplicationQueryInstallationDenialKind),
     CapabilityInstallation(BankApplicationCapabilityInstallationDenialKind),
     CapabilityAdmission(BankAuthorizationDenial),
@@ -104,6 +114,51 @@ pub enum BankApplicationQueryDenial {
 }
 
 impl BankApplicationQueryDenial {
+    pub(crate) fn from_history_selection(
+        denial: WorthQueryApplicationHistorySelectionDenial,
+    ) -> Self {
+        match denial {
+            WorthQueryApplicationHistorySelectionDenial::ProductSelection(denial) => {
+                Self::from_product_selection(denial)
+            }
+            WorthQueryApplicationHistorySelectionDenial::CommitUnavailable => {
+                Self::HistoricalCommitUnavailable
+            }
+        }
+    }
+
+    pub(crate) fn from_live_request_open(
+        denial: WorthQueryApplicationLiveOpenRequestDenial,
+    ) -> Self {
+        match denial {
+            WorthQueryApplicationLiveOpenRequestDenial::RetainedBasis => Self::LiveRetainedBasis,
+            WorthQueryApplicationLiveOpenRequestDenial::BindingInstallation(denial) => {
+                Self::from_installation(denial)
+            }
+            WorthQueryApplicationLiveOpenRequestDenial::CapabilityInstallation(denial) => {
+                Self::from_capability_installation(denial)
+            }
+            WorthQueryApplicationLiveOpenRequestDenial::CapabilityAdmission(denial) => {
+                Self::from_capability_admission(denial)
+            }
+            WorthQueryApplicationLiveOpenRequestDenial::Limit(denial) => Self::Limit(denial),
+            WorthQueryApplicationLiveOpenRequestDenial::ProductSelection(denial) => {
+                Self::from_product_selection(denial)
+            }
+            WorthQueryApplicationLiveOpenRequestDenial::PrincipalResolution(denial) => {
+                Self::PrincipalResolution(denial.kind())
+            }
+            WorthQueryApplicationLiveOpenRequestDenial::ScopeResolution(denial) => {
+                Self::from_scope_resolution(denial)
+            }
+            WorthQueryApplicationLiveOpenRequestDenial::Controls(denial) => {
+                Self::LiveControls(denial)
+            }
+            WorthQueryApplicationLiveOpenRequestDenial::Open(denial) => {
+                Self::from_live_open(denial)
+            }
+        }
+    }
     pub(crate) fn from_request_query(denial: WorthQueryApplicationRequestQueryDenial) -> Self {
         match denial {
             WorthQueryApplicationRequestQueryDenial::ProductSelection(denial) => {
@@ -124,6 +179,16 @@ impl BankApplicationQueryDenial {
             }
             WorthQueryApplicationRequestQueryDenial::Execution(denial) => {
                 Self::from_execution(denial)
+            }
+            WorthQueryApplicationRequestQueryDenial::ContinuationExecution(denial) => {
+                Self::from_continuation_execution(denial)
+            }
+            WorthQueryApplicationRequestQueryDenial::RequestMode => Self::RequestMode,
+            WorthQueryApplicationRequestQueryDenial::CapabilityInstallation(denial) => {
+                Self::from_capability_installation(denial)
+            }
+            WorthQueryApplicationRequestQueryDenial::CapabilityAdmission(denial) => {
+                Self::from_capability_admission(denial)
             }
             WorthQueryApplicationRequestQueryDenial::OutputSettlement(denial) => {
                 Self::from_output_settlement(denial)
@@ -181,6 +246,9 @@ impl BankApplicationQueryDenial {
             Query::AmbiguousApplicableProducer => Bank::AmbiguousApplicableProducer,
             Query::ProducerUnavailable => Bank::ProducerUnavailable,
             Query::SchedulingRejected => Bank::SchedulingRejected,
+            Query::SchedulingDeferred => Bank::SchedulingDeferred,
+            Query::PublicationStale => Bank::PublicationStale,
+            Query::NoEffect => Bank::NoEffect,
             Query::Superseded => Bank::Superseded,
             Query::Cancelled => Bank::Cancelled,
             Query::TimedOut => Bank::TimedOut,
@@ -191,6 +259,7 @@ impl BankApplicationQueryDenial {
             Query::ForeignSettlement => Bank::ForeignSettlement,
             Query::RetainedBasisUnavailable => Bank::RetainedBasisUnavailable,
             Query::Closed => Bank::Closed,
+            Query::DuplicatePerformedSource => Bank::DuplicatePerformedSource,
         };
         Self::OutputSettlement(kind)
     }

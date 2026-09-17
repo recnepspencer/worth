@@ -6,10 +6,22 @@ use worth_query_decl::facade::{
     worth_query_operation_unlinks, worth_query_operation_writes,
 };
 
+mod account_access_bindings;
+mod create_business_account_binding;
 mod create_personal_account_binding;
+mod initiate_business_payment_binding;
+mod money_movement_bindings;
+mod payment_decision_bindings;
 mod read_capabilities;
+mod reverse_journal_binding;
 
+pub use account_access_bindings::*;
+pub use create_business_account_binding::*;
 pub use create_personal_account_binding::*;
+pub use initiate_business_payment_binding::*;
+pub use money_movement_bindings::*;
+pub use payment_decision_bindings::*;
+pub use reverse_journal_binding::*;
 
 use crate::model::{
     AccountAuthorizationId, AccountId, AccountName, BankPrincipalId, BusinessId, CustomerRole,

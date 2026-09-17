@@ -76,7 +76,7 @@ where
             return revocation_denied(Some(request_id), unavailable());
         }
         BankEstateElevationCloseOutcome::ProductUnpublished(_) => {
-            return revocation_denied(Some(request_id), unavailable());
+            return revocation_denied(Some(request_id), indeterminate());
         }
         BankEstateElevationCloseOutcome::Closed(authority) => {
             (authority, BankHttpCommitDisposition::Committed)

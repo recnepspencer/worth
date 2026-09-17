@@ -1,8 +1,7 @@
 //! Complete Bank commit-publication noninterference across protected-fact twins.
 
-use bank_domain::schema::AccountStatus;
+use bank_domain::{proposals::BankIdempotencyKey, schema::AccountStatus};
 use bank_server::{queries, BankMutationCommitOutcome, BankReadControls};
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 use worth_query_host::facade::publication::application_aftermath::WorthQueryPublishedAftermathPosture;
 
 use super::freeze_account::fixture::{freeze_world_with_protected_foreign_status, FreezeFixture};
@@ -80,10 +79,10 @@ fn commit_freeze(fixture: &FreezeFixture, key: u8) -> bank_server::BankCommitRec
     let outcome = fixture
         .world
         .runtime
-        .freeze_estate_account(
+        .freeze_estate_account_with_key(
             &specialist,
             fixture.action(fixture.estate_account),
-            WorthQueryApplicationIdempotencyBinding::new([key; 32], [key.wrapping_add(1); 32]),
+            &BankIdempotencyKey::new(format!("publication-freeze-{key}")).unwrap(),
             &request_scope(),
         )
         .expect("freeze must admit under both protected-fact twins");

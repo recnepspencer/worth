@@ -149,7 +149,7 @@ fn institution_scope(input: &CreatePersonalAccount) -> InstitutionId {
     input.institution
 }
 
-fn client_key_identity(key: &BankIdempotencyKey) -> [u8; 32] {
+pub(crate) fn client_key_identity(key: &BankIdempotencyKey) -> [u8; 32] {
     derive_identity(
         CLIENT_KEY_DOMAIN,
         CLIENT_KEY_RULE_VERSION,
@@ -194,6 +194,7 @@ worth_query_mutation_binding!(
     decision CreatePersonalAccountDecision,
     denial CreatePersonalAccountDenialBinding,
     handler identity "bank.operation.create-personal-account.handler.v1",
+    program required,
     outputs CreatePersonalAccountOutputs,
     principal BankPrincipalBinding,
         mapping ExternalPrincipalMapping,
@@ -209,7 +210,7 @@ worth_query_mutation_binding!(
     field InstitutionIdentityField::reference(),
     value institution_scope,
     candidates creates 1, deletes 0, links 2, unlinks 0, writes 5, emits 0,
-    resources retained_representation_bytes CREATE_PERSONAL_ACCOUNT_RETAINED_BYTES, validator_work 8
+    resources retained_representation_bytes CREATE_PERSONAL_ACCOUNT_RETAINED_BYTES, validator_work 16
 );
 
 fn derive_identity<const N: usize>(

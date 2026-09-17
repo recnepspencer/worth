@@ -1,8 +1,8 @@
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryCapabilityRevocationProgram,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryCapabilityRevocationProgram,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -11,6 +11,31 @@ where
     Schema: ApplicationSchema,
 {
     pub fn compare_and_commit_capability_revocation<Operation, Input, Scope>(
+        &self,
+        program: WorthQueryCapabilityRevocationProgram<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
+        if self.installed_program_action_operations.is_some()
+            || self
+                .program_required_operations
+                .contains(&std::any::TypeId::of::<Operation>())
+        {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            );
+        }
+        self.compare_and_commit_capability_revocation_for_program(program, idempotency)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_capability_revocation_for_program<
+        Operation,
+        Input,
+        Scope,
+    >(
         &self,
         program: WorthQueryCapabilityRevocationProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,

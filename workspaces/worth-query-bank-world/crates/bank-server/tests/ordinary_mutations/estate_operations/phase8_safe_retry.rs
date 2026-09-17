@@ -6,7 +6,10 @@
 
 use bank_external_rail::test_control::FaultScript;
 use bank_external_rail::LedgerStatus;
-use bank_server::{BankEstateProgressionDenial, BankRecoveryDenialKind, BankRecoveryDurability};
+use bank_server::{
+    BankEstateProgressionDenial, BankRecoveryClaimStatus, BankRecoveryDenialKind,
+    BankRecoveryDurability,
+};
 use worth_query_host::facade::publication::application_aftermath::WorthQueryPublishedExternalEffectPostureKind;
 
 use super::phase8_cross_gate::world;
@@ -44,6 +47,14 @@ fn faulted_dispatch_then_safe_retry_escapes_exactly_once() {
         .expect("safe-retry through production admission");
     assert!(admission.is_external_completion());
     assert!(admission.has_fresh_attempt());
+    assert_eq!(
+        world
+            .fixture
+            .world
+            .runtime
+            .commit_recovery_claim_status(&receipt),
+        Ok(BankRecoveryClaimStatus::Completed)
+    );
     assert_eq!(
         admission.durability(),
         BankRecoveryDurability::StoreCapabilityRequired
@@ -227,6 +238,8 @@ fn foreign_principal_safe_retry_denies_before_transport() {
         .runtime
         .safe_retry_commit_recovery(handle, &deceased, action, &scope)
         .expect_err("foreign principal must deny");
+    let (denied, retained) = denied.into_parts();
+    let retained = retained.expect("denial must return the exact recovery handle");
     match denied {
         BankEstateProgressionDenial::Authorization(d) => {
             assert_eq!(
@@ -240,6 +253,51 @@ fn foreign_principal_safe_retry_denies_before_transport() {
     }
     assert_eq!(world.transport.attempts().len(), attempts_before);
     assert_eq!(world.transport.admission_count(), admissions_before);
+    let specialist = world.fixture.authenticate_specialist();
+    world.transport.under(FaultScript::Succeed, world::PATIENT);
+    world
+        .fixture
+        .world
+        .runtime
+        .safe_retry_commit_recovery(retained, &specialist, action, &scope)
+        .expect("the authorized retry must consume the returned handle");
+    assert_eq!(world.transport.attempts().len(), attempts_before + 1);
+}
+
+#[test]
+fn unresolved_redispatch_retains_the_handle_for_a_later_completed_attempt() {
+    let world = world::cross_gate_world("safe-retry-unresolved");
+    world
+        .transport
+        .under(FaultScript::DisappearMidDispatch, world::PATIENT);
+    let receipt = world.commit_notification(87);
+    let handle = world.open_recovery(&receipt);
+    let specialist = world.fixture.authenticate_specialist();
+    let action = world.specialist_action();
+    let scope = request_scope();
+    let denied = world
+        .fixture
+        .world
+        .runtime
+        .safe_retry_commit_recovery(handle, &specialist, action, &scope)
+        .expect_err("unresolved rail attempt cannot settle recovery");
+    let (denial, retained) = denied.into_parts();
+    assert!(matches!(
+        denial,
+        BankEstateProgressionDenial::Recovery(ref denied)
+            if denied.kind() == BankRecoveryDenialKind::UnresolvedExternalPosture
+    ));
+    let handle = retained.expect("unresolved transport must preserve the same live handle");
+    assert_eq!(world.transport.completed_effect_count(), 0);
+    world.transport.under(FaultScript::Succeed, world::PATIENT);
+    let completed = world
+        .fixture
+        .world
+        .runtime
+        .safe_retry_commit_recovery(handle, &specialist, action, &scope)
+        .expect("the next completed attempt consumes the retained handle");
+    assert!(completed.is_external_completion());
+    assert_eq!(world.transport.completed_effect_count(), 1);
 }
 
 #[test]
@@ -267,6 +325,11 @@ fn expired_handle_safe_retry_denies_before_transport() {
         .runtime
         .safe_retry_commit_recovery(handle, &specialist, action, &scope)
         .expect_err("expired handle must deny");
+    let (denied, retained) = denied.into_parts();
+    assert!(
+        retained.is_some(),
+        "expiry denial must preserve owner custody"
+    );
     match denied {
         BankEstateProgressionDenial::Recovery(d) => {
             assert_eq!(d.kind(), BankRecoveryDenialKind::Expired);
@@ -285,7 +348,8 @@ fn undeclared_external_effect_leaves_retry_path_nothing_to_find() {
     use bank_domain::model::Money;
     use bank_domain::proposals::BankIdempotencyKey;
     use bank_domain::schema::SendMoney;
-    use bank_server::{mutations, BankMutationControls, BankMutationStatus};
+    use bank_server::{mutations, BankMutationControls};
+    use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
     use super::external_effect_dispatch::rail_transport::{spawn_rail, BankEstateRailTransport};
     use crate::fixture::{ordinary_read_world, principal_id, OWNER, RECIPIENT};
@@ -318,10 +382,10 @@ fn undeclared_external_effect_leaves_retry_path_nothing_to_find() {
             BankIdempotencyKey::new("safe-retry-r84-send").unwrap(),
         ))
         .execute();
-    let BankMutationStatus::Committed(receipt) = outcome.status() else {
+    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) = &outcome else {
         panic!("lawful transfer must commit: {outcome:?}");
     };
-    assert!(!receipt.co_committed_dispatch_outbox());
+    assert!(receipt.dispatch_outbox().is_none());
     assert!(transport.attempts().is_empty());
     assert_eq!(transport.admission_count(), 0);
 }

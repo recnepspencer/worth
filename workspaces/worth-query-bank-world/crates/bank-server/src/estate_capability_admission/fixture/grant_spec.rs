@@ -164,15 +164,4 @@ impl GrantSpec {
             ..Self::view()
         }
     }
-
-    pub(crate) fn release() -> Self {
-        Self {
-            operation: EstateCapabilityOperation::ReleaseEstate,
-            purpose: EstateCapabilityPurpose::EstateAdministration,
-            account: None,
-            field: None,
-            amount_ceiling: None,
-            ..Self::view()
-        }
-    }
 }

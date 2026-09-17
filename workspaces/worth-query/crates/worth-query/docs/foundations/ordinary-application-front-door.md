@@ -192,16 +192,16 @@ let outcome = application
     .on_branch(branch)
     .transaction()
     .apply(admitted_change)
-    .commit()?;
+    .commit_for_program(application.admit_program_operation::<Operation>()?)?;
 ```
 
 `selected` pins the exact composite occurrence. Query carries its World,
 Relational, Signal, and Bridge affinity through admission and execution; later
 phases do not resolve latest product truth again. The complete executable
 [ordinary product workflow](../../../worth-query-certification/examples/ordinary_product_workflow.rs)
-constructs the real declaration and host runtime, reads the selected branch,
+constructs and installs a validated program, reads the selected branch,
 performs a World publication, delivers the patch, executes its conditional,
-checks a retained read, and closes runtime resources.
+checks the successor and a retained read, and closes runtime resources.
 
 Match every commit terminal. `Committed` and `AlreadyCommitted` carry the
 canonical product receipt. `ProductUnpublished`, `Deferred`,
@@ -273,17 +273,22 @@ Money movement must preserve commit uncertainty and idempotent retry rather
 than translating every transport success or failure into a business result:
 
 ```rust,no_run
-# use bank_domain::{proposals::BankIdempotencyKey, schema::SendMoney};
+# use bank_domain::{proposals::{BankIdempotencyKey, BankProposalDenial}, schema::SendMoney};
 # use bank_server::{
-#     mutations, BankAuthenticatedPrincipal, BankCommitReceipt, BankIdentityRuntime,
-#     BankMutationControls, BankMutationDenial, BankMutationStatus, BankUnresolvedCommitEvidence,
+#     mutations, BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationControls,
 # };
-# use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-# fn publish(_: BankCommitReceipt) {}
-# fn retry_from_fresh_state(_: usize) {}
-# fn inspect_before_retry(_: BankUnresolvedCommitEvidence) {}
-# fn explain(_: BankMutationDenial) {}
-# fn handle_terminal_stop(_: BankMutationStatus) {}
+# use worth_query_host::facade::{
+#     admission::authenticated_principal::WorthQueryRequestScope,
+#     application_entry::{
+#         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
+#     },
+#     primary_graph::{WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt},
+# };
+# fn publish(_: WorthQueryApplicationCommitReceipt) {}
+# fn inspect_commit_outcome(_: WorthQueryApplicationCommitOutcome) {}
+# fn explain_domain(_: BankProposalDenial) {}
+# fn explain_request(_: WorthQueryApplicationRequestMutationDenial) {}
+# fn handle_terminal_stop() {}
 # fn send_money(
 #     bank: &BankIdentityRuntime,
 #     principal: &BankAuthenticatedPrincipal,
@@ -300,24 +305,23 @@ let outcome = bank
     ))
     .execute();
 
-match outcome.into_status() {
-    BankMutationStatus::Committed(receipt)
-    | BankMutationStatus::AlreadyCommitted(receipt) => publish(receipt),
-    BankMutationStatus::Stale { stale_fact_count } => {
-        retry_from_fresh_state(stale_fact_count)
-    }
-    BankMutationStatus::PartialEffect(evidence)
-    | BankMutationStatus::Indeterminate(evidence) => inspect_before_retry(evidence),
-    BankMutationStatus::Denied(reason) => explain(reason),
-    stop => handle_terminal_stop(stop),
+match outcome {
+    Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. })
+    | Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)) => publish(receipt),
+    Ok(WorthQueryApplicationMutationOutcome::Commit(commit)) => inspect_commit_outcome(commit),
+    Ok(WorthQueryApplicationMutationOutcome::DomainDenied(reason)) => explain_domain(reason),
+    Err(reason) => explain_request(reason),
+    Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
+    | Ok(WorthQueryApplicationMutationOutcome::Cancelled)
+    | Ok(WorthQueryApplicationMutationOutcome::DeadlineExceeded) => handle_terminal_stop(),
 }
 # }
 ```
 
 The idempotency binding is application meaning installed by Query. The
-provider owns the commit. Partial-effect and indeterminate evidence retain the
+provider owns the commit. Deferred and indeterminate commit outcomes retain the
 only legal follow-up posture for that exact attempt; any live recovery handle
-derived from it remains server-side rather than becoming serialized authority.
+derived from them remains server-side rather than becoming serialized authority.
 
 For time-driven operations, the host performs installation rather than calling
 the operation directly:

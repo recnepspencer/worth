@@ -19,6 +19,12 @@ use worth_query_execution::facade::primary_graph::{
 
 use super::WorthQueryApplicationRequestQueryDenial;
 
+mod continuation;
+mod governed;
+mod governed_continuation;
+mod governed_retained;
+mod live_approved;
+
 pub struct WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, Schema, Intent> {
     application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -232,8 +238,7 @@ where
             ),
             None => None,
         };
-        let resolution_basis = retained.as_ref().unwrap_or(&selected);
-        let principal = resolution_basis
+        let principal = selected
             .resolve_authenticated_principal(
                 binding.principal_binding(),
                 self.principal,
@@ -243,7 +248,7 @@ where
             .map_err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution)?;
         let (scope_field, scope_value) =
             scope_binding.into_field_parts(principal.principal_identity());
-        let scope = resolution_basis
+        let scope = selected
             .resolve_entity(
                 scope_field,
                 scope_value,

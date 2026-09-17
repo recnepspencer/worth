@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use bank_domain::estate::EstateAction;
 use bank_domain::proposals::BankIdempotencyKey;
-use bank_server::BankCommitRecoveryHandle;
+use bank_server::{BankCommitRecoveryHandle, BankEstateProgressionDenial};
 
 use super::super::super::protocol::BankHttpCommitDescription;
 use super::super::authenticated_owner::BankHttpAuthenticatedOwner;
@@ -25,7 +25,8 @@ pub(super) struct RecoveryRecord {
     pub(super) action: EstateAction,
     pub(super) commit: BankHttpCommitDescription,
     pub(super) expires_at: Instant,
-    pub(super) handle: BankCommitRecoveryHandle,
+    pub(super) handle: Option<BankCommitRecoveryHandle>,
+    pub(super) retried: Option<RecoveryRetryResult>,
 }
 
 impl RecoveryRecord {
@@ -40,9 +41,25 @@ impl RecoveryRecord {
             action,
             commit: registration.commit,
             expires_at: Instant::now() + lifetime,
-            handle: registration.handle,
+            handle: Some(registration.handle),
+            retried: None,
         }
     }
+}
+
+#[derive(Clone, Copy)]
+pub(in crate::http::server) struct RecoveryRetryResult {
+    pub(in crate::http::server) external_completion: bool,
+    pub(in crate::http::server) fresh_attempt: bool,
+}
+
+pub(in crate::http::server) enum BankHttpRecoveryRetry {
+    Missing,
+    Applied {
+        result: RecoveryRetryResult,
+        replay: bool,
+    },
+    Denied(BankEstateProgressionDenial),
 }
 
 pub(in crate::http::server) enum BankHttpCommitReplay {
@@ -50,6 +67,7 @@ pub(in crate::http::server) enum BankHttpCommitReplay {
     Applied {
         commit: BankHttpCommitDescription,
         recovery: String,
+        completed: bool,
     },
     Conflicting,
 }

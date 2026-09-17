@@ -5,13 +5,14 @@ mod commit_terminal;
 mod compare_and_commit;
 mod delegation_activation_program;
 mod denial;
-mod dependency_identity;
 mod effect_program;
 mod effect_validation;
 mod elevation_approval_outcome;
 mod elevation_approval_program;
+mod elevation_approval_replay;
 mod elevation_close_outcome;
 mod elevation_close_program;
+mod elevation_close_replay;
 mod elevation_lifecycle_effects;
 mod elevation_lifecycle_emission;
 mod elevation_lifecycle_facts;
@@ -22,6 +23,7 @@ mod idempotency;
 mod idempotency_resolution;
 mod mandatory_review_outcome;
 mod mandatory_review_program;
+mod mandatory_review_replay;
 mod observation;
 pub(in crate::domain_computation::primary_graph) mod precondition_binding;
 mod provider_binding;
@@ -31,6 +33,7 @@ mod provider_recomparison;
 mod read_phase;
 mod read_scope;
 mod read_set;
+mod retained_commit;
 pub(super) mod snapshot_lease;
 pub(in crate::domain_computation) use snapshot_lease::{
     WorthQueryApplicationSnapshotLease, WorthQueryApplicationSnapshotLeaseDenial,
@@ -124,3 +127,4 @@ pub use read_set::{
     WorthQueryApplicationReadAttempt, WorthQueryCompleteApplicationReadSet,
     WorthQueryObservedApplicationRelation,
 };
+pub use retained_commit::WorthQueryApplicationRetainedCommitOutcome;

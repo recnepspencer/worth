@@ -58,6 +58,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
             },
         )?;
         setup.handler::<PlanarMutationBinding<Schema>, _>(PlanarHandler)?;
+        setup.handler::<super::PlanarEditBinding<Schema>, _>(PlanarHandler)?;
         setup.handler::<super::FinalPlanarMutationBinding<Schema>, _>(
             super::FinalPlanarMutationHandler,
         )?;

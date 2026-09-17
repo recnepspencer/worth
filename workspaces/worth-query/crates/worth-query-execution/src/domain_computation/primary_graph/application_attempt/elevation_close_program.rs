@@ -69,7 +69,8 @@ impl<Schema, Operation, Input, Scope>
                 super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
-            output_currentness_facts: None,
+            retain_client_observation: false,
+            producer_required_invariants: &[],
         };
         validate_elevation_close_program(&program)?;
         Ok(WorthQueryElevationCloseProgram { program })
@@ -175,6 +176,7 @@ fn validate_lifecycle_facts(
                 requested.review_status_field(),
                 requested.review_required_status(),
             ),
+            absent_fields: &[(binding.elevation(), binding.closed_at_field())],
             requester_relation: requested.requester_relation(),
             approver_relation: binding.approver_relation(),
             grant_relation: requested.grant_relation(),
@@ -196,10 +198,16 @@ fn close_effects(
     vec![WorthQueryApplicationRealizedEffect::UpdateEntity {
         entity: binding.elevation_entity().to_owned(),
         entity_id: binding.elevation(),
-        fields: BTreeMap::from([(
-            binding.status_field().clone(),
-            binding.closed_status().clone(),
-        )]),
+        fields: BTreeMap::from([
+            (
+                binding.status_field().clone(),
+                binding.closed_status().clone(),
+            ),
+            (
+                binding.closed_at_field().clone(),
+                binding.closed_at().clone(),
+            ),
+        ]),
     }]
 }
 

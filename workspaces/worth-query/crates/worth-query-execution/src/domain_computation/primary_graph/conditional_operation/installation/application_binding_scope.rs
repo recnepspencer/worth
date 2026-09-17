@@ -38,6 +38,7 @@ where
     pub(in crate::domain_computation::primary_graph) fn begin_application_binding_scope(
         &mut self,
         binding: WorthQueryPortableApplicationConditionalOperationBinding,
+        operation_type: std::any::TypeId,
         node_identity: String,
         required_producers: Vec<String>,
     ) {
@@ -47,6 +48,7 @@ where
         );
         self.application_binding_scope = Some(ApplicationConditionalBindingScope {
             binding,
+            operation_type,
             node_identity,
             initial_binding_count: self.bindings.len(),
             initial_readiness_count: self.output_readiness.len(),
@@ -121,6 +123,7 @@ where
         >,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>
     where
+        ApplicationOperation: 'static,
         Provider: WorthQueryHostConditionalPredicateProvider<Node>,
         Clock: WorthQueryNamedClock,
         Source: WorthQueryNamedClockSource<Clock>,
@@ -134,7 +137,8 @@ where
             scope,
             node.operation().binding(),
             node.location().node_identity(),
-        ) {
+        ) || scope.operation_type != std::any::TypeId::of::<ApplicationOperation>()
+        {
             return Err(denial(
                 DenialKind::ForeignBinding,
                 scope.node_identity.clone(),
@@ -185,6 +189,7 @@ mod tests {
     fn application_binding_scope_rejects_wrong_operation_and_node() {
         let scope = ApplicationConditionalBindingScope {
             binding: binding("expected"),
+            operation_type: std::any::TypeId::of::<()>(),
             node_identity: "ready".into(),
             initial_binding_count: 0,
             initial_readiness_count: 0,

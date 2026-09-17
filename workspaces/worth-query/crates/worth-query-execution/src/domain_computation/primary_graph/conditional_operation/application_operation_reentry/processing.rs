@@ -122,6 +122,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
 ) -> WorthQueryTemporalReentryCounts
 where
     Schema: ApplicationSchema,
+    Operation: 'static,
     Input: Clone + Send + Sync + 'static,
     PrincipalIdentity: 'static,
     PrincipalIdentityBinding:

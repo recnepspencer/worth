@@ -6,10 +6,7 @@ use worth_ui::facade::intent::{
     UiIntentApplicationFactRegistrationError, UiIntentDefinitionRegistrationError,
     UiIntentExecutionBindingPreparationDenial,
 };
-use worth_ui::facade::query_binding::{
-    WorthUiInstalledQueryView, WorthUiProjectionRegistrationError,
-    WorthUiQueryViewRegistrationError,
-};
+use worth_ui::facade::query_binding::WorthUiProjectionRegistrationError;
 use worth_ui::facade::source::{
     UiSourceRebindAttemptFailure, WorthUiFilesystemSourceProvider, WorthUiFilesystemSourceWatcher,
     WorthUiFilesystemWatcherDenial, WorthUiSourcePackageRevision,
@@ -61,7 +58,6 @@ pub(crate) enum PlatformPulsePreparationDenial {
     InitialSourceLowering(UiSourceRebindAttemptFailure),
     QueryInstallation(Box<PlatformPulseQueryInstallationDenial>),
     QueryRegistration(WorthUiProjectionRegistrationError),
-    QueryViewRegistration(WorthUiQueryViewRegistrationError),
     IntentInput(PlatformPulseIntentInputWatchDenial),
     IntentFact(UiIntentApplicationFactRegistrationError),
     IntentDefinition(UiIntentDefinitionRegistrationError),
@@ -102,7 +98,6 @@ pub(crate) fn prepare_composition(
     };
     let InstalledPlatformPulseQuery {
         registration,
-        action_view,
         lifecycle: query_lifecycle,
         watcher: query_watcher,
     } = query;
@@ -114,7 +109,6 @@ pub(crate) fn prepare_composition(
         let fonts = presentation::PulseFonts::admit();
         let capability_builder = builder(
             registration.clone(),
-            action_view.clone(),
             &intent_initial,
             intent_provider.clone(),
             &fonts,
@@ -127,14 +121,7 @@ pub(crate) fn prepare_composition(
             .into_candidate_submission()
             .map_err(PlatformPulsePreparationDenial::InitialSourceLowering)?;
         drop(capability_app);
-        builder(
-            registration,
-            action_view,
-            &intent_initial,
-            intent_provider,
-            &fonts,
-        )
-        .map(|builder| {
+        builder(registration, &intent_initial, intent_provider, &fonts).map(|builder| {
             (
                 builder.with_candidate_submission(submission),
                 initial_source,
@@ -183,9 +170,6 @@ impl std::fmt::Display for PlatformPulsePreparationDenial {
             Self::QueryRegistration(denial) => {
                 write!(formatter, "Query registration: {denial:?}")
             }
-            Self::QueryViewRegistration(denial) => {
-                write!(formatter, "Query view registration: {denial:?}")
-            }
             Self::IntentInput(denial) => write!(formatter, "intent input: {denial}"),
             Self::IntentFact(denial) => write!(formatter, "intent fact: {denial:?}"),
             Self::IntentDefinition(denial) => write!(formatter, "intent definition: {denial:?}"),
@@ -196,8 +180,7 @@ impl std::fmt::Display for PlatformPulsePreparationDenial {
 }
 
 fn builder(
-    registration: worth_ui::facade::query_binding::UiScalarProjectionRegistration,
-    action_view: WorthUiInstalledQueryView,
+    registration: worth_ui::facade::query_binding::UiApplicationScalarProjectionRegistration,
     intent: &PlatformPulseIntentInputRecord,
     provider: PlatformPulseActionProvider,
     fonts: &presentation::PulseFonts,
@@ -241,8 +224,6 @@ fn builder(
             intent.query_denial_requested(),
         )
         .map_err(PlatformPulsePreparationDenial::IntentFact)?
-        .register_query_view(action_view)
-        .map_err(PlatformPulsePreparationDenial::QueryViewRegistration)?
         .register_intent_definition(platform_pulse_action_definition())
         .map_err(PlatformPulsePreparationDenial::IntentDefinition)?
         .register_intent_provider(provider)
@@ -252,7 +233,7 @@ fn builder(
         .register_runtime_service_intent_definition(platform_pulse_close_portal_definition())
         .map_err(PlatformPulsePreparationDenial::IntentDefinition)?;
     command_story::register(builder)?
-        .register_scalar_projection(registration)
+        .register_application_scalar_projection(registration)
         .map(|builder| builder.with_visual_inspection_policy(visual_inspection_policy()))
         .map_err(PlatformPulsePreparationDenial::QueryRegistration)
 }

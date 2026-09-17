@@ -69,6 +69,7 @@ pub struct ApplicationCapabilityMandatoryReviewDefinition {
     scope: ApplicationCapabilityRelationBinding,
     reviewer: ApplicationCapabilityRelationBinding,
     status: ApplicationCapabilityFieldBinding,
+    reviewed_at: ApplicationCapabilityFieldBinding,
     required: ApplicationCapabilityValueBinding,
     completed: ApplicationCapabilityValueBinding,
 }
@@ -82,6 +83,7 @@ impl ApplicationCapabilityMandatoryReviewDefinition {
         scope: ApplicationCapabilityRelationBinding,
         reviewer: ApplicationCapabilityRelationBinding,
         status: ApplicationCapabilityFieldBinding,
+        reviewed_at: ApplicationCapabilityFieldBinding,
         required: ApplicationCapabilityValueBinding,
         completed: ApplicationCapabilityValueBinding,
     ) -> Self {
@@ -92,6 +94,7 @@ impl ApplicationCapabilityMandatoryReviewDefinition {
             scope,
             reviewer,
             status,
+            reviewed_at,
             required,
             completed,
         }
@@ -121,6 +124,10 @@ impl ApplicationCapabilityMandatoryReviewDefinition {
         &self.status
     }
 
+    pub const fn reviewed_at(&self) -> &ApplicationCapabilityFieldBinding {
+        &self.reviewed_at
+    }
+
     pub const fn required(&self) -> &ApplicationCapabilityValueBinding {
         &self.required
     }
@@ -135,6 +142,7 @@ pub struct ApplicationCapabilityElevationDefinition {
     identity: ApplicationCapabilityFieldBinding,
     reason: ApplicationCapabilityFieldBinding,
     status: ApplicationCapabilityFieldBinding,
+    closed_at: ApplicationCapabilityFieldBinding,
     states: ApplicationCapabilityElevationStates,
     validity: ApplicationCapabilityValidityDefinition,
     maximum_duration: Duration,
@@ -152,6 +160,7 @@ impl ApplicationCapabilityElevationDefinition {
         identity: ApplicationCapabilityFieldBinding,
         reason: ApplicationCapabilityFieldBinding,
         status: ApplicationCapabilityFieldBinding,
+        closed_at: ApplicationCapabilityFieldBinding,
         states: ApplicationCapabilityElevationStates,
         validity: ApplicationCapabilityValidityDefinition,
         maximum_duration: Duration,
@@ -165,6 +174,7 @@ impl ApplicationCapabilityElevationDefinition {
             identity,
             reason,
             status,
+            closed_at,
             states,
             validity,
             maximum_duration,
@@ -187,6 +197,10 @@ impl ApplicationCapabilityElevationDefinition {
 
     pub const fn status(&self) -> &ApplicationCapabilityFieldBinding {
         &self.status
+    }
+
+    pub const fn closed_at(&self) -> &ApplicationCapabilityFieldBinding {
+        &self.closed_at
     }
 
     pub const fn states(&self) -> &ApplicationCapabilityElevationStates {

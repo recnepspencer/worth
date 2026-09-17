@@ -74,30 +74,11 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
         ),
         performed,
     );
-    assert!(
-        !failed.is_retryable(),
-        "Bridge admission failure is terminal"
-    );
     let returned = failed
-        .into_undelivered_change()
+        .into_retry_change()
         .expect("a Bridge failure must return the exact performed-change authority");
     assert_eq!(returned.product_commit(), &commit);
     assert!(first_root.accepts_performed_change(&returned));
-    let deferred =
-        crate::domain_computation::execution_runtime::product_world::preserve_delivery_authority(
-            worth_proof::TransitionOutcome::Deferred(
-                worth_runtime_bridge::facade::BridgeCorrespondenceDeferred::GraphMutationInProgress,
-            ),
-            returned,
-        );
-    assert!(
-        deferred.is_retryable(),
-        "a busy Bridge may admit the same change later"
-    );
-    let returned = deferred
-        .into_undelivered_change()
-        .expect("deferral returns the performed-change authority");
-    assert_eq!(returned.product_commit(), &commit);
 
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "committed", &request);

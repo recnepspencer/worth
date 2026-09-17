@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_schema::{
-    ApplicationSchema, ApplicationSchemaComposition, ApplicationSchemaContribution,
-    ApplicationSchemaContributionIdentity,
+    ApplicationSchema, ApplicationSchemaContribution, ApplicationSchemaContributionIdentity,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
@@ -75,15 +74,17 @@ where
 
 impl<Schema> WorthQueryConfiguredApplicationContributions<Schema>
 where
-    Schema: ApplicationSchemaComposition,
-    Schema::Contributions: WorthQueryApplicationContributionTuple<Schema>,
+    Schema: ApplicationSchema,
 {
-    pub fn configure(
+    pub fn configure<Contributions>(
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-        configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+        configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
         contracts: WorthQueryApplicationContractCatalog<Schema>,
-    ) -> Result<Self, WorthQueryPrimaryGraphInstallationDenial> {
-        Schema::Contributions::configure(installed_schema, configuration, contracts)
+    ) -> Result<Self, WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Contributions: WorthQueryApplicationContributionTuple<Schema>,
+    {
+        Contributions::configure(installed_schema, configuration, contracts)
     }
 }
 

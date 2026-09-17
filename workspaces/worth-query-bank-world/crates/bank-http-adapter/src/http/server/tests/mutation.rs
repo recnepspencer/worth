@@ -3,8 +3,9 @@ use std::sync::Arc;
 use bank_domain::model::{AccountId, InstitutionId};
 
 use super::super::super::protocol::{
-    BankHttpAccountSummaryOutcome, BankHttpCommitDisposition, BankHttpDenialKind,
-    BankHttpMutationOutcome, BankHttpMutationRequest,
+    BankHttpAccountActivityItem, BankHttpAccountActivityPageOutcome, BankHttpAccountSummaryOutcome,
+    BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpDenialKind,
+    BankHttpMutationOutcome, BankHttpMutationRequest, BankHttpPostingPurpose,
 };
 use super::fixture::application;
 use super::{bind_application, controls_json, credential_json, BankHttpServerConfiguration};
@@ -46,10 +47,58 @@ async fn response_loss_reuses_domain_idempotency_without_duplicate_effect() {
     let request = deposit_request(institution, account);
     serde_json::from_value::<BankHttpMutationRequest>(request.clone())
         .expect("mutation specimen must match the wire contract");
-    let committed = post_mutation(&client, &endpoint, &request).await;
-    assert_disposition(&committed, BankHttpCommitDisposition::Committed);
-    let replayed = post_mutation(&client, &endpoint, &request).await;
-    assert_disposition(&replayed, BankHttpCommitDisposition::AlreadyCommitted);
+    let before =
+        account_activity(&client, server.local_address(), account, "activity-before").await;
+    let lost_response = client
+        .post(&endpoint)
+        .json(&request)
+        .send()
+        .await
+        .expect("the first deposit should reach the HTTP server");
+    assert!(lost_response.status().is_success());
+    drop(lost_response);
+    let after = account_activity(&client, server.local_address(), account, "activity-after").await;
+    assert_eq!(after.len(), before.len() + 1);
+    assert_eq!(
+        after
+            .iter()
+            .filter(|entry| {
+                entry.purpose == BankHttpPostingPurpose::Deposit && entry.amount_minor == 10
+            })
+            .count(),
+        1,
+        "the first publication must expose the deposit exactly once"
+    );
+    let replayed_wire = client
+        .post(&endpoint)
+        .json(&request)
+        .send()
+        .await
+        .expect("the idempotent retry should reach the HTTP server")
+        .json::<serde_json::Value>()
+        .await
+        .expect("the retry response should be valid JSON");
+    let commit_wire = &replayed_wire["commit"];
+    assert!(commit_wire.get("provider_work_units").is_some());
+    assert!(commit_wire["provider_work_units"].is_null());
+    assert!(commit_wire["invariant_work_units"].as_u64().is_some());
+    let replayed: BankHttpMutationOutcome = serde_json::from_value(replayed_wire)
+        .expect("the v1 retry response should match the public mutation contract");
+    let replayed_description =
+        commit_description(&replayed, BankHttpCommitDisposition::AlreadyCommitted);
+    assert_eq!(replayed_description.provider_work_units, None);
+    assert!(replayed_description.invariant_work_units.is_some());
+    assert_eq!(
+        account_activity(
+            &client,
+            server.local_address(),
+            account,
+            "activity-after-retry"
+        )
+        .await,
+        after,
+        "retrying a lost response must not publish another activity entry"
+    );
     assert_summary_balance(&client, server.local_address(), account, 310).await;
     server.shutdown().await.expect("server should shut down");
 }
@@ -68,14 +117,51 @@ fn deposit_request(institution: InstitutionId, account: AccountId) -> serde_json
     })
 }
 
-fn assert_disposition(outcome: &BankHttpMutationOutcome, expected: BankHttpCommitDisposition) {
-    assert!(
-        matches!(
-            outcome,
-            BankHttpMutationOutcome::Applied { disposition, .. } if *disposition == expected
-        ),
-        "unexpected mutation outcome: {outcome:?}"
-    );
+fn commit_description(
+    outcome: &BankHttpMutationOutcome,
+    expected: BankHttpCommitDisposition,
+) -> BankHttpCommitDescription {
+    let BankHttpMutationOutcome::Applied {
+        disposition,
+        commit,
+        ..
+    } = outcome
+    else {
+        panic!("unexpected mutation outcome: {outcome:?}");
+    };
+    assert_eq!(*disposition, expected);
+    *commit
+}
+
+async fn account_activity(
+    client: &reqwest::Client,
+    address: std::net::SocketAddr,
+    account: AccountId,
+    request_id: &str,
+) -> Vec<BankHttpAccountActivityItem> {
+    let outcome = client
+        .post(format!("http://{address}/v1/queries/account-activity/page"))
+        .json(&serde_json::json!({
+            "protocol": "v1",
+            "request_id": request_id,
+            "credential": credential_json(),
+            "controls": controls_json(16),
+            "account": account.canonical_text()
+        }))
+        .send()
+        .await
+        .expect("activity request should reach the HTTP server")
+        .json::<BankHttpAccountActivityPageOutcome>()
+        .await
+        .expect("activity response should be typed");
+    match outcome {
+        BankHttpAccountActivityPageOutcome::Delivered {
+            activity,
+            continuation: None,
+            ..
+        } => activity.entries,
+        other => panic!("activity page should be complete: {other:?}"),
+    }
 }
 
 async fn assert_summary_balance(

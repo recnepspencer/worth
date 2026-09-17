@@ -21,7 +21,7 @@ error[E0308]: mismatched types
 
 error[E0308]: mismatched types
  --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/ui_admission_cannot_become_query_publication.rs
- note: expected struct `UiScalarProjectionObservation`
+ note: expected struct `WorthUiStatusActionRequest`
    found struct `UiAdmittedIntent<I>`
  note: method defined here
 

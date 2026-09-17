@@ -64,6 +64,7 @@ impl ExampleApplication {
             )
             .expect("the selected product change must be authorized");
         let (_, projection, _) = self
+            .conditional
             .invariant
             .project_admitted_operation(&admission, |reader, scope| {
                 reader
@@ -138,7 +139,7 @@ impl ExampleApplication {
         let external = block_on(authentication.authenticate((), &request))
             .expect("the example identity must authenticate");
         let conditional_definition = selected
-            .admit_application_conditional_definition(&self.clock, provider)
+            .admit_application_conditional_definition(&self.conditional.clock, provider)
             .expect("the replacement conditional definition must be admitted");
         let principal = selected
             .resolve_authenticated_principal(
@@ -169,6 +170,7 @@ impl ExampleApplication {
             )
             .expect("the selected product combined change must be authorized");
         let (_, projection, _) = self
+            .conditional
             .invariant
             .project_admitted_operation(&admission, |reader, scope| {
                 reader

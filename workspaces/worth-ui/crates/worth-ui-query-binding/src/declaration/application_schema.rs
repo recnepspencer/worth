@@ -3,17 +3,33 @@ use worth_query_decl::facade::application_schema::{
     StringApplicationValueBinding, U64ApplicationValueBinding,
 };
 use worth_query_decl::facade::{
-    worth_query_application_schema, worth_query_aspect, worth_query_entity, worth_query_field,
-    worth_query_portable_type, worth_query_value_binding,
+    worth_query_application, worth_query_application_contribution, worth_query_aspect,
+    worth_query_entity, worth_query_field, worth_query_portable_type, worth_query_value_binding,
 };
 
-worth_query_application_schema! {
-    pub schema WorthUiApplicationSchema {
-        owner: worth_ui,
-        version: (1, 0),
+worth_query_application! {
+    pub WorthUiApplicationSchema {
+        owner: "worth_ui",
+        version: (1, 1),
+        contributions: [WorthUiRecordContribution],
+    }
+}
+
+worth_query_application_contribution! {
+    pub contribution WorthUiRecordContribution in WorthUiApplicationSchema {
+        identity: "worth.ui.record.v1",
         members: |schema| {
-            schema
+            let schema = schema
                 .entity(WorthUiRecord::reference())
+                .entity(super::WorthUiExternalPrincipalMapping::reference())
+                .entity(super::WorthUiPrincipal::reference())
+                .aspect(super::WorthUiExternalPrincipalMapping::reference(), super::WorthUiExternalIdentity::reference())
+                .aspect(super::WorthUiPrincipal::reference(), super::WorthUiPrincipalIdentity::reference())
+                .field(super::WorthUiExternalPrincipalMapping::reference(), super::WorthUiExternalIdentityKey::reference())
+                .field(super::WorthUiExternalPrincipalMapping::reference(), super::WorthUiMappingStatus::reference())
+                .field(super::WorthUiPrincipal::reference(), super::WorthUiPrincipalId::reference())
+                .relation(super::WorthUiExternalPrincipal::reference(), super::WorthUiExternalPrincipalMapping::reference(), super::WorthUiPrincipal::reference())
+                .principal_binding(super::WorthUiPrincipalBinding::reference())
                 .aspect(WorthUiRecord::reference(), IdentityAspect::reference())
                 .aspect(WorthUiRecord::reference(), QueryTextAspect::reference())
                 .aspect(WorthUiRecord::reference(), QueryRevisionAspect::reference())
@@ -27,6 +43,11 @@ worth_query_application_schema! {
                 .field(WorthUiRecord::reference(), CollectionItemKeyField::reference())
                 .field(WorthUiRecord::reference(), MeasurementValueField::reference())
                 .field(WorthUiRecord::reference(), SizeValueField::reference())
+                .invariant(super::status_integrity_invariant())
+                .effect(super::WorthUiStatusChangedEffect::reference())
+                .application_query(super::status_query_definition())
+                .application_query_binding::<super::WorthUiStatusQueryBinding>();
+            super::declare_status_action(super::declare_status_mutation(schema))
         }
     }
 }
@@ -44,11 +65,11 @@ worth_query_field!(
 );
 worth_query_field!(
     pub QueryTextStatusField for WorthUiApplicationSchema, WorthUiRecord, QueryTextAspect:
-    String => StringApplicationValueBinding, read_only, equality
+    String => StringApplicationValueBinding, read_write, equality
 );
 worth_query_field!(
     pub QueryRevisionValueField for WorthUiApplicationSchema, WorthUiRecord, QueryRevisionAspect:
-    u64 => U64ApplicationValueBinding, read_only, equality
+    u64 => U64ApplicationValueBinding, read_write, equality
 );
 worth_query_field!(
     pub CollectionItemStatusField for WorthUiApplicationSchema, WorthUiRecord, CollectionItemAspect:

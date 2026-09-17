@@ -107,30 +107,6 @@ pub(super) fn governed_disclosure_world(
     })
 }
 
-pub(crate) fn release_world(scenario: &str) -> CapabilityFixture {
-    capability_world_from_spec(FixtureWorldSpec {
-        scenario,
-        spec: GrantSpec::release(),
-        case_stage: EstateWorkflowStage::Administration,
-        specialist_holds_authority: false,
-        unrelated_grants: 0,
-        composition: FixtureWorldComposition::Release,
-        alternate_emergency_bound: None,
-    })
-}
-
-pub(crate) fn disbursement_world(scenario: &str) -> CapabilityFixture {
-    capability_world_from_spec(FixtureWorldSpec {
-        scenario,
-        spec: GrantSpec::disburse(50_000),
-        case_stage: EstateWorkflowStage::Administration,
-        specialist_holds_authority: false,
-        unrelated_grants: 0,
-        composition: FixtureWorldComposition::Disbursement,
-        alternate_emergency_bound: None,
-    })
-}
-
 pub(super) fn emergency_request_world(
     scenario: &str,
     upper_bound: GrantSpec,
@@ -303,6 +279,28 @@ pub(crate) fn delegation_world_with_parent_spec(
         },
         alternate_emergency_bound: None,
     })
+}
+
+pub(crate) fn delegation_world_with_parent_spec_at(
+    scenario: &str,
+    parent: GrantSpec,
+    authorization_time: AuthorizationTimeController,
+) -> CapabilityFixture {
+    capability_world_from_spec_with_authorization_time(
+        FixtureWorldSpec {
+            scenario,
+            spec: parent,
+            case_stage: EstateWorkflowStage::Administration,
+            specialist_holds_authority: false,
+            unrelated_grants: 0,
+            composition: FixtureWorldComposition::Delegation {
+                command_authority: true,
+                parent_context: world::DelegationParentContext::Exact,
+            },
+            alternate_emergency_bound: None,
+        },
+        authorization_time,
+    )
 }
 
 fn capability_world_from_spec(spec: FixtureWorldSpec<'_>) -> CapabilityFixture {

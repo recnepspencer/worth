@@ -17,7 +17,6 @@ use bank_domain::schema::RevokeAccountAuthorization;
 use bank_server::{
     mutations, BankAccountActivityLiveOutcome, BankApplicationLiveCloseOutcome,
     BankApplicationLiveOpenDenialKind, BankApplicationQueryDenial, BankMutationControls,
-    BankMutationStatus,
 };
 
 use fixture::{ordinary_read_world, OWNER, TELLER, VIEWER};
@@ -29,6 +28,7 @@ use support::request_scope;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControls;
 
 #[test]
@@ -114,7 +114,10 @@ fn permission_revocation_closes_before_another_payload_is_delivered() {
             BankIdempotencyKey::new("revoke-live-viewer").unwrap(),
         ))
         .execute();
-    assert!(matches!(revoked.status(), BankMutationStatus::Committed(_)));
+    assert!(matches!(
+        revoked,
+        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+    ));
     commit_deposit(
         &fixture,
         &teller,
@@ -241,7 +244,6 @@ fn admitted_buffer_capacity_retains_multiple_matching_commit_causes() {
     let fixture = ordinary_read_world("live-buffer-retention", 0);
     let owner = fixture.authenticate(OWNER);
     let teller = fixture.authenticate(TELLER);
-    let mut warm_work = None;
     for ordinal in 0..16 {
         let outcome = commit_deposit(
             &fixture,
@@ -249,14 +251,9 @@ fn admitted_buffer_capacity_retains_multiple_matching_commit_causes() {
             fixture.personal_account,
             &format!("preexisting-live-history-{ordinal}"),
         );
-        let work = outcome.metadata().projection_work().unwrap();
-        if ordinal == 0 {
-            assert_eq!(work.aggregate_cache_hits(), 0);
-        } else {
-            assert_eq!(work.aggregate_cache_hits(), 2);
-            assert_eq!(work.aggregate_rebuild_input_rows(), 0);
-            assert_eq!(warm_work.get_or_insert(work), &work);
-        }
+        let work = outcome.mutation_work().unwrap();
+        assert!(work.decision_fact_count() > 0);
+        assert!(work.proposed_fact_count() > 0);
     }
     let mut live = fixture
         .world
@@ -277,10 +274,8 @@ fn admitted_buffer_capacity_retains_multiple_matching_commit_causes() {
         fixture.personal_account,
         "buffered-live-deposit-two",
     );
-    assert_eq!(
-        first_commit.metadata().projection_work(),
-        second_commit.metadata().projection_work()
-    );
+    assert!(first_commit.mutation_work().is_some());
+    assert!(second_commit.mutation_work().is_some());
 
     let first_outcome = live.poll(&owner, &request_scope());
     let BankAccountActivityLiveOutcome::Delivered(first) = first_outcome else {

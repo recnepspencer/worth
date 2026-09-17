@@ -29,10 +29,10 @@ impl UiIntentAdmissionState {
         mounted: &crate::mounting::WorthUiMountedSessionState,
         successor: &crate::mounting::UiMountedNodeReceiptBasis,
     ) -> super::UiPreparedIntentOperabilityReceiptSuccession {
-        let successor = match self.standing_owner.as_ref() {
-            Some(owner) => Some(owner.prepare_receipt_succession(mounted, successor)),
-            None => None,
-        };
+        let successor = self
+            .standing_owner
+            .as_ref()
+            .map(|owner| owner.prepare_receipt_succession(mounted, successor));
         super::UiPreparedIntentOperabilityReceiptSuccession {
             predecessor: self.operability_standing_snapshot(),
             successor,

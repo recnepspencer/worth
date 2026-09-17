@@ -41,6 +41,16 @@ impl WorthQueryMandatoryReviewBinding {
     pub(in crate::domain_computation) const fn reviewed_at(&self) -> &AspectValue {
         &self.draft.reviewed_at
     }
+    pub(in crate::domain_computation) fn restore_committed_review(
+        mut self,
+        reviewed_at: AspectValue,
+    ) -> Self {
+        self.draft.reviewed_at = reviewed_at;
+        self
+    }
+    pub(in crate::domain_computation) const fn reviewed_at_field(&self) -> &AspectFieldLocator {
+        &self.draft.reviewed_at_field
+    }
     pub(in crate::domain_computation) const fn terminal_status(&self) -> &AspectValue {
         &self.draft.terminal_status
     }

@@ -51,14 +51,14 @@ use super::super::declaration::{
 };
 use super::{
     ApproveCapabilityElevationOperation, CapabilityElevation, CapabilityElevationApprover,
-    CapabilityElevationFacts, CapabilityElevationGrant, CapabilityElevationIdentity,
-    CapabilityElevationNotAfter, CapabilityElevationNotBefore, CapabilityElevationReason,
-    CapabilityElevationRequester, CapabilityElevationResource, CapabilityElevationReview,
-    CapabilityElevationSlot, CapabilityElevationStatusField, CapabilityReview,
-    CapabilityReviewFacts, CapabilityReviewIdentity, CapabilityReviewKindField,
-    CapabilityReviewResource, CapabilityReviewSlot, CapabilityReviewStatusField,
-    CapabilityReviewer, CompleteCapabilityReviewOperation, ElevatedCapabilityTouchInput,
-    ElevatedCapabilityTouchOperation, ElevatedTouchAccountCapability,
+    CapabilityElevationClosedAt, CapabilityElevationFacts, CapabilityElevationGrant,
+    CapabilityElevationIdentity, CapabilityElevationNotAfter, CapabilityElevationNotBefore,
+    CapabilityElevationReason, CapabilityElevationRequester, CapabilityElevationResource,
+    CapabilityElevationReview, CapabilityElevationSlot, CapabilityElevationStatusField,
+    CapabilityReview, CapabilityReviewFacts, CapabilityReviewIdentity, CapabilityReviewKindField,
+    CapabilityReviewResource, CapabilityReviewReviewedAt, CapabilityReviewSlot,
+    CapabilityReviewStatusField, CapabilityReviewer, CompleteCapabilityReviewOperation,
+    ElevatedCapabilityTouchInput, ElevatedCapabilityTouchOperation, ElevatedTouchAccountCapability,
     RequestCapabilityElevationOperation, RevokeCapabilityElevationOperation,
 };
 
@@ -68,10 +68,13 @@ mod approval;
 mod close;
 #[path = "contract/elevation.rs"]
 mod elevation;
+#[path = "contract/propagation.rs"]
+mod propagation;
 #[path = "contract/request.rs"]
 mod request;
 #[path = "contract/review.rs"]
 mod review;
+pub(super) use propagation::{command_propagation, propagation};
 
 pub(in crate::domain_computation::primary_graph::tests::fixture::capability) fn install(
     schema: ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
@@ -102,6 +105,10 @@ pub(in crate::domain_computation::primary_graph::tests::fixture::capability) fn 
             CapabilityElevation::reference(),
             CapabilityElevationNotAfter::reference(),
         )
+        .field(
+            CapabilityElevation::reference(),
+            CapabilityElevationClosedAt::reference(),
+        )
         .entity(CapabilityReview::reference())
         .aspect(
             CapabilityReview::reference(),
@@ -118,6 +125,10 @@ pub(in crate::domain_computation::primary_graph::tests::fixture::capability) fn 
         .field(
             CapabilityReview::reference(),
             CapabilityReviewStatusField::reference(),
+        )
+        .field(
+            CapabilityReview::reference(),
+            CapabilityReviewReviewedAt::reference(),
         )
         .relation(
             CapabilityElevationRequester::reference(),
@@ -363,33 +374,5 @@ fn composition_with_propagation(
             ApplicationCapabilityDistinctActorRule::not_applicable(),
         ),
         propagation,
-    )
-}
-
-pub(super) fn propagation() -> ApplicationCapabilityPropagationComposition {
-    ApplicationCapabilityPropagationComposition::new(
-        ApplicationCapabilityDelegationRule::narrow_all_dimensions(
-            ApplicationCapabilityDelegationDepth::new(2).unwrap(),
-        ),
-        ApplicationCapabilityDisclosureRule::permit([ApplicationCapabilityScopeGuard::requiring(
-            [ApplicationCapabilityAcceptedValues::one_of(
-                CapabilityDisclosureField::reference(),
-                [
-                    ApplicationEncodedScalarValue::<CapabilityDisclosureBinding>::try_new(
-                        CapabilityDisclosure::AccountActivity,
-                    )
-                    .expect("fixture capability disclosure must encode"),
-                ],
-            )],
-        )]),
-    )
-}
-
-pub(super) fn command_propagation() -> ApplicationCapabilityPropagationComposition {
-    ApplicationCapabilityPropagationComposition::new(
-        ApplicationCapabilityDelegationRule::narrow_all_dimensions(
-            ApplicationCapabilityDelegationDepth::new(2).unwrap(),
-        ),
-        ApplicationCapabilityDisclosureRule::not_applicable(),
     )
 }

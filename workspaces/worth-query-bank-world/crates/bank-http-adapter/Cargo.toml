@@ -12,6 +12,7 @@ cold-certification = []
 [dependencies]
 axum.workspace = true
 bank-domain.workspace = true
+bank-external-rail.workspace = true
 bank-server.workspace = true
 openidconnect.workspace = true
 rand.workspace = true
@@ -25,6 +26,7 @@ worth-query-host.workspace = true
 
 [dev-dependencies]
 reqwest.workspace = true
+worth-query-host = { workspace = true, features = ["test-world-operation-control"] }
 
 [lints]
 workspace = true

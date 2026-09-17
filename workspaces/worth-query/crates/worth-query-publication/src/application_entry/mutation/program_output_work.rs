@@ -53,18 +53,6 @@ impl WorthQueryApplicationProgramWork {
         >,
     ) -> Self {
         let settlements = std::iter::once(root).chain(descendants);
-        Self::from_all_settlements(traversal, settlements)
-    }
-
-    pub(super) fn from_all_settlements<'settlement>(
-        traversal: ProgramOutputTraversalWork,
-        settlements: impl Iterator<
-            Item = (
-                &'settlement WorthQueryApplicationCommitReceipt,
-                Option<&'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence>,
-            ),
-        >,
-    ) -> Self {
         let mut producer_contacts = 0_usize;
         let mut delivery_contacts = 0_usize;
         let mut invariant_state_facts = 0_usize;

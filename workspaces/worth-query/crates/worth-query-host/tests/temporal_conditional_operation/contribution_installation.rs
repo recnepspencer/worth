@@ -7,7 +7,17 @@ use worth_query_host::facade::{
         WorthQueryApplicationContributionContracts, WorthQueryApplicationContributionSetup,
     },
     application_installation::{self, WorthQueryInMemoryApplicationLimits},
-    declaration::application_query::ApplicationQueryParameterSet,
+    declaration::{
+        application_program::{
+            ApplicationActionLeaf, ApplicationActionList, ApplicationConditionalOperationActionRef,
+            ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureLeaf,
+            ApplicationFeatureList, ApplicationFeatureRef, ApplicationNoOutputGraph,
+            ApplicationOperationActionRef, ApplicationProgramAuthoring,
+            ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationRuleLeaf,
+        },
+        application_query::ApplicationQueryParameterSet,
+        application_schema::ApplicationSchemaComposition,
+    },
     domain, primary_graph, product, runtime,
 };
 
@@ -21,6 +31,52 @@ use super::schema::*;
 use super::world::{
     admit_identity_adapter, request_scope, resources::product_world_resources, seed::seed_graph,
 };
+
+struct TemporalInstallationProgram;
+struct TemporalInstallationFeature;
+
+impl ApplicationFeature<TemporalHostSchema> for TemporalInstallationFeature {
+    type Inputs = ApplicationFeatureInputLeaf;
+    const IDENTITY: &'static str = "worth.query.host.temporal-installation-feature.v1";
+}
+
+impl ApplicationProgramDefinition<TemporalHostSchema> for TemporalInstallationProgram {
+    type Contributions = <TemporalHostSchema as ApplicationSchemaComposition>::Contributions;
+    type Actions = ApplicationActionList<
+        ApplicationConditionalOperationActionRef<
+            TemporalHostSchema,
+            TemporalInstallationFeature,
+            ExecuteTemporal,
+        >,
+        ApplicationActionList<
+            ApplicationOperationActionRef<
+                TemporalHostSchema,
+                TemporalInstallationFeature,
+                AmendTemporal,
+            >,
+            ApplicationActionLeaf,
+        >,
+    >;
+    type Features = ApplicationFeatureList<
+        ApplicationFeatureRef<TemporalHostSchema, TemporalInstallationFeature>,
+        ApplicationFeatureLeaf,
+    >;
+    type OutputGraph = ApplicationNoOutputGraph;
+    type Rules = ApplicationRuleLeaf;
+
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("worth.query.host.temporal-installation.v1");
+}
+
+fn validated_program(
+) -> worth_query_host::facade::declaration::application_program::ValidatedApplicationProgram<
+    TemporalHostSchema,
+    TemporalInstallationProgram,
+> {
+    ApplicationProgramAuthoring::<TemporalHostSchema, TemporalInstallationProgram>::begin()
+        .validated_program()
+        .expect("the temporal installation program has no authored output obligations")
+}
 
 pub struct TemporalContributionConfiguration {
     installation_predicate: Predicate,
@@ -49,6 +105,7 @@ struct TemporalConditional;
 impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalConditional {
     type Configuration = TemporalContributionConfiguration;
     type Installed = Option<InstalledTemporalConditional>;
+    type Operation = ExecuteTemporal;
 
     const IDENTITY: &'static str = "worth.query.host.courtroom.temporal-conditional.v1";
     const REQUIRED_PRODUCERS: &'static [&'static str] = &[];
@@ -163,7 +220,8 @@ pub(super) fn publishes_delivers_and_executes() {
         contacts: contacts.clone(),
         install_route: true,
     };
-    let application = application_installation::in_memory::<TemporalHostSchema>(
+    let application = application_installation::in_memory_program(
+        validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         (configuration,),
         WorthQueryInMemoryApplicationLimits::new(
@@ -246,7 +304,8 @@ pub(super) fn zero_route_installation_is_denied() {
     let (installation_predicate, _) = Predicate::controlled(contacts.clone());
     let (definition_predicate, _) = Predicate::controlled(contacts.clone());
     let (clock_source, clock_control) = ClockSource::due();
-    let result = application_installation::in_memory::<TemporalHostSchema>(
+    let result = application_installation::in_memory_program(
+        validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         (TemporalContributionConfiguration {
             installation_predicate,
@@ -283,105 +342,6 @@ pub(super) fn zero_route_installation_is_denied() {
     }
 }
 
-fn change_input(
-    application: &primary_graph::WorthQueryPrimaryGraphApplicationRuntime<TemporalHostSchema>,
-    invariant: &primary_graph::WorthQueryApplicationInvariantProjectionAuthority<
-        TemporalHostSchema,
-    >,
-    branch: product::WorthQueryProductBranch,
-    input: &str,
-) -> primary_graph::WorthQueryApplicationCommitOutcome {
-    let schema = application.installed_schema();
-    let principal_binding = schema
-        .principal_binding(TemporalPrincipalBinding::reference())
-        .unwrap();
-    let authentication = admit_identity_adapter(schema);
-    let request = request_scope();
-    let external = block_on(authentication.authenticate((), &request)).unwrap();
-    let selected = application.on_branch(branch).select().unwrap();
-    let principal = selected
-        .resolve_authenticated_principal(
-            &principal_binding,
-            &external,
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let intent = selected
-        .resolve_entity(
-            IntentIdentityField::reference(),
-            "intent-1".to_string(),
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let operation = schema
-        .installed_operation(AmendTemporal::reference())
-        .unwrap();
-    let admission = selected
-        .authorize_operation(
-            &principal,
-            &intent,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
-    let (_, projection, _) = invariant
-        .project_admitted_operation(&admission, |reader, scope| {
-            reader
-                .decision_field(scope, IntentRevisionField::reference())
-                .unwrap();
-            reader
-                .decision_field(scope, IntentLifecycleField::reference())
-                .unwrap();
-            reader
-                .decision_field(scope, IntentGateField::reference())
-                .unwrap();
-            reader
-                .decision_field(scope, IntentDueField::reference())
-                .unwrap();
-            reader
-                .decision_field(scope, IntentInputField::reference())
-                .unwrap();
-        })
-        .unwrap()
-        .into_parts();
-    let reads = application
-        .begin_projected_application_read_attempt(admission, projection)
-        .unwrap();
-    let mut effects = reads
-        .complete_projected_dependencies()
-        .unwrap()
-        .begin_effect_program();
-    let intent = effects.existing_entity(&intent).unwrap();
-    effects
-        .write_field(&intent, IntentRevisionField::reference(), 2_u64)
-        .unwrap();
-    effects
-        .write_field(
-            &intent,
-            IntentLifecycleField::reference(),
-            "active".to_string(),
-        )
-        .unwrap();
-    effects
-        .write_field(&intent, IntentDueField::reference(), 11_u64)
-        .unwrap();
-    effects
-        .write_field(&intent, IntentInputField::reference(), input.to_string())
-        .unwrap();
-    effects
-        .write_field(&intent, IntentGateField::reference(), "ready".to_string())
-        .unwrap();
-    let admitted = product::WorthQueryAdmittedChange::new(
-        effects.finish().unwrap(),
-        primary_graph::WorthQueryApplicationIdempotencyBinding::new([0x7A; 32], [0xA7; 32]),
-    );
-    application
-        .on_branch(branch)
-        .transaction()
-        .apply(admitted)
-        .commit()
-        .unwrap()
-}
+#[path = "contribution_installation/source_change.rs"]
+mod source_change;
+use source_change::change_input;

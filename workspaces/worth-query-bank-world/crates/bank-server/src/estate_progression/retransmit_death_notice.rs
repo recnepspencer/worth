@@ -1,22 +1,16 @@
 use bank_domain::{
-    estate::{
-        DeathNoticeId, DeathNoticeStatus, EstateAction, EstateCaseId,
-        EstateDeathNotificationRequest,
-    },
+    estate::{DeathNoticeId, DeathNoticeStatus, EstateAction},
     model::BankPrincipalId,
+    proposals::BankIdempotencyKey,
     schema::{
         BankSchema, DeathNoticeIdentityField, DeathNoticeStatusField, DeathNoticeSubject,
-        EstateCase, EstateDeathNotice, EstateDeathNotificationEffect, EstateDeceased,
-        PrincipalIdentityField, RetransmitDeathNoticeEstateCapability,
+        EstateCase, EstateDeathNotice, EstateDeceased, PrincipalIdentityField,
         RetransmitDeathNoticeEstateOperation,
     },
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
-    declaration::application_schema::TypedMutationPreconditions,
     primary_graph::{
-        WorthQueryAdmittedApplicationOperation, WorthQueryApplicationEffectProgram,
-        WorthQueryApplicationIdempotencyBinding,
         WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
     },
 };
@@ -24,147 +18,63 @@ use worth_query_host::facade::{
 use super::{notify_death::BankDeathNotificationProjectionDenial, BankEstateProgressionDenial};
 use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
 
-type AdmittedRetransmitOperation = WorthQueryAdmittedApplicationOperation<
-    BankSchema,
-    RetransmitDeathNoticeEstateOperation,
-    EstateAction,
-    EstateCase,
->;
-type RetransmitEffectProgram = WorthQueryApplicationEffectProgram<
-    BankSchema,
-    RetransmitDeathNoticeEstateOperation,
-    EstateAction,
-    EstateCase,
->;
-
 impl BankIdentityRuntime {
-    /// Retransmit the death-notice rail for a notice already requested locally.
-    ///
-    /// Writes no domain fields: the co-committed dispatch outbox is the sole
-    /// local anchor (R8.25 / R8.55 O2).
-    pub fn retransmit_estate_death_notice(
+    pub fn retransmit_estate_death_notice_with_key(
         &self,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
+        key: &BankIdempotencyKey,
         request: &WorthQueryRequestScope,
     ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-        let command = retransmit_command(action)?;
-        let admission = self.admit_retransmit_operation(principal, action, request)?;
-        if let Some(outcome) =
-            super::idempotency::resolve_admitted_idempotency(self, &admission, idempotency)?
-        {
-            return Ok(outcome);
-        }
-        let program = self.materialize_retransmit_effect(admission, command)?;
-        Ok(self
-            .application_runtime()
-            .compare_and_commit_application(program, idempotency)
-            .into())
-    }
-
-    fn admit_retransmit_operation(
-        &self,
-        principal: &BankAuthenticatedPrincipal,
-        action: EstateAction,
-        request: &WorthQueryRequestScope,
-    ) -> Result<AdmittedRetransmitOperation, BankEstateProgressionDenial> {
-        let capability = self
-            .application_runtime()
-            .installed_schema()
-            .capability(
-                RetransmitDeathNoticeEstateCapability::reference(),
-                RetransmitDeathNoticeEstateOperation::reference(),
-            )
-            .map_err(BankEstateProgressionDenial::from_capability_installation)?;
-        let selected = self
-            .select_current_product()
-            .map_err(BankEstateProgressionDenial::from_product_selection)?;
-        let access = selected
-            .admit_capability_access(principal.query(), &capability, action, request)
-            .map_err(BankEstateProgressionDenial::from_authorization)?;
-        let operation = self
-            .application_runtime()
-            .installed_schema()
-            .installed_operation(RetransmitDeathNoticeEstateOperation::reference())
-            .map_err(BankEstateProgressionDenial::from_operation_installation)?;
-        self.application_runtime()
-            .authorize_capability_operation(
-                access,
-                &operation,
-                TypedMutationPreconditions::<
-                    BankSchema,
-                    RetransmitDeathNoticeEstateOperation,
-                    EstateCase,
-                >::default(),
-            )
-            .map_err(BankEstateProgressionDenial::from_authorization)
-    }
-
-    fn materialize_retransmit_effect(
-        &self,
-        admission: AdmittedRetransmitOperation,
-        command: RetransmitCommand,
-    ) -> Result<RetransmitEffectProgram, BankEstateProgressionDenial> {
-        let projected = self
-            .invariant_projection()
-            .project_admitted_operation(&admission, |reader, estate| {
-                project_retransmit(reader, estate, command)
-            })
-            .map_err(BankEstateProgressionDenial::from_projection)?;
-        let (projection_result, projection, _) = projected.into_parts();
-        projection_result.map_err(BankEstateProgressionDenial::DeathNotificationProjection)?;
-        let reads = self
-            .application_runtime()
-            .begin_projected_application_read_attempt(admission, projection)
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        let mut effects = reads
-            .complete_projected_dependencies()
-            .map_err(BankEstateProgressionDenial::from_attempt)?
-            .begin_effect_program();
-        effects
-            .emit_external(
-                EstateDeathNotificationEffect::reference(),
-                EstateDeathNotificationRequest::new(
-                    command.estate,
-                    command.notice,
-                    command.subject,
-                ),
-            )
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        effects
-            .finish()
-            .map_err(BankEstateProgressionDenial::from_attempt)
+        let EstateAction::RetransmitDeathNotice {
+            estate,
+            notice,
+            subject,
+        } = action
+        else {
+            return Err(BankEstateProgressionDenial::CommandInput(
+                "RetransmitDeathNoticeEstateOperation",
+            ));
+        };
+        super::program_outcome::program_outcome(
+            self.request(principal, request)
+                .mutate(bank_domain::schema::RetransmitEstateDeathNotice::new(
+                    estate, notice, subject,
+                ))
+                .idempotency(key)
+                .execute_capability_in_program(self.application_program()),
+            "RetransmitDeathNoticeEstateOperation",
+            |denial| {
+                denial
+                    .downcast::<BankDeathNotificationProjectionDenial>()
+                    .map(BankEstateProgressionDenial::DeathNotificationProjection)
+            },
+        )
     }
 }
 
 #[derive(Clone, Copy)]
-struct RetransmitCommand {
-    estate: EstateCaseId,
-    notice: DeathNoticeId,
-    subject: BankPrincipalId,
+pub(crate) struct RetransmitCommand {
+    pub(crate) notice: DeathNoticeId,
+    pub(crate) subject: BankPrincipalId,
 }
 
-fn retransmit_command(
+pub(crate) fn retransmit_command(
     action: EstateAction,
 ) -> Result<RetransmitCommand, BankEstateProgressionDenial> {
     match action {
         EstateAction::RetransmitDeathNotice {
-            estate,
+            estate: _,
             notice,
             subject,
-        } => Ok(RetransmitCommand {
-            estate,
-            notice,
-            subject,
-        }),
+        } => Ok(RetransmitCommand { notice, subject }),
         _ => Err(BankEstateProgressionDenial::CommandInput(
             "RetransmitDeathNoticeEstateOperation",
         )),
     }
 }
 
-fn project_retransmit(
+pub(crate) fn project_retransmit(
     reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<
         BankSchema,
         RetransmitDeathNoticeEstateOperation,

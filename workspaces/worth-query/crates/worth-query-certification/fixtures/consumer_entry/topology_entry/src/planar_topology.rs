@@ -62,27 +62,6 @@ impl PlanarSuccessor {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct UndeclaredPlanarRelation;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct PlanarDiscoverySource;
-
-impl PlanarDiscoverySource {
-    pub const fn reference<Schema>() -> ApplicationRelationRef<Schema, Self, Body, Body>
-    where
-        Schema: TopologySchemaBinding,
-    {
-        ApplicationRelationRef::from_schema_identifiers(
-            "PlanarDiscoverySource",
-            "Body",
-            "Body",
-            ApplicationRelationIntegrity::new(
-                ApplicationRelationEndpoints::same_context(false),
-                ApplicationRelationCardinality::new(None, None, None, None, None, None),
-                ApplicationRelationDeletionPolicy::CascadeDeleteRelations,
-            ),
-        )
-    }
-}
-
 impl UndeclaredPlanarRelation {
     pub const fn reference<Schema>() -> ApplicationRelationRef<Schema, Self, Body, Body>
     where

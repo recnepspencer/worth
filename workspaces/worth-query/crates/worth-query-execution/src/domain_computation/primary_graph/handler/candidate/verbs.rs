@@ -1,7 +1,7 @@
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEffectMarkerIdentity, ApplicationEffectRef, ApplicationRetainedEffectBinding,
-    OperationEmits,
+    ApplicationEffectMarkerIdentity, ApplicationEffectRef, ApplicationExternalEffectBinding,
+    ApplicationRetainedEffectBinding, OperationEmits,
 };
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
@@ -107,5 +107,18 @@ where
         Payload: Send + Sync + 'static,
     {
         self.candidate.emit(effect, payload)
+    }
+
+    pub fn emit_external<Effect, Payload>(
+        &mut self,
+        effect: ApplicationEffectRef<Schema, Effect, Payload>,
+        payload: Payload,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
+    where
+        Effect: ApplicationEffectMarkerIdentity<Schema> + OperationEmits<Binding::Operation>,
+        Effect::PayloadBinding: ApplicationExternalEffectBinding<Value = Payload>,
+        Payload: Send + Sync + 'static,
+    {
+        self.candidate.emit_external(effect, payload)
     }
 }

@@ -328,4 +328,23 @@ impl UiRebindReceipt {
         drop((publication, disposition, _registration));
         Ok(fact.into_observation())
     }
+
+    pub fn release_application_scalar_projection_observation(
+        self,
+    ) -> Result<worth_ui_query_binding::UiApplicationScalarProjectionObservation, Box<Self>> {
+        if self.plan.application_scalar_projection_fact_count() != 1 {
+            return Err(Box::new(self));
+        }
+        let Self {
+            plan,
+            publication,
+            disposition,
+            _registration,
+        } = self;
+        let fact = plan
+            .into_application_scalar_projection_fact()
+            .expect("the exact application scalar count was admitted before release");
+        drop((publication, disposition, _registration));
+        Ok(fact.into_observation())
+    }
 }

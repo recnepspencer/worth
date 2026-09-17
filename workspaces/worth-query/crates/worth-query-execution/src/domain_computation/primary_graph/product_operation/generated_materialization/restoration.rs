@@ -4,6 +4,7 @@ use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 mod failure;
 mod invariant_admission;
+pub(in crate::domain_computation::primary_graph) use invariant_admission::admit_required_invariants;
 mod no_effect;
 mod receipt;
 mod recovery;
@@ -281,8 +282,6 @@ where
                         &observation,
                         correspondence,
                         producer.source_identity,
-                        producer.producer_dependency_identity,
-                        producer.idempotency_key_identity,
                         producer.observed_source_facts,
                     );
                 Ok(WorthQueryRestoredGeneratedOutput {

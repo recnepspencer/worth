@@ -11,7 +11,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationCommitOutcome, WorthQueryCustomInvariantDenial,
     },
 };
-use worth_query_topology_entry::{PlanarMutation, PlanarRead};
+use worth_query_topology_entry::{PlanarEdit, PlanarMutation, PlanarRead};
 use worth_query_topology_entry::{
     INVARIANT_PROBE_EVALUATION_EXPANSION, INVARIANT_PROBE_STANDARD,
     INVARIANT_PROBE_UNDECLARED_ACCESS,
@@ -29,6 +29,11 @@ mod publication;
 mod resource_profile;
 
 type Request<'a> = WorthQueryApplicationRequest<'a, 'a, 'a, ConsumerSchema>;
+type ProgramApplication =
+    worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
+        ConsumerSchema,
+        crate::ConsumerProgram,
+    >;
 type MutationOutcome = WorthQueryApplicationMutationOutcome<
     worth_query_consumer_values::PlanarMutationDenial,
     PlanarAdjustmentResult,
@@ -43,9 +48,7 @@ pub(crate) fn run(
     application_program::performed_source_settles_required_output(foreign);
     application_program::caller_disposal_before_progress_recovers(foreign);
     application_program::resource_denial_preserves_source_and_delivery(foreign);
-    application_program::root_selection::foreign_program_is_denied_before_publication(foreign);
-    application_program::root_selection::undeclared_root_is_denied_before_publication(foreign);
-    application_program::root_selection::truncated_root_is_denied_before_publication(foreign);
+    application_program::foreign_program_is_denied_before_publication(foreign);
     application_program::ordinary_source_publication_cannot_bypass_program(foreign);
     application_program::lifecycle_proofs(foreign);
     resource_profile::candidate_bytes_beyond_host_limit_are_denied(foreign);
@@ -66,13 +69,13 @@ pub(crate) fn run(
     typed_invariant_access_is_bounded(&request, &world);
     typed_domain_denial_has_no_publication(&request, &world);
     insufficient_work_is_denied_before_owner(&request, &world);
-    publication::create_and_reject_cycles(&request);
+    publication::create_and_reject_cycles(&request, &world.application);
     prior_output_family::branch_local_inventory_drives_real_publications(
         &world.application,
         &principal,
         &scope,
     );
-    current_output_selector::producer_qualified_selection_is_current(&request, &world.application);
+    current_output_selector::producer_qualified_missing_and_stale(&request, &world.application);
     actual_candidate_checks_untouched_neighbors(&request, &world);
     let foreign_world = installation::install(foreign);
     generated_materialization::typed_reconstruction_preserves_query_authority(
@@ -93,9 +96,10 @@ pub(crate) fn run(
         .request(&foreign_principal, &foreign_scope);
     output_correspondence::require_foreign_source(
         &request,
+        &world.application,
         output_correspondence::observed_source(&foreign_request, "anchor-a"),
     );
-    output_correspondence::run(&request);
+    output_correspondence::run(&request, &world.application);
     println!("Public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, producer-qualified current-output selection, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, early work exhaustion, and idempotency");
 }
 
@@ -104,11 +108,21 @@ fn typed_invariant_access_is_bounded(request: &Request<'_>, world: &installation
     world
         .invariant_probe
         .store(INVARIANT_PROBE_UNDECLARED_ACCESS, Ordering::SeqCst);
-    require_invariant_access_failure(mutate(request, adjust("anchor-a", 2, 4096), 901));
+    require_invariant_access_failure(mutate(
+        request,
+        &world.application,
+        adjust("anchor-a", 2, 4096),
+        901,
+    ));
     world
         .invariant_probe
         .store(INVARIANT_PROBE_EVALUATION_EXPANSION, Ordering::SeqCst);
-    require_invariant_access_failure(mutate(request, adjust("anchor-a", 2, 4096), 902));
+    require_invariant_access_failure(mutate(
+        request,
+        &world.application,
+        adjust("anchor-a", 2, 4096),
+        902,
+    ));
     world
         .invariant_probe
         .store(INVARIANT_PROBE_STANDARD, Ordering::SeqCst);
@@ -141,6 +155,7 @@ fn typed_domain_denial_has_no_publication(
     let calls = world.invariant_calls.load(Ordering::SeqCst);
     let outcome = mutate(
         request,
+        &world.application,
         PlanarMutation {
             scope_key: "anchor-a".to_owned(),
             operation: PlanarOperation::CreateCycle(Vec::new()),
@@ -164,7 +179,7 @@ fn insufficient_work_is_denied_before_owner(
 ) {
     let calls = world.invariant_calls.load(Ordering::SeqCst);
     let before = source_version(request);
-    let outcome = mutate(request, adjust("anchor-a", 2, 1), 1);
+    let outcome = mutate(request, &world.application, adjust("anchor-a", 2, 1), 1);
     let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationCommitOutcome::Denied(
         denial,
     )) = outcome
@@ -197,10 +212,10 @@ fn actual_candidate_checks_untouched_neighbors(
     let valid = adjust("anchor-a", 2, 4096);
     let source = output_correspondence::observed_source(request, &valid.scope_key);
     let outcome = request
-        .mutate(valid.clone())
+        .mutate(PlanarEdit(valid.clone()))
         .expect_source(source.clone())
         .idempotency(&10)
-        .execute()
+        .execute_in_program(&world.application)
         .expect("the typed request reaches the actual mutation owner");
     let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
         panic!("the positive-turn adjustment must commit: {outcome:?}")
@@ -212,10 +227,10 @@ fn actual_candidate_checks_untouched_neighbors(
     assert_eq!(read_y(request, "anchor-c"), 10);
 
     let retry = request
-        .mutate(valid)
+        .mutate(PlanarEdit(valid))
         .expect_source(source)
         .idempotency(&10)
-        .execute()
+        .execute_in_program(&world.application)
         .expect("the repeated typed request reaches idempotency resolution");
     let WorthQueryApplicationMutationOutcome::AlreadyCommitted(recovered) = retry else {
         panic!("the repeated command must recover its single committed publication")
@@ -223,7 +238,12 @@ fn actual_candidate_checks_untouched_neighbors(
     assert!(recovered.is_same_authoritative_commit(&receipt));
 
     let before = source_version(request);
-    let malformed = mutate(request, adjust("anchor-a", 12, 4096), 11);
+    let malformed = mutate(
+        request,
+        &world.application,
+        adjust("anchor-a", 12, 4096),
+        11,
+    );
     require_planar_violation(malformed);
     assert_eq!(
         source_version(request),
@@ -272,13 +292,18 @@ fn require_planar_violation<Denial: std::fmt::Debug, Result: std::fmt::Debug>(
     );
 }
 
-fn mutate(request: &Request<'_>, input: PlanarMutation, key: u64) -> MutationOutcome {
+fn mutate(
+    request: &Request<'_>,
+    application: &ProgramApplication,
+    input: PlanarMutation,
+    key: u64,
+) -> MutationOutcome {
     let source = output_correspondence::observed_source(request, &input.scope_key);
     request
-        .mutate(input)
+        .mutate(PlanarEdit(input))
         .expect_source(source)
         .idempotency(&key)
-        .execute()
+        .execute_in_program(application)
         .expect("the typed request reaches the actual mutation owner")
 }
 

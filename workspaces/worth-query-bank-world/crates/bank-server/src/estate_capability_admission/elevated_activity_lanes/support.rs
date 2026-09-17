@@ -5,13 +5,13 @@ use bank_domain::{
         CapabilityGrantId, CapabilityGrantStatus, EmergencyAccessId, EstateAction,
         EstateWorkflowStage, RestrictedBankField,
     },
+    proposals::BankIdempotencyKey,
     queries::{
         estate_emergency_access_activity, EstateEmergencyAccessActivityItem,
         EstateEmergencyAccessActivityRequest, EstateGovernanceQuery,
     },
     reads::{EstateCapabilityContext, EstateGovernanceContext},
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 use worth_query_host::facade::publication::domain_computation::WorthQueryPublishedApplicationResult;
 
 use super::super::{
@@ -122,13 +122,13 @@ pub(super) fn revoke_exact_support(world: &ActivityWorld, seed: u8) {
     let outcome = world
         .fixture
         .runtime
-        .revoke_estate_capability(
+        .revoke_estate_capability_with_key(
             &world.requester,
             EstateAction::RevokeCapability {
                 estate: ESTATE,
                 grant: GRANT,
             },
-            WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed + 1; 32]),
+            &BankIdempotencyKey::new(format!("activity-support-revocation-{seed}")).unwrap(),
             &request_scope(),
         )
         .expect("the exact activity support revocation should commit");

@@ -14,6 +14,25 @@ use super::{
     ApplicationQueryScopeContract,
 };
 
+type QueryScopeFieldRef<Schema, Binding> = ApplicationFieldRef<
+    Schema,
+    <Binding as ApplicationQueryScopeBinding<Schema>>::Scope,
+    <Binding as ApplicationQueryScopeBinding<Schema>>::Aspect,
+    <Binding as ApplicationQueryScopeBinding<Schema>>::Field,
+    <Binding as ApplicationQueryScopeBinding<Schema>>::Value,
+    <Binding as ApplicationQueryScopeBinding<Schema>>::Write,
+    EqualityPredicate,
+    <Binding as ApplicationQueryScopeBinding<Schema>>::Unit,
+>;
+
+type QueryIntentReference<Schema, Binding> = ApplicationQueryReference<
+    Schema,
+    <Binding as ApplicationQueryBinding<Schema>>::Query,
+    <<Binding as ApplicationQueryBinding<Schema>>::ParameterBinding as ApplicationStructuredValueBinding>::Value,
+    <<Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+    <<Binding as ApplicationQueryBinding<Schema>>::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope,
+>;
+
 /// Complete declaration-time meaning of one application-owned query binding.
 pub trait ApplicationQueryBinding<Schema>: Sized + 'static
 where
@@ -55,16 +74,7 @@ where
     const IDENTITY: &'static str;
     const LIMITS: ApplicationQueryBindingLimits;
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope,
-        <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Aspect,
-        <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Field,
-        <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Value,
-        <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Write,
-        EqualityPredicate,
-        <Self::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Unit,
-    >;
+    fn scope_field() -> QueryScopeFieldRef<Schema, Self::ScopeBinding>;
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -110,15 +120,7 @@ where
 {
     type Binding: ApplicationQueryBinding<Schema, Input = Self>;
 
-    fn reference(
-        &self,
-    ) -> ApplicationQueryReference<
-        Schema,
-        <Self::Binding as ApplicationQueryBinding<Schema>>::Query,
-        <<Self::Binding as ApplicationQueryBinding<Schema>>::ParameterBinding as ApplicationStructuredValueBinding>::Value,
-        <<Self::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
-        <<Self::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope,
-    >{
+    fn reference(&self) -> QueryIntentReference<Schema, Self::Binding> {
         ApplicationQueryReference::from_declaration()
     }
 

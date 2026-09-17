@@ -19,6 +19,7 @@ use super::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod binding;
+mod replay;
 pub(in crate::domain_computation) use binding::{
     WorthQueryDelegationActivationBinding, WorthQueryDelegationActivationEffect,
 };

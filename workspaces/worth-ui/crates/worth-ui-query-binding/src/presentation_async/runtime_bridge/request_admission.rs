@@ -6,7 +6,9 @@ pub(super) fn admit_presentation_owned_request(
     product: &worth_query::facade::product::WorthQueryProductBranchLease,
 ) -> Result<
     worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
-    runtime::WorthQueryOwnedAsyncRuntimeDenial,
+    Box<runtime::WorthQueryOwnedAsyncRuntimeDenial>,
 > {
-    workspace.admit_owned_bridge_async_request(declaration, product)
+    workspace
+        .admit_owned_bridge_async_request(declaration, product)
+        .map_err(Box::new)
 }

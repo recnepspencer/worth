@@ -263,6 +263,16 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
         &self.touched
     }
 
+    pub(crate) fn has_applicable_touches(&self) -> bool {
+        !self.touched.direct_visible_entity_ids().is_empty()
+            || !self.touched.visible_relation_ids().is_empty()
+            || !self.touched.planned_entity_deletes().is_empty()
+            || !self.touched.planned_entity_creates().is_empty()
+            || !self.touched.planned_relation_creates().is_empty()
+            || !self.touched.planned_relation_deletes().is_empty()
+            || !self.touched.planned_relation_endpoint_updates().is_empty()
+    }
+
     pub fn aspect_states(&self) -> StructuralAspectStateView<'runtime> {
         self.aspect_states.clone()
     }

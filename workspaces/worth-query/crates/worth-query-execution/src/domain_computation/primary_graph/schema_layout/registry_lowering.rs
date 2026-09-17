@@ -232,6 +232,26 @@ fn lower_endpoint_deletion(
     })
 }
 
+pub(super) struct LoweredApplicationContractBindings {
+    pub by_entity: BTreeMap<String, Vec<DeclaredAspectContractBinding>>,
+}
+
+pub(super) fn lower_application_contract_bindings(
+    catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,
+) -> LoweredApplicationContractBindings {
+    let mut by_entity = BTreeMap::<String, Vec<DeclaredAspectContractBinding>>::new();
+    for installed in catalog.contracts() {
+        by_entity
+            .entry(installed.locus().entity().to_string())
+            .or_default()
+            .push(DeclaredAspectContractBinding {
+                binding: installed.binding().clone(),
+                contract: installed.contract().clone(),
+            });
+    }
+    LoweredApplicationContractBindings { by_entity }
+}
+
 #[cfg(test)]
 mod tests {
     use worth_query_installation::facade::{
@@ -316,24 +336,4 @@ mod tests {
         assert!(lowered.cardinality_contracts.is_empty());
         assert!(lowered.endpoint_deletion_integrity_contracts.is_empty());
     }
-}
-
-pub(super) struct LoweredApplicationContractBindings {
-    pub by_entity: BTreeMap<String, Vec<DeclaredAspectContractBinding>>,
-}
-
-pub(super) fn lower_application_contract_bindings(
-    catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,
-) -> LoweredApplicationContractBindings {
-    let mut by_entity = BTreeMap::<String, Vec<DeclaredAspectContractBinding>>::new();
-    for installed in catalog.contracts() {
-        by_entity
-            .entry(installed.locus().entity().to_string())
-            .or_default()
-            .push(DeclaredAspectContractBinding {
-                binding: installed.binding().clone(),
-                contract: installed.contract().clone(),
-            });
-    }
-    LoweredApplicationContractBindings { by_entity }
 }

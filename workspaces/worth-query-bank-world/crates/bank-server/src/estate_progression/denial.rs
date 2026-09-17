@@ -10,14 +10,14 @@ pub use operation_projection::BankEstateOperationProjectionDenial;
 
 use worth_query_host::facade::domain::{
     WorthQueryApplicationCapabilityInstallationDenial,
-    WorthQueryApplicationOperationInstallationDenial,
+    WorthQueryApplicationOperationInstallationDenial, WorthQueryPrincipalBindingInstallationDenial,
 };
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryElevationApprovalAuthorizationDenial, WorthQueryElevationCloseAuthorizationDenial,
-    WorthQueryInvariantDecisionPlanDenial, WorthQueryMandatoryReviewAuthorizationDenial,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationCommitDenial,
+    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryInvariantDecisionPlanDenial,
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationProjectionDenial,
-    WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
+    WorthQueryPrincipalResolutionDenial, WorthQueryRecoveryHandleDenial,
+    WorthQueryRecoveryHandleDenialKind,
 };
 
 use super::{
@@ -30,6 +30,16 @@ use super::{
 
 #[derive(Debug)]
 pub enum BankEstateProgressionDenial {
+    ProgramAction(WorthQueryApplicationCommitDenial),
+    ProgramMismatch,
+    PrincipalBindingInstallation(WorthQueryPrincipalBindingInstallationDenial),
+    PrincipalIdentityEncoding(
+        worth_query_host::facade::declaration::application_schema::ApplicationValueEncodeDenial,
+    ),
+    PrincipalResolution(WorthQueryPrincipalResolutionDenial),
+    ApplicationEntry(
+        worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial,
+    ),
     ProductSelection(worth_query_host::facade::product::WorthQueryProductBranchAdmissionDenial),
     CapabilityInstallation(crate::BankApplicationCapabilityInstallationDenialKind),
     OperationInstallation(crate::BankOperationInstallationDenial),
@@ -38,6 +48,7 @@ pub enum BankEstateProgressionDenial {
     CloseAuthorization(crate::BankAuthorizationDenial),
     ReviewAuthorization(crate::BankAuthorizationDenial),
     CommandInput(&'static str),
+    IdempotencyIntentDrift,
     Projection(BankEstateOperationProjectionDenial),
     DecisionProjection(BankInvariantDecisionPlanDenial),
     FreezeProjection(BankEstateFreezeProjectionDenial),
@@ -138,9 +149,15 @@ impl BankRecoveryDenial {
 impl std::fmt::Display for BankEstateProgressionDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ProgramAction(denial) => write!(formatter, "{denial:?}"),
+            Self::ProgramMismatch => formatter.write_str("application-program-mismatch"),
+            Self::PrincipalBindingInstallation(denial) => write!(formatter, "{denial:?}"),
+            Self::PrincipalIdentityEncoding(denial) => write!(formatter, "{denial:?}"),
+            Self::PrincipalResolution(denial) => denial.fmt(formatter),
             Self::ProductSelection(denial) => {
                 write!(formatter, "product selection denied: {denial:?}")
             }
+            Self::ApplicationEntry(denial) => denial.fmt(formatter),
             Self::CapabilityInstallation(_) => {
                 formatter.write_str("capability-installation-denied")
             }
@@ -152,6 +169,7 @@ impl std::fmt::Display for BankEstateProgressionDenial {
             Self::CommandInput(operation) => {
                 write!(formatter, "invalid estate lifecycle input for {operation}")
             }
+            Self::IdempotencyIntentDrift => formatter.write_str("idempotency-intent-drift"),
             Self::Projection(_) => formatter.write_str("operation-projection-denied"),
             Self::DecisionProjection(_) => formatter.write_str("decision-projection-denied"),
             Self::FreezeProjection(denial) => denial.fmt(formatter),
@@ -199,30 +217,6 @@ impl BankEstateProgressionDenial {
 
     pub(crate) fn from_authorization(denial: WorthQueryOperationAuthorizationDenial) -> Self {
         Self::Authorization(crate::BankAuthorizationDenial::from_query(denial))
-    }
-
-    pub(crate) fn from_approval_authorization_ref(
-        denial: &WorthQueryElevationApprovalAuthorizationDenial,
-    ) -> Self {
-        Self::ApprovalAuthorization(crate::BankAuthorizationDenial::from_query(
-            denial.denial().clone(),
-        ))
-    }
-
-    pub(crate) fn from_close_authorization_ref(
-        denial: &WorthQueryElevationCloseAuthorizationDenial,
-    ) -> Self {
-        Self::CloseAuthorization(crate::BankAuthorizationDenial::from_query(
-            denial.denial().clone(),
-        ))
-    }
-
-    pub(crate) fn from_review_authorization_ref(
-        denial: &WorthQueryMandatoryReviewAuthorizationDenial,
-    ) -> Self {
-        Self::ReviewAuthorization(crate::BankAuthorizationDenial::from_query(
-            denial.denial().clone(),
-        ))
     }
 
     pub(crate) fn from_projection(denial: WorthQueryOperationProjectionDenial) -> Self {

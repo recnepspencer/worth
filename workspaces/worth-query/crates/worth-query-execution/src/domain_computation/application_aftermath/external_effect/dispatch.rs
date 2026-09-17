@@ -1,5 +1,6 @@
 //! Transport orchestration for one freshly observed committed outbox row.
 
+use worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline;
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
 use super::super::WorthQueryAftermathDerivationFailure;
@@ -183,10 +184,13 @@ pub(in crate::domain_computation) fn dispatch_external_effect(
 ) -> Result<WorthQueryExternalEffectDispatch, WorthQueryAftermathDerivationFailure> {
     with_admitted_dispatch(admitted, |attempt, clock, progression_work| {
         let correlation = *attempt.record().correlation();
+        clock
+            .sample(ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds)
+            .map_err(|_| WorthQueryAftermathDerivationFailure::RuntimeTimeUnavailable)?;
         let observed = transport.dispatch(WorthQueryExternalDispatchRequest::for_record(
             attempt.record(),
         ));
-        let classified = classify_dispatch_observation(observed, attempt, clock)?;
+        let classified = classify_dispatch_observation(observed, attempt, clock);
         let causal_ladder = WorthQueryExternalEffectCausalLadder {
             provider_commit: attempt.provider_commit().clone(),
             emission: attempt.emission().clone(),

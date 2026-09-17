@@ -21,6 +21,18 @@ impl HandlerExecutionDenial {
             source: Box::new(source),
         }
     }
+
+    /// Recovers an owning product's concrete handler denial without exposing
+    /// that product type to Query.
+    pub fn downcast<Denial>(self) -> Result<Denial, Self>
+    where
+        Denial: std::error::Error + Send + Sync + 'static,
+    {
+        match self.source.downcast::<Denial>() {
+            Ok(denial) => Ok(*denial),
+            Err(source) => Err(Self { source }),
+        }
+    }
 }
 
 impl std::fmt::Display for HandlerExecutionDenial {

@@ -173,7 +173,8 @@ fn elevation(
         capability_value(1),
         relation.clone(),
         relation.clone(),
-        field.clone(),
+        capability_field_named("review-status"),
+        capability_field_named("reviewed-at"),
         capability_value(1),
         capability_value(2),
     );
@@ -181,7 +182,8 @@ fn elevation(
         WorthQueryPortableApplicationCapabilityElevationDefinitionParts {
             identity: field.clone(),
             reason: field.clone(),
-            status: field.clone(),
+            status: capability_field_named("elevation-status"),
+            closed_at: capability_field_named("closed-at"),
             states: ApplicationCapabilityElevationStates::new(
                 capability_value(1),
                 capability_value(2),
@@ -232,11 +234,15 @@ pub(super) fn authorization_path() -> ApplicationAuthorizationPath {
 }
 
 fn capability_field() -> ApplicationCapabilityFieldBinding {
+    capability_field_named("value")
+}
+
+fn capability_field_named(name: &str) -> ApplicationCapabilityFieldBinding {
     ApplicationCapabilityFieldBinding::from_untrusted_parts(
         WorthQueryPortableApplicationCapabilityFieldBindingParts {
             entity: text("Grant"),
             aspect: text("State"),
-            field: text("value"),
+            field: text(name),
             scalar_family: ScalarAspectType::UInt64,
             value_type: text("worth.rust.u64"),
         },

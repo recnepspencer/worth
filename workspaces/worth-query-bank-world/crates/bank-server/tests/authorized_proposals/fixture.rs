@@ -5,8 +5,7 @@ use bank_domain::proposals::{
     BankIdempotencyKey, BankOperationScopeBinding, BankProposalEngine, BankSnapshot,
     BankSnapshotBuilder,
 };
-use bank_domain::schema::{ApplyOpeningFunding, CreatePersonalAccount, SendMoney};
-use bank_server::{BankAuthorizedProposal, BankSendMoneyPreparation};
+use bank_domain::schema::{ApplyOpeningFunding, CreatePersonalAccount};
 
 pub(super) fn id<T>(constructor: impl FnOnce(u64) -> Option<T>, value: u64) -> T {
     constructor(value).expect("test identity is nonzero")
@@ -24,25 +23,6 @@ pub(super) fn descriptive_binding(value: u8) -> BankOperationScopeBinding {
         bank_domain::proposals::BankOperationScopeEntityBinding::new(0, 1, 1),
         bank_domain::proposals::BankOperationScopeEntityBinding::new(0, u64::from(value), 1),
     )
-}
-
-pub(super) fn expect_send_proposal(
-    preparation: BankSendMoneyPreparation,
-) -> BankAuthorizedProposal<
-    bank_domain::schema::SendMoneyOperation,
-    SendMoney,
-    bank_domain::schema::Account,
-    AccountId,
-> {
-    match preparation {
-        BankSendMoneyPreparation::Proposal(proposal) => proposal,
-        BankSendMoneyPreparation::AlreadyCommitted { .. } => {
-            panic!("an unseen request cannot already be committed")
-        }
-        BankSendMoneyPreparation::IntentDrift { .. } => {
-            panic!("an unseen request cannot have idempotency drift")
-        }
-    }
 }
 
 pub(super) fn funded_personal_world() -> BankSnapshot {

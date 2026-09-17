@@ -225,6 +225,15 @@ impl WorthQueryPrimaryGraphProvider {
             &material.requirements,
             semantic_work,
         )?;
+        super::super::product_operation::admit_required_invariants(
+            candidate
+                .invariant_evidence()
+                .custom_invariant_execution_receipts(),
+            material.producer_required_invariants,
+        )
+        .map_err(|_| {
+            closure_failure("producer-required invariant did not pass before publication")
+        })?;
         let touch_admission =
             super::application_touch_admission::admit_validated_application_touches(
                 &candidate,

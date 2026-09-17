@@ -75,16 +75,10 @@ impl super::WorthUiApplicationSessionState {
             if !visited.insert((previous_identity.clone(), successor_identity.clone())) {
                 continue;
             }
-            let Some((_, old)) =
-                previous.mounted_projection_ordinary_meaning_for_identity(&previous_identity)
-            else {
-                return None;
-            };
-            let Some((_, next)) =
-                candidate.mounted_projection_ordinary_meaning_for_identity(&successor_identity)
-            else {
-                return None;
-            };
+            let (_, old) =
+                previous.mounted_projection_ordinary_meaning_for_identity(&previous_identity)?;
+            let (_, next) =
+                candidate.mounted_projection_ordinary_meaning_for_identity(&successor_identity)?;
             if !old.same_mounted_layout_meaning(&next) {
                 return None;
             }

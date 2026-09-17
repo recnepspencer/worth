@@ -2,6 +2,7 @@ use super::validation_engine_fixtures::*;
 use std::sync::Arc;
 
 pub(super) struct AlwaysViolatesCustomRule;
+pub(super) struct TinyBudgetUnrelatedRule;
 pub(super) struct GraphCompositionViolatesCustomRule;
 pub(super) struct StructuralSurfaceRule;
 pub(super) struct PanicDuringPrepareRule;
@@ -46,6 +47,33 @@ impl CustomInvariantRule for AlwaysViolatesCustomRule {
         _scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
         Ok(CustomInvariantVerdict::Violation)
+    }
+}
+
+impl CustomInvariantRule for TinyBudgetUnrelatedRule {
+    type Scope = ();
+
+    fn descriptor(&self) -> CustomInvariantDescriptor {
+        let mut descriptor = AlwaysViolatesCustomRule.descriptor();
+        descriptor.identity.rule_id = CustomInvariantRuleId::new("test.custom.tiny-unrelated");
+        descriptor.operational.maximum_work_units = std::num::NonZeroU64::new(1).unwrap();
+        descriptor.operational.access.affected_entity_kinds = vec![KindId(999)];
+        descriptor
+    }
+
+    fn prepare_scope(
+        &self,
+        _: &mut CustomInvariantScopePlanner<'_>,
+    ) -> Result<Self::Scope, CustomInvariantPreparationError> {
+        Ok(())
+    }
+
+    fn evaluate(
+        &self,
+        _: &CustomInvariantExecutionContext<'_>,
+        _: &Self::Scope,
+    ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
+        Ok(CustomInvariantVerdict::Pass)
     }
 }
 

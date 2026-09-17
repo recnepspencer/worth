@@ -32,6 +32,7 @@ type InstalledOutputProducers<Schema> =
     super::super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>;
 struct ApplicationConditionalBindingScope {
     binding: WorthQueryPortableApplicationConditionalOperationBinding,
+    operation_type: std::any::TypeId,
     node_identity: String,
     initial_binding_count: usize,
     initial_readiness_count: usize,

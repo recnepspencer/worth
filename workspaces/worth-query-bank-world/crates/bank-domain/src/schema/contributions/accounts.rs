@@ -39,8 +39,11 @@ worth_query_application_contribution! {
                 .operation(without_external_effect_or_aftermath(CreatePersonalAccountOperation::reference()))
                 .application_mutation_binding::<CreatePersonalAccountMutationBinding>()
                 .operation(without_external_effect_or_aftermath(CreateBusinessAccountOperation::reference()))
+                .application_mutation_binding::<CreateBusinessAccountMutationBinding>()
                 .operation(without_external_effect_or_aftermath(GrantAccountAuthorizationOperation::reference()))
-                .operation(without_external_effect_or_aftermath(RevokeAccountAuthorizationOperation::reference()));
+                .application_mutation_binding::<GrantAccountAccessMutationBinding>()
+                .operation(without_external_effect_or_aftermath(RevokeAccountAuthorizationOperation::reference()))
+                .application_mutation_binding::<RevokeAccountAccessMutationBinding>();
             let schema = install_account_creation_program(schema);
             let schema = install_authorization_program(schema);
             let schema = install_account_decision_reads(schema)

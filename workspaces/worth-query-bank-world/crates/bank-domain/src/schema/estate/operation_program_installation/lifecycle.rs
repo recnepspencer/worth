@@ -50,7 +50,9 @@ fn install_close(
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let operation = RevokeEstateEmergencyAccessOperation::reference();
     install_lifecycle_reads(schema, operation)
+        .operation_read_field(operation, EmergencyAccessClosedAtField::reference())
         .operation_write(operation, EmergencyAccessStatusField::reference())
+        .operation_write(operation, EmergencyAccessClosedAtField::reference())
 }
 
 fn install_review(
@@ -58,7 +60,9 @@ fn install_review(
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let operation = CompleteEstateMandatoryReviewOperation::reference();
     install_lifecycle_reads(schema, operation)
+        .operation_read_field(operation, MandatoryReviewReviewedAtField::reference())
         .operation_write(operation, MandatoryReviewStatusField::reference())
+        .operation_write(operation, MandatoryReviewReviewedAtField::reference())
         .operation_link(operation, ReviewPrincipal::reference())
 }
 

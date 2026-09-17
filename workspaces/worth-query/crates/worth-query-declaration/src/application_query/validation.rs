@@ -199,7 +199,7 @@ fn validate_predicates(
     {
         return Err(ApplicationQueryDefinitionDenial::ResultRootMismatch);
     }
-    if result_shape::relation_predicate_targets_are_valid(definition.result_shape()) == false {
+    if !result_shape::relation_predicate_targets_are_valid(definition.result_shape()) {
         return Err(ApplicationQueryDefinitionDenial::RelationPredicateTargetMismatch);
     }
     Ok(())

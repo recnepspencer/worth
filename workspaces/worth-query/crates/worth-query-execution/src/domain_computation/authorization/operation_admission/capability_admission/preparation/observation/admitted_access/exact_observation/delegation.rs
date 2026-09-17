@@ -71,6 +71,48 @@ impl<Schema> WorthQueryExactCapabilityObservation<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// Resolves stable proposal identity for an already-committed retry. This
+    /// never supplies parent-currentness or narrowing evidence for a new effect.
+    pub(in crate::domain_computation::authorization) fn resolve_delegation_replay_target<
+        TargetCapability,
+        TargetOperation,
+        TargetInput,
+        Scope,
+        Context,
+    >(
+        &self,
+        target_capability: &WorthQueryInstalledApplicationCapability<
+            Schema,
+            TargetCapability,
+            TargetOperation,
+            TargetInput,
+        >,
+        proposed: &ApplicationCapabilityDelegationRequestProjection<Schema, Scope, Context>,
+    ) -> Result<WorthQueryDelegationResolvedRequest, WorthQueryOperationAuthorizationDenial> {
+        let installed = self
+            .runtime
+            .authorization
+            .capability_plan(target_capability)
+            .ok_or_else(|| stale(target_capability.contract().name()))?;
+        let target = self.resolve_request(proposed.target())?;
+        let parent = self.resolve_selector(proposed.parent())?;
+        let grantee = self.resolve_selector(proposed.grantee())?;
+        if parent.entity_kind() != installed.grant_kind()
+            || grantee.entity_kind() != installed.principal_kind()
+        {
+            return Err(rejected(installed));
+        }
+        let activation_context = self.resolve_activation_context(installed, proposed)?;
+        Ok(WorthQueryDelegationResolvedRequest {
+            parent: parent.entity_id(),
+            grantor: self.principal,
+            grantee: grantee.entity_id(),
+            resource: target.resource_entity_id(),
+            related: target.related(),
+            activation_context,
+        })
+    }
+
     pub(in crate::domain_computation::authorization) fn authorize_delegation_support<
         TargetCapability,
         TargetOperation,

@@ -32,7 +32,10 @@ pub(super) fn reduce_invariant_verdicts(
             verdict,
         };
         let result_identity = result_identity(&result, witness);
-        if !matches!(result.verdict, InvariantVerdict::Pass) {
+        if !matches!(
+            result.verdict,
+            InvariantVerdict::Pass | InvariantVerdict::NotApplicable
+        ) {
             diagnostic_observations.push(
                 crate::authority::commit::preparation::diagnostics::observations::ValidationDiagnosticObservation {
                     packet_index: packet.packet_index,
@@ -53,7 +56,7 @@ pub(super) fn reduce_invariant_verdicts(
 
 fn witness_for_verdict(verdict: &InvariantVerdict) -> InvariantWitnessKey {
     match verdict {
-        InvariantVerdict::Pass => InvariantWitnessKey::pass(),
+        InvariantVerdict::Pass | InvariantVerdict::NotApplicable => InvariantWitnessKey::pass(),
         InvariantVerdict::Advisory { violation, .. } | InvariantVerdict::Violation(violation) => {
             violation.witness_key()
         }

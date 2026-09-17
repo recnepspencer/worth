@@ -30,6 +30,7 @@ fn one_lifecycle_operation_cannot_serve_two_governed_capability_owners() {
         ordinary.identity().clone(),
         ordinary.reason().clone(),
         ordinary.status().clone(),
+        ordinary.closed_at().clone(),
         ordinary.states().clone(),
         ordinary.validity().clone(),
         ordinary.maximum_duration(),

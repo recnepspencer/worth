@@ -1,13 +1,10 @@
-use bank_domain::estate::EstateAction;
+use bank_domain::{estate::EstateAction, proposals::BankIdempotencyKey};
 use bank_estate_certification::{
     exercise_estate_lifecycle, EstateLifecycleInputs, EstateLifecyclePrincipals,
     EstateLifecycleProgressionOutcome,
 };
 use bank_server::{BankEstateProgressionDenial, BankIdentityRuntime};
-use worth_query_host::facade::{
-    admission::authenticated_principal::WorthQueryRequestScope,
-    primary_graph::WorthQueryApplicationIdempotencyBinding,
-};
+use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 
 #[allow(dead_code)]
 fn public_consumer_compiles_one_move_only_lifecycle(
@@ -15,7 +12,7 @@ fn public_consumer_compiles_one_move_only_lifecycle(
     principals: EstateLifecyclePrincipals<'_>,
     request: &WorthQueryRequestScope,
     actions: [EstateAction; 4],
-    idempotency: [WorthQueryApplicationIdempotencyBinding; 4],
+    idempotency: [BankIdempotencyKey; 4],
 ) -> Result<(), BankEstateProgressionDenial> {
     let [request_action, approval_action, close_action, review_action] = actions;
     let outcome = exercise_estate_lifecycle(

@@ -36,9 +36,9 @@ impl<Schema: TopologySchemaBinding>
 {
     type Configuration = ();
     type Installed = ();
+    type Operation = PublishFinalPlanarOutput;
 
-    const IDENTITY: &'static str =
-        "worth.query.certification.planar-final-output-readiness.v1";
+    const IDENTITY: &'static str = "worth.query.certification.planar-final-output-readiness.v1";
     const REQUIRED_PRODUCERS: &'static [&'static str] =
         &["worth.query.certification.planar-final-output-producer.v1"];
 
@@ -69,15 +69,8 @@ impl<Schema: TopologySchemaBinding>
             .unwrap()
             .bind_node(PlanarFinalReadyNode::reference())
             .unwrap();
-        installation.bind_output_readiness::<
-            PlanarFinalOutputProducer<Schema>,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-        >(node, 0)
+        installation
+            .bind_output_readiness::<PlanarFinalOutputProducer<Schema>, _, _, _, _, _, _>(node, 0)
     }
 }
 

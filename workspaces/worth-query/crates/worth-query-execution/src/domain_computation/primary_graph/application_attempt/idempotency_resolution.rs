@@ -62,21 +62,21 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
         }
     }
 
-    const fn foreign_admission() -> Self {
+    pub(super) const fn foreign_admission() -> Self {
         Self {
             kind: WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission,
             authorization: None,
         }
     }
 
-    const fn provider_unavailable() -> Self {
+    pub(super) const fn provider_unavailable() -> Self {
         Self {
             kind: WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable,
             authorization: None,
         }
     }
 
-    fn from_provider(
+    pub(super) fn from_provider(
         denial: crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial,
     ) -> Self {
         let kind = match denial {

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpCredential, BankHttpDenial,
-    BankHttpMutationControls, BankHttpProtocolVersion,
+    BankHttpMutationControls, BankHttpProtocolVersion, BankHttpRecoveryStatus,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -27,7 +27,8 @@ pub enum BankHttpEstateDisbursementOutcome {
         request_id: String,
         disposition: BankHttpCommitDisposition,
         commit: BankHttpCommitDescription,
-        recovery: String,
+        recovery: Option<String>,
+        recovery_status: BankHttpRecoveryStatus,
     },
     Denied {
         request_id: Option<String>,

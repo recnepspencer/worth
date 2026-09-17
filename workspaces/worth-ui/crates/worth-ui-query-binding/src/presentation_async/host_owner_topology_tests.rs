@@ -2,6 +2,20 @@ use super::tests::{basis, installed_owner};
 use super::*;
 
 #[test]
+fn presentation_host_installs_only_its_async_domain() {
+    let plan = WorthUiPresentationAsyncHostPlan::prepare().unwrap();
+    let (request, _) = plan.into_parts();
+    let packages = request.into_packages();
+    let [package] = packages.as_slice() else {
+        panic!("presentation custody must install exactly one Query domain");
+    };
+    assert_eq!(
+        package.package().domain_identity().owner(),
+        "WORTH.ui.presentation-async"
+    );
+}
+
+#[test]
 fn host_plan_retains_one_query_owned_graph_and_pending_attempts() {
     let mut owner = installed_owner();
     let baseline = basis(1);

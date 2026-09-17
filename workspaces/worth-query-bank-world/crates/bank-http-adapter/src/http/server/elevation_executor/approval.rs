@@ -74,7 +74,7 @@ where
             return approval_denied(Some(request_id), unavailable());
         }
         BankEstateElevationApprovalOutcome::ProductUnpublished(_) => {
-            return approval_denied(Some(request_id), unavailable());
+            return approval_denied(Some(request_id), indeterminate());
         }
         BankEstateElevationApprovalOutcome::Approved(authority) => {
             (authority, BankHttpCommitDisposition::Committed)

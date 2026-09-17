@@ -8,6 +8,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryProductBranchAdmissionDenial,
 };
 use worth_query_installation::facade::{
+    WorthQueryApplicationCapabilityInstallationDenial,
     WorthQueryApplicationOperationInstallationDenial, WorthQueryApplicationQueryInstallationDenial,
     WorthQueryApplicationQueryLimitDenial,
 };
@@ -22,6 +23,10 @@ pub enum WorthQueryApplicationRequestQueryDenialKind {
     ScopeResolution,
     Admission,
     Execution,
+    ContinuationExecution,
+    RequestMode,
+    CapabilityInstallation,
+    CapabilityAdmission,
 }
 
 #[derive(Debug)]
@@ -34,6 +39,12 @@ pub enum WorthQueryApplicationRequestQueryDenial {
     ScopeResolution(WorthQueryEntityResolutionDenial),
     Admission(WorthQueryApplicationQueryAdmissionDenial),
     Execution(WorthQueryApplicationOneShotDenial),
+    ContinuationExecution(
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationContinuationDenial,
+    ),
+    RequestMode,
+    CapabilityInstallation(WorthQueryApplicationCapabilityInstallationDenial),
+    CapabilityAdmission(WorthQueryOperationAuthorizationDenial),
 }
 
 impl WorthQueryApplicationRequestQueryDenial {
@@ -57,6 +68,16 @@ impl WorthQueryApplicationRequestQueryDenial {
             }
             Self::Admission(_) => WorthQueryApplicationRequestQueryDenialKind::Admission,
             Self::Execution(_) => WorthQueryApplicationRequestQueryDenialKind::Execution,
+            Self::ContinuationExecution(_) => {
+                WorthQueryApplicationRequestQueryDenialKind::ContinuationExecution
+            }
+            Self::RequestMode => WorthQueryApplicationRequestQueryDenialKind::RequestMode,
+            Self::CapabilityInstallation(_) => {
+                WorthQueryApplicationRequestQueryDenialKind::CapabilityInstallation
+            }
+            Self::CapabilityAdmission(_) => {
+                WorthQueryApplicationRequestQueryDenialKind::CapabilityAdmission
+            }
         }
     }
 }
@@ -76,6 +97,7 @@ impl std::error::Error for WorthQueryApplicationRequestQueryDenial {}
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationRequestMutationDenialKind {
     BindingInstallation,
+    CapabilityInstallation,
     ProductSelection,
     PrincipalResolution,
     ScopeResolution,
@@ -84,11 +106,13 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     Handler,
     SourceExpectation,
     ApplicationProgramRequired,
+    ApplicationProgramMismatch,
 }
 
 #[derive(Debug)]
 pub enum WorthQueryApplicationRequestMutationDenial {
     BindingInstallation(WorthQueryApplicationOperationInstallationDenial),
+    CapabilityInstallation(WorthQueryApplicationCapabilityInstallationDenial),
     ProductSelection(WorthQueryProductBranchAdmissionDenial),
     PrincipalResolution(WorthQueryPrincipalResolutionDenial),
     ScopeResolution(WorthQueryEntityResolutionDenial),
@@ -99,6 +123,7 @@ pub enum WorthQueryApplicationRequestMutationDenial {
         worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenial,
     ),
     ApplicationProgramRequired,
+    ApplicationProgramMismatch,
 }
 
 impl WorthQueryApplicationRequestMutationDenial {
@@ -106,6 +131,9 @@ impl WorthQueryApplicationRequestMutationDenial {
         match self {
             Self::BindingInstallation(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::BindingInstallation
+            }
+            Self::CapabilityInstallation(_) => {
+                WorthQueryApplicationRequestMutationDenialKind::CapabilityInstallation
             }
             Self::ProductSelection(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::ProductSelection
@@ -124,6 +152,9 @@ impl WorthQueryApplicationRequestMutationDenial {
             }
             Self::ApplicationProgramRequired => {
                 WorthQueryApplicationRequestMutationDenialKind::ApplicationProgramRequired
+            }
+            Self::ApplicationProgramMismatch => {
+                WorthQueryApplicationRequestMutationDenialKind::ApplicationProgramMismatch
             }
         }
     }

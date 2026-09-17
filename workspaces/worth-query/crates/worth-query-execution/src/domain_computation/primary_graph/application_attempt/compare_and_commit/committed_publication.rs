@@ -98,11 +98,10 @@ impl WorthQueryCommittedProductPublication {
         self.receipt.take_output_demand_observation()
     }
 
-    #[cfg(feature = "test-primary-graph-faults")]
-    pub(in crate::domain_computation::primary_graph) fn has_output_demand_observation_for_test(
+    pub(in crate::domain_computation::primary_graph) fn take_client_observation(
         &self,
-    ) -> bool {
-        self.receipt.has_output_demand_observation_for_test()
+    ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
+        self.receipt.take_client_observation()
     }
 }
 

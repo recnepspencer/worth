@@ -65,7 +65,7 @@ impl BankProposalEngine {
             postings,
             Some(input.journal),
         );
-        proposed.append_journal(reversal.clone());
+        proposed.append_proposed_journal(reversal.clone())?;
         proposed.mark_reversed(input.journal);
         let effects = vec![BankProposedEffect::ReverseJournal {
             original: input.journal,

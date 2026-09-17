@@ -10,11 +10,16 @@ use worth_query_installation::facade::ApplicationSchema;
 mod demand;
 pub use demand::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
-    WorthQuerySelectedApplicationProducer,
+    WorthQueryOutputDemandDenialKind, WorthQuerySelectedApplicationProducer,
 };
 mod execution;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
+
+#[derive(Clone, Copy)]
+pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerCommitAuthority {
+    Ordinary,
+    ProgramOutput,
+}
 mod readiness;
 pub(in crate::domain_computation::primary_graph) use readiness::{
     evaluate_output_readiness, install_output_readiness_routes, PendingOutputReadiness,

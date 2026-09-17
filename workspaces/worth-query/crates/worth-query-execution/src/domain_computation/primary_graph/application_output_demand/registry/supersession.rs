@@ -20,28 +20,13 @@ impl WorthQueryOutputDemandRegistry {
             .records
             .get_mut(&interest.key)
             .expect("superseded demand retains its owner record");
-        match &record.state {
-            DemandState::Failed(existing)
-                if existing.kind() == WorthQueryOutputDemandDenialKind::Closed =>
-            {
-                return existing.clone();
-            }
-            DemandState::Output(output) => {
-                if let super::WorthQueryOutputAdvancement::Stopped { denial, .. } =
-                    &output.advancement
-                {
-                    return denial.clone();
-                }
-            }
-            _ => {}
-        }
         let denial = superseded_denial(subject);
-        match &mut record.state {
-            DemandState::Output(output) => output.stop(denial.clone()),
-            _ => record.state = DemandState::Failed(denial.clone()),
+        if !matches!(record.state, DemandState::Failed(ref existing) if existing.kind() == WorthQueryOutputDemandDenialKind::Closed)
+        {
+            record.state = DemandState::Failed(denial.clone());
+            record.performed_source = None;
+            record.wake.notify();
         }
-        record.performed_source = None;
-        record.wake.notify();
         denial
     }
 }
@@ -50,20 +35,17 @@ pub(super) fn supersede_predecessors(
     state: &mut DemandRegistryState,
     successor: &WorthQueryOutputDemandKey,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    // Ordinary demand supersession is producer-scoped: another producer may
-    // still be computing from this source until currentness rejects its work.
     if state.records.keys().any(|key| {
-        key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater)
+        key != successor && key.same_occurrence(successor) && key.revision() > successor.revision()
     }) {
         return Err(superseded_denial(&successor.producer));
     }
     for (key, record) in &mut state.records {
-        if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Less) {
-            let denial = superseded_denial(&key.producer);
-            match &mut record.state {
-                DemandState::Output(output) => output.stop(denial),
-                _ => record.state = DemandState::Failed(denial),
-            }
+        if key != successor
+            && key.same_occurrence(successor)
+            && key.revision() < successor.revision()
+        {
+            record.state = DemandState::Failed(superseded_denial(&key.producer));
             record.performed_source = None;
             record.wake.notify();
         }
@@ -73,8 +55,6 @@ pub(super) fn supersede_predecessors(
             || !key.same_occurrence(successor)
             || record.interests != 0
             || !matches!(record.state, DemandState::Failed(_))
-                && !matches!(&record.state, DemandState::Output(output)
-                    if matches!(output.advancement, super::WorthQueryOutputAdvancement::Stopped { .. }))
     });
     Ok(())
 }

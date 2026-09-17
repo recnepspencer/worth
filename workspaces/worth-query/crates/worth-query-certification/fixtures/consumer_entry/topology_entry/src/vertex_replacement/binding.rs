@@ -70,6 +70,9 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
 
 impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for VertexReplacement {
     type Binding = VertexReplacementBinding<Schema>;
+    fn input(&self) -> &Self {
+        self
+    }
     fn scope_binding(&self) -> PlanarMutationScope<Schema> {
         PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
     }

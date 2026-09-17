@@ -28,6 +28,7 @@ impl BankSnapshotBuilder {
                 primary_personal_accounts: BTreeMap::new(),
                 business_accounts: BTreeMap::new(),
                 institution_cash_accounts: BTreeMap::new(),
+                projected_account_revisions: BTreeMap::new(),
                 journal: Vec::new(),
                 payments: BTreeMap::new(),
                 authorizations: BTreeMap::new(),
@@ -102,6 +103,23 @@ impl BankSnapshotBuilder {
         self
     }
 
+    pub fn projected_account_revision(
+        mut self,
+        account: AccountId,
+        revision: crate::model::AccountJournalRevision,
+    ) -> Self {
+        if !self.snapshot.accounts.contains_key(&account)
+            || self
+                .snapshot
+                .projected_account_revisions
+                .insert(account, revision)
+                .is_some()
+        {
+            self.valid = false;
+        }
+        self
+    }
+
     pub fn projected_journal(mut self, entry: BankJournalEntry) -> Self {
         let collides = self
             .snapshot
@@ -129,7 +147,7 @@ impl BankSnapshotBuilder {
         if let Some(original) = entry.reversal_of() {
             self.snapshot.reversed_journals.insert(original);
         }
-        self.snapshot.append_journal(entry);
+        self.snapshot.append_projected_journal(entry);
         self
     }
 

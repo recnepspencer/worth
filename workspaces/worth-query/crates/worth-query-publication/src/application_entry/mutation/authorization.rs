@@ -1,9 +1,7 @@
-use worth_query_declaration::facade::{
-    application_operation::{
-        ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
-        ApplicationMutationScopeResolution, ApplicationMutationSourceExpectation,
-    },
-    application_schema::TypedMutationPreconditions,
+use worth_query_declaration::facade::application_operation::{
+    ApplicationCapabilityMutationBinding, ApplicationMutationBinding, ApplicationMutationIntent,
+    ApplicationMutationScopeBinding, ApplicationMutationScopeResolution,
+    ApplicationMutationSourceExpectation,
 };
 use worth_query_execution::facade::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationIdempotencyBinding,
@@ -25,6 +23,7 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
+    pub(super) principal_identity: Binding::PrincipalIdentity,
     pub(super) admission: WorthQueryAdmittedApplicationOperation<
         Schema,
         Binding::Operation,
@@ -79,6 +78,7 @@ where
         .intent
         .scope_binding()
         .into_field_parts(principal.principal_identity());
+    let principal_identity = principal.principal_identity().clone();
     let scope = selected
         .resolve_entity(
             scope_field,
@@ -92,7 +92,7 @@ where
             &principal,
             &scope,
             binding.operation(),
-            TypedMutationPreconditions::default(),
+            std::mem::take(&mut request.request.preconditions),
             request.request.scope,
         )
         .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
@@ -123,10 +123,129 @@ where
     }
     let idempotency = WorthQueryApplicationIdempotencyBinding::new(
         IntentBinding::<Schema, Intent>::idempotency_key_identity(request.key),
-        IntentBinding::<Schema, Intent>::input_identity(&request.request.intent),
+        IntentBinding::<Schema, Intent>::input_identity(request.request.intent.input()),
     )
     .bind_source(source_identity.as_ref());
     Ok(PreparedMutation {
+        principal_identity,
+        admission,
+        idempotency,
+    })
+}
+
+pub(super) fn prepare_capability<Schema, Intent, SourcePreparation>(
+    request: &mut WorthQueryApplicationMutationRequestWithIdempotency<
+        '_,
+        '_,
+        '_,
+        '_,
+        Schema,
+        Intent,
+        SourcePreparation,
+    >,
+) -> Result<PreparedMutation<Schema, IntentBinding<Schema, Intent>>, WorthQueryApplicationRequestMutationDenial>
+where
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema> + Clone,
+    IntentBinding<Schema, Intent>: ApplicationCapabilityMutationBinding<Schema>,
+    <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input:
+        Clone
+        +
+        worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
+            Schema,
+            <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<
+                Schema,
+            >>::Capability,
+            Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
+        >,
+{
+    use worth_query_declaration::facade::application_capability::ApplicationCapabilityRef;
+
+    let binding = request
+        .request
+        .application
+        .installed_schema()
+        .installed_mutation_binding::<IntentBinding<Schema, Intent>>()
+        .map_err(WorthQueryApplicationRequestMutationDenial::BindingInstallation)?;
+    let selected = request
+        .request
+        .application
+        .on_branch(request.request.branch)
+        .select()
+        .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
+    let principal = selected
+        .resolve_authenticated_principal(
+            binding.principal_binding(),
+            request.request.principal,
+            request.request.scope,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .map_err(WorthQueryApplicationRequestMutationDenial::PrincipalResolution)?;
+    let capability =
+        request
+            .request
+            .application
+            .installed_schema()
+            .capability(
+                ApplicationCapabilityRef::<
+                    Schema,
+                    <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<
+                        Schema,
+                    >>::Capability,
+                >::from_declaration(),
+                request.request.intent.operation(),
+            )
+            .map_err(WorthQueryApplicationRequestMutationDenial::CapabilityInstallation)?;
+    let access = selected
+        .admit_capability_access(
+            &principal,
+            &capability,
+            request.request.intent.input().clone(),
+            request.request.scope,
+        )
+        .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
+    let principal_identity = principal.principal_identity().clone();
+    let mut admission = request
+        .request
+        .application
+        .authorize_capability_operation(
+            access,
+            binding.operation(),
+            std::mem::take(&mut request.request.preconditions),
+        )
+        .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
+    let expected_source = <<IntentBinding<Schema, Intent> as ApplicationMutationBinding<
+        Schema,
+    >>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::QUERY_IDENTIFIER;
+    let mut source_identity = None;
+    match (expected_source, request.request.source.take()) {
+        (Some(_), Some(source)) => {
+            source_identity = Some(
+                request
+                    .request
+                    .application
+                    .bind_application_source_expectation::<IntentBinding<Schema, Intent>, _>(
+                        &mut admission,
+                        source,
+                    )
+                    .map_err(WorthQueryApplicationRequestMutationDenial::SourceExpectation)?,
+            );
+        }
+        (Some(expected), None) => {
+            return Err(WorthQueryApplicationRequestMutationDenial::SourceExpectation(
+                worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenial::new_missing(expected),
+            ));
+        }
+        (None, None) => {}
+        (None, Some(_)) => unreachable!("a no-source binding has no constructible source marker"),
+    }
+    let idempotency = WorthQueryApplicationIdempotencyBinding::new(
+        IntentBinding::<Schema, Intent>::idempotency_key_identity(request.key),
+        IntentBinding::<Schema, Intent>::input_identity(request.request.intent.input()),
+    )
+    .bind_source(source_identity.as_ref());
+    Ok(PreparedMutation {
+        principal_identity,
         admission,
         idempotency,
     })

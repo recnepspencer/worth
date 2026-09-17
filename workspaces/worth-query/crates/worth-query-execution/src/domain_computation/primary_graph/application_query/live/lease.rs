@@ -129,23 +129,10 @@ where
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        if self.basis.is_none() {
-            return WorthQueryApplicationLiveOutcome::Closed;
+        if let Some(outcome) = self.observe_interruption(request) {
+            return outcome;
         }
         self.controls.replace_request(request.clone());
-        if let Some(interruption) = self.controls.request().interruption() {
-            if !self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
-                return WorthQueryApplicationLiveOutcome::Unavailable;
-            }
-            return match interruption {
-                WorthQueryRequestInterruption::Cancelled => {
-                    WorthQueryApplicationLiveOutcome::Cancelled
-                }
-                WorthQueryRequestInterruption::DeadlineExceeded => {
-                    WorthQueryApplicationLiveOutcome::DeadlineExceeded
-                }
-            };
-        }
         if let Err(outcome) = self.admit_delivery_progress(principal) {
             return outcome;
         }
@@ -207,6 +194,26 @@ where
             product.retained_clone(),
             target_identity,
         )
+    }
+
+    pub fn observe_interruption(
+        &mut self,
+        request: &WorthQueryRequestScope,
+    ) -> Option<WorthQueryApplicationLiveOutcome<Query, QueryResult>> {
+        if self.basis.is_none() {
+            return Some(WorthQueryApplicationLiveOutcome::Closed);
+        }
+        let interruption = request.interruption()?;
+        self.controls.replace_request(request.clone());
+        if !self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
+            return Some(WorthQueryApplicationLiveOutcome::Unavailable);
+        }
+        Some(match interruption {
+            WorthQueryRequestInterruption::Cancelled => WorthQueryApplicationLiveOutcome::Cancelled,
+            WorthQueryRequestInterruption::DeadlineExceeded => {
+                WorthQueryApplicationLiveOutcome::DeadlineExceeded
+            }
+        })
     }
 
     fn project_front(

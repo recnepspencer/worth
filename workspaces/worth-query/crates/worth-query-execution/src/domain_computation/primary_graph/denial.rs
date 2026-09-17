@@ -65,7 +65,6 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     InvariantInstallationReceiptMismatch,
     MissingProducerBinding,
     DuplicateProducerBinding,
-    DuplicateProducerOperationBinding,
     MissingProducerProvider,
     ForeignProducerBinding,
     ProducerBindingMeaningMismatch,
@@ -90,6 +89,16 @@ impl WorthQueryPrimaryGraphInstallationDenial {
             kind,
             subject: subject.into(),
         }
+    }
+
+    /// Maps failure to resolve a declaration-required installed binding while
+    /// constructing an unpublished application root.
+    #[doc(hidden)]
+    pub fn binding_not_installed(subject: impl Into<String>) -> Self {
+        Self::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::BindingNotInstalled,
+            subject,
+        )
     }
 
     pub const fn kind(&self) -> WorthQueryPrimaryGraphInstallationDenialKind {

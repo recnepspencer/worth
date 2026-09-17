@@ -5,6 +5,7 @@ use bank_server::{
     BankIdentityRuntime, BankIdentityRuntimeBuildError, BankPrincipalAdmissionError,
     BankPrincipalSeed,
 };
+use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
 use worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus;
 use worth_query_host::facade::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenialKind, WorthQueryPrincipalResolutionDenialKind,
@@ -70,7 +71,9 @@ fn ambiguous_dynamic_identity_is_denied() {
     };
 
     match error {
-        BankIdentityRuntimeBuildError::PrimaryGraph(denial) => assert_eq!(
+        BankIdentityRuntimeBuildError::ApplicationInstallation(
+            WorthQueryInMemoryApplicationDenial::InitialState(denial),
+        ) => assert_eq!(
             denial.kind(),
             WorthQueryPrimaryGraphInstallationDenialKind::DuplicateExternalIdentity
         ),

@@ -6,7 +6,7 @@ use bank_http_adapter::{
 use crate::protocol::{
     BankUserNodeDenialKind, BankUserNodeEstateNotificationOutcome,
     BankUserNodeEstateNotificationRequest, BankUserNodeRecoveryInspectionOutcome,
-    BankUserNodeRecoveryRequest,
+    BankUserNodeRecoveryRequest, BankUserNodeRecoverySafeRetryOutcome,
 };
 
 use super::{denial, BankUserSession};
@@ -64,6 +64,27 @@ impl BankUserSession {
         }
     }
 
+    pub(crate) async fn safe_retry_recovery(
+        &self,
+        request: BankUserNodeRecoveryRequest,
+    ) -> BankUserNodeRecoverySafeRetryOutcome {
+        let upstream = match self.recovery_request(request).await {
+            Ok(upstream) => upstream,
+            Err(kind) => return retry_denied(kind),
+        };
+        match self
+            .forward(
+                self.recovery_safe_retry_endpoint.clone(),
+                &upstream,
+                upstream.controls.deadline_milliseconds,
+            )
+            .await
+        {
+            Ok(response) => BankUserNodeRecoverySafeRetryOutcome::Forwarded { response },
+            Err(kind) => retry_denied(kind),
+        }
+    }
+
     async fn recovery_request(
         &self,
         request: BankUserNodeRecoveryRequest,
@@ -92,6 +113,12 @@ fn notification_denied(kind: BankUserNodeDenialKind) -> BankUserNodeEstateNotifi
 
 fn inspection_denied(kind: BankUserNodeDenialKind) -> BankUserNodeRecoveryInspectionOutcome {
     BankUserNodeRecoveryInspectionOutcome::Denied {
+        denial: denial(kind),
+    }
+}
+
+fn retry_denied(kind: BankUserNodeDenialKind) -> BankUserNodeRecoverySafeRetryOutcome {
+    BankUserNodeRecoverySafeRetryOutcome::Denied {
         denial: denial(kind),
     }
 }

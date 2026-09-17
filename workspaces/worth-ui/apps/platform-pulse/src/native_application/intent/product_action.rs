@@ -57,7 +57,11 @@ impl PlatformPulseApplicationRuntime {
                 .expect("prepared Pulse retains its Query lifecycle");
             let status = "Deployed";
             let action = if query_denial_requested {
-                query.execute_denied_action(status)
+                query.execute_denied_action(
+                    status,
+                    reference.idempotency_session(),
+                    reference.idempotency_lineage(),
+                )
             } else {
                 if !request.begin_effect() {
                     let _ = request.settle_indeterminate();
@@ -66,7 +70,11 @@ impl PlatformPulseApplicationRuntime {
                     );
                     return;
                 }
-                query.execute_current_action(status)
+                query.execute_current_action(
+                    status,
+                    reference.idempotency_session(),
+                    reference.idempotency_lineage(),
+                )
             };
             match action {
                 Ok(crate::query_source::PlatformPulseQueryActionOutcome::Executed {

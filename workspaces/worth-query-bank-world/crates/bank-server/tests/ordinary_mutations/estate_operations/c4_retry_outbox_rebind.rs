@@ -24,7 +24,7 @@ fn ordinary_equivalent_retry_skips_materialization_and_the_external_rail() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = world.commit_with(binding);
+    let receipt = world.commit_with(binding.clone());
     assert_eq!(
         world.notice_status(),
         DeathNoticeStatus::NotificationRequested
@@ -47,10 +47,10 @@ fn ordinary_equivalent_retry_skips_materialization_and_the_external_rail() {
         .fixture
         .world
         .runtime
-        .notify_estate_death(
+        .notify_estate_death_with_key(
             &world.fixture.authenticate_specialist(),
             world.specialist_action(),
-            binding,
+            &binding,
             &request_scope(),
         )
         .expect("freshly authorized equivalent retry reaches retained resolution");
@@ -91,23 +91,25 @@ fn equivalent_binding_does_not_bypass_fresh_authorization_currentness() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = world.commit_with(binding);
+    let receipt = world.commit_with(binding.clone());
     time.advance_to_epoch_seconds(401);
 
     let denied = world
         .fixture
         .world
         .runtime
-        .notify_estate_death(
+        .notify_estate_death_with_key(
             &world.fixture.authenticate_specialist(),
             world.specialist_action(),
-            binding,
+            &binding,
             &request_scope(),
         )
         .expect_err("expired current authority must precede retained resolution");
     assert!(matches!(
         denied,
-        BankEstateProgressionDenial::Authorization(_)
+        BankEstateProgressionDenial::ApplicationEntry(ref denial)
+            if denial.kind()
+                == worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization
     ));
     assert_eq!(world.transport.attempts().len(), 1);
     assert_eq!(

@@ -22,6 +22,7 @@ pub use suspension::{
     WorthQueryGeneratedOutputSuspensionRecoveryStage,
 };
 mod restoration;
+pub(in crate::domain_computation::primary_graph) use restoration::admit_required_invariants;
 pub use restoration::{
     WorthQueryGeneratedOutputInvariantAdmissionDenial,
     WorthQueryGeneratedOutputPublicationNoEffect,
@@ -46,8 +47,6 @@ pub(super) struct ProducerQualification {
     binding_identity: &'static str,
     provider_identity: &'static str,
     source_identity: [u8; 32],
-    producer_dependency_identity: Option<[u8; 32]>,
-    idempotency_key_identity: [u8; 32],
     runtime_authority: u64,
     schema: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
@@ -181,7 +180,6 @@ where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         let source_identity = source.idempotency_identity();
-        let source_root = source.source_root();
         let crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisSelectionIdentity::Product(selection) = source.selection.clone() else {
             return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
                 WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
@@ -192,7 +190,7 @@ where
             ExpectedSourceQualification {
                 runtime_authority: source.runtime_authority,
                 schema: source.schema_binding,
-                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source_root),
+                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.footprint.root),
                 source_identity,
                 selection,
             },
@@ -311,8 +309,6 @@ where
             binding_identity: Producer::IDENTITY,
             provider_identity: Producer::Provider::SEMANTIC_IDENTITY,
             source_identity: exact.source_identity,
-            producer_dependency_identity: exact.producer_dependency_identity,
-            idempotency_key_identity: exact.idempotency_key_identity,
             runtime_authority: exact.runtime_authority,
             schema: exact.schema,
             scope: exact.scope,

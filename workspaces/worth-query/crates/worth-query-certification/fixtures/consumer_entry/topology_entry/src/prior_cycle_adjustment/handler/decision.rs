@@ -19,7 +19,7 @@ pub(super) fn observe_prior_cycle<Schema: TopologySchemaBinding>(
     reader: &mut DecisionReader<'_, '_, '_, Schema, PriorCycleAdjustmentBinding<Schema>>,
 ) -> HandlerResult<PriorCycleDecision<Schema>, PriorCycleAdjustmentDenial> {
     let prior = match reader
-        .prior_output_family_if_present::<crate::PlanarMutationBinding<Schema>, Body>(
+        .prior_output_family_if_present::<crate::PlanarEditBinding<Schema>, Body>(
             WorthQueryApplicationOutputRoleFamily::from_static("created."),
         ) {
         Ok(Some(prior)) => prior,

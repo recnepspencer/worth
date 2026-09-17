@@ -288,7 +288,8 @@ impl<Schema, Operation, Input, Scope>
             validator_work_admission,
             output_correspondence: self.output_correspondence,
             retain_output_demand_observation: false,
-            output_currentness_facts: None,
+            retain_client_observation: false,
+            producer_required_invariants: &[],
         })
     }
 

@@ -166,7 +166,33 @@ pub(in crate::domain_computation::primary_graph) fn closed_outcome(
             WorthQueryElevationCloseOutcome::Closed(closed(binding, commit))
         }
         WorthQueryApplicationCommitOutcome::AlreadyCommitted(commit) => {
-            WorthQueryElevationCloseOutcome::AlreadyClosed(closed(binding, commit))
+            let values = commit.committed_changes().committed_field_values(
+                binding.elevation(),
+                &[binding.status_field(), binding.closed_at_field()],
+            );
+            match values {
+                Some(values) => {
+                    match binding.restore_committed_close(values[0].clone(), values[1].clone()) {
+                        Ok(binding) => {
+                            WorthQueryElevationCloseOutcome::AlreadyClosed(closed(binding, commit))
+                        }
+                        Err(binding) => WorthQueryElevationCloseOutcome::Denied(
+                            WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                                super::WorthQueryApplicationCommitDenialStage::Idempotency,
+                                "committed elevation status is invalid",
+                            ),
+                            binding.into_approved(),
+                        ),
+                    }
+                }
+                None => WorthQueryElevationCloseOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                        super::WorthQueryApplicationCommitDenialStage::Idempotency,
+                        "committed close fields are unavailable",
+                    ),
+                    binding.into_approved(),
+                ),
+            }
         }
         WorthQueryApplicationCommitOutcome::Stale(stale) => {
             WorthQueryElevationCloseOutcome::Stale(stale, binding.into_approved())

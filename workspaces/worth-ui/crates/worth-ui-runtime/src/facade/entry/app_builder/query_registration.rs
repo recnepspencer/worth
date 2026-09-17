@@ -50,6 +50,17 @@ impl<ChangeProfileState, IntentWiringState>
         Ok(self)
     }
 
+    pub fn register_application_scalar_projection(
+        mut self,
+        registration: worth_ui_query_binding::UiApplicationScalarProjectionRegistration,
+    ) -> Result<Self, WorthUiProjectionRegistrationError> {
+        self.query_binding_plan = self
+            .query_binding_plan
+            .register_application_scalar_projection(registration)
+            .map_err(WorthUiProjectionRegistrationError)?;
+        Ok(self)
+    }
+
     pub fn register_collection_projection(
         mut self,
         registration: worth_ui_query_binding::UiCollectionProjectionRegistration,

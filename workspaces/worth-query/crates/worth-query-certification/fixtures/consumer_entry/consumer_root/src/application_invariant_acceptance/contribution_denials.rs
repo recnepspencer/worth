@@ -1,5 +1,8 @@
 mod producer_contract_denials;
 mod producer_denials;
+mod program;
+
+use program::{validated_denial_program, DenialProgram};
 
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -17,8 +20,9 @@ use worth_query_host::facade::{
     application_contribution::{
         WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
     },
+    application_installation,
     application_installation::{
-        self, WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
+        WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
     },
     primary_graph::{
         self, WorthQueryPrimaryGraphInstallationDenial,
@@ -92,7 +96,8 @@ boundary_schema!(
 fn inventory_drift_precedes_callbacks() {
     let setup_calls = Arc::new(AtomicUsize::new(0));
     let seed_calls = Arc::new(AtomicUsize::new(0));
-    let result = application_installation::in_memory::<MissingContributionSchema>(
+    let result = application_installation::in_memory_program(
+        validated_denial_program::<MissingContributionSchema>(),
         MissingContributionSchema::declaration().unwrap(),
         (topology_configuration(&setup_calls),),
         limits(),
@@ -105,7 +110,8 @@ fn inventory_drift_precedes_callbacks() {
         result,
         WorthQueryPrimaryGraphInstallationDenialKind::ContributionInventoryMismatch,
     );
-    let result = application_installation::in_memory::<DuplicateContributionSchema>(
+    let result = application_installation::in_memory_program(
+        validated_denial_program::<DuplicateContributionSchema>(),
         DuplicateContributionSchema::declaration().unwrap(),
         (
             topology_configuration(&setup_calls),
@@ -137,7 +143,8 @@ fn inventory_drift_precedes_callbacks() {
 fn missing_handler_precedes_initializer() {
     let setup_calls = Arc::new(AtomicUsize::new(0));
     let seed_calls = Arc::new(AtomicUsize::new(0));
-    let result = application_installation::in_memory::<MissingHandlerSchema>(
+    let result = application_installation::in_memory_program(
+        validated_denial_program::<MissingHandlerSchema>(),
         MissingHandlerSchema::declaration().unwrap(),
         (Arc::clone(&setup_calls), Arc::clone(&setup_calls)),
         limits(),
@@ -169,7 +176,8 @@ fn foreign_member_registration_is_denied() {
     for attempted_member in [ForeignMember::Handler, ForeignMember::Invariant] {
         let setup_calls = Arc::new(AtomicUsize::new(0));
         let seed_calls = Arc::new(AtomicUsize::new(0));
-        let result = application_installation::in_memory::<ForeignMemberSchema>(
+        let result = application_installation::in_memory_program(
+            validated_denial_program::<ForeignMemberSchema>(),
             ForeignMemberSchema::declaration().unwrap(),
             (
                 (attempted_member, Arc::clone(&setup_calls)),
@@ -286,11 +294,16 @@ fn limits() -> WorthQueryInMemoryApplicationLimits {
 
 fn assert_contribution_denial<Schema>(
     result: Result<
-        primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        application_installation::WorthQueryProgramApplicationRuntime<
+            Schema,
+            DenialProgram<Schema>,
+        >,
         WorthQueryInMemoryApplicationDenial,
     >,
     expected: WorthQueryPrimaryGraphInstallationDenialKind,
-) {
+) where
+    Schema: ApplicationSchemaComposition,
+{
     match result {
         Err(WorthQueryInMemoryApplicationDenial::Contributions(denial)) => {
             assert_eq!(denial.kind(), expected, "{denial:?}")

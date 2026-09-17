@@ -4,35 +4,25 @@ use worth_query_admission::facade::authenticated_principal::{
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
-    FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryProducerOutputFamily,
+    FamilySourceQuery, WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandDenial,
+    WorthQueryOutputDemandDenialKind, WorthQueryProducerOutputFamily,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationOutputDemandSource,
+    WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationOutputDemandDisclosure,
     WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
 };
-pub(super) fn validate_disclosure<'a, Schema, Family>(
+pub(super) fn validate_disclosure<Schema, Family>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     delivery_branch: crate::basis::WorthQueryProductBranch,
-    source: WorthQueryApplicationOutputDemandSource<
-        FamilySourceQuery<Schema, Family>,
-        FamilySourceValue<Schema, Family>,
-    >,
-) -> Result<
-    (
-        FamilySourceValue<Schema, Family>,
-        WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
-    ),
-    WorthQueryOutputDemandDenial,
->
+    disclosure: WorthQueryApplicationOutputDemandDisclosure<FamilySourceQuery<Schema, Family>>,
+) -> Result<WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
-    let (mut rows, disclosure) = source.into_parts();
     let (mut sources, request_affinity, receipt) = disclosure.into_parts();
     if !request_affinity.is_some_and(|affinity| affinity.admits(principal, request_scope)) {
         return Err(denial(
@@ -40,8 +30,8 @@ where
             Family::IDENTITY,
         ));
     }
-    let source = (sources.len() == 1 && rows.len() == 1)
-        .then(|| sources.pop().zip(rows.pop()))
+    let source = (sources.len() == 1)
+        .then(|| sources.pop())
         .flatten()
         .ok_or_else(|| {
             denial(
@@ -49,14 +39,13 @@ where
                 Family::IDENTITY,
             )
         })?;
-    let (source, value) = source;
     let selected = runtime
         .on_branch(delivery_branch)
         .select()
         .map_err(|error| {
-            WorthQueryOutputDemandDenial::product_selection(
-                error,
-                format!("{}: disclosure product selection", Family::IDENTITY),
+            denial(
+                WorthQueryOutputDemandDenialKind::Superseded,
+                format!("{}: {error:?}", Family::IDENTITY),
             )
         })?;
     let current = crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
@@ -84,14 +73,14 @@ where
         || disclosed != &current
         || !original.same_branch_occurrence(disclosed)
         || source.model_root != demand.observed_source.model_root
-        || source.source_root() != demand.observed_source.source_root()
+        || source.footprint.root != demand.observed_source.footprint.root
     {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::Superseded,
             Family::IDENTITY,
         ));
     }
-    Ok((value, source))
+    Ok(source)
 }
 
 fn denial(

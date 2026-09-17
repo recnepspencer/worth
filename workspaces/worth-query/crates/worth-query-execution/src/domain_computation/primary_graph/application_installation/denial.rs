@@ -19,7 +19,8 @@ pub enum WorthQueryInMemoryApplicationDenial {
         super::super::conditional_operation::WorthQueryConditionalRuntimeInstallationDenial,
     ),
     Program(worth_query_installation::facade::WorthQueryApplicationProgramInstallationDenial),
-    ApplicationProgramRequired(String),
+    ConditionalProgramMismatch,
+    RequiredOutputSourceAction(String),
 }
 
 impl std::fmt::Display for WorthQueryInMemoryApplicationDenial {
@@ -35,7 +36,10 @@ impl std::error::Error for WorthQueryInMemoryApplicationDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Package(error) => Some(error),
-            Self::Admission(_) | Self::Runtime(_) | Self::ApplicationProgramRequired(_) => None,
+            Self::Admission(_)
+            | Self::Runtime(_)
+            | Self::ConditionalProgramMismatch
+            | Self::RequiredOutputSourceAction(_) => None,
             Self::Schema(error) => Some(error),
             Self::Contributions(error)
             | Self::Graph(error)

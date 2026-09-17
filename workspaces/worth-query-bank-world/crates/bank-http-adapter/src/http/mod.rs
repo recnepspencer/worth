@@ -26,10 +26,12 @@ pub use protocol::{
     BankHttpEstateNotificationRequest, BankHttpMandatoryReviewOutcome,
     BankHttpMandatoryReviewRequest, BankHttpMutationControls, BankHttpMutationFailureKind,
     BankHttpMutationOperation, BankHttpMutationOutcome, BankHttpMutationRequest,
-    BankHttpNextAction, BankHttpPostingPurpose, BankHttpProtocolVersion, BankHttpQueryBasis,
-    BankHttpQueryBasisPosture, BankHttpQueryCapabilityPurpose, BankHttpQueryDisclosure,
-    BankHttpQueryDisclosurePosture, BankHttpQueryOmissionPosture, BankHttpQueryPublication,
-    BankHttpRecoveryInspectionOutcome, BankHttpRecoveryPosture, BankHttpRecoveryRequest,
-    BankHttpRecoveryWork, BankHttpRequestControls, BankHttpRestrictedBankField,
+    BankHttpNextAction, BankHttpPostingPurpose, BankHttpProtocolVersion,
+    BankHttpProviderRecoveryKind, BankHttpQueryBasis, BankHttpQueryBasisPosture,
+    BankHttpQueryCapabilityPurpose, BankHttpQueryDisclosure, BankHttpQueryDisclosurePosture,
+    BankHttpQueryOmissionPosture, BankHttpQueryPublication, BankHttpRecoveryInspectionOutcome,
+    BankHttpRecoveryPosture, BankHttpRecoveryRequest, BankHttpRecoveryRetryDisposition,
+    BankHttpRecoverySafeRetryOutcome, BankHttpRecoveryStatus, BankHttpRecoveryWork,
+    BankHttpRequestControls, BankHttpRestrictedBankField,
 };
 pub use server::{BankHttpServer, BankHttpServerBinding, BankHttpServerConfiguration};

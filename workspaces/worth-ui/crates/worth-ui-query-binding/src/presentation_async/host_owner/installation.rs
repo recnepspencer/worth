@@ -26,7 +26,8 @@ pub struct WorthUiPresentationAsyncInstallation {
 
 #[derive(Debug)]
 pub enum WorthUiPresentationAsyncInstallationError {
-    Builder(Box<super::super::super::WorthUiScalarProjectionInstallationError>),
+    DomainPackage(Box<worth_query::facade::domain::WorthQueryDomainPackageInstallationError>),
+    AspectContract(Box<runtime::WorthQueryAspectContractRegistrationDenial>),
     Completion(Box<runtime::WorthQueryHostRuntimeCompletionError>),
     Installation(String),
     Runtime(Box<runtime::WorthQueryRuntimeError>),
@@ -36,12 +37,17 @@ pub enum WorthUiPresentationAsyncInstallationError {
 
 impl WorthUiPresentationAsyncHostPlan {
     pub fn prepare() -> Result<Self, WorthUiPresentationAsyncInstallationError> {
-        let source = crate::product_projection::shared_source_state();
-        let builder =
-            crate::product_projection::projection_runtime_builder(source, Default::default())
-                .map_err(|error| {
-                    WorthUiPresentationAsyncInstallationError::Builder(Box::new(error))
-                })?;
+        let builder = runtime::WorthQueryRuntime::builder(
+            crate::query_runtime_resources::ui_product_world_resources(),
+        )
+        .domain_package(super::super::worth_ui_presentation_async_domain_package())
+        .map_err(|error| {
+            WorthUiPresentationAsyncInstallationError::DomainPackage(Box::new(error))
+        })?;
+        let builder = super::super::install_worth_ui_presentation_async_runtime(builder).map_err(
+            |error| WorthUiPresentationAsyncInstallationError::AspectContract(Box::new(error)),
+        )?;
+        let builder = super::super::backend::configure(builder);
         let plan = builder.prepare_host_installation();
         let (request, completion) = plan.into_parts();
         Ok(Self {

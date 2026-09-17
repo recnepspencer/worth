@@ -58,8 +58,8 @@ pub struct WorthQueryPreparedRequiredOutputSource {
     pub(in crate::domain_computation::primary_graph) runtime_authority: u64,
     pub(in crate::domain_computation::primary_graph) source_commit:
         worth_runtime_world::facade::CompositeCommitIdentity,
-    pub(in crate::domain_computation::primary_graph) product_occurrence:
-        worth_runtime_world::facade::ProductBranchIncarnation,
+    pub(in crate::domain_computation::primary_graph) source_scope:
+        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     pub(in crate::domain_computation::primary_graph) owner:
         super::application_output_demand::WorthQueryOutputDemandRegistry,
 }
@@ -105,27 +105,6 @@ where
     fn demand_from_source(
         source: &<Self::Source as ApplicationMutationBinding<Schema>>::Input,
     ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial>;
-}
-
-/// A performed source whose required root demands are resolved by one typed
-/// query at that source publication's retained observation.
-pub trait WorthQueryApplicationDiscoveredOutputConnection<Schema>: Sized + 'static
-where
-    Schema: ApplicationSchema,
-{
-    type Source: ApplicationMutationBinding<Schema>;
-    type Discovery: ApplicationQueryIntent<Schema> + Clone + Send + Sync;
-    type Demand: WorthQueryApplicationOutputDemand<Schema>;
-
-    const IDENTITY: &'static str;
-
-    fn discovery_from_source(
-        source: &<Self::Source as ApplicationMutationBinding<Schema>>::Input,
-    ) -> Result<Self::Discovery, WorthQueryRequiredOutputConnectionDenial>;
-
-    fn demands_from_discovery(
-        discovery: &<<<Self::Discovery as ApplicationQueryIntent<Schema>>::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
-    ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial>;
 }
 
 /// One typed transitive connection from a settled root output to every

@@ -11,6 +11,8 @@ use super::super::super::protocol::{
 };
 use super::fixture::application;
 use super::{bind_application, credential_json, BankHttpServerConfiguration};
+mod terminal_retry;
+mod transport;
 
 #[tokio::test]
 async fn authority_remains_behind_one_opaque_transport_handle() {
@@ -30,7 +32,9 @@ async fn authority_remains_behind_one_opaque_transport_handle() {
     )
     .await;
     let recovery = match notified {
-        BankHttpEstateNotificationOutcome::Applied { recovery, .. } => recovery,
+        BankHttpEstateNotificationOutcome::Applied { recovery, .. } => {
+            recovery.expect("first commit must issue a recovery token")
+        }
         other => panic!("notification did not commit: {other:?}"),
     };
     assert_recovery_inspects(&client, server.local_address(), &action, &recovery).await;
@@ -57,7 +61,7 @@ async fn lost_notification_response_replays_the_exact_opaque_handle() {
 }
 
 #[tokio::test]
-async fn expired_recovery_handle_opens_no_inspection_door() {
+async fn local_token_lifetime_cannot_discard_live_query_recovery() {
     let server = bind_application(
         Arc::new(application(AccountId::new(100).unwrap())),
         BankHttpServerConfiguration::local_ephemeral().with_opaque_handle_lifetime(Duration::ZERO),
@@ -74,12 +78,16 @@ async fn expired_recovery_handle_opens_no_inspection_door() {
     )
     .await;
     let (_, recovery) = applied_notification(notified);
-    let inspected = inspect_recovery(&client, server.local_address(), &action, &recovery).await;
-    assert!(matches!(
-        inspected,
-        BankHttpRecoveryInspectionOutcome::Denied { denial, .. }
-            if denial.kind == BankHttpDenialKind::Stale
-    ));
+    assert_recovery_inspects(&client, server.local_address(), &action, &recovery).await;
+    let replay = notify(
+        &client,
+        server.local_address(),
+        &action,
+        "expiring-notification-replay",
+    )
+    .await;
+    let (_, replay_recovery) = applied_notification(replay);
+    assert_eq!(replay_recovery, recovery);
     server.shutdown().await.expect("server should shut down");
 }
 
@@ -226,7 +234,10 @@ fn applied_notification(
     match outcome {
         BankHttpEstateNotificationOutcome::Applied {
             commit, recovery, ..
-        } => (commit, recovery),
+        } => (
+            commit,
+            recovery.expect("first commit or live replay must retain its recovery token"),
+        ),
         other => panic!("notification did not commit: {other:?}"),
     }
 }

@@ -10,14 +10,15 @@ use worth_query_declaration::facade::application_schema::ApplicationEncodedScala
 
 use super::super::{
     ApproveCapabilityElevationOperation, ApproveElevationCapability, CapabilityElevationApprover,
-    CapabilityElevationGrant, CapabilityElevationIdentity, CapabilityElevationNotAfter,
-    CapabilityElevationNotBefore, CapabilityElevationReason, CapabilityElevationRequester,
-    CapabilityElevationResource, CapabilityElevationReview, CapabilityElevationSlot,
-    CapabilityElevationStatus, CapabilityElevationStatusBinding, CapabilityElevationStatusField,
-    CapabilityReviewIdentity, CapabilityReviewKind, CapabilityReviewKindBinding,
-    CapabilityReviewKindField, CapabilityReviewResource, CapabilityReviewSlot,
-    CapabilityReviewStatus, CapabilityReviewStatusBinding, CapabilityReviewStatusField,
-    CapabilityReviewer, CompleteCapabilityReviewOperation, CompleteElevationReviewCapability,
+    CapabilityElevationClosedAt, CapabilityElevationGrant, CapabilityElevationIdentity,
+    CapabilityElevationNotAfter, CapabilityElevationNotBefore, CapabilityElevationReason,
+    CapabilityElevationRequester, CapabilityElevationResource, CapabilityElevationReview,
+    CapabilityElevationSlot, CapabilityElevationStatus, CapabilityElevationStatusBinding,
+    CapabilityElevationStatusField, CapabilityReviewIdentity, CapabilityReviewKind,
+    CapabilityReviewKindBinding, CapabilityReviewKindField, CapabilityReviewResource,
+    CapabilityReviewReviewedAt, CapabilityReviewSlot, CapabilityReviewStatus,
+    CapabilityReviewStatusBinding, CapabilityReviewStatusField, CapabilityReviewer,
+    CompleteCapabilityReviewOperation, CompleteElevationReviewCapability,
     RequestCapabilityElevationOperation, RequestElevationCapability,
     RevokeCapabilityElevationOperation, RevokeElevationCapability,
 };
@@ -40,6 +41,9 @@ pub(super) fn definition() -> ApplicationCapabilityElevationRule {
             ),
             ApplicationCapabilityFieldBinding::from_reference(
                 CapabilityElevationStatusField::reference(),
+            ),
+            ApplicationCapabilityFieldBinding::from_reference(
+                CapabilityElevationClosedAt::reference(),
             ),
             ApplicationCapabilityElevationStates::new(
                 state(CapabilityElevationStatus::Requested),
@@ -112,6 +116,9 @@ pub(super) fn definition() -> ApplicationCapabilityElevationRule {
                 ),
                 ApplicationCapabilityFieldBinding::from_reference(
                     CapabilityReviewStatusField::reference(),
+                ),
+                ApplicationCapabilityFieldBinding::from_reference(
+                    CapabilityReviewReviewedAt::reference(),
                 ),
                 ApplicationCapabilityValueBinding::new(
                     CapabilityReviewStatusField::reference(),

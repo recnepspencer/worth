@@ -9,7 +9,7 @@ use worth_query_host::facade::admission::authenticated_principal::WorthQueryCanc
 
 use super::super::protocol::{
     BankHttpEstateDisbursementOutcome, BankHttpEstateNotificationOutcome,
-    BankHttpRecoveryInspectionOutcome,
+    BankHttpRecoveryInspectionOutcome, BankHttpRecoverySafeRetryOutcome,
 };
 use super::authentication::BankHttpApplicationAuthenticator;
 use super::recovery_registry::BankHttpRecoveryRegistry;
@@ -18,11 +18,13 @@ mod disbursement;
 mod inspection;
 mod notification;
 mod outcome;
+mod safe_retry;
 
 use disbursement::execute_disbursement;
 use inspection::execute_inspection;
 use notification::execute_notification;
 use outcome::*;
+use safe_retry::execute_safe_retry;
 
 pub(super) struct AdmittedBankHttpRecoveryRequest {
     pub(super) request_id: String,
@@ -62,6 +64,11 @@ enum RecoveryCommand {
         request: AdmittedBankHttpRecoveryRequest,
         cancellation: WorthQueryCancellationSource,
         response: oneshot::Sender<BankHttpRecoveryInspectionOutcome>,
+    },
+    SafeRetry {
+        request: AdmittedBankHttpRecoveryRequest,
+        cancellation: WorthQueryCancellationSource,
+        response: oneshot::Sender<BankHttpRecoverySafeRetryOutcome>,
     },
     Disburse {
         request: AdmittedBankHttpDisbursementRequest,
@@ -143,6 +150,33 @@ impl BankHttpRecoveryExecutor {
         }
     }
 
+    pub(super) async fn safe_retry(
+        &self,
+        request: AdmittedBankHttpRecoveryRequest,
+    ) -> BankHttpRecoverySafeRetryOutcome {
+        let request_id = request.request_id.clone();
+        let deadline = request.deadline;
+        let cancellation = WorthQueryCancellationSource::new();
+        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
+        let (response, receiver) = oneshot::channel();
+        if self
+            .sender
+            .try_send(RecoveryCommand::SafeRetry {
+                request,
+                cancellation,
+                response,
+            })
+            .is_err()
+        {
+            return safe_retry_denied(Some(request_id), saturated());
+        }
+        match tokio::time::timeout_at(deadline.into(), receiver).await {
+            Ok(Ok(outcome)) => outcome,
+            Ok(Err(_)) => safe_retry_denied(Some(request_id), unavailable()),
+            Err(_) => safe_retry_denied(Some(request_id), deadline_exceeded()),
+        }
+    }
+
     pub(super) async fn disburse(
         &self,
         request: AdmittedBankHttpDisbursementRequest,
@@ -187,6 +221,7 @@ async fn run<A>(
     A: BankHttpApplicationAuthenticator,
 {
     while let Some(command) = receiver.recv().await {
+        registry.purge_expired(application.runtime());
         match command {
             RecoveryCommand::Notify {
                 request,
@@ -210,6 +245,16 @@ async fn run<A>(
             } => {
                 let _ = response.send(
                     execute_inspection(application.as_ref(), &mut registry, request, cancellation)
+                        .await,
+                );
+            }
+            RecoveryCommand::SafeRetry {
+                request,
+                cancellation,
+                response,
+            } => {
+                let _ = response.send(
+                    execute_safe_retry(application.as_ref(), &mut registry, request, cancellation)
                         .await,
                 );
             }

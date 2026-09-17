@@ -246,6 +246,5 @@ fn same_collection_item(
     candidate.application_item_key() == bound.application_item_key()
         && candidate_revision.slot() == bound_revision.slot()
         && candidate_revision.projection_identity() == bound_revision.projection_identity()
-        && candidate_revision.query_world_identity() == bound_revision.query_world_identity()
-        && candidate_revision.binding_identity() == bound_revision.binding_identity()
+        && candidate_revision.has_same_authority(bound_revision)
 }

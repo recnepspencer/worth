@@ -70,9 +70,8 @@ pub use projection::{
     PlatformPulseLifecycleObservationProjectionDenial, PlatformPulseLifecycleObservationStream,
 };
 pub use query::{
-    PlatformPulseLiveQueryResidue, PlatformPulseQueryProjectionEvidence,
-    PlatformPulseQueryProjectionPosture, PlatformPulseQueryProjectionPublished,
-    PlatformPulseQueryProjectionResidue, PlatformPulseQueryShutdownEvidence,
+    PlatformPulseQueryProjectionEvidence, PlatformPulseQueryProjectionPosture,
+    PlatformPulseQueryProjectionPublished, PlatformPulseQueryShutdownEvidence,
     PlatformPulseQueryWatcherShutdownEvidence,
 };
 pub use schema_transition::{

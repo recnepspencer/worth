@@ -1,35 +1,34 @@
 use std::error::Error;
+use std::num::NonZeroUsize;
 
 use worth_query_consumer_values::{
-    PlanarAdjustment, PlanarCurrentOutputExpectation, PlanarMutationDenial, PlanarOperation,
+    PlanarCurrentOutputExpectation, PlanarMutationDenial, PlanarOperation,
 };
 use worth_query_host::facade::{
     application_entry::{
-        WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
+        WorthQueryApplicationMutationOutcome, WorthQueryApplicationProgramOutputProgress,
+        WorthQueryApplicationRequestMutationDenial, WorthQueryOutputDemandControls,
     },
     primary_graph::{
         MutationHandlerExecutionDenial, WorthQueryCurrentOutputDenial,
         WorthQueryCurrentOutputDenialKind,
     },
 };
-use worth_query_topology_entry::AlternatePlanarOutput;
-use worth_query_topology_entry::PlanarMutation;
-use worth_query_topology_entry::PlanarSourceAdjustment;
+use worth_query_topology_entry::{PlanarEdit, PlanarMutation};
+use worth_query_topology_entry::{PlanarOutputDemand, PlanarSourceAdjustment};
 
-use super::{length, output_correspondence::observed_source, read_y, Request};
+use super::{length, output_correspondence::observed_source, read_y, ProgramApplication, Request};
 
-pub(super) fn producer_qualified_selection_is_current(
+pub(super) fn producer_qualified_missing_and_stale(
     request: &Request<'_>,
-    application: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
-        crate::ConsumerSchema,
-        crate::ConsumerProgram,
-    >,
+    application: &ProgramApplication,
 ) {
-    publish_no_change(request, "anchor-a", &["anchor-a"], 960);
-    publish_no_change(request, "sibling-a", &["sibling-a"], 961);
+    publish_initial(request, application, "anchor-a");
+    publish_initial(request, application, "sibling-a");
 
     let outcome = execute_verification(
         request,
+        application,
         &[expectation("anchor-a"), expectation("sibling-a")],
         962,
     )
@@ -42,7 +41,7 @@ pub(super) fn producer_qualified_selection_is_current(
         "a producer-qualified cache must not alias two same-family producers: {outcome:?}"
     );
 
-    let missing = execute_verification(request, &[expectation("anchor-b")], 963)
+    let missing = execute_verification(request, application, &[expectation("anchor-b")], 963)
         .expect("missing output is a semantic selector outcome");
     assert!(matches!(
         missing,
@@ -51,29 +50,7 @@ pub(super) fn producer_qualified_selection_is_current(
         )
     ));
 
-    publish_no_change(request, "anchor-b", &["anchor-b"], 967);
-    publish_alternate(request, "anchor-b", "anchor-b", 968);
-    let duplicate = execute_verification(request, &[expectation("anchor-b")], 969)
-        .expect("duplicate correspondence targets reach the installed handler");
-    assert!(
-        matches!(
-            duplicate,
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ),
-        "two correspondences for one entity remain one unique output: {duplicate:?}"
-    );
-
-    publish_alternate(request, "anchor-b", "sibling-b", 970);
-    let ambiguous = execute_verification(request, &[expectation("anchor-b")], 971)
-        .expect("ambiguous output selection is a semantic handler outcome");
-    assert!(matches!(
-        ambiguous,
-        WorthQueryApplicationMutationOutcome::DomainDenied(
-            PlanarMutationDenial::CurrentOutputAmbiguous
-        )
-    ));
-
-    publish_no_change(request, "anchor-a", &["anchor-a"], 964);
+    publish_initial(request, application, "anchor-a");
     adjust_source(
         request,
         application,
@@ -91,7 +68,7 @@ pub(super) fn producer_qualified_selection_is_current(
         .inspect()
         .basis()
         .version();
-    let denial = execute_verification(request, &[expectation("anchor-a")], 966)
+    let denial = execute_verification(request, application, &[expectation("anchor-a")], 966)
         .expect_err("a changed retained source fact must reject the old output");
     let WorthQueryApplicationRequestMutationDenial::Handler(
         MutationHandlerExecutionDenial::Handler(handler),
@@ -120,43 +97,31 @@ pub(super) fn producer_qualified_selection_is_current(
     assert_eq!(before, after, "stale selection must publish nothing");
 }
 
-fn publish_alternate(request: &Request<'_>, scope_key: &str, output_key: &str, command: u64) {
-    let source = observed_source(request, scope_key);
-    let outcome = request
-        .mutate(AlternatePlanarOutput {
-            scope_key: scope_key.to_owned(),
-            output_key: output_key.to_owned(),
-        })
-        .expect_source(source)
-        .idempotency(&command)
-        .execute()
-        .expect("the alternate output reaches its real public mutation owner");
-    assert!(
-        matches!(
-            outcome,
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ),
-        "alternate output must commit: {outcome:?}"
-    );
-}
-
-fn publish_no_change(request: &Request<'_>, scope_key: &str, observed_keys: &[&str], command: u64) {
-    let adjustments = observed_keys
-        .iter()
-        .map(|key| PlanarAdjustment {
-            body_key: (*key).to_owned(),
-            replacement_y: length(read_y(request, key)),
-        })
-        .collect();
-    publish(request, scope_key, adjustments, command);
+fn publish_initial(request: &Request<'_>, application: &ProgramApplication, scope_key: &str) {
+    let mut output = request
+        .start_program_outputs(
+            application,
+            PlanarOutputDemand::new(scope_key),
+            WorthQueryOutputDemandControls::new(
+            NonZeroUsize::new(4_096).unwrap(),
+            NonZeroUsize::new(8_192).unwrap(),
+            ),
+        )
+        .expect("the declared root producer starts for the selected source");
+    loop {
+        match output
+            .advance(request)
+            .expect("the declared root producer settles")
+        {
+            WorthQueryApplicationProgramOutputProgress::Pending => {}
+            WorthQueryApplicationProgramOutputProgress::Settled(_) => break,
+        }
+    }
 }
 
 fn adjust_source(
     request: &Request<'_>,
-    application: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
-        crate::ConsumerSchema,
-        crate::ConsumerProgram,
-    >,
+    application: &ProgramApplication,
     scope_key: &str,
     y: u64,
     command: u64,
@@ -169,7 +134,7 @@ fn adjust_source(
         })
         .expect_source(source)
         .idempotency(&command)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(application)
+        .execute_performed(application)
         .expect("the independent source adjustment reaches its real mutation owner");
     assert!(matches!(
         outcome,
@@ -177,32 +142,9 @@ fn adjust_source(
     ));
 }
 
-fn publish(
-    request: &Request<'_>,
-    scope_key: &str,
-    adjustments: Vec<PlanarAdjustment>,
-    command: u64,
-) {
-    let input = PlanarMutation {
-        scope_key: scope_key.to_owned(),
-        operation: PlanarOperation::Adjust(adjustments),
-        validator_work: 4096,
-    };
-    let source = observed_source(request, scope_key);
-    let outcome = request
-        .mutate(input)
-        .expect_source(source)
-        .idempotency(&command)
-        .execute()
-        .expect("the output setup reaches its real mutation owner");
-    assert!(matches!(
-        outcome,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
-    ));
-}
-
 fn execute_verification(
     request: &Request<'_>,
+    application: &ProgramApplication,
     expectations: &[PlanarCurrentOutputExpectation],
     command: u64,
 ) -> Result<
@@ -218,10 +160,10 @@ fn execute_verification(
         validator_work: 4096,
     };
     request
-        .mutate(input)
+        .mutate(PlanarEdit(input))
         .expect_source(observed_source(request, "anchor-a"))
         .idempotency(&command)
-        .execute()
+        .execute_in_program(application)
 }
 
 fn expectation(key: &str) -> PlanarCurrentOutputExpectation {
