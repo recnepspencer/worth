@@ -109,6 +109,23 @@ impl WorthQueryOutputDemandRegistry {
         if existing_key.is_none() {
             supersede_predecessors(&mut state, &requested_key)?;
         }
+        if let Some(successor) = successor_of {
+            if let Some(DemandState::Output(output)) =
+                state.records.get(&key).map(|record| &record.state)
+            {
+                let matches_ready = output.checkpoint.as_ref().is_some_and(|checkpoint| {
+                    matches!(checkpoint, super::WorthQueryOutputCheckpoint::Ready(completion)
+                        if completion.receipt.is_same_authoritative_commit(successor))
+                });
+                if matches_ready {
+                    if let super::WorthQueryOutputAdvancement::Stopped { denial, .. } =
+                        &output.advancement
+                    {
+                        return Err(denial.clone());
+                    }
+                }
+            }
+        }
         let accepts_prepared_source = state.records.get(&key).is_none_or(|record| {
             record.performed_source.is_none() && matches!(record.state, DemandState::Admitted)
         });
@@ -160,7 +177,8 @@ impl WorthQueryOutputDemandRegistry {
             let reopens_exact_ready = matches!(
                 &record.state,
                 DemandState::Output(output)
-                    if output.checkpoint.as_ref().is_some_and(|checkpoint| {
+                    if matches!(output.advancement, super::WorthQueryOutputAdvancement::Idle)
+                    && output.checkpoint.as_ref().is_some_and(|checkpoint| {
                         matches!(checkpoint, super::WorthQueryOutputCheckpoint::Ready(completion)
                             if completion.receipt.is_same_authoritative_commit(successor))
                     })

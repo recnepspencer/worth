@@ -204,6 +204,55 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
 }
 
 #[test]
+fn stopped_ready_record_rejects_successor_without_reviving_custody() {
+    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    let occurrence = receipt.product_branch().occurrence();
+    let registry = WorthQueryOutputDemandRegistry::default();
+    let demand_key = key("preserve", 8, 1);
+    let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
+    let mut output = WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Ready(
+        super::super::WorthQueryCompletedOutputDemand {
+            receipt: receipt.clone(),
+            readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+        },
+    ));
+    output.stop(WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputDemandDenialKind::Superseded,
+        "newer source owns the cycle",
+    ));
+    registry.state.lock().unwrap().records.insert(
+        demand_key.clone(),
+        DemandRecord {
+            source_scope: Some(scope),
+            ..record(occurrence, DemandState::Output(output), 1)
+        },
+    );
+
+    let denial = match registry.admit(
+        demand_key.clone(),
+        None,
+        scope,
+        occurrence,
+        super::super::DemandAdmissionKind::Ordinary,
+        None,
+        Some(&receipt),
+    ) {
+        Ok(_) => panic!("a stopped ready record was revived"),
+        Err(denial) => denial,
+    };
+    assert_eq!(denial.kind(), WorthQueryOutputDemandDenialKind::Superseded);
+    let state = registry.state.lock().unwrap();
+    let record = &state.records[&demand_key];
+    assert_eq!(record.interests, 1);
+    assert!(matches!(
+        &record.state,
+        DemandState::Output(output)
+            if matches!(output.advancement, super::super::WorthQueryOutputAdvancement::Stopped { .. })
+                && matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Ready(_)))
+    ));
+}
+
+#[test]
 fn failed_successor_admission_preserves_ready_custody() {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let occurrence = receipt.product_branch().occurrence();
