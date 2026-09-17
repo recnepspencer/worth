@@ -1,6 +1,17 @@
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
+    pub(in crate::domain_computation::primary_graph) fn finish_replaced_interest(
+        &self,
+        replaced: &WorthQueryOutputDemandInterest,
+        replacement: &WorthQueryOutputDemandInterest,
+        subject: &str,
+    ) {
+        if replaced.key != replacement.key {
+            self.finish_superseded(replaced, subject);
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn begin(
         &self,
         interest: &WorthQueryOutputDemandInterest,
@@ -167,46 +178,6 @@ impl WorthQueryOutputDemandRegistry {
             DemandState::Failed(denial.clone())
         };
         record.wake.notify();
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn reopen_stale_ready(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
-        stale_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state.records.get_mut(&interest.key).ok_or_else(|| {
-            WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
-                "stale ready demand was released before it could reopen",
-            )
-        })?;
-        let reopen = match &record.state {
-            DemandState::Output(output) => match (&output.advancement, &output.checkpoint) {
-                (
-                    WorthQueryOutputAdvancement::Idle,
-                    Some(WorthQueryOutputCheckpoint::Ready(completion)),
-                ) => completion
-                    .receipt
-                    .is_same_authoritative_commit(stale_receipt),
-                (WorthQueryOutputAdvancement::Stopped { denial, .. }, _) => {
-                    return Err(denial.clone())
-                }
-                _ => false,
-            },
-            DemandState::Failed(denial) => return Err(denial.clone()),
-            _ => false,
-        };
-        if reopen {
-            record.state = DemandState::Scheduled;
-            record.performed_source = None;
-            record.successor_of = Some(*stale_receipt.idempotency_binding().key_identity());
-            record.wake.notify();
-        }
-        Ok(reopen)
     }
 
     pub(in crate::domain_computation::primary_graph) fn finish_checkpoint(

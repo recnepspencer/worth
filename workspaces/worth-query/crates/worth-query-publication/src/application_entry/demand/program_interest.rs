@@ -116,12 +116,12 @@ where
             .query(self.demand.source_intent())
             .execute()
             .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
-            .into_output_demand_disclosure();
+            .into_output_demand_source();
         match self
             .application
             .advance_program_output(
                 &worth_query_execution::publication_boundary::program_publication_access(),
-                &self.admitted,
+                &mut self.admitted,
                 request.principal,
                 request.scope,
                 request.branch,

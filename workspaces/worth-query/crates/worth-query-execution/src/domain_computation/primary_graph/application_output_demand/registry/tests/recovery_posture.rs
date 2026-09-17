@@ -49,7 +49,6 @@ fn retryable_publication_stale_keeps_required_scheduled_obligation() {
 
 #[test]
 fn running_budget_failure_cannot_claim_retry_after_the_registry_finishes_it() {
-    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("required", 7, 1);
     let wake = Arc::new(DemandWake {
@@ -81,70 +80,6 @@ fn running_budget_failure_cannot_claim_retry_after_the_registry_finishes_it() {
         WorthQueryOutputDemandAdvanceAdmission::Failed(stored)
             if stored == denial
     ));
-    assert_eq!(
-        registry
-            .reopen_stale_ready(&demand_interest, &receipt)
-            .expect_err("a failed demand retains its terminal denial"),
-        denial
-    );
-}
-
-#[test]
-fn stale_ready_receipt_reopens_the_same_demand_for_execution() {
-    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
-    let unrelated = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
-    let occurrence = receipt.product_branch().occurrence();
-    let registry = WorthQueryOutputDemandRegistry::default();
-    let demand_key = key("stale-ready", 8, 1);
-    let wake = Arc::new(DemandWake {
-        generation: Mutex::new(0),
-        changed: Condvar::new(),
-    });
-    registry.state.lock().unwrap().records.insert(
-        demand_key.clone(),
-        DemandRecord {
-            required: true,
-            wake: Arc::clone(&wake),
-            ..record(
-                occurrence,
-                DemandState::Output(WorthQueryOutputProgress::new(
-                    WorthQueryOutputCheckpoint::Ready(super::super::WorthQueryCompletedOutputDemand {
-                        receipt: receipt.clone(),
-                        readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-                    }),
-                )),
-                1,
-            )
-        },
-    );
-    let demand_interest = interest(&registry, demand_key.clone(), Arc::clone(&wake));
-
-    assert!(matches!(
-        registry.begin(&demand_interest),
-        WorthQueryOutputDemandAdvanceAdmission::Ready(_)
-    ));
-    assert!(!registry
-        .reopen_stale_ready(&demand_interest, &unrelated)
-        .expect("an unrelated receipt cannot disturb the ready checkpoint"));
-    assert!(matches!(
-        registry.begin(&demand_interest),
-        WorthQueryOutputDemandAdvanceAdmission::Ready(_)
-    ));
-    assert_eq!(*wake.generation.lock().unwrap(), 0);
-    assert!(registry
-        .reopen_stale_ready(&demand_interest, &receipt)
-        .expect("the exact stale ready receipt can reopen"));
-    assert_eq!(*wake.generation.lock().unwrap(), 1);
-    let stale_key = *receipt.idempotency_binding().key_identity();
-    assert!(matches!(
-        registry.begin(&demand_interest),
-        WorthQueryOutputDemandAdvanceAdmission::Execute {
-            successor_of: Some(key)
-        } if key == stale_key
-    ));
-    assert!(!registry
-        .reopen_stale_ready(&demand_interest, &receipt)
-        .expect("a running replacement cannot be reopened a second time"));
 }
 
 #[test]
@@ -218,9 +153,107 @@ fn no_change_checkpoint_keeps_its_real_receipt_across_claims() {
 }
 
 #[test]
+fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
+    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    let occurrence = receipt.product_branch().occurrence();
+    let registry = WorthQueryOutputDemandRegistry::default();
+    let demand_key = key("preserve", 8, 1);
+    let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
+    let wake = Arc::new(DemandWake {
+        generation: Mutex::new(0),
+        changed: Condvar::new(),
+    });
+    registry.state.lock().unwrap().records.insert(
+        demand_key.clone(),
+        DemandRecord {
+            source_scope: Some(scope),
+            wake: Arc::clone(&wake),
+            ..record(
+                occurrence,
+                DemandState::Output(WorthQueryOutputProgress::new(
+                    WorthQueryOutputCheckpoint::Ready(super::super::WorthQueryCompletedOutputDemand {
+                        receipt: receipt.clone(),
+                        readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+                    }),
+                )),
+                1,
+            )
+        },
+    );
+
+    let replacement = registry
+        .admit(
+            demand_key.clone(),
+            None,
+            scope,
+            occurrence,
+            super::super::DemandAdmissionKind::Ordinary,
+            None,
+            Some(&receipt),
+        )
+        .expect("the exact stale ready receipt admits its forced successor");
+    assert_eq!(replacement.key, demand_key);
+    let state = registry.state.lock().unwrap();
+    let record = &state.records[&demand_key];
+    assert!(matches!(record.state, DemandState::Admitted));
+    assert_eq!(
+        record.successor_of,
+        Some(*receipt.idempotency_binding().key_identity())
+    );
+    assert_eq!(record.interests, 2);
+}
+
+#[test]
+fn failed_successor_admission_preserves_ready_custody() {
+    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    let occurrence = receipt.product_branch().occurrence();
+    let registry = WorthQueryOutputDemandRegistry::default();
+    let ready_key = key_with_identity("preserve", 8, 1, 80);
+    let stale_request = key_with_identity("preserve", 7, 1, 70);
+    let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
+    registry.state.lock().unwrap().records.insert(
+        ready_key.clone(),
+        DemandRecord {
+            source_scope: Some(scope),
+            ..record(
+                occurrence,
+                DemandState::Output(WorthQueryOutputProgress::new(
+                    WorthQueryOutputCheckpoint::Ready(super::super::WorthQueryCompletedOutputDemand {
+                        receipt: receipt.clone(),
+                        readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+                    }),
+                )),
+                1,
+            )
+        },
+    );
+
+    let denial = match registry.admit(
+        stale_request,
+        None,
+        scope,
+        occurrence,
+        super::super::DemandAdmissionKind::Ordinary,
+        None,
+        Some(&receipt),
+    ) {
+        Ok(_) => panic!("an older successor admission was accepted"),
+        Err(denial) => denial,
+    };
+    assert_eq!(denial.kind(), WorthQueryOutputDemandDenialKind::Superseded);
+    let state = registry.state.lock().unwrap();
+    let record = &state.records[&ready_key];
+    assert_eq!(record.interests, 1);
+    assert!(matches!(
+        &record.state,
+        DemandState::Output(output)
+            if matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Ready(_)))
+    ));
+}
+
+#[test]
 fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
-    let stale_receipt = receipt.clone();
     let commit = receipt
         .committed_product_publication()
         .composite_commit()
@@ -287,11 +320,9 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
         super::super::WorthQueryOutputAdvancement::Stopped { .. }
     ));
     drop(state);
-    assert_eq!(
-        registry
-            .reopen_stale_ready(&demand_interest, &stale_receipt)
-            .expect_err("a stopped checkpoint retains its terminal denial")
-            .kind(),
-        WorthQueryOutputDemandDenialKind::Closed
-    );
+    assert!(matches!(
+        registry.begin(&demand_interest),
+        WorthQueryOutputDemandAdvanceAdmission::Failed(denial)
+            if denial.kind() == WorthQueryOutputDemandDenialKind::Closed
+    ));
 }

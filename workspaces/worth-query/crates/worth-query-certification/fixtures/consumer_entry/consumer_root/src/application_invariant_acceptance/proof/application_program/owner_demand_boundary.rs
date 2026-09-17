@@ -60,11 +60,11 @@ fn sibling_target_disclosure_is_denied(
     );
 
     let denial = match world.application.advance_output_demand(
-        &peer,
+        &mut peer,
         &principal,
         &scope,
         world.application.current_world(),
-        source(&world.application, &principal, &scope, "anchor-b").into_disclosure(),
+        source(&world.application, &principal, &scope, "anchor-b"),
     ) {
         Ok(_) => panic!("a sibling target consumed the settled target's owner record"),
         Err(denial) => denial,
@@ -100,11 +100,10 @@ fn principal_and_scope_are_revalidated(
 
     let other = installation::install(foreign_schema);
     let foreign_principal = authenticate(&other.application, &scope);
-    let local_disclosure =
-        source(&world.application, &principal, &scope, "anchor-a").into_disclosure();
+    let local_disclosure = source(&world.application, &principal, &scope, "anchor-a");
     let denial = expect_denial(
         world.application.advance_output_demand(
-            &foreign_peer,
+            &mut foreign_peer,
             &foreign_principal,
             &scope,
             world.application.current_world(),
@@ -115,11 +114,10 @@ fn principal_and_scope_are_revalidated(
     assert_eq!(denial.kind(), WorthQueryOutputDemandDenialKind::Superseded);
 
     let other_scope = authentication::request_scope();
-    let wrong_scope_disclosure =
-        source(&world.application, &principal, &scope, "anchor-a").into_disclosure();
+    let wrong_scope_disclosure = source(&world.application, &principal, &scope, "anchor-a");
     let denial = expect_denial(
         world.application.advance_output_demand(
-            &foreign_peer,
+            &mut foreign_peer,
             &principal,
             &other_scope,
             world.application.current_world(),
@@ -138,12 +136,11 @@ fn principal_and_scope_are_revalidated(
         &world.application,
         source(&world.application, &principal, &cancelled_scope, "anchor-a"),
     );
-    let cancelled_disclosure =
-        source(&world.application, &principal, &cancelled_scope, "anchor-a").into_disclosure();
+    let cancelled_disclosure = source(&world.application, &principal, &cancelled_scope, "anchor-a");
     cancellation.cancel();
     let denial = expect_denial(
         world.application.advance_output_demand(
-            &cancelled_peer,
+            &mut cancelled_peer,
             &principal,
             &cancelled_scope,
             world.application.current_world(),
@@ -180,11 +177,11 @@ fn close_is_idempotent_and_terminal(
         WorthQueryOutputDemandDenialKind::Closed
     );
     let denial = match world.application.advance_output_demand(
-        &admitted,
+        &mut admitted,
         &principal,
         &scope,
         world.application.current_world(),
-        source(&world.application, &principal, &scope, "anchor-a").into_disclosure(),
+        source(&world.application, &principal, &scope, "anchor-a"),
     ) {
         Ok(_) => panic!("a closed owner advanced"),
         Err(denial) => denial,
@@ -214,11 +211,11 @@ fn denied_executor_releases_shared_claim(
     let mut observed_denial = None;
     for _ in 0..4 {
         match world.application.advance_output_demand(
-            &denied,
+            &mut denied,
             &principal,
             &scope,
             world.application.current_world(),
-            source(&world.application, &principal, &scope, "anchor-a").into_disclosure(),
+            source(&world.application, &principal, &scope, "anchor-a"),
         ) {
             Ok(WorthQueryOutputDemandAdvance::Pending) => {}
             Ok(WorthQueryOutputDemandAdvance::Settled(_)) => {
@@ -235,7 +232,13 @@ fn denied_executor_releases_shared_claim(
         denial.kind(),
         WorthQueryOutputDemandDenialKind::ProducerUnavailable
     );
-    settle(&world.application, &principal, &scope, &peer, "anchor-a");
+    settle(
+        &world.application,
+        &principal,
+        &scope,
+        &mut peer,
+        "anchor-a",
+    );
     denied.close();
     peer.close();
 }
@@ -322,7 +325,7 @@ fn settle(
     application: &Application,
     principal: &WorthQueryAuthenticatedExternalPrincipal<ConsumerSchema>,
     scope: &WorthQueryRequestScope,
-    admitted: &Admitted,
+    admitted: &mut Admitted,
     body_key: &str,
 ) {
     for _ in 0..8 {
@@ -332,7 +335,7 @@ fn settle(
                 principal,
                 scope,
                 application.current_world(),
-                source(application, principal, scope, body_key).into_disclosure(),
+                source(application, principal, scope, body_key),
             )
             .expect("the owner output advances");
         if matches!(progress, WorthQueryOutputDemandAdvance::Settled(_)) {

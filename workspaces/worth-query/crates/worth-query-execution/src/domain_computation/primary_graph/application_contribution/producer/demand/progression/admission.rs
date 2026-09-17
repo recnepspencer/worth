@@ -4,12 +4,20 @@ mod source_custody;
 
 use super::super::{
     FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryProducerOutputFamily,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    WorthQueryProducerApplicability, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily,
 };
 use super::denial;
 use crate::domain_computation::primary_graph::{
     WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
 };
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub(super) enum OutputLifecycleRequirement {
+    SelectCurrent,
+    PreserveExisting,
+}
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -43,6 +51,8 @@ where
             None,
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary,
             None,
+            None,
+            OutputLifecycleRequirement::SelectCurrent,
         )
     }
 
@@ -75,6 +85,8 @@ where
             None,
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             None,
+            None,
+            OutputLifecycleRequirement::SelectCurrent,
         )
     }
 
@@ -108,6 +120,8 @@ where
             None,
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery,
             Some(source_receipt.committed_product_publication().composite_commit()),
+            None,
+            OutputLifecycleRequirement::SelectCurrent,
         )
     }
 
@@ -145,10 +159,12 @@ where
             Some(prepared.source_commit.clone()),
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             None,
+            None,
+            OutputLifecycleRequirement::SelectCurrent,
         )
     }
 
-    fn admit_output_demand_with_source<Family>(
+    pub(super) fn admit_output_demand_with_source<Family>(
         &self,
         source: FamilySourceValue<Schema, Family>,
         observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
@@ -158,11 +174,33 @@ where
         performed_source: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
         admission_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
         expected_source_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
+        successor_of: Option<
+            &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        >,
+        lifecycle_requirement: OutputLifecycleRequirement,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        let selected = self.select_output_producer::<Family>(&observed_source, profile_kind)?;
+        let currentness_work_limit =
+            std::num::NonZeroUsize::new(maximum_work).ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                    Family::IDENTITY,
+                )
+                .with_recovery_posture(
+                    super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
+                )
+            })?;
+        let selected = if lifecycle_requirement == OutputLifecycleRequirement::PreserveExisting {
+            self.installed_producers
+                .select::<Family>(WorthQueryProducerApplicability::new(
+                    profile_kind,
+                    WorthQueryProducerLifecyclePosture::Preserve,
+                ))?
+        } else {
+            self.select_output_producer::<Family>(&observed_source, profile_kind)?
+        };
         let entry = self
             .installed_producers
             .entries
@@ -239,6 +277,7 @@ where
                 product_occurrence,
                 admission_kind,
                 expected_source_commit,
+                successor_of,
             )?,
         };
         Ok(WorthQueryAdmittedOutputDemand {
@@ -247,6 +286,9 @@ where
             selected,
             source,
             observed_source,
+            currentness_work_limit,
+            maximum_retained_bytes,
+            admission_kind,
             interest: Some(interest),
         })
     }

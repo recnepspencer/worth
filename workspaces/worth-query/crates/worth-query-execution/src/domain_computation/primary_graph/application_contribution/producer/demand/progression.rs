@@ -9,9 +9,8 @@ use super::{
     WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryProducerOutputFamily,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOutputDemandDisclosure, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use admission::OutputLifecycleRequirement;
 
 mod admission;
 mod source_recovery;
@@ -22,11 +21,14 @@ where
 {
     pub fn advance_output_demand<Family>(
         &self,
-        demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
-        disclosure: WorthQueryApplicationOutputDemandDisclosure<FamilySourceQuery<Schema, Family>>,
+        disclosure: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            FamilySourceQuery<Schema, Family>,
+            FamilySourceValue<Schema, Family>,
+        >,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -71,7 +73,7 @@ where
                 ),
             ));
         }
-        let disclosed_source = validate_disclosure(
+        let (disclosed_value, disclosed_source) = validate_disclosure(
             self,
             demand,
             principal,
@@ -128,6 +130,34 @@ where
                 );
             }
             Admission::Ready(completion) => {
+                if !demand.matches_observed_source(&disclosed_source) {
+                    return Err(self
+                        .output_demands
+                        .finish_superseded(interest, Family::IDENTITY));
+                }
+                let current = self.on_branch(delivery_branch).select().map_err(|denial| {
+                    WorthQueryOutputDemandDenial::product_selection(
+                        denial,
+                        "ready output currentness basis could not be selected",
+                    )
+                })?;
+                match current.require_current_output_receipts(
+                    [&completion.receipt],
+                    demand.currentness_work_limit,
+                ) {
+                    Ok(()) => {}
+                    Err(denial)
+                        if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
+                    {
+                        return self.refresh_output_demand(
+                            demand,
+                            disclosed_value,
+                            disclosed_source,
+                            &completion.receipt,
+                        );
+                    }
+                    Err(denial) => return Err(denial),
+                }
                 let settlement = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_commit(
                     self,
                     &completion.receipt,
@@ -138,9 +168,12 @@ where
                     Err(denial)
                         if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
                     {
-                        self.output_demands
-                            .reopen_stale_ready(interest, &completion.receipt)?;
-                        Ok(WorthQueryOutputDemandAdvance::Pending)
+                        self.refresh_output_demand(
+                            demand,
+                            disclosed_value,
+                            disclosed_source,
+                            &completion.receipt,
+                        )
                     }
                     Err(denial) => Err(denial),
                 };
@@ -193,6 +226,63 @@ where
                 delivery,
             },
         )?;
+        Ok(WorthQueryOutputDemandAdvance::Pending)
+    }
+}
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    fn refresh_output_demand<Family>(
+        &self,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        source: FamilySourceValue<Schema, Family>,
+        observed_source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
+            FamilySourceQuery<Schema, Family>,
+        >,
+        stale_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>: 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        if demand.admission_kind
+            == crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery
+        {
+            let interest = demand.interest.as_ref().ok_or_else(|| {
+                denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY)
+            })?;
+            return Err(self
+                .output_demands
+                .finish_superseded(interest, Family::IDENTITY));
+        }
+        let profile_kind = Family::profile_kind(&source);
+        let refreshed = self.admit_output_demand_with_source::<Family>(
+            source,
+            observed_source,
+            profile_kind,
+            demand.currentness_work_limit.get(),
+            demand.maximum_retained_bytes,
+            None,
+            demand.admission_kind,
+            None,
+            Some(stale_receipt),
+            OutputLifecycleRequirement::PreserveExisting,
+        )?;
+        if let Some(interest) = demand.interest.take() {
+            self.output_demands.finish_replaced_interest(
+                &interest,
+                refreshed
+                    .interest
+                    .as_ref()
+                    .expect("a refreshed demand retains its new interest"),
+                Family::IDENTITY,
+            );
+            drop(interest);
+        }
+        *demand = refreshed;
         Ok(WorthQueryOutputDemandAdvance::Pending)
     }
 }

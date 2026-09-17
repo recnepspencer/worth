@@ -18,6 +18,9 @@ impl WorthQueryOutputDemandRegistry {
         product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         admission_kind: DemandAdmissionKind,
         expected_source_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
+        successor_of: Option<
+            &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        >,
     ) -> Result<WorthQueryOutputDemandInterest, WorthQueryOutputDemandDenial> {
         let mut state = self
             .state
@@ -98,6 +101,7 @@ impl WorthQueryOutputDemandRegistry {
         } else {
             None
         };
+        let existing_record = existing_key.is_some();
         let key = existing_key
             .as_ref()
             .cloned()
@@ -149,8 +153,25 @@ impl WorthQueryOutputDemandRegistry {
                 source_scope,
                 prepared_source_commit.clone(),
                 admission_kind.is_required(),
+                successor_of.map(|receipt| *receipt.idempotency_binding().key_identity()),
             )
         });
+        if let Some(successor) = successor_of {
+            let reopens_exact_ready = matches!(
+                &record.state,
+                DemandState::Output(output)
+                    if output.checkpoint.as_ref().is_some_and(|checkpoint| {
+                        matches!(checkpoint, super::WorthQueryOutputCheckpoint::Ready(completion)
+                            if completion.receipt.is_same_authoritative_commit(successor))
+                    })
+            );
+            if existing_record && reopens_exact_ready {
+                record.state = DemandState::Admitted;
+                record.performed_source = None;
+                record.successor_of = Some(*successor.idempotency_binding().key_identity());
+                record.wake.notify();
+            }
+        }
         if record.performed_source.is_none() {
             record.performed_source = prepared_source;
         }
@@ -232,6 +253,7 @@ impl WorthQueryOutputDemandRegistry {
                 source_scope,
                 Some(source_commit.clone()),
                 true,
+                None,
             )
         });
         if !record.source_commits.contains(source_commit) {
@@ -277,6 +299,7 @@ fn new_record(
     source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     source_commit: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
     required: bool,
+    successor_of: Option<[u8; 32]>,
 ) -> DemandRecord {
     DemandRecord {
         interests: 0,
@@ -286,7 +309,7 @@ fn new_record(
         source_commits: source_commit.into_iter().collect(),
         state: DemandState::Admitted,
         performed_source: None,
-        successor_of: None,
+        successor_of,
         wake: Arc::new(DemandWake {
             generation: Mutex::new(0),
             changed: Condvar::new(),

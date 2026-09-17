@@ -11,7 +11,7 @@ use super::super::super::{
 use super::super::aftermath_resolution::resolve_exact_committed_aftermath;
 use super::super::elevation_currentness::WorthQueryElevationCommitCurrentness;
 use super::super::outcome::commit_outcome_from_authorization_denial;
-use super::super::provider_denial::denied;
+use super::super::provider_denial::{denied, denied_with_detail};
 use crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality;
 use crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization;
 use crate::domain_computation::primary_graph::application_attempt::{
@@ -275,7 +275,7 @@ fn take_commit_authorization<Schema, Operation, Input, Scope>(
 ) -> Result<WorthQueryProviderCommitAuthorization, WorthQueryApplicationCommitOutcome> {
     admission
         .take_authorization_dependencies(application.authorization.bridge())
-        .map_err(|_| denied(DenialStage::DecisionReadSet))
+        .map_err(|denial| denied_with_detail(DenialStage::DecisionReadSet, denial.to_string()))
 }
 
 fn bind_commit_idempotency<Schema, Operation, Input, Scope>(

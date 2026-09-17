@@ -14,11 +14,11 @@ mod dependent;
 mod discovered_roots;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationDependentOutputConnection,
-    WorthQueryApplicationOutputDemand, WorthQueryApplicationOutputDemandDisclosure,
-    WorthQueryApplicationOutputDemandSource, WorthQueryApplicationRequiredOutputConnection,
-    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandNotifications, WorthQueryOutputDemandSettlement,
-    WorthQueryPreparedRequiredOutputSource, WorthQueryProducerOutputFamily,
+    WorthQueryApplicationOutputDemand, WorthQueryApplicationOutputDemandSource,
+    WorthQueryApplicationRequiredOutputConnection, WorthQueryOutputDemandAdvance,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandNotifications,
+    WorthQueryOutputDemandSettlement, WorthQueryPreparedRequiredOutputSource,
+    WorthQueryProducerOutputFamily,
 };
 
 type Family<Schema, Demand> = <Demand as WorthQueryApplicationOutputDemand<Schema>>::OutputFamily;
@@ -315,11 +315,14 @@ where
     pub fn advance_program_output<Demand>(
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        demand: &WorthQueryAdmittedProgramOutput<Schema, Program, Demand>,
+        demand: &mut WorthQueryAdmittedProgramOutput<Schema, Program, Demand>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
-        disclosure: WorthQueryApplicationOutputDemandDisclosure<SourceQuery<Schema, Demand>>,
+        disclosure: WorthQueryApplicationOutputDemandSource<
+            SourceQuery<Schema, Demand>,
+            SourceValue<Schema, Demand>,
+        >,
     ) -> Result<WorthQueryProgramOutputAdvance<Schema, Program, Demand>, WorthQueryOutputDemandDenial>
     where
         Demand: WorthQueryApplicationOutputDemand<Schema>,
@@ -328,7 +331,7 @@ where
     {
         self.runtime
             .advance_output_demand(
-                &demand.admitted,
+                &mut demand.admitted,
                 principal,
                 request_scope,
                 delivery_branch,

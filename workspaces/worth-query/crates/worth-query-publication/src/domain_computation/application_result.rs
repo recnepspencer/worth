@@ -1,7 +1,5 @@
 use worth_query_execution::facade::primary_graph::WorthQueryAdmittedDisclosedApplicationResult;
-use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationOutputDemandDisclosure, WorthQueryApplicationOutputDemandSource,
-};
+use worth_query_execution::facade::primary_graph::WorthQueryApplicationOutputDemandSource;
 
 mod basis;
 mod disclosure;
@@ -83,12 +81,6 @@ impl<Query, QueryResult> WorthQueryPublishedApplicationResult<Query, QueryResult
         &self,
     ) -> &[worth_query_execution::facade::primary_graph::WorthQueryObservedSource<Query>] {
         self.source.observed_sources()
-    }
-
-    pub fn into_output_demand_disclosure(
-        self,
-    ) -> WorthQueryApplicationOutputDemandDisclosure<Query> {
-        self.source.into_disclosure()
     }
 
     pub fn into_rows(self) -> Vec<QueryResult> {

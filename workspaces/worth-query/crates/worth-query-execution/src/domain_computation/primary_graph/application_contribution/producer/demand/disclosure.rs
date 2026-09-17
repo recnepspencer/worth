@@ -4,11 +4,11 @@ use worth_query_admission::facade::authenticated_principal::{
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
-    FamilySourceQuery, WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryProducerOutputFamily,
+    FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryProducerOutputFamily,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationOutputDemandDisclosure,
+    WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationOutputDemandSource,
     WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
 };
 pub(super) fn validate_disclosure<'a, Schema, Family>(
@@ -17,12 +17,22 @@ pub(super) fn validate_disclosure<'a, Schema, Family>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     delivery_branch: crate::basis::WorthQueryProductBranch,
-    disclosure: WorthQueryApplicationOutputDemandDisclosure<FamilySourceQuery<Schema, Family>>,
-) -> Result<WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>, WorthQueryOutputDemandDenial>
+    source: WorthQueryApplicationOutputDemandSource<
+        FamilySourceQuery<Schema, Family>,
+        FamilySourceValue<Schema, Family>,
+    >,
+) -> Result<
+    (
+        FamilySourceValue<Schema, Family>,
+        WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
+    ),
+    WorthQueryOutputDemandDenial,
+>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
+    let (mut rows, disclosure) = source.into_parts();
     let (mut sources, request_affinity, receipt) = disclosure.into_parts();
     if !request_affinity.is_some_and(|affinity| affinity.admits(principal, request_scope)) {
         return Err(denial(
@@ -30,8 +40,8 @@ where
             Family::IDENTITY,
         ));
     }
-    let source = (sources.len() == 1)
-        .then(|| sources.pop())
+    let source = (sources.len() == 1 && rows.len() == 1)
+        .then(|| sources.pop().zip(rows.pop()))
         .flatten()
         .ok_or_else(|| {
             denial(
@@ -39,6 +49,7 @@ where
                 Family::IDENTITY,
             )
         })?;
+    let (source, value) = source;
     let selected = runtime
         .on_branch(delivery_branch)
         .select()
@@ -80,7 +91,7 @@ where
             Family::IDENTITY,
         ));
     }
-    Ok(source)
+    Ok((value, source))
 }
 
 fn denial(

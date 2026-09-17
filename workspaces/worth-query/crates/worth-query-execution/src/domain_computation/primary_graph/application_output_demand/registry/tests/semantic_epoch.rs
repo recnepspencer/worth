@@ -22,6 +22,7 @@ fn unchanged_source_after_unrelated_world_work_joins_the_active_demand() {
             occurrence(),
             super::super::DemandAdmissionKind::Ordinary,
             None,
+            None,
         )
         .expect("an unchanged semantic source joins its active demand");
 
@@ -58,6 +59,7 @@ fn semantic_join_deterministically_selects_the_latest_active_generation() {
             occurrence(),
             super::super::DemandAdmissionKind::Ordinary,
             None,
+            None,
         )
         .expect("semantic join chooses one active owner deterministically");
 
@@ -88,6 +90,7 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
             occurrence(),
             super::super::DemandAdmissionKind::Ordinary,
             None,
+            None,
         )
         .expect("the changed source supersedes its predecessor");
     let returned_interest = registry
@@ -97,6 +100,7 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
             scope,
             occurrence(),
             super::super::DemandAdmissionKind::Ordinary,
+            None,
             None,
         )
         .expect("a later return is a new source cycle, not the stopped old record");
@@ -216,6 +220,7 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
             occurrence,
             super::super::DemandAdmissionKind::Recovery,
             Some(&commit),
+            None,
         )
         .expect("recovery finds the semantic record that owns retained custody");
 

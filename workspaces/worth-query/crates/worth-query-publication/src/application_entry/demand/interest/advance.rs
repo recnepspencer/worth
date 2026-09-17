@@ -32,16 +32,17 @@ where
         let disclosure = fresh_request
             .query(self.demand.source_intent())
             .execute()
-            .map_err(WorthQueryApplicationOutputDemandDenial::Source)?;
+            .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
+            .into_output_demand_source();
         let _controls = self.controls;
         let progress = self
             .application
             .advance_output_demand(
-                &self.admitted,
+                &mut self.admitted,
                 fresh_request.principal,
                 fresh_request.scope,
                 fresh_request.branch.clone(),
-                disclosure.into_output_demand_disclosure(),
+                disclosure,
             )
             .map_err(|denial| {
                 if denial.kind()

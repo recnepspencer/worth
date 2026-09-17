@@ -166,6 +166,9 @@ where
     selected: WorthQuerySelectedApplicationProducer,
     source: FamilySourceValue<Schema, Family>,
     observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
+    currentness_work_limit: std::num::NonZeroUsize,
+    maximum_retained_bytes: usize,
+    admission_kind: super::super::super::application_output_demand::DemandAdmissionKind,
     interest:
         Option<super::super::super::application_output_demand::WorthQueryOutputDemandInterest>,
 }
