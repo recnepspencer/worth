@@ -30,6 +30,15 @@ pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery> {
 }
 
 impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
+    pub(in crate::application_entry) fn receipts(
+        &self,
+    ) -> impl Iterator<
+        Item = &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+    > {
+        std::iter::once(self.root.receipt())
+            .chain(self.outputs.iter().map(ProgramOutputRecord::receipt))
+    }
+
     pub fn root_receipt(
         &self,
     ) -> &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt {

@@ -37,6 +37,6 @@ pub use mutation::{
 pub use query::WorthQueryApplicationQueryRequest;
 pub use request::{
     WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
-    WorthQueryApplicationRetainedRequest,
+    WorthQueryApplicationRetainedRequest, WorthQueryProgramOutputCurrentnessDenial,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;

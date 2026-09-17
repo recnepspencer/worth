@@ -1,3 +1,4 @@
+use std::num::NonZeroUsize;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
@@ -15,7 +16,43 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationRequiredOutputConnection,
 };
 
-use super::WorthQueryApplicationRequest;
+use super::{WorthQueryApplicationRequest, WorthQueryApplicationRetainedRequest};
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WorthQueryProgramOutputCurrentnessDenial {
+    Observation(
+        worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
+    ),
+    ForeignBranch,
+    Output(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
+}
+
+impl<'application, 'principal, 'scope, Schema>
+    WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>
+where
+    Schema: ApplicationSchema,
+{
+    /// Requires every output in a program settlement to retain its Query-owned
+    /// source lineage at this request's one exact World observation.
+    pub fn require_current_program_output<RootQuery>(
+        &self,
+        settlement: &crate::application_entry::WorthQueryApplicationProgramOutputSettlement<
+            RootQuery,
+        >,
+        maximum_work: NonZeroUsize,
+    ) -> Result<(), WorthQueryProgramOutputCurrentnessDenial> {
+        let selected = self
+            .application
+            .select_application_read_observation(&self.observation)
+            .map_err(WorthQueryProgramOutputCurrentnessDenial::Observation)?;
+        if selected.product().product_branch() != self.branch {
+            return Err(WorthQueryProgramOutputCurrentnessDenial::ForeignBranch);
+        }
+        selected
+            .require_current_output_receipts(settlement.receipts(), maximum_work)
+            .map_err(WorthQueryProgramOutputCurrentnessDenial::Output)
+    }
+}
 
 type RootConnectionRef<Schema, Root> =
     <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;
