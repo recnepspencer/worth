@@ -1,5 +1,5 @@
 use worth_query_host::facade::declaration::application_program::{
-    ApplicationActionLeaf, ApplicationActionList, ApplicationCommitBoundary,
+    ApplicationActionLeaf, ApplicationActionList, ApplicationActionRef, ApplicationCommitBoundary,
     ApplicationConditionalOperationActionRef, ApplicationFeature, ApplicationFeatureInputLeaf,
     ApplicationFeatureLeaf, ApplicationFeatureList, ApplicationFeatureRef, ApplicationLocalRuleRef,
     ApplicationNoOutputGraph, ApplicationOperationActionRef, ApplicationProgramAuthoring,
@@ -7,9 +7,10 @@ use worth_query_host::facade::declaration::application_program::{
     ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList, ValidatedApplicationProgram,
 };
 
+use super::application_entry::AmendTemporalBinding;
 use super::schema::{
-    AmendTemporal, AmendTemporalAndPublishDefinition, ExecuteTemporal, RevokeTemporalPrincipal,
-    TemporalHostContribution, TemporalHostSchema, TemporalIntegrity,
+    ExecuteTemporal, RevokeTemporalPrincipal, TemporalHostContribution, TemporalHostSchema,
+    TemporalIntegrity,
 };
 
 pub struct TemporalExampleProgram;
@@ -24,27 +25,20 @@ impl ApplicationFeature<TemporalHostSchema> for TemporalExampleFeature {
 impl ApplicationProgramDefinition<TemporalHostSchema> for TemporalExampleProgram {
     type Contributions = (TemporalHostContribution,);
     type Actions = ApplicationActionList<
-        ApplicationOperationActionRef<TemporalHostSchema, TemporalExampleFeature, AmendTemporal>,
+        ApplicationActionRef<TemporalHostSchema, TemporalExampleFeature, AmendTemporalBinding>,
         ApplicationActionList<
-            ApplicationOperationActionRef<
+            ApplicationConditionalOperationActionRef<
                 TemporalHostSchema,
                 TemporalExampleFeature,
-                AmendTemporalAndPublishDefinition,
+                ExecuteTemporal,
             >,
             ApplicationActionList<
-                ApplicationConditionalOperationActionRef<
+                ApplicationOperationActionRef<
                     TemporalHostSchema,
                     TemporalExampleFeature,
-                    ExecuteTemporal,
+                    RevokeTemporalPrincipal,
                 >,
-                ApplicationActionList<
-                    ApplicationOperationActionRef<
-                        TemporalHostSchema,
-                        TemporalExampleFeature,
-                        RevokeTemporalPrincipal,
-                    >,
-                    ApplicationActionLeaf,
-                >,
+                ApplicationActionLeaf,
             >,
         >,
     >;

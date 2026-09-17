@@ -3,33 +3,9 @@ use worth_query_host::facade::domain::{self, AspectValue, FieldKey, InternedStri
 use super::super::contract::TemporalReadyNode;
 
 pub struct Predicate;
-pub struct ReplacementPredicate;
 
 impl domain::WorthQueryHostConditionalPredicateProvider<TemporalReadyNode> for Predicate {
     const SEMANTIC_IDENTITY: &'static str = "worth.query.example.product.predicate";
-
-    fn retained_heap_bytes(
-        &self,
-    ) -> Result<
-        domain::WorthQueryHostProviderHeapRetention,
-        domain::WorthQueryHostProviderRetentionOverflow,
-    > {
-        Ok(domain::WorthQueryHostProviderHeapRetention::none())
-    }
-
-    fn evaluate(
-        &self,
-        observation: domain::WorthQueryConditionalObservationView<'_>,
-    ) -> Result<domain::WorthQueryHostPredicateDecision, domain::WorthQueryHostPredicateFailure>
-    {
-        evaluate(observation)
-    }
-}
-
-impl domain::WorthQueryHostConditionalPredicateProvider<TemporalReadyNode>
-    for ReplacementPredicate
-{
-    const SEMANTIC_IDENTITY: &'static str = "worth.query.example.product.replacement-predicate";
 
     fn retained_heap_bytes(
         &self,

@@ -218,6 +218,7 @@ exports = [
     "WorthQueryApplicationLiveCloseOutcome",
     "WorthQueryApplicationLiveControlDenial",
     "WorthQueryApplicationLiveControls",
+    "WorthQueryApplicationLiveDeliveryCloseReceipt",
     "WorthQueryApplicationLiveLease",
     "WorthQueryApplicationLiveOpenDenial",
     "WorthQueryApplicationLiveOpenDenialKind",

@@ -275,6 +275,38 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     );
 }
 
+#[test]
+fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
+    let mut world = installed_authorization_world(true);
+    assert!(!world
+        .application
+        .program_required_operations
+        .contains(&std::any::TypeId::of::<TouchAccountOperation>()));
+    world.application.installed_program_action_operations =
+        Some(std::collections::BTreeSet::from([std::any::TypeId::of::<
+            ProgramRequiredOperation,
+        >()]));
+    let request = live_scope();
+    let principal = authenticated_principal(&world, &request);
+    let account = resolved_account(&world, "open", &request);
+    let predecessor = world.selected_product().product().selected_commit().clone();
+    let program = admitted_program(&world, &principal, &account, &request, "program-owned");
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
+        .application
+        .compare_and_commit_application(program, idempotency(38, 38))
+    else {
+        panic!("an installed program must deny every raw commit entry");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
+    );
+    assert_eq!(
+        world.selected_product().product().selected_commit(),
+        &predecessor
+    );
+}
+
 pub(in crate::domain_computation::primary_graph) fn idempotency(
     key: u8,
     intent: u8,

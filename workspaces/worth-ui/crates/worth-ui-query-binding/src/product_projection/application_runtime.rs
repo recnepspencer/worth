@@ -26,14 +26,17 @@ use crate::declaration::{
 };
 
 use super::application_program::{validated_status_program, WorthUiStatusProgram};
+use super::WorthUiStatusOwnerError;
 
 pub(super) type WorthUiStatusApplication =
     WorthQueryProgramApplicationRuntime<WorthUiApplicationSchema, WorthUiStatusProgram>;
 
-pub(super) fn install_status_application() -> Result<WorthUiStatusApplication, String> {
-    let program = validated_status_program().map_err(|error| format!("{error:?}"))?;
-    let declaration =
-        WorthUiApplicationSchema::declaration().map_err(|error| format!("{error:?}"))?;
+pub(super) fn install_status_application(
+) -> Result<WorthUiStatusApplication, WorthUiStatusOwnerError> {
+    let program = validated_status_program()
+        .map_err(|error| WorthUiStatusOwnerError::Installation(format!("{error:?}")))?;
+    let declaration = WorthUiApplicationSchema::declaration()
+        .map_err(|error| WorthUiStatusOwnerError::Installation(format!("{error:?}")))?;
     in_memory_program(
         program,
         declaration,
@@ -76,7 +79,7 @@ pub(super) fn install_status_application() -> Result<WorthUiStatusApplication, S
             Ok(())
         },
     )
-    .map_err(|error| format!("{error:?}"))
+    .map_err(|error| WorthUiStatusOwnerError::Installation(format!("{error:?}")))
 }
 
 pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {

@@ -11,7 +11,9 @@ pub async fn assert_expired_session_fails_closed(world: &TransportProcessWorld) 
         revoke_session(&world.client, world.primary_address).await,
         BankUserNodeAuthorizationOutcome::Revoked
     );
-    world.set_access_token_validity("seconds=2").await;
+    // Leave enough lifetime for the real browser callback to finish under
+    // full-workspace load while keeping expiry inside `read_until`'s bound.
+    world.set_access_token_validity("seconds=5").await;
     world.authenticate_primary().await;
 
     let mut stream = open_stream(

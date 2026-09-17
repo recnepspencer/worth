@@ -1,11 +1,18 @@
 //! Run with `cargo run -p worth-query-certification --example advanced_product_branching`.
+//! Branch construction and bounded history inspection deliberately use the World API; all product
+//! reads and mutations use the ordinary application entry.
 
 pub mod product_workflow_support;
 
 use std::num::NonZeroUsize;
 
-use product_workflow_support::schema::AmendTemporal;
-use product_workflow_support::{principal, read_input, read_selected, ExampleApplication};
+use product_workflow_support::schema::AmendTemporalInput;
+use product_workflow_support::{
+    principal, read_input, AmendTemporalIntent, ExampleApplication, TemporalIntentRead,
+};
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
+};
 
 fn main() {
     std::thread::Builder::new()
@@ -19,18 +26,10 @@ fn main() {
 
 fn run() {
     let application = ExampleApplication::publish("ready");
-    let request = product_workflow_support::adapters::request_scope();
-    let principal = principal(&application, &request);
+    let scope = product_workflow_support::adapters::request_scope();
+    let principal = principal(&application, &scope);
     let source = application.runtime.current_world();
-    let source_commit_before = application
-        .runtime
-        .on_branch(source)
-        .select()
-        .expect("the source product must be selectable")
-        .product()
-        .selected_commit()
-        .clone();
-    let source_value_before = read_input(&application, source, &principal, &request);
+    let source_value_before = read_input(&application, source, &principal, &scope);
 
     let reuse_both = application
         .runtime
@@ -65,134 +64,64 @@ fn run() {
         .create()
         .expect("the fully independent product must publish");
 
-    for branch in [reuse_both, fork_relational, fork_signal, fork_both] {
-        let selected = application
-            .runtime
-            .on_branch(branch)
-            .select()
-            .expect("each exact product posture must remain selectable");
-        assert_eq!(selected.product().product_branch(), branch);
-    }
-
-    let retained = application
-        .runtime
-        .on_branch(fork_relational)
-        .select()
-        .expect("the independent Relational branch must be retained");
-    let retained_commit = retained.product().selected_commit().clone();
-    let admitted = application.admit_input_change(
-        application
-            .runtime
-            .on_branch(fork_relational)
-            .select()
-            .expect("the branch-local mutation must select its exact product"),
+    let first = mutate(
+        &application,
+        &principal,
+        &scope,
+        fork_relational,
+        2,
         "branch-local-change",
         0x31,
     );
-    let committed = application
-        .runtime
-        .on_branch(fork_relational)
-        .transaction()
-        .apply(admitted)
-        .commit_for_program(
-            application
-                .runtime
-                .admit_program_operation::<AmendTemporal>()
-                .expect("the validated program declares the branch action"),
-        )
-        .expect("the transaction must retain the admitted product")
-        .require_committed()
-        .expect("the selected branch-local operation must commit");
-    assert_eq!(committed.product_branch(), fork_relational);
-    let branch_after = read_input(&application, fork_relational, &principal, &request);
-    assert_eq!(branch_after, "branch-local-change");
-    let branch_commit_after = application
-        .runtime
-        .on_branch(fork_relational)
-        .select()
-        .expect("the advanced branch must remain selectable")
-        .product()
-        .selected_commit()
-        .clone();
-    assert_ne!(branch_commit_after, retained_commit);
+    assert_eq!(
+        read_input(&application, fork_relational, &principal, &scope),
+        "branch-local-change"
+    );
 
-    let admitted = application.admit_input_change(
-        application
-            .runtime
-            .on_branch(fork_relational)
-            .select()
-            .expect("the advanced branch must select its latest product"),
+    let newest = mutate(
+        &application,
+        &principal,
+        &scope,
+        fork_relational,
+        3,
         "branch-newest",
         0x32,
     );
-    let newest = application
-        .runtime
-        .on_branch(fork_relational)
-        .transaction()
-        .apply(admitted)
-        .commit_for_program(
-            application
-                .runtime
-                .admit_program_operation::<AmendTemporal>()
-                .expect("the validated program declares the source action"),
-        )
-        .expect("the second transaction must retain the admitted product")
-        .require_committed()
-        .expect("the second branch-local operation must commit");
     assert_eq!(
-        read_input(&application, fork_relational, &principal, &request),
+        read_input(&application, fork_relational, &principal, &scope),
         "branch-newest"
     );
 
-    let first_page = application
+    let historical = application
+        .runtime
+        .request(&principal, &scope)
+        .on_branch(fork_relational)
+        .at_commit(&first, NonZeroUsize::new(2).unwrap())
+        .expect("the first application receipt must select its retained generation")
+        .query(TemporalIntentRead {
+            identity: "intent-1".to_owned(),
+        })
+        .execute()
+        .expect("the historical read must use the retained application evidence");
+    assert_eq!(historical.rows()[0].input, "branch-local-change");
+
+    let history = application
         .runtime
         .branches()
         .history(fork_relational, NonZeroUsize::new(1).unwrap())
         .expect("the live product must expose bounded ancestry");
-    assert_eq!(first_page.visited_count(), 1);
-    assert!(!first_page.is_complete());
-    assert!(first_page.next_parent_commit().is_some());
-    let prior_page = first_page
-        .continue_ancestry(NonZeroUsize::new(1).unwrap())
-        .expect("the owner-issued continuation must advance one bounded page");
-    let prior_entry = prior_page
-        .entries()
-        .next()
-        .expect("the prior branch generation must remain retained");
-    assert_eq!(prior_entry.selected_commit(), &branch_commit_after);
-    let historical = prior_page
-        .select(&prior_entry)
-        .expect("an entry can select only its exact retained product basis");
+    assert_eq!(history.visited_count(), 1);
+    assert!(!history.is_complete());
+    assert!(history.next_parent_commit().is_some());
+
     assert_eq!(
-        read_selected(&application, historical, &principal, &request),
-        "branch-local-change"
+        read_input(&application, source, &principal, &scope),
+        source_value_before
     );
-    drop(prior_page);
-    drop(first_page);
-
-    let recovery_page = application
-        .runtime
-        .branches()
-        .recovery_page(None, NonZeroUsize::new(1).unwrap())
-        .expect("bounded recovery inspection must remain available");
-    assert!(recovery_page.examined() <= 1);
-    assert!(recovery_page.rows().is_empty());
-
-    let source_value_after = read_input(&application, source, &principal, &request);
-    let source_commit_after = application
-        .runtime
-        .on_branch(source)
-        .select()
-        .expect("the source product must remain selectable")
-        .product()
-        .selected_commit()
-        .clone();
-    assert_eq!(source_value_after, source_value_before);
-    assert_eq!(source_commit_after, source_commit_before);
-
-    drop(committed);
+    drop(historical);
+    drop(first);
+    drop(history);
     drop(newest);
-    drop(retained);
     for branch in [reuse_both, fork_signal, fork_both, fork_relational] {
         let closed = application
             .runtime
@@ -202,5 +131,41 @@ fn run() {
         assert!(closed.is_complete());
     }
     assert!(application.runtime.branches().pending_cleanup().is_empty());
-    println!("created, advanced, inspected, and closed all product postures");
+    println!("created, advanced, inspected, and closed all product postures through the application entry");
+}
+
+fn mutate(
+    application: &ExampleApplication,
+    principal: &worth_query_host::facade::admission::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<
+        product_workflow_support::schema::TemporalHostSchema,
+    >,
+    scope: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
+    branch: worth_query_host::facade::product::WorthQueryProductBranch,
+    revision: u64,
+    input: &str,
+    idempotency: u64,
+) -> worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt {
+    let outcome = application
+        .runtime
+        .request(principal, scope)
+        .on_branch(branch)
+        .mutate(AmendTemporalIntent {
+            identity: "intent-1".to_owned(),
+            amendment: AmendTemporalInput {
+                revision,
+                due: 11,
+                lifecycle: "active".to_owned(),
+                input: input.to_owned(),
+                gate: "ready".to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency(&idempotency)
+        .execute_in_program(&application.runtime)
+        .expect("the branch-local application mutation must prepare");
+    let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
+        panic!("the branch-local application mutation must commit")
+    };
+    assert_eq!(result.revision, revision);
+    receipt
 }

@@ -178,7 +178,7 @@ pub(in crate::intent) fn portal_owner_removal_input(
 
 pub(in crate::intent) fn build_open_portal_projection_application_with_host<Host>(
     host: Host,
-    registration: worth_ui::facade::query_binding::UiScalarProjectionRegistration,
+    registration: worth_ui::facade::query_binding::UiApplicationScalarProjectionRegistration,
 ) -> (worth_ui::facade::app::WorthUiApp, OperabilityFacts)
 where
     Host: worth_ui_certification::scenario::application_authority_closure::fixed_host::FixedCertificationHostBinding,
@@ -187,7 +187,7 @@ where
     let input = projected_module(&facts);
     let app = FilesystemApplicationLifecycleScenario::new("phase-3-portal-projection-world")
         .portal_semantic_text_action_application_builder(host)
-        .register_scalar_projection(registration)
+        .register_application_scalar_projection(registration)
         .expect("the product Query projection registration matches its declaration")
         .register_intent_boolean_fact(facts.mutability.clone(), true)
         .unwrap()

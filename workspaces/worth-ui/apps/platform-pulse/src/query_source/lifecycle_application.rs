@@ -1,8 +1,9 @@
 use worth_query_host::facade::publication::domain_computation::WorthQueryApplicationQueryPublicationReceipt;
 use worth_ui::facade::query_binding::{
     UiApplicationScalarProjectionObservation, UiProjectionObservation,
-    WorthUiScalarProjectionActionEvidence, WorthUiScalarProjectionActionPreconditionDenial,
-    WorthUiScalarProjectionSourceRecord, WorthUiStatusActionOutcome, WorthUiStatusActionRequest,
+    WorthUiQueryViewIdentityError, WorthUiScalarProjectionActionEvidence,
+    WorthUiScalarProjectionActionPreconditionDenial, WorthUiScalarProjectionSourceRecord,
+    WorthUiStatusActionOutcome, WorthUiStatusActionRequest, WorthUiStatusOwnerError,
     WorthUiStatusSourceOwner,
 };
 
@@ -38,9 +39,28 @@ pub(crate) enum PlatformPulseQueryActionOutcome {
         active_query_source_revision: u64,
         submitted_query_source_revision: u64,
     },
-    Indeterminate {
-        detail: String,
-    },
+    Indeterminate(PlatformPulseQueryActionIndeterminate),
+}
+
+#[derive(Debug)]
+pub(crate) enum PlatformPulseQueryActionIndeterminate {
+    CurrentRevisionLost,
+    DeniedActionCommitted,
+    Owner(WorthUiStatusOwnerError),
+}
+
+impl std::fmt::Display for PlatformPulseQueryActionIndeterminate {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::CurrentRevisionLost => {
+                formatter.write_str("the current action lost its Query source revision")
+            }
+            Self::DeniedActionCommitted => {
+                formatter.write_str("the revision-mismatched action unexpectedly committed")
+            }
+            Self::Owner(error) => write!(formatter, "{error}"),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -50,7 +70,8 @@ pub(crate) enum PlatformPulseQueryLifecycleDenial {
     PublicationNotPending,
     OwnerNotLive,
     ActionRequest(&'static str),
-    Advance(String),
+    Owner(WorthUiStatusOwnerError),
+    Projection(WorthUiQueryViewIdentityError),
     ForeignPublication,
     UnsettledPublicationAtClose,
     IndeterminateAtClose,
@@ -64,7 +85,8 @@ impl std::fmt::Display for PlatformPulseQueryLifecycleDenial {
             Self::PublicationNotPending => formatter.write_str("publication is not pending"),
             Self::OwnerNotLive => formatter.write_str("live owner unavailable"),
             Self::ActionRequest(denial) => write!(formatter, "action request: {denial}"),
-            Self::Advance(denial) => write!(formatter, "advance: {denial}"),
+            Self::Owner(denial) => write!(formatter, "Query owner: {denial}"),
+            Self::Projection(denial) => write!(formatter, "projection: {denial:?}"),
             Self::ForeignPublication => formatter.write_str("foreign publication fact"),
             Self::UnsettledPublicationAtClose => {
                 formatter.write_str("Query publication had not reached presentation at close")
@@ -113,12 +135,12 @@ impl PlatformPulseQueryLifecycle {
             Ok(publication) => publication,
             Err(denial) => {
                 self.state = PlatformPulseQueryOwnerState::Indeterminate;
-                return Err(PlatformPulseQueryLifecycleDenial::Advance(denial));
+                return Err(PlatformPulseQueryLifecycleDenial::Owner(denial));
             }
         };
         let observation = publication
             .into_projection_observation()
-            .map_err(|denial| PlatformPulseQueryLifecycleDenial::Advance(format!("{denial:?}")))?;
+            .map_err(PlatformPulseQueryLifecycleDenial::Projection)?;
         self.retain_awaiting(&observation);
         Ok(observation)
     }
@@ -139,21 +161,23 @@ impl PlatformPulseQueryLifecycle {
         .map_err(PlatformPulseQueryLifecycleDenial::ActionRequest)?;
         let execution = match self.owner.execute_action(action) {
             Ok(WorthUiStatusActionOutcome::Committed(execution)) => execution,
-            Ok(WorthUiStatusActionOutcome::DeniedStaleRevision { .. }) => {
+            Ok(WorthUiStatusActionOutcome::DeniedRevisionMismatch { .. }) => {
                 self.state = PlatformPulseQueryOwnerState::Indeterminate;
-                return Ok(PlatformPulseQueryActionOutcome::Indeterminate {
-                    detail: "the current action lost its Query source revision".to_owned(),
-                });
+                return Ok(PlatformPulseQueryActionOutcome::Indeterminate(
+                    PlatformPulseQueryActionIndeterminate::CurrentRevisionLost,
+                ));
             }
             Err(detail) => {
                 self.state = PlatformPulseQueryOwnerState::Indeterminate;
-                return Ok(PlatformPulseQueryActionOutcome::Indeterminate { detail });
+                return Ok(PlatformPulseQueryActionOutcome::Indeterminate(
+                    PlatformPulseQueryActionIndeterminate::Owner(detail),
+                ));
             }
         };
         let (publication, evidence) = execution.into_parts();
         let observation = publication
             .into_projection_observation()
-            .map_err(|denial| PlatformPulseQueryLifecycleDenial::Advance(format!("{denial:?}")))?;
+            .map_err(PlatformPulseQueryLifecycleDenial::Projection)?;
         self.retain_awaiting(&observation);
         Ok(PlatformPulseQueryActionOutcome::Executed {
             evidence,
@@ -168,13 +192,19 @@ impl PlatformPulseQueryLifecycle {
         idempotency_lineage: u64,
     ) -> Result<PlatformPulseQueryActionOutcome, PlatformPulseQueryLifecycleDenial> {
         self.require_live()?;
-        match self
-            .owner
-            .execute_stale_action(status, idempotency_session, idempotency_lineage)
-        {
-            Ok(WorthUiStatusActionOutcome::DeniedStaleRevision {
+        let submitted_revision = self.current_source_revision()?.checked_add(1).unwrap_or(0);
+        let action = WorthUiStatusActionRequest::new(
+            submitted_revision,
+            status,
+            idempotency_session,
+            idempotency_lineage,
+        )
+        .map_err(PlatformPulseQueryLifecycleDenial::ActionRequest)?;
+        match self.owner.execute_action(action) {
+            Ok(WorthUiStatusActionOutcome::DeniedRevisionMismatch {
                 active_revision,
                 submitted_revision,
+                ..
             }) => Ok(PlatformPulseQueryActionOutcome::Denied {
                 denial: WorthUiScalarProjectionActionPreconditionDenial::SourceRevisionMismatch,
                 active_query_source_revision: active_revision,
@@ -182,13 +212,15 @@ impl PlatformPulseQueryLifecycle {
             }),
             Ok(WorthUiStatusActionOutcome::Committed(_)) => {
                 self.state = PlatformPulseQueryOwnerState::Indeterminate;
-                Ok(PlatformPulseQueryActionOutcome::Indeterminate {
-                    detail: "the stale action unexpectedly committed".to_owned(),
-                })
+                Ok(PlatformPulseQueryActionOutcome::Indeterminate(
+                    PlatformPulseQueryActionIndeterminate::DeniedActionCommitted,
+                ))
             }
             Err(detail) => {
                 self.state = PlatformPulseQueryOwnerState::Indeterminate;
-                Ok(PlatformPulseQueryActionOutcome::Indeterminate { detail })
+                Ok(PlatformPulseQueryActionOutcome::Indeterminate(
+                    PlatformPulseQueryActionIndeterminate::Owner(detail),
+                ))
             }
         }
     }
@@ -198,7 +230,7 @@ impl PlatformPulseQueryLifecycle {
         self.owner
             .read_status()
             .map(|publication| publication.value().revision)
-            .map_err(PlatformPulseQueryLifecycleDenial::Advance)
+            .map_err(PlatformPulseQueryLifecycleDenial::Owner)
     }
 
     fn require_live(&self) -> Result<(), PlatformPulseQueryLifecycleDenial> {

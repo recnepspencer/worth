@@ -166,12 +166,12 @@ impl OperationHandler<WorthUiApplicationSchema, WorthUiStatusActionBinding>
         let current = match reader.field(&entity, QueryRevisionValueField::reference()) {
             Ok(Some(current)) => current,
             Ok(None) => {
-                return HandlerResult::DomainDenied(WorthUiStatusUpdateDenial::StaleRevision)
+                return HandlerResult::DomainDenied(WorthUiStatusUpdateDenial::RevisionMismatch)
             }
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
         if input.source_revision() != current {
-            return HandlerResult::DomainDenied(WorthUiStatusUpdateDenial::StaleRevision);
+            return HandlerResult::DomainDenied(WorthUiStatusUpdateDenial::RevisionMismatch);
         }
         if let Err(error) = reader.field(&entity, QueryTextStatusField::reference()) {
             return HandlerResult::ExecutionDenied(error);

@@ -4,19 +4,19 @@
 //! exact settlement, operation-native live delivery, and downstream
 //! observation.
 //!
-//! The former scalar host is certification-only. Ordinary callers use the
-//! authored status application owner:
+//! Callers use the authored status application owner:
 //!
 //! ```
-//! use worth_ui_query_binding::WorthUiStatusSourceOwner;
-//! let _install: fn() -> Result<WorthUiStatusSourceOwner, String> =
+//! use worth_ui_query_binding::{WorthUiStatusOwnerError, WorthUiStatusSourceOwner};
+//! let _install: fn() -> Result<WorthUiStatusSourceOwner, WorthUiStatusOwnerError> =
 //!     WorthUiStatusSourceOwner::install;
 //! ```
 //!
 //! ```compile_fail
 //! use worth_ui_query_binding::WorthUiScalarProjectionHostPlan;
-//! let _plan = WorthUiScalarProjectionHostPlan::prepare();
+//! let _ = WorthUiScalarProjectionHostPlan::prepare();
 //! ```
+//!
 
 mod application_binding;
 #[cfg(test)]
@@ -193,27 +193,15 @@ pub use presentation_async::{
     WorthUiPresentationUnresolvedReceipt, WorthUiPresentationValidatedCompletion,
     WORTH_UI_PRESENTATION_PENDING_CAPACITY, WORTH_UI_PRESENTATION_TRANSITION_CAPACITY,
 };
-#[cfg(any(test, feature = "certification-construction"))]
-pub use product_projection::{
-    WorthUiQueryHostInstallationRequest, WorthUiScalarProjectionActionAdvance,
-    WorthUiScalarProjectionActionDenied, WorthUiScalarProjectionActionExecution,
-    WorthUiScalarProjectionActionIndeterminate, WorthUiScalarProjectionActionInstallation,
-    WorthUiScalarProjectionActionLiveOwner, WorthUiScalarProjectionActionOutcome,
-    WorthUiScalarProjectionActionPublicationCompletion, WorthUiScalarProjectionActionRequest,
-    WorthUiScalarProjectionAdvance, WorthUiScalarProjectionAdvanceError,
-    WorthUiScalarProjectionHostCompletion, WorthUiScalarProjectionHostPlan,
-    WorthUiScalarProjectionInstallation, WorthUiScalarProjectionInstallationError,
-    WorthUiScalarProjectionLiveOwner, WorthUiScalarProjectionPublicationCompletion,
-    WorthUiScalarProjectionSourceCloseError, WorthUiScalarProjectionSourceCloseReceipt,
-};
 pub use product_projection::{
     WorthUiScalarProjectionActionEvidence, WorthUiScalarProjectionActionPreconditionDenial,
     WorthUiScalarProjectionSourceRecord,
 };
 pub use product_projection::{
-    WorthUiStatusActionExecution, WorthUiStatusActionIdentity, WorthUiStatusActionOutcome,
-    WorthUiStatusActionRequest, WorthUiStatusOwnerCloseReceipt, WorthUiStatusPublication,
-    WorthUiStatusSourceOwner,
+    WorthUiStatusActionExecution, WorthUiStatusActionIdentity, WorthUiStatusActionMutationOutcome,
+    WorthUiStatusActionOutcome, WorthUiStatusActionRequest, WorthUiStatusLiveDeliveryStop,
+    WorthUiStatusMutationOutcome, WorthUiStatusOwnerCloseReceipt, WorthUiStatusOwnerError,
+    WorthUiStatusPublication, WorthUiStatusSourceOwner,
 };
 pub use projection_binding::{
     UiCollectionProjectionBinding, UiCollectionProjectionBindingAdmission,

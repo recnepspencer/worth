@@ -3,7 +3,6 @@ mod collection_patch_recovery;
 mod installed_projection_fixture;
 mod operation_live_fixture;
 mod operation_semantic_facts;
-mod product_support_contract;
 mod projection_world_fixture;
 mod query_row_reference_fixture;
 mod scalar_native_authority_attack;
@@ -18,7 +17,6 @@ pub use installed_projection_fixture::{
 };
 pub use operation_live_fixture::WorthUiOperationLiveTestFixture;
 pub use operation_semantic_facts::WorthUiInstalledOperationCertificationFacts;
-pub use product_support_contract::certify_product_projection_support_contract;
 pub use projection_world_fixture::{
     collection_projection_workspace, collection_projection_workspace_without_dependency_impact,
     collection_projection_workspace_without_entity_lookup, insert_projection_status,

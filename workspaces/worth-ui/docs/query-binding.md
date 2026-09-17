@@ -107,10 +107,9 @@ WorthUiPresentationAsyncHostPlan::prepare()
 ```
 
 The authored source owns application Query progression. The presentation
-installation contains no second status source. The older
-`WorthUiScalarProjectionHostPlan` remains available only to certification
-construction. The host audience remains the Query progression boundary; Worth
-UI does not emulate it or reach into the raw engine.
+installation contains no second status source. The host audience remains the
+Query progression boundary; Worth UI does not emulate it or reach into the raw
+engine.
 
 ## Observe And Rebind
 

@@ -11,6 +11,7 @@ use worth_query_host::facade::{
 use crate::declaration::WorthUiApplicationSchema;
 
 use super::application_runtime::external_identity;
+use super::WorthUiStatusOwnerError;
 
 pub(super) struct WorthUiLocalSourceAdapter;
 
@@ -62,7 +63,7 @@ pub(super) fn authenticate(
     scope: &authentication::WorthQueryRequestScope,
 ) -> Result<
     authentication::WorthQueryAuthenticatedExternalPrincipal<WorthUiApplicationSchema>,
-    String,
+    WorthUiStatusOwnerError,
 > {
     let adapter = authentication::admit_authentication_adapter(
         schema,
@@ -74,9 +75,9 @@ pub(super) fn authenticate(
         ),
         WorthUiLocalSourceAdapter,
     )
-    .map_err(|error| format!("{error:?}"))?;
+    .map_err(|error| WorthUiStatusOwnerError::Authentication(format!("{error:?}")))?;
     block_on(adapter.authenticate(WorthUiLocalSourceCredential, scope))
-        .map_err(|error| format!("{error:?}"))
+        .map_err(|error| WorthUiStatusOwnerError::Authentication(format!("{error:?}")))
 }
 
 fn block_on<Output>(future: impl Future<Output = Output>) -> Output {
