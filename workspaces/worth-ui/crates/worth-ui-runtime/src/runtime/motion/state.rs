@@ -33,6 +33,7 @@ pub(crate) struct UiMotionRuntimeState {
 }
 
 impl UiMotionRuntimeState {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn new(persistence: crate::runtime::UiServiceStatePersistencePosture) -> Self {
         Self::new_with_policy(
             persistence,

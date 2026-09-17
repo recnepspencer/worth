@@ -42,6 +42,7 @@ pub(crate) struct UiScrollRuntimeState {
 }
 
 impl UiScrollRuntimeState {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn new_session_restore_candidate() -> Self {
         Self::new_session_restore_candidate_with_policy(
             crate::declaration::UiScrollPolicy::nested_region(),
@@ -75,6 +76,7 @@ impl UiScrollRuntimeState {
         self.policy.reveal_alignment()
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(in crate::runtime) fn register(
         &mut self,
         registration: super::UiScrollOwnerRegistration,

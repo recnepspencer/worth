@@ -1,5 +1,6 @@
 use super::*;
 use crate::data::dependency::DependencyEdge;
+use crate::facade::SignalRuntimePolicy;
 use crate::tests::support::{evaluate_on_demand, version_ab};
 
 #[test]
@@ -95,6 +96,7 @@ fn conditional_application_preserves_installed_scoped_topology_through_warm_reus
 #[test]
 fn conditional_refresh_still_removes_retired_edges_before_application() {
     let (mut graph, contract) = installed();
+    graph.set_runtime_policy(SignalRuntimePolicy::forensic());
     let source = graph.node().build();
     graph
         .set_dependencies(

@@ -63,6 +63,7 @@ impl UiScrollChainTransition {
         self.current
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn consumed(self) -> super::UiScrollDelta {
         self.consumed
     }
@@ -85,6 +86,7 @@ impl UiScrollRouteReceipt {
         }
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn cause(&self) -> super::UiScrollDeltaCause {
         self.cause
     }
@@ -116,18 +118,22 @@ impl UiScrollCounters {
         }
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(in crate::runtime) const fn admitted_requests(self) -> u64 {
         self.admitted_requests
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(in crate::runtime) const fn rejected_requests(self) -> u64 {
         self.rejected_requests
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn owners_visited(self) -> u64 {
         self.owners_visited
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn owners_changed(self) -> u64 {
         self.owners_changed
     }

@@ -127,11 +127,11 @@ fn hot_effect_runtime_path_avoids_broad_entry_reads() {
         "runtime effect should derive previous lineage/hash/reuse truth through a narrowed graph accessor"
     );
     assert!(
-        HOT_EFFECT_SOURCE.contains("apply_node_artifact_write_delta("),
+        HOT_EFFECT_SOURCE.contains("apply_artifact_write("),
         "runtime effect should publish runtime and retained artifact writes through a named graph operation"
     );
     assert!(
-        HOT_EFFECT_SOURCE.contains("transition_node_clean("),
+        HOT_EFFECT_SOURCE.contains("transition_clean("),
         "runtime effect suppression should clean nodes through a named graph transition"
     );
 }

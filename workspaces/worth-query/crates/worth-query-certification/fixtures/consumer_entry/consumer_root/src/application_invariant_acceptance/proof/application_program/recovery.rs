@@ -1,5 +1,3 @@
-use std::num::NonZeroUsize;
-
 use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation, PlanarVertex};
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
@@ -13,9 +11,11 @@ use worth_query_topology_entry::{
 use super::super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
 
+mod controls;
 mod settlement;
 mod snapshot_pressure;
 mod supersession;
+use controls::output_controls;
 pub(super) use settlement::settle_recovered;
 pub(super) use snapshot_pressure::snapshot_pressure_preserves_recoverable_source;
 pub(super) use supersession::superseded_completion_is_terminal;
@@ -395,11 +395,4 @@ pub(super) fn resource_denial_preserves_source_and_delivery(
         .execute()
         .expect("the recovered output is retained");
     assert_eq!(row.rows()[0].value, length(3));
-}
-
-fn output_controls() -> WorthQueryOutputDemandControls {
-    WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    )
 }

@@ -9,7 +9,7 @@ use worth_query_host::facade::{
         application_program::{
             ApplicationActionLeaf, ApplicationActionList, ApplicationNoOutputGraph,
             ApplicationOperationActionRef, ApplicationProgramAuthoring,
-            ApplicationProgramDefinition, ApplicationProgramIdentity,
+            ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
         },
         application_schema::ApplicationOperationMarkerIdentity,
     },
@@ -43,7 +43,7 @@ impl ApplicationProgramDefinition<BankSchema> for ForgedBankApplication {
         ApplicationActionLeaf,
     >;
     type Features = BankFeatures;
-    type OutputGraph = ApplicationNoOutputGraph;
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = BankRules;
 
     const IDENTITY: ApplicationProgramIdentity =

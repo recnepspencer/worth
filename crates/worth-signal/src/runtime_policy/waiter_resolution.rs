@@ -1,7 +1,10 @@
 //! Ordinary waiter-resolution work admission, independent of reconstruction.
 use super::{InstalledSignalRuntimePolicy, ResolvedSignalRuntimePolicy, SignalRuntimePolicy};
 
-pub(super) const DEFAULT_MAXIMUM_WAITER_RESOLUTION_VISITS: usize = 1_000_000;
+// Covers the governed 4,096-node fan-out, including one conservative B-tree
+// path-copy edit per waiter and projection bookkeeping, while retaining a
+// finite ordinary-work denial boundary.
+pub(super) const DEFAULT_MAXIMUM_WAITER_RESOLUTION_VISITS: usize = 4 * 1_024 * 1_024;
 
 impl SignalRuntimePolicy {
     /// Bound candidate visits, pending-membership scans, and recursive waiter

@@ -53,10 +53,12 @@ pub(super) struct UiPortalRecord {
 }
 
 impl UiPortalRuntimeState {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn new(persistence: crate::runtime::UiServiceStatePersistencePosture) -> Self {
         Self::new_with_policy(persistence, crate::declaration::UiPortalPolicy::dropdown())
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn new_with_policy(
         _persistence: crate::runtime::UiServiceStatePersistencePosture,
         policy: crate::declaration::UiPortalPolicy,
@@ -165,6 +167,7 @@ impl UiPortalRuntimeState {
             .map(|identity| identity.owner().graph_node())
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn posture_count(&self, posture: super::UiPortalLifecyclePosture) -> usize {
         self.records
             .values()
@@ -172,6 +175,7 @@ impl UiPortalRuntimeState {
             .count()
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn exit_retention_count(&self) -> usize {
         self.records
             .values()
@@ -179,10 +183,12 @@ impl UiPortalRuntimeState {
             .count()
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn admitted_requests(&self) -> u64 {
         self.admitted_requests
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn idempotent_requests(&self) -> u64 {
         self.idempotent_requests
     }

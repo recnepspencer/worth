@@ -1,4 +1,5 @@
 mod advance;
+mod types;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
@@ -6,12 +7,8 @@ use worth_query_declaration::facade::application_program::{
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
 };
-use worth_query_declaration::facade::application_schema::{
-    ApplicationSchema, ApplicationStructuredValueBinding,
-};
-use worth_query_execution::facade::application_contribution::{
-    WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily,
-};
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution::facade::application_contribution::WorthQueryApplicationOutputDemand;
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationDependentOutputConnection,
@@ -26,20 +23,7 @@ use super::request::{
 };
 use super::settlement::WorthQueryApplicationOutputDemandSettlement;
 
-type Family<Schema, Demand> = <Demand as WorthQueryApplicationOutputDemand<Schema>>::OutputFamily;
-type SourceBinding<Schema, Demand> =
-    <Family<Schema, Demand> as WorthQueryProducerOutputFamily<Schema>>::Source;
-type SourceQuery<Schema, Demand> =
-    <SourceBinding<Schema, Demand> as ApplicationQueryBinding<Schema>>::Query;
-type SourceValue<Schema, Demand> = <<SourceBinding<Schema, Demand> as ApplicationQueryBinding<
-    Schema,
->>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-type RootConnectionRef<Schema, Root> =
-    <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;
-type RootConnection<Schema, Root> =
-    <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::Binding;
-type ConnectionBinding<Schema, Connection> =
-    <Connection as ApplicationConnectionShape<Schema>>::Binding;
+use types::{ConnectionBinding, Family, RootConnection, SourceBinding, SourceQuery, SourceValue};
 
 pub enum WorthQueryApplicationOutputDemandProgress<Query> {
     Pending,

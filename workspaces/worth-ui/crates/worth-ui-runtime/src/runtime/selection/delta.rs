@@ -70,6 +70,7 @@ impl UiSelectionDelta {
     pub(crate) const fn selected_count(&self) -> usize {
         self.selected_count
     }
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn candidates_visited(&self) -> u32 {
         self.candidates_visited
     }

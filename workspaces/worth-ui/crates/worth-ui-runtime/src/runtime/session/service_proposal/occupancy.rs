@@ -333,12 +333,14 @@ impl UiServiceProposalOccupancyTable {
         self.neighborhoods.live_count()
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(super) fn neighborhood_count(&self) -> usize {
         self.neighborhoods.neighborhood_count()
     }
 
     /// Counters are read from the index rather than mirrored, so a sweep charged
     /// inside the index cannot be lost on the way out.
+    #[cfg(any(test, feature = "certification-support"))]
     pub(super) fn work_counters(&self) -> UiServiceProposalOccupancyWorkCounters {
         UiServiceProposalOccupancyWorkCounters {
             proposal_requirements_visited: self.work_counters.proposal_requirements_visited,
@@ -363,10 +365,12 @@ impl UiServiceProposalOccupancyTable {
 }
 
 impl UiServiceProposalOccupancyWorkCounters {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(in crate::runtime) const fn proposal_requirements_visited(self) -> u64 {
         self.proposal_requirements_visited
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(in crate::runtime) const fn unrelated_neighborhoods_touched(self) -> u64 {
         self.unrelated_neighborhoods_touched
     }

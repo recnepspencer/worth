@@ -16,9 +16,13 @@ pub(super) fn validate_request(
             require_key(record, key)?;
             Ok(u32::try_from(record.selected.len().saturating_add(1)).unwrap_or(u32::MAX))
         }
-        super::UiSelectionRequest::ToggleMultiple(key)
-        | super::UiSelectionRequest::Add(key)
-        | super::UiSelectionRequest::Remove(key) => {
+        #[cfg(any(test, feature = "certification-support"))]
+        super::UiSelectionRequest::ToggleMultiple(key) => {
+            require_multiple(record)?;
+            require_key(record, key)?;
+            Ok(1)
+        }
+        super::UiSelectionRequest::Add(key) | super::UiSelectionRequest::Remove(key) => {
             require_multiple(record)?;
             require_key(record, key)?;
             Ok(1)
@@ -49,6 +53,7 @@ pub(super) fn apply_request(
 ) -> Result<UiSelectionMutation, super::UiSelectionRequestDenial> {
     match request {
         super::UiSelectionRequest::SelectSingle(key) => select_single(record, key),
+        #[cfg(any(test, feature = "certification-support"))]
         super::UiSelectionRequest::ToggleMultiple(key) => toggle_selection(record, key),
         super::UiSelectionRequest::Add(key) => add_selection(record, key),
         super::UiSelectionRequest::Remove(key) => remove_selection(record, key),
@@ -79,6 +84,7 @@ fn select_single(
     Ok(mutation(added, removed))
 }
 
+#[cfg(any(test, feature = "certification-support"))]
 fn toggle_selection(
     record: &mut UiSelectionOwnerRecord,
     key: super::UiSelectionStableKey,

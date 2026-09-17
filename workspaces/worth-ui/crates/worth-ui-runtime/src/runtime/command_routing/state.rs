@@ -31,6 +31,7 @@ impl UiCommandRoutingRuntimeState {
         }
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn route_stroke(
         &mut self,
         stroke: crate::capability::UiCommandShortcutStroke,

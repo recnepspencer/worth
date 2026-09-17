@@ -14,6 +14,7 @@ impl UiMountedProjectionFrame {
         self.mechanics.qualified_layout_count()
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn require_qualified_layout_reconstruction(
         &mut self,
     ) -> Result<usize, super::UiMountedProjectionDenial> {

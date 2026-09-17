@@ -156,6 +156,7 @@ const fn physical_outcome(
 
 const fn map_cause(cause: crate::runtime::focus::UiFocusCause) -> UiSemanticFocusPublicationCause {
     match cause {
+        #[cfg(any(test, feature = "certification-support"))]
         crate::runtime::focus::UiFocusCause::Direct => UiSemanticFocusPublicationCause::Direct,
         crate::runtime::focus::UiFocusCause::KeyboardTraversal => {
             UiSemanticFocusPublicationCause::KeyboardTraversal

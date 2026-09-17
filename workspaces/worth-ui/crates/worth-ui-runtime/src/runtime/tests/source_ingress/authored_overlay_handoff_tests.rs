@@ -33,6 +33,10 @@ backdrop overlay.scrim {
 fn overlay_builder() -> crate::facade::entry::WorthUiCertificationApplicationBuilder {
     WorthUi::app()
         .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
+        .register_appearance_role(backdrop_role())
+        .expect("the authored backdrop role is valid")
+        .register_appearance_theme_bundle(theme_bundle())
+        .expect("the authored backdrop theme is valid")
         .register_component(ComponentDescriptor::new(
             ComponentId::new("workspace.component.overlay").expect("valid component identity"),
             ComponentPropSchema::named("workspace.component.overlay.props"),
@@ -46,6 +50,71 @@ fn overlay_builder() -> crate::facade::entry::WorthUiCertificationApplicationBui
             SurfacePlacementClass::overlay_layer(),
             SurfaceStateClass::restorable(),
         ))
+}
+
+fn backdrop_role() -> worth_ui_dsl::UiAppearanceRoleDeclaration {
+    use worth_ui_dsl::*;
+    let partition = |identity, kind| {
+        UiAppearancePartitionAuthoring::new([]).with_cell(
+            UiAppearanceCell::when([]).uses_slot(UiThemeSlotIdentity::new(identity).unwrap(), kind),
+        )
+    };
+    UiAppearanceRole::authoring(UiAppearanceRoleIdentity::new("overlay.scrim").unwrap())
+        .applies_to_backdrop()
+        .cover(
+            UiAppearanceAspect::Background,
+            partition("overlay.scrim.background", UiThemeValueKind::Color),
+        )
+        .unwrap()
+        .cover(
+            UiAppearanceAspect::Opacity,
+            partition("overlay.scrim.opacity", UiThemeValueKind::Opacity),
+        )
+        .unwrap()
+        .build()
+        .unwrap()
+}
+
+fn theme_bundle() -> crate::capability::FrozenAppearanceThemeCapabilities {
+    use crate::capability::*;
+    use worth_ui_dsl::{UiThemeColor, UiThemeOpacity, UiThemeValue, UiThemeValueKind};
+    let declarations = [
+        ("overlay.scrim.background", UiThemeValueKind::Color),
+        ("overlay.scrim.opacity", UiThemeValueKind::Opacity),
+    ];
+    let catalog = UiThemeSlotCatalog::admit(
+        1,
+        declarations.map(|(identity, kind)| {
+            UiThemeSlotDeclaration::new(
+                ThemeTokenId::new(identity).unwrap(),
+                ThemeTokenFamily::surface(),
+                kind,
+                ThemeTokenSource::application(),
+                UiThemeSlotDisclosure::Public,
+                UiThemeSlotSuccessorCompatibility::ExactMeaning,
+                None,
+            )
+        }),
+    )
+    .unwrap();
+    let identity = UiThemeDefinitionIdentity::new("theme.overlay.handoff").unwrap();
+    let definition = UiThemeDefinition::admit(
+        identity.clone(),
+        1,
+        &catalog,
+        [
+            (
+                ThemeTokenId::new("overlay.scrim.background").unwrap(),
+                UiThemeValue::Color(UiThemeColor::from_channels([4, 8, 12, 255])),
+            ),
+            (
+                ThemeTokenId::new("overlay.scrim.opacity").unwrap(),
+                UiThemeValue::Opacity(UiThemeOpacity::from_ratio(1, 2).unwrap()),
+            ),
+        ],
+    )
+    .unwrap();
+    FrozenAppearanceThemeCapabilities::admit(catalog, identity, vec![definition]).unwrap()
 }
 
 #[test]

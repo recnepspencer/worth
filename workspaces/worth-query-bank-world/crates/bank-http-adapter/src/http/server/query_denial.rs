@@ -38,18 +38,25 @@ fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
         Selection::ForeignOwner
         | Selection::RetiredBranch
         | Selection::IncarnationChanged
-        | Selection::ObservationRejected => stale(),
+        | Selection::ObservationRejected
+        | Selection::ObservationStaleSourceHead => stale(),
+        Selection::ObservationCancelled => cancelled(),
+        Selection::ObservationDeadlineExceeded => deadline(),
         Selection::ObservationStatePoisoned => internal_denied(),
         Selection::OwnerUnavailable
         | Selection::ProductActivationUnavailable
         | Selection::RelationalBasisUnavailable
         | Selection::RelationalSnapshotUnavailable
         | Selection::BridgeSourceUnavailable => unavailable(),
-        Selection::ActiveSnapshotCapacityExhausted { .. }
+        Selection::ObservationCapacityExhausted
+        | Selection::CustodyCapacityExhausted
+        | Selection::ActiveSnapshotCapacityExhausted { .. }
         | Selection::RetentionCapacityExhausted => {
             BankHttpDenial::new(Kind::ResourceExhausted, Next::Retry)
         }
-        Selection::RetentionIdentityExhausted | Selection::SnapshotIdentityExhausted => {
+        Selection::ObservationIdentityExhausted
+        | Selection::RetentionIdentityExhausted
+        | Selection::SnapshotIdentityExhausted => {
             BankHttpDenial::new(Kind::ResourceExhausted, Next::ContactOperator)
         }
     }
@@ -264,6 +271,7 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         | Settlement::SchedulingRejected
         | Settlement::SchedulingDeferred
         | Settlement::NoEffect => unavailable(),
+        Settlement::ProductSelection(kind) => product_selection(kind),
         Settlement::DuplicatePerformedSource => internal_denied(),
     }
 }

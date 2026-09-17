@@ -1,8 +1,7 @@
 //! Work for concrete waiter projection maps, NodeId sets and traversal storage.
 use super::PendingRevalidationPreparationDenial;
 use crate::data::retained_storage::{
-    ordered_lookup_steps, RetainedStoragePreparation as Work,
-    RetainedStoragePreparationDenial as Denial,
+    RetainedStoragePreparation as Work, RetainedStoragePreparationDenial as Denial,
 };
 
 pub(crate) fn reserve(
@@ -20,35 +19,51 @@ pub(crate) fn map_lookup(
     work: &mut Work,
     entries: usize,
 ) -> Result<(), PendingRevalidationPreparationDenial> {
-    // Fixed two-word NodeId keys: at most all keys plus navigation/root setup.
-    reserve(work, entries.checked_add(1).and_then(|n| n.checked_mul(4)))
+    // Fixed two-word NodeId keys follow the ordered-map search path.
+    reserve(work, btree_search_steps(entries).checked_mul(4))
 }
 
 pub(crate) fn map_insert(
     work: &mut Work,
     entries: usize,
 ) -> Result<(), PendingRevalidationPreparationDenial> {
-    // std BTree insertion moves initialized fixed-size key/value slots and
-    // child pointers, never clones a projection's pending-producer vector.
-    // At most one old node per entry plus a split and new root; 64 slots/node
-    // covers the installed 11 keys, 11 values and 12 children plus navigation.
-    reserve(work, entries.checked_add(2).and_then(|n| n.checked_mul(64)))
+    // Search follows the ordered-map path. One insertion can additionally
+    // split the touched leaf and its ancestors; the fixed allowance covers
+    // the initialized slots moved at those levels without charging the whole
+    // map for every insertion.
+    reserve(
+        work,
+        btree_search_steps(entries)
+            .checked_mul(4)
+            .and_then(|search| search.checked_add(64)),
+    )
+}
+
+fn btree_search_steps(entries: usize) -> usize {
+    entries
+        .checked_ilog2()
+        .map_or(1, |depth| depth as usize + 1)
 }
 
 pub(crate) fn bucket_edit(
     work: &mut Work,
     entries: usize,
 ) -> Result<(), PendingRevalidationPreparationDenial> {
-    // im15.1 NodeId sets: bound path copying, sibling borrow/merge and search.
-    // Allow 16 times the 64-slot lookup bound per level, or all initialized
-    // nodes for tiny sets. This bounds work, not retained allocation custody.
-    reserve(
-        work,
-        entries
-            .checked_add(1)
-            .and_then(|n| n.checked_mul(128))
-            .map(|n| n.min(16 * ordered_lookup_steps(entries))),
-    )
+    // im 15.1 nodes hold 64 entries and non-root nodes remain at least half
+    // full. Charge every comparison/navigation slot on the longest possible
+    // edit path. Using a binary-tree depth here turns a B-tree edit into a
+    // fictitious quadratic traversal at ordinary fan-out.
+    reserve(work, im_btree_edit_steps(entries))
+}
+
+fn im_btree_edit_steps(entries: usize) -> Option<usize> {
+    let mut levels = 1_usize;
+    let mut remaining = entries;
+    while remaining > 64 {
+        remaining = remaining.checked_add(31)?.checked_div(32)?;
+        levels = levels.checked_add(1)?;
+    }
+    levels.checked_mul(128)
 }
 
 pub(crate) fn sequence_growth(

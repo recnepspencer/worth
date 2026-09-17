@@ -1,9 +1,11 @@
 use super::WorthUiApp;
 
+#[cfg(any(test, feature = "certification-support"))]
 pub(crate) enum WorthUiPresentationAsyncInstallationDenial {
     AlreadyInstalled(Box<worth_ui_query_binding::WorthUiPresentationAsyncInstallation>),
 }
 
+#[cfg(any(test, feature = "certification-support"))]
 impl std::fmt::Debug for WorthUiPresentationAsyncInstallationDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -12,6 +14,7 @@ impl std::fmt::Debug for WorthUiPresentationAsyncInstallationDenial {
     }
 }
 
+#[cfg(any(test, feature = "certification-support"))]
 impl WorthUiPresentationAsyncInstallationDenial {
     pub(crate) fn into_installation(
         self,
@@ -23,6 +26,7 @@ impl WorthUiPresentationAsyncInstallationDenial {
 }
 
 impl WorthUiApp {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn install_presentation_async(
         &mut self,
         installation: worth_ui_query_binding::WorthUiPresentationAsyncInstallation,

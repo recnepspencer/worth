@@ -82,6 +82,7 @@ impl UiFocusReconciliationReceipt {
     pub(crate) const fn mounted_nodes_visited(self) -> u32 {
         self.mounted_nodes_visited
     }
+    #[cfg(any(test, feature = "certification-support"))]
     pub(in crate::runtime) const fn participants_installed(self) -> u32 {
         self.participants_installed
     }

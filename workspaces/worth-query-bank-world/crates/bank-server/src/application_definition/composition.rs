@@ -4,7 +4,8 @@ use worth_query_host::facade::declaration::application_program::{
     ApplicationFeatureInputLeaf, ApplicationFeatureLeaf, ApplicationFeatureList,
     ApplicationFeatureRef, ApplicationLocalRuleRef, ApplicationNoOutputGraph,
     ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramIdentity,
-    ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList, ValidatedApplicationProgram,
+    ApplicationProgramOutputs, ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList,
+    ValidatedApplicationProgram,
 };
 
 use super::governance_actions::BankEstateGovernanceActions;
@@ -198,7 +199,7 @@ impl ApplicationProgramDefinition<BankSchema> for BankApplication {
     );
     type Actions = BankActions;
     type Features = BankFeatures;
-    type OutputGraph = ApplicationNoOutputGraph;
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = BankRules;
 
     const IDENTITY: ApplicationProgramIdentity =

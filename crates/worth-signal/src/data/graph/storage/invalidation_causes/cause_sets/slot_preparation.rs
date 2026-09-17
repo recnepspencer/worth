@@ -180,7 +180,8 @@ impl CauseSlotPreparation<'_> {
         };
         if !empty && current.index.is_none() {
             work.reserve(Some(
-                crate::data::retained_storage::ordered_lookup_steps(self.allocated.len()) * 32,
+                prepared_owner_set_edit_steps(self.allocated.len())
+                    .ok_or_else(|| SignalError::internal("cause allocation work overflow"))?,
             ))?;
             if !self
                 .allocated
@@ -208,7 +209,8 @@ impl CauseSlotPreparation<'_> {
         work.reserve(Some(
             self.store.sets.lookup_steps()
                 + self.store.slot_generations.lookup_steps()
-                + crate::data::retained_storage::ordered_lookup_steps(self.claimed.len()) * 32,
+                + prepared_owner_set_edit_steps(self.claimed.len())
+                    .ok_or_else(|| SignalError::internal("cause claim work overflow"))?,
         ))?;
         if self.store.get(current)?.is_empty()
             || !self
@@ -221,4 +223,16 @@ impl CauseSlotPreparation<'_> {
         }
         Ok(())
     }
+}
+
+/// Rust 1.94 `BTreeSet` nodes hold 11 keys and non-root nodes retain at least
+/// five. Charge all key comparisons plus navigation on the longest legal path.
+fn prepared_owner_set_edit_steps(entries: usize) -> Option<usize> {
+    let mut levels = 1_usize;
+    let mut remaining = entries;
+    while remaining > 11 {
+        remaining = remaining.checked_add(5)?.checked_div(6)?;
+        levels = levels.checked_add(1)?;
+    }
+    levels.checked_mul(12)
 }

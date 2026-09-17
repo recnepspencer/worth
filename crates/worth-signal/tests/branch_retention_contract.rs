@@ -1,6 +1,5 @@
 use worth_proof::TransitionOutcome;
 use worth_signal::facade::branch::{
-    SignalBranchBasisObservationDenial, SignalBranchBasisReadmissionDenial,
     SignalBranchRetentionAcquisitionDenial, SignalBranchRetentionReleaseOutcome,
 };
 use worth_signal::facade::runtime::SignalBranchRetirementDenial;
@@ -38,40 +37,35 @@ fn retention_capacity_denies_before_unbounded_growth() {
     assert_eq!(leases.len(), INDEPENDENT_SAFETY_CEILING - 1);
 
     let descriptor = basis.descriptor().clone();
+    let readmitted = runtime
+        .readmit_signal_branch_basis(descriptor.clone())
+        .expect("canonical readmission reuses the existing admission at capacity");
+    assert_eq!(readmitted.descriptor(), &descriptor);
+    let observed = runtime
+        .observe_signal_branch_basis(runtime.current_branch())
+        .expect("canonical observation reuses the existing admission at capacity");
+    assert_eq!(observed.descriptor(), &descriptor);
     assert!(matches!(
-        runtime.readmit_signal_branch_basis(descriptor.clone()),
-        Err(SignalBranchBasisReadmissionDenial::UnavailableRetention {
+        runtime.retain_signal_component_basis(&basis),
+        Err(SignalBranchRetentionAcquisitionDenial::CapacityExhausted {
             maximum_active_leases: INDEPENDENT_SAFETY_CEILING,
         })
     ));
-    assert!(matches!(
-        runtime.observe_signal_branch_basis(runtime.current_branch()),
-        Err(SignalBranchBasisObservationDenial::RetentionUnavailable {
-            denial: SignalBranchRetentionAcquisitionDenial::CapacityExhausted {
-                maximum_active_leases: INDEPENDENT_SAFETY_CEILING,
-            },
-        })
-    ));
+    drop(readmitted);
+    drop(observed);
 
     let released = leases.pop().expect("capacity fixture should retain leases");
     assert!(matches!(
         runtime.release_signal_component_basis(released),
         SignalBranchRetentionReleaseOutcome::Released(_)
     ));
-    let readmitted = runtime
-        .readmit_signal_branch_basis(descriptor.clone())
-        .expect("one remaining slot is sufficient for exactly one readmission lease");
+    let reacquired = runtime
+        .retain_signal_component_basis(&basis)
+        .expect("one released slot is sufficient for one external obligation");
     assert!(matches!(
-        runtime.readmit_signal_branch_basis(descriptor.clone()),
-        Err(SignalBranchBasisReadmissionDenial::UnavailableRetention {
-            maximum_active_leases: INDEPENDENT_SAFETY_CEILING,
-        })
+        runtime.release_signal_component_basis(reacquired),
+        SignalBranchRetentionReleaseOutcome::Released(_)
     ));
-    drop(readmitted);
-    let readmitted_after_release = runtime
-        .readmit_signal_branch_basis(descriptor)
-        .expect("dropping the admitted basis must release its exact retention slot");
-    drop(readmitted_after_release);
 
     for lease in leases {
         assert!(matches!(
@@ -79,11 +73,11 @@ fn retention_capacity_denies_before_unbounded_growth() {
             SignalBranchRetentionReleaseOutcome::Released(_)
         ));
     }
-    let reacquired = runtime
+    let reacquired_after_release = runtime
         .retain_signal_component_basis(&basis)
         .expect("released capacity should be reusable");
     assert!(matches!(
-        runtime.release_signal_component_basis(reacquired),
+        runtime.release_signal_component_basis(reacquired_after_release),
         SignalBranchRetentionReleaseOutcome::Released(_)
     ));
 }

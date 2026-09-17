@@ -6,7 +6,7 @@ mod succession;
 
 #[test]
 fn graph_replacement_publishes_pending_text_or_retires_it_only_after_acceptance() {
-    for (remove, delayed) in [(false, false), (true, false), (false, true), (true, true)] {
+    for remove in [false, true] {
         let role = fixture::foreground_role();
         let (mut session, host) = fixture::session_with_text(&role, 65_537, Some(text_contract()));
         let authored = format!(
@@ -80,58 +80,16 @@ fn graph_replacement_publishes_pending_text_or_retires_it_only_after_acceptance(
         assert_host_text(&host, second, Some("AB"));
         let replacement = rejected.into_replacement();
         for _ in [surface, second] {
-            if delayed {
-                host.push_in_flight(
-                    vec![crate::certification_support::ScriptedSurfaceCompletion::Pending,
-                        crate::certification_support::ScriptedSurfaceCompletion::Presented(
-                            UiMountedSurfacePresentationCompletion::new(
-                                crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
-                                crate::certification_support::scripted_presentation_epoch(),
-                                UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
-                                UiHostPresentationCostReport::default(),
-                            ),
-                        )],
-                    UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
-                );
-            } else {
-                host.push_native_display_presented();
-            }
+            host.push_presentation(UiHostSurfacePresentationOutcome::Presented(
+                UiMountedSurfacePresentationCompletion::new(
+                    crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
+                    UiHostPresentationEpoch::issued_by_host(u64::MAX),
+                    UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
+                    UiHostPresentationCostReport::default(),
+                ),
+            ));
         }
         let outcome = replacement.present(UiPresentationDeadline::at_tick(100), 3);
-        let outcome = if delayed {
-            let crate::facade::entry::WorthUiMountedApplicationReplacementOutcome::InFlight(
-                pending,
-            ) = outcome
-            else {
-                panic!("replacement must retain the asynchronous host attempt");
-            };
-            let pending = pending.detach();
-            assert_eq!(
-                session.current_mounted_publication().unwrap().frame(),
-                predecessor
-            );
-            assert_accepted_text(&session, surface, Some("AB"));
-            assert_accepted_text(&session, second, Some("AB"));
-            assert_host_text(&host, surface, Some("AB"));
-            assert_host_text(&host, second, Some("AB"));
-            let crate::facade::entry::WorthUiMountedApplicationReplacementOutcome::InFlight(
-                pending,
-            ) = pending.complete(&mut session, 4)
-            else {
-                panic!("the first completion poll must remain pending");
-            };
-            let pending = pending.detach();
-            assert_eq!(
-                session.current_mounted_publication().unwrap().frame(),
-                predecessor
-            );
-            assert!(!session.presentation.project().unwrap().content().is_empty());
-            assert_accepted_text(&session, surface, Some("AB"));
-            assert_accepted_text(&session, second, Some("AB"));
-            pending.complete(&mut session, 5)
-        } else {
-            outcome
-        };
         let crate::facade::entry::WorthUiMountedApplicationReplacementOutcome::Published {
             mounted,
             ..

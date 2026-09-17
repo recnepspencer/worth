@@ -31,6 +31,7 @@ impl UiPresentedInteractionGeometry {
         self.bounds
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn clip_bounds(self) -> worth_ui_host_contract::UiMountedCanonicalBox {
         self.clip_bounds
     }

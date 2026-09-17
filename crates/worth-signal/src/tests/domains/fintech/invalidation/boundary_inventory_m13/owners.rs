@@ -55,6 +55,7 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
             "validate_packet",
             "prepare_direct_cause_publication",
             "publish_direct_output_causes",
+            "split_node_changes",
         ],
     );
     assert_owner_functions(
@@ -90,7 +91,6 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
         DIRECT_CAUSE_OWNER,
         &[
             "merge",
-            "validate_packet",
             "prepare_direct_output_causes",
             "prepare_stable_output_resolution",
             "prepare_consumer_cause_set",
@@ -149,7 +149,6 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
             "apply_effect",
             "prepare_output_commit_packet",
             "prepare_output_commit_packet_with_probe",
-            "prevalidate_output_commit_packet",
             "publish_output_commit_packet",
             "publish_prepared_parallel_apply_commit_packet",
         ],

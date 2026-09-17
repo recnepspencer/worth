@@ -322,7 +322,6 @@ fn direct_dirty_seed_supersedes_dependency_causes_before_topology_repair() {
 #[test]
 fn dependency_output_cannot_overwrite_an_active_direct_dirty_obligation() {
     use crate::data::comparator::DefaultComparatorPolicyResolver;
-    use crate::data::proof::invalidation::binding::OutputCommitOrdinal;
     use crate::data::proof::invalidation::output_commit::ProducedAspectDelta;
 
     let mut graph = SignalGraph::new();
@@ -338,7 +337,7 @@ fn dependency_output_cannot_overwrite_an_active_direct_dirty_obligation() {
 
     let delta = ProducedAspectDelta::from_committed_result(
         upstream,
-        OutputCommitOrdinal(1),
+        graph.cause_sets.reserve_output_commit_ordinal(),
         version_ab(1, 0),
         version_ab(2, 0),
         AspectMask::from_aspect(ASPECT_A),

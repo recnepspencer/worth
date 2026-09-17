@@ -55,6 +55,7 @@ impl UiFocusPlan {
 }
 
 impl super::UiFocusRuntimeState {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(in crate::runtime) fn plan(
         &self,
         request: super::UiFocusRequest,

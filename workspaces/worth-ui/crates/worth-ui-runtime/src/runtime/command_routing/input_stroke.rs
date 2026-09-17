@@ -12,6 +12,7 @@ impl UiCommandInputStroke {
         Self { logical, physical }
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(super) const fn single(stroke: crate::capability::UiCommandShortcutStroke) -> Self {
         Self::new(stroke, None)
     }

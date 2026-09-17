@@ -1,11 +1,9 @@
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
-use crate::branch::{SignalBranchBasisReadmissionDenial, SignalBranchRetainedReadmissionDenial};
-
 use super::world::{advance_exact, basis_port_world, issue_reference};
 
 #[test]
-fn retained_exact_readmission_denies_quarantined_target_without_minting_basis() {
+fn retained_exact_readmission_survives_a_caller_panic_after_rollback() {
     let world = basis_port_world();
     let descriptor = world.basis_b.descriptor().clone();
     let reference = issue_reference(&world.port, &world.basis_b);
@@ -41,15 +39,13 @@ fn retained_exact_readmission_denies_quarantined_target_without_minting_basis() 
         retention_after, retention_before,
         "unavailable exact admission cannot mint an admitted pin or consume capacity"
     );
-    assert!(matches!(
-        readmission,
-        Err(SignalBranchRetainedReadmissionDenial::UnavailableExactTarget(_))
-    ));
-    assert!(matches!(
-        world.port.readmit_exact(&reference, &descriptor),
-        Err(SignalBranchBasisReadmissionDenial::QuarantinedBranch { branch_id })
-            if branch_id == world.branch_b.id
-    ));
+    let readmission = readmission.expect("successful rollback preserves the retained target");
+    assert_eq!(readmission.observation(), descriptor.observation());
+    let direct = world
+        .port
+        .readmit_exact(&reference, &descriptor)
+        .expect("successful rollback preserves direct readmission");
+    assert_eq!(direct.observation(), descriptor.observation());
 }
 
 #[test]

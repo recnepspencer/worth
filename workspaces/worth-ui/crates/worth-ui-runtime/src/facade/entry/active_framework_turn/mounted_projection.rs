@@ -38,6 +38,7 @@ impl<'session> WorthUiActiveFrameworkTurnExecution<'session> {
         ))
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn prepare_mounted_frame_internal(
         &mut self,
         request: crate::mounting::UiMountedFrameRequest,

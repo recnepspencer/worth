@@ -43,13 +43,7 @@ impl PreparedDirectCauseStores {
             "every cause replacement has a prepared slot"
         );
         let count = slots.len();
-        let visits = count
-            .checked_mul(
-                std::mem::size_of::<PreparedCauseStoreReplacement>()
-                    + std::mem::size_of::<PreparedCauseNodeReplacement>()
-                    + 2,
-            )
-            .filter(|bytes| *bytes <= isize::MAX as usize);
+        let visits = count.checked_mul(2);
         crate::data::graph::waiter_preparation_work::reserve(work, visits)
             .map_err(PendingRevalidationPreparationDenial::into_signal_error)?;
         let mut stores = Vec::with_capacity(count);

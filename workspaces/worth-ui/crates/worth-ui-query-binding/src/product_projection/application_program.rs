@@ -3,8 +3,8 @@ use worth_query_host::facade::declaration::application_program::{
     ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureLeaf,
     ApplicationFeatureList, ApplicationFeatureRef, ApplicationLocalRuleRef,
     ApplicationNoOutputGraph, ApplicationProgramAuthoring, ApplicationProgramDefinition,
-    ApplicationProgramIdentity, ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList,
-    ValidatedApplicationProgram,
+    ApplicationProgramIdentity, ApplicationProgramOutputs, ApplicationRuleAt, ApplicationRuleLeaf,
+    ApplicationRuleList, ValidatedApplicationProgram,
 };
 
 use crate::declaration::{
@@ -42,7 +42,7 @@ impl ApplicationProgramDefinition<WorthUiApplicationSchema> for WorthUiStatusPro
         ApplicationFeatureRef<WorthUiApplicationSchema, WorthUiStatusFeature>,
         ApplicationFeatureLeaf,
     >;
-    type OutputGraph = ApplicationNoOutputGraph;
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = ApplicationRuleList<
         ApplicationRuleAt<
             ApplicationLocalRuleRef<

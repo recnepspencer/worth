@@ -29,6 +29,7 @@ fn project_transition(
             .current()
             .map(|focus| focus.mounted_instance().diagnostic_value()),
         match receipt.cause() {
+            #[cfg(any(test, feature = "certification-support"))]
             crate::runtime::focus::UiFocusCause::Direct => {
                 worth_ui_inspection::UiFocusMoveInspectionCause::Direct
             }

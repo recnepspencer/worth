@@ -8,6 +8,7 @@ pub(crate) struct UiApplicationItemKeyFamily(UiApplicationItemKeyFamilyBasis);
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 enum UiApplicationItemKeyFamilyBasis {
     ProjectionInput(worth_ui_query_binding::UiProjectionInputSlot),
+    #[cfg(any(test, feature = "certification-support"))]
     Recorded(NonZeroU64),
 }
 
@@ -24,6 +25,7 @@ enum UiApplicationItemKeyValue {
 }
 
 impl UiApplicationItemKeyFamily {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn new(value: NonZeroU64) -> Self {
         Self(UiApplicationItemKeyFamilyBasis::Recorded(value))
     }
@@ -39,6 +41,7 @@ impl UiApplicationItemKeyFamily {
     ) -> Option<worth_ui_query_binding::UiProjectionInputSlot> {
         match self.0 {
             UiApplicationItemKeyFamilyBasis::ProjectionInput(slot) => Some(slot),
+            #[cfg(any(test, feature = "certification-support"))]
             UiApplicationItemKeyFamilyBasis::Recorded(_) => None,
         }
     }
@@ -48,12 +51,14 @@ impl UiApplicationItemKeyFamily {
             UiApplicationItemKeyFamilyBasis::ProjectionInput(slot) => {
                 (slot.index() as u64) | (1_u64 << 63)
             }
+            #[cfg(any(test, feature = "certification-support"))]
             UiApplicationItemKeyFamilyBasis::Recorded(value) => value.get(),
         }
     }
 }
 
 impl UiApplicationItemKey {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn new(family: UiApplicationItemKeyFamily, value: NonZeroU64) -> Self {
         Self {
             family,
@@ -75,6 +80,7 @@ impl UiApplicationItemKey {
         self.family
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn value(self) -> NonZeroU64 {
         match self.value {
             UiApplicationItemKeyValue::Recorded(value) => value,

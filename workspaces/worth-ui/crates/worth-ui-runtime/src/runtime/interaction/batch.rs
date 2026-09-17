@@ -103,6 +103,7 @@ impl UiInteractionBatchReceipt {
         self.scroll_observations = observations.into_boxed_slice();
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn scroll_observations(
         &self,
     ) -> &[crate::runtime::scroll::UiHostScrollObservationOutcome] {
