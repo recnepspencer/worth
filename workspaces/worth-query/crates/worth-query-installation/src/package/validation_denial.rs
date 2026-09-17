@@ -47,6 +47,8 @@ pub struct WorthQueryPortablePackageValidationDenial {
     kind: WorthQueryPortablePackageValidationDenialKind,
     definition_kind: Option<WorthQueryPortableDefinitionKind>,
     slot: String,
+    maximum_canonical_bytes: Option<usize>,
+    attempted_canonical_bytes: Option<usize>,
 }
 
 impl WorthQueryPortablePackageValidationDenial {
@@ -236,12 +238,15 @@ impl WorthQueryPortablePackageValidationDenial {
         )
     }
 
-    pub(super) fn canonical_encoded_byte_budget_exceeded() -> Self {
-        Self::new(
+    pub(super) fn canonical_encoded_byte_budget_exceeded(maximum: usize, attempted: usize) -> Self {
+        let mut denial = Self::new(
             WorthQueryPortablePackageValidationDenialKind::CanonicalEncodedByteBudgetExceeded,
             None,
             "package-canonical-encoded-byte-budget",
-        )
+        );
+        denial.maximum_canonical_bytes = Some(maximum);
+        denial.attempted_canonical_bytes = Some(attempted);
+        denial
     }
 
     pub(super) fn canonical_digest_slot_rejected() -> Self {
@@ -261,6 +266,8 @@ impl WorthQueryPortablePackageValidationDenial {
             kind,
             definition_kind,
             slot: slot.into(),
+            maximum_canonical_bytes: None,
+            attempted_canonical_bytes: None,
         }
     }
 
@@ -275,14 +282,29 @@ impl WorthQueryPortablePackageValidationDenial {
     pub fn slot(&self) -> &str {
         &self.slot
     }
+
+    pub const fn maximum_canonical_bytes(&self) -> Option<usize> {
+        self.maximum_canonical_bytes
+    }
+
+    pub const fn attempted_canonical_bytes(&self) -> Option<usize> {
+        self.attempted_canonical_bytes
+    }
 }
 
 impl std::fmt::Display for WorthQueryPortablePackageValidationDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             formatter,
-            "portable package validation denied: {:?} ({})",
-            self.kind, self.slot
+            "portable package validation denied: {:?} ({}){}",
+            self.kind,
+            self.slot,
+            match (self.maximum_canonical_bytes, self.attempted_canonical_bytes) {
+                (Some(maximum), Some(attempted)) => {
+                    format!("; canonical bytes {attempted} exceed {maximum}")
+                }
+                _ => String::new(),
+            }
         )
     }
 }

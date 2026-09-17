@@ -75,6 +75,19 @@ fn malformed_portable_input_is_denied_without_panicking() {
 }
 
 #[test]
+fn package_byte_budget_denial_reports_attempted_and_maximum_work() {
+    let denial = package_with_order(false)
+        .validate_with_canonical_work_limit(64)
+        .unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPortablePackageValidationDenialKind::CanonicalEncodedByteBudgetExceeded
+    );
+    assert_eq!(denial.maximum_canonical_bytes(), Some(64));
+    assert!(denial.attempted_canonical_bytes().unwrap() > 64);
+}
+
+#[test]
 fn duplicate_contribution_policy_is_denied_instead_of_silently_rewritten() {
     let denial = package_with_order(false)
         .permits_contribution("query-index")

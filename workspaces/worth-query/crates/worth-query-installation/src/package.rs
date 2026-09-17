@@ -376,8 +376,10 @@ fn map_package_canonical_denial(
         CanonicalDigestDerivationDenial::EntryLimitExceeded { .. } => {
             WorthQueryPortablePackageValidationDenial::canonical_entry_budget_exceeded()
         }
-        CanonicalDigestDerivationDenial::EncodedByteLimitExceeded { .. } => {
-            WorthQueryPortablePackageValidationDenial::canonical_encoded_byte_budget_exceeded()
+        CanonicalDigestDerivationDenial::EncodedByteLimitExceeded { maximum, attempted } => {
+            WorthQueryPortablePackageValidationDenial::canonical_encoded_byte_budget_exceeded(
+                maximum, attempted,
+            )
         }
         _ => WorthQueryPortablePackageValidationDenial::canonical_digest_slot_rejected(),
     }
