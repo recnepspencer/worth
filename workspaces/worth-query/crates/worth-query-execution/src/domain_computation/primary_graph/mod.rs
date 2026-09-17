@@ -18,10 +18,11 @@ pub use application_contribution::{
     WorthQueryInstalledApplicationConditionalRegistry,
     WorthQueryInstalledApplicationProducerRegistry, WorthQueryOutputDemandAdvance,
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
-    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
+    WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadinessContractBuilder,
+    WorthQueryOutputReadinessContractDenial, WorthQueryProducerApplicability,
+    WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+    WorthQuerySelectedApplicationProducer,
 };
 pub use application_output_demand::{
     WorthQueryOutputDemandNotifications, WorthQueryOutputDemandSettlement,

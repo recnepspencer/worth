@@ -43,9 +43,9 @@ where
         .on_branch(delivery_branch)
         .select()
         .map_err(|error| {
-            denial(
-                WorthQueryOutputDemandDenialKind::Superseded,
-                format!("{}: {error:?}", Family::IDENTITY),
+            WorthQueryOutputDemandDenial::product_selection(
+                error,
+                format!("{}: disclosure product selection", Family::IDENTITY),
             )
         })?;
     let current = crate::basis::WorthQueryProductBranchReadIdentity::from_observation(

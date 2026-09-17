@@ -1,21 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Condvar, Mutex};
 
-use super::WorthQueryOutputDemandSettlement;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingOutputDelivery {
-    pub(in crate::domain_computation::primary_graph) receipt:
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    pub(in crate::domain_computation::primary_graph) change:
-        crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
-}
-
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingOutputReadiness {
-    pub(in crate::domain_computation::primary_graph) receipt:
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    pub(in crate::domain_computation::primary_graph) delivery:
-        worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt,
-}
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPerformedOutputDemandSource {
@@ -170,6 +156,7 @@ pub struct WorthQueryOutputDemandNotifications {
 }
 
 mod admission;
+mod checkpoint;
 mod lifecycle;
 mod notifications;
 mod progression;
@@ -177,6 +164,10 @@ mod source_custody;
 mod supersession;
 #[cfg(test)]
 mod tests;
+use checkpoint::{WorthQueryOutputAdvancement, WorthQueryOutputProgress};
+pub(in crate::domain_computation::primary_graph) use checkpoint::{
+    WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity, WorthQueryPendingOutputDelivery,
+};
 use supersession::supersede_predecessors;
 
 struct DemandWake {
@@ -200,13 +191,7 @@ enum DemandState {
     Scheduling,
     Scheduled,
     Running,
-    Delivering,
-    DeliveryPending(Option<WorthQueryPendingOutputDelivery>),
-    ReadinessPending(Option<WorthQueryPendingOutputReadiness>),
-    EvaluatingReadiness,
-    Settled(Arc<WorthQueryOutputDemandSettlement>),
-    Completed(WorthQueryCompletedOutputDemand),
-    Recovering(WorthQueryCompletedOutputDemand),
+    Output(WorthQueryOutputProgress),
     Failed(WorthQueryOutputDemandDenial),
 }
 
@@ -268,10 +253,11 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRequiredOutput
 pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputDemandAdvanceAdmission {
     Schedule(Option<WorthQueryPerformedOutputDemandSource>),
     Execute,
-    Deliver(WorthQueryPendingOutputDelivery),
-    EvaluateReadiness(WorthQueryPendingOutputReadiness),
-    Recover(WorthQueryCompletedOutputDemand),
+    AdvanceCheckpoint {
+        claim: WorthQueryOutputClaimIdentity,
+        checkpoint: WorthQueryOutputCheckpoint,
+    },
+    Ready(WorthQueryCompletedOutputDemand),
     Pending,
-    Settled(Arc<WorthQueryOutputDemandSettlement>),
     Failed(WorthQueryOutputDemandDenial),
 }

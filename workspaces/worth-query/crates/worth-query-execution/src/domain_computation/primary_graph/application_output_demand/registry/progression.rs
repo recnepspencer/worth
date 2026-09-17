@@ -13,21 +13,7 @@ impl WorthQueryOutputDemandRegistry {
             .records
             .get_mut(&interest.key)
             .expect("live demand interest retains its owner record");
-        if let DemandState::DeliveryPending(pending) = &mut record.state {
-            let pending = pending
-                .take()
-                .expect("pending delivery remains present outside delivery custody");
-            record.state = DemandState::Delivering;
-            return WorthQueryOutputDemandAdvanceAdmission::Deliver(pending);
-        }
-        if let DemandState::ReadinessPending(pending) = &mut record.state {
-            let pending = pending
-                .take()
-                .expect("pending readiness remains present outside evaluation custody");
-            record.state = DemandState::EvaluatingReadiness;
-            return WorthQueryOutputDemandAdvanceAdmission::EvaluateReadiness(pending);
-        }
-        match &record.state {
+        match &mut record.state {
             DemandState::Admitted => {
                 record.state = DemandState::Scheduling;
                 WorthQueryOutputDemandAdvanceAdmission::Schedule(record.performed_source.take())
@@ -36,21 +22,39 @@ impl WorthQueryOutputDemandRegistry {
                 record.state = DemandState::Running;
                 WorthQueryOutputDemandAdvanceAdmission::Execute
             }
-            DemandState::Scheduling
-            | DemandState::Running
-            | DemandState::Recovering(_)
-            | DemandState::Delivering
-            | DemandState::EvaluatingReadiness => WorthQueryOutputDemandAdvanceAdmission::Pending,
-            DemandState::DeliveryPending(_) => unreachable!("pending delivery handled above"),
-            DemandState::ReadinessPending(_) => unreachable!("pending readiness handled above"),
-            DemandState::Completed(completion) => {
-                let completion = completion.clone();
-                record.state = DemandState::Recovering(completion.clone());
-                WorthQueryOutputDemandAdvanceAdmission::Recover(completion)
+            DemandState::Scheduling | DemandState::Running => {
+                WorthQueryOutputDemandAdvanceAdmission::Pending
             }
-            DemandState::Settled(receipt) => {
-                WorthQueryOutputDemandAdvanceAdmission::Settled(receipt.clone())
-            }
+            DemandState::Output(output) => match &output.advancement {
+                WorthQueryOutputAdvancement::Claimed(_) => {
+                    WorthQueryOutputDemandAdvanceAdmission::Pending
+                }
+                WorthQueryOutputAdvancement::Stopped { denial, .. } => {
+                    WorthQueryOutputDemandAdvanceAdmission::Failed(denial.clone())
+                }
+                WorthQueryOutputAdvancement::Idle => {
+                    if let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint
+                    {
+                        return WorthQueryOutputDemandAdvanceAdmission::Ready(completion.clone());
+                    }
+                    let Some(next_claim) = output.next_claim.checked_add(1) else {
+                        let denial = WorthQueryOutputDemandDenial::new(
+                            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected,
+                            "output advancement claim identity exhausted",
+                        );
+                        output.stop(denial.clone());
+                        return WorthQueryOutputDemandAdvanceAdmission::Failed(denial);
+                    };
+                    output.next_claim = next_claim;
+                    let claim = WorthQueryOutputClaimIdentity(next_claim);
+                    let checkpoint = output
+                        .checkpoint
+                        .take()
+                        .expect("idle output retains its checkpoint");
+                    output.advancement = WorthQueryOutputAdvancement::Claimed(claim);
+                    WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint { claim, checkpoint }
+                }
+            },
             DemandState::Failed(denial) => {
                 WorthQueryOutputDemandAdvanceAdmission::Failed(denial.clone())
             }
@@ -61,8 +65,15 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         interest: &WorthQueryOutputDemandInterest,
         performed_source: Option<WorthQueryPerformedOutputDemandSource>,
-        result: &Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,
+        result: &mut Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,
     ) {
+        match result {
+            Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
+                denial.recovery_posture =
+                    crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal;
+            }
+            _ => {}
+        }
         let mut state = self
             .state
             .lock()
@@ -89,35 +100,53 @@ impl WorthQueryOutputDemandRegistry {
         record.wake.notify();
     }
 
-    pub(in crate::domain_computation::primary_graph) fn finish(
+    pub(in crate::domain_computation::primary_graph) fn publish_checkpoint(
         &self,
         interest: &WorthQueryOutputDemandInterest,
-        result: &Result<Arc<WorthQueryOutputDemandSettlement>, WorthQueryOutputDemandDenial>,
-    ) {
+        checkpoint: WorthQueryOutputCheckpoint,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
-            .records
-            .get_mut(&interest.key)
-            .expect("executing demand retains its owner record");
-        if demand_record_is_closed(record) {
-            return;
+        let record = state.records.get_mut(&interest.key).ok_or_else(|| {
+            WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
+                "published demand record was released during execution",
+            )
+        })?;
+        if let DemandState::Failed(denial) = &record.state {
+            return Err(denial.clone());
         }
-        record.state = match result {
-            Ok(receipt) => DemandState::Settled(receipt.clone()),
-            Err(denial) => DemandState::Failed(denial.clone()),
-        };
+        if !matches!(record.state, DemandState::Running) {
+            return Err(WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected,
+                "published output did not retain its running demand claim",
+            ));
+        }
+        record.state = DemandState::Output(WorthQueryOutputProgress::new(checkpoint));
         record.performed_source = None;
         record.wake.notify();
+        Ok(())
     }
 
     pub(in crate::domain_computation::primary_graph) fn finish_execution_failure(
         &self,
         interest: &WorthQueryOutputDemandInterest,
-        denial: &WorthQueryOutputDemandDenial,
+        denial: &mut WorthQueryOutputDemandDenial,
     ) {
+        let rescheduled = matches!(
+            denial.kind(),
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationStale
+                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Cancelled
+                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::TimedOut
+                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded
+        );
+        denial.recovery_posture = if rescheduled {
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
+        } else {
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal
+        };
         let mut state = self
             .state
             .lock()
@@ -129,13 +158,7 @@ impl WorthQueryOutputDemandRegistry {
         if demand_record_is_closed(record) {
             return;
         }
-        record.state = if matches!(
-            denial.kind(),
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationStale
-                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Cancelled
-                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::TimedOut
-                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded
-        ) {
+        record.state = if rescheduled {
             DemandState::Scheduled
         } else {
             DemandState::Failed(denial.clone())
@@ -143,71 +166,61 @@ impl WorthQueryOutputDemandRegistry {
         record.wake.notify();
     }
 
-    pub(in crate::domain_computation::primary_graph) fn finish_recovery(
+    pub(in crate::domain_computation::primary_graph) fn finish_checkpoint(
         &self,
         interest: &WorthQueryOutputDemandInterest,
-        result: &Result<Arc<WorthQueryOutputDemandSettlement>, WorthQueryOutputDemandDenial>,
-    ) {
+        claim: WorthQueryOutputClaimIdentity,
+        checkpoint: WorthQueryOutputCheckpoint,
+        denial: Option<&WorthQueryOutputDemandDenial>,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
-            .records
-            .get_mut(&interest.key)
-            .expect("recovering demand retains its owner record");
-        if demand_record_is_closed(record) {
-            return;
-        }
-        record.state = match result {
-            Ok(settlement) => DemandState::Settled(settlement.clone()),
-            Err(_) => match &record.state {
-                DemandState::Recovering(completion) => DemandState::Completed(completion.clone()),
-                _ => return,
-            },
+        let record = state.records.get_mut(&interest.key).ok_or_else(|| {
+            WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
+                "output checkpoint was released during advancement",
+            )
+        })?;
+        let DemandState::Output(output) = &mut record.state else {
+            return Err(match &record.state {
+                DemandState::Failed(denial) => denial.clone(),
+                _ => WorthQueryOutputDemandDenial::new(
+                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected,
+                    "output advancement no longer owns its registry record",
+                ),
+            });
         };
-        record.performed_source = None;
-        record.wake.notify();
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn finish_delivery_pending(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
-        pending: WorthQueryPendingOutputDelivery,
-    ) {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
-            .records
-            .get_mut(&interest.key)
-            .expect("pending delivery retains its owner record");
-        if demand_record_is_closed(record) {
-            return;
+        match &output.advancement {
+            WorthQueryOutputAdvancement::Claimed(active) if *active == claim => {}
+            WorthQueryOutputAdvancement::Stopped { denial: stopped, interrupted_claim: Some(active) } if *active == claim => {
+                let stopped = stopped.clone();
+                output.checkpoint.get_or_insert(checkpoint);
+                output.advancement = WorthQueryOutputAdvancement::Stopped {
+                    denial: stopped.clone(),
+                    interrupted_claim: None,
+                };
+                return Err(stopped);
+            }
+            _ => return Err(WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected,
+                "output advancement claim no longer matches its registry record",
+            )),
         }
-        record.state = DemandState::DeliveryPending(Some(pending));
+        output.checkpoint = Some(checkpoint);
+        output.advancement = match denial {
+            Some(denial) if denial.recovery_posture()
+                != crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable => {
+                WorthQueryOutputAdvancement::Stopped {
+                    denial: denial.clone(),
+                    interrupted_claim: None,
+                }
+            }
+            _ => WorthQueryOutputAdvancement::Idle,
+        };
         record.wake.notify();
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn finish_readiness_pending(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
-        pending: WorthQueryPendingOutputReadiness,
-    ) {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
-            .records
-            .get_mut(&interest.key)
-            .expect("pending readiness retains its owner record");
-        if demand_record_is_closed(record) {
-            return;
-        }
-        record.state = DemandState::ReadinessPending(Some(pending));
-        record.wake.notify();
+        Ok(())
     }
 }
 

@@ -131,10 +131,14 @@ impl WorthQueryOutputDemandRegistry {
             if record.interests == 0 {
                 return false;
             }
-            record.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
+            let denial = WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
                 "product occurrence retired",
-            ));
+            );
+            match &mut record.state {
+                DemandState::Output(output) => output.stop(denial),
+                _ => record.state = DemandState::Failed(denial),
+            }
             record.performed_source = None;
             record.wake.notify();
             true
@@ -164,6 +168,35 @@ impl WorthQueryOutputDemandRegistry {
             .len()
     }
 
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub(in crate::domain_computation::primary_graph) fn output_checkpoint_snapshot_state(
+        &self,
+    ) -> (usize, usize) {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state
+            .records
+            .values()
+            .fold((0, 0), |(outputs, pinned), record| {
+                if let DemandState::Output(output) = &record.state {
+                    (
+                        outputs + 1,
+                        pinned
+                            + usize::from(
+                                output
+                                    .receipt
+                                    .committed_product_publication()
+                                    .has_output_demand_observation_for_test(),
+                            ),
+                    )
+                } else {
+                    (outputs, pinned)
+                }
+            })
+    }
+
     pub(in crate::domain_computation::primary_graph) fn relinquish_execution(
         &self,
         interest: &WorthQueryOutputDemandInterest,
@@ -176,14 +209,10 @@ impl WorthQueryOutputDemandRegistry {
             .records
             .get_mut(&interest.key)
             .expect("executing demand retains its owner record");
-        if matches!(
-            record.state,
-            DemandState::Scheduling | DemandState::Running | DemandState::Recovering(_)
-        ) {
+        if matches!(record.state, DemandState::Scheduling | DemandState::Running) {
             record.state = match std::mem::replace(&mut record.state, DemandState::Admitted) {
                 DemandState::Scheduling => DemandState::Admitted,
                 DemandState::Running => DemandState::Scheduled,
-                DemandState::Recovering(completion) => DemandState::Completed(completion),
                 _ => unreachable!("relinquished state was checked above"),
             };
             record.wake.notify();
@@ -200,32 +229,20 @@ impl WorthQueryOutputDemandRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let remove = state.records.get_mut(&interest.key).is_some_and(|record| {
             record.interests = record.interests.saturating_sub(1);
-            if record.interests == 0 {
-                match &record.state {
-                    DemandState::Settled(settlement) => {
-                        record.state = DemandState::Completed(settlement.completion());
-                    }
-                    DemandState::Recovering(completion) => {
-                        record.state = DemandState::Completed(completion.clone());
-                        record.wake.notify();
-                    }
-                    _ => {}
-                }
-            }
             record.interests == 0
-                && (!record.required || matches!(record.state, DemandState::Failed(_)))
+                && (!record.required
+                    || matches!(record.state, DemandState::Failed(_))
+                    || matches!(&record.state, DemandState::Output(output)
+                        if matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. })))
                 && record.performed_source.is_none()
-                && !matches!(
-                    record.state,
-                    DemandState::Scheduling
-                        | DemandState::Running
-                        | DemandState::Recovering(_)
-                        | DemandState::Delivering
-                        | DemandState::DeliveryPending(_)
-                        | DemandState::EvaluatingReadiness
-                        | DemandState::ReadinessPending(_)
-                        | DemandState::Completed(_)
-                )
+                && match &record.state {
+                    DemandState::Scheduling | DemandState::Running => false,
+                    DemandState::Output(output) => {
+                        matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. })
+                            || matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Ready(_)))
+                    }
+                    _ => true,
+                }
         });
         if remove {
             state.records.remove(&interest.key);
@@ -265,7 +282,10 @@ impl DemandRegistryState {
                     && (record.interests != 0
                         || !matches!(
                             record.state,
-                            DemandState::Completed(_) | DemandState::Failed(_)
+                            DemandState::Output(WorthQueryOutputProgress {
+                                checkpoint: Some(WorthQueryOutputCheckpoint::Ready(_)),
+                                ..
+                            }) | DemandState::Failed(_)
                         ))
             })
         });

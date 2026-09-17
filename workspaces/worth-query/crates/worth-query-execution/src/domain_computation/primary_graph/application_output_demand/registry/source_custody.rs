@@ -326,10 +326,11 @@ fn retire_stale_records(
             && WorthQueryOutputDemandKey::source_same_occurrence(&key.source, successor)
             && key.revision() < WorthQueryOutputDemandKey::source_revision(successor)
         {
-            record.state = DemandState::Failed(denial(
-                WorthQueryOutputDemandDenialKind::Superseded,
-                &key.producer,
-            ));
+            let cause = denial(WorthQueryOutputDemandDenialKind::Superseded, &key.producer);
+            match &mut record.state {
+                DemandState::Output(output) => output.stop(cause),
+                _ => record.state = DemandState::Failed(cause),
+            }
             record.performed_source = None;
             record.wake.notify();
         }

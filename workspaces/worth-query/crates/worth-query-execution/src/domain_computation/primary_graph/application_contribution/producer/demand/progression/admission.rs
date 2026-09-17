@@ -186,12 +186,18 @@ where
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
                 &selected.identity,
+            )
+            .with_recovery_posture(
+                super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
             ));
         }
         if resources.retained_bytes() > maximum_retained_bytes {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
                 &selected.identity,
+            )
+            .with_recovery_posture(
+                super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
             ));
         }
         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(

@@ -137,27 +137,26 @@ pub(in crate::domain_computation::primary_graph) fn schedule_output_producer(
     query_identity: u64,
     execution_identity: &str,
     attempt: u64,
-) -> Result<WorthQueryConditionalSignalDecision, String> {
-    let signal_basis = bridge
-        .admit_exact_conditional_signal_basis(lowering, signal_basis)
-        .map_err(|denial| format!("{:?}: {}", denial.kind(), denial.detail()))?;
+) -> Result<
+    WorthQueryConditionalSignalDecision,
+    worth_runtime_bridge::facade::BridgeConditionalDenial,
+> {
+    let signal_basis = bridge.admit_exact_conditional_signal_basis(lowering, signal_basis)?;
     let mut compute = ProducerSignalComputeContext { attempt };
-    let evidence = bridge
-        .execute(
-            &signal_basis,
-            BridgeConditionalExecutionRequest {
-                lowering,
-                query_binding_identity,
-                query_capability_identity: query_identity,
-                snapshot_identity: truth.snapshot_projection(),
-                truth_branch_identity: Some(truth.branch_projection()),
-                bridge_snapshot_identity: None,
-                execution_identity,
-                attempt,
-            },
-            &mut compute,
-        )
-        .map_err(|denial| format!("{:?}: {}", denial.kind(), denial.detail()))?;
+    let evidence = bridge.execute(
+        &signal_basis,
+        BridgeConditionalExecutionRequest {
+            lowering,
+            query_binding_identity,
+            query_capability_identity: query_identity,
+            snapshot_identity: truth.snapshot_projection(),
+            truth_branch_identity: Some(truth.branch_projection()),
+            bridge_snapshot_identity: None,
+            execution_identity,
+            attempt,
+        },
+        &mut compute,
+    )?;
     Ok(super::super::super::conditional_operation::classify_bridge_signal(&evidence))
 }
 

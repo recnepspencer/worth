@@ -13,7 +13,11 @@ use super::super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
 
 mod settlement;
+mod snapshot_pressure;
+mod supersession;
 pub(super) use settlement::settle_recovered;
+pub(super) use snapshot_pressure::snapshot_pressure_preserves_recoverable_source;
+pub(super) use supersession::superseded_completion_is_terminal;
 
 pub(super) fn caller_disposal_before_progress_recovers(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<

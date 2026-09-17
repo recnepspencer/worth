@@ -36,28 +36,31 @@ impl WorthQueryOutputDemandSettlement {
 
     pub(in crate::domain_computation::primary_graph) fn from_commit<Schema>(
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        receipt: WorthQueryApplicationCommitReceipt,
-        readiness_delivery: WorthQueryOutputReadinessDeliveryEvidence,
+        receipt: &WorthQueryApplicationCommitReceipt,
+        readiness_delivery: &WorthQueryOutputReadinessDeliveryEvidence,
     ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        let observation = receipt
-            .committed_product_publication()
-            .take_output_demand_observation()
-            .map(WorthQueryProductObservationLease::new)
-            .or_else(|| reacquire_current_committed_output(runtime, &receipt))
-            .ok_or_else(|| {
+        #[cfg(feature = "test-primary-graph-faults")]
+        let _held_world_observations =
+            if runtime.primary_provider.take_ready_read_snapshot_pressure() {
+                Some(runtime.hold_world_snapshot_pressure_for_test(receipt))
+            } else {
+                None
+            };
+        let observation =
+            reacquire_current_committed_output(runtime, receipt)?.ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                    "authoritative output is not current in the selected product occurrence",
+                    WorthQueryOutputDemandDenialKind::Superseded,
+                    "authoritative output is no longer current in its product occurrence",
                 )
             })?;
         Ok(Arc::new(Self {
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
-            receipt,
-            readiness_delivery: Some(readiness_delivery),
+            receipt: receipt.clone(),
+            readiness_delivery: Some(readiness_delivery.clone()),
             observation: WorthQueryApplicationReadObservation::from_product(runtime, observation),
         }))
     }
@@ -68,19 +71,6 @@ impl WorthQueryOutputDemandSettlement {
 
     pub fn readiness_delivery(&self) -> Option<&WorthQueryOutputReadinessDeliveryEvidence> {
         self.readiness_delivery.as_ref()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn completion(
-        &self,
-    ) -> super::registry::WorthQueryCompletedOutputDemand {
-        super::registry::WorthQueryCompletedOutputDemand {
-            receipt: self.receipt.clone(),
-            readiness: self
-                .readiness_delivery
-                .as_ref()
-                .expect("a settled output retains readiness completion")
-                .clone(),
-        }
     }
 
     #[doc(hidden)]
@@ -162,12 +152,20 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
 fn reacquire_current_committed_output<Schema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     receipt: &WorthQueryApplicationCommitReceipt,
-) -> Option<WorthQueryProductObservationLease>
+) -> Result<Option<WorthQueryProductObservationLease>, WorthQueryOutputDemandDenial>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
     let committed = receipt.committed_product_publication();
-    let selected = runtime.on_branch(receipt.product_branch()).select().ok()?;
+    let selected = runtime
+        .on_branch(receipt.product_branch())
+        .select()
+        .map_err(|error| {
+            WorthQueryOutputDemandDenial::product_selection(
+                error,
+                "settled output product observation could not be reacquired",
+            )
+        })?;
     let observation = selected.product().observation();
     let original_publication_is_current = observation.lifecycle_incarnation()
         == committed.product_incarnation()
@@ -185,8 +183,10 @@ where
             observation,
             receipt,
         );
-    (original_publication_is_current || retained_output_is_current)
-        .then(|| selected.product().read_lease())
+    Ok(
+        (original_publication_is_current || retained_output_is_current)
+            .then(|| selected.product().read_lease()),
+    )
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>

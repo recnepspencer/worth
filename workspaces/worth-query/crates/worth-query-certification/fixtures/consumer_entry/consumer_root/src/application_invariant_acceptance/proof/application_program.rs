@@ -187,6 +187,8 @@ pub(super) fn caller_disposal_before_progress_recovers(
     >,
 ) {
     recovery::caller_disposal_before_progress_recovers(foreign);
+    recovery::snapshot_pressure_preserves_recoverable_source(foreign);
+    recovery::superseded_completion_is_terminal(foreign);
     recovery::changed_root_cannot_adopt_stale_prepared_source(foreign);
     dependent_recovery::caller_disposal_after_root_recovers_dependent(foreign);
 }
@@ -211,6 +213,10 @@ pub(super) fn lifecycle_proofs(
     lifecycle::two_forks_preserve_predecessor_output(foreign);
     lifecycle::branch_close_wakes_live_required_output(foreign);
     readiness_recovery::readiness_failure_recovers_exact_pending_output(foreign);
+    readiness_recovery::ready_read_capacity_preserves_completion(foreign);
+    readiness_recovery::already_committed_replace_and_preserve_revalidate(foreign);
+    readiness_recovery::published_outputs_hold_no_hidden_read_lease(foreign);
+    readiness_recovery::readiness_snapshot_pressure_keeps_published_output_recoverable(foreign);
     readiness_recovery::preserved_noop_output_completes_readiness_without_a_signal_successor(
         foreign,
     );

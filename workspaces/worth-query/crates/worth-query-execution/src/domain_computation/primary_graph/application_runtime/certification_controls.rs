@@ -29,6 +29,61 @@ where
             .fail_next_output_readiness_evaluation_for_test();
     }
 
+    /// Holds real World observations while the next ready output opens a read.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn press_next_ready_read_with_world_snapshots_for_test(&self) {
+        self.primary_provider
+            .press_next_ready_read_with_world_snapshots_for_test();
+    }
+
+    /// Holds real World observations while the next readiness evaluation selects its basis.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn press_next_readiness_with_world_snapshots_for_test(&self) {
+        self.primary_provider
+            .press_next_readiness_with_world_snapshots_for_test();
+    }
+
+    /// Counts readiness decisions actually attempted by this application runtime.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn output_readiness_attempt_count_for_test(&self) -> u64 {
+        self.next_output_producer_attempt
+            .load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Counts post-publication checkpoints and any World snapshots retained inside their receipts.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn output_checkpoint_snapshot_state_for_test(&self) -> (usize, usize) {
+        self.output_demands.output_checkpoint_snapshot_state()
+    }
+
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub(in crate::domain_computation::primary_graph) fn hold_world_snapshot_pressure_for_test(
+        &self,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    ) -> Vec<crate::basis::WorthQueryProductBranchLease> {
+        let mut held = Vec::new();
+        let mut exhausted = false;
+        for _ in 0..1_024 {
+            match self.product_runtime.integration_admit_product_branch(receipt.product_branch()) {
+                Ok(observation) => held.push(observation),
+                Err(crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted) => {
+                    exhausted = true;
+                    break;
+                }
+                Err(error) => panic!("World snapshot pressure failed for another reason: {error:?}"),
+            }
+        }
+        assert!(
+            exhausted,
+            "snapshot pressure must reach actual World capacity"
+        );
+        held
+    }
+
     /// Counts performed sources awaiting their required-output admission owner.
     #[doc(hidden)]
     #[cfg(feature = "test-primary-graph-faults")]

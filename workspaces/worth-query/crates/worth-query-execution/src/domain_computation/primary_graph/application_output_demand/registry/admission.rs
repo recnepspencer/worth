@@ -28,14 +28,8 @@ impl WorthQueryOutputDemandRegistry {
             .iter()
             .find(|(key, record)| {
                 let pending_commit = match &record.state {
-                    DemandState::DeliveryPending(Some(pending)) => Some(
-                        pending
-                            .receipt
-                            .committed_product_publication()
-                            .composite_commit(),
-                    ),
-                    DemandState::ReadinessPending(Some(pending)) => Some(
-                        pending
+                    DemandState::Output(output) => Some(
+                        output
                             .receipt
                             .committed_product_publication()
                             .composite_commit(),

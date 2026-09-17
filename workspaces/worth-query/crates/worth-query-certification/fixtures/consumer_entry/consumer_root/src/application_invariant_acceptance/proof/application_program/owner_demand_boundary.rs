@@ -325,7 +325,7 @@ fn settle(
     admitted: &Admitted,
     body_key: &str,
 ) {
-    for _ in 0..4 {
+    for _ in 0..8 {
         let progress = application
             .advance_output_demand(
                 admitted,

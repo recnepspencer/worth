@@ -399,6 +399,7 @@ exports = [
     "WorthQueryOutputDemandDenial",
     "WorthQueryOutputDemandDenialKind",
     "WorthQueryOutputDemandNotifications",
+    "WorthQueryOutputDemandRecoveryPosture",
     "WorthQueryOutputDemandSettlement",
     "WorthQueryOutputReadinessDeliveryEvidence",
     "WorthQueryPerformedConditionalDefinitionPublication",

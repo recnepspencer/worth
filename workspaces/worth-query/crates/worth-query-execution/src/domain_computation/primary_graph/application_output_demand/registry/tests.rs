@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 
+mod recovery_posture;
 mod source_custody;
 
 fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnation {
@@ -145,7 +146,7 @@ fn scheduling_failure_is_terminal_and_last_interest_releases_the_record() {
         "producer stopped before scheduling",
     );
 
-    registry.finish_scheduling(&demand_interest, None, &Err(denial));
+    registry.finish_scheduling(&demand_interest, None, &mut Err(denial));
 
     assert!(matches!(
         &registry.state.lock().unwrap().records[&demand_key].state,
@@ -184,7 +185,7 @@ fn required_failure_is_released_with_its_last_interest() {
         "required producer stopped before scheduling",
     );
 
-    registry.finish_scheduling(&demand_interest, None, &Err(denial));
+    registry.finish_scheduling(&demand_interest, None, &mut Err(denial));
     drop(demand_interest);
 
     assert!(
@@ -196,43 +197,6 @@ fn required_failure_is_released_with_its_last_interest() {
             .contains_key(&demand_key),
         "a failed required attempt is not a permanent owner obligation"
     );
-}
-
-#[test]
-fn retryable_publication_stale_keeps_required_scheduled_obligation() {
-    let registry = WorthQueryOutputDemandRegistry::default();
-    let occurrence = occurrence();
-    let demand_key = key("required", 6, 1);
-    let wake = Arc::new(DemandWake {
-        generation: Mutex::new(0),
-        changed: Condvar::new(),
-    });
-    registry.state.lock().unwrap().records.insert(
-        demand_key.clone(),
-        DemandRecord {
-            required: true,
-            wake: Arc::clone(&wake),
-            ..record(occurrence, DemandState::Running, 1)
-        },
-    );
-    let demand_interest = interest(&registry, demand_key.clone(), wake);
-    let denial = WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::PublicationStale,
-        "a sibling advanced the product head",
-    );
-
-    registry.finish_execution_failure(&demand_interest, &denial);
-    assert!(matches!(
-        registry.state.lock().unwrap().records[&demand_key].state,
-        DemandState::Scheduled
-    ));
-    drop(demand_interest);
-
-    let state = registry.state.lock().unwrap();
-    let retained = &state.records[&demand_key];
-    assert_eq!(retained.interests, 0);
-    assert!(retained.required);
-    assert!(matches!(retained.state, DemandState::Scheduled));
 }
 
 #[test]
@@ -257,7 +221,7 @@ fn retiring_occurrence_closes_live_work_and_completion_cannot_resurrect_it() {
     registry.finish_scheduling(
         &demand_interest,
         None,
-        &Ok(WorthQueryOutputSchedulingResult::Scheduled),
+        &mut Ok(WorthQueryOutputSchedulingResult::Scheduled),
     );
 
     assert!(matches!(
@@ -304,12 +268,12 @@ fn deferred_scheduling_returns_to_admitted_while_no_effect_is_terminal() {
     registry.finish_scheduling(
         &deferred,
         None,
-        &Ok(WorthQueryOutputSchedulingResult::Deferred),
+        &mut Ok(WorthQueryOutputSchedulingResult::Deferred),
     );
     registry.finish_scheduling(
         &terminal,
         None,
-        &Ok(WorthQueryOutputSchedulingResult::NoEffect(no_effect_denial)),
+        &mut Ok(WorthQueryOutputSchedulingResult::NoEffect(no_effect_denial)),
     );
 
     let state = registry.state.lock().unwrap();

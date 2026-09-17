@@ -87,14 +87,14 @@ where
                         .output_demands
                         .finish_superseded(interest, Family::IDENTITY));
                 }
-                let result = self.schedule_selected_output_producer(
+                let mut result = self.schedule_selected_output_producer(
                     &demand.selected,
                     delivery_branch,
                     &demand.observed_source,
                     performed_source.as_ref(),
                 );
                 self.output_demands
-                    .finish_scheduling(interest, performed_source, &result);
+                    .finish_scheduling(interest, performed_source, &mut result);
                 return match result {
                     Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Scheduled) => {
                         Ok(WorthQueryOutputDemandAdvance::Pending)
@@ -107,37 +107,33 @@ where
                 };
             }
             Admission::Pending => return Ok(WorthQueryOutputDemandAdvance::Pending),
-            Admission::Recover(completion) => {
-                let result = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_commit(
-                    self,
-                    completion.receipt,
-                    completion.readiness,
-                );
-                self.output_demands.finish_recovery(interest, &result);
-                return result.map(WorthQueryOutputDemandAdvance::Settled);
-            }
-            Admission::Deliver(pending) => {
+            Admission::AdvanceCheckpoint { claim, checkpoint } => {
                 if !demand.matches_observed_source(&disclosed_source) {
-                    drop(pending);
-                    return Err(self
+                    let denial = self
                         .output_demands
-                        .finish_superseded(interest, Family::IDENTITY));
+                        .finish_superseded(interest, Family::IDENTITY);
+                    self.output_demands.finish_checkpoint(
+                        interest,
+                        claim,
+                        checkpoint,
+                        Some(&denial),
+                    )?;
+                    return Err(denial);
                 }
-                return self.finish_output_readiness_delivery::<Family>(
+                return self.advance_output_checkpoint(
                     interest,
                     &demand.selected.identity,
-                    pending,
+                    claim,
+                    checkpoint,
                 );
             }
-            Admission::EvaluateReadiness(pending) => {
-                return self.finish_output_readiness_evaluation::<Family>(
-                    interest,
-                    &demand.selected.identity,
-                    pending,
-                );
-            }
-            Admission::Settled(settlement) => {
-                return Ok(WorthQueryOutputDemandAdvance::Settled(settlement))
+            Admission::Ready(completion) => {
+                let settlement = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_commit(
+                    self,
+                    &completion.receipt,
+                    &completion.readiness,
+                )?;
+                return Ok(WorthQueryOutputDemandAdvance::Settled(settlement));
             }
             Admission::Failed(denial) => return Err(denial),
             Admission::Execute => {}
@@ -167,48 +163,27 @@ where
         );
         let mut receipt = match result {
             Ok(receipt) => receipt,
-            Err(denial) => {
+            Err(mut denial) => {
                 self.output_demands
-                    .finish_execution_failure(interest, &denial);
+                    .finish_execution_failure(interest, &mut denial);
                 return Err(denial);
             }
         };
-        let Some(change) = receipt.take_performed_relational_product_change() else {
-            let readiness = match self.evaluate_current_output_readiness(
-                &demand.selected.identity,
-                &receipt,
-                None,
-            ) {
-                Ok(readiness) => readiness,
-                Err(denial) => {
-                    let result = Err(denial);
-                    self.output_demands.finish(interest, &result);
-                    return result.map(WorthQueryOutputDemandAdvance::Settled);
-                }
-            };
-            let result = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_commit(self, receipt, readiness);
-            self.output_demands.finish(interest, &result);
-            return result.map(WorthQueryOutputDemandAdvance::Settled);
-        };
-        self.finish_output_readiness_delivery::<Family>(
+        let delivery = receipt
+            .take_performed_relational_product_change()
+            .map_or(
+                crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputDelivery::NoChange,
+                crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputDelivery::Change,
+            );
+        self.output_demands.publish_checkpoint(
             interest,
-            &demand.selected.identity,
-            crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputDelivery {
+            crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint::Published {
                 receipt,
-                change,
+                delivery,
             },
-        )
+        )?;
+        Ok(WorthQueryOutputDemandAdvance::Pending)
     }
-}
-
-pub(super) fn scheduling_failed(
-    identity: &str,
-    error: impl std::fmt::Debug,
-) -> WorthQueryOutputDemandDenial {
-    denial(
-        WorthQueryOutputDemandDenialKind::SchedulingRejected,
-        format!("{identity}: {error:?}"),
-    )
 }
 
 pub(super) fn denial(
