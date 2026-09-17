@@ -74,6 +74,67 @@ impl<'application, 'principal, 'scope, Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    /// Starts one explicitly selected installed output root from a retained
+    /// current source observation.
+    pub fn start_program_outputs<Program, Root>(
+        &self,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        root_demand: RootDemand<Schema, Root>,
+        controls: crate::application_entry::WorthQueryOutputDemandControls,
+    ) -> Result<
+        crate::application_entry::WorthQueryApplicationProgramOutputHandle<
+            'application, Schema, Program, Root,
+        >,
+        crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Root: ApplicationOutputGraphShape<Schema>
+            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+        Root::Dependents:
+            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
+                'application, Schema, Program, RootDemand<Schema, Root>,
+            >,
+        RootDemand<Schema, Root>: Clone,
+        <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
+            ApplicationQueryIntent<Schema, Binding = RootSource<Schema, Root>>,
+        <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                Schema,
+                <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            >,
+        RootValue<Schema, Root>:
+            WorthQueryApplicationProjection<Schema, RootQuery<Schema, Root>> + Clone,
+    {
+        if !std::ptr::eq(application.runtime(), self.application) {
+            return Err(
+                crate::application_entry::WorthQueryRequiredOutputPreparationDenial::ForeignProgram,
+            );
+        }
+        if !application.contains_output_root::<Root>() {
+            return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::UndeclaredOutputRoot);
+        }
+        let observation = self.retain_read().map_err(
+            crate::application_entry::WorthQueryRequiredOutputPreparationDenial::ReadObservation,
+        )?;
+        let (root, retained) = self
+            .at(&observation)
+            .demand(root_demand.clone())
+            .controls(controls)
+            .start_for_program::<Program, Root>(application)
+            .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?;
+        Ok(
+            crate::application_entry::WorthQueryApplicationProgramOutputHandle::new_initial(
+                application,
+                crate::application_entry::WorthQueryApplicationReadObservation::new(retained),
+                root,
+                root_demand,
+                controls,
+            ),
+        )
+    }
+
     /// Re-enters one installed program's owner-retained required-output graph
     /// with fresh request authority after caller disposal or interruption.
     pub fn recover_required_outputs<Program, Root>(

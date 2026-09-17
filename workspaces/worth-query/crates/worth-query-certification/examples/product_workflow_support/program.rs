@@ -3,9 +3,8 @@ use worth_query_host::facade::declaration::application_program::{
     ApplicationConditionalOperationActionRef, ApplicationFeature, ApplicationFeatureInputLeaf,
     ApplicationFeatureLeaf, ApplicationFeatureList, ApplicationFeatureRef, ApplicationLocalRuleRef,
     ApplicationNoOutputGraph, ApplicationOperationActionRef, ApplicationProgramAuthoring,
-    ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationRuleAt,
-    ApplicationProgramOutputs, ApplicationRuleLeaf, ApplicationRuleList,
-    ValidatedApplicationProgram,
+    ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
+    ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList, ValidatedApplicationProgram,
 };
 
 use super::schema::{

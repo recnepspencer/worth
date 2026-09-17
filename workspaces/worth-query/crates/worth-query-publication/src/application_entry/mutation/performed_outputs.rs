@@ -47,7 +47,7 @@ where
 {
     application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     source_receipt:
-        worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt>,
     source_observation: crate::application_entry::WorthQueryApplicationReadObservation,
     root: Option<
         WorthQueryApplicationProgramDemandHandle<
@@ -93,7 +93,32 @@ where
     ) -> Self {
         Self {
             application,
-            source_receipt,
+            source_receipt: Some(source_receipt),
+            source_observation,
+            root: Some(root),
+            root_demand,
+            root_settlement: None,
+            continuation: None,
+            controls,
+            complete: false,
+        }
+    }
+
+    pub(in crate::application_entry) fn new_initial(
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        source_observation: crate::application_entry::WorthQueryApplicationReadObservation,
+        root: WorthQueryApplicationProgramDemandHandle<
+            'application,
+            Schema,
+            Program,
+            RootDemand<Schema, Root>,
+        >,
+        root_demand: RootDemand<Schema, Root>,
+        controls: crate::application_entry::WorthQueryOutputDemandControls,
+    ) -> Self {
+        Self {
+            application,
+            source_receipt: None,
             source_observation,
             root: Some(root),
             root_demand,
@@ -201,10 +226,12 @@ where
                 Ok(WorthQueryApplicationProgramOutputProgress::Pending)
             }
             ProgramOutputContinuationProgress::Settled { outputs, work } => {
-                self.application.complete_program_output_source(
-                    &worth_query_execution::publication_boundary::program_publication_access(),
-                    &self.source_receipt,
-                );
+                if let Some(source_receipt) = &self.source_receipt {
+                    self.application.complete_program_output_source(
+                        &worth_query_execution::publication_boundary::program_publication_access(),
+                        source_receipt,
+                    );
+                }
                 self.complete = true;
                 self.continuation = None;
                 let root = self

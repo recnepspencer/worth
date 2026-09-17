@@ -116,6 +116,43 @@ where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
 {
+    pub fn admit_program_root_output<Root>(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        source: WorthQueryApplicationOutputDemandSource<
+            SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
+            SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
+        >,
+        maximum_work: usize,
+        maximum_retained_bytes: usize,
+    ) -> Result<
+        WorthQueryAdmittedProgramOutput<Schema, Program, WorthQueryProgramRootDemand<Schema, Root>>,
+        WorthQueryOutputDemandDenial,
+    >
+    where
+        Root: ApplicationOutputGraphShape<Schema>
+            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    {
+        if !self.contains_output_root::<Root>() {
+            return Err(WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "selected output root is not installed for this program",
+            ));
+        }
+        self.runtime
+            .admit_required_output_demand::<
+                Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
+            >(source, maximum_work, maximum_retained_bytes)
+            .map(|admitted| WorthQueryAdmittedProgramOutput {
+                admitted,
+                target_feature: std::any::TypeId::of::<
+                    <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature,
+                >(),
+                marker: std::marker::PhantomData,
+            })
+    }
+
     pub fn recover_prepared_program_root_source<Root>(
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,

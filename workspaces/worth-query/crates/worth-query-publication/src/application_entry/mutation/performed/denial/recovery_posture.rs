@@ -27,6 +27,7 @@ impl WorthQueryRequiredOutputPreparationDenial {
             | Denial::MissingConnection
             | Denial::MissingPerformedDelivery
             | Denial::MissingSource
+            | Denial::ReadObservation(_)
             | Denial::Connection(_)
             | Denial::Closed => WorthQueryRequiredOutputRecoveryPosture::Terminal,
             Denial::SourceQuery(query) => query_posture(query),

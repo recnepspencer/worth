@@ -83,6 +83,58 @@ where
         self.start_ordinary(source_result.into_output_demand_source())
     }
 
+    pub(in crate::application_entry) fn start_for_program<Program, Root>(
+        self,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<
+        (
+            super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
+            std::sync::Arc<
+                worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
+            >,
+        ),
+        WorthQueryApplicationOutputDemandDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Root: ApplicationOutputGraphShape<Schema>
+            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+        RootConnection<Schema, Root>:
+            WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
+    {
+        if !std::ptr::eq(self.application, application.runtime()) {
+            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+        }
+        let observation = self
+            .observation
+            .as_ref()
+            .cloned()
+            .ok_or(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch)?;
+        let source_result = self.query_source()?;
+        let maximum_work = self
+            .controls
+            .map_or(1, |controls| controls.maximum_work().get());
+        let maximum_retained_bytes = self
+            .controls
+            .map_or(1, |controls| controls.maximum_retained_bytes().get());
+        let admitted = application
+            .admit_program_root_output::<Root>(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                source_result.into_output_demand_source(),
+                maximum_work,
+                maximum_retained_bytes,
+            )
+            .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
+        Ok((
+            super::WorthQueryApplicationProgramDemandHandle::new(
+                application,
+                admitted,
+                self.demand,
+            ),
+            observation,
+        ))
+    }
+
     pub(in crate::application_entry) fn start_recovery<Program, Root>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
