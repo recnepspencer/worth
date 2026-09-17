@@ -157,7 +157,7 @@ impl WorthQueryOutputDemandRegistry {
         let recovery = custody
             .discovery
             .as_ref()
-            .filter(|retained| retained.receipt == *receipt)
+            .filter(|retained| retained.receipt.same_retained_output_source_as(receipt))
             .ok_or_else(|| {
                 denial(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,

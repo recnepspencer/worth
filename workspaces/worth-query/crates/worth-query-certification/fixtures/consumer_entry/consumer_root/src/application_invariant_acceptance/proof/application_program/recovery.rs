@@ -36,12 +36,13 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .observed_sources()[0]
         .clone();
     let controls = output_controls();
+    let intent = PlanarSourceAdjustment {
+        scope_key: "anchor-b".to_owned(),
+        replacement_y: length(2),
+    };
     let outcome = request
-        .mutate(PlanarSourceAdjustment {
-            scope_key: "anchor-b".to_owned(),
-            replacement_y: length(2),
-        })
-        .expect_source(source)
+        .mutate(intent.clone())
+        .expect_source(source.clone())
         .idempotency(&10_002)
         .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
         .expect("source publication admits its required output");
@@ -50,6 +51,22 @@ pub(super) fn caller_disposal_before_progress_recovers(
     };
     let source_receipt = performed.receipt().clone();
     drop(performed);
+    let replay = request
+        .mutate(intent)
+        .expect_source(source)
+        .idempotency(&10_002)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .expect("the retry reaches the committed source");
+    let WorthQueryApplicationPerformedMutationOutcome::NotPerformed(replay) = replay else {
+        panic!("the source retry must not perform twice")
+    };
+    let replay_receipt = replay
+        .receipt()
+        .expect("an idempotent retry retains its committed receipt");
+    assert_eq!(
+        replay_receipt.commit_reference(),
+        source_receipt.commit_reference()
+    );
     assert_eq!(
         world
             .application
@@ -60,7 +77,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
     let truncated_recovery = request
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerTruncatedProgramRoot>(
             &world.application,
-            &source_receipt,
+            replay_receipt,
             PlanarOutputDemand::new("anchor-b"),
             output_controls(),
         );
@@ -127,7 +144,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
     let recovered_once = request
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
-            &source_receipt,
+            replay_receipt,
             PlanarOutputDemand::new("anchor-b"),
             controls,
         )

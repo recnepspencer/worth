@@ -79,7 +79,7 @@ impl WorthQueryOutputDemandRegistry {
             if custody
                 .source
                 .as_ref()
-                .is_some_and(|source| source.receipt == *receipt)
+                .is_some_and(|source| source.receipt.same_retained_output_source_as(receipt))
             {
                 custody.completed = true;
                 custody.source = None;

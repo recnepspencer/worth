@@ -37,7 +37,7 @@ impl WorthQueryOutputDemandRegistry {
             || custody
                 .source
                 .as_ref()
-                .is_none_or(|source| source.receipt != *receipt)
+                .is_none_or(|source| !source.receipt.same_retained_output_source_as(receipt))
         {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -65,7 +65,7 @@ impl WorthQueryOutputDemandRegistry {
                 custody
                     .source
                     .as_ref()
-                    .is_some_and(|source| source.receipt == *receipt)
+                    .is_some_and(|source| source.receipt.same_retained_output_source_as(receipt))
             })?;
         custody.token_count += 1;
         custody
