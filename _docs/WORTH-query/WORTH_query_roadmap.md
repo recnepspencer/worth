@@ -5373,7 +5373,11 @@ quality rules rather than serving as a suite-name registry.
 authoring and complete migration of existing ordinary consumers. Shared model
 meaning, reusable features/compositions, typed occurrence connections, local and
 cross-feature rules, fixed/generated output and required inventory lower into
-one canonical program and the existing owners. Typed phase evidence extends
+one Query-owned canonical compiler/program and the existing owners. Governed
+evaluated requirements, optional subject-to-action correspondence and externally
+resolved typed inputs derive from those same installed contracts rather than
+presentation predicates, handwritten payload tables or operation-name dispatch.
+Typed phase evidence extends
 through actual publication, delivery, dependent admission, settlement and cleanup;
 strings, raw IDs or consumer lookalikes cannot replace canonical evidence.
 
@@ -5438,6 +5442,10 @@ external occurrences for Bank rail and CAD/solver callbacks over the existing ou
 Required inventory survives supplier removal, approvals bind exact proposal/source/
 evidence, duplicate wakes or messages cannot duplicate effects, and status records
 cannot substitute for performed publication or external truth.
+Evidence may be collected once its subject is ready and remains separately assigned,
+collected and consumed. Back/navigation or a new transition occurrence does not by
+itself invalidate it; dependency-scoped edits, expiry and exact signing-intent
+authentication policy govern selective invalidation across multi-subject proposals.
 
 9.18 follows all three completed milestones and consumes their ordinary typed
 operations, exact history, scoped rules and lawful workflow/effect custody. None of

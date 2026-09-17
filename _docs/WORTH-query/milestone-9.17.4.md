@@ -165,6 +165,13 @@ granular invalidation, snapshot isolation and view retirement. Server direct/HTT
 roots preserve fresh authorization. In-process substitutes cannot certify external
 transport or authentication.
 
+A non-CAD action selects an externally versioned document through its installed
+provider binding. Change or remove that revision before resolution and require the
+declared changed/unavailable denial; retain a previously captured historical
+selection as readable provenance. A generated repeated-child client edits and clears
+one optional field while targeting the exact child without handwritten payload-builder
+or resource-to-command correspondence. Both enter the same ordinary mutation path.
+
 
 ## Authoritative Meaning And Compilation
 
@@ -200,6 +207,14 @@ declare what cannot be inferred. Reuse Query expressions, predicates, paths,
 aggregates and planner analysis; no second expression evaluator or arbitrary Rust
 dependency inference. Entry bindings preserve Query-free domain vocabulary.
 
+Query owns the canonical composition/feature/action compiler, its validated program
+representation and the generated implementation slots consumed by installation.
+Downstream authoring kernels may contribute flatter syntax, metadata inference,
+diagnostics and measured consumer adoption to this compiler; they cannot define a
+second public capsule/program representation or installation route. Proprietary
+capsules specialize domain vocabulary into these contracts and retain their domain
+algorithms. They do not become another semantic root.
+
 ### Typed relationships
 
 | Relationship | Contract and consequence |
@@ -209,6 +224,7 @@ dependency inference. Entry bindings preserve Query-free domain vocabulary.
 | Data dependency | Typed input/output, source identity, completeness, freshness, scope mapping and resource bound; derives invalidation/readiness |
 | Workflow precedence | Typed result/condition, enabled successor and failure continuation; grants no reads/writes |
 | Obligation/evidence | Applicability over required subjects, accepted evidence type/version/source and coverage; missing supplier never deletes the requirement |
+| Externally resolved input | Installed provider contract, stable selected identity, dependency parameters, freshness and captured-state disposition; external observation is not native Query source authority |
 
 Connections bind typed ports and occurrence scope mappings, not arbitrary callbacks.
 Cross-feature access uses exported contracts. Unbound required ports or ambiguous
@@ -223,6 +239,15 @@ any additional bounded scope transform; it does not repeat the relation path.
 Installation checks that mapping against both ports and derives source identity,
 dependency/impact routes and the combined resource ceiling. Ambiguous or unbounded
 mappings deny; a dependency edge alone cannot authorize source mutation.
+
+An action input resolved through an installed external provider declares the provider
+contract, selected identity and dependency parameters, required resolution/freshness
+posture, values captured into domain state and retained external revision/provenance.
+Resolution returns typed unavailable, changed and invalid-selection outcomes. A
+database row, signed document or decoded service result remains an external
+observation; an adapter cannot manufacture a native Query source expectation or
+transactional freshness. This extends the existing input/provider binding and does
+not create a lookup engine, scheduler or inbox.
 
 Model topology may contain legal cycles. Reusable-definition nesting is acyclic and
 bounded. Computation cycles reject unless an explicitly installed bounded coupled-solve
@@ -262,6 +287,16 @@ qualified identity and references exported contracts. Semantic diff preserves bo
 rule identity/owner and every installation scope; scope changes cannot disappear
 behind unchanged rule code.
 
+The installed rule binding supplies both enforcement and a governed evaluated
+requirement result. That result carries rule identity and applicability,
+satisfied/unmet/unavailable posture, typed affected subjects and input members,
+relevant source observation and disclosure-safe reasons. A custom rule produces
+structured findings from the same installed implementation that enforces it; the
+application cannot supply a second explanation predicate whose meaning may drift.
+Installed-callability discovery and current authorization assessment are distinct:
+the first reports that a binding exists, the second evaluates whether this principal
+may act now, and neither result grants execution authority.
+
 Removing rules, changing applicability or transferring fact ownership requires
 [9.17.5 program adoption](./milestone-9.17.5.md). Before that product ships, this
 static authoring entry exposes no live program-edit shortcut; existing owner
@@ -281,6 +316,7 @@ ApplicationActionSpec owns the following facts once:
 | Authored fact | Expansion and consumer |
 | --- | --- |
 | Input/result/domain denial and value bindings | Generated intent/result types and checked codecs; transport remains descriptive |
+| Optional subject-to-input correspondence | Typed repeated-row/subject identity, result members that initialize inputs, editable members, explicit clear versus unchanged posture and required source observations; server/client projections derive one mapping |
 | Target scope and required observed source | Installed source selector and mutation builder requiring its expectation |
 | Preconditions and lifecycle transition | Query expressions/reads and candidate before/after checks; illegal transitions deny before effects |
 | Capability, purpose and disclosure | Existing fresh admission route; a semantic capability name grants no authority |
@@ -301,6 +337,13 @@ A custom numerical or domain algorithm supplies a typed compute binding, declare
 bounded input footprint, effect/output ceiling and actual resource request; Query
 does not inspect arbitrary Rust to infer its behavior. Complete posting membership,
 absence reads and dependency completion remain owner-checked, not cached business facts.
+
+The optional correspondence clause completes an action contract through the displayed
+subject boundary. Query owns the semantic mapping; server and client generators
+project it. Product UI code may attach controls and layout, but it cannot hand-author
+another payload builder or resource-to-command correspondence table. Absence of the
+clause means the action has no generated displayed-subject binding, not that a client
+may infer one from field names.
 
 The canonical program contains explicit qualified membership, typed port bindings,
 operation/rule/materialization contracts and authored-clause provenance. Canonicalization
@@ -444,6 +487,13 @@ meaning-incompatible providers deny before bootstrap. The existing contribution/
 traits become internal lowering contracts for migrated definitions; ordinary authors
 cannot use them to augment or override generated meaning. Advanced core contributions
 enter the same validator and generate the same required implementation slots.
+
+Installed external-input providers satisfy generated slots keyed by the declared
+provider contract, never by operation-name dispatch. Preparation consumes their typed
+resolution result and captures exactly the declared values, revision and provenance
+before candidate validation. A selection changed or removed before resolution denies
+according to its declared policy; already captured historical state remains readable
+under its retained provenance and cannot be silently refreshed into different truth.
 
 Declaration constructs canonical/structurally validated program products with private
 constructors; installation alone constructs complete installed products. None is a
@@ -590,6 +640,12 @@ meaning and owner evidence, not a second truth graph. Disclosure/retention appli
 rich explanation is on demand, never mandatory per-edit work. Discovery grants no
 execution authority.
 
+Rule inspection projects the governed evaluated-requirement result from the installed
+enforcement binding. It can answer which requirement applies, which typed subjects or
+inputs are satisfied, unmet or unavailable, and which disclosed observation supports
+that posture without rerunning presentation-owned policy. Current authorization is a
+separate fresh assessment and remains non-authorizing inspection evidence.
+
 
 ## Required Authoring Experience
 
@@ -690,8 +746,8 @@ compiler framework, proc-macro package or generated-source registry.
 worth-query-declaration/src/
   application_program/                                      N
     composition/{authored,ports,connections,canonical}.rs
-    feature/{authored,actions,lifecycle,derived_truth}.rs
-    rules/{scope,dependencies,invariant,obligation}.rs
+    feature/{authored,actions,action_correspondence,lifecycle,derived_truth}.rs
+    rules/{scope,dependencies,invariant,obligation,evaluated_requirement}.rs
     workflow/{vocabulary,definition,connection,validation}/   S 9.17.6 detailed tree there
     expression/{binding,dependency_extraction}.rs             existing IR adapters
     core/{operation,output_protocol,materialization}.rs
@@ -704,7 +760,8 @@ worth-query-declaration/src/
   authoring/ canonicalization/                               E/R existing expression owners
 worth-query-installation/src/application_program/            N
   composition/{closure,ownership,connection_validation}.rs
-  rules/{impact,coverage}.rs
+  rules/{impact,coverage,evaluation}.rs
+  providers/{external_input,selection_resolution}.rs
   workflow/{vocabulary,adapters,definition_contract}.rs       S 9.17.6
   installation/{validation,lowering}.rs
   support/{admission,compatibility,retirement}.rs             S 9.17.5
@@ -725,7 +782,7 @@ worth-query-execution/src/domain_computation/primary_graph/
     adoption/{inventory,dispositions}.rs                      S 9.17.6 participant in 9.17.5
     recovery/{continuation,disposition}.rs                    S 9.17.6
   conditional_operation/ live_delivery/                      E/R no second scheduler
-  application_discovery/                                    E/R governed inspection
+  application_discovery/                                    E/R governed requirement/callability/authorization inspection
 worth-query-publication/src/application_entry/               E/R request/result builders
 worth-query-decl/src/facade.rs                               E/R declaration reexports
 worth-query-host/src/facade.rs                               E/R installed/entry reexports
@@ -818,6 +875,11 @@ Suspend/reconstruct generated output through existing custody; cleanup must pres
 unpublished restoration. Delete duplicate role/count/route/dependency inventories
 for these families. The next phase trusts extensible composition and honest output.
 
+Change one conditional requirement and prove that enforcement denial and governed
+next-required-input inspection change together from the same installed rule binding,
+without presentation-owned requirement logic. Distinguish installed callability from
+fresh current authorization and prove neither inspection product can execute.
+
 ### Phase 3: Bank feature lifecycle and complete ordinary resources
 
 Bind Bank payment initiation/approval/rejection, posting invariants, balances, purpose,
@@ -825,6 +887,10 @@ capability, elevation and distinct-approver meaning through the same declaration
 Complete account/estate/other existing operation families and fixed workflow bindings.
 Use existing domain handlers and managed workflow owners, not a new dynamic engine.
 Remove their copied select/admit/prepare/commit and per-query read pipelines.
+
+Bind one non-CAD externally selected action input through a typed provider contract.
+Prove changed, removed and invalid selections deny before candidate effects while an
+already captured historical selection remains readable under its original provenance.
 
 Finish retained/history/page/live/saved-view delivery, opt-in publication retention,
 idempotent replay and exact external/unpublished/provider recovery in the same entry.
@@ -838,6 +904,10 @@ postures; dynamic authoring is not a prerequisite.
 Migrate UI Query binding's actual projections/live retirement, server direct/HTTP
 adapters, examples and remaining public ordinary call sites. Keep presentation and
 protocol ownership in their consumers. Finish Bank process/resource close coverage.
+Generate optional subject/repeated-row action correspondence through server/client
+projections, including exact targeting, initialization, edit, clear-versus-unchanged
+and required-source behavior. Delete handwritten payload/resource correspondence for
+each migrated identity; controls and layout remain consumer-owned.
 Remove weaker ordinary exports, old authoring aliases, duplicate registries and
 workspace-string execution alternatives. Retire only explicitly provisional Bank
 linear correction commands/routes/tests; preserve accepted aftermath/recovery.
@@ -884,6 +954,13 @@ codecs and deterministic compatibility handling. Unchanged meaning cannot change
 bytes because a Rust module/macro changed. Archives are descriptive definitions
 requiring fresh validation, not installed authority.
 
+Focused acceptance changes one conditional requirement and observes both submission
+denial and required-input guidance change through the same rule implementation. It
+adds one optional field to a repeated child and obtains edit, explicit clear and exact
+targeting without a handwritten client payload change. It also changes/removes an
+external selection before resolution, observes the declared denial, and proves retained
+historical captured state remains readable without being promoted to native freshness.
+
 Measure cold/warm owner and consumer compilation, declaration-only/domain-only
 rebuilds, dependency/adjacency visits, candidate effects/bytes, invariant work,
 MVCC granules, producer/delivery contacts, publications and retained resources.
@@ -924,7 +1001,8 @@ Query authors/integrators use
 worth-query/docs/foundations/ordinary-application-front-door.md as the authoritative
 composition/feature/action/rule/output guide. Its examples compile through decl/host
 facades. Update their READMEs and the existing declarative-query guide to describe
-one entry, required provider slots, typed failures, retained reads and managed demand.
+one entry, evaluated requirements, action correspondence, external-input provider
+slots, typed failures, retained reads and managed demand.
 Query AI_README.md names current owners; existing history/aftermath/resource guides
 retain their complete operator contracts.
 
