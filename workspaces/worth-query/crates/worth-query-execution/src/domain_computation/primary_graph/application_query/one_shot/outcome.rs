@@ -59,16 +59,26 @@ where
     let basis_version = plan.basis.version_id();
     let observed_sources = source_footprints
         .into_iter()
-        .map(|footprint| super::super::WorthQueryObservedSource {
-            runtime_authority: plan.runtime_authority.as_u64(),
-            schema_binding: plan.query.binding_identity().clone(),
-            query_identity: plan.query.identity().clone(),
-            query_identifier: plan.query.name().to_owned(),
-            branch: basis_identity.branch_id().clone(),
-            selection: basis_identity.selection().clone(),
-            model_root: plan.scope.entity_id(),
-            footprint,
-            _marker: PhantomData,
+        .map(|footprint| {
+            let selection = basis_identity.selection().clone();
+            let source_identity =
+                super::super::observed_source::source_identity::derive_source_identity(
+                    plan.query.identity().as_bytes(),
+                    &footprint,
+                    &selection,
+                );
+            super::super::WorthQueryObservedSource {
+                runtime_authority: plan.runtime_authority.as_u64(),
+                schema_binding: plan.query.binding_identity().clone(),
+                query_identity: plan.query.identity().clone(),
+                query_identifier: plan.query.name().to_owned(),
+                branch: basis_identity.branch_id().clone(),
+                selection,
+                model_root: plan.scope.entity_id(),
+                footprint,
+                source_identity,
+                _marker: PhantomData,
+            }
         })
         .collect();
     let basis_release = plan.basis.release();

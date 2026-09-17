@@ -80,8 +80,13 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         self.output_demands.ensure_prepared_output_source_bound(
             &prepared.source_commit,
             crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
-                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.footprint.root),
-                identity: observed.idempotency_identity(),
+                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
+                identity: observed.output_source_epoch().ok_or_else(|| {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        "recovered source has no product epoch",
+                    )
+                })?,
             },
         )
     }
@@ -120,8 +125,18 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         }
         self.output_demands.validate_prepared_recovery_currentness(
             &prepared.source_commit,
-            retained_observed.idempotency_identity(),
-            current_observed.idempotency_identity(),
+            retained_observed.output_source_epoch().ok_or_else(|| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    "retained source has no product epoch",
+                )
+            })?,
+            current_observed.output_source_epoch().ok_or_else(|| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    "current source has no product epoch",
+                )
+            })?,
         )
     }
 }

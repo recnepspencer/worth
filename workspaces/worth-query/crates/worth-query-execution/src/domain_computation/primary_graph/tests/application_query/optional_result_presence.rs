@@ -77,7 +77,7 @@ fn execute(world: &AuthorizationWorld, account: &str) -> OptionalAccountFieldRes
     assert_eq!(result.rows()[0].account(), account);
     assert_eq!(result.receipt().projected_field_count(), 4);
     assert!(result.receipt().disclosure().omitted().is_empty());
-    let footprint = &result.observed_sources()[0].footprint;
+    let footprint = result.observed_sources()[0].footprint_for_test();
     assert_eq!(footprint.aspects.len(), 2);
     assert_eq!(
         footprint

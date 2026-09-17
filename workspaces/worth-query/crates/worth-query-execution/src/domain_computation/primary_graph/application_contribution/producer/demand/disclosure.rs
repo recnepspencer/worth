@@ -73,7 +73,7 @@ where
         || disclosed != &current
         || !original.same_branch_occurrence(disclosed)
         || source.model_root != demand.observed_source.model_root
-        || source.footprint.root != demand.observed_source.footprint.root
+        || source.source_root() != demand.observed_source.source_root()
     {
         return Err(denial(
             WorthQueryOutputDemandDenialKind::Superseded,

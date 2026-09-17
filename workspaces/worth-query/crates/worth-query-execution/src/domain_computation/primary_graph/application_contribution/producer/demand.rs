@@ -310,7 +310,7 @@ where
             .source_posture_for_any_output_binding(
                 self.runtime.authority_identity().as_u64(),
                 &self.installed_schema.binding_identity(),
-                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.footprint.root),
+                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root()),
                 observation.lifecycle_incarnation(),
                 observation.reference_generation().get(),
                 &output_bindings,

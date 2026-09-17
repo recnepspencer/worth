@@ -179,6 +179,7 @@ where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         let source_identity = source.idempotency_identity();
+        let source_root = source.source_root();
         let crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisSelectionIdentity::Product(selection) = source.selection.clone() else {
             return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
                 WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
@@ -189,7 +190,7 @@ where
             ExpectedSourceQualification {
                 runtime_authority: source.runtime_authority,
                 schema: source.schema_binding,
-                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.footprint.root),
+                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source_root),
                 source_identity,
                 selection,
             },

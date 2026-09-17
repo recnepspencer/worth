@@ -1,7 +1,6 @@
 use super::{
     BoundOutputSource, DemandRegistryState, DemandState, PreparedOutputRootKind, SourceCustody,
-    WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry,
-    WorthQueryPerformedOutputDemandSource,
+    WorthQueryOutputDemandRegistry, WorthQueryPerformedOutputDemandSource,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
@@ -85,16 +84,13 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn validate_prepared_recovery_currentness(
         &self,
         commit: &CompositeCommitIdentity,
-        retained: [u8; 32],
-        current: [u8; 32],
+        retained: crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,
+        current: crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        if retained == current {
+        if retained.same_semantic_source(&current) {
             return Ok(());
         }
-        if WorthQueryOutputDemandKey::source_same_occurrence(&retained, &current)
-            && WorthQueryOutputDemandKey::source_revision(&current)
-                > WorthQueryOutputDemandKey::source_revision(&retained)
-        {
+        if current.replacement_order(&retained) == Some(Ordering::Greater) {
             let mut state = self
                 .state
                 .lock()
@@ -132,9 +128,9 @@ impl WorthQueryOutputDemandRegistry {
         sources: &[BoundOutputSource],
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         if sources.iter().enumerate().any(|(index, source)| {
-            sources[..index].iter().any(|prior| {
-                WorthQueryOutputDemandKey::source_same_occurrence(&prior.identity, &source.identity)
-            })
+            sources[..index]
+                .iter()
+                .any(|prior| prior.identity.same_occurrence(&source.identity))
         }) {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
@@ -305,26 +301,23 @@ pub(super) fn root_revision_order(
     prior: &BoundOutputSource,
     successor: &BoundOutputSource,
 ) -> Option<Ordering> {
-    (prior.scope == successor.scope
-        && WorthQueryOutputDemandKey::source_same_occurrence(&prior.identity, &successor.identity))
-    .then(|| {
-        WorthQueryOutputDemandKey::source_revision(&prior.identity).cmp(
-            &WorthQueryOutputDemandKey::source_revision(&successor.identity),
-        )
-    })
+    (prior.scope == successor.scope)
+        .then(|| prior.identity.replacement_order(&successor.identity))
+        .flatten()
 }
 
 fn retire_stale_records(
     state: &mut DemandRegistryState,
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    successor: &[u8; 32],
+    successor: &crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,
 ) {
+    // Custody retirement is source-wide: a changed query source invalidates
+    // every producer record that was computed from its older epoch.
     for (key, record) in &mut state.records {
         if record.product_occurrence == occurrence
             && record.source_scope == Some(scope)
-            && WorthQueryOutputDemandKey::source_same_occurrence(&key.source, successor)
-            && key.revision() < WorthQueryOutputDemandKey::source_revision(successor)
+            && key.source.replacement_order(successor) == Some(Ordering::Less)
         {
             let cause = denial(WorthQueryOutputDemandDenialKind::Superseded, &key.producer);
             match &mut record.state {
@@ -338,8 +331,7 @@ fn retire_stale_records(
     state.records.retain(|key, record| {
         record.product_occurrence != occurrence
             || record.source_scope != Some(scope)
-            || !WorthQueryOutputDemandKey::source_same_occurrence(&key.source, successor)
-            || key.revision() >= WorthQueryOutputDemandKey::source_revision(successor)
+            || key.source.replacement_order(successor) != Some(Ordering::Less)
             || record.interests != 0
     });
 }

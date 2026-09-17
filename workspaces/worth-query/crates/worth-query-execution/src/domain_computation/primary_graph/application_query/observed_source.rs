@@ -12,6 +12,8 @@ use worth_relational::facade::{
 use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 
 mod footprint_accounting;
+pub(super) mod source_identity;
+pub(in crate::domain_computation::primary_graph) use source_identity::WorthQueryObservedSourceEpoch;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQuerySourceExpectationDenialKind {
@@ -114,7 +116,8 @@ pub struct WorthQueryObservedSource<Query> {
     pub(in crate::domain_computation) branch: BranchId,
     pub(in crate::domain_computation) selection: WorthQueryApplicationBasisSelectionIdentity,
     pub(in crate::domain_computation) model_root: EntityId,
-    pub(in crate::domain_computation) footprint: WorthQueryObservedSourceFootprint,
+    pub(super) footprint: WorthQueryObservedSourceFootprint,
+    pub(super) source_identity: [u8; 32],
     pub(in crate::domain_computation) _marker: PhantomData<fn() -> Query>,
 }
 
@@ -137,6 +140,7 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
             selection: self.selection.clone(),
             model_root: self.model_root,
             footprint: self.footprint.clone(),
+            source_identity: self.source_identity,
             _marker: PhantomData,
         }
     }
@@ -177,36 +181,33 @@ impl<Query> WorthQueryObservedSource<Query> {
         })
     }
 
-    /// Collision-free source epoch within the runtime, installation, query,
-    /// and branch contract validated before idempotency lookup. Every relevant
-    /// source mutation advances at least one native revision; branch-local
-    /// sibling work advances none of them.
+    /// Collision-resistant digest of the complete normalized source footprint.
+    /// Runtime, installation, query, and branch affinity are validated before
+    /// idempotency lookup; branch-local sibling work leaves this digest intact.
     pub(in crate::domain_computation) fn idempotency_identity(&self) -> [u8; 32] {
-        let mut identity = [0; 32];
-        identity[..4].copy_from_slice(&self.footprint.root.partition_value().to_be_bytes());
-        identity[4..12].copy_from_slice(&self.footprint.root.local_slot_value().to_be_bytes());
-        identity[12..16].copy_from_slice(&self.footprint.root.generation_value().to_be_bytes());
-        let latest_revision =
-            self.footprint
-                .aspects
-                .iter()
-                .filter_map(|aspect| aspect.native_revision)
-                .chain(
-                    self.footprint.adjacencies.iter().filter_map(|adjacency| {
-                        adjacency.native_revision.map(|revision| revision.0)
-                    }),
-                )
-                .max()
-                .unwrap_or(0);
-        identity[16..24].copy_from_slice(&latest_revision.to_be_bytes());
-        let lifecycle_ordinal = match &self.selection {
-            WorthQueryApplicationBasisSelectionIdentity::Product(product) => {
-                product.lifecycle_incarnation().ordinal()
-            }
-            WorthQueryApplicationBasisSelectionIdentity::Relational => 0,
-        };
-        identity[24..].copy_from_slice(&lifecycle_ordinal.to_be_bytes());
-        identity
+        self.source_identity
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn output_source_epoch(
+        &self,
+    ) -> Option<source_identity::WorthQueryObservedSourceEpoch> {
+        source_identity::WorthQueryObservedSourceEpoch::from_observation(
+            self.query_identity.as_bytes(),
+            &self.footprint,
+            &self.selection,
+            self.source_identity,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn source_root(&self) -> EntityId {
+        self.footprint.root
+    }
+
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) const fn footprint_for_test(
+        &self,
+    ) -> &WorthQueryObservedSourceFootprint {
+        &self.footprint
     }
     pub(in crate::domain_computation) fn validate_and_into_facts(
         self,

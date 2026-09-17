@@ -66,7 +66,7 @@ fn filters_siblings_before_child_projection() {
     assert_eq!(result.receipt().projected_record_count(), 2);
     assert_eq!(result.receipt().projected_field_count(), 1);
     assert!(result.receipt().work().predicate_work_units() >= 5);
-    let source = &result.observed_sources()[0].footprint;
+    let source = result.observed_sources()[0].footprint_for_test();
     assert_eq!(source.entities.len(), 3);
     assert_eq!(source.aspects.len(), 2);
     assert_eq!(source.adjacencies.len(), 1);

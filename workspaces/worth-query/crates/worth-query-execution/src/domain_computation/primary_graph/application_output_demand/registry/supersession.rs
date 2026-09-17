@@ -50,16 +50,15 @@ pub(super) fn supersede_predecessors(
     state: &mut DemandRegistryState,
     successor: &WorthQueryOutputDemandKey,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
+    // Ordinary demand supersession is producer-scoped: another producer may
+    // still be computing from this source until currentness rejects its work.
     if state.records.keys().any(|key| {
-        key != successor && key.same_occurrence(successor) && key.revision() > successor.revision()
+        key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater)
     }) {
         return Err(superseded_denial(&successor.producer));
     }
     for (key, record) in &mut state.records {
-        if key != successor
-            && key.same_occurrence(successor)
-            && key.revision() < successor.revision()
-        {
+        if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Less) {
             let denial = superseded_denial(&key.producer);
             match &mut record.state {
                 DemandState::Output(output) => output.stop(denial),

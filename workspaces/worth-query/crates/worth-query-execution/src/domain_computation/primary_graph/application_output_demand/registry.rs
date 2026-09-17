@@ -3,6 +3,9 @@ use std::sync::{Arc, Condvar, Mutex};
 
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
+type SourceEpoch =
+    crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
+
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPerformedOutputDemandSource {
     pub(in crate::domain_computation::primary_graph) receipt:
@@ -12,7 +15,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPerformedOutpu
     >,
     pub(in crate::domain_computation::primary_graph) observation:
         worth_runtime_world::facade::ProductBranchObservation,
-    pub(in crate::domain_computation::primary_graph) output_source_identity: Option<[u8; 32]>,
+    pub(in crate::domain_computation::primary_graph) output_source_identity: Option<SourceEpoch>,
 }
 
 struct DiscoveredSourceRecovery {
@@ -33,8 +36,8 @@ struct SourceCustody {
     source: Option<WorthQueryPerformedOutputDemandSource>,
     discovery: Option<DiscoveredSourceRecovery>,
     bound_sources: Option<Vec<BoundOutputSource>>,
-    consumed_sources: Vec<[u8; 32]>,
-    retired_sources: Vec<([u8; 32], WorthQueryOutputDemandDenial)>,
+    consumed_sources: Vec<SourceEpoch>,
+    retired_sources: Vec<(SourceEpoch, WorthQueryOutputDemandDenial)>,
     retired: Option<WorthQueryOutputDemandDenial>,
     token_count: usize,
     completed: bool,
@@ -44,13 +47,13 @@ struct SourceCustody {
 pub(in crate::domain_computation::primary_graph) struct BoundOutputSource {
     pub(in crate::domain_computation::primary_graph) scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    pub(in crate::domain_computation::primary_graph) identity: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) identity: SourceEpoch,
 }
 
 impl SourceCustody {
     fn available(
         &self,
-        identity: &[u8; 32],
+        identity: &SourceEpoch,
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     ) -> bool {
         self.retired.is_none()
@@ -83,11 +86,11 @@ impl SourceCustody {
         })
     }
 
-    fn finish_admission(&mut self, identity: [u8; 32]) {
+    fn finish_admission(&mut self, identity: SourceEpoch) {
         self.consumed_sources.push(identity);
     }
 
-    fn source_denial(&self, identity: &[u8; 32]) -> Option<WorthQueryOutputDemandDenial> {
+    fn source_denial(&self, identity: &SourceEpoch) -> Option<WorthQueryOutputDemandDenial> {
         self.retired_sources
             .iter()
             .find(|(retired, _)| retired == identity)
@@ -112,41 +115,29 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputScheduling
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandKey {
     producer: String,
-    source: [u8; 32],
+    source: SourceEpoch,
 }
 
 impl WorthQueryOutputDemandKey {
     pub(in crate::domain_computation::primary_graph) fn new(
         producer: String,
-        source: [u8; 32],
+        source: SourceEpoch,
     ) -> Self {
         Self { producer, source }
     }
 
     fn same_occurrence(&self, other: &Self) -> bool {
-        self.producer == other.producer
-            && self.source[..16] == other.source[..16]
-            && self.source[24..] == other.source[24..]
+        self.producer == other.producer && self.source.same_occurrence(&other.source)
     }
 
-    fn revision(&self) -> u64 {
-        u64::from_be_bytes(
-            self.source[16..24]
-                .try_into()
-                .expect("source revision occupies eight bytes"),
-        )
+    fn same_semantic_source(&self, other: &Self) -> bool {
+        self.producer == other.producer && self.source.same_semantic_source(&other.source)
     }
 
-    fn source_same_occurrence(left: &[u8; 32], right: &[u8; 32]) -> bool {
-        left[..16] == right[..16] && left[24..] == right[24..]
-    }
-
-    fn source_revision(source: &[u8; 32]) -> u64 {
-        u64::from_be_bytes(
-            source[16..24]
-                .try_into()
-                .expect("source revision occupies eight bytes"),
-        )
+    fn replacement_order(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        (self.producer == other.producer)
+            .then(|| self.source.replacement_order(&other.source))
+            .flatten()
     }
 }
 

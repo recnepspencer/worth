@@ -202,7 +202,12 @@ where
         }
         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
             selected.identity.clone(),
-            observed_source.idempotency_identity(),
+            observed_source.output_source_epoch().ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    Family::IDENTITY,
+                )
+            })?,
         );
         let product_occurrence =
             observed_source
@@ -217,7 +222,7 @@ where
             Some(source_commit) => self.output_demands.admit_performed(
                 key,
                 &source_commit,
-                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed_source.footprint.root),
+                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed_source.source_root()),
                 product_occurrence,
             )?,
             None => self.output_demands.admit(
@@ -229,7 +234,7 @@ where
                     )
                 })?),
                 crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
-                    observed_source.footprint.root,
+                    observed_source.source_root(),
                 ),
                 product_occurrence,
                 admission_kind,

@@ -40,7 +40,11 @@ impl WorthQueryOutputDemandRegistry {
                     && selected_commit.is_some_and(|selected| pending_commit == Some(selected))
             })
             .map(|(key, _)| key.clone());
+        let matching_semantic_source = newest_semantic_key(&state, &requested_key, |record| {
+            accepts_semantic_join(record)
+        });
         let requested_source = requested_key.source;
+        let mut retained_key = None;
         if admission_kind == DemandAdmissionKind::Recovery {
             let expected = expected_source_commit.ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
@@ -61,12 +65,20 @@ impl WorthQueryOutputDemandRegistry {
                 return Err(retired);
             }
             let same_occurrence = custody.occurrence == product_occurrence;
-            let retained_record = state.records.get(&requested_key).is_some_and(|record| {
+            retained_key = newest_semantic_key(&state, &requested_key, |record| {
                 record.required
                     && record.source_commits.contains(expected)
                     && record.product_occurrence == product_occurrence
                     && record.source_scope == Some(source_scope)
             });
+            if let Some(DemandState::Failed(denial)) = retained_key
+                .as_ref()
+                .and_then(|key| state.records.get(key))
+                .map(|record| &record.state)
+            {
+                return Err(denial.clone());
+            }
+            let retained_record = retained_key.is_some();
             let available = custody.available(&requested_source, source_scope);
             if !same_occurrence || (!retained_record && !available) {
                 return Err(WorthQueryOutputDemandDenial::new(
@@ -75,8 +87,12 @@ impl WorthQueryOutputDemandRegistry {
                 ));
             }
         }
-        let existing_key = if state.records.contains_key(&requested_key) {
+        let existing_key = if retained_key.is_some() {
+            retained_key
+        } else if state.records.contains_key(&requested_key) {
             Some(requested_key.clone())
+        } else if let Some(key) = matching_semantic_source {
+            Some(key)
         } else if let Some(key) = matching_delivery {
             Some(key)
         } else {
@@ -150,7 +166,7 @@ impl WorthQueryOutputDemandRegistry {
 
     pub(in crate::domain_computation::primary_graph) fn admit_performed(
         &self,
-        key: WorthQueryOutputDemandKey,
+        requested_key: WorthQueryOutputDemandKey,
         source_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
         source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
         product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
@@ -168,10 +184,10 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(denial) = &custody.retired {
             return Err(denial.clone());
         }
-        if let Some(denial) = custody.source_denial(&key.source) {
+        if let Some(denial) = custody.source_denial(&requested_key.source) {
             return Err(denial);
         }
-        if !custody.available(&key.source, source_scope) {
+        if !custody.available(&requested_key.source, source_scope) {
             if custody.bound_sources.is_some() {
                 return Err(WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -183,6 +199,8 @@ impl WorthQueryOutputDemandRegistry {
                 "performed source is absent or has already been consumed",
             ));
         }
+        let key = newest_semantic_key(&state, &requested_key, accepts_semantic_join)
+            .unwrap_or_else(|| requested_key.clone());
         if let Some(record) = state.records.get(&key) {
             if record.product_occurrence != product_occurrence
                 || record.source_scope != Some(source_scope)
@@ -196,7 +214,7 @@ impl WorthQueryOutputDemandRegistry {
                 return Err(denial.clone());
             }
         }
-        supersede_predecessors(&mut state, &key)?;
+        supersede_predecessors(&mut state, &requested_key)?;
         let custody = state
             .source_custody
             .get_mut(source_commit)
@@ -206,8 +224,8 @@ impl WorthQueryOutputDemandRegistry {
             .as_ref()
             .expect("available custody retains source")
             .clone();
-        performed_source.output_source_identity = Some(key.source);
-        custody.finish_admission(key.source);
+        performed_source.output_source_identity = Some(requested_key.source);
+        custody.finish_admission(requested_key.source);
         let record = state.records.entry(key.clone()).or_insert_with(|| {
             new_record(
                 product_occurrence,
@@ -228,6 +246,30 @@ impl WorthQueryOutputDemandRegistry {
         record.interests = record.interests.saturating_add(1);
         Ok(interest(self, key, record))
     }
+}
+
+fn accepts_semantic_join(record: &DemandRecord) -> bool {
+    match &record.state {
+        DemandState::Failed(_) => false,
+        DemandState::Output(output) => !matches!(
+            output.advancement,
+            super::WorthQueryOutputAdvancement::Stopped { .. }
+        ),
+        _ => true,
+    }
+}
+
+fn newest_semantic_key(
+    state: &super::DemandRegistryState,
+    requested: &WorthQueryOutputDemandKey,
+    accepts: impl Fn(&DemandRecord) -> bool,
+) -> Option<WorthQueryOutputDemandKey> {
+    state
+        .records
+        .iter()
+        .filter(|(key, record)| key.same_semantic_source(requested) && accepts(record))
+        .max_by_key(|(key, _)| key.source.observation_generation())
+        .map(|(key, _)| key.clone())
 }
 
 fn new_record(

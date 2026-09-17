@@ -138,8 +138,13 @@ where
         self.output_demands.bind_prepared_output_source(
             &prepared.source_commit,
             crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
-                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.footprint.root),
-                identity: observed.idempotency_identity(),
+                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
+                identity: observed.output_source_epoch().ok_or_else(|| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        "prepared output source has no product epoch",
+                    )
+                })?,
             },
         )
     }
@@ -174,8 +179,13 @@ where
                     observed,
                 )?;
                 Ok(crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
-                    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.footprint.root),
-                    identity: observed.idempotency_identity(),
+                    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
+                    identity: observed.output_source_epoch().ok_or_else(|| {
+                        denial(
+                            WorthQueryOutputDemandDenialKind::ForeignSource,
+                            "discovered output source has no product epoch",
+                        )
+                    })?,
                 })
             })
             .collect::<Result<Vec<_>, WorthQueryOutputDemandDenial>>()?;
