@@ -43,7 +43,7 @@ pub(super) fn abandoned_and_superseded_preparations_are_bounded(
         "caller disposal leaves exact prepared custody with the owner"
     );
     let mut recovered = request
-        .recover_required_outputs::<crate::ConsumerProgram>(
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &abandoned_receipt,
             PlanarOutputDemand::new("anchor-a"),
@@ -224,6 +224,7 @@ type Prepared<'a> =
         ConsumerSchema,
         PlanarSourceAdjustment,
         crate::ConsumerProgram,
+        crate::ConsumerProgramRoot,
     >;
 
 fn prepare<'a>(
@@ -248,7 +249,7 @@ fn prepare<'a>(
         })
         .expect_source(source)
         .idempotency(&command)
-        .execute_performed(application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(application)
         .expect("the source operation reaches its installed program");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source operation must perform")
@@ -269,11 +270,12 @@ fn settle<'a>(
         ConsumerSchema,
         PlanarSourceAdjustment,
         crate::ConsumerProgram,
+        crate::ConsumerProgramRoot,
     >,
     request: &'a Request<'a>,
 ) -> worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputSettlement<
     <worth_query_topology_entry::PlanarReadBinding<ConsumerSchema> as worth_query_decl::facade::application_query::ApplicationQueryBinding<ConsumerSchema>>::Query,
-> {
+>{
     loop {
         match performed.required_output_mut().advance(request).unwrap() {
             WorthQueryApplicationProgramOutputProgress::Pending => {}

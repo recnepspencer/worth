@@ -87,6 +87,7 @@ where
             SourceQuery<Schema, ParentDemand>,
         >,
         parent_authority: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
@@ -136,6 +137,7 @@ where
             SourceQuery<Schema, ParentDemand>,
         >,
         _: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        _: &crate::application_entry::WorthQueryApplicationReadObservation,
         _: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
         _: WorthQueryOutputDemandControls,
     ) -> Result<
@@ -170,6 +172,7 @@ where
     outputs: Vec<ProgramOutputRecord>,
     work: ProgramOutputTraversalWork,
     controls: WorthQueryOutputDemandControls,
+    basis: crate::application_entry::WorthQueryApplicationReadObservation,
     marker: std::marker::PhantomData<fn() -> Children>,
 }
 
@@ -237,6 +240,7 @@ where
             SourceQuery<Schema, ParentDemand>,
         >,
         parent_authority: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
@@ -245,7 +249,14 @@ where
     > {
         let discovery = Binding::<Schema, Connection>::discovery_from_root(parent_demand)
             .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?;
-        let retained = request.at(parent_settlement.observation());
+        let basis = if parent_settlement.observation().selected_commit().ordinal()
+            >= minimum_observation.selected_commit().ordinal()
+        {
+            parent_settlement.observation()
+        } else {
+            minimum_observation
+        };
+        let retained = request.at(basis);
         let result = retained
             .query(discovery)
             .execute()
@@ -266,6 +277,8 @@ where
                     .start_dependent::<Program, ParentDemand, Connection>(
                         application,
                         parent_authority,
+                        basis,
+                        minimum_observation,
                     )
                     .map_err(WorthQueryRequiredOutputPreparationDenial::Demand)?;
                 Ok(EdgeNode {
@@ -281,6 +294,7 @@ where
             outputs: Vec::new(),
             work,
             controls,
+            basis: basis.retained_clone(),
             marker: std::marker::PhantomData,
         }))
     }
@@ -337,6 +351,7 @@ where
                             &node.demand,
                             &settlement,
                             &authority,
+                            &self.basis,
                             request,
                             self.controls,
                         )?);

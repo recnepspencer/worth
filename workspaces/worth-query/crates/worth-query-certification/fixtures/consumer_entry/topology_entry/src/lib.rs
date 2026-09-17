@@ -16,6 +16,7 @@ pub use alternate_output::*;
 pub use application_program::*;
 pub use contribution::TopologyConfiguration;
 pub use final_output::*;
+mod discovery_read;
 mod mutation;
 mod mutation_identity;
 mod planar_invariant;
@@ -30,6 +31,7 @@ mod source_adjustment;
 mod vertex_replacement;
 pub use vertex_replacement::*;
 
+pub use discovery_read::*;
 pub use handler::*;
 pub use mutation::*;
 pub use planar_invariant::*;
@@ -91,6 +93,11 @@ worth_query_application_contribution! {
                     Body::reference::<Schema>(),
                 )
                 .relation(
+                    PlanarDiscoverySource::reference::<Schema>(),
+                    Body::reference::<Schema>(),
+                    Body::reference::<Schema>(),
+                )
+                .relation(
                     UndeclaredPlanarRelation::reference::<Schema>(),
                     Body::reference::<Schema>(),
                     Body::reference::<Schema>(),
@@ -124,6 +131,8 @@ worth_query_application_contribution! {
                 .application_mutation_binding::<PlanarMutationBinding<Schema>>()
                 .application_query(planar_query_definition::<Schema>())
                 .application_query_binding::<PlanarReadBinding<Schema>>()
+                .application_query(planar_discovery_definition::<Schema>())
+                .application_query_binding::<PlanarDiscoveryBinding<Schema>>()
                 .application_query(planar_output_query_definition::<Schema>())
                 .application_query_binding::<PlanarOutputReadBinding<Schema>>()
         }

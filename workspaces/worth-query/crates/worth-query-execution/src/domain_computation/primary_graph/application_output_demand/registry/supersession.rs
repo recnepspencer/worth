@@ -20,13 +20,28 @@ impl WorthQueryOutputDemandRegistry {
             .records
             .get_mut(&interest.key)
             .expect("superseded demand retains its owner record");
-        let denial = superseded_denial(subject);
-        if !matches!(record.state, DemandState::Failed(ref existing) if existing.kind() == WorthQueryOutputDemandDenialKind::Closed)
-        {
-            record.state = DemandState::Failed(denial.clone());
-            record.performed_source = None;
-            record.wake.notify();
+        match &record.state {
+            DemandState::Failed(existing)
+                if existing.kind() == WorthQueryOutputDemandDenialKind::Closed =>
+            {
+                return existing.clone();
+            }
+            DemandState::Output(output) => {
+                if let super::WorthQueryOutputAdvancement::Stopped { denial, .. } =
+                    &output.advancement
+                {
+                    return denial.clone();
+                }
+            }
+            _ => {}
         }
+        let denial = superseded_denial(subject);
+        match &mut record.state {
+            DemandState::Output(output) => output.stop(denial.clone()),
+            _ => record.state = DemandState::Failed(denial.clone()),
+        }
+        record.performed_source = None;
+        record.wake.notify();
         denial
     }
 }
@@ -45,7 +60,11 @@ pub(super) fn supersede_predecessors(
             && key.same_occurrence(successor)
             && key.revision() < successor.revision()
         {
-            record.state = DemandState::Failed(superseded_denial(&key.producer));
+            let denial = superseded_denial(&key.producer);
+            match &mut record.state {
+                DemandState::Output(output) => output.stop(denial),
+                _ => record.state = DemandState::Failed(denial),
+            }
             record.performed_source = None;
             record.wake.notify();
         }
@@ -55,6 +74,8 @@ pub(super) fn supersede_predecessors(
             || !key.same_occurrence(successor)
             || record.interests != 0
             || !matches!(record.state, DemandState::Failed(_))
+                && !matches!(&record.state, DemandState::Output(output)
+                    if matches!(output.advancement, super::WorthQueryOutputAdvancement::Stopped { .. }))
     });
     Ok(())
 }

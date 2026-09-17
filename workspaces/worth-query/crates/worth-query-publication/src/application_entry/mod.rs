@@ -22,18 +22,21 @@ pub use live::{
     WorthQueryApplicationLiveOpenRequestDenial, WorthQueryApplicationLiveSubscription,
 };
 pub use mutation::{
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequest,
-    WorthQueryApplicationMutationRequestWithIdempotency,
+    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryApplicationMutationOutcome,
+    WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputHandle,
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
-    WorthQueryApplicationProgramWork, WorthQueryMutationSourcePrepared,
-    WorthQueryPerformedApplicationMutation, WorthQueryPerformedMutationExecutionDenial,
-    WorthQueryRequiredOutputPreparationDenial, WorthQueryRequiredOutputStartFailure,
-    WorthQueryStartedRequiredOutputs,
+    WorthQueryApplicationProgramWork, WorthQueryDiscoveredOutputStartFailure,
+    WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
+    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryMutationSourcePrepared,
+    WorthQueryPerformedApplicationMutation, WorthQueryPerformedDiscoveredApplicationMutation,
+    WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
+    WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputStartFailure,
+    WorthQueryStartedDiscoveredOutputs, WorthQueryStartedRequiredOutputs,
 };
 pub use query::WorthQueryApplicationQueryRequest;
 pub use request::{
     WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
-    WorthQueryApplicationRetainedRequest,
+    WorthQueryApplicationRetainedRequest, WorthQueryProgramOutputCurrentnessDenial,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;

@@ -3,12 +3,14 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationEntityKey, WorthQueryApplicationEntitySeed,
     WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphBootstrap,
 };
-use worth_query_topology_entry::{Body, BodyKey, Length, PlanarSuccessor, PositionX, PositionY};
+use worth_query_topology_entry::{
+    Body, BodyKey, Length, PlanarDiscoverySource, PlanarSuccessor, PositionX, PositionY,
+};
 
 use crate::ConsumerSchema;
 
 pub(super) fn seed_cycles(graph: &mut WorthQueryPrimaryGraphBootstrap<ConsumerSchema>) {
-    for (prefix, offset) in [("anchor", 0), ("sibling", 20)] {
+    for (prefix, offset) in [("anchor", 0), ("sibling", 20), ("remote", 40)] {
         for (name, x, y) in [("a", 1, 1), ("b", 10, 1), ("c", 1, 10)] {
             let key = format!("{prefix}-{name}");
             graph
@@ -35,6 +37,24 @@ pub(super) fn seed_cycles(graph: &mut WorthQueryPrimaryGraphBootstrap<ConsumerSc
                 .expect("the source ring has one successor per vertex");
         }
     }
+    for target in ["b", "c"] {
+        graph
+            .bind_relation(WorthQueryApplicationRelationSeed::new(
+                PlanarDiscoverySource::reference::<ConsumerSchema>(),
+                format!("anchor-a-discovers-{target}"),
+                entity_key("anchor-a"),
+                entity_key(&format!("sibling-{target}")),
+            ))
+            .expect("the authored anchor discovers its output sources");
+    }
+    graph
+        .bind_relation(WorthQueryApplicationRelationSeed::new(
+            PlanarDiscoverySource::reference::<ConsumerSchema>(),
+            "anchor-a-discovers-remote-b",
+            entity_key("anchor-a"),
+            entity_key("remote-b"),
+        ))
+        .expect("the authored anchor discovers an independent output source");
 }
 
 fn entity_key(key: &str) -> WorthQueryApplicationEntityKey<ConsumerSchema, Body> {

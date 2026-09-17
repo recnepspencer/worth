@@ -1,33 +1,33 @@
 use super::*;
 
-impl<'application, Schema, Intent, Program>
-    WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program>
+impl<'application, Schema, Intent, Program, Root>
+    WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
-    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
-    RootConnection<Schema, Program>:
+    Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+    RootConnection<Schema, Root>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
-    ProgramRootEdges<Schema, Program>:
+    Root::Dependents:
         crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
             'application,
             Schema,
             Program,
-            ProgramDemand<Schema, Program>,
+            ProgramDemand<Schema, Root>,
         >,
-    ProgramDemand<Schema, Program>: Clone,
-    <DemandSource<Schema, Program> as ApplicationQueryBinding<Schema>>::Input:
-        ApplicationQueryIntent<Schema, Binding = DemandSource<Schema, Program>>,
-    <DemandSource<Schema, Program> as ApplicationQueryBinding<Schema>>::ScopeBinding:
+    ProgramDemand<Schema, Root>: Clone,
+    <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
+        ApplicationQueryIntent<Schema, Binding = DemandSource<Schema, Root>>,
+    <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ScopeBinding:
         ApplicationQueryScopeResolution<
             Schema,
-            <DemandSource<Schema, Program> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
         >,
-    <<DemandSource<Schema, Program> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
+    <<DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
         WorthQueryApplicationProjection<
                 Schema,
-                <DemandSource<Schema, Program> as ApplicationQueryBinding<Schema>>::Query,
+                <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Query,
             > + Clone,
 {
     pub fn start_required_outputs<'principal, 'scope>(
@@ -40,8 +40,8 @@ where
         >,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Result<
-        WorthQueryStartedRequiredOutputs<'application, Schema, Intent, Program>,
-        WorthQueryRequiredOutputStartFailure<'application, Schema, Intent, Program>,
+        WorthQueryStartedRequiredOutputs<'application, Schema, Intent, Program, Root>,
+        WorthQueryRequiredOutputStartFailure<'application, Schema, Intent, Program, Root>,
     > {
         let Self {
             receipt,
@@ -50,6 +50,7 @@ where
             demand,
             prepared,
             retained_source,
+            mut source_bound,
         } = self;
         let retained_source =
             crate::application_entry::WorthQueryApplicationReadObservation::new(retained_source);
@@ -68,6 +69,7 @@ where
                         demand,
                         prepared,
                         retained_source: std::sync::Arc::clone(&retained_source.retained),
+                        source_bound,
                     },
                     denial: WorthQueryRequiredOutputPreparationDenial::SourceQuery(denial),
                 })
@@ -82,24 +84,51 @@ where
                     demand,
                     prepared,
                     retained_source: std::sync::Arc::clone(&retained_source.retained),
+                    source_bound,
                 },
                 denial: WorthQueryRequiredOutputPreparationDenial::MissingSource,
             });
         }
+        let output_source = source_result.into_output_demand_source();
+        if !source_bound {
+            if let Err(denial) = application.bind_prepared_program_root_source::<Root>(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                &prepared,
+                &output_source,
+            ) {
+                return Err(WorthQueryRequiredOutputStartFailure {
+                    performed: Self {
+                        receipt,
+                        result,
+                        application,
+                        demand,
+                        prepared,
+                        retained_source: std::sync::Arc::clone(&retained_source.retained),
+                        source_bound,
+                    },
+                    denial: WorthQueryRequiredOutputPreparationDenial::Demand(
+                        crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
+                    ),
+                });
+            }
+            source_bound = true;
+        }
         match request
             .demand(demand.clone())
             .controls(controls)
-            .start_performed(
+            .start_performed::<Program, Root>(
                 application,
                 &prepared,
-                source_result.into_output_demand_source(),
+                output_source,
             )
         {
             Ok(required_output) => Ok(WorthQueryStartedRequiredOutputs {
-                receipt,
+                receipt: receipt.clone(),
                 result,
                 required_output: crate::application_entry::WorthQueryApplicationProgramOutputHandle::new(
                     application,
+                    receipt,
+                    retained_source,
                     required_output,
                     demand,
                     controls,
@@ -113,6 +142,7 @@ where
                     demand,
                     prepared,
                     retained_source: std::sync::Arc::clone(&retained_source.retained),
+                    source_bound,
                 },
                 denial: WorthQueryRequiredOutputPreparationDenial::Demand(denial),
             }),

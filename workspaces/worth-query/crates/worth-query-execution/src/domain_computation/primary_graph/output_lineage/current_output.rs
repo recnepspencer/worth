@@ -9,18 +9,25 @@ use super::{
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
 impl WorthQueryApplicationOutputLineage {
-    pub(in crate::domain_computation::primary_graph) fn current_output_matches_receipt(
+    pub(in crate::domain_computation::primary_graph) fn source_facts_for_receipt(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         receipt: &WorthQueryApplicationCommitReceipt,
-    ) -> bool {
+        maximum_work: usize,
+    ) -> Result<
+        Option<(
+            std::sync::Arc<[super::super::application_attempt::WorthQueryApplicationObservedFact]>,
+            usize,
+        )>,
+        (),
+    > {
         let Some(output_binding) = receipt.output_correspondence().binding_type() else {
-            return false;
+            return Ok(None);
         };
         let Some(source_identity) = receipt.idempotency_binding().source_identity() else {
-            return false;
+            return Ok(None);
         };
         let source = SemanticSource {
             runtime_authority,
@@ -29,29 +36,46 @@ impl WorthQueryApplicationOutputLineage {
             output_binding,
         };
         let Some(versions) = self.by_source.get(&source) else {
-            return false;
+            return Ok(None);
         };
         let mut coordinate = ProductCoordinate {
             occurrence: observation.lifecycle_incarnation(),
             generation: observation.reference_generation().get(),
         };
+        let mut work = 0_usize;
         loop {
+            work = work.checked_add(1).ok_or(())?;
+            if work > maximum_work {
+                return Err(());
+            }
             if let Some(recorded) = versions
                 .get(&coordinate.occurrence)
                 .and_then(|history| history.range(..=coordinate.generation).next_back())
                 .map(|(_, recorded)| recorded)
             {
-                return recorded.source_identity == Some(source_identity)
+                return Ok((recorded.source_identity == Some(source_identity)
                     && std::ptr::eq(
                         recorded.correspondence.as_ref(),
                         receipt.output_correspondence(),
-                    );
+                    ))
+                .then(|| (std::sync::Arc::clone(&recorded.observed_source_facts), work)));
             }
             let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
-                return false;
+                return Ok(None);
             };
             coordinate = parent;
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn current_output_matches_receipt(
+        &self,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        receipt: &WorthQueryApplicationCommitReceipt,
+    ) -> bool {
+        self.source_facts_for_receipt(runtime_authority, schema, observation, receipt, usize::MAX)
+            .is_ok_and(|facts| facts.is_some())
     }
 
     pub(in crate::domain_computation::primary_graph) fn source_posture_for_any_output_binding(

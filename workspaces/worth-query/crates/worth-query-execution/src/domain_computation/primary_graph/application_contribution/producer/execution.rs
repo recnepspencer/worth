@@ -359,7 +359,6 @@ where
         }
     };
     let (program, _) = completed.into_parts();
-    let program = program.with_output_demand_observation();
     match runtime.compare_and_commit_application(program, idempotency) {
         WorthQueryApplicationCommitOutcome::Committed(receipt)
         | WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => Ok(receipt),

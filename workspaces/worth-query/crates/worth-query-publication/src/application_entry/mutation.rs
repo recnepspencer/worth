@@ -1,4 +1,5 @@
 mod authorization;
+mod discovered;
 mod execution;
 mod outcome;
 mod performed;
@@ -8,11 +9,18 @@ mod program_output_settlement;
 mod program_output_work;
 mod request;
 
+pub use discovered::{
+    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryDiscoveredOutputStartFailure,
+    WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
+    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryPerformedDiscoveredApplicationMutation,
+    WorthQueryStartedDiscoveredOutputs,
+};
 pub use outcome::WorthQueryApplicationMutationOutcome;
 pub use performed::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryPerformedApplicationMutation,
     WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
-    WorthQueryRequiredOutputStartFailure, WorthQueryStartedRequiredOutputs,
+    WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputStartFailure,
+    WorthQueryStartedRequiredOutputs,
 };
 pub use performed_outputs::WorthQueryApplicationProgramOutputHandle;
 pub use program_output_settlement::{

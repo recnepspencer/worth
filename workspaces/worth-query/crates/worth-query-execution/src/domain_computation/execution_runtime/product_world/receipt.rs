@@ -140,6 +140,15 @@ impl WorthQueryProductPublicationReceipt {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .take()
     }
+
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub(crate) fn has_output_demand_observation_for_test(&self) -> bool {
+        self.custody
+            .output_demand_observation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .is_some()
+    }
 }
 
 impl std::fmt::Debug for WorthQueryProductPublicationReceipt {
