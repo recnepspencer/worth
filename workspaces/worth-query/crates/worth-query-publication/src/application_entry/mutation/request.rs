@@ -3,7 +3,7 @@ use worth_query_admission::facade::authenticated_principal::{
 };
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
-    ApplicationMutationSourceExpectation,
+    ApplicationMutationSourceExpectation, NoApplicationMutationSource,
 };
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
@@ -114,6 +114,32 @@ where
             intent: self.intent,
             preconditions: self.preconditions,
             source: Some(source),
+            source_preparation: std::marker::PhantomData,
+        }
+    }
+
+    pub fn without_source(
+        self,
+    ) -> WorthQueryApplicationMutationRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Intent,
+        WorthQueryMutationSourcePrepared,
+    >
+    where
+        Intent::Binding:
+            ApplicationMutationBinding<Schema, SourceExpectation = NoApplicationMutationSource>,
+    {
+        WorthQueryApplicationMutationRequest {
+            application: self.application,
+            principal: self.principal,
+            scope: self.scope,
+            branch: self.branch,
+            intent: self.intent,
+            preconditions: self.preconditions,
+            source: None,
             source_preparation: std::marker::PhantomData,
         }
     }

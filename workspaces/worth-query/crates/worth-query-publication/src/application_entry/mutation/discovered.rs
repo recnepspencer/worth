@@ -201,8 +201,9 @@ where
         if !application.contains_output_root::<Root>() {
             return Err(WorthQueryPerformedMutationExecutionDenial::UndeclaredOutputRoot);
         }
-        let discovery = RootConnection::<Schema, Root>::discovery_from_source(self.request.intent.input())
-            .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
+        let discovery =
+            RootConnection::<Schema, Root>::discovery_from_source(self.request.intent.input())
+                .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
         let retained_discovery = discovery.clone();
         let preparation_failure = std::cell::RefCell::new(None);
         let prepared_source = std::cell::RefCell::new(None);

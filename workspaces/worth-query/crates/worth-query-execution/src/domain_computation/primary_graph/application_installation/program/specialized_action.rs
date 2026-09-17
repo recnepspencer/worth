@@ -35,9 +35,9 @@ where
         let operation = std::any::TypeId::of::<Operation>();
         let required_output_source = self.program.actions().iter().any(|action| {
             action.operation_type() == operation
-                && action.mutation_binding_type().is_some_and(|binding| {
-                    self.output_source_bindings.contains(&binding)
-                })
+                && action
+                    .mutation_binding_type()
+                    .is_some_and(|binding| self.output_source_bindings.contains(&binding))
         });
         if !self.program.contains_operation_type::<Operation>()
             || required_output_source

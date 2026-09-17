@@ -229,10 +229,7 @@ where
         {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
-        self.execute_with_preparation_and_commit(
-            super::authorization::prepare,
-            commit,
-        )
+        self.execute_with_preparation_and_commit(super::authorization::prepare, commit)
     }
 
     fn resolve_idempotency(
