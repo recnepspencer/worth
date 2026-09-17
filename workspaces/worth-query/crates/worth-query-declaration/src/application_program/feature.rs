@@ -2,6 +2,10 @@ use std::marker::PhantomData;
 
 use crate::application_schema::{ApplicationSchema, ApplicationStructuredValueBinding};
 
+mod authoring;
+
+pub use authoring::{ApplicationFeatureSpec, ApplicationFeatureSpecBuilder};
+
 /// One semantic feature participating in an application program.
 pub trait ApplicationFeature<Schema>: Sized + 'static
 where

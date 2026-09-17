@@ -5,8 +5,8 @@ use crate::application_schema::ApplicationSchema;
 
 use super::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
-    ApplicationProgramActionsShape, ApplicationProgramFeaturesShape, ApplicationProgramIdentity,
-    ApplicationProgramOutputsShape, ApplicationProgramRuleDeclaration,
+    ApplicationFeatureSpec, ApplicationProgramActionsShape, ApplicationProgramFeaturesShape,
+    ApplicationProgramIdentity, ApplicationProgramOutputsShape, ApplicationProgramRuleDeclaration,
     ApplicationProgramRulesShape,
 };
 
@@ -27,6 +27,12 @@ where
     /// Complete scoped invariant inventory owned by this composition.
     type Rules: ApplicationProgramRulesShape<Schema>;
     const IDENTITY: ApplicationProgramIdentity;
+
+    /// Flat feature-owned contributions compiled into the same canonical
+    /// program as any still-unmigrated legacy inventories.
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        Vec::new()
+    }
 }
 
 /// Phase 1 authoring progression. Validation is unavailable until its typed
@@ -149,7 +155,13 @@ where
     Program: ApplicationProgramDefinition<Schema>,
 {
     require_identity(Program::IDENTITY.as_str())?;
-    let features = Program::Features::features();
+    let mut features = Program::Features::features();
+    let mut actions = Program::Actions::actions();
+    for spec in Program::feature_specs() {
+        let (feature, spec_actions) = spec.into_parts();
+        features.push(feature);
+        actions.extend(spec_actions);
+    }
     let mut feature_ids = BTreeSet::new();
     for feature in &features {
         require_identity(feature.composition_instance())?;
@@ -171,7 +183,6 @@ where
             }
         }
     }
-    let actions = Program::Actions::actions();
     let mut action_ids = BTreeSet::new();
     for action in &actions {
         require_identity(action.composition_instance())?;

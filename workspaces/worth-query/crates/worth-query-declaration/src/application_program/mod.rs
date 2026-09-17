@@ -11,6 +11,9 @@ mod program;
 mod program_outputs;
 mod rule;
 
+#[cfg(test)]
+mod program_tests;
+
 pub use action::{
     ApplicationActionDeclaration, ApplicationActionInstanceRef, ApplicationActionLeaf,
     ApplicationActionList, ApplicationActionRef, ApplicationActionShape,
@@ -26,8 +29,8 @@ pub use feature::{
     ApplicationFeature, ApplicationFeatureDeclaration, ApplicationFeatureInputDeclaration,
     ApplicationFeatureInputLeaf, ApplicationFeatureInputList, ApplicationFeatureInstanceRef,
     ApplicationFeatureLeaf, ApplicationFeatureList, ApplicationFeatureRef, ApplicationFeatureShape,
-    ApplicationInputPort, ApplicationOutputPort, ApplicationPortRef,
-    ApplicationProgramFeaturesShape,
+    ApplicationFeatureSpec, ApplicationFeatureSpecBuilder, ApplicationInputPort,
+    ApplicationOutputPort, ApplicationPortRef, ApplicationProgramFeaturesShape,
 };
 pub use identity::ApplicationProgramIdentity;
 pub use instance::{ApplicationCompositionInstance, ApplicationRootComposition};
