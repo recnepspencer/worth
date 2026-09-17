@@ -208,6 +208,7 @@ struct DemandRecord {
     source_commits: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
     state: DemandState,
     performed_source: Option<WorthQueryPerformedOutputDemandSource>,
+    successor_of: Option<[u8; 32]>,
     wake: Arc<DemandWake>,
 }
 
@@ -243,7 +244,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRequiredOutput
 
 pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputDemandAdvanceAdmission {
     Schedule(Option<WorthQueryPerformedOutputDemandSource>),
-    Execute,
+    Execute {
+        successor_of: Option<[u8; 32]>,
+    },
     AdvanceCheckpoint {
         claim: WorthQueryOutputClaimIdentity,
         checkpoint: WorthQueryOutputCheckpoint,

@@ -34,6 +34,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         crate::domain_computation::primary_graph::provider::WorthQueryApplicationPublicationRecoveryReservation,
     >,
     retain_output_demand_observation: bool,
+    output_currentness_facts: Option<
+        std::sync::Arc<[super::super::super::WorthQueryApplicationObservedFact]>,
+    >,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPublishedApplicationCausality {
@@ -69,6 +72,9 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     pub(in crate::domain_computation::primary_graph) fn observed_source_facts(
         &self,
     ) -> Vec<super::super::super::WorthQueryApplicationObservedFact> {
+        if let Some(facts) = &self.output_currentness_facts {
+            return facts.to_vec();
+        }
         self.decision_facts
             .facts()
             .values()
@@ -262,6 +268,7 @@ impl WorthQueryPrimaryGraphProvider {
             conditional_definition,
             validator_work_admission,
             retain_output_demand_observation,
+            output_currentness_facts,
         } = registration;
         let emitted_effect_count = u64::try_from(effects.emissions().len())
             .map_err(|_| "application emission count exceeds provider representation")?;
@@ -305,6 +312,7 @@ impl WorthQueryPrimaryGraphProvider {
                 live_delivery_reservation: None,
                 publication_recovery_reservation: None,
                 retain_output_demand_observation,
+                output_currentness_facts,
             },
             requests,
             dispatch_outbox: dispatch_outbox_record,

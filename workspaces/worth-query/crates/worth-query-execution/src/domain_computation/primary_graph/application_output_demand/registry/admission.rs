@@ -286,6 +286,7 @@ fn new_record(
         source_commits: source_commit.into_iter().collect(),
         state: DemandState::Admitted,
         performed_source: None,
+        successor_of: None,
         wake: Arc::new(DemandWake {
             generation: Mutex::new(0),
             changed: Condvar::new(),

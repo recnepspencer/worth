@@ -4,11 +4,43 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::{
     ProductCoordinate, SemanticSource, WorthQueryApplicationOutputLineage,
-    WorthQueryOutputSourcePosture,
+    WorthQueryOutputSourcePosture, WorthQueryProducerLineageHead,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
 impl WorthQueryApplicationOutputLineage {
+    pub(in crate::domain_computation::primary_graph) fn producer_head<Binding: 'static>(
+        &self,
+        scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Option<WorthQueryProducerLineageHead> {
+        let source = SemanticSource {
+            runtime_authority: scope.runtime_authority(),
+            schema: scope.binding_identity().clone(),
+            scope: scope.scope(),
+            output_binding: TypeId::of::<Binding>(),
+        };
+        let versions = self.by_source.get(&source)?;
+        let mut coordinate = ProductCoordinate {
+            occurrence: observation.lifecycle_incarnation(),
+            generation: observation.reference_generation().get(),
+        };
+        loop {
+            if let Some(recorded) = versions
+                .get(&coordinate.occurrence)
+                .and_then(|history| history.range(..=coordinate.generation).next_back())
+                .map(|(_, recorded)| recorded)
+            {
+                return Some(WorthQueryProducerLineageHead {
+                    occurrence: coordinate.occurrence,
+                    dependency_identity: recorded.producer_dependency_identity,
+                    idempotency_key_identity: recorded.idempotency_key_identity,
+                });
+            }
+            coordinate = self.origins.get(&coordinate.occurrence).copied()?;
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn source_facts_for_receipt(
         &self,
         runtime_authority: u64,

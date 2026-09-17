@@ -80,7 +80,7 @@ where
             disclosure,
         )?;
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
-        match self.output_demands.begin(interest) {
+        let successor_of = match self.output_demands.begin(interest) {
             Admission::Schedule(performed_source) => {
                 if !demand.matches_observed_source(&disclosed_source) {
                     return Err(self
@@ -132,12 +132,22 @@ where
                     self,
                     &completion.receipt,
                     &completion.readiness,
-                )?;
-                return Ok(WorthQueryOutputDemandAdvance::Settled(settlement));
+                );
+                return match settlement {
+                    Ok(settlement) => Ok(WorthQueryOutputDemandAdvance::Settled(settlement)),
+                    Err(denial)
+                        if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
+                    {
+                        self.output_demands
+                            .reopen_stale_ready(interest, &completion.receipt)?;
+                        Ok(WorthQueryOutputDemandAdvance::Pending)
+                    }
+                    Err(denial) => Err(denial),
+                };
             }
             Admission::Failed(denial) => return Err(denial),
-            Admission::Execute => {}
-        }
+            Admission::Execute { successor_of } => successor_of,
+        };
         if !demand.matches_observed_source(&disclosed_source) {
             return Err(self
                 .output_demands
@@ -160,6 +170,7 @@ where
             delivery_branch,
             &demand.source,
             &demand.observed_source,
+            successor_of,
         );
         let mut receipt = match result {
             Ok(receipt) => receipt,

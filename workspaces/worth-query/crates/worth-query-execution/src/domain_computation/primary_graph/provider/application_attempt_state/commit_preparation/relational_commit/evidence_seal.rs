@@ -1,5 +1,7 @@
 //! Exact-commit evidence minted only from the committed session stage.
 
+mod postcommit_currentness;
+
 use super::commit_execution::WorthQueryCommittedApplicationSession;
 use crate::domain_computation::primary_graph::provider::{
     mutation_work::{WorthQueryPrimaryMutationWorkCounters, WorthQueryPrimaryMutationWorkEvidence},
@@ -36,6 +38,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCo
 }
 
 pub(super) fn seal(
+    provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
     committed: &WorthQueryCommittedApplicationSession,
 ) -> WorthQueryPrimaryGraphCommitEvidence {
     let mutation_work =
@@ -51,6 +54,13 @@ pub(super) fn seal(
     let output_correspondence = committed
         .attempt()
         .seal_output_correspondence(committed.committed());
+    let observed_source_facts = provider.graph.with_runtime(|runtime| {
+        postcommit_currentness::rebase(
+            runtime,
+            &committed.committed().snapshot,
+            committed.attempt().observed_source_facts(),
+        )
+    });
     WorthQueryPrimaryGraphCommitEvidence {
         provider_session_binding: committed.attempt().affinity().provider_session().clone(),
         idempotency: committed.attempt().idempotency(),
@@ -60,7 +70,7 @@ pub(super) fn seal(
         committed_dispatch_outbox,
         output_correspondence: std::sync::Arc::new(output_correspondence),
         operation_scope: committed.attempt().affinity().operation_scope().clone(),
-        observed_source_facts: committed.attempt().observed_source_facts().into(),
+        observed_source_facts,
         committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
     }
 }

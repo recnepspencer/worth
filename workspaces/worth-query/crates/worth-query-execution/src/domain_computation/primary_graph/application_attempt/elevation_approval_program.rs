@@ -74,6 +74,7 @@ impl<Schema, Operation, Input, Scope>
                 super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
+            output_currentness_facts: None,
         };
         validate_elevation_approval_program(&program)?;
         Ok(WorthQueryElevationApprovalProgram { program })

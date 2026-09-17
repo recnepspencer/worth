@@ -26,6 +26,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     validator_work_admission:
         super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     retain_output_demand_observation: bool,
+    output_currentness_facts: Option<
+        std::sync::Arc<[super::super::WorthQueryApplicationObservedFact]>,
+    >,
 }
 
 /// Proves that the effect owner consumed a completed provider attempt before
@@ -71,6 +74,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         conditional_definition,
         validator_work_admission,
         retain_output_demand_observation,
+        output_currentness_facts,
     } = prepared;
     let affinity = match staged.bind_application_attempt(attempt_basis) {
         Ok(affinity) => affinity,
@@ -102,6 +106,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             conditional_definition,
             validator_work_admission,
             retain_output_demand_observation,
+            output_currentness_facts,
         },
     );
     match dispatch_outbox {

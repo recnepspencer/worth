@@ -5,6 +5,7 @@ mod commit_terminal;
 mod compare_and_commit;
 mod delegation_activation_program;
 mod denial;
+mod dependency_identity;
 mod effect_program;
 mod effect_validation;
 mod elevation_approval_outcome;

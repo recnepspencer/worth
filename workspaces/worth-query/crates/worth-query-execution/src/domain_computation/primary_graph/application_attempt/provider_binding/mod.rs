@@ -30,6 +30,7 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
     validator_work_admission: super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     retain_output_demand_observation: bool,
+    output_currentness_facts: Option<std::sync::Arc<[WorthQueryApplicationObservedFact]>>,
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
@@ -83,6 +84,7 @@ pub(super) fn prepare_provider_attempt(
     validator_work_admission: super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     output_correspondence: super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
+    output_currentness_facts: Option<std::sync::Arc<[WorthQueryApplicationObservedFact]>>,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
     let mut accumulator =
         WorthQueryProviderEffectAccumulator::new(&facts, &effects, mutation_partition);
@@ -102,6 +104,7 @@ pub(super) fn prepare_provider_attempt(
         conditional_definition,
         validator_work_admission,
         retain_output_demand_observation,
+        output_currentness_facts,
     })
 }
 

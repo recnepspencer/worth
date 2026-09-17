@@ -134,9 +134,12 @@ impl DeclaredProducerBinding {
     }
 }
 
+mod operation_binding_uniqueness;
 mod output_family_inventory;
 #[cfg(test)]
 mod tests;
+
+use operation_binding_uniqueness::duplicate_operation_binding;
 
 pub(super) struct InstalledProducerProvider<Schema> {
     pub(super) declaration: DeclaredProducerBinding,
@@ -336,6 +339,12 @@ where
         WorthQueryInstalledApplicationProducerRegistry<Schema>,
         WorthQueryPrimaryGraphInstallationDenial,
     > {
+        if let Some((left, right)) = duplicate_operation_binding(&self.declared) {
+            return Err(denial(
+                DenialKind::DuplicateProducerOperationBinding,
+                format!("{left} / {right}"),
+            ));
+        }
         let missing = self
             .declared
             .keys()

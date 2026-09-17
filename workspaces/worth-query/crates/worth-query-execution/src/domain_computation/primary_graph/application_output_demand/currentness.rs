@@ -53,19 +53,30 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                             WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => {
                                 denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
                             }
-                            WorthQuerySourceCurrentnessFailure::Unavailable => {
-                                denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)
-                            }
+                            WorthQuerySourceCurrentnessFailure::Unavailable => denial_subject(
+                                WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                                fact.locator_identity(),
+                            ),
                         })?;
                     remaining_work -= work;
                     if !current {
-                        return Err(denial(WorthQueryOutputDemandDenialKind::Superseded));
+                        return Err(denial_subject(
+                            WorthQueryOutputDemandDenialKind::Superseded,
+                            fact.locator_identity(),
+                        ));
                     }
                 }
             }
             Ok(())
         })
     }
+}
+
+fn denial_subject(
+    kind: WorthQueryOutputDemandDenialKind,
+    fact: String,
+) -> WorthQueryOutputDemandDenial {
+    WorthQueryOutputDemandDenial::new(kind, format!("settled output fact is not current: {fact}"))
 }
 
 fn denial(kind: WorthQueryOutputDemandDenialKind) -> WorthQueryOutputDemandDenial {

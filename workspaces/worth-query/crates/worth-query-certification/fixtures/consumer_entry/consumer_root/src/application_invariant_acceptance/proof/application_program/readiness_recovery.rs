@@ -12,9 +12,11 @@ use super::lifecycle::{controls, perform};
 use crate::ConsumerSchema;
 
 mod already_committed;
+mod dependency_aba;
 mod published_capacity;
 mod ready_read;
 pub(super) use already_committed::already_committed_replace_and_preserve_revalidate;
+pub(super) use dependency_aba::complete_dependency_aba_advances_the_live_demand;
 pub(super) use published_capacity::published_outputs_hold_no_hidden_read_lease;
 pub(super) use ready_read::ready_read_capacity_preserves_completion;
 

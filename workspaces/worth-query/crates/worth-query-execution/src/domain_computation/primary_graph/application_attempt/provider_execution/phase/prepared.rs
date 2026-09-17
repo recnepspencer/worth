@@ -110,6 +110,7 @@ struct WorthQueryProviderAttemptPreparation {
     validator_work_admission: crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
+    output_currentness_facts: Option<std::sync::Arc<[WorthQueryApplicationObservedFact]>>,
 }
 
 struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
@@ -148,6 +149,7 @@ where
         validator_work_admission,
         output_correspondence,
         retain_output_demand_observation,
+        output_currentness_facts,
     } = program;
     let mut admission = read_set.admission;
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());
@@ -183,6 +185,7 @@ where
                 validator_work_admission,
                 output_correspondence,
                 retain_output_demand_observation,
+                output_currentness_facts,
             },
             idempotency,
             aftermath_causality,
@@ -239,6 +242,7 @@ fn prepare_application_provider_attempt(
         preparation.validator_work_admission,
         preparation.output_correspondence,
         preparation.retain_output_demand_observation,
+        preparation.output_currentness_facts,
     )
     .map_err(|_| ())
 }

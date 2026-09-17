@@ -14,106 +14,8 @@ mod recovery_posture;
 mod semantic_epoch;
 mod source_custody;
 
-fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnation {
-    static OCCURRENCE: std::sync::OnceLock<worth_runtime_world::facade::ProductBranchIncarnation> =
-        std::sync::OnceLock::new();
-    *OCCURRENCE.get_or_init(|| {
-        let world =
-            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-                true,
-            );
-        let product = world
-            .application
-            .product_runtime()
-            .admit_product_branch(world.application.product_runtime().default_branch())
-            .expect("the fixture's default product occurrence is live");
-        product.observation().lifecycle_incarnation()
-    })
-}
-
-fn key(producer: &str, revision: u64, tail: u8) -> WorthQueryOutputDemandKey {
-    key_with_identity(producer, revision, tail, revision)
-}
-
-fn key_with_identity(
-    producer: &str,
-    observation_generation: u64,
-    root_slot: u8,
-    semantic_identity: u64,
-) -> WorthQueryOutputDemandKey {
-    key_with_query_identity(
-        producer,
-        observation_generation,
-        root_slot,
-        semantic_identity,
-        1,
-    )
-}
-
-fn key_with_query_identity(
-    producer: &str,
-    observation_generation: u64,
-    root_slot: u8,
-    semantic_identity: u64,
-    query_identity: u8,
-) -> WorthQueryOutputDemandKey {
-    let mut identity = [0; 32];
-    identity[..8].copy_from_slice(&semantic_identity.to_be_bytes());
-    let query = [query_identity; 32];
-    let root = root(root_slot);
-    WorthQueryOutputDemandKey::new(
-        producer.to_owned(),
-        crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch::new(
-            query,
-            root,
-            occurrence(),
-            observation_generation,
-            identity,
-        ),
-    )
-}
-
-fn root(slot: u8) -> worth_relational::facade::identity::EntityId {
-    worth_relational::facade::identity::EntityId::new(
-        worth_relational::facade::identity::PartitionId::main(),
-        u64::from(slot),
-        1,
-    )
-}
-
-fn record(
-    occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    state: DemandState,
-    interests: usize,
-) -> DemandRecord {
-    DemandRecord {
-        interests,
-        required: false,
-        product_occurrence: occurrence,
-        source_scope: None,
-        source_commits: Vec::new(),
-        state,
-        performed_source: None,
-        wake: Arc::new(DemandWake {
-            generation: Mutex::new(0),
-            changed: Condvar::new(),
-        }),
-    }
-}
-
-fn interest(
-    registry: &WorthQueryOutputDemandRegistry,
-    key: WorthQueryOutputDemandKey,
-    wake: Arc<DemandWake>,
-) -> WorthQueryOutputDemandInterest {
-    WorthQueryOutputDemandInterest {
-        key,
-        notifications: WorthQueryOutputDemandNotifications {
-            wake: Arc::clone(&wake),
-        },
-        owner: registry.clone(),
-    }
-}
+mod support;
+use support::*;
 
 #[test]
 fn stale_successor_is_denied_without_mutating_newer_or_unrelated_records() {
@@ -385,7 +287,7 @@ fn denied_executor_releases_the_shared_claim_for_its_peer() {
 
     assert!(matches!(
         registry.begin(&denied),
-        super::WorthQueryOutputDemandAdvanceAdmission::Execute
+        super::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
     ));
     assert!(matches!(
         registry.begin(&peer),
@@ -394,6 +296,6 @@ fn denied_executor_releases_the_shared_claim_for_its_peer() {
     registry.relinquish_execution(&denied);
     assert!(matches!(
         registry.begin(&peer),
-        super::WorthQueryOutputDemandAdvanceAdmission::Execute
+        super::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
     ));
 }

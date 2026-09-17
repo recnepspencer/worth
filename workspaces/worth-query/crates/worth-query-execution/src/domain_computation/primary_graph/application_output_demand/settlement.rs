@@ -98,6 +98,20 @@ pub struct WorthQueryOutputReadinessDeliveryEvidence {
 }
 
 impl WorthQueryOutputReadinessDeliveryEvidence {
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) const fn for_test() -> Self {
+        Self {
+            producer_contacts: 1,
+            delivery_contacts: 0,
+            conditional_successor: false,
+            truth_targets_admitted: 0,
+            signal_seeds_emitted: 0,
+            slots_touched: 0,
+            signal_decision: crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision::DependencyUnchanged,
+            semantic_observation_reads: 1,
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn from_execution(
         delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
         execution: &worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,

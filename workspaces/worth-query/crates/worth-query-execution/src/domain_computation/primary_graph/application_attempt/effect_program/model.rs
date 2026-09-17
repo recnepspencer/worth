@@ -306,6 +306,8 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     pub(in crate::domain_computation::primary_graph::application_attempt) retain_output_demand_observation:
         bool,
+    pub(in crate::domain_computation::primary_graph::application_attempt) output_currentness_facts:
+        Option<Arc<[super::super::WorthQueryApplicationObservedFact]>>,
 }
 
 pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope> {

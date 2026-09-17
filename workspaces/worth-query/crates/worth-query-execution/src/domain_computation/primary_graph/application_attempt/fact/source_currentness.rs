@@ -69,6 +69,9 @@ impl WorthQueryApplicationObservedFact {
                     .map_err(|_| WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 Ok((comparison.revision() == *native_revision, comparison.work_units()))
             }
+            Self::Entity { .. } | Self::Field { .. } | Self::AbsentField { .. } => {
+                Ok((self.remains_equal_in(runtime, snapshot), 1))
+            }
             _ => Err(WorthQuerySourceCurrentnessFailure::Unavailable),
         }
     }
