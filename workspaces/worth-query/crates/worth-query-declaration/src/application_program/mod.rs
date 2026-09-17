@@ -14,12 +14,7 @@ mod rule;
 #[cfg(test)]
 mod program_tests;
 
-pub use action::{
-    ApplicationActionDeclaration, ApplicationActionInstanceRef, ApplicationActionLeaf,
-    ApplicationActionList, ApplicationActionRef, ApplicationActionShape,
-    ApplicationConditionalOperationActionInstanceRef, ApplicationConditionalOperationActionRef,
-    ApplicationOperationActionRef, ApplicationProgramActionsShape,
-};
+pub use action::ApplicationActionDeclaration;
 pub use connection::{
     ApplicationConnectionDeclaration, ApplicationConnectionIdentity,
     ApplicationConnectionInstanceRef, ApplicationConnectionRef,
@@ -27,10 +22,8 @@ pub use connection::{
 };
 pub use feature::{
     ApplicationFeature, ApplicationFeatureDeclaration, ApplicationFeatureInputDeclaration,
-    ApplicationFeatureInputLeaf, ApplicationFeatureInputList, ApplicationFeatureInstanceRef,
-    ApplicationFeatureLeaf, ApplicationFeatureList, ApplicationFeatureRef, ApplicationFeatureShape,
-    ApplicationFeatureSpec, ApplicationFeatureSpecBuilder, ApplicationInputPort,
-    ApplicationOutputPort, ApplicationPortRef, ApplicationProgramFeaturesShape,
+    ApplicationFeatureInputLeaf, ApplicationFeatureInputList, ApplicationFeatureSpec,
+    ApplicationFeatureSpecBuilder, ApplicationInputPort, ApplicationOutputPort, ApplicationPortRef,
 };
 pub use identity::ApplicationProgramIdentity;
 pub use instance::{ApplicationCompositionInstance, ApplicationRootComposition};

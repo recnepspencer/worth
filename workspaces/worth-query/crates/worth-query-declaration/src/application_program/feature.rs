@@ -136,13 +136,8 @@ impl ApplicationFeatureInputDeclaration {
     }
 }
 
-/// One feature whose input-port inventory is owned by the feature declaration.
-pub struct ApplicationFeatureRef<Schema, Feature> {
-    marker: PhantomData<fn() -> (Schema, Feature)>,
-}
-
 /// One semantic feature installed at an explicit composition-instance path.
-pub struct ApplicationFeatureInstanceRef<Schema, Instance, Feature> {
+pub(crate) struct ApplicationFeatureInstanceRef<Schema, Instance, Feature> {
     marker: PhantomData<fn() -> (Schema, Instance, Feature)>,
 }
 
@@ -153,20 +148,13 @@ pub struct ApplicationFeatureInputList<Port, Tail> {
 
 pub struct ApplicationFeatureInputLeaf;
 
-/// One feature followed by the remaining features in a program.
-pub struct ApplicationFeatureList<Head, Tail> {
-    marker: PhantomData<fn() -> (Head, Tail)>,
-}
-
-pub struct ApplicationFeatureLeaf;
-
 mod sealed {
     pub trait FeatureShape {}
     pub trait FeatureInputsShape {}
-    pub trait ProgramFeaturesShape {}
 }
 
-pub trait ApplicationFeatureShape<Schema>: sealed::FeatureShape + Sized + 'static
+pub(crate) trait ApplicationFeatureShape<Schema>:
+    sealed::FeatureShape + Sized + 'static
 where
     Schema: ApplicationSchema,
 {
@@ -182,37 +170,9 @@ where
     fn append_inputs(inputs: &mut Vec<ApplicationFeatureInputDeclaration>);
 }
 
-pub trait ApplicationProgramFeaturesShape<Schema>:
-    sealed::ProgramFeaturesShape + Sized + 'static
-where
-    Schema: ApplicationSchema,
-{
-    fn features() -> Vec<ApplicationFeatureDeclaration>;
-}
-
-impl<Schema, Feature> sealed::FeatureShape for ApplicationFeatureRef<Schema, Feature> {}
-
 impl<Schema, Instance, Feature> sealed::FeatureShape
     for ApplicationFeatureInstanceRef<Schema, Instance, Feature>
 {
-}
-
-impl<Schema, Feature> ApplicationFeatureShape<Schema> for ApplicationFeatureRef<Schema, Feature>
-where
-    Schema: ApplicationSchema + 'static,
-    Feature: ApplicationFeature<Schema>,
-{
-    fn declaration() -> ApplicationFeatureDeclaration {
-        let mut inputs = Vec::new();
-        Feature::Inputs::append_inputs(&mut inputs);
-        ApplicationFeatureDeclaration::new(
-            <super::ApplicationRootComposition as super::ApplicationCompositionInstance>::PATH,
-            Feature::IDENTITY,
-            Feature::MAJOR,
-            Feature::MINOR,
-            inputs,
-        )
-    }
 }
 
 impl<Schema, Instance, Feature> ApplicationFeatureShape<Schema>
@@ -261,32 +221,5 @@ where
             Port::REQUIRED,
         ));
         Tail::append_inputs(inputs);
-    }
-}
-
-impl sealed::ProgramFeaturesShape for ApplicationFeatureLeaf {}
-
-impl<Schema> ApplicationProgramFeaturesShape<Schema> for ApplicationFeatureLeaf
-where
-    Schema: ApplicationSchema,
-{
-    fn features() -> Vec<ApplicationFeatureDeclaration> {
-        Vec::new()
-    }
-}
-
-impl<Head, Tail> sealed::ProgramFeaturesShape for ApplicationFeatureList<Head, Tail> {}
-
-impl<Schema, Head, Tail> ApplicationProgramFeaturesShape<Schema>
-    for ApplicationFeatureList<Head, Tail>
-where
-    Schema: ApplicationSchema,
-    Head: ApplicationFeatureShape<Schema>,
-    Tail: ApplicationProgramFeaturesShape<Schema>,
-{
-    fn features() -> Vec<ApplicationFeatureDeclaration> {
-        let mut features = vec![Head::declaration()];
-        features.extend(Tail::features());
-        features
     }
 }

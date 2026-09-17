@@ -18,10 +18,8 @@ use worth_query_host::facade::{
     application_installation::{self, WorthQueryInMemoryApplicationDenial},
     declaration::application_operation::ApplicationMutationBinding,
     declaration::application_program::{
-        ApplicationActionLeaf, ApplicationActionList, ApplicationActionRef, ApplicationFeature,
-        ApplicationFeatureInputLeaf, ApplicationFeatureList, ApplicationFeatureRef,
-        ApplicationOperationActionRef, ApplicationProgramAuthoring, ApplicationProgramDefinition,
-        ApplicationProgramIdentity,
+        ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureSpec,
+        ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramIdentity,
     },
     primary_graph::{
         HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
@@ -43,18 +41,6 @@ impl ApplicationFeature<TemporalHostSchema> for ConflictingConditionalClientFeat
 impl ApplicationProgramDefinition<TemporalHostSchema> for ConflictingConditionalClientProgram {
     type Contributions =
         <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Contributions;
-    type Actions = ApplicationActionList<
-        ApplicationOperationActionRef<
-            TemporalHostSchema,
-            ConflictingConditionalClientFeature,
-            ExecuteTemporal,
-        >,
-        <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Actions,
-    >;
-    type Features = ApplicationFeatureList<
-        ApplicationFeatureRef<TemporalHostSchema, ConflictingConditionalClientFeature>,
-        <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Features,
-    >;
     type Outputs =
         <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Outputs;
     type Rules =
@@ -62,24 +48,21 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for ConflictingConditional
 
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.example.conflicting-conditional-client.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        let mut specs = TemporalExampleProgram::feature_specs();
+        specs.push(
+            ApplicationFeatureSpec::root::<TemporalHostSchema, ConflictingConditionalClientFeature>()
+                .operation::<ExecuteTemporal>()
+                .finish(),
+        );
+        specs
+    }
 }
 
 impl ApplicationProgramDefinition<TemporalHostSchema> for MissingConditionalActionProgram {
     type Contributions =
         <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Contributions;
-    type Actions = ApplicationActionList<
-        ApplicationActionRef<TemporalHostSchema, TemporalExampleFeature, AmendTemporalBinding>,
-        ApplicationActionList<
-            ApplicationOperationActionRef<
-                TemporalHostSchema,
-                TemporalExampleFeature,
-                RevokeTemporalPrincipal,
-            >,
-            ApplicationActionLeaf,
-        >,
-    >;
-    type Features =
-        <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Features;
     type Outputs =
         <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Outputs;
     type Rules =
@@ -87,6 +70,15 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for MissingConditionalActi
 
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.example.missing-conditional-action.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        vec![
+            ApplicationFeatureSpec::root::<TemporalHostSchema, TemporalExampleFeature>()
+                .mutation::<AmendTemporalBinding>()
+                .operation::<RevokeTemporalPrincipal>()
+                .finish(),
+        ]
+    }
 }
 
 #[test]

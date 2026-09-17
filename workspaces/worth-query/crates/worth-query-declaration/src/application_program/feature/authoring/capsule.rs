@@ -5,11 +5,17 @@ use crate::{
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationSchema},
 };
 
-use super::super::super::{
-    ApplicationActionDeclaration, ApplicationActionInstanceRef, ApplicationActionShape,
-    ApplicationCompositionInstance, ApplicationConditionalOperationActionInstanceRef,
+use crate::application_program::action::{
+    ApplicationActionInstanceRef, ApplicationActionShape,
+    ApplicationConditionalOperationActionInstanceRef, ApplicationOperationActionRef,
+};
+use crate::application_program::{
+    ApplicationActionDeclaration, ApplicationCompositionInstance, ApplicationRootComposition,
+};
+
+use super::super::{
     ApplicationFeature, ApplicationFeatureDeclaration, ApplicationFeatureInstanceRef,
-    ApplicationFeatureShape, ApplicationRootComposition,
+    ApplicationFeatureShape,
 };
 
 /// One feature-owned contribution to the canonical application program.
@@ -114,5 +120,20 @@ where
             feature: self.feature,
             actions: self.actions.into_boxed_slice(),
         }
+    }
+}
+
+impl<Schema, Feature> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Feature>
+where
+    Schema: ApplicationSchema + 'static,
+    Feature: ApplicationFeature<Schema>,
+{
+    pub fn operation<Operation>(mut self) -> Self
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+    {
+        self.actions
+            .push(ApplicationOperationActionRef::<Schema, Feature, Operation>::declaration());
+        self
     }
 }

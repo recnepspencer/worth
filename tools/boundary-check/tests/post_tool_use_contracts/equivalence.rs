@@ -29,7 +29,7 @@ fn shell_mutation_routes_to_the_same_json_entrypoint() {
     let workspace = hostile_workspace();
     let manifest =
         workspace.join("cad/workspaces/worth-contracts/crates/worth-schema-core/Cargo.toml");
-    let illegal_dependency = "worth-query = { path = \"../../../../../vendor/worth-query\" }";
+    let illegal_dependency = "worth-query = { path = \"../../../../../vendor/WORTH-query\" }";
     let legal = fs::read_to_string(&manifest)
         .unwrap()
         .replace(illegal_dependency, "");

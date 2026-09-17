@@ -9,12 +9,9 @@ use worth_query_host::facade::{
     application_installation::{self, WorthQueryInMemoryApplicationLimits},
     declaration::{
         application_program::{
-            ApplicationActionLeaf, ApplicationActionList, ApplicationConditionalOperationActionRef,
-            ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureLeaf,
-            ApplicationFeatureList, ApplicationFeatureRef, ApplicationNoOutputGraph,
-            ApplicationOperationActionRef, ApplicationProgramAuthoring,
-            ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
-            ApplicationRuleLeaf,
+            ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureSpec,
+            ApplicationNoOutputGraph, ApplicationProgramAuthoring, ApplicationProgramDefinition,
+            ApplicationProgramIdentity, ApplicationProgramOutputs, ApplicationRuleLeaf,
         },
         application_query::ApplicationQueryParameterSet,
         application_schema::ApplicationSchemaComposition,
@@ -43,30 +40,20 @@ impl ApplicationFeature<TemporalHostSchema> for TemporalInstallationFeature {
 
 impl ApplicationProgramDefinition<TemporalHostSchema> for TemporalInstallationProgram {
     type Contributions = <TemporalHostSchema as ApplicationSchemaComposition>::Contributions;
-    type Actions = ApplicationActionList<
-        ApplicationConditionalOperationActionRef<
-            TemporalHostSchema,
-            TemporalInstallationFeature,
-            ExecuteTemporal,
-        >,
-        ApplicationActionList<
-            ApplicationOperationActionRef<
-                TemporalHostSchema,
-                TemporalInstallationFeature,
-                AmendTemporal,
-            >,
-            ApplicationActionLeaf,
-        >,
-    >;
-    type Features = ApplicationFeatureList<
-        ApplicationFeatureRef<TemporalHostSchema, TemporalInstallationFeature>,
-        ApplicationFeatureLeaf,
-    >;
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = ApplicationRuleLeaf;
 
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.host.temporal-installation.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        vec![
+            ApplicationFeatureSpec::root::<TemporalHostSchema, TemporalInstallationFeature>()
+                .conditional_operation::<ExecuteTemporal>()
+                .operation::<AmendTemporal>()
+                .finish(),
+        ]
+    }
 }
 
 fn validated_program(

@@ -9,36 +9,30 @@ use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::{ApplicationCompositionInstance, ApplicationFeature, ApplicationRootComposition};
 
-/// One program-owned mutation binding attached to a concrete feature instance.
-pub struct ApplicationActionRef<Schema, Feature, Binding> {
-    marker: PhantomData<fn() -> (Schema, Feature, Binding)>,
-}
-
 /// One program-owned mutation binding attached to an explicit nested instance.
-pub struct ApplicationActionInstanceRef<Schema, Instance, Feature, Binding> {
+pub(crate) struct ApplicationActionInstanceRef<Schema, Instance, Feature, Binding> {
     marker: PhantomData<fn() -> (Schema, Instance, Feature, Binding)>,
 }
 
 /// One program-owned specialized operation whose effects are issued by Query.
-pub struct ApplicationOperationActionRef<Schema, Feature, Operation> {
+pub(crate) struct ApplicationOperationActionRef<Schema, Feature, Operation> {
     marker: PhantomData<fn() -> (Schema, Feature, Operation)>,
 }
 
 /// A program operation issued only by its installed conditional owner.
-pub struct ApplicationConditionalOperationActionRef<Schema, Feature, Operation> {
+pub(crate) struct ApplicationConditionalOperationActionRef<Schema, Feature, Operation> {
     marker: PhantomData<fn() -> (Schema, Feature, Operation)>,
 }
 
 /// Conditional operation owned by a feature in a named composition instance.
-pub struct ApplicationConditionalOperationActionInstanceRef<Schema, Instance, Feature, Operation> {
+pub(crate) struct ApplicationConditionalOperationActionInstanceRef<
+    Schema,
+    Instance,
+    Feature,
+    Operation,
+> {
     marker: PhantomData<fn() -> (Schema, Instance, Feature, Operation)>,
 }
-
-pub struct ApplicationActionList<Head, Tail> {
-    marker: PhantomData<fn() -> (Head, Tail)>,
-}
-
-pub struct ApplicationActionLeaf;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ApplicationActionDeclaration {
@@ -93,49 +87,14 @@ impl ApplicationActionDeclaration {
 
 mod sealed {
     pub trait ActionShape {}
-    pub trait ActionsShape {}
 }
 
-pub trait ApplicationActionShape<Schema>: sealed::ActionShape + Sized + 'static
+pub(crate) trait ApplicationActionShape<Schema>:
+    sealed::ActionShape + Sized + 'static
 where
     Schema: ApplicationSchema,
 {
     fn declaration() -> ApplicationActionDeclaration;
-}
-
-pub trait ApplicationProgramActionsShape<Schema>: sealed::ActionsShape + Sized + 'static
-where
-    Schema: ApplicationSchema,
-{
-    fn actions() -> Vec<ApplicationActionDeclaration>;
-}
-
-impl<Schema, Feature, Binding> sealed::ActionShape
-    for ApplicationActionRef<Schema, Feature, Binding>
-{
-}
-
-impl<Schema, Feature, Binding> ApplicationActionShape<Schema>
-    for ApplicationActionRef<Schema, Feature, Binding>
-where
-    Schema: ApplicationSchema,
-    Feature: ApplicationFeature<Schema>,
-    Binding: ApplicationMutationBinding<Schema>,
-{
-    fn declaration() -> ApplicationActionDeclaration {
-        ApplicationActionDeclaration {
-            composition_instance: ApplicationRootComposition::PATH,
-            feature: Feature::IDENTITY,
-            binding: Binding::IDENTITY,
-            action_type: TypeId::of::<Binding>(),
-            mutation_binding_type: Some(TypeId::of::<Binding>()),
-            operation_type: TypeId::of::<Binding::Operation>(),
-            operation_input_type: TypeId::of::<Binding::Input>(),
-            operation_input_identity:
-                <Binding::InputBinding as ApplicationStructuredValueBinding>::IDENTITY,
-            conditional_only: false,
-        }
-    }
 }
 
 impl<Schema, Instance, Feature, Binding> sealed::ActionShape
@@ -233,32 +192,5 @@ where
             ApplicationConditionalOperationActionRef::<Schema, Feature, Operation>::declaration();
         action.composition_instance = Instance::PATH;
         action
-    }
-}
-
-impl sealed::ActionsShape for ApplicationActionLeaf {}
-
-impl<Schema> ApplicationProgramActionsShape<Schema> for ApplicationActionLeaf
-where
-    Schema: ApplicationSchema,
-{
-    fn actions() -> Vec<ApplicationActionDeclaration> {
-        Vec::new()
-    }
-}
-
-impl<Head, Tail> sealed::ActionsShape for ApplicationActionList<Head, Tail> {}
-
-impl<Schema, Head, Tail> ApplicationProgramActionsShape<Schema>
-    for ApplicationActionList<Head, Tail>
-where
-    Schema: ApplicationSchema,
-    Head: ApplicationActionShape<Schema>,
-    Tail: ApplicationProgramActionsShape<Schema>,
-{
-    fn actions() -> Vec<ApplicationActionDeclaration> {
-        let mut actions = vec![Head::declaration()];
-        actions.extend(Tail::actions());
-        actions
     }
 }

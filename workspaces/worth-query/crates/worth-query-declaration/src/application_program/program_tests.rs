@@ -1,6 +1,5 @@
 use super::{
-    ApplicationActionLeaf, ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureLeaf,
-    ApplicationFeatureList, ApplicationFeatureRef, ApplicationFeatureSpec,
+    ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureSpec,
     ApplicationNoOutputGraph, ApplicationProgramAuthoring, ApplicationProgramDefinition,
     ApplicationProgramIdentity, ApplicationProgramOutputs, ApplicationRuleLeaf,
 };
@@ -52,8 +51,6 @@ struct FlatProgram;
 
 impl ApplicationProgramDefinition<TestSchema> for FlatProgram {
     type Contributions = ();
-    type Actions = ApplicationActionLeaf;
-    type Features = ApplicationFeatureLeaf;
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
@@ -70,18 +67,18 @@ struct DuplicateProgram;
 
 impl ApplicationProgramDefinition<TestSchema> for DuplicateProgram {
     type Contributions = ();
-    type Actions = ApplicationActionLeaf;
-    type Features = ApplicationFeatureList<
-        ApplicationFeatureRef<TestSchema, FlatFeature>,
-        ApplicationFeatureLeaf,
-    >;
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.tests.duplicate-program.v1");
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        FlatProgram::feature_specs()
+        vec![
+            ApplicationFeatureSpec::root::<TestSchema, FlatFeature>().finish(),
+            ApplicationFeatureSpec::root::<TestSchema, FlatFeature>()
+                .conditional_operation::<Operation>()
+                .finish(),
+        ]
     }
 }
 
@@ -99,11 +96,11 @@ fn flat_feature_spec_enters_the_canonical_program_with_its_action() {
 }
 
 #[test]
-fn migrated_feature_cannot_survive_in_the_legacy_inventory() {
+fn duplicate_feature_specs_are_rejected() {
     let denial = match ApplicationProgramAuthoring::<TestSchema, DuplicateProgram>::begin()
         .validated_program()
     {
-        Ok(_) => panic!("duplicate legacy and flat feature must be rejected"),
+        Ok(_) => panic!("duplicate feature specs must be rejected"),
         Err(denial) => denial,
     };
 

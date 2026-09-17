@@ -1,14 +1,12 @@
 use bank_domain::schema::{BankPostingIntegrity, BankSchema};
 use worth_query_host::facade::declaration::application_program::{
-    ApplicationActionList, ApplicationActionRef, ApplicationCommitBoundary, ApplicationFeature,
-    ApplicationFeatureInputLeaf, ApplicationFeatureLeaf, ApplicationFeatureList,
-    ApplicationFeatureRef, ApplicationLocalRuleRef, ApplicationNoOutputGraph,
+    ApplicationCommitBoundary, ApplicationFeature, ApplicationFeatureInputLeaf,
+    ApplicationFeatureSpec, ApplicationLocalRuleRef, ApplicationNoOutputGraph,
     ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramIdentity,
     ApplicationProgramOutputs, ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList,
     ValidatedApplicationProgram,
 };
 
-use super::governance_actions::BankEstateGovernanceActions;
 use super::providers::{BankAccountsProvider, BankEstateProvider, BankPaymentsProvider};
 
 pub struct BankApplication;
@@ -37,17 +35,6 @@ impl ApplicationFeature<BankSchema> for BankEstateFeature {
     const IDENTITY: &'static str = "worth.bank.feature.estate.v1";
 }
 
-pub(crate) type BankFeatures = ApplicationFeatureList<
-    ApplicationFeatureRef<BankSchema, BankAccountsFeature>,
-    ApplicationFeatureList<
-        ApplicationFeatureRef<BankSchema, BankPaymentsFeature>,
-        ApplicationFeatureList<
-            ApplicationFeatureRef<BankSchema, BankEstateFeature>,
-            ApplicationFeatureLeaf,
-        >,
-    >,
->;
-
 pub(crate) type BankRules = ApplicationRuleList<
     ApplicationRuleAt<
         ApplicationLocalRuleRef<BankSchema, BankPaymentsFeature, BankPostingIntegrity>,
@@ -56,140 +43,43 @@ pub(crate) type BankRules = ApplicationRuleList<
     ApplicationRuleLeaf,
 >;
 
-pub(crate) type BankActions = ApplicationActionList<
-    ApplicationActionRef<
-        BankSchema,
-        BankAccountsFeature,
-        bank_domain::schema::CreatePersonalAccountMutationBinding,
-    >,
-    ApplicationActionList<
-        ApplicationActionRef<
-            BankSchema,
-            BankAccountsFeature,
-            bank_domain::schema::CreateBusinessAccountMutationBinding,
-        >,
-        ApplicationActionList<
-            ApplicationActionRef<
-                BankSchema,
-                BankAccountsFeature,
-                bank_domain::schema::GrantAccountAccessMutationBinding,
-            >,
-            ApplicationActionList<
-                ApplicationActionRef<
-                    BankSchema,
-                    BankAccountsFeature,
-                    bank_domain::schema::RevokeAccountAccessMutationBinding,
-                >,
-                ApplicationActionList<
-                    ApplicationActionRef<
-                        BankSchema,
-                        BankPaymentsFeature,
-                        bank_domain::schema::ApplyOpeningFundingMutationBinding,
-                    >,
-                    ApplicationActionList<
-                        ApplicationActionRef<
-                            BankSchema,
-                            BankPaymentsFeature,
-                            bank_domain::schema::DepositMutationBinding,
-                        >,
-                        ApplicationActionList<
-                            ApplicationActionRef<
-                                BankSchema,
-                                BankPaymentsFeature,
-                                bank_domain::schema::WithdrawMutationBinding,
-                            >,
-                            ApplicationActionList<
-                                ApplicationActionRef<
-                                    BankSchema,
-                                    BankPaymentsFeature,
-                                    bank_domain::schema::SendMoneyMutationBinding,
-                                >,
-                                ApplicationActionList<
-                                    ApplicationActionRef<
-                                        BankSchema,
-                                        BankPaymentsFeature,
-                                        bank_domain::schema::InitiateBusinessPaymentMutationBinding,
-                                    >,
-                                    ApplicationActionList<
-                                        ApplicationActionRef<
-                                            BankSchema,
-                                            BankPaymentsFeature,
-                                            bank_domain::schema::ApprovePaymentMutationBinding,
-                                        >,
-                                        ApplicationActionList<
-                                            ApplicationActionRef<
-                                                BankSchema,
-                                                BankPaymentsFeature,
-                                                bank_domain::schema::RejectPaymentMutationBinding,
-                                            >,
-                                            ApplicationActionList<
-                                                ApplicationActionRef<
-                                                    BankSchema,
-                                                    BankPaymentsFeature,
-                                                    bank_domain::schema::ReverseJournalMutationBinding,
-                                                >,
-                                                ApplicationActionList<
-                                                    ApplicationActionRef<
-                                                        BankSchema,
-                                                        BankEstateFeature,
-                                                        bank_domain::schema::NotifyEstateDeathMutationBinding,
-                                                    >,
-                                                    ApplicationActionList<
-                                                        ApplicationActionRef<
-                                                            BankSchema,
-                                                            BankEstateFeature,
-                                                            bank_domain::schema::FreezeEstateAccountMutationBinding,
-                                                        >,
-                                                        ApplicationActionList<
-                                                            ApplicationActionRef<
-                                                                BankSchema,
-                                                                BankEstateFeature,
-                                                                bank_domain::schema::OpenEstateCaseMutationBinding,
-                                                            >,
-                                                            ApplicationActionList<
-                                                                ApplicationActionRef<
-                                                                    BankSchema,
-                                                                    BankEstateFeature,
-                                                                    bank_domain::schema::RecognizeEstateExecutorMutationBinding,
-                                                                >,
-                                                                    ApplicationActionList<
-                                                                        ApplicationActionRef<
-                                                                            BankSchema,
-                                                                            BankEstateFeature,
-                                                                            bank_domain::schema::ReleaseEstateMutationBinding,
-                                                                        >,
-                                                                        ApplicationActionList<
-                                                                            ApplicationActionRef<
-                                                                                BankSchema,
-                                                                                BankEstateFeature,
-                                                                                bank_domain::schema::DisburseEstateMutationBinding,
-                                                                            >,
-                                                                            ApplicationActionList<
-                                                                                ApplicationActionRef<
-                                                                                    BankSchema,
-                                                                                    BankEstateFeature,
-                                                                                    bank_domain::schema::RetransmitEstateDeathNoticeMutationBinding,
-                                                                                >,
-                                                                                BankEstateGovernanceActions,
-                                                                            >,
-                                                                        >,
-                                                                    >,
-                                                            >,
-                                                        >,
-                                                    >,
-                                                >,
-                                            >,
-                                        >,
-                                    >,
-                                >,
-                            >,
-                        >,
-                    >,
-                >,
-            >,
-        >,
-    >,
->;
+pub(crate) fn bank_feature_specs() -> Vec<ApplicationFeatureSpec> {
+    use bank_domain::schema::*;
+
+    vec![
+        ApplicationFeatureSpec::root::<BankSchema, BankAccountsFeature>()
+            .mutation::<CreatePersonalAccountMutationBinding>()
+            .mutation::<CreateBusinessAccountMutationBinding>()
+            .mutation::<GrantAccountAccessMutationBinding>()
+            .mutation::<RevokeAccountAccessMutationBinding>()
+            .finish(),
+        ApplicationFeatureSpec::root::<BankSchema, BankPaymentsFeature>()
+            .mutation::<ApplyOpeningFundingMutationBinding>()
+            .mutation::<DepositMutationBinding>()
+            .mutation::<WithdrawMutationBinding>()
+            .mutation::<SendMoneyMutationBinding>()
+            .mutation::<InitiateBusinessPaymentMutationBinding>()
+            .mutation::<ApprovePaymentMutationBinding>()
+            .mutation::<RejectPaymentMutationBinding>()
+            .mutation::<ReverseJournalMutationBinding>()
+            .finish(),
+        ApplicationFeatureSpec::root::<BankSchema, BankEstateFeature>()
+            .mutation::<NotifyEstateDeathMutationBinding>()
+            .mutation::<FreezeEstateAccountMutationBinding>()
+            .mutation::<OpenEstateCaseMutationBinding>()
+            .mutation::<RecognizeEstateExecutorMutationBinding>()
+            .mutation::<ReleaseEstateMutationBinding>()
+            .mutation::<DisburseEstateMutationBinding>()
+            .mutation::<RetransmitEstateDeathNoticeMutationBinding>()
+            .operation::<RequestEstateEmergencyAccessOperation>()
+            .operation::<ApproveEstateEmergencyAccessOperation>()
+            .operation::<RevokeEstateEmergencyAccessOperation>()
+            .operation::<CompleteEstateMandatoryReviewOperation>()
+            .operation::<DelegateEstateCapabilityOperation>()
+            .operation::<RevokeEstateCapabilityOperation>()
+            .finish(),
+    ]
+}
 
 impl ApplicationProgramDefinition<BankSchema> for BankApplication {
     type Contributions = (
@@ -197,13 +87,15 @@ impl ApplicationProgramDefinition<BankSchema> for BankApplication {
         BankPaymentsProvider,
         BankEstateProvider,
     );
-    type Actions = BankActions;
-    type Features = BankFeatures;
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = BankRules;
 
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.bank.application.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        bank_feature_specs()
+    }
 }
 
 pub(crate) fn validated_bank_application() -> Result<

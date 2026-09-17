@@ -5,9 +5,8 @@ use crate::application_schema::ApplicationSchema;
 
 use super::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
-    ApplicationFeatureSpec, ApplicationProgramActionsShape, ApplicationProgramFeaturesShape,
-    ApplicationProgramIdentity, ApplicationProgramOutputsShape, ApplicationProgramRuleDeclaration,
-    ApplicationProgramRulesShape,
+    ApplicationFeatureSpec, ApplicationProgramIdentity, ApplicationProgramOutputsShape,
+    ApplicationProgramRuleDeclaration, ApplicationProgramRulesShape,
 };
 
 /// Complete authored static program definition.
@@ -18,21 +17,15 @@ where
     /// Exact root contribution tuple whose generated slots implement this
     /// program. Installation must consume this tuple before exposing a root.
     type Contributions;
-    /// Complete feature-owned action inventory for this program.
-    type Actions: ApplicationProgramActionsShape<Schema>;
-    /// Complete feature inventory and each feature's authored input ports.
-    type Features: ApplicationProgramFeaturesShape<Schema>;
     /// Complete transitive output topology used by the installed executor.
     type Outputs: super::ApplicationProgramOutputsShape<Schema>;
     /// Complete scoped invariant inventory owned by this composition.
     type Rules: ApplicationProgramRulesShape<Schema>;
     const IDENTITY: ApplicationProgramIdentity;
 
-    /// Flat feature-owned contributions compiled into the same canonical
-    /// program as any still-unmigrated legacy inventories.
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        Vec::new()
-    }
+    /// Complete feature inventory with every action attached to its owning
+    /// feature occurrence.
+    fn feature_specs() -> Vec<ApplicationFeatureSpec>;
 }
 
 /// Phase 1 authoring progression. Validation is unavailable until its typed
@@ -155,8 +148,8 @@ where
     Program: ApplicationProgramDefinition<Schema>,
 {
     require_identity(Program::IDENTITY.as_str())?;
-    let mut features = Program::Features::features();
-    let mut actions = Program::Actions::actions();
+    let mut features = Vec::new();
+    let mut actions = Vec::new();
     for spec in Program::feature_specs() {
         let (feature, spec_actions) = spec.into_parts();
         features.push(feature);
