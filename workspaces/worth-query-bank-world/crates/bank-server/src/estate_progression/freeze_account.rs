@@ -1,17 +1,15 @@
 use bank_domain::{
     estate::EstateAction,
     model::AccountId,
+    proposals::BankIdempotencyKey,
     schema::{
         AccountIdentity, AccountStatus, BankSchema, EstateAccount, EstateCase,
-        FreezeEstateAccountCapability, FreezeEstateAccountOperation, Status,
+        FreezeEstateAccountOperation, Status,
     },
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
-    declaration::application_schema::TypedMutationPreconditions,
     primary_graph::{
-        WorthQueryAdmittedApplicationOperation, WorthQueryApplicationEffectProgram,
-        WorthQueryApplicationIdempotencyBinding,
         WorthQueryApplicationOperationInvariantProjectionReader,
         WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantEntityIdentity,
         WorthQueryInvariantProjectionTraversalDenial,
@@ -20,19 +18,6 @@ use worth_query_host::facade::{
 
 use super::BankEstateProgressionDenial;
 use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
-
-type AdmittedFreezeOperation = WorthQueryAdmittedApplicationOperation<
-    BankSchema,
-    FreezeEstateAccountOperation,
-    EstateAction,
-    EstateCase,
->;
-type FreezeEffectProgram = WorthQueryApplicationEffectProgram<
-    BankSchema,
-    FreezeEstateAccountOperation,
-    EstateAction,
-    EstateCase,
->;
 
 #[derive(Debug)]
 pub enum BankEstateFreezeProjectionDenial {
@@ -46,103 +31,38 @@ pub enum BankEstateFreezeProjectionDenial {
 }
 
 impl BankIdentityRuntime {
-    pub fn freeze_estate_account(
+    pub fn freeze_estate_account_with_key(
         &self,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
+        key: &BankIdempotencyKey,
         request: &WorthQueryRequestScope,
     ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-        let account = freeze_command_account(action)?;
-        let admission = self.admit_freeze_operation(principal, action, request)?;
-        if let Some(outcome) =
-            super::idempotency::resolve_admitted_idempotency(self, &admission, idempotency)?
-        {
-            return Ok(outcome);
-        }
-        let program = self.materialize_freeze_effect(admission, account)?;
-        Ok(self
-            .application_runtime()
-            .compare_and_commit_application(program, idempotency)
-            .into())
-    }
-
-    pub(crate) fn admit_freeze_operation(
-        &self,
-        principal: &BankAuthenticatedPrincipal,
-        action: EstateAction,
-        request: &WorthQueryRequestScope,
-    ) -> Result<AdmittedFreezeOperation, BankEstateProgressionDenial> {
-        let capability = self
-            .application_runtime()
-            .installed_schema()
-            .capability(
-                FreezeEstateAccountCapability::reference(),
-                FreezeEstateAccountOperation::reference(),
-            )
-            .map_err(BankEstateProgressionDenial::from_capability_installation)?;
-        let selected = self
-            .select_current_product()
-            .map_err(BankEstateProgressionDenial::from_product_selection)?;
-        let access = selected
-            .admit_capability_access(principal.query(), &capability, action, request)
-            .map_err(BankEstateProgressionDenial::from_authorization)?;
-        let operation = self
-            .application_runtime()
-            .installed_schema()
-            .installed_operation(FreezeEstateAccountOperation::reference())
-            .map_err(BankEstateProgressionDenial::from_operation_installation)?;
-        self.application_runtime()
-            .authorize_capability_operation(
-                access,
-                &operation,
-                TypedMutationPreconditions::<
-                    BankSchema,
-                    FreezeEstateAccountOperation,
-                    EstateCase,
-                >::default(),
-            )
-            .map_err(BankEstateProgressionDenial::from_authorization)
-    }
-
-    fn materialize_freeze_effect(
-        &self,
-        admission: AdmittedFreezeOperation,
-        account: AccountId,
-    ) -> Result<FreezeEffectProgram, BankEstateProgressionDenial> {
-        let projected = self
-            .invariant_projection()
-            .project_admitted_operation(&admission, |reader, estate| {
-                project_freeze_account(reader, estate, account)
-            })
-            .map_err(BankEstateProgressionDenial::from_projection)?;
-        let (projection_result, projection, _) = projected.into_parts();
-        projection_result.map_err(BankEstateProgressionDenial::FreezeProjection)?;
-        let reads = self
-            .application_runtime()
-            .begin_projected_application_read_attempt(admission, projection)
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        let account = reads
-            .resolve_entity(AccountIdentity::reference(), account)
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        let mut effects = reads
-            .complete_projected_dependencies()
-            .map_err(BankEstateProgressionDenial::from_attempt)?
-            .begin_effect_program();
-        let account = effects
-            .existing_entity(&account)
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        effects
-            .write_field(&account, Status::reference(), AccountStatus::Frozen)
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        let program = effects
-            .finish()
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        Ok(program)
+        let EstateAction::FreezeAccount { estate, account } = action else {
+            return Err(BankEstateProgressionDenial::CommandInput(
+                "FreezeEstateAccountOperation",
+            ));
+        };
+        super::program_outcome::program_outcome(
+            self.request(principal, request)
+                .mutate(bank_domain::schema::FreezeEstateAccount::new(
+                    estate, account,
+                ))
+                .idempotency(key)
+                .execute_capability_in_program(self.application_program()),
+            "FreezeEstateAccountOperation",
+            |denial| {
+                denial
+                    .downcast::<BankEstateFreezeProjectionDenial>()
+                    .map(BankEstateProgressionDenial::FreezeProjection)
+            },
+        )
     }
 }
 
-fn freeze_command_account(action: EstateAction) -> Result<AccountId, BankEstateProgressionDenial> {
+pub(crate) fn freeze_command_account(
+    action: EstateAction,
+) -> Result<AccountId, BankEstateProgressionDenial> {
     match action {
         EstateAction::FreezeAccount { account, .. } => Ok(account),
         _ => Err(BankEstateProgressionDenial::CommandInput(
@@ -151,7 +71,7 @@ fn freeze_command_account(action: EstateAction) -> Result<AccountId, BankEstateP
     }
 }
 
-fn project_freeze_account(
+pub(crate) fn project_freeze_account(
     reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<
         BankSchema,
         FreezeEstateAccountOperation,

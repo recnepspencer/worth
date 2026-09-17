@@ -105,6 +105,7 @@ pub(super) fn try_reentry<
 ) -> Result<WorthQueryTemporalReentryOutcome, WorthQueryTemporalReentryDenial>
 where
     Schema: ApplicationSchema,
+    Operation: 'static,
     Input: Clone + Send + Sync + 'static,
     PrincipalIdentity: 'static,
     PrincipalIdentityBinding:

@@ -165,20 +165,22 @@ fn beneficiary_and_executor_actors_deny_at_capability_composition() {
             idempotency(91 + ordinal as u8),
         )
         .expect_err("conflicted authority must deny before invariant projection");
-        let BankEstateProgressionDenial::Authorization(denial) = denial else {
+        let BankEstateProgressionDenial::ApplicationEntry(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(denial),
+        ) = denial else {
             panic!("actor conflict must deny at Query authorization")
         };
         let kind = match actor_conflict {
             ActorConflict::Beneficiary => {
-                bank_server::BankAuthorizationDenialKind::ConflictRuleMatched
+                worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::ConflictRuleMatched
             }
             ActorConflict::Executor => {
-                bank_server::BankAuthorizationDenialKind::SeparationOfDutyRuleMatched
+                worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::SeparationOfDutyRuleMatched
             }
             ActorConflict::None => unreachable!(),
         };
         assert_eq!(denial.kind(), kind);
-        assert_eq!(denial.contributing_cause_count(), 1);
+        assert_eq!(denial.causes().len(), 1);
         assert_no_disbursement_effects(&fixture);
     }
 }
@@ -197,6 +199,8 @@ fn approved_emergency_graph_state_is_not_ordinary_disbursement_authority() {
         .expect_err("an approved graph record does not replace ordinary command authority");
     assert!(matches!(
         denial,
-        BankEstateProgressionDenial::Authorization(_)
+        BankEstateProgressionDenial::ApplicationEntry(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(_)
+        )
     ));
 }

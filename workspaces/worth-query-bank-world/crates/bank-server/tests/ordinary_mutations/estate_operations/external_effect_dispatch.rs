@@ -19,13 +19,15 @@ pub(crate) mod rail_transport;
 use std::sync::Arc;
 use std::time::Duration;
 
-use bank_domain::estate::{DeathNoticeStatus, ESTATE_DEATH_NOTICE_RAIL};
+use bank_domain::{
+    estate::{DeathNoticeStatus, ESTATE_DEATH_NOTICE_RAIL},
+    proposals::BankIdempotencyKey,
+};
 use bank_external_rail::test_control::FaultScript;
 use bank_external_rail::{
     LedgerStatus, RailCorrelation, RailProcessHandle, RailProtocolSupportProfile,
 };
 use bank_server::{queries, BankCommitReceipt, BankMutationCommitOutcome, BankReadControls};
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 use worth_query_host::facade::publication::application_aftermath::{
     WorthQueryPublishedExternalEffectFailure, WorthQueryPublishedExternalEffectPostureKind,
     WorthQueryPublishedUnsupportedProtocolVersionPosture,
@@ -258,7 +260,7 @@ fn a_duplicate_acknowledgement_never_advances_the_posture_twice() {
         .transport
         .under(FaultScript::DuplicateAcknowledgement, PATIENT);
     let binding = idempotency(45);
-    let receipt = world.commit_with(binding);
+    let receipt = world.commit_with(binding.clone());
     let posture = receipt
         .external_dispatch_posture()
         .expect("the declared effect must be dispatched");
@@ -293,7 +295,7 @@ impl DispatchWorld {
         self.commit_with(idempotency(identity))
     }
 
-    fn commit_with(&self, binding: WorthQueryApplicationIdempotencyBinding) -> BankCommitReceipt {
+    fn commit_with(&self, binding: BankIdempotencyKey) -> BankCommitReceipt {
         let outcome = self.notify(binding);
         let BankMutationCommitOutcome::Committed(receipt) = outcome else {
             panic!("the exact reported notice must commit: {outcome:?}");
@@ -301,18 +303,15 @@ impl DispatchWorld {
         receipt
     }
 
-    fn notify(
-        &self,
-        binding: WorthQueryApplicationIdempotencyBinding,
-    ) -> BankMutationCommitOutcome {
+    fn notify(&self, binding: BankIdempotencyKey) -> BankMutationCommitOutcome {
         self.fixture
             .world
             .runtime
-            .notify_estate_death(
+            .notify_estate_death_with_key(
                 &self.fixture.authenticate_specialist(),
                 self.fixture
                     .action(self.fixture.notice, self.fixture.deceased),
-                binding,
+                &binding,
                 &request_scope(),
             )
             .expect("the lawful death notification should reach commit")
@@ -376,6 +375,6 @@ fn rail_correlation(world: &DispatchWorld) -> RailCorrelation {
         .expect("a dispatched effect reaches the rail with one correlation")
 }
 
-fn idempotency(identity: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([identity; 32], [identity + 1; 32])
+fn idempotency(identity: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("external-notification-{identity}")).unwrap()
 }

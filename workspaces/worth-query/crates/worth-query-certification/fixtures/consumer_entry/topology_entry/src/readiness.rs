@@ -46,6 +46,7 @@ impl<Schema: TopologySchemaBinding>
 {
     type Configuration = ();
     type Installed = ();
+    type Operation = MutatePlanar;
 
     const IDENTITY: &'static str = "worth.query.certification.planar-initial-readiness.v1";
     const REQUIRED_PRODUCERS: &'static [&'static str] =

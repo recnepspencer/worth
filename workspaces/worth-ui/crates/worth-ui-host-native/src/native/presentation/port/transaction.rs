@@ -29,8 +29,7 @@ pub(super) fn present(
         plan: Some(plan),
         defer_initial_observation,
     };
-    let result = lifecycle.run_presentation(&mut transaction);
-    result
+    lifecycle.run_presentation(&mut transaction)
 }
 
 struct UiWgpuPresentationTransaction<'transaction, 'owners> {

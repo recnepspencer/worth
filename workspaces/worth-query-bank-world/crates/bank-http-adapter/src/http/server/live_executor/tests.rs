@@ -1,8 +1,9 @@
 use tokio_stream::StreamExt;
 
 use crate::http::protocol::{
-    BankHttpQueryBasis, BankHttpQueryBasisPosture, BankHttpQueryDisclosure,
-    BankHttpQueryDisclosurePosture, BankHttpQueryOmissionPosture, BankHttpQueryPublication,
+    BankHttpAccountActivity, BankHttpQueryBasis, BankHttpQueryBasisPosture,
+    BankHttpQueryCapabilityPurpose, BankHttpQueryDisclosure, BankHttpQueryDisclosurePosture,
+    BankHttpQueryOmissionPosture, BankHttpQueryPublication,
 };
 
 use super::*;

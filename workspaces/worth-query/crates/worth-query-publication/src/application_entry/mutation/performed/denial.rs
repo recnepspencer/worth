@@ -15,6 +15,9 @@ pub enum WorthQueryRequiredOutputPreparationDenial {
     MissingPerformedDelivery,
     MissingSource,
     SourceQuery(crate::application_entry::WorthQueryApplicationRequestQueryDenial),
+    ReadObservation(
+        worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
+    ),
     DemandExecution(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
     Demand(crate::application_entry::WorthQueryApplicationOutputDemandDenial),
     Connection(

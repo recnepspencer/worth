@@ -40,12 +40,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
 }
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
-    pub(in crate::domain_computation::primary_graph) const fn binding_type(
-        &self,
-    ) -> Option<TypeId> {
-        self.binding_type
-    }
-
     pub(in crate::domain_computation::primary_graph::application_attempt) fn remap_created_partition(
         mut self,
         mutation_partition: worth_relational::facade::identity::PartitionId,

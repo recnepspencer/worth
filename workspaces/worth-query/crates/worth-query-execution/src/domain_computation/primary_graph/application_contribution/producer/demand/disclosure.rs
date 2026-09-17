@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationOutputDemandDisclosure,
     WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
 };
-pub(super) fn validate_disclosure<'a, Schema, Family>(
+pub(super) fn validate_disclosure<Schema, Family>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,

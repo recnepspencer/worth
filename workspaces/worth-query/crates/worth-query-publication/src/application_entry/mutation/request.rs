@@ -2,8 +2,10 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationSourceExpectation,
+    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
+    ApplicationMutationSourceExpectation,
 };
+use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -30,6 +32,11 @@ where
     pub(super) scope: &'scope WorthQueryRequestScope,
     pub(super) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     pub(super) intent: Intent,
+    pub(super) preconditions: TypedMutationPreconditions<
+        Schema,
+        <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
+        <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+    >,
     pub(super) source: Option<
         worth_query_execution::facade::primary_graph::WorthQueryObservedSource<
             <<Intent::Binding as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
@@ -67,7 +74,7 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
 {
-    pub(in crate::application_entry) const fn new(
+    pub(in crate::application_entry) fn new(
         application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
         scope: &'scope WorthQueryRequestScope,
@@ -80,6 +87,7 @@ where
             scope,
             branch,
             intent,
+            preconditions: TypedMutationPreconditions::default(),
             source: None,
             source_preparation: std::marker::PhantomData,
         }
@@ -104,6 +112,7 @@ where
             scope: self.scope,
             branch: self.branch,
             intent: self.intent,
+            preconditions: self.preconditions,
             source: Some(source),
             source_preparation: std::marker::PhantomData,
         }
@@ -123,6 +132,18 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
 {
+    pub fn preconditions(
+        mut self,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
+            <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+    ) -> Self {
+        self.preconditions = preconditions;
+        self
+    }
+
     pub fn idempotency<'key>(
         self,
         key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,

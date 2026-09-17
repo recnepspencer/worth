@@ -6,8 +6,11 @@ mod program;
 pub use denial::WorthQueryInMemoryApplicationDenial;
 pub use limits::WorthQueryInMemoryApplicationLimits;
 pub use program::{
-    in_memory_program, WorthQueryAdmittedProgramOutput, WorthQueryProgramApplicationRuntime,
-    WorthQueryProgramOutputAdvance, WorthQueryProgramRootDemand, WorthQuerySettledProgramOutput,
+    in_memory_program, in_memory_program_with_authorization_time_source,
+    WorthQueryAdmittedProgramOperation, WorthQueryAdmittedProgramOutput,
+    WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance,
+    WorthQueryProgramOutputInstallation, WorthQueryProgramRootDemand,
+    WorthQuerySettledProgramOutput,
 };
 
 use super::application_contribution::{
@@ -27,41 +30,21 @@ use worth_query_installation::facade::{
     WorthQueryPortableDomainPackage,
 };
 
-/// Installs the declaration's contribution configuration and publishes its initial state.
-///
-/// Configuration is paired with the contribution tuple declared by `Schema`. All
-/// handler and invariant factories must be complete before `initial_state` runs.
-/// The initializer borrows only the unpublished typed graph and its installed
-/// schema. Any error drops construction without exposing a runtime.
-pub fn in_memory<Schema>(
+pub(super) fn in_memory_with_contributions<Schema, Contributions>(
     declaration: ApplicationSchemaDeclaration<Schema>,
-    configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+    configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
+    authorization_time_source: Option<
+        Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
+    >,
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
 where
     Schema: ApplicationSchemaComposition,
-    Schema::Contributions: WorthQueryApplicationContributionTuple<Schema>,
-{
-    in_memory_with_program(declaration, configuration, limits, initial_state, false)
-}
-
-pub(super) fn in_memory_with_program<Schema>(
-    declaration: ApplicationSchemaDeclaration<Schema>,
-    configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
-    initial_state: impl FnOnce(
-        &mut WorthQueryPrimaryGraphBootstrap<Schema>,
-        &WorthQueryInstalledApplicationSchema<Schema>,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-    allow_program_required: bool,
-) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
-where
-    Schema: ApplicationSchemaComposition,
-    Schema::Contributions: WorthQueryApplicationContributionTuple<Schema>,
+    Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     use WorthQueryInMemoryApplicationDenial as Denial;
 
@@ -70,7 +53,7 @@ where
         Schema::MAJOR,
         Schema::MINOR,
     ));
-    let contracts = Schema::Contributions::contracts().map_err(Denial::Contributions)?;
+    let contracts = Contributions::contracts().map_err(Denial::Contributions)?;
     let package = contracts
         .compose_package(package.application_schema(declaration.clone()))
         .validate()
@@ -91,24 +74,12 @@ where
         .installed_packages()
         .bind_application_schema(declaration)
         .map_err(Denial::Schema)?;
-    let configured = WorthQueryConfiguredApplicationContributions::<Schema>::configure(
-        &installed,
-        configuration,
-        contracts,
-    )
+    let configured = WorthQueryConfiguredApplicationContributions::<Schema>::configure::<
+        Contributions,
+    >(&installed, configuration, contracts)
     .map_err(Denial::Contributions)?;
     let (invariants, handlers, producers, conditionals) =
         configured.into_parts().map_err(Denial::Contributions)?;
-    if !allow_program_required {
-        if let Some(binding) = installed
-            .installed_mutation_binding_inventory()
-            .find(|binding| binding.requires_application_program())
-        {
-            return Err(Denial::ApplicationProgramRequired(
-                binding.identity().to_owned(),
-            ));
-        }
-    }
     let mut graph = authority
         .prepare_primary_graph_with_invariants(&runtime, &installed, limits.world, invariants)
         .map_err(Denial::Graph)?;
@@ -116,19 +87,41 @@ where
     initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
     let (mut application, installed_conditionals) =
         if conditionals.is_empty() && producers.is_empty() {
-            let application = graph
-                .publish_application_runtime(runtime, authority, installed, limits.conditionals)
-                .map_err(Denial::Publication)?;
-            (application, Default::default())
-        } else {
-            let mut publication = graph
-                .conditional_application_runtime_installation(
+            let application = match authorization_time_source {
+                Some(source) => graph.publish_application_runtime_with_authorization_time_source(
                     runtime,
                     authority,
                     installed,
                     limits.conditionals,
-                )
-                .map_err(Denial::ConditionalPublication)?;
+                    source,
+                ),
+                None => graph.publish_application_runtime(
+                    runtime,
+                    authority,
+                    installed,
+                    limits.conditionals,
+                ),
+            }
+            .map_err(Denial::Publication)?;
+            (application, Default::default())
+        } else {
+            let mut publication = match authorization_time_source {
+                Some(source) => graph
+                    .conditional_application_runtime_installation_with_authorization_time_source(
+                        runtime,
+                        authority,
+                        installed,
+                        limits.conditionals,
+                        source,
+                    ),
+                None => graph.conditional_application_runtime_installation(
+                    runtime,
+                    authority,
+                    installed,
+                    limits.conditionals,
+                ),
+            }
+            .map_err(Denial::ConditionalPublication)?;
             publication.install_output_producers(producers.clone());
             let installed_conditionals = conditionals
                 .install_all(&producers, &mut publication)

@@ -24,6 +24,7 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryRequestScope, WorthQueryValidatedExternalPrincipal,
 };
 use worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity;
+use worth_query_host::facade::primary_graph::WorthQueryRuntimeTimeSource;
 
 use super::super::super::protocol::{BankHttpCredential, BankHttpDenial};
 use super::super::authentication::BankHttpApplicationAuthenticator;
@@ -150,6 +151,24 @@ impl WorthQueryAuthenticationAdapter for CausalAuthenticationAdapter {
 }
 
 pub(super) fn application(account: AccountId) -> CausalHttpApplication {
+    let runtime = BankIdentityRuntime::install_world(world_seed(account))
+        .expect("bank HTTP runtime should install");
+    application_from_runtime(runtime)
+}
+
+pub(super) fn application_with_authorization_time(
+    account: AccountId,
+    source: impl WorthQueryRuntimeTimeSource,
+) -> CausalHttpApplication {
+    let runtime = BankIdentityRuntime::install_world_with_authorization_time_source(
+        world_seed(account),
+        source,
+    )
+    .expect("bank HTTP runtime should install with authorization time");
+    application_from_runtime(runtime)
+}
+
+fn world_seed(account: AccountId) -> BankWorldSeed {
     let principal = BankPrincipalId::new(1).unwrap();
     let institution = InstitutionId::new(1).unwrap();
     let snapshot = BankSnapshotBuilder::new(BankSnapshotVersion::new(1).unwrap())
@@ -190,56 +209,56 @@ pub(super) fn application(account: AccountId) -> CausalHttpApplication {
         snapshot,
         FundingSpec::estate(institution, AccountId::new(101).unwrap(), 1_000),
     );
-    let runtime = BankIdentityRuntime::install_world(
-        BankWorldSeed::new(snapshot)
-            .principal(BankPrincipalSeed::enabled(principal, external_identity()))
-            .principal(BankPrincipalSeed::enabled(
-                BankPrincipalId::new(2).unwrap(),
-                WorthQueryExternalPrincipalIdentity::new(TEST_ISSUER, "estate-subject").unwrap(),
-            ))
-            .principal(BankPrincipalSeed::enabled(
-                BankPrincipalId::new(3).unwrap(),
-                WorthQueryExternalPrincipalIdentity::new(TEST_ISSUER, "beneficiary").unwrap(),
-            ))
-            .principal(BankPrincipalSeed::enabled(
-                BankPrincipalId::new(4).unwrap(),
-                WorthQueryExternalPrincipalIdentity::new(TEST_ISSUER, "executor").unwrap(),
-            ))
-            .principal(BankPrincipalSeed::enabled(
-                BankPrincipalId::new(5).unwrap(),
-                external_identity_for("approver"),
-            ))
-            .principal(BankPrincipalSeed::enabled(
-                BankPrincipalId::new(6).unwrap(),
-                external_identity_for("reviewer"),
-            ))
-            .employee(BankEmployeeAssignmentSeed::new(
-                EmployeeAssignmentId::new(1).unwrap(),
-                institution,
-                principal,
-                EmployeeRole::Teller,
-            ))
-            .employee(BankEmployeeAssignmentSeed::new(
-                EmployeeAssignmentId::new(2).unwrap(),
-                institution,
-                principal,
-                EmployeeRole::EstateSpecialist,
-            ))
-            .employee(BankEmployeeAssignmentSeed::new(
-                EmployeeAssignmentId::new(3).unwrap(),
-                institution,
-                BankPrincipalId::new(5).unwrap(),
-                EmployeeRole::EstateSpecialist,
-            ))
-            .employee(BankEmployeeAssignmentSeed::new(
-                EmployeeAssignmentId::new(4).unwrap(),
-                institution,
-                BankPrincipalId::new(6).unwrap(),
-                EmployeeRole::Compliance,
-            ))
-            .estate(estate_world(institution, principal)),
-    )
-    .expect("bank HTTP runtime should install");
+    BankWorldSeed::new(snapshot)
+        .principal(BankPrincipalSeed::enabled(principal, external_identity()))
+        .principal(BankPrincipalSeed::enabled(
+            BankPrincipalId::new(2).unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(TEST_ISSUER, "estate-subject").unwrap(),
+        ))
+        .principal(BankPrincipalSeed::enabled(
+            BankPrincipalId::new(3).unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(TEST_ISSUER, "beneficiary").unwrap(),
+        ))
+        .principal(BankPrincipalSeed::enabled(
+            BankPrincipalId::new(4).unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(TEST_ISSUER, "executor").unwrap(),
+        ))
+        .principal(BankPrincipalSeed::enabled(
+            BankPrincipalId::new(5).unwrap(),
+            external_identity_for("approver"),
+        ))
+        .principal(BankPrincipalSeed::enabled(
+            BankPrincipalId::new(6).unwrap(),
+            external_identity_for("reviewer"),
+        ))
+        .employee(BankEmployeeAssignmentSeed::new(
+            EmployeeAssignmentId::new(1).unwrap(),
+            institution,
+            principal,
+            EmployeeRole::Teller,
+        ))
+        .employee(BankEmployeeAssignmentSeed::new(
+            EmployeeAssignmentId::new(2).unwrap(),
+            institution,
+            principal,
+            EmployeeRole::EstateSpecialist,
+        ))
+        .employee(BankEmployeeAssignmentSeed::new(
+            EmployeeAssignmentId::new(3).unwrap(),
+            institution,
+            BankPrincipalId::new(5).unwrap(),
+            EmployeeRole::EstateSpecialist,
+        ))
+        .employee(BankEmployeeAssignmentSeed::new(
+            EmployeeAssignmentId::new(4).unwrap(),
+            institution,
+            BankPrincipalId::new(6).unwrap(),
+            EmployeeRole::Compliance,
+        ))
+        .estate(estate_world(institution, principal))
+}
+
+fn application_from_runtime(runtime: BankIdentityRuntime) -> CausalHttpApplication {
     let authentication = runtime
         .admit_authentication_adapter(
             BankAuthenticationConfiguration::new(audience(), method()),

@@ -244,24 +244,24 @@ where
         TypedReadDeclarationBuilder::new(entity).with_installed_context(self.authoring_context())
     }
 
-    pub fn operation<Operation: 'static, Input>(
+    pub fn operation<Operation, Input>(
         &self,
         operation: ApplicationOperationRef<Schema, Operation, Input>,
     ) -> TypedOperationBuilder<Schema, Operation, Input>
     where
-        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
         Input: 'static,
     {
         TypedOperationBuilder::new(operation).with_installed_context(self.authoring_context())
     }
 
-    pub fn effects<Operation: 'static, Input>(
+    pub fn effects<Operation, Input>(
         &self,
         operation: ApplicationOperationRef<Schema, Operation, Input>,
     ) -> TypedEffectIntentBuilder<Schema, Operation, Input>
     where
-        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
         Input: 'static,
     {

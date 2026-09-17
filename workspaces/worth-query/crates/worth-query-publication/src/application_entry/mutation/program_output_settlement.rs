@@ -30,6 +30,12 @@ pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery> {
 }
 
 impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
+    pub const fn root(
+        &self,
+    ) -> &crate::application_entry::WorthQueryApplicationOutputDemandSettlement<RootQuery> {
+        &self.root
+    }
+
     pub fn root_observation(
         &self,
     ) -> &crate::application_entry::WorthQueryApplicationReadObservation {
@@ -69,8 +75,10 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
         Demand<Schema, Connection>: 'static,
         Query<Schema, Connection>: 'static,
     {
-        self.outputs.iter().filter_map(|output| {
-            (output.connection_identity == Connection::IDENTITY).then(|| {
+        self.outputs
+            .iter()
+            .filter(|output| output.connection_identity == Connection::IDENTITY)
+            .map(|output| {
                 (
                     output
                         .demand
@@ -86,7 +94,6 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
                         .expect("a typed program output retains its declared settlement"),
                 )
             })
-        })
     }
 
     pub fn outputs_for_instance<'output, Schema, Connection>(
@@ -159,7 +166,7 @@ impl ProgramOutputRecord {
         Demand<Schema, Connection::Binding>: 'static,
         Query<Schema, Connection::Binding>: 'static,
     {
-        let observation = settlement.observation().retained_clone();
+        let observation = settlement.observation().retain();
         let receipt = settlement.receipt().clone();
         let readiness_delivery = settlement.readiness_delivery().cloned();
         let declaration = Connection::declaration();

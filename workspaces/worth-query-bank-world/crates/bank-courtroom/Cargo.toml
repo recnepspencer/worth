@@ -13,6 +13,7 @@ cold-docker-courtroom = [
 
 [dependencies]
 bank-domain.workspace = true
+bank-external-rail.workspace = true
 bank-http-adapter.workspace = true
 bank-server.workspace = true
 bank-user-node.workspace = true
@@ -43,6 +44,11 @@ required-features = ["cold-docker-courtroom"]
 [[bin]]
 name = "cold-bank-user-node"
 path = "src/bin/cold-bank-user-node.rs"
+required-features = ["cold-docker-courtroom"]
+
+[[bin]]
+name = "cold-bank-rail"
+path = "src/bin/cold-bank-rail.rs"
 required-features = ["cold-docker-courtroom"]
 
 [lints]

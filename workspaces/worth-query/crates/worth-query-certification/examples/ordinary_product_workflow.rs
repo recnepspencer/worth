@@ -4,10 +4,12 @@ pub mod product_workflow_support;
 
 use std::sync::Arc;
 
-use product_workflow_support::schema::{IntentIdentityField, TemporalIntentQuery};
+use product_workflow_support::schema::{
+    AmendTemporalAndPublishDefinition, IntentIdentityField, TemporalIntentQuery,
+};
 use product_workflow_support::{
-    controls, principal, product_identity, CompletingExternalTransport, ExampleApplication,
-    ReplacementPredicate,
+    controls, principal, product_identity, read_row, CompletingExternalTransport,
+    ExampleApplication, ReplacementPredicate,
 };
 use worth_query_host::facade::{
     declaration::application_query::ApplicationQueryParameterSet, primary_graph, product, runtime,
@@ -21,7 +23,7 @@ fn main() {
         .expect("the bounded example thread must start")
         .join()
         .expect("the ordinary product workflow must not unwind")
-        .unwrap_or_else(|stop| eprintln!("application stopped with retained evidence: {stop:?}"));
+        .expect("the ordinary product workflow must commit");
 }
 
 fn run() -> Result<(), NonCommitted> {
@@ -78,7 +80,12 @@ fn run() -> Result<(), NonCommitted> {
         .on_branch(branch)
         .transaction()
         .apply(admitted_change)
-        .commit()
+        .commit_for_program(
+            application
+                .runtime
+                .admit_program_operation::<AmendTemporalAndPublishDefinition>()
+                .expect("the validated program declares the combined action"),
+        )
         .expect("the admitted change and transaction must name the same product");
     let mut committed = require_committed(&application.runtime, outcome)?;
     assert_eq!(committed.product_branch(), branch);
@@ -103,7 +110,7 @@ fn run() -> Result<(), NonCommitted> {
         .select()
         .expect("the published product occurrence must be selectable");
     let delivery = current
-        .deliver_relational_change_to_conditional(&application.clock, 0, change)
+        .deliver_relational_change_to_conditional(&application.conditional.clock, 0, change)
         .expect("the exact product must admit its patch");
     let runtime::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivery) =
         delivery
@@ -120,7 +127,7 @@ fn run() -> Result<(), NonCommitted> {
         .on_branch(branch)
         .select()
         .expect("the published product must remain selectable")
-        .conditional_clock(&application.clock)
+        .conditional_clock(&application.conditional.clock)
         .expect("the conditional belongs to this product")
         .observe();
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(conditional) =
@@ -128,8 +135,30 @@ fn run() -> Result<(), NonCommitted> {
     else {
         panic!("the delivered patch must execute its conditional")
     };
-    assert_eq!(conditional.committed_operation_count(), 1);
+    assert_eq!(
+        conditional.committed_operation_count(),
+        1,
+        "due={} retained={} eligible={} suppressed={} deferred={} failed_wakes={} failed_operations={} authoritative_commits={}",
+        conditional.due_wake_count(),
+        conditional.retained_due_wake_count(),
+        conditional.retained_eligible_wake_count(),
+        conditional.retained_suppressed_wake_count(),
+        conditional.retained_deferred_wake_count(),
+        conditional.retained_failed_wake_count(),
+        conditional.failed_operation_count(),
+        conditional.authoritative_commit_count(),
+    );
     drop(conditional);
+
+    let current = application
+        .runtime
+        .on_branch(branch)
+        .select()
+        .expect("the conditional successor must be selectable");
+    let row = read_row(&application, current, &principal, &request);
+    assert_eq!(row.revision, 3);
+    assert_eq!(row.lifecycle, "completed");
+    assert_eq!(row.input, "published-through-world");
 
     let retained = application
         .runtime
@@ -163,6 +192,7 @@ enum NonCommitted {
         primary_graph::WorthQueryProductUnpublishedRecoveryReleaseFailure,
     ),
     NoEffect(product::WorthQueryApplicationNoEffectCause),
+    AlreadyCommitted,
     Stale(primary_graph::WorthQueryApplicationStaleAttempt),
     Cancelled,
     TimedOut,
@@ -205,6 +235,7 @@ impl std::fmt::Debug for NonCommitted {
                 .field(failure)
                 .finish(),
             Self::NoEffect(cause) => formatter.debug_tuple("NoEffect").field(cause).finish(),
+            Self::AlreadyCommitted => formatter.write_str("AlreadyCommitted"),
             Self::Stale(stale) => formatter
                 .debug_struct("Stale")
                 .field("stale_fact_count", &stale.stale_fact_count())
@@ -254,9 +285,9 @@ fn require_committed(
     outcome: primary_graph::WorthQueryApplicationCommitOutcome,
 ) -> Result<primary_graph::WorthQueryApplicationCommitReceipt, NonCommitted> {
     match outcome {
-        primary_graph::WorthQueryApplicationCommitOutcome::Committed(receipt)
-        | primary_graph::WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => {
-            Ok(receipt)
+        primary_graph::WorthQueryApplicationCommitOutcome::Committed(receipt) => Ok(receipt),
+        primary_graph::WorthQueryApplicationCommitOutcome::AlreadyCommitted(_) => {
+            Err(NonCommitted::AlreadyCommitted)
         }
         primary_graph::WorthQueryApplicationCommitOutcome::ProductStale(stale) => {
             Err(NonCommitted::ProductStale(stale))

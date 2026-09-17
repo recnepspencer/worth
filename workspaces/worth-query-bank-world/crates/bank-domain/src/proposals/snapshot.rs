@@ -45,6 +45,7 @@ pub struct BankSnapshot {
     primary_personal_accounts: BTreeMap<BankPrincipalId, AccountId>,
     business_accounts: BTreeMap<BusinessId, AccountId>,
     institution_cash_accounts: BTreeMap<InstitutionId, AccountId>,
+    projected_account_revisions: BTreeMap<AccountId, AccountJournalRevision>,
     journal: Vec<BankJournalEntry>,
     payments: BTreeMap<PaymentId, BusinessPayment>,
     authorizations: BTreeMap<AccountAuthorizationId, BankAccountAuthorization>,
@@ -85,6 +86,9 @@ impl BankSnapshot {
 
     pub fn account_journal_revision(&self, id: AccountId) -> Option<AccountJournalRevision> {
         self.accounts.get(&id)?;
+        if let Some(revision) = self.projected_account_revisions.get(&id) {
+            return Some(*revision);
+        }
         let posting_count = self
             .journal
             .iter()
@@ -166,8 +170,23 @@ impl BankSnapshot {
         self.accounts.insert(account.id(), account);
     }
 
-    pub(crate) fn append_journal(&mut self, entry: BankJournalEntry) {
+    pub(crate) fn append_projected_journal(&mut self, entry: BankJournalEntry) {
         self.journal.push(entry);
+    }
+
+    pub(crate) fn append_proposed_journal(
+        &mut self,
+        entry: BankJournalEntry,
+    ) -> Result<(), super::BankProposalDenial> {
+        for posting in entry.postings() {
+            if let Some(revision) = self.projected_account_revisions.get_mut(&posting.account()) {
+                *revision = revision
+                    .next()
+                    .ok_or(super::BankProposalDenial::ArithmeticOverflow)?;
+            }
+        }
+        self.journal.push(entry);
+        Ok(())
     }
 
     pub(crate) fn insert_payment(&mut self, payment: BusinessPayment) {

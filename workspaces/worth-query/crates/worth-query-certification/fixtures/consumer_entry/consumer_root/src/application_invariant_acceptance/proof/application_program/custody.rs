@@ -273,7 +273,7 @@ fn settle<'a>(
     request: &'a Request<'a>,
 ) -> worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputSettlement<
     <worth_query_topology_entry::PlanarReadBinding<ConsumerSchema> as worth_query_decl::facade::application_query::ApplicationQueryBinding<ConsumerSchema>>::Query,
-> {
+>{
     loop {
         match performed.required_output_mut().advance(request).unwrap() {
             WorthQueryApplicationProgramOutputProgress::Pending => {}

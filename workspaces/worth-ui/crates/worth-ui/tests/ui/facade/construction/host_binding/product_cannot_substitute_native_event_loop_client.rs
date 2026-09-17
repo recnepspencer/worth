@@ -2,7 +2,7 @@ use worth_ui_host_native::{
     UiNativeClientPresentationAttribution, UiNativeEventLoopClient, UiNativeEventLoopClientClose,
     UiNativeEventLoopClientFailure, UiNativeEventLoopDirective, UiNativeObservationClock,
     UiNativeObservationReadinessGrant, UiNativeObservationTimeProgress,
-    UiNativePresentationObservation, UiNativeReadinessGrant,
+    UiNativeReadinessGrant, UiNativeRetainedFrameObservation,
 };
 use worth_ui_native_platform::UiPreparedNativePlatform;
 
@@ -48,7 +48,7 @@ impl UiNativeEventLoopClient for ForgedNativeClient {
 
     fn presentation_attribution(
         &self,
-        _observed: &UiNativePresentationObservation,
+        _observed: &UiNativeRetainedFrameObservation,
     ) -> Option<UiNativeClientPresentationAttribution> {
         None
     }

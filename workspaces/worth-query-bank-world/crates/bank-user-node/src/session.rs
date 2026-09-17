@@ -41,6 +41,7 @@ pub(super) struct BankUserSession {
     mutation_endpoint: url::Url,
     estate_notification_endpoint: url::Url,
     recovery_inspection_endpoint: url::Url,
+    recovery_safe_retry_endpoint: url::Url,
     estate_disbursement_endpoint: url::Url,
     elevation_request_endpoint: url::Url,
     elevation_approval_endpoint: url::Url,
@@ -84,6 +85,9 @@ impl BankUserSession {
         let recovery_inspection_endpoint = configuration
             .bank_server_origin
             .join("v1/recovery/inspect")?;
+        let recovery_safe_retry_endpoint = configuration
+            .bank_server_origin
+            .join("v1/recovery/safe-retry")?;
         let estate_disbursement_endpoint = configuration
             .bank_server_origin
             .join("v1/estate/disburse")?;
@@ -114,6 +118,7 @@ impl BankUserSession {
             mutation_endpoint,
             estate_notification_endpoint,
             recovery_inspection_endpoint,
+            recovery_safe_retry_endpoint,
             estate_disbursement_endpoint,
             elevation_request_endpoint,
             elevation_approval_endpoint,

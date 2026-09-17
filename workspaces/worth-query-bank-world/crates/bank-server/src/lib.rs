@@ -4,12 +4,12 @@
 
 #![forbid(unsafe_code)]
 
+mod application_definition;
 mod application_query;
 mod authenticated_principal;
 mod authentication_boundary;
 mod bank_projection;
 mod committed_dispatch_outbox;
-mod domain_package;
 mod error;
 #[cfg(test)]
 mod estate_capability_admission;
@@ -20,11 +20,11 @@ mod identity_runtime;
 mod mutation_handlers;
 mod operation_admission;
 mod operation_commit;
-mod operation_proposals;
 mod ordinary;
 mod principal_seed;
 mod world_seed;
 
+pub use application_definition::BankApplication;
 pub use application_query::{
     BankAccountActivityContinuation, BankAccountActivityHistoricalResult,
     BankAccountActivityLiveLease, BankAccountActivityLiveOutcome, BankAccountActivityLiveUpdate,
@@ -70,15 +70,15 @@ pub use estate_progression::{
     BankEstateMandatoryReviewOutcome, BankEstateOperationProjectionDenial,
     BankEstateProgressionDenial, BankEstateReleaseProjectionDenial,
     BankExecutorRecognitionProjectionDenial, BankInvariantDecisionPlanDenial,
-    BankInvariantProjectionTraversalDenial, BankRecoveryDenial, BankRecoveryDenialKind,
-    BankRecoveryDurability, BankRecoveryExpiryDecision, BankRecoveryExpiryEvaluation,
-    BankRecoveryIdempotencyResolution, BankRecoveryInspection, BankRecoveryPosture,
-    BankRecoverySafeRetryReceipt, BankRecoverySupportTruth, BankRecoveryTransitionReceipt,
-    BankRequestedEstateElevation, BankReviewedEstateElevation,
+    BankInvariantProjectionTraversalDenial, BankRecoveryClaimStatus, BankRecoveryDenial,
+    BankRecoveryDenialKind, BankRecoveryDurability, BankRecoveryExpiryDecision,
+    BankRecoveryExpiryEvaluation, BankRecoveryIdempotencyResolution, BankRecoveryInspection,
+    BankRecoveryPosture, BankRecoverySafeRetryDenial, BankRecoverySafeRetryReceipt,
+    BankRecoverySupportTruth, BankRecoveryTransitionReceipt, BankRequestedEstateElevation,
+    BankReviewedEstateElevation,
 };
 pub use external_effect_transport::BankExternalEffectTransportDenial;
 pub use identity_runtime::{BankAuthenticationConfiguration, BankIdentityRuntime};
-pub use operation_admission::{BankAdmittedOperation, BankOperationAdmissionError};
 pub use operation_commit::{
     BankApplicationAttemptDenialKind, BankCommitCanonicalWorkEvidence,
     BankCommitCanonicalWorkPhases, BankCommitDenialKind, BankCommitDenialStage,
@@ -86,21 +86,16 @@ pub use operation_commit::{
     BankMutationCommitOutcome, BankProviderFailureKind, BankProviderFailureStage,
     BankUnresolvedCommitEvidence,
 };
-pub use operation_proposals::{
-    BankAuthorizedProposal, BankOperationProposalError, BankOperationProposals,
-    BankSendMoneyPreparation,
-};
 pub use ordinary::{
-    mutations, queries, BankApprovePendingPayment, BankAuthorizationDenial,
-    BankAuthorizationDenialKind, BankEntityResolutionDenial, BankEntityResolutionDenialKind,
-    BankIdempotencyResolutionDenialKind, BankMutation, BankMutationControls, BankMutationDenial,
-    BankMutationExplanation, BankMutationExplanationStage, BankMutationForPrincipal,
-    BankMutationMetadata, BankMutationOutcome, BankMutationProjectionWork,
-    BankMutationProposalDenial, BankMutationStatus, BankOperationInstallationDenial,
+    mutations, queries, BankAccountAccessExecution, BankApprovePendingPayment,
+    BankAuthorizationDenial, BankAuthorizationDenialKind, BankBusinessAccountCreationExecution,
+    BankEntityResolutionDenial, BankEntityResolutionDenialKind, BankMoneyMovementExecution,
+    BankMutation, BankMutationControls, BankMutationForPrincipal, BankOperationInstallationDenial,
     BankOperationInstallationDenialKind, BankPaymentContinuationDenial,
-    BankPaymentInitiationOutcome, BankPendingPaymentContinuation, BankQuery, BankQueryForPrincipal,
-    BankReadControlDenial, BankReadControls, BankReadyMutation, BankReadyQuery,
-    BankRejectPendingPayment,
+    BankPaymentDecisionExecution, BankPaymentInitiationOutcome, BankPendingPaymentContinuation,
+    BankPersonalAccountCreationExecution, BankProgramMutationExecution, BankQuery,
+    BankQueryForPrincipal, BankReadControlDenial, BankReadControls, BankReadyMutation,
+    BankReadyQuery, BankRejectPendingPayment,
 };
 pub use principal_seed::BankPrincipalSeed;
 pub use world_seed::{BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankWorldSeed};

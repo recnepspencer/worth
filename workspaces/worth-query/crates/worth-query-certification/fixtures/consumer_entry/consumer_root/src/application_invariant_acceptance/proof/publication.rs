@@ -8,11 +8,13 @@ use worth_query_host::facade::{
         WorthQueryEntityResolutionDenialKind, WorthQueryPreserveOutput,
     },
 };
-use worth_query_topology_entry::{Body, PlanarMutation, PlanarMutationBinding, PlanarRead};
+use worth_query_topology_entry::{Body, PlanarEditBinding, PlanarMutation, PlanarRead};
 
-use super::{length, mutate, read_y, require_planar_violation, source_version, Request};
+use super::{
+    length, mutate, read_y, require_planar_violation, source_version, ProgramApplication, Request,
+};
 
-pub(super) fn create_and_reject_cycles(request: &Request<'_>) {
+pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &ProgramApplication) {
     for (ordinal, coordinates) in [
         vec![(41, 1), (50, 1), (41, 10)],
         vec![(61, 1), (70, 1), (70, 10), (61, 10)],
@@ -40,7 +42,7 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>) {
             operation: PlanarOperation::CreateCycle(vertices.clone()),
             validator_work: 4096,
         };
-        let outcome = mutate(request, input, 100 + ordinal as u64);
+        let outcome = mutate(request, application, input, 100 + ordinal as u64);
         let WorthQueryApplicationMutationOutcome::Committed {
             mut receipt,
             result,
@@ -50,7 +52,7 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>) {
         };
         assert_eq!(result.changed_vertices, vertices.len());
         receipt.output_correspondence().entity(
-            WorthQueryApplicationOutputRole::<PlanarMutationBinding<crate::ConsumerSchema>, Body, WorthQueryPreserveOutput>::from_static("anchor"),
+            WorthQueryApplicationOutputRole::<PlanarEditBinding<crate::ConsumerSchema>, Body, WorthQueryPreserveOutput>::from_static("anchor"),
         ).expect("the committed group preserves its declared anchor through owner identity correspondence");
         let created = vertices
             .iter()
@@ -59,7 +61,7 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>) {
                     .output_correspondence()
                     .entity(
                         WorthQueryApplicationOutputRole::<
-                            PlanarMutationBinding<crate::ConsumerSchema>,
+                            PlanarEditBinding<crate::ConsumerSchema>,
                             Body,
                             WorthQueryCreateOutput,
                         >::try_new(format!("created.{}", vertex.body_key))
@@ -96,6 +98,7 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>) {
         let before = source_version(request);
         require_planar_violation(mutate(
             request,
+            application,
             PlanarMutation {
                 scope_key: "anchor-a".to_owned(),
                 operation: PlanarOperation::CreateCycle(malformed.clone()),

@@ -6,17 +6,27 @@ use worth_query_host::facade::declaration::application_query::{
 };
 use worth_query_host::facade::{declaration, primary_graph};
 use worth_query_host::facade::{
-    worth_query_application_query, worth_query_application_schema, worth_query_aspect,
-    worth_query_effect, worth_query_entity, worth_query_field, worth_query_operation,
-    worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_portable_type, worth_query_principal_binding, worth_query_relation,
-    worth_query_structured_value_binding,
+    worth_query_application, worth_query_application_contribution, worth_query_application_query,
+    worth_query_aspect, worth_query_effect, worth_query_entity, worth_query_field,
+    worth_query_operation, worth_query_operation_emits, worth_query_operation_reads,
+    worth_query_operation_writes, worth_query_portable_type, worth_query_principal_binding,
+    worth_query_relation, worth_query_structured_value_binding,
 };
 
-worth_query_application_schema! {
-    pub schema TemporalHostSchema {
-        owner: temporal_host_courtroom,
+mod integrity;
+pub use integrity::TemporalIntegrity;
+
+worth_query_application! {
+    pub TemporalHostSchema {
+        owner: "temporal_host_courtroom",
         version: (1, 0),
+        contributions: [TemporalHostContribution],
+    }
+}
+
+worth_query_application_contribution! {
+    pub contribution TemporalHostContribution in TemporalHostSchema {
+        identity: "temporal_host_courtroom.example.v1",
         members: |schema| {
             schema
                 .entity(ExternalMapping::reference())
@@ -109,6 +119,7 @@ worth_query_application_schema! {
                 .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentDueField::reference())
                 .operation_write(AmendTemporalAndPublishDefinition::reference(), IntentInputField::reference())
                 .operation_emit(AmendTemporalAndPublishDefinition::reference(), TemporalAmendmentEffect::reference())
+                .invariant(integrity::definition())
                 .application_query(temporal_intent_query_definition())
         }
     }

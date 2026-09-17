@@ -86,6 +86,7 @@ where
         _parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
             SourceQuery<Schema, ParentDemand>,
         >,
+        parent_basis: &crate::application_entry::WorthQueryApplicationReadObservation,
         parent_authority: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
@@ -135,6 +136,7 @@ where
         _parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
             SourceQuery<Schema, ParentDemand>,
         >,
+        _: &crate::application_entry::WorthQueryApplicationReadObservation,
         _: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
         _: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
         _: WorthQueryOutputDemandControls,
@@ -233,9 +235,10 @@ where
     fn start(
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,
-        parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
+        _parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
             SourceQuery<Schema, ParentDemand>,
         >,
+        parent_basis: &crate::application_entry::WorthQueryApplicationReadObservation,
         parent_authority: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
@@ -245,7 +248,7 @@ where
     > {
         let discovery = Binding::<Schema, Connection>::discovery_from_root(parent_demand)
             .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?;
-        let retained = request.at(parent_settlement.observation());
+        let retained = request.at(parent_basis);
         let result = retained
             .query(discovery)
             .execute()
@@ -266,6 +269,7 @@ where
                     .start_dependent::<Program, ParentDemand, Connection>(
                         application,
                         parent_authority,
+                        parent_basis,
                     )
                     .map_err(WorthQueryRequiredOutputPreparationDenial::Demand)?;
                 Ok(EdgeNode {
@@ -331,11 +335,13 @@ where
                     WorthQueryApplicationProgramDemandProgress::Settled {
                         settlement,
                         authority,
+                        basis,
                     } => {
                         node.continuation = Some(Children::start(
                             self.application,
                             &node.demand,
                             &settlement,
+                            &basis,
                             &authority,
                             request,
                             self.controls,

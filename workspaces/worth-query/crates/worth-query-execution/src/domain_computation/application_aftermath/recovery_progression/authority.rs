@@ -75,6 +75,15 @@ impl WorthQueryRecoveryEffectAuthority {
         deny_if_expired(handle, handle.registry_clock())?;
         ensure_authority_owns_handle(*self.current.strong_basis().value(), handle)
     }
+
+    /// Finalize an already performed dispatch without resampling expiry after I/O.
+    pub(crate) fn ensure_performed_for(
+        &self,
+        handle: &WorthQueryRecoveryHandle,
+    ) -> Result<(), WorthQueryRecoveryHandleDenial> {
+        handle.ensure_live()?;
+        ensure_authority_owns_handle(*self.current.strong_basis().value(), handle)
+    }
 }
 
 /// Proof that disclosure admission and binding truth matched for inspection.

@@ -50,9 +50,23 @@ where
                 request.version_id(),
                 request.current_version_id(),
                 &prepared_scope,
-                work,
+                work.clone(),
                 std::sync::Arc::new(registration.access_contract().clone()),
             );
+            let access = registration.access_contract();
+            let has_declared_applicability = !access.affected_entity_kinds.is_empty()
+                || !access.affected_relation_kinds.is_empty();
+            if request.merged_plan().is_some()
+                && has_declared_applicability
+                && !planner.has_applicable_touches()
+                && !work.exceeded()
+            {
+                return InvariantPacketRegistration::CustomNotApplicable {
+                    registration: registration.clone(),
+                    prepared_scope,
+                    work,
+                };
+            }
             let prepared_execution = registration
                 .executable()
                 .prepare_for_execution(runtime, &mut planner);

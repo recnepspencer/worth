@@ -24,11 +24,8 @@ type SourceQuery<Schema, Demand> =
 type SourceValue<Schema, Demand> =
     <<Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
-pub(in crate::application_entry) enum WorthQueryApplicationProgramDemandProgress<
-    Schema,
-    Program,
-    Demand,
-> where
+pub enum WorthQueryApplicationProgramDemandProgress<Schema, Program, Demand>
+where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
@@ -37,15 +34,12 @@ pub(in crate::application_entry) enum WorthQueryApplicationProgramDemandProgress
     Settled {
         settlement: WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, Demand>>,
         authority: WorthQuerySettledProgramOutput<Schema, Program, Demand>,
+        basis: crate::application_entry::WorthQueryApplicationReadObservation,
     },
 }
 
-pub(in crate::application_entry) struct WorthQueryApplicationProgramDemandHandle<
-    'application,
-    Schema,
-    Program,
-    Demand,
-> where
+pub struct WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>
+where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
@@ -53,6 +47,7 @@ pub(in crate::application_entry) struct WorthQueryApplicationProgramDemandHandle
     application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     admitted: WorthQueryAdmittedProgramOutput<Schema, Program, Demand>,
     demand: Demand,
+    basis: crate::application_entry::WorthQueryApplicationReadObservation,
 }
 
 impl<'application, Schema, Program, Demand>
@@ -75,15 +70,17 @@ where
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         admitted: WorthQueryAdmittedProgramOutput<Schema, Program, Demand>,
         demand: Demand,
+        basis: crate::application_entry::WorthQueryApplicationReadObservation,
     ) -> Self {
         Self {
             application,
             admitted,
             demand,
+            basis,
         }
     }
 
-    pub(in crate::application_entry) fn notifications(
+    pub fn notifications(
         &self,
     ) -> Result<
         worth_query_execution::facade::primary_graph::WorthQueryOutputDemandNotifications,
@@ -94,13 +91,16 @@ where
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)
     }
 
-    pub(in crate::application_entry) fn advance(
+    pub fn advance(
         &mut self,
         request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
         WorthQueryApplicationProgramDemandProgress<Schema, Program, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     > {
+        if !std::ptr::eq(self.application.runtime(), request.application) {
+            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+        }
         let disclosure = request
             .query(self.demand.source_intent())
             .execute()
@@ -126,9 +126,17 @@ where
                     authority.retained(),
                     self.admitted.observed_source().clone(),
                 );
+                let basis = if settlement.observation().selected_commit().ordinal()
+                    >= self.basis.selected_commit().ordinal()
+                {
+                    settlement.observation().retain()
+                } else {
+                    self.basis.retain()
+                };
                 Ok(WorthQueryApplicationProgramDemandProgress::Settled {
                     settlement,
                     authority,
+                    basis,
                 })
             }
         }

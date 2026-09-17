@@ -9,6 +9,10 @@ use super::{
 
 mod execution;
 
+pub use crate::product_projection::action_evidence::{
+    WorthUiScalarProjectionActionEvidence, WorthUiScalarProjectionActionPreconditionDenial,
+};
+
 pub struct WorthUiScalarProjectionActionInstallation {
     inner: WorthUiScalarProjectionInstallation,
 }
@@ -31,14 +35,6 @@ pub struct WorthUiScalarProjectionActionRequest {
     status: String,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthUiScalarProjectionActionEvidence {
-    source_revision: u64,
-    status: String,
-    query_receipt_digest: String,
-    affected_live_view_ids: Vec<String>,
-}
-
 pub struct WorthUiScalarProjectionActionExecution {
     evidence: WorthUiScalarProjectionActionEvidence,
     advance: WorthUiScalarProjectionActionAdvance,
@@ -48,15 +44,6 @@ pub enum WorthUiScalarProjectionActionOutcome {
     Executed(WorthUiScalarProjectionActionExecution),
     Denied(WorthUiScalarProjectionActionDenied),
     Indeterminate(WorthUiScalarProjectionActionIndeterminate),
-}
-
-/// Binding-local optimistic-concurrency precondition that a product projection
-/// action must satisfy **before** the owner submits any Query work. This is not
-/// a Query admission outcome: when it fires, Query is never asked. A denial that
-/// Query itself owns would arrive through the execution path instead.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthUiScalarProjectionActionPreconditionDenial {
-    SourceRevisionMismatch,
 }
 
 pub struct WorthUiScalarProjectionActionDenied {
@@ -228,24 +215,6 @@ impl WorthUiScalarProjectionActionExecution {
         WorthUiScalarProjectionActionAdvance,
     ) {
         (self.evidence, self.advance)
-    }
-}
-
-impl WorthUiScalarProjectionActionEvidence {
-    pub fn source_revision(&self) -> u64 {
-        self.source_revision
-    }
-
-    pub fn status(&self) -> &str {
-        &self.status
-    }
-
-    pub fn query_receipt_digest(&self) -> &str {
-        &self.query_receipt_digest
-    }
-
-    pub fn affected_live_view_ids(&self) -> &[String] {
-        &self.affected_live_view_ids
     }
 }
 

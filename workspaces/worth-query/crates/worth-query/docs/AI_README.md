@@ -29,7 +29,8 @@ branches by operation kind:
 
 ```text
 application schema and declarations
-    -> installed application meaning
+    -> validated canonical application program
+    -> installed application meaning and implementation slots
     -> authenticated request and resolved principal
     -> capability, purpose, disclosure, and conflict admission
     -> graph obligation and access-plan admission
@@ -133,16 +134,44 @@ Query filters actual relation targets before cardinality and child projection,
 while source evidence retains the complete examined sibling set and predicate
 aspect revisions. Filtered result relations are not continuation targets.
 
-## Contribution And Installation Boundary
+## Static Application Program, Contributions, And Installation
+
+`ApplicationProgramDefinition<Schema>` is the canonical static application
+root. It owns one stable program identity and the complete typed inventories of
+contributions, feature instances, actions, output-graph connections, and scoped
+rules. Calling `ApplicationProgramAuthoring::<Schema, Program>::begin()` and
+then `.validated_program()` validates that meaning before installation.
+Invalid or duplicate identities, dangling features, missing required inputs,
+duplicate bindings, and unexported cross-instance connections are typed
+denials; they are not deferred to the first request.
+
+Features declare semantic ownership and typed ports. Composition-instance
+identity distinguishes multiple installations of one reusable feature meaning.
+It does not identify a domain entity or occurrence. Connections bind compatible
+source and target ports at explicit composition instances. The output graph is
+also typed: each child edge must leave its parent feature, and
+`ApplicationOutputLeaf` explicitly terminates a branch. Declaration order,
+registration ordinal, strings, and runtime traversal do not create these
+relationships.
+
+Installation enters through `application_installation::in_memory_program` with
+the validated program, configuration, limits, and initial state. It returns a
+`WorthQueryProgramApplicationRuntime<Schema, Program>`. Program-owned actions
+execute with `.execute_in_program(&application)`; capability-owned actions use
+`.execute_capability_in_program(&application)`. If an installed action belongs
+to a program, the weaker `.execute()` path returns
+`ApplicationProgramRequired`. A runtime for another installed program returns
+`ApplicationProgramMismatch`.
 
 The application foundation supports independently compiled entry contributions
 for one root schema. `worth_query_application!` lists those contributions once
 and supplies `ApplicationSchemaComposition::Contributions`. Each entry declares
 members through `ApplicationSchemaContribution<Schema>` and implements
 `WorthQueryApplicationContribution<Schema>` with its own configuration type.
-The host supplies the corresponding configuration tuple to
-`facade::application_installation::in_memory(declaration, configuration, limits,
-initial_state)`. See the [host API guide](../../worth-query-host/README.md#contribution-composed-applications)
+The program names the exact contribution tuple, and the host supplies its
+corresponding configuration tuple during `in_memory_program`. Contributions are
+implementation and provider slots under the program; they are not a second
+semantic root. See the [host API guide](../../worth-query-host/README.md#contribution-composed-applications)
 for the call shape and the [public consumer](../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/main.rs)
 for executable definitions.
 
@@ -261,12 +290,37 @@ An output family declares its source query, supported profile and lifecycle
 postures, while each producer binding declares its operation, output role,
 required invariants, resource policy, and reuse policy. A provider supplies the
 typed operation input, idempotency key, and finite work and retained-byte demand.
-`request.demand(demand).controls(controls).start()` admits one exact source and
-selects one applicable installed producer. `advance(&fresh_request)` returns
-`Pending` or `Settled`; settlement carries the commit receipt, observed source,
-exact retained observation, and readiness delivery. `notifications()` exposes
-owner progress, and `close()` releases that interest. Source drift returns
-`Superseded`; a closed handle or request from another application is rejected.
+
+For a program-owned action, required output means the complete authored output
+graph. A performed mutation calls
+`performed.start_required_outputs(&request, controls)`; a caller that must
+settle the installed graph from an admitted source, including reconstruction,
+calls `request.start_program_outputs(&application, demand, controls)`. Both
+return `WorthQueryApplicationProgramOutputHandle`. Repeated
+`advance(&fresh_request)` yields `Pending` until the root and every discovered
+dependent edge have settled, then returns one
+`WorthQueryApplicationProgramOutputSettlement`. The settlement exposes the root,
+the latest exact observation, measured program work, and typed
+`outputs_for::<Schema, Connection>()` or instance-qualified dependent outputs.
+
+Dependent discovery executes at the exact carried traversal basis. Admission
+requires the child source occurrence and selected commit to match that basis;
+a later unrelated observation, equal visible ordinal, foreign installation, or
+foreign parent settlement cannot authorize the edge. Required completed outputs
+retain their exact owner settlement so reconstruction and retry do not depend on
+a consumer keeping an earlier presentation view alive.
+
+`take_settled_root()` exists to report that the source output really completed
+when a dependent edge later denies. It does not prove graph completion and must
+not be presented as a settled program result. `notifications()` exposes owner
+progress, and `close()` releases the caller's graph interest without discarding
+owner-held recovery custody. Source drift returns `Superseded`; a closed handle
+or request from another application is rejected.
+
+The single-demand entry
+`request.demand(demand).controls(controls).start()` settles one producer family.
+It is not a substitute for the program-output handle when an installed program
+declares transitive required outputs.
 
 Ordinary query results expose bounded `observed_sources()`. A source-bound edit
 passes one of those observations through `.expect_source(...)`; Query compares its
@@ -292,12 +346,12 @@ identities, and installed request-binding availability. Discovery grants no
 execution authority or promise of current authorization.
 
 The [public application proof](../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof.rs)
-demonstrates source-bound edits, direct candidate construction, typed invariant
-access, producer demand, readiness delivery, exact and live reads, sibling
-progress, cleanup, output correspondence, and idempotent recovery. The bounded
-synchronous M0 foundation is implemented. Milestone 9.17.4 remains open for its
-remaining consumer migrations and broader managed lifecycle; deferred producer
-completion belongs to the later producer extension.
+demonstrates program-owned actions, source-bound edits, direct candidate
+construction, typed invariant access, transitive output demand, readiness
+delivery, exact and live reads, sibling progress, cleanup, output
+correspondence, and idempotent recovery. Consumer migration does not weaken
+these boundaries: an unmigrated caller may use only its existing ordinary
+identity and may not mix that identity with program-owned meaning.
 
 Certification-only resource evidence enters through `worth-query-replay` with
 `WorthQueryCertificationCostRuntimeExt` and a bounded
@@ -382,6 +436,7 @@ Use `worth-query-decl` for application schema and declaration code:
 ```rust
 use worth_query_decl::facade::{
     application_aftermath,
+    application_program,
     application_query,
     application_schema,
 };
@@ -483,6 +538,8 @@ typed reference participates in installed meaning.
 
 A declaration states portable intent. Depending on the family, it can describe:
 
+- a canonical static program, feature and composition instances, typed ports
+  and connections, scoped rules, actions, and its required-output graph;
 - fields and aspects to read;
 - predicates, ordering, traversal, grouping, and aggregation;
 - result shape and disclosure requirements;
@@ -505,6 +562,8 @@ lower-runtime layouts.
 Installed products include the exact identities and contracts needed by
 admission:
 
+- canonical program identity, feature-instance closure, action membership,
+  typed connections, output-graph adjacency, and scoped rule ownership;
 - application schema and operation identity;
 - one sealed native application-aspect catalog retaining each declaration-owned
   `AspectIdentity`, `AspectContractRevision`, contract, and field closure;
@@ -1356,6 +1415,24 @@ typed operation reference
 The commit receipt comes from actual provider terminal evidence. A proposed
 mutation, invariant selection, or effect summary cannot manufacture it.
 
+### Program action and required outputs
+
+```text
+typed action intent + exact installed program
+    -> program-affine mutation admission and publication
+    -> performed source result
+    -> retained exact root demand basis
+    -> authored output-graph traversal
+    -> per-edge occurrence discovery at the carried parent basis
+    -> producer admission, readiness, and exact settlement
+    -> complete program-output settlement
+```
+
+Source publication and complete derived settlement are distinct facts. A root
+that published before a child failed remains published; recovery resumes from
+owner custody. Only the complete settlement proves the declared transitive
+output graph settled.
+
 ### Emergency access
 
 ```text
@@ -1485,6 +1562,12 @@ Do not:
 - use a cursor outside its query, ordering, branch, and basis;
 - reuse consumed lifecycle or commit authority;
 - infer support from method presence;
+- execute a program-owned action through the weaker ordinary mutation entry;
+- settle only the root producer when the installed program declares dependent
+  required outputs;
+- use `take_settled_root()` as evidence that the complete output graph settled;
+- rediscover a dependent output from a current or consumer-retained view when
+  Query carries the exact parent traversal basis and owner settlement;
 - add production glob imports or glob reexports to an authority-governed
   surface; keep those bindings explicit and named;
 - hide typed denial, stale, cancellation, or resource state inside a generic

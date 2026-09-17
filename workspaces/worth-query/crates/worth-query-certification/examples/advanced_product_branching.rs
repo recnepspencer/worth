@@ -4,6 +4,7 @@ pub mod product_workflow_support;
 
 use std::num::NonZeroUsize;
 
+use product_workflow_support::schema::AmendTemporal;
 use product_workflow_support::{principal, read_input, read_selected, ExampleApplication};
 
 fn main() {
@@ -93,7 +94,12 @@ fn run() {
         .on_branch(fork_relational)
         .transaction()
         .apply(admitted)
-        .commit()
+        .commit_for_program(
+            application
+                .runtime
+                .admit_program_operation::<AmendTemporal>()
+                .expect("the validated program declares the branch action"),
+        )
         .expect("the transaction must retain the admitted product")
         .require_committed()
         .expect("the selected branch-local operation must commit");
@@ -124,7 +130,12 @@ fn run() {
         .on_branch(fork_relational)
         .transaction()
         .apply(admitted)
-        .commit()
+        .commit_for_program(
+            application
+                .runtime
+                .admit_program_operation::<AmendTemporal>()
+                .expect("the validated program declares the source action"),
+        )
         .expect("the second transaction must retain the admitted product")
         .require_committed()
         .expect("the second branch-local operation must commit");

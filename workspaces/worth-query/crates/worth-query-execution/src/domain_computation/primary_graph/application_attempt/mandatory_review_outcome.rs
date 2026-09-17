@@ -133,7 +133,22 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
             WorthQueryMandatoryReviewOutcome::Reviewed(reviewed(binding, commit))
         }
         WorthQueryApplicationCommitOutcome::AlreadyCommitted(commit) => {
-            WorthQueryMandatoryReviewOutcome::AlreadyReviewed(reviewed(binding, commit))
+            match commit
+                .committed_changes()
+                .committed_field_values(binding.review(), &[binding.reviewed_at_field()])
+            {
+                Some(values) => WorthQueryMandatoryReviewOutcome::AlreadyReviewed(reviewed(
+                    binding.restore_committed_review(values[0].clone()),
+                    commit,
+                )),
+                None => WorthQueryMandatoryReviewOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                        super::WorthQueryApplicationCommitDenialStage::Idempotency,
+                        "committed review field is unavailable",
+                    ),
+                    binding.into_mandatory(),
+                ),
+            }
         }
         WorthQueryApplicationCommitOutcome::Stale(stale) => {
             WorthQueryMandatoryReviewOutcome::Stale(stale, binding.into_mandatory())

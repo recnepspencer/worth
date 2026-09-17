@@ -110,6 +110,9 @@ struct WorthQueryProviderAttemptPreparation {
     validator_work_admission: crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
+    retain_client_observation: bool,
+    producer_required_invariants:
+        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
 }
 
 struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
@@ -148,6 +151,8 @@ where
         validator_work_admission,
         output_correspondence,
         retain_output_demand_observation,
+        retain_client_observation,
+        producer_required_invariants,
     } = program;
     let mut admission = read_set.admission;
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());
@@ -183,6 +188,8 @@ where
                 validator_work_admission,
                 output_correspondence,
                 retain_output_demand_observation,
+                retain_client_observation,
+                producer_required_invariants,
             },
             idempotency,
             aftermath_causality,
@@ -239,6 +246,8 @@ fn prepare_application_provider_attempt(
         preparation.validator_work_admission,
         preparation.output_correspondence,
         preparation.retain_output_demand_observation,
+        preparation.retain_client_observation,
+        preparation.producer_required_invariants,
     )
     .map_err(|_| ())
 }

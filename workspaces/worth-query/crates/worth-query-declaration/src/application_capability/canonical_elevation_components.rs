@@ -20,6 +20,7 @@ pub(super) fn append_elevation(
     append_field(components, "elevation.identity", elevation.identity());
     append_field(components, "elevation.reason", elevation.reason());
     append_field(components, "elevation.status", elevation.status());
+    append_field(components, "elevation.closed-at", elevation.closed_at());
     for (name, state) in [
         ("requested", elevation.states().requested()),
         ("approved", elevation.states().approved()),
@@ -78,6 +79,11 @@ pub(super) fn append_elevation(
     append_relation(components, "elevation.review.scope", review.scope());
     append_relation(components, "elevation.review.reviewer", review.reviewer());
     append_field(components, "elevation.review.status", review.status());
+    append_field(
+        components,
+        "elevation.review.reviewed-at",
+        review.reviewed_at(),
+    );
     append_value_binding(components, "elevation.review.required", review.required());
     append_value_binding(components, "elevation.review.completed", review.completed());
 }

@@ -40,6 +40,7 @@ pub struct WorthQueryApplicationProgramOutputHandle<'application, Schema, Progra
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
     RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
     application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
@@ -143,6 +144,27 @@ where
         )
     }
 
+    /// Takes an exact root settlement after root completion. This does not
+    /// assert that declared dependent outputs settled.
+    pub fn take_settled_root(
+        &mut self,
+    ) -> Option<
+        crate::application_entry::WorthQueryApplicationOutputDemandSettlement<
+            Query<Schema, RootDemand<Schema, Program>>,
+        >,
+    > {
+        self.root_settlement.take()
+    }
+
+    /// Releases this caller's complete graph interest. Owner-held recovery
+    /// custody, when present, remains governed by the runtime.
+    pub fn close(&mut self) {
+        self.root.take();
+        self.continuation.take();
+        self.root_settlement.take();
+        self.complete = true;
+    }
+
     pub fn advance(
         &mut self,
         request: &crate::application_entry::WorthQueryApplicationRequest<
@@ -171,6 +193,7 @@ where
                 WorthQueryApplicationProgramDemandProgress::Settled {
                     settlement,
                     authority,
+                    basis,
                 } => {
                     self.continuation = Some(ApplicationProgramRootEdges::<
                         Schema,
@@ -179,6 +202,7 @@ where
                         self.application,
                         &self.root_demand,
                         &settlement,
+                        &basis,
                         &authority,
                         request,
                         self.controls,

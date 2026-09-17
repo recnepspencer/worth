@@ -2,10 +2,10 @@ use bank_domain::{
     estate::{
         CapabilityGrantId, CapabilityGrantStatus, EstateAction, EstateCaseId, EstateWorkflowStage,
     },
+    proposals::BankIdempotencyKey,
     queries::EstateGovernanceQuery,
     reads::{EstateCapabilityContext, EstateGovernanceContext},
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 use worth_query_host::facade::publication::application_aftermath::WorthQueryPublishedApplicationCommitKind;
 use worth_query_host::facade::publication::domain_computation::WorthQueryPublishedApplicationResult;
 
@@ -76,7 +76,12 @@ fn equivalent_revocation_retry_recovers_commit_before_fresh_poststate_denial() {
 
     let first = fixture
         .runtime
-        .revoke_estate_capability(&specialist, revocation_action(), binding, &request_scope())
+        .revoke_estate_capability_with_key(
+            &specialist,
+            revocation_action(),
+            &binding,
+            &request_scope(),
+        )
         .expect("an active exact grant should admit public revocation");
     let BankMutationCommitOutcome::Committed(committed) = first else {
         panic!("the first revocation must authoritatively commit: {first:?}");
@@ -84,7 +89,12 @@ fn equivalent_revocation_retry_recovers_commit_before_fresh_poststate_denial() {
 
     let retry = fixture
         .runtime
-        .revoke_estate_capability(&specialist, revocation_action(), binding, &request_scope())
+        .revoke_estate_capability_with_key(
+            &specialist,
+            revocation_action(),
+            &binding,
+            &request_scope(),
+        )
         .expect("an equivalent retry should resolve idempotency before active-state projection");
     let BankMutationCommitOutcome::AlreadyCommitted(recovered) = retry else {
         panic!("the equivalent retry must recover the prior commit: {retry:?}");
@@ -101,10 +111,10 @@ fn equivalent_revocation_retry_recovers_commit_before_fresh_poststate_denial() {
 
     let target_drift = fixture
         .runtime
-        .revoke_estate_capability(
+        .revoke_estate_capability_with_key(
             &specialist,
             revocation_action_for(ALTERNATE_EMERGENCY_BOUND_GRANT),
-            binding,
+            &binding,
             &request_scope(),
         )
         .expect("governed target drift is a typed commit outcome");
@@ -122,10 +132,10 @@ fn equivalent_revocation_retry_recovers_commit_before_fresh_poststate_denial() {
 
     let denial = fixture
         .runtime
-        .revoke_estate_capability(
+        .revoke_estate_capability_with_key(
             &specialist,
             revocation_action(),
-            idempotency(133),
+            &idempotency(133),
             &request_scope(),
         )
         .expect_err("a fresh intent must evaluate the authoritative Revoked poststate");
@@ -159,13 +169,13 @@ fn revocation_cannot_substitute_a_target_from_another_estate() {
 
     let denial = fixture
         .runtime
-        .revoke_estate_capability(
+        .revoke_estate_capability_with_key(
             &specialist,
             EstateAction::RevokeCapability {
                 estate: FOREIGN_ESTATE,
                 grant: GRANT,
             },
-            idempotency(135),
+            &idempotency(135),
             &request_scope(),
         )
         .expect_err("the foreign command estate must not capture another estate's grant");
@@ -246,6 +256,6 @@ fn capability(result: &GovernanceResult, grant: CapabilityGrantId) -> &EstateCap
         .expect("the exact capability grant should be present in governance readback")
 }
 
-fn idempotency(seed: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed + 1; 32])
+fn idempotency(seed: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("capability-revocation-{seed}")).unwrap()
 }

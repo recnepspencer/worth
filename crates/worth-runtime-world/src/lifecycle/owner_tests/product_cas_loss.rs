@@ -23,9 +23,10 @@ use crate::recovery::{
     ProductUnpublishedRetentionPosture,
 };
 
+#[cfg(feature = "test-durability-faults")]
+use super::publication::setup_with_retention_capacity;
 use super::publication::{
-    prepare_relational, ready_from_prepared, setup, setup_with_relational_source,
-    setup_with_retention_capacity, TestOwner,
+    prepare_relational, ready_from_prepared, setup, setup_with_relational_source, TestOwner,
 };
 
 /// One resolved race: the winner's product head, and the retained record the

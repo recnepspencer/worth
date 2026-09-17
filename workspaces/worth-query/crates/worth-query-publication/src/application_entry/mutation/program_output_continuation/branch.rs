@@ -34,6 +34,7 @@ where
         parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
             SourceQuery<Schema, ParentDemand>,
         >,
+        parent_basis: &crate::application_entry::WorthQueryApplicationReadObservation,
         parent_authority: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
@@ -46,6 +47,7 @@ where
                 application,
                 parent_demand,
                 parent_settlement,
+                parent_basis,
                 parent_authority,
                 request,
                 controls,
@@ -54,6 +56,7 @@ where
                 application,
                 parent_demand,
                 parent_settlement,
+                parent_basis,
                 parent_authority,
                 request,
                 controls,

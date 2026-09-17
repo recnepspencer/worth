@@ -1,13 +1,21 @@
 //! Authored static application composition.
 
+mod action;
 mod connection;
 mod feature;
 mod identity;
 mod instance;
 mod output_graph;
+mod output_posture;
 mod program;
 mod rule;
 
+pub use action::{
+    ApplicationActionDeclaration, ApplicationActionInstanceRef, ApplicationActionLeaf,
+    ApplicationActionList, ApplicationActionRef, ApplicationActionShape,
+    ApplicationConditionalOperationActionInstanceRef, ApplicationConditionalOperationActionRef,
+    ApplicationOperationActionRef, ApplicationProgramActionsShape,
+};
 pub use connection::{
     ApplicationConnectionDeclaration, ApplicationConnectionIdentity,
     ApplicationConnectionInstanceRef, ApplicationConnectionRef,
@@ -28,6 +36,7 @@ pub use output_graph::{
     ApplicationOutputGraphShape, ApplicationOutputLeaf, ApplicationProgramRootConnection,
     ApplicationProgramRootConnectionRef, ApplicationProgramRootEdges,
 };
+pub use output_posture::{ApplicationNoOutputGraph, ApplicationProgramOutputShape};
 pub use program::{
     ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramValidationDenial,
     ApplicationProgramValidationDenialKind, ValidatedApplicationProgram,

@@ -31,6 +31,7 @@ pub(super) fn setup() -> (
     setup_with_budgets(8, 8, super::bootstrap_budgets())
 }
 
+#[cfg(feature = "test-durability-faults")]
 pub(super) fn setup_with_retention_capacity(
     unique_pin_limit: u64,
     reservation_limit: u64,

@@ -1,59 +1,44 @@
-use worth_query_declaration::facade::application_schema::ApplicationInvariantGroup;
+use worth_query_declaration::facade::application_schema::ApplicationInvariantScopeTarget;
 
 use crate::domain_operation::{WorthQueryOperationTouchContract, WorthQueryOperationTouchScope};
 
 pub(super) fn requires(
     touches: &WorthQueryOperationTouchContract,
-    required_groups: &[ApplicationInvariantGroup],
+    applicability: &[ApplicationInvariantScopeTarget],
 ) -> bool {
     touches.scopes().iter().any(|scope| {
-        required_groups
+        applicability
             .iter()
-            .any(|group| invalidates(scope, *group))
+            .any(|target| invalidates(scope, target))
     })
 }
 
-fn invalidates(scope: &WorthQueryOperationTouchScope, group: ApplicationInvariantGroup) -> bool {
-    use ApplicationInvariantGroup as Group;
-    match scope {
-        WorthQueryOperationTouchScope::CreateEntity(_) => matches!(
-            group,
-            Group::StorageCoherence
-                | Group::IdentityCoherence
-                | Group::SchemaCompliance
-                | Group::PublicationCoherence
-                | Group::VersionVisibility
-        ),
-        WorthQueryOperationTouchScope::DeleteEntity(_) => matches!(
-            group,
-            Group::AdjacencyIntegrity
-                | Group::StorageCoherence
-                | Group::LineageIntegrity
-                | Group::RelationIntegrity
-                | Group::PublicationCoherence
-                | Group::VersionVisibility
-        ),
-        WorthQueryOperationTouchScope::WriteField(_) => {
-            matches!(group, Group::IdentityCoherence | Group::SchemaCompliance)
-        }
-        WorthQueryOperationTouchScope::LinkRelation(_) => matches!(
-            group,
-            Group::AdjacencyIntegrity
-                | Group::StorageCoherence
-                | Group::SchemaCompliance
-                | Group::RelationIntegrity
-                | Group::PublicationCoherence
-                | Group::VersionVisibility
-        ),
-        WorthQueryOperationTouchScope::UnlinkRelation(_) => matches!(
-            group,
-            Group::AdjacencyIntegrity
-                | Group::StorageCoherence
-                | Group::RelationIntegrity
-                | Group::PublicationCoherence
-                | Group::VersionVisibility
-        ),
-        WorthQueryOperationTouchScope::DeclaredDomain(_) => true,
+fn invalidates(
+    scope: &WorthQueryOperationTouchScope,
+    target: &ApplicationInvariantScopeTarget,
+) -> bool {
+    match (scope, target) {
+        (
+            WorthQueryOperationTouchScope::CreateEntity(scope)
+            | WorthQueryOperationTouchScope::DeleteEntity(scope),
+            ApplicationInvariantScopeTarget::Entity(entity),
+        ) => scope.entity() == entity,
+        (
+            WorthQueryOperationTouchScope::WriteField(scope),
+            ApplicationInvariantScopeTarget::Entity(entity),
+        ) => scope.entity() == entity,
+        (
+            WorthQueryOperationTouchScope::LinkRelation(scope)
+            | WorthQueryOperationTouchScope::UnlinkRelation(scope),
+            ApplicationInvariantScopeTarget::Relation(relation),
+        ) => scope.relation() == relation,
+        (
+            WorthQueryOperationTouchScope::LinkRelation(scope)
+            | WorthQueryOperationTouchScope::UnlinkRelation(scope),
+            ApplicationInvariantScopeTarget::Entity(entity),
+        ) => scope.from() == entity || scope.to() == entity,
+        (WorthQueryOperationTouchScope::DeclaredDomain(_), _) => true,
+        _ => false,
     }
 }
 
@@ -61,7 +46,7 @@ fn invalidates(scope: &WorthQueryOperationTouchScope, group: ApplicationInvarian
 mod tests {
     use worth_foundational::facade::CanonicalDigestId;
     use worth_query_declaration::facade::application_schema::{
-        ApplicationInvariantGroup, ApplicationSchemaBindingIdentity,
+        ApplicationInvariantScopeTarget, ApplicationSchemaBindingIdentity,
     };
 
     use super::*;
@@ -70,23 +55,25 @@ mod tests {
     };
 
     #[test]
-    fn entity_create_requires_schema_but_not_relation_invariants() {
+    fn entity_create_requires_only_its_declared_entity_applicability() {
         let touches = contract(WorthQueryOperationTouchScope::CreateEntity(
             WorthQueryOperationEntityTouchScope::new(binding(), "Occurrence".to_owned()),
         ));
 
         assert!(requires(
             &touches,
-            &[ApplicationInvariantGroup::SchemaCompliance]
+            &[ApplicationInvariantScopeTarget::Entity(
+                "Occurrence".to_owned()
+            )]
         ));
         assert!(!requires(
             &touches,
-            &[ApplicationInvariantGroup::RelationIntegrity]
+            &[ApplicationInvariantScopeTarget::Entity("Other".to_owned())]
         ));
     }
 
     #[test]
-    fn relation_create_requires_relation_and_schema_invariants() {
+    fn relation_create_requires_only_its_declared_relation_applicability() {
         let touches = contract(WorthQueryOperationTouchScope::LinkRelation(
             WorthQueryOperationRelationTouchScope::new(
                 binding(),
@@ -96,15 +83,40 @@ mod tests {
             ),
         ));
 
-        for group in [
-            ApplicationInvariantGroup::RelationIntegrity,
-            ApplicationInvariantGroup::SchemaCompliance,
-        ] {
-            assert!(requires(&touches, &[group]));
-        }
+        assert!(requires(
+            &touches,
+            &[ApplicationInvariantScopeTarget::Relation(
+                "Parent".to_owned()
+            )]
+        ));
         assert!(!requires(
             &touches,
-            &[ApplicationInvariantGroup::LineageIntegrity]
+            &[ApplicationInvariantScopeTarget::Relation(
+                "Other".to_owned()
+            )]
+        ));
+    }
+
+    #[test]
+    fn relation_create_requires_endpoint_entity_applicability() {
+        let touches = contract(WorthQueryOperationTouchScope::LinkRelation(
+            WorthQueryOperationRelationTouchScope::new(
+                binding(),
+                "SplitSourceExtrusion".to_owned(),
+                "SplitFeature".to_owned(),
+                "ExtrusionFeature".to_owned(),
+            ),
+        ));
+
+        assert!(requires(
+            &touches,
+            &[ApplicationInvariantScopeTarget::Entity(
+                "ExtrusionFeature".to_owned()
+            )]
+        ));
+        assert!(!requires(
+            &touches,
+            &[ApplicationInvariantScopeTarget::Entity("Other".to_owned())]
         ));
     }
 

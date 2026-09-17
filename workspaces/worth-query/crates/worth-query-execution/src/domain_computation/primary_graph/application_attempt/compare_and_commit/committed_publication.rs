@@ -97,6 +97,12 @@ impl WorthQueryCommittedProductPublication {
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         self.receipt.take_output_demand_observation()
     }
+
+    pub(in crate::domain_computation::primary_graph) fn take_client_observation(
+        &self,
+    ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
+        self.receipt.take_client_observation()
+    }
 }
 
 impl std::fmt::Debug for WorthQueryCommittedProductPublication {

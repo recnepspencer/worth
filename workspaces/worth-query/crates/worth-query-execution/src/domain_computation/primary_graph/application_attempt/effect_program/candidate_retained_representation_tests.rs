@@ -178,8 +178,8 @@ fn hostile_key_and_value_capacity_requires_the_exact_owned_capacity_ceiling() {
         .expect("the exact owned-capacity total must admit");
 }
 
-fn reserved_external_builder<'world>(
-    world: &'world AuthorizationWorld,
+fn reserved_external_builder(
+    world: &AuthorizationWorld,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -220,8 +220,8 @@ fn reserved_external_builder<'world>(
         .unwrap()
 }
 
-fn reserved_touch_builder<'world>(
-    world: &'world AuthorizationWorld,
+fn reserved_touch_builder(
+    world: &AuthorizationWorld,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,

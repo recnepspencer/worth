@@ -1,12 +1,13 @@
 #[path = "notify_death/fixture.rs"]
 pub(super) mod fixture;
 
-use bank_domain::{estate::DeathNoticeStatus, model::BankPrincipalId};
-use bank_server::{
-    queries, BankCommitDenialKind, BankCommitDenialStage, BankDeathNotificationProjectionDenial,
-    BankEstateProgressionDenial, BankMutationCommitOutcome, BankReadControls,
+use bank_domain::{
+    estate::DeathNoticeStatus, model::BankPrincipalId, proposals::BankIdempotencyKey,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
+use bank_server::{
+    queries, BankDeathNotificationProjectionDenial, BankEstateProgressionDenial,
+    BankMutationCommitOutcome, BankReadControls,
+};
 
 use self::fixture::{notification_world, NotificationFixture};
 use crate::support::request_scope;
@@ -15,14 +16,14 @@ use crate::support::request_scope;
 fn public_query_observes_one_committed_notification_request() {
     let fixture = notification_world("notify-death-commit", DeathNoticeStatus::Reported);
     let specialist = fixture.authenticate_specialist();
-    let binding = idempotency(81);
+    let key = BankIdempotencyKey::new("notify-death-program-entry").unwrap();
     let outcome = fixture
         .world
         .runtime
-        .notify_estate_death(
+        .notify_estate_death_with_key(
             &specialist,
             fixture.action(fixture.notice, fixture.deceased),
-            binding,
+            &key,
             &request_scope(),
         )
         .expect("the exact reported notice should commit one notification request");
@@ -52,10 +53,10 @@ fn public_query_observes_one_committed_notification_request() {
     let retry = fixture
         .world
         .runtime
-        .notify_estate_death(
+        .notify_estate_death_with_key(
             &specialist,
             fixture.action(fixture.notice, fixture.deceased),
-            binding,
+            &key,
             &request_scope(),
         )
         .expect("equivalent retry should recover before poststate inspection");
@@ -70,19 +71,16 @@ fn public_query_observes_one_committed_notification_request() {
     let drift = fixture
         .world
         .runtime
-        .notify_estate_death(
+        .notify_estate_death_with_key(
             &specialist,
-            fixture.action(fixture.notice, fixture.deceased),
-            WorthQueryApplicationIdempotencyBinding::new([81; 32], [99; 32]),
+            fixture.action(fixture.foreign_notice, fixture.deceased),
+            &key,
             &request_scope(),
         )
-        .expect("intent drift remains a typed Query outcome");
+        .expect_err("the same key with a different input must retain typed drift");
     assert!(matches!(
         drift,
-        BankMutationCommitOutcome::Denied {
-            kind: BankCommitDenialKind::IdempotencyIntentDrift,
-            stage: BankCommitDenialStage::Idempotency,
-        }
+        BankEstateProgressionDenial::IdempotencyIntentDrift
     ));
 }
 
@@ -156,10 +154,11 @@ fn notify(
     subject: BankPrincipalId,
     identity: u8,
 ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-    fixture.world.runtime.notify_estate_death(
+    let key = idempotency(identity);
+    fixture.world.runtime.notify_estate_death_with_key(
         &fixture.authenticate_specialist(),
         fixture.action(notice, subject),
-        idempotency(identity),
+        &key,
         &request_scope(),
     )
 }
@@ -178,8 +177,8 @@ fn notice_status(fixture: &NotificationFixture) -> DeathNoticeStatus {
         .status()
 }
 
-fn idempotency(identity: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([identity; 32], [identity + 1; 32])
+fn idempotency(identity: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("notify-death-{identity}")).unwrap()
 }
 
 fn assert_zero_canonical_work(phases: bank_server::BankCommitCanonicalWorkPhases) {

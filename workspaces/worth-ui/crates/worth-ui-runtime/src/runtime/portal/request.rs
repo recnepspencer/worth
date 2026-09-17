@@ -183,13 +183,12 @@ impl UiPortalServiceRequest {
                 }
             });
             if let Some(extent) = self.content_extent {
-                self.placement_geometry = match self.placement_geometry {
-                    Some(geometry) => Some(geometry.with_content_extent([
+                self.placement_geometry = self.placement_geometry.map(|geometry| {
+                    geometry.with_content_extent([
                         extent.layout.width() as u16,
                         extent.layout.height() as u16,
-                    ])),
-                    None => None,
-                };
+                    ])
+                });
             }
             if self.shielding_uses_policy_default {
                 self.shielding = match policy.kind() {

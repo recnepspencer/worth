@@ -1,5 +1,6 @@
 mod external_value;
 mod installation;
+#[path = "lifecycle_application.rs"]
 mod lifecycle;
 
 pub(crate) use external_value::{

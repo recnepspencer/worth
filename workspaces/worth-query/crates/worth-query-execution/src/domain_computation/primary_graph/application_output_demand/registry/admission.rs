@@ -112,10 +112,8 @@ impl WorthQueryOutputDemandRegistry {
         }
         let existing_key = if state.records.contains_key(&requested_key) {
             Some(requested_key.clone())
-        } else if let Some(key) = matching_delivery {
-            Some(key)
         } else {
-            None
+            matching_delivery
         };
         let key = existing_key
             .as_ref()

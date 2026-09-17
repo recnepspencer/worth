@@ -22,6 +22,7 @@ pub use suspension::{
     WorthQueryGeneratedOutputSuspensionRecoveryStage,
 };
 mod restoration;
+pub(in crate::domain_computation::primary_graph) use restoration::admit_required_invariants;
 pub use restoration::{
     WorthQueryGeneratedOutputInvariantAdmissionDenial,
     WorthQueryGeneratedOutputPublicationNoEffect,

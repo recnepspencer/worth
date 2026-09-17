@@ -6,6 +6,20 @@ use crate::application_schema::{
     WritePosture,
 };
 
+type QueryResolvedFieldParts<Schema, Binding> = (
+    ApplicationFieldRef<
+        Schema,
+        <Binding as ApplicationQueryScopeBinding<Schema>>::Scope,
+        <Binding as ApplicationQueryScopeBinding<Schema>>::Aspect,
+        <Binding as ApplicationQueryScopeBinding<Schema>>::Field,
+        <Binding as ApplicationQueryScopeBinding<Schema>>::Value,
+        <Binding as ApplicationQueryScopeBinding<Schema>>::Write,
+        EqualityPredicate,
+        <Binding as ApplicationQueryScopeBinding<Schema>>::Unit,
+    >,
+    <Binding as ApplicationQueryScopeBinding<Schema>>::Value,
+);
+
 /// Resolves a declared scope strategy using the current borrowed request.
 pub trait ApplicationQueryScopeResolution<Schema, PrincipalIdentity>:
     ApplicationQueryScopeBinding<Schema>
@@ -13,19 +27,7 @@ pub trait ApplicationQueryScopeResolution<Schema, PrincipalIdentity>:
     fn into_field_parts(
         self,
         principal_identity: &PrincipalIdentity,
-    ) -> (
-        ApplicationFieldRef<
-            Schema,
-            Self::Scope,
-            Self::Aspect,
-            Self::Field,
-            Self::Value,
-            Self::Write,
-            EqualityPredicate,
-            Self::Unit,
-        >,
-        Self::Value,
-    );
+    ) -> QueryResolvedFieldParts<Schema, Self>;
 }
 
 impl<Schema, Scope, Aspect, Field, Value, Write, Unit, PrincipalIdentity>

@@ -10,7 +10,8 @@ use std::sync::Arc;
 use bank_domain::model::Money;
 use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::SendMoney;
-use bank_server::{mutations, BankMutationControls, BankMutationStatus};
+use bank_server::{mutations, BankMutationControls};
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 use super::external_effect_dispatch::rail_transport::{spawn_rail, BankEstateRailTransport};
 use crate::fixture::{ordinary_read_world, principal_id, OWNER, RECIPIENT};
@@ -46,25 +47,17 @@ fn an_undeclared_external_effect_costs_no_outbox_and_no_dispatch() {
             BankIdempotencyKey::new("undeclared-effect-send").unwrap(),
         ))
         .execute();
-    let BankMutationStatus::Committed(receipt) = outcome.status() else {
+    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) = &outcome else {
         panic!("the lawful transfer must commit: {outcome:?}");
     };
 
     assert!(
-        !receipt.co_committed_dispatch_outbox(),
+        receipt.dispatch_outbox().is_none(),
         "an operation with no declared external effect writes no outbox row"
     );
-    assert_eq!(
-        receipt.aftermath().external_effect(),
-        worth_query_host::facade::publication::application_aftermath::WorthQueryPublishedExternalEffectPosture::NotDeclared
-    );
+    assert!(receipt.external_dispatch().is_none());
     assert!(
-        fixture
-            .world
-            .runtime
-            .observe_committed_dispatch_outbox(receipt)
-            .expect("the owner read accepts this runtime's receipt")
-            .is_none(),
+        receipt.dispatch_outbox().is_none(),
         "an undeclared effect has no committed outbox to observe"
     );
     let dispatch_work = receipt.canonical_work().external_dispatch();

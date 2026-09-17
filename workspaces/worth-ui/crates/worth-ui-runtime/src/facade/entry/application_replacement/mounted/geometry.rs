@@ -31,7 +31,7 @@ pub(super) fn complete_candidate_surface(
         .map_err(super::WorthUiApplicationCutoverDenial::OccurrenceGeometry)?;
     let (batch, _) = validated.into_parts();
     successor
-        .replace_candidate_occurrence_geometry(batch, scroll.as_deref_mut())
+        .replace_candidate_occurrence_geometry(batch, scroll)
         .map(|_| ())
         .map_err(super::WorthUiApplicationCutoverDenial::OccurrenceGeometry)
 }

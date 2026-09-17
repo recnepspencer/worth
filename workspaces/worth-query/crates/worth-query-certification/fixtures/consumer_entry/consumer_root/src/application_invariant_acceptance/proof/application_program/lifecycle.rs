@@ -1,13 +1,11 @@
 use std::num::NonZeroUsize;
 
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationProgramOutputProgress,
-    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationRequestExt,
+    WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationPerformedMutationOutcome,
+    WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
     WorthQueryOutputDemandControls,
 };
-use worth_query_topology_entry::{
-    PlanarOutputRead, PlanarRead, PlanarSourceAdjustment,
-};
+use worth_query_topology_entry::{PlanarOutputRead, PlanarRead, PlanarSourceAdjustment};
 
 use super::super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;

@@ -4,7 +4,8 @@ mod product_races;
 use std::time::Duration;
 
 use super::fixture::{
-    installed_authorization_world, live_scope, AccountStatus, TouchAccountOperation,
+    installed_authorization_world, live_scope, AccountStatus, ProgramRequiredInput,
+    ProgramRequiredOperation, TouchAccountOperation,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
@@ -39,6 +40,8 @@ mod post_commit_recovery;
 pub(in crate::domain_computation::primary_graph) mod preimage_evidence;
 #[path = "application_attempt/preimage_retention.rs"]
 mod preimage_retention;
+#[path = "application_attempt/producer_invariant_publication.rs"]
+mod producer_invariant_publication;
 #[path = "application_attempt/program_fixture.rs"]
 mod program_fixture;
 #[path = "application_attempt/provider_terminal_evidence.rs"]
@@ -209,6 +212,66 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
         crate::execution_digest::test_hash_parts_call_count(),
         after_commit,
         "idempotent retry or recovery derived a legacy execution digest"
+    );
+}
+
+#[test]
+fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
+    let world = installed_authorization_world(true);
+    let request = live_scope();
+    let principal = authenticated_principal(&world, &request);
+    let account = resolved_account(&world, "open", &request);
+    let operation = world
+        .application
+        .installed_schema()
+        .installed_operation(ProgramRequiredOperation::reference())
+        .unwrap();
+    let admission = world
+        .selected_product()
+        .authorize_operation(
+            &principal,
+            &account,
+            &operation,
+            worth_query_declaration::facade::application_schema::TypedMutationPreconditions::new(),
+            &request,
+        )
+        .unwrap();
+    let (_, projection, _) = world
+        .invariant
+        .project_admitted_operation(&admission, |reader, projected| {
+            reader
+                .require_decision_field(projected, AccountStatus::reference())
+                .unwrap();
+        })
+        .unwrap()
+        .into_parts();
+    let reads = world
+        .application
+        .begin_projected_application_read_attempt(admission, projection)
+        .unwrap();
+    let mut effects = reads
+        .complete_projected_dependencies()
+        .unwrap()
+        .begin_effect_program();
+    let account = effects.existing_entity(&account).unwrap();
+    effects
+        .write_field(
+            &account,
+            AccountStatus::reference(),
+            ProgramRequiredInput::new("program-owned").status,
+        )
+        .unwrap();
+    let program = effects.finish().unwrap();
+
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
+        .application
+        .compare_and_commit_application(program, idempotency(37, 37))
+    else {
+        panic!("a declaration-required program must deny the raw commit entry");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
     );
 }
 

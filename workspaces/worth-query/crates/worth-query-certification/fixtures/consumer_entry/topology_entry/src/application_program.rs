@@ -6,8 +6,8 @@ use worth_query_decl::facade::application_program::{
 use worth_query_host::facade::{
     application_contribution::WorthQueryApplicationOutputDemand,
     primary_graph::{
-        WorthQueryApplicationRequiredOutputConnection, WorthQueryRequiredOutputConnectionDenial,
         WorthQueryApplicationDependentOutputConnection,
+        WorthQueryApplicationRequiredOutputConnection, WorthQueryRequiredOutputConnectionDenial,
     },
 };
 
@@ -69,8 +69,7 @@ impl<Schema: TopologySchemaBinding> ApplicationFeature<Schema> for PlanarSummary
 impl<Schema: TopologySchemaBinding> ApplicationFeature<Schema> for PlanarAlternateSummaryFeature {
     type Inputs =
         ApplicationFeatureInputList<PlanarAlternateSummaryInput, ApplicationFeatureInputLeaf>;
-    const IDENTITY: &'static str =
-        "worth.query.certification.planar-alternate-summary-feature.v1";
+    const IDENTITY: &'static str = "worth.query.certification.planar-alternate-summary-feature.v1";
 }
 
 impl<Schema: TopologySchemaBinding> ApplicationOutputPort<Schema, PlanarSourceFeature>
@@ -117,8 +116,7 @@ impl<Schema: TopologySchemaBinding> ApplicationInputPort<Schema, PlanarFinalOutp
     const REQUIRED: bool = true;
 }
 
-impl<Schema: TopologySchemaBinding>
-    ApplicationInputPort<Schema, PlanarAlternateFinalOutputFeature>
+impl<Schema: TopologySchemaBinding> ApplicationInputPort<Schema, PlanarAlternateFinalOutputFeature>
     for PlanarAlternateDerivedBodyInput
 {
     type Value = super::PlanarOutputReadResultBinding;
@@ -135,8 +133,7 @@ impl<Schema: TopologySchemaBinding> ApplicationOutputPort<Schema, PlanarFinalOut
     const IDENTITY: &'static str = "final-body";
 }
 
-impl<Schema: TopologySchemaBinding>
-    ApplicationOutputPort<Schema, PlanarAlternateFinalOutputFeature>
+impl<Schema: TopologySchemaBinding> ApplicationOutputPort<Schema, PlanarAlternateFinalOutputFeature>
     for PlanarAlternateFinalBodyOutput
 {
     type Value = PlanarReadResultBinding;
@@ -167,8 +164,7 @@ impl ApplicationConnectionIdentity for PlanarOutputToFinalConnection {
 }
 
 impl ApplicationConnectionIdentity for PlanarOutputToAlternateFinalConnection {
-    const IDENTITY: &'static str =
-        "worth.query.certification.planar-output-to-alternate-final.v1";
+    const IDENTITY: &'static str = "worth.query.certification.planar-output-to-alternate-final.v1";
 }
 
 impl<Schema: TopologySchemaBinding>
@@ -191,8 +187,7 @@ impl ApplicationConnectionIdentity for PlanarFinalToSummaryConnection {
 }
 
 impl ApplicationConnectionIdentity for PlanarAlternateFinalToSummaryConnection {
-    const IDENTITY: &'static str =
-        "worth.query.certification.planar-alternate-final-to-summary.v1";
+    const IDENTITY: &'static str = "worth.query.certification.planar-alternate-final-to-summary.v1";
 }
 
 impl<Schema: TopologySchemaBinding>
@@ -318,8 +313,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationDependentOutputConnecti
     type Discovery = super::PlanarOutputRead;
     type Demand = super::PlanarFinalOutputDemand;
 
-    const IDENTITY: &'static str =
-        "worth.query.certification.planar-output-to-alternate-final.v1";
+    const IDENTITY: &'static str = "worth.query.certification.planar-output-to-alternate-final.v1";
 
     fn discovery_from_root(
         root: &Self::RootDemand,
@@ -345,8 +339,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationDependentOutputConnecti
     type Discovery = PlanarRead;
     type Demand = super::PlanarFinalOutputDemand;
 
-    const IDENTITY: &'static str =
-        "worth.query.certification.planar-alternate-final-to-summary.v1";
+    const IDENTITY: &'static str = "worth.query.certification.planar-alternate-final-to-summary.v1";
 
     fn discovery_from_root(
         root: &Self::RootDemand,

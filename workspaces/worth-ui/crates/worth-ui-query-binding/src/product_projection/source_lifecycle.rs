@@ -19,11 +19,10 @@ mod revalidation;
 
 pub use product_action::{
     WorthUiScalarProjectionActionAdvance, WorthUiScalarProjectionActionDenied,
-    WorthUiScalarProjectionActionEvidence, WorthUiScalarProjectionActionExecution,
-    WorthUiScalarProjectionActionIndeterminate, WorthUiScalarProjectionActionInstallation,
-    WorthUiScalarProjectionActionLiveOwner, WorthUiScalarProjectionActionOutcome,
-    WorthUiScalarProjectionActionPreconditionDenial,
-    WorthUiScalarProjectionActionPublicationCompletion, WorthUiScalarProjectionActionRequest,
+    WorthUiScalarProjectionActionExecution, WorthUiScalarProjectionActionIndeterminate,
+    WorthUiScalarProjectionActionInstallation, WorthUiScalarProjectionActionLiveOwner,
+    WorthUiScalarProjectionActionOutcome, WorthUiScalarProjectionActionPublicationCompletion,
+    WorthUiScalarProjectionActionRequest,
 };
 
 use declaration::{admitted_completion, async_request, declare_scalar_view, scalar_binding};

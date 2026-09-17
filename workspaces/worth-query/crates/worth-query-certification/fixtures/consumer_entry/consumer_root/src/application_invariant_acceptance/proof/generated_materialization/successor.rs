@@ -4,17 +4,19 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryGeneratedOutputSuspensionDenial, WorthQueryGeneratedOutputSuspensionFailure,
     WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
 };
-use worth_query_topology_entry::{InitialPlanarProducer, PlanarMutation, PlanarQuery};
+use worth_query_topology_entry::{PlanarFinalOutputProducer, PlanarMutation, PlanarQuery};
 
-use super::super::{length, mutate, Request};
+use super::super::{length, mutate, ProgramApplication, Request};
 use crate::ConsumerSchema;
 
 pub(super) fn publish_unrelated(
     request: &Request<'_>,
+    application: &ProgramApplication,
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
 ) {
     let successor = mutate(
         request,
+        application,
         PlanarMutation {
             scope_key: "sibling-a".to_owned(),
             operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
@@ -41,8 +43,9 @@ pub(super) fn require_stale_source_denial(
         .on_branch(branch)
         .select()
         .expect("the Query-issued output occurrence remains selectable")
-        .suspend_current_generated_output::<InitialPlanarProducer<ConsumerSchema>>(scope, source)
-    {
+        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(
+            scope, source,
+        ) {
         Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
             WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
         )) => {}

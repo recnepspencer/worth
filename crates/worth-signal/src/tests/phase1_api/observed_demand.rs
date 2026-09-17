@@ -136,7 +136,8 @@ fn constant_computeds_evaluator(
 fn settle_on_demand(
     runtime: &mut SignalRuntime<(), (), (), (), ()>,
     nodes: &[NodeId],
-    evaluator: &(impl Fn(&mut EvaluationContext<'_, ()>) -> Result<EvaluationOutput, SignalError> + Sync),
+    evaluator: &(impl Fn(&mut EvaluationContext<'_, ()>) -> Result<EvaluationOutput, SignalError>
+          + Sync),
 ) {
     runtime
         .targets(nodes.iter().copied())
@@ -198,7 +199,9 @@ fn watched_on_demand_chain_is_recomputed_and_delivered_by_the_committing_transac
     );
     assert_eq!(node_state(&runtime, chain.second), NodeState::Clean);
 
-    let notices = notices.lock().expect("observed demand notices mutex poisoned");
+    let notices = notices
+        .lock()
+        .expect("observed demand notices mutex poisoned");
     assert_eq!(
         notices.as_slice(),
         &[(vec![chain.second], true, true)],
@@ -206,9 +209,19 @@ fn watched_on_demand_chain_is_recomputed_and_delivered_by_the_committing_transac
     );
 
     let after = *runtime.telemetry();
-    assert_eq!(after.transaction.observed_demand_reach_visits - before.transaction.observed_demand_reach_visits, 3);
-    assert_eq!(after.transaction.observed_demand_targets - before.transaction.observed_demand_targets, 1);
-    assert_eq!(after.transaction.observed_demand_passes - before.transaction.observed_demand_passes, 2);
+    assert_eq!(
+        after.transaction.observed_demand_reach_visits
+            - before.transaction.observed_demand_reach_visits,
+        3
+    );
+    assert_eq!(
+        after.transaction.observed_demand_targets - before.transaction.observed_demand_targets,
+        1
+    );
+    assert_eq!(
+        after.transaction.observed_demand_passes - before.transaction.observed_demand_passes,
+        2
+    );
 }
 
 #[test]
@@ -239,12 +252,10 @@ fn without_the_demand_pass_a_watched_on_demand_node_is_never_delivered() {
     assert_eq!(calls_for(&calls, chain.first), 1);
     assert_eq!(calls_for(&calls, chain.second), 1);
     assert_eq!(node_state(&runtime, chain.first), NodeState::Dirty);
-    assert!(
-        notices
-            .lock()
-            .expect("observed demand notices mutex poisoned")
-            .is_empty()
-    );
+    assert!(notices
+        .lock()
+        .expect("observed demand notices mutex poisoned")
+        .is_empty());
 }
 
 #[test]
@@ -283,12 +294,10 @@ fn unrelated_watched_on_demand_nodes_are_not_demanded() {
     );
     assert_eq!(calls_for(&calls, chain.unrelated), 0);
     assert_ne!(node_state(&runtime, chain.unrelated), NodeState::Clean);
-    assert!(
-        notices
-            .lock()
-            .expect("observed demand notices mutex poisoned")
-            .is_empty()
-    );
+    assert!(notices
+        .lock()
+        .expect("observed demand notices mutex poisoned")
+        .is_empty());
 
     // Touching its own source is what demands it.
     runtime
@@ -383,75 +392,4 @@ fn demand_pass_is_free_when_nothing_is_observed() {
     assert_eq!(calls_for(&calls, chain.first), 0);
 }
 
-#[test]
-fn standing_demand_settles_a_reached_node_without_any_observer() {
-    let (mut runtime, chain) = build_chain();
-    let calls: CallLog = Arc::default();
-    let evaluator = changing_evaluator(calls.clone(), chain.upstreams.clone());
-    settle_on_demand(&mut runtime, &[chain.second, chain.unrelated], &evaluator);
-    let before = *runtime.telemetry();
-
-    let mut summary = None;
-    runtime
-        .transaction(&mut (), |tx| {
-            tx.mark_dirty(chain.source, ASPECT_A)?;
-            tx.evaluate_dirty(&evaluator)?;
-            summary = Some(tx.evaluate_demand(&evaluator, &[chain.second, chain.unrelated])?);
-            Ok(())
-        })
-        .unwrap();
-
-    // Reach is source, first, second. `unrelated` is standing demand but not
-    // reached by this change, so it is not a target and never recomputed.
-    assert_eq!(
-        summary.expect("transaction closure ran"),
-        ObservedDemandSummary {
-            reach_visits: 3,
-            targets: 1,
-            passes: 2,
-            tasks_executed: 2,
-        }
-    );
-    assert_eq!(node_state(&runtime, chain.first), NodeState::Clean);
-    assert_eq!(node_state(&runtime, chain.second), NodeState::Clean);
-    assert_eq!(calls_for(&calls, chain.first), 2);
-    assert_eq!(calls_for(&calls, chain.second), 2);
-    assert_eq!(calls_for(&calls, chain.unrelated), 1);
-    let after = *runtime.telemetry();
-    assert_eq!(
-        after.transaction.observed_demand_targets - before.transaction.observed_demand_targets,
-        1
-    );
-}
-
-#[test]
-fn standing_demand_that_the_change_does_not_reach_is_not_demanded() {
-    let (mut runtime, chain) = build_chain();
-    let calls: CallLog = Arc::default();
-    let evaluator = changing_evaluator(calls.clone(), chain.upstreams.clone());
-    settle_on_demand(&mut runtime, &[chain.second, chain.unrelated], &evaluator);
-
-    let mut summary = None;
-    runtime
-        .transaction(&mut (), |tx| {
-            tx.mark_dirty(chain.source, ASPECT_A)?;
-            tx.evaluate_dirty(&evaluator)?;
-            summary = Some(tx.evaluate_demand(&evaluator, &[chain.unrelated])?);
-            Ok(())
-        })
-        .unwrap();
-
-    assert_eq!(
-        summary.expect("transaction closure ran"),
-        ObservedDemandSummary {
-            reach_visits: 3,
-            targets: 0,
-            passes: 0,
-            tasks_executed: 0,
-        }
-    );
-    // Nothing demanded `first`, so it stays deferred like any on-demand node.
-    assert_eq!(node_state(&runtime, chain.first), NodeState::Dirty);
-    assert_eq!(calls_for(&calls, chain.first), 1);
-    assert_eq!(calls_for(&calls, chain.unrelated), 1);
-}
+mod standing;

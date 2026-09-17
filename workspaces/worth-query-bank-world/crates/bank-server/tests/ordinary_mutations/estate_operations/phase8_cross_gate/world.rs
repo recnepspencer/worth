@@ -3,10 +3,9 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use bank_domain::estate::DeathNoticeStatus;
+use bank_domain::{estate::DeathNoticeStatus, proposals::BankIdempotencyKey};
 use bank_external_rail::RailProcessHandle;
 use bank_server::{queries, BankCommitReceipt, BankMutationCommitOutcome, BankReadControls};
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
 use super::super::external_effect_dispatch::rail_transport::{spawn_rail, BankEstateRailTransport};
 use super::super::notify_death::fixture::{
@@ -72,14 +71,14 @@ impl CrossGateWorld {
             .fixture
             .world
             .runtime
-            .notify_estate_death(
+            .notify_estate_death_with_key(
                 &self.fixture.authenticate_specialist(),
                 bank_domain::estate::EstateAction::NotifyDeath {
                     estate: self.fixture.second_estate,
                     notice: self.fixture.second_notice,
                     subject: self.fixture.other_subject,
                 },
-                idempotency(identity),
+                &idempotency(identity),
                 &request_scope(),
             )
             .expect("lawful second death notification reaches commit");
@@ -89,19 +88,16 @@ impl CrossGateWorld {
         receipt
     }
 
-    pub(crate) fn commit_with(
-        &self,
-        binding: WorthQueryApplicationIdempotencyBinding,
-    ) -> BankCommitReceipt {
+    pub(crate) fn commit_with(&self, binding: BankIdempotencyKey) -> BankCommitReceipt {
         let outcome = self
             .fixture
             .world
             .runtime
-            .notify_estate_death(
+            .notify_estate_death_with_key(
                 &self.fixture.authenticate_specialist(),
                 self.fixture
                     .action(self.fixture.notice, self.fixture.deceased),
-                binding,
+                &binding,
                 &request_scope(),
             )
             .expect("lawful death notification reaches commit");
@@ -161,6 +157,6 @@ impl CrossGateWorld {
     }
 }
 
-pub(crate) fn idempotency(identity: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([identity; 32], [identity.wrapping_add(1); 32])
+pub(crate) fn idempotency(identity: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("phase8-notification-{identity}")).unwrap()
 }

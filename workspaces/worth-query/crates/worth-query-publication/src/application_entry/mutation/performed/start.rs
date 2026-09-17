@@ -53,11 +53,8 @@ where
         } = self;
         let retained_source =
             crate::application_entry::WorthQueryApplicationReadObservation::new(retained_source);
-        let source_result = match request
-            .at(&retained_source)
-            .query(demand.source_intent())
-            .execute()
-        {
+        let retained_request = request.at(&retained_source);
+        let source_result = match retained_request.query(demand.source_intent()).execute() {
             Ok(source) => source,
             Err(denial) => {
                 return Err(WorthQueryRequiredOutputStartFailure {
@@ -86,7 +83,7 @@ where
                 denial: WorthQueryRequiredOutputPreparationDenial::MissingSource,
             });
         }
-        match request
+        match retained_request
             .demand(demand.clone())
             .controls(controls)
             .start_performed(

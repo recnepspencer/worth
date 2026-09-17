@@ -32,6 +32,7 @@ pub enum BankCommitDenialKind {
     MandatoryReviewProgramMismatch,
     DelegationActivationRequired,
     CapabilityRevocationRequired,
+    ApplicationProgramRequired,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -97,6 +98,7 @@ pub(crate) const fn denial_kind(
         }
         Query::DelegationActivationRequired => BankCommitDenialKind::DelegationActivationRequired,
         Query::CapabilityRevocationRequired => BankCommitDenialKind::CapabilityRevocationRequired,
+        Query::ApplicationProgramRequired => BankCommitDenialKind::ApplicationProgramRequired,
     }
 }
 

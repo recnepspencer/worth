@@ -22,6 +22,7 @@ impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityAspect, Ide
     WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityAspect, IdentityField, IdentityValue, IdentityWrite, IdentityUnit, RevisionAspect, RevisionField, RevisionValue, RevisionWrite, RevisionEquality, RevisionUnit, LifecycleAspect, LifecycleField, LifecycleValue, LifecycleWrite, LifecycleEquality, LifecycleUnit, Authorization>
 where
     Schema: ApplicationSchema,
+    Operation: 'static,
     Input: Clone + Send + Sync + 'static,
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
     IdentityField: DeclaredApplicationFieldValue<Value = IdentityValue>,
@@ -90,7 +91,7 @@ where
             .map_err(|denial| denial.to_string())?;
         let program = effects.finish().map_err(|denial| denial.to_string())?;
         Ok(classify_commit(
-            runtime.compare_and_commit_application(program, idempotency.binding()),
+            runtime.compare_and_commit_conditional_operation(program, idempotency.binding()),
         ))
     }
 }

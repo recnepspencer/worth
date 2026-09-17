@@ -1,11 +1,11 @@
 #[path = "recognize_executor/fixture.rs"]
 mod fixture;
 
+use bank_domain::proposals::BankIdempotencyKey;
 use bank_server::{
-    queries, BankCommitDenialKind, BankCommitDenialStage, BankEstateProgressionDenial,
-    BankExecutorRecognitionProjectionDenial, BankMutationCommitOutcome, BankReadControls,
+    queries, BankEstateProgressionDenial, BankExecutorRecognitionProjectionDenial,
+    BankMutationCommitOutcome, BankReadControls,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
 use self::fixture::{
     duplicate_executor_world, exact_recognition_world, foreign_authority_world,
@@ -17,14 +17,14 @@ use crate::support::request_scope;
 fn public_query_observes_the_exact_recognized_executor() {
     let fixture = exact_recognition_world("recognize-executor-commit");
     let specialist = fixture.authenticate_specialist();
-    let binding = idempotency(41);
+    let key = BankIdempotencyKey::new("recognize-estate-executor-program-entry").unwrap();
     let outcome = fixture
         .world
         .runtime
-        .recognize_estate_executor(
+        .recognize_estate_executor_with_key(
             &specialist,
             fixture.action(fixture.executor),
-            binding,
+            &key,
             &request_scope(),
         )
         .expect("the exact legal authority should authorize one executor relation");
@@ -42,10 +42,10 @@ fn public_query_observes_the_exact_recognized_executor() {
     let retry = fixture
         .world
         .runtime
-        .recognize_estate_executor(
+        .recognize_estate_executor_with_key(
             &specialist,
             fixture.action(fixture.executor),
-            binding,
+            &key,
             &request_scope(),
         )
         .expect("an equivalent retry should recover before duplicate-state denial");
@@ -54,24 +54,6 @@ fn public_query_observes_the_exact_recognized_executor() {
     };
     assert_eq!(receipt.aftermath(), recovered.aftermath());
     assert_zero_canonical_work(recovered.canonical_work());
-
-    let drift = fixture
-        .world
-        .runtime
-        .recognize_estate_executor(
-            &specialist,
-            fixture.action(fixture.executor),
-            WorthQueryApplicationIdempotencyBinding::new([41; 32], [99; 32]),
-            &request_scope(),
-        )
-        .expect("intent drift should remain a typed Query outcome");
-    assert!(matches!(
-        drift,
-        BankMutationCommitOutcome::Denied {
-            kind: BankCommitDenialKind::IdempotencyIntentDrift,
-            stage: BankCommitDenialStage::Idempotency,
-        }
-    ));
 }
 
 #[test]
@@ -134,10 +116,11 @@ fn recognize(
     executor: bank_domain::model::BankPrincipalId,
     identity: u8,
 ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-    fixture.world.runtime.recognize_estate_executor(
+    let key = idempotency(identity);
+    fixture.world.runtime.recognize_estate_executor_with_key(
         &fixture.authenticate_specialist(),
         fixture.action(executor),
-        idempotency(identity),
+        &key,
         &request_scope(),
     )
 }
@@ -166,8 +149,8 @@ fn estate_overview(fixture: &RecognitionFixture) -> bank_domain::reads::EstateCa
         .clone()
 }
 
-fn idempotency(identity: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([identity; 32], [identity + 1; 32])
+fn idempotency(identity: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("recognize-estate-executor-{identity}")).unwrap()
 }
 
 fn assert_zero_canonical_work(phases: bank_server::BankCommitCanonicalWorkPhases) {

@@ -2,9 +2,8 @@ use bank_domain::model::PaymentId;
 use bank_domain::reads::PaymentSummary;
 use bank_domain::schema::PaymentStatus;
 
-use super::{
-    BankMutationExplanation, BankMutationMetadata, BankMutationOutcome, BankMutationStatus,
-};
+use super::BankProgramMutationExecution;
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 /// A descriptive pending-payment handle. It carries no workflow authority.
 ///
@@ -43,7 +42,7 @@ pub struct BankRejectPendingPayment {
 
 #[derive(Debug)]
 pub struct BankPaymentInitiationOutcome {
-    outcome: BankMutationOutcome,
+    execution: BankProgramMutationExecution<bank_domain::schema::InitiateBusinessPaymentResult>,
     continuation: Option<BankPendingPaymentContinuation>,
 }
 
@@ -77,31 +76,25 @@ impl BankPendingPaymentContinuation {
 }
 
 impl BankPaymentInitiationOutcome {
-    pub(super) fn new(
-        outcome: BankMutationOutcome,
-        continuation: Option<BankPendingPaymentContinuation>,
+    pub(super) fn from_program(
+        execution: BankProgramMutationExecution<bank_domain::schema::InitiateBusinessPaymentResult>,
     ) -> Self {
-        let continuation = outcome
-            .status()
-            .is_authoritatively_committed()
-            .then_some(continuation)
-            .flatten();
+        let continuation = match &execution {
+            Ok(WorthQueryApplicationMutationOutcome::Committed { result, .. }) => Some(
+                BankPendingPaymentContinuation::from_payment_id(result.payment),
+            ),
+            _ => None,
+        };
         Self {
-            outcome,
+            execution,
             continuation,
         }
     }
 
-    pub const fn status(&self) -> &BankMutationStatus {
-        self.outcome.status()
-    }
-
-    pub const fn metadata(&self) -> BankMutationMetadata {
-        self.outcome.metadata()
-    }
-
-    pub fn explanation(&self) -> BankMutationExplanation<'_> {
-        self.outcome.explanation()
+    pub const fn execution(
+        &self,
+    ) -> &BankProgramMutationExecution<bank_domain::schema::InitiateBusinessPaymentResult> {
+        &self.execution
     }
 
     pub const fn continuation(&self) -> Option<BankPendingPaymentContinuation> {
@@ -112,7 +105,9 @@ impl BankPaymentInitiationOutcome {
         self.continuation
     }
 
-    pub fn into_outcome(self) -> BankMutationOutcome {
-        self.outcome
+    pub fn into_execution(
+        self,
+    ) -> BankProgramMutationExecution<bank_domain::schema::InitiateBusinessPaymentResult> {
+        self.execution
     }
 }

@@ -1,20 +1,18 @@
 use bank_domain::{
-    model::BankPrincipalId,
     queries::{
         EstateEmergencyAccessActivity, EstateEmergencyAccessActivityQuery,
-        EstateEmergencyAccessActivityQueryBinding, EstateEmergencyAccessActivityQueryParameters,
+        EstateEmergencyAccessActivityQueryParameters,
     },
     schema::{
-        BankSchema, EstateCase, EstateCaseIdentityField, Principal,
-        ViewEstateEmergencyProtectionCapability, ViewRestrictedEstateOperation,
+        BankSchema, EstateCase, ViewEstateEmergencyProtectionCapability,
+        ViewRestrictedEstateOperation,
     },
 };
 use worth_query_host::facade::{
-    declaration::application_query::ApplicationQueryParameterSet,
+    application_entry::WorthQueryApplicationRequestExt,
     primary_graph::{
-        WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryContinuation,
-        WorthQueryApplicationQueryResumeControls, WorthQueryPrimaryGraphApplicationRuntime,
-        WorthQueryPrincipalResolutionMode, WorthQueryProductQueryControls,
+        WorthQueryApplicationQueryContinuation, WorthQueryApplicationQueryResumeControls,
+        WorthQueryPrimaryGraphApplicationRuntime,
     },
     publication::domain_computation::{
         publish_application_result, WorthQueryPublishedApplicationResult,
@@ -171,63 +169,21 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
     pub(crate) fn page(
         self,
     ) -> Result<BankEstateEmergencyAccessActivityPageResult, BankApplicationQueryDenial> {
-        let application = self.runtime.application_runtime();
-        let selected = application
-            .on_branch(application.current_world())
-            .select()
-            .map_err(BankApplicationQueryDenial::from_product_selection)?;
-        let query_binding = application
-            .installed_schema()
-            .installed_query_binding::<EstateEmergencyAccessActivityQueryBinding>()
-            .map_err(BankApplicationQueryDenial::from_installation)?;
-
-        let query = query_binding.query();
-        let capability = application
-            .installed_schema()
-            .capability(
+        let capability_input = self.request.capability_request();
+        let page = self
+            .runtime
+            .application_runtime()
+            .request(self.principal.external(), self.controls.request())
+            .query(self.request)
+            .page_approved(
+                self.approved.query(),
                 ViewEstateEmergencyProtectionCapability::reference(),
                 ViewRestrictedEstateOperation::reference(),
+                capability_input,
+                self.controls.maximum_result_count(),
+                self.controls.maximum_work(),
             )
-            .map_err(BankApplicationQueryDenial::from_capability_installation)?;
-        let capability_access = selected
-            .admit_approved_elevation_access(
-                self.approved.query(),
-                self.principal.query(),
-                &capability,
-                self.request.capability_request(),
-                self.controls.request(),
-            )
-            .map_err(BankApplicationQueryDenial::from_capability_admission)?;
-        let scope = selected
-            .resolve_entity(
-                EstateCaseIdentityField::reference(),
-                self.request.estate(),
-                self.controls.request(),
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .map_err(BankApplicationQueryDenial::from_scope_resolution)?;
-        let access = WorthQueryApplicationQueryAccessContext::<
-            BankSchema,
-            Principal,
-            BankPrincipalId,
-            EstateCase,
-        >::new(self.principal.query(), &scope);
-        let plan = selected
-            .admit_governed_application_query_continuation(
-                query,
-                &access,
-                capability_access,
-                ApplicationQueryParameterSet::<EstateEmergencyAccessActivityQuery>::new(),
-                WorthQueryProductQueryControls::new(
-                    self.controls.maximum_result_count(),
-                    self.controls.maximum_work(),
-                    self.controls.request(),
-                ),
-            )
-            .map_err(BankApplicationQueryDenial::from_admission)?;
-        let page = application
-            .execute_application_query_continuation_page(plan)
-            .map_err(BankApplicationQueryDenial::from_continuation_execution)?;
+            .map_err(BankApplicationQueryDenial::from_request_query)?;
         Ok(publish_page(page))
     }
 
@@ -251,61 +207,27 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
         let BankEstateEmergencyAccessActivityContinuation {
             query: continuation,
         } = continuation;
-        let application = self.runtime.application_runtime();
-        let query_binding = application
-            .installed_schema()
-            .installed_query_binding::<EstateEmergencyAccessActivityQueryBinding>()
-            .map_err(BankApplicationQueryDenial::from_installation)?;
-
-        let query = query_binding.query();
-        let capability = application
-            .installed_schema()
-            .capability(
+        let capability_input = self.request.capability_request();
+        self.runtime
+            .application_runtime()
+            .request(self.principal.external(), controls.request_scope())
+            .query(self.request)
+            .readmit_resume_approved(
+                self.approved.query(),
                 ViewEstateEmergencyProtectionCapability::reference(),
                 ViewRestrictedEstateOperation::reference(),
-            )
-            .map_err(BankApplicationQueryDenial::from_capability_installation)?;
-        let current = application
-            .on_branch(application.current_world())
-            .select()
-            .map_err(BankApplicationQueryDenial::from_product_selection)?;
-        let capability_access = current
-            .admit_approved_elevation_access(
-                self.approved.query(),
-                self.principal.query(),
-                &capability,
-                self.request.capability_request(),
-                controls.request_scope(),
-            )
-            .map_err(BankApplicationQueryDenial::from_capability_admission)?;
-        let scope = current
-            .resolve_entity(
-                EstateCaseIdentityField::reference(),
-                self.request.estate(),
-                controls.request_scope(),
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .map_err(BankApplicationQueryDenial::from_scope_resolution)?;
-        let access = WorthQueryApplicationQueryAccessContext::<
-            BankSchema,
-            Principal,
-            BankPrincipalId,
-            EstateCase,
-        >::new(self.principal.query(), &scope);
-        let plan = application
-            .readmit_governed_application_query_continuation(
-                query,
-                &access,
-                capability_access,
-                ApplicationQueryParameterSet::<EstateEmergencyAccessActivityQuery>::new(),
+                capability_input,
                 continuation,
-                controls,
+                controls.maximum_page_width(),
+                controls.maximum_work(),
+                |application, plan| {
+                    after_readmission(BankAdmittedEstateEmergencyAccessActivityContinuation {
+                        application,
+                        plan,
+                    })
+                },
             )
-            .map_err(BankApplicationQueryDenial::from_admission)?;
-        after_readmission(BankAdmittedEstateEmergencyAccessActivityContinuation {
-            application,
-            plan,
-        })
+            .map_err(BankApplicationQueryDenial::from_request_query)?
     }
 }
 

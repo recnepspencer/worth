@@ -35,6 +35,32 @@ impl UiQueryObservationReportingProjection {
     pub fn from_observation(observation: &crate::UiProjectionObservation) -> Self {
         let core = match observation {
             crate::UiProjectionObservation::Scalar(observation) => observation.fact().core(),
+            crate::UiProjectionObservation::ApplicationScalar(observation) => {
+                let query = observation.fact().query_receipt().inspect();
+                let basis = query.basis();
+                return Self {
+                    query_world: UiQueryIdentityReportingProjection::from_query_reporting_text(
+                        &format!(
+                            "application:{}:{}",
+                            basis.runtime_instance(),
+                            basis.branch()
+                        ),
+                    ),
+                    binding: UiQueryIdentityReportingProjection::from_query_reporting_text(
+                        query.parameter_binding_identity(),
+                    ),
+                    source_generation:
+                        UiQueryIdentityReportingProjection::from_query_reporting_text(&format!(
+                            "snapshot:{}",
+                            basis.snapshot()
+                        )),
+                    result_generation:
+                        UiQueryIdentityReportingProjection::from_query_reporting_text(&format!(
+                            "version:{}",
+                            basis.version()
+                        )),
+                };
+            }
             crate::UiProjectionObservation::Collection(observation) => observation.fact().core(),
         };
         Self {

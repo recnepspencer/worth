@@ -1,12 +1,64 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use super::super::{UiCollectionProjectionValue, UiPresentProjection, UiProjectionAvailability};
 use super::collection_catalog::{UiProjectionInputCollectionCatalog, UiProjectionOptionKey};
 use super::{
-    collection_input, UiCollectionProjectionInputFact, UiProjectionInputCollectionRow,
+    UiCollectionProjectionInputFact, UiProjectionInputCollectionRow,
     UiProjectionInputFactReference, UiProjectionInputPosture, UiProjectionInputRevision,
     UiProjectionInputSlot, UiProjectionInputTransitionStopKind, UiProjectionInputTransitionWork,
 };
+
+fn collection_input(
+    availability: &UiProjectionAvailability<UiCollectionProjectionValue>,
+) -> (
+    UiProjectionInputPosture,
+    Option<super::UiCollectionCompleteness>,
+    Box<[UiProjectionInputCollectionRow]>,
+) {
+    match availability {
+        UiProjectionAvailability::Present(UiPresentProjection::Current(value)) => (
+            UiProjectionInputPosture::Current,
+            Some(value.completeness()),
+            collection_rows(value),
+        ),
+        UiProjectionAvailability::Present(UiPresentProjection::RetainedStale {
+            value,
+            activity,
+        }) => (
+            UiProjectionInputPosture::RetainedStale(activity.kind()),
+            Some(value.completeness()),
+            collection_rows(value),
+        ),
+        UiProjectionAvailability::Unavailable(receipt) => (
+            UiProjectionInputPosture::Unavailable(receipt.kind()),
+            None,
+            Box::default(),
+        ),
+        UiProjectionAvailability::Stopped(receipt) => (
+            UiProjectionInputPosture::Stopped(receipt.kind()),
+            None,
+            Box::default(),
+        ),
+    }
+}
+
+fn collection_rows(value: &UiCollectionProjectionValue) -> Box<[UiProjectionInputCollectionRow]> {
+    value
+        .rows()
+        .iter()
+        .map(|row| {
+            UiProjectionInputCollectionRow::query_issued(
+                row.row().clone(),
+                row.selected_values()
+                    .iter()
+                    .map(|value| Arc::from(value.as_str()))
+                    .collect(),
+                row.application_item_key(),
+            )
+        })
+        .collect()
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiProjectionInputFactTransition {

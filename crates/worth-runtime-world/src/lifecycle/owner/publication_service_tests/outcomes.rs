@@ -1,6 +1,72 @@
 use super::*;
 
 #[test]
+fn successor_observation_capacity_denies_before_effect_but_plain_publication_still_works() {
+    let (fixture, owner, expected) = setup();
+    let cell = owner.state.branches.root_cell().expect("bootstrapped cell");
+    let before = cell.atomic_snapshot();
+    let retention_before = owner.state.retention.cost_snapshot();
+    let occupancy_before = owner.state.retention.snapshot(0);
+    let cancellation = RuntimeWorldCancellationSource::new();
+    let denied = RuntimeWorldPreparationService::prepare_publication(
+        owner.as_ref(),
+        expected.clone(),
+        CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
+            .with_prepared_relational_candidate(
+                fixture.prepare_relational_owner_candidate("observation-capacity-denied"),
+            )
+            .with_successor_observation(),
+        &cancellation.token(),
+        None,
+    )
+    .expect_err("the bootstrap observation occupies the only observation slot");
+    assert_eq!(
+        denied.cause(),
+        crate::publication::NoEffectCause::CapacityExhausted
+    );
+    assert_eq!(cell.atomic_snapshot(), before);
+    assert_eq!(owner.state.operation.active(), 0);
+    assert_eq!(owner.state.publication_capacity.active(), 0);
+    assert_eq!(owner.state.history.reserved_len(), 0);
+    assert_eq!(owner.state.recovery.reserved_slots(), 0);
+    assert_eq!(owner.recovery_record_count(), 0);
+    assert_eq!(owner.state.retention.cost_snapshot(), retention_before);
+    let occupancy_after = owner.state.retention.snapshot(0);
+    assert_eq!(
+        (
+            occupancy_after.unique_pins(),
+            occupancy_after.component_obligations(),
+            occupancy_after.in_flight_acquisitions(),
+            occupancy_after.reserved_unique_pins(),
+            occupancy_after.reserved_acquisitions(),
+            occupancy_after.observations(),
+        ),
+        (
+            occupancy_before.unique_pins(),
+            occupancy_before.component_obligations(),
+            occupancy_before.in_flight_acquisitions(),
+            occupancy_before.reserved_unique_pins(),
+            occupancy_before.reserved_acquisitions(),
+            occupancy_before.observations(),
+        ),
+        "denied successor retention must release its reserved pin pair"
+    );
+
+    let ready = ready_relational(&fixture, &owner, &expected, "plain-publication");
+    let outcome = crate::lifecycle::ports::RuntimeWorldProductPublicationService::publish(
+        owner.as_ref(),
+        ready,
+        &cell,
+        CompositeLateCancellationPosture::NotRequested,
+    );
+    assert!(matches!(
+        outcome,
+        RuntimeWorldPublicationOutcome::Performed(_)
+    ));
+    assert_ne!(cell.atomic_snapshot(), before);
+}
+
+#[test]
 fn ready_drop_retains_effects_and_allows_close_before_explicit_cleanup() {
     let (fixture, owner, expected) = setup();
     let ready = ready_relational(&fixture, &owner, &expected, "publication-service");

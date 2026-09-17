@@ -182,6 +182,22 @@ impl ApplicationSchemaMemberProvenance {
     }
 
     #[doc(hidden)]
+    pub fn admits_program_operation(
+        &self,
+        name: &str,
+        operation_type: TypeId,
+        input_type: TypeId,
+        input_identity: &WorthQueryPortableTypeIdentity,
+    ) -> bool {
+        self.operations.iter().any(|member| {
+            member.name == name
+                && member.marker_type == operation_type
+                && member.value_type == input_type
+                && &member.value_identity == input_identity
+        })
+    }
+
+    #[doc(hidden)]
     pub fn admits_effect<Effect: 'static, Payload: 'static>(
         &self,
         name: &str,

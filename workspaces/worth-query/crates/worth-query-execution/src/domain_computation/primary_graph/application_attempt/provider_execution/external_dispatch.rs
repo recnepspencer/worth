@@ -12,7 +12,7 @@
 
 use std::sync::Arc;
 
-use worth_query_installation::facade::ApplicationSchema;
+use worth_query_installation::facade::{ApplicationSchema, InstalledAftermathRecoveryContract};
 
 use super::super::WorthQueryApplicationCommitOutcome;
 use crate::domain_computation::application_aftermath::{
@@ -47,6 +47,7 @@ pub enum WorthQueryExternalDispatchPreparationDenial {
 pub enum WorthQueryExternalRedispatchDenial {
     /// Fresh effect authority or current admission failed before transport.
     AdmissionDenied,
+    RecoveryNotAdmitted,
     /// The live handle binding carries no co-committed outbox record.
     BindingOutboxMissing,
     /// No host transport is installed on this runtime.
@@ -114,6 +115,11 @@ impl From<WorthQueryExternalRedispatchDenial> for WorthQueryRecoveryHandleDenial
                     WorthQueryRecoveryHandleDenialKind::CorrelationMismatch,
                 )
             }
+            WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted => {
+                WorthQueryRecoveryHandleDenial::new(
+                    WorthQueryRecoveryHandleDenialKind::TransitionNotAdmitted,
+                )
+            }
             WorthQueryExternalRedispatchDenial::TransportNotInstalled
             | WorthQueryExternalRedispatchDenial::OwnerReadDenied(_)
             | WorthQueryExternalRedispatchDenial::AttemptAdmissionDenied
@@ -160,6 +166,12 @@ where
     ) -> Result<WorthQueryPerformedExternalRedispatch, WorthQueryExternalRedispatchDenial> {
         require_fresh_effect_authority(handle, authority)
             .map_err(|_| WorthQueryExternalRedispatchDenial::AdmissionDenied)?;
+        if matches!(
+            handle.binding().installed_aftermath().recovery(),
+            InstalledAftermathRecoveryContract::NotAdmitted
+        ) {
+            return Err(WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted);
+        }
         admission
             .validate_current_authority()
             .map_err(|_| WorthQueryExternalRedispatchDenial::AdmissionDenied)?;
@@ -371,6 +383,6 @@ mod tests {
                 .perform_committed_external_dispatch(&transport, observation),
             Err(WorthQueryExternalDispatchPreparationDenial::TimeObservationDenied)
         );
-        assert_eq!(transport.0.load(Ordering::Acquire), 1);
+        assert_eq!(transport.0.load(Ordering::Acquire), 0);
     }
 }

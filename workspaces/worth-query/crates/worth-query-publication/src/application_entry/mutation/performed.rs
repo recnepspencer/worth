@@ -47,6 +47,7 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
     RootConnection<Schema, Program>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -73,6 +74,7 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
     RootConnection<Schema, Program>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -92,6 +94,7 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
     RootConnection<Schema, Program>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -107,6 +110,7 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
     RootConnection<Schema, Program>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -125,6 +129,7 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
     RootConnection<Schema, Program>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -152,6 +157,7 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
     RootConnection<Schema, Program>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -165,6 +171,7 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
+    Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
     RootConnection<Schema, Program>:
         WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
 {
@@ -209,6 +216,7 @@ impl<'application, 'principal, 'scope, 'key, Schema, Intent>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema> + Clone + Send + Sync,
+    <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
             Schema,
@@ -253,7 +261,7 @@ where
         let demand =
             <RootConnection<Schema, Program> as WorthQueryApplicationRequiredOutputConnection<
                 Schema,
-            >>::demand_from_source(&self.request.intent)
+            >>::demand_from_source(self.request.intent.input())
             .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
         let query_application = self.request.application;
         let query_principal = self.request.principal;
@@ -262,11 +270,13 @@ where
         let preparation_failure = std::cell::RefCell::new(None);
         let prepared_source = std::cell::RefCell::new(None);
         let outcome = self
-            .execute_with_commit(true, |_, program, idempotency| {
-                match application.compare_and_commit_required_output_source::<Intent::Binding>(
-                    program,
-                    idempotency,
-                ) {
+            .execute_with_preparation_and_commit(
+                super::authorization::prepare,
+                |_, program, idempotency| match application
+                    .compare_and_commit_required_output_source::<Intent::Binding>(
+                        program,
+                        idempotency,
+                    ) {
                     Ok((outcome, prepared)) => {
                         if let Some(prepared) = prepared {
                             prepared_source.replace(Some(prepared));
@@ -278,8 +288,8 @@ where
                         preparation_failure.replace(Some(failure));
                         WorthQueryApplicationCommitOutcome::Committed(receipt)
                     }
-                }
-            })
+                },
+            )
             .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)?;
         let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
             return Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(

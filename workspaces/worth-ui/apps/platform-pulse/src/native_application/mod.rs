@@ -169,8 +169,7 @@ pub(crate) fn publish_preparation_failure(
             publisher.candidate_submission_failure(denial)
         }
         PlatformPulsePreparationDenial::QueryInstallation(_)
-        | PlatformPulsePreparationDenial::QueryRegistration(_)
-        | PlatformPulsePreparationDenial::QueryViewRegistration(_) => {
+        | PlatformPulsePreparationDenial::QueryRegistration(_) => {
             publisher.query_preparation_failure()
         }
         PlatformPulsePreparationDenial::IntentInput(_)

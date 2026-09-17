@@ -118,7 +118,7 @@ where
     })
 }
 
-fn source_backed_component_app_from_builder(
+pub(crate) fn source_backed_component_app_from_builder(
     builder: crate::facade::entry::WorthUiCertificationApplicationBuilder,
     activate: impl FnOnce(crate::facade::entry::WorthUiHostNeutralApp) -> WorthUiApp,
 ) -> WorthUiApp {

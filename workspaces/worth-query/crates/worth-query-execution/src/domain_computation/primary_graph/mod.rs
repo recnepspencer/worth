@@ -147,6 +147,7 @@ pub use application_attempt::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationRetainedCommitOutcome,
     WorthQueryApplicationNoEffectCause,
     WorthQueryApplicationCommitOutcomeIdentity,
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,

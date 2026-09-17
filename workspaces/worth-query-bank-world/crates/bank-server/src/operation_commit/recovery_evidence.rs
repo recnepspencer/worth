@@ -4,7 +4,7 @@ use bank_domain::schema::BankSchema;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryCommittedDispatchOutboxObservation,
     WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial,
+    WorthQueryRecoveryClaimStatus, WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial,
 };
 
 #[derive(Clone)]
@@ -32,5 +32,12 @@ impl BankCommitRecoveryEvidence {
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
     ) -> Result<WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial> {
         runtime.mint_recovery_handle(&self.execution)
+    }
+
+    pub(crate) fn recovery_claim_status(
+        &self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
+    ) -> Result<WorthQueryRecoveryClaimStatus, WorthQueryRecoveryHandleDenial> {
+        runtime.recovery_claim_status(&self.execution)
     }
 }

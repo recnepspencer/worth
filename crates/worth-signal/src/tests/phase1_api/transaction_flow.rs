@@ -25,11 +25,7 @@ fn build() -> World {
     let mut graph = SignalGraph::new();
     graph.set_runtime_policy(SignalRuntimePolicy::development());
     let source = graph.node().produces_aspects(mask_a()).build();
-    let consumer = graph
-        .node()
-        .produces_aspects(mask_a())
-        .on_demand()
-        .build();
+    let consumer = graph.node().produces_aspects(mask_a()).on_demand().build();
     graph.append_dependency(consumer, source, ASPECT_A).unwrap();
     World {
         runtime: SignalRuntime::builder(graph).with_kernel_defaults().build(),
@@ -147,8 +143,14 @@ fn a_transaction_with_a_demand_pass_records_one_flow_carrying_its_change() {
     // Both executions are in the one flow: the dirty pass planned the source
     // as a requested target, the demand pass forced the on-demand consumer.
     assert_eq!(facts.tasks_executed, 2);
-    assert!(facts.requested_target_tasks >= 1, "dirty pass is in the flow");
-    assert!(facts.condition_forced_tasks >= 1, "demand pass is in the flow");
+    assert!(
+        facts.requested_target_tasks >= 1,
+        "dirty pass is in the flow"
+    );
+    assert!(
+        facts.condition_forced_tasks >= 1,
+        "demand pass is in the flow"
+    );
 }
 
 #[test]
@@ -159,7 +161,11 @@ fn a_clean_read_after_commit_leaves_the_transaction_flow_in_place() {
     let before = latest_flow_facts(&world);
 
     settle(&mut world);
-    assert_eq!(calls_for(&world.calls, world.consumer), 2, "nothing recomputed");
+    assert_eq!(
+        calls_for(&world.calls, world.consumer),
+        2,
+        "nothing recomputed"
+    );
     let after = latest_flow_facts(&world);
     assert_eq!(after.changed_nodes, before.changed_nodes);
     assert_eq!(after.tasks_executed, before.tasks_executed);
@@ -178,7 +184,10 @@ fn the_next_transaction_starts_a_fresh_flow() {
     assert_eq!(second.changed_nodes, vec![world.source]);
     assert_eq!(second.changed_aspects, vec![ASPECT_A.id()]);
     assert_eq!(second.tasks_executed, first.tasks_executed, "no carry-over");
-    assert_eq!(second.plan_task_count, first.plan_task_count, "no carry-over");
+    assert_eq!(
+        second.plan_task_count, first.plan_task_count,
+        "no carry-over"
+    );
     assert_eq!(calls_for(&world.calls, world.consumer), 3);
 }
 
@@ -196,13 +205,19 @@ fn outside_a_transaction_each_execution_is_its_own_flow() {
     let dirty_pass = latest_flow_facts(&world);
     assert_eq!(dirty_pass.changed_nodes, vec![world.source]);
     assert_eq!(dirty_pass.changed_aspects, vec![ASPECT_A.id()]);
-    assert_eq!(dirty_pass.tasks_executed, 1, "the source alone; the consumer is on-demand");
+    assert_eq!(
+        dirty_pass.tasks_executed, 1,
+        "the source alone; the consumer is on-demand"
+    );
 
     settle(&mut world);
     assert_eq!(calls_for(&world.calls, world.consumer), 2);
     let read_pass = latest_flow_facts(&world);
     assert_eq!(read_pass.changed_nodes, Vec::<NodeId>::new());
-    assert_eq!(read_pass.tasks_executed, 1, "not folded into the dirty pass");
+    assert_eq!(
+        read_pass.tasks_executed, 1,
+        "not folded into the dirty pass"
+    );
 }
 
 #[test]
@@ -211,16 +226,22 @@ fn a_rolled_back_transaction_does_not_leak_its_change_into_the_next_flow() {
     settle(&mut world);
     let evaluator = evaluator(world.calls.clone(), world.consumer, world.source);
     let (source, consumer) = (world.source, world.consumer);
-    let rolled_back: Result<(), SignalError> = world.runtime.transaction(&mut (), |tx| {
-        tx.mark_dirty(source, ASPECT_A)?;
-        tx.evaluate_dirty(&evaluator)?;
-        tx.evaluate_demand(&evaluator, &[consumer])?;
-        Err(SignalError::invalid_input("abandon"))
-    }).map(|_| ());
+    let rolled_back: Result<(), SignalError> = world
+        .runtime
+        .transaction(&mut (), |tx| {
+            tx.mark_dirty(source, ASPECT_A)?;
+            tx.evaluate_dirty(&evaluator)?;
+            tx.evaluate_demand(&evaluator, &[consumer])?;
+            Err(SignalError::invalid_input("abandon"))
+        })
+        .map(|_| ());
     assert!(rolled_back.is_err());
 
     commit_with_demand(&mut world);
     let facts = latest_flow_facts(&world);
     assert_eq!(facts.changed_nodes, vec![world.source]);
-    assert_eq!(facts.tasks_executed, 2, "only the committed transaction's work");
+    assert_eq!(
+        facts.tasks_executed, 2,
+        "only the committed transaction's work"
+    );
 }

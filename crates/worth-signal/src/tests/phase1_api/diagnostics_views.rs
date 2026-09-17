@@ -27,11 +27,7 @@ fn build() -> World {
     let mut graph = SignalGraph::new();
     graph.set_runtime_policy(SignalRuntimePolicy::operational());
     let source = graph.node().produces_aspects(mask_a()).build();
-    let consumer = graph
-        .node()
-        .produces_aspects(mask_a())
-        .on_demand()
-        .build();
+    let consumer = graph.node().produces_aspects(mask_a()).on_demand().build();
     graph.append_dependency(consumer, source, ASPECT_A).unwrap();
     let bystander = graph.node().produces_aspects(mask_a()).build();
     let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
@@ -111,13 +107,19 @@ fn refreshing_retained_views_makes_history_now_describe_the_live_graph() {
         "the refreshed view is one more retained entry, like a snapshot restore"
     );
     // The graph summary is refreshed from the same pass.
-    assert_eq!(world.runtime.diagnostics().summary_now().active_node_count, 3);
+    assert_eq!(
+        world.runtime.diagnostics().summary_now().active_node_count,
+        3
+    );
 }
 
 #[test]
 fn refreshing_an_untouched_graph_traces_nothing() {
     let mut world = build();
     refresh_retained_diagnostics_views(world.runtime.graph_mut());
-    assert_eq!(world.runtime.diagnostics().history_now().traced_node_count, 0);
+    assert_eq!(
+        world.runtime.diagnostics().history_now().traced_node_count,
+        0
+    );
     assert_eq!(world.runtime.diagnostics().recent_history().len(), 1);
 }

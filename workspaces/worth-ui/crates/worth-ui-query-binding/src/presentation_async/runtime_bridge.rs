@@ -53,7 +53,7 @@ pub(crate) enum WorthUiPresentationRuntimeAdmissionDenial {
 
 #[derive(Debug)]
 pub(crate) enum WorthUiPresentationRuntimeCleanupDenial {
-    Query(runtime::WorthQueryOwnedAsyncRuntimeDenial),
+    Query(Box<runtime::WorthQueryOwnedAsyncRuntimeDenial>),
 }
 
 pub(crate) struct WorthUiPresentationRuntimeCleanup {
@@ -78,7 +78,7 @@ impl WorthUiPresentationRuntimeAdmission {
                 return Err(cleanup_after_admission_failure(
                     workspace,
                     None,
-                    WorthUiPresentationRuntimeAdmissionDenial::QueryOwned(Box::new(denial)),
+                    WorthUiPresentationRuntimeAdmissionDenial::QueryOwned(denial),
                 ));
             }
         };
@@ -228,7 +228,9 @@ impl WorthUiPresentationRuntimeCleanup {
             if let Some(request) = self.request.as_ref() {
                 workspace
                     .retire_owned_bridge_async_request(request)
-                    .map_err(WorthUiPresentationRuntimeCleanupDenial::Query)?;
+                    .map_err(|denial| {
+                        WorthUiPresentationRuntimeCleanupDenial::Query(Box::new(denial))
+                    })?;
             }
             self.request_retired = true;
         }

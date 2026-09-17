@@ -282,8 +282,7 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn application_program_required(
-    ) -> Self {
+    pub(in crate::domain_computation) const fn application_program_required() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,

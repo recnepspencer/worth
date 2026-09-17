@@ -24,7 +24,7 @@ use super::live_routes::account_activity_stream;
 use super::mutation_routes::mutate;
 use super::queue::BankHttpExecutionQueue;
 use super::recovery_executor::BankHttpRecoveryExecutor;
-use super::recovery_routes::{inspect as inspect_recovery, notify_death};
+use super::recovery_routes::{inspect as inspect_recovery, notify_death, safe_retry};
 use super::request_admission::UnadmittedBankHttpRequestBasis;
 
 #[derive(Clone)]
@@ -78,6 +78,7 @@ pub(super) fn router(state: BankHttpRouteState, maximum_body_bytes: usize) -> Ro
         .route("/v1/estate/elevation/review", post(complete_review))
         .route("/v1/estate/notify-death", post(notify_death))
         .route("/v1/recovery/inspect", post(inspect_recovery))
+        .route("/v1/recovery/safe-retry", post(safe_retry))
         .layer(DefaultBodyLimit::max(maximum_body_bytes))
         .with_state(state)
 }

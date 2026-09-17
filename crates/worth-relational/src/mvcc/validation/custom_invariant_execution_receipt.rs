@@ -6,8 +6,8 @@ use crate::validation::data::{
 };
 use crate::validation::engine::InvariantExecutionResult;
 
-/// Immutable evidence of one installed custom invariant's execution against a
-/// Relational-owned proposed candidate.
+/// Immutable evidence of an installed custom invariant's execution or
+/// owner-validated non-applicability against a Relational-owned candidate.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct CustomInvariantExecutionReceipt {
     identity: CustomInvariantSemanticIdentity,
@@ -68,6 +68,7 @@ pub(crate) fn collect_custom_invariant_execution_receipts(
                 execution_point: result.execution_point,
                 verdict: match result.verdict {
                     InvariantVerdict::Pass => InvariantDecisionKind::Passed,
+                    InvariantVerdict::NotApplicable => InvariantDecisionKind::NotApplicable,
                     InvariantVerdict::Advisory { .. } => InvariantDecisionKind::Advisory,
                     InvariantVerdict::Violation(_) => InvariantDecisionKind::Violated,
                 },

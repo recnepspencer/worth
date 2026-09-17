@@ -16,7 +16,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationDependentOutputConnection,
     WorthQueryApplicationOutputDemandSource, WorthQueryApplicationProjection,
     WorthQueryApplicationRequiredOutputConnection, WorthQueryOutputDemandAdvance,
-    WorthQueryOutputDemandNotifications, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 use super::request::{
@@ -24,6 +24,8 @@ use super::request::{
     WorthQueryOutputDemandControls,
 };
 use super::settlement::WorthQueryApplicationOutputDemandSettlement;
+
+mod lifecycle;
 
 type Family<Schema, Demand> = <Demand as WorthQueryApplicationOutputDemand<Schema>>::OutputFamily;
 type SourceBinding<Schema, Demand> =
@@ -79,6 +81,46 @@ where
         self.start_ordinary(source_result.into_output_demand_source())
     }
 
+    pub(in crate::application_entry) fn start_for_program<Program>(
+        self,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<
+        super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
+        WorthQueryApplicationOutputDemandDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
+        RootConnection<Schema, Program>:
+            WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
+    {
+        if !std::ptr::eq(self.application, application.runtime()) {
+            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+        }
+        let basis = self.program_basis();
+        let source_result = self.query_source()?;
+        let maximum_work = self
+            .controls
+            .map_or(1, |controls| controls.maximum_work().get());
+        let maximum_retained_bytes = self
+            .controls
+            .map_or(1, |controls| controls.maximum_retained_bytes().get());
+        let admitted = application
+            .admit_program_root_output(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                source_result.into_output_demand_source(),
+                maximum_work,
+                maximum_retained_bytes,
+            )
+            .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
+        Ok(super::WorthQueryApplicationProgramDemandHandle::new(
+            application,
+            admitted,
+            self.demand,
+            basis,
+        ))
+    }
+
     pub(in crate::application_entry) fn start_recovery<Program>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
@@ -93,6 +135,7 @@ where
         RootConnection<Schema, Program>:
             WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
     {
+        let basis = self.program_basis();
         let source_result = self.query_source()?;
         let maximum_work = self
             .controls
@@ -113,6 +156,7 @@ where
             application,
             admitted,
             self.demand,
+            basis,
         ))
     }
 
@@ -124,6 +168,7 @@ where
             Program,
             ParentDemand,
         >,
+        parent_basis: &crate::application_entry::WorthQueryApplicationReadObservation,
     ) -> Result<
         super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
         WorthQueryApplicationOutputDemandDenial,
@@ -138,6 +183,7 @@ where
             Demand = Demand,
         >,
     {
+        let basis = self.program_basis();
         let source_result = self.query_source()?;
         let maximum_work = self
             .controls
@@ -149,6 +195,7 @@ where
             .admit_program_dependent_output::<ParentDemand, Connection>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 parent,
+                &parent_basis.retained,
                 source_result.into_output_demand_source(),
                 maximum_work,
                 maximum_retained_bytes,
@@ -158,6 +205,7 @@ where
             application,
             admitted,
             self.demand,
+            basis,
         ))
     }
 
@@ -191,6 +239,14 @@ where
         .map_err(WorthQueryApplicationOutputDemandDenial::Source)
     }
 
+    fn program_basis(&self) -> crate::application_entry::WorthQueryApplicationReadObservation {
+        crate::application_entry::WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(
+            self.observation
+                .as_ref()
+                .expect("program output admission is pinned to one exact read basis"),
+        ))
+    }
+
     pub(in crate::application_entry) fn start_performed<Program>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
@@ -209,6 +265,7 @@ where
         RootConnection<Schema, Program>:
             WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
     {
+        let basis = self.program_basis();
         let maximum_work = self
             .controls
             .map_or(1, |controls| controls.maximum_work().get());
@@ -228,6 +285,7 @@ where
             application,
             admitted,
             self.demand,
+            basis,
         ))
     }
 
@@ -317,7 +375,7 @@ where
                 &self.admitted,
                 fresh_request.principal,
                 fresh_request.scope,
-                fresh_request.branch.clone(),
+                fresh_request.branch,
                 disclosure.into_output_demand_disclosure(),
             )
             .map_err(|denial| {
@@ -341,34 +399,6 @@ where
                     ),
                 ))
             }
-        }
-    }
-
-    pub fn close(&mut self) {
-        if !self.closed {
-            self.admitted.close();
-        }
-        self.closed = true;
-    }
-
-    pub fn notifications(
-        &self,
-    ) -> Result<WorthQueryOutputDemandNotifications, WorthQueryApplicationOutputDemandDenial> {
-        self.admitted
-            .notifications()
-            .map_err(WorthQueryApplicationOutputDemandDenial::Demand)
-    }
-}
-
-impl<Schema, Demand> Drop for WorthQueryApplicationOutputDemandHandle<'_, Schema, Demand>
-where
-    Schema: ApplicationSchema,
-    Demand: WorthQueryApplicationOutputDemand<Schema>,
-{
-    fn drop(&mut self) {
-        if !self.closed {
-            self.admitted.close();
-            self.closed = true;
         }
     }
 }

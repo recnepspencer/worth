@@ -150,12 +150,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         match recovery.state {
             RecoveryState::Unpublished { product, retry } => {
                 let needs_settlement = product.relational_requires_settlement();
-                self.continue_world::<Producer>(
-                    product.into_recovery(),
-                    retry,
-                    needs_settlement,
-                    request,
-                )
+                self.continue_world(product.into_recovery(), retry, needs_settlement, request)
             }
             RecoveryState::World { recovery, retry } => {
                 let needs_settlement = match recovery.inspect() {
@@ -167,7 +162,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         ));
                     }
                 };
-                self.continue_world::<Producer>(recovery, retry, needs_settlement, request)
+                self.continue_world(recovery, retry, needs_settlement, request)
             }
             RecoveryState::HandoffWorld { old, next, retry } => {
                 self.finish_handoff(old, next, retry)
@@ -213,7 +208,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 
-    fn continue_world<Producer>(
+    fn continue_world(
         &self,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
@@ -222,20 +217,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> Result<
         WorthQuerySuspendedGeneratedOutput,
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
-    >
-    where
-        Producer: WorthQueryApplicationProducerBinding<Schema>,
-    {
+    > {
         if needs_settlement && recovery.continue_owner_settlement().is_err() {
             return Err(failure(
                 WorthQueryGeneratedOutputSuspensionRecoveryStage::OwnerSettlement,
                 RecoveryState::World { recovery, retry },
             ));
         }
-        self.adopt_settled::<Producer>(recovery, retry, request)
+        self.adopt_settled(recovery, retry, request)
     }
 
-    fn adopt_settled<Producer>(
+    fn adopt_settled(
         &self,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
@@ -243,10 +235,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> Result<
         WorthQuerySuspendedGeneratedOutput,
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
-    >
-    where
-        Producer: WorthQueryApplicationProducerBinding<Schema>,
-    {
+    > {
         let selected = match self.on_branch(retry.branch).select() {
             Ok(selected) => selected,
             Err(_) => {

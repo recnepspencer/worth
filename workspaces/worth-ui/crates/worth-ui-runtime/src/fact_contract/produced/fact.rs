@@ -64,6 +64,17 @@ impl UiProducedFact {
         }
     }
 
+    pub(crate) fn into_application_scalar_projection(
+        self,
+    ) -> Result<worth_ui_query_binding::UiApplicationScalarProjectionFactReceipt, Box<Self>> {
+        match self {
+            Self::Query(fact) => fact
+                .into_application_scalar_projection()
+                .map_err(|fact| Box::new(Self::Query(*fact))),
+            other => Err(Box::new(other)),
+        }
+    }
+
     pub(crate) fn into_query_owner_consequence(
         self,
     ) -> Result<worth_ui_query_binding::WorthUiCollectionChangeConsequence, Box<Self>> {

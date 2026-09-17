@@ -235,7 +235,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 else {
                     return None;
                 };
-                invariant_selection::requires(&touches, required_groups).then(|| {
+                invariant_selection::requires(&touches, applicability).then(|| {
                     WorthQueryInstalledApplicationInvariantDescriptor::from_installed_parts(
                         invariant.clone(),
                         *major,

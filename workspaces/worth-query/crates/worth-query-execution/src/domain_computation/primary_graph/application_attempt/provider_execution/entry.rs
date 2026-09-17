@@ -17,18 +17,23 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub(in crate::domain_computation) fn has_installed_application_program(&self) -> bool {
+        self.installed_program_action_operations.is_some()
+    }
+
     pub fn compare_and_commit_application<Operation, Input, Scope>(
         &self,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationCommitOutcome
     where
+        Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if program
-            .output_correspondence
-            .binding_type()
-            .is_some_and(|binding| self.program_required_bindings.contains(&binding))
+        if self.installed_program_action_operations.is_some()
+            || self
+                .program_required_operations
+                .contains(&std::any::TypeId::of::<Operation>())
         {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
@@ -50,6 +55,94 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         self.compare_and_commit_application_with_output_observation(program, idempotency, true)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_program_output_producer<
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
+        if !self
+            .installed_conditionals
+            .contains_operation::<Operation>()
+            || !self
+                .installed_program_action_operations
+                .as_ref()
+                .is_some_and(|actions| actions.contains(&std::any::TypeId::of::<Operation>()))
+        {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            );
+        }
+        self.compare_and_commit_application_with_output_observation(program, idempotency, true)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_program_action<
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
+        if self
+            .installed_conditionals
+            .contains_operation::<Operation>()
+            || !self
+                .installed_program_action_operations
+                .as_ref()
+                .is_some_and(|actions| actions.contains(&std::any::TypeId::of::<Operation>()))
+        {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            );
+        }
+        self.compare_and_commit_application_with_output_observation(program, idempotency, false)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_conditional_operation<
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> WorthQueryApplicationCommitOutcome
+    where
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
+        if self.installed_program_action_operations.is_some() {
+            if !self
+                .installed_conditionals
+                .contains_operation::<Operation>()
+                || !self
+                    .installed_program_action_operations
+                    .as_ref()
+                    .is_some_and(|actions| actions.contains(&std::any::TypeId::of::<Operation>()))
+            {
+                return WorthQueryApplicationCommitOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::application_program_required(),
+                );
+            }
+            self.compare_and_commit_application_with_output_observation(program, idempotency, false)
+        } else {
+            self.compare_and_commit_application(program, idempotency)
+        }
     }
 
     fn compare_and_commit_application_with_output_observation<Operation, Input, Scope>(

@@ -15,6 +15,7 @@ mod lifecycle_progression;
 mod product_consumers;
 mod publication_evidence;
 mod request_binding;
+mod request_entry_tests;
 mod scale;
 mod support_cutoff;
 mod warm_locality;

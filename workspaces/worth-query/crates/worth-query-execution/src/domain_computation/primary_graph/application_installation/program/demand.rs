@@ -49,6 +49,7 @@ where
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
+    target_feature: std::any::TypeId,
     marker: std::marker::PhantomData<fn() -> Program>,
 }
 
@@ -60,6 +61,7 @@ where
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     retained: std::sync::Arc<WorthQueryOutputDemandSettlement>,
+    target_feature: std::any::TypeId,
     marker: std::marker::PhantomData<fn() -> (Schema, Program, Demand)>,
 }
 
@@ -116,6 +118,34 @@ where
     Program::OutputGraph: ApplicationOutputGraphShape<Schema>,
     RootConnection<Schema, Program>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
+    pub fn admit_program_root_output(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        source: WorthQueryApplicationOutputDemandSource<
+            SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
+            SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
+        >,
+        maximum_work: usize,
+        maximum_retained_bytes: usize,
+    ) -> Result<
+        WorthQueryAdmittedProgramOutput<
+            Schema,
+            Program,
+            WorthQueryProgramRootDemand<Schema, Program>,
+        >,
+        WorthQueryOutputDemandDenial,
+    > {
+        self.runtime
+            .admit_required_output_demand::<
+                Family<Schema, WorthQueryProgramRootDemand<Schema, Program>>,
+            >(source, maximum_work, maximum_retained_bytes)
+            .map(|admitted| WorthQueryAdmittedProgramOutput {
+                admitted,
+                target_feature: std::any::TypeId::of::<<RootConnectionRef<Schema, Program> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
+                marker: std::marker::PhantomData,
+            })
+    }
+
     pub fn recover_program_root_output(
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
@@ -145,6 +175,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                target_feature: std::any::TypeId::of::<<RootConnectionRef<Schema, Program> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 marker: std::marker::PhantomData,
             })
     }
@@ -173,6 +204,7 @@ where
             >(source, maximum_work, maximum_retained_bytes, prepared)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                target_feature: std::any::TypeId::of::<<RootConnectionRef<Schema, Program> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 marker: std::marker::PhantomData,
             })
     }
@@ -198,7 +230,7 @@ where
         SourceQuery<Schema, Demand>: 'static,
     {
         self.runtime
-            .advance_output_demand(
+            .advance_program_output_demand(
                 &demand.admitted,
                 principal,
                 request_scope,
@@ -210,6 +242,7 @@ where
                 WorthQueryOutputDemandAdvance::Settled(retained) => {
                     WorthQueryProgramOutputAdvance::Settled(WorthQuerySettledProgramOutput {
                         retained,
+                        target_feature: demand.target_feature,
                         marker: std::marker::PhantomData,
                     })
                 }
@@ -220,6 +253,7 @@ where
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         parent: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        parent_basis: &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         source: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, ConnectionDemand<Schema, Connection>>,
             SourceValue<Schema, ConnectionDemand<Schema, Connection>>,
@@ -242,6 +276,12 @@ where
                 "dependent output connection is not installed for this program",
             ));
         }
+        if parent.target_feature != std::any::TypeId::of::<Connection::SourceFeature>() {
+            return Err(WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                "dependent output edge does not leave this settled program feature",
+            ));
+        }
         if !parent.retained.belongs_to(&self.runtime) {
             return Err(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
@@ -252,12 +292,8 @@ where
             .observed_sources()
             .first()
             .filter(|_| source.rows().len() == 1 && source.observed_sources().len() == 1);
-        let parent_commit = parent
-            .retained
-            .receipt()
-            .committed_product_publication()
-            .composite_commit();
-        let parent_occurrence = parent.retained.receipt().product_branch().occurrence();
+        let parent_commit = parent_basis.selected_commit();
+        let parent_occurrence = parent_basis.branch_incarnation();
         if selected_source.is_none_or(|observed| {
             observed.selected_product_commit() != Some(parent_commit)
                 || observed.selected_product_occurrence() != Some(parent_occurrence)
@@ -275,6 +311,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                target_feature: std::any::TypeId::of::<Connection::TargetFeature>(),
                 marker: std::marker::PhantomData,
             })
     }

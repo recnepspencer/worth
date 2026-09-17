@@ -1,9 +1,14 @@
+#[cfg(any(test, feature = "certification-construction"))]
 use std::collections::BTreeMap;
 
+#[cfg(any(test, feature = "certification-construction"))]
 use worth_foundational::facade::{AspectValue, CanonicalFieldPath, FieldKey};
+#[cfg(any(test, feature = "certification-construction"))]
 use worth_query::facade::foundation::{WorthQueryEntity, WorthQueryEntityIdentity};
+#[cfg(any(test, feature = "certification-construction"))]
 use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
 
+#[cfg(any(test, feature = "certification-construction"))]
 use crate::installed_domain::scalar_text_projection::PLATFORM_PULSE_STATUS_IDENTITY;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -32,6 +37,7 @@ impl WorthUiScalarProjectionSourceRecord {
         self.revision
     }
 
+    #[cfg(any(test, feature = "certification-construction"))]
     pub(crate) fn into_query_entity(self) -> WorthQueryEntity {
         WorthQueryEntity::from_native_field_values(
             platform_pulse_entity_identity(),
@@ -53,12 +59,14 @@ impl WorthUiScalarProjectionSourceRecord {
     }
 }
 
+#[cfg(any(test, feature = "certification-construction"))]
 pub(crate) fn platform_pulse_entity_identity() -> WorthQueryEntityIdentity {
     WorthQueryEntityIdentity::from_bridge_record_projection(
         RelationalBridgeRecordIdentityParts::entity(313, 1, 1),
     )
 }
 
+#[cfg(any(test, feature = "certification-construction"))]
 fn field_path(aspect: &str, field: &str) -> CanonicalFieldPath {
     CanonicalFieldPath::new([
         FieldKey::new(aspect).expect("static aspect key must admit"),

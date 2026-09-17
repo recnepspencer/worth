@@ -1,3 +1,6 @@
+use worth_query_installation::facade::WorthQueryPrincipalBindingInstallationDenialKind;
+use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum WorthQueryPrincipalResolutionDenialKind {
@@ -139,5 +142,3 @@ mod tests {
         );
     }
 }
-use worth_query_installation::facade::WorthQueryPrincipalBindingInstallationDenialKind;
-use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;

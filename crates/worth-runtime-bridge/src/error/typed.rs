@@ -7,7 +7,7 @@ use super::context::BridgeErrorContext;
 pub struct BridgeTypedError<K> {
     kind: K,
     message: Arc<str>,
-    context: BridgeErrorContext,
+    context: Box<BridgeErrorContext>,
 }
 
 impl<K: Copy> BridgeTypedError<K> {
@@ -15,7 +15,7 @@ impl<K: Copy> BridgeTypedError<K> {
         Self {
             kind,
             message: message.into(),
-            context: BridgeErrorContext::default(),
+            context: Box::default(),
         }
     }
 
@@ -24,7 +24,7 @@ impl<K: Copy> BridgeTypedError<K> {
     }
 
     pub(crate) fn with_context(mut self, context: BridgeErrorContext) -> Self {
-        self.context = context;
+        self.context = Box::new(context);
         self
     }
 

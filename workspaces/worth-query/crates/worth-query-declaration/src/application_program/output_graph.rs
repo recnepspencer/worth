@@ -6,6 +6,7 @@ use super::{
     ApplicationConnectionDeclaration, ApplicationConnectionIdentity,
     ApplicationConnectionInstanceRef, ApplicationConnectionRef, ApplicationFeature,
     ApplicationInputPort, ApplicationOccurrenceConnectionBinding, ApplicationOutputPort,
+    ApplicationProgramOutputShape,
 };
 
 pub type ApplicationProgramRootConnectionRef<Schema, Program> =
@@ -172,24 +173,12 @@ impl<
 {
 }
 
-pub trait ApplicationOutputGraphShape<Schema>: Sized + 'static
+pub trait ApplicationOutputGraphShape<Schema>: ApplicationProgramOutputShape<Schema>
 where
     Schema: ApplicationSchema,
 {
     type RootConnection: ApplicationConnectionShape<Schema>;
     type Dependents: ApplicationOutputEdgesShape<Schema>;
-
-    fn connections() -> Vec<ApplicationConnectionDeclaration> {
-        let mut connections = vec![Self::RootConnection::declaration()];
-        Self::Dependents::append_connections(&mut connections);
-        connections
-    }
-
-    fn connection_types() -> Vec<std::any::TypeId> {
-        let mut connections = vec![std::any::TypeId::of::<Self::RootConnection>()];
-        Self::Dependents::append_connection_types(&mut connections);
-        connections
-    }
 }
 
 impl<Schema, RootConnection, Dependents> ApplicationOutputGraphShape<Schema>

@@ -33,6 +33,9 @@ pub(super) fn rule(
             ApplicationCapabilityFieldBinding::from_reference(
                 EmergencyAccessStatusField::reference(),
             ),
+            ApplicationCapabilityFieldBinding::from_reference(
+                EmergencyAccessClosedAtField::reference(),
+            ),
             ApplicationCapabilityElevationStates::new(
                 elevation_status(EmergencyAccessStatus::Requested),
                 elevation_status(EmergencyAccessStatus::Approved),
@@ -89,6 +92,9 @@ pub(super) fn rule(
                 ApplicationCapabilityRelationBinding::from_reference(ReviewPrincipal::reference()),
                 ApplicationCapabilityFieldBinding::from_reference(
                     MandatoryReviewStatusField::reference(),
+                ),
+                ApplicationCapabilityFieldBinding::from_reference(
+                    MandatoryReviewReviewedAtField::reference(),
                 ),
                 review_status(MandatoryReviewStatus::Required),
                 review_status(MandatoryReviewStatus::Completed),

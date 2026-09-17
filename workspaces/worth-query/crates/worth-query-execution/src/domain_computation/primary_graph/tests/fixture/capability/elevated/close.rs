@@ -13,12 +13,13 @@ use worth_query_declaration::{
 
 use super::{
     CapabilityAction, CapabilityActionBinding, CapabilityElevationApprover,
-    CapabilityElevationGrant, CapabilityElevationIdentity, CapabilityElevationNotAfter,
-    CapabilityElevationNotBefore, CapabilityElevationReason, CapabilityElevationRequester,
-    CapabilityElevationResource, CapabilityElevationReview, CapabilityElevationSlot,
-    CapabilityElevationStatusField, CapabilityPurpose, CapabilityPurposeBinding,
-    CapabilityRequestContext, CapabilityReviewIdentity, CapabilityReviewKindField,
-    CapabilityReviewResource, CapabilityReviewStatusField, CapabilityReviewer,
+    CapabilityElevationClosedAt, CapabilityElevationGrant, CapabilityElevationIdentity,
+    CapabilityElevationNotAfter, CapabilityElevationNotBefore, CapabilityElevationReason,
+    CapabilityElevationRequester, CapabilityElevationResource, CapabilityElevationReview,
+    CapabilityElevationSlot, CapabilityElevationStatusField, CapabilityPurpose,
+    CapabilityPurposeBinding, CapabilityRequestContext, CapabilityReviewIdentity,
+    CapabilityReviewKindField, CapabilityReviewResource, CapabilityReviewStatusField,
+    CapabilityReviewer,
 };
 use crate::domain_computation::primary_graph::tests::fixture::{
     Account, AccountIdentity, IdentityExecutionSchema,
@@ -37,8 +38,8 @@ worth_query_declaration::worth_query_portable_type!(
 
 worth_query_declaration::worth_query_structured_value_binding!(pub RevokeCapabilityElevationOperationInputBinding for CloseElevationInput { identity: "worth.query.test.close-elevation-input.v1" });
 worth_query_operation!(pub RevokeCapabilityElevationOperation for IdentityExecutionSchema, input RevokeCapabilityElevationOperationInputBinding);
-worth_query_operation_reads!(RevokeCapabilityElevationOperation => [CapabilityElevationIdentity, CapabilityElevationReason, CapabilityElevationStatusField, CapabilityElevationNotBefore, CapabilityElevationNotAfter, CapabilityReviewIdentity, CapabilityReviewKindField, CapabilityReviewStatusField, CapabilityElevationRequester, CapabilityElevationApprover, CapabilityElevationGrant, CapabilityElevationResource, CapabilityElevationReview, CapabilityReviewResource, CapabilityReviewer]);
-worth_query_operation_writes!(RevokeCapabilityElevationOperation => [CapabilityElevationStatusField]);
+worth_query_operation_reads!(RevokeCapabilityElevationOperation => [CapabilityElevationIdentity, CapabilityElevationReason, CapabilityElevationStatusField, CapabilityElevationNotBefore, CapabilityElevationNotAfter, CapabilityElevationClosedAt, CapabilityReviewIdentity, CapabilityReviewKindField, CapabilityReviewStatusField, CapabilityElevationRequester, CapabilityElevationApprover, CapabilityElevationGrant, CapabilityElevationResource, CapabilityElevationReview, CapabilityReviewResource, CapabilityReviewer]);
+worth_query_operation_writes!(RevokeCapabilityElevationOperation => [CapabilityElevationStatusField, CapabilityElevationClosedAt]);
 
 impl ApplicationCapabilityRequest<IdentityExecutionSchema, RevokeElevationCapability>
     for CloseElevationInput

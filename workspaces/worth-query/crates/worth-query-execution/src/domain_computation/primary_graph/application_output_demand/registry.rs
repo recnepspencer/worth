@@ -34,6 +34,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedOutpu
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     pub(in crate::domain_computation::primary_graph) readiness:
         super::WorthQueryOutputReadinessDeliveryEvidence,
+    pub(in crate::domain_computation::primary_graph) retained:
+        Option<Arc<WorthQueryOutputDemandSettlement>>,
 }
 
 pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputSchedulingResult {

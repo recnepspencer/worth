@@ -72,6 +72,9 @@ fn publish(
         UiProjectionObservation::Collection(_) => {
             panic!("the scalar product owner cannot issue collection evidence")
         }
+        UiProjectionObservation::ApplicationScalar(_) => {
+            panic!("the certification scalar owner cannot issue authored application evidence")
+        }
     };
     completion
         .admit_publication(observation)

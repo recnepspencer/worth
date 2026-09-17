@@ -109,11 +109,78 @@ pub enum BankRecoveryIdempotencyResolution {
     IntentDrift,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BankRecoveryClaimStatus {
+    Unclaimed,
+    Live,
+    Consumed,
+    Completed,
+    Expired,
+    Disposed,
+    ForceTerminated,
+}
+
+impl BankRecoveryClaimStatus {
+    pub(super) fn from_query(
+        status: worth_query_host::facade::primary_graph::WorthQueryRecoveryClaimStatus,
+    ) -> Self {
+        use worth_query_host::facade::primary_graph::WorthQueryRecoveryClaimStatus as Query;
+        match status {
+            Query::Unclaimed => Self::Unclaimed,
+            Query::Live => Self::Live,
+            Query::Consumed => Self::Consumed,
+            Query::Completed => Self::Completed,
+            Query::Expired => Self::Expired,
+            Query::Disposed => Self::Disposed,
+            Query::ForceTerminated => Self::ForceTerminated,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct BankRecoverySafeRetryReceipt {
     external_completion: bool,
     fresh_attempt: bool,
     durability: BankRecoveryDurability,
+}
+
+#[derive(Debug)]
+pub enum BankRecoverySafeRetryDenial {
+    Retained {
+        denial: super::BankEstateProgressionDenial,
+        handle: Box<BankCommitRecoveryHandle>,
+    },
+    Terminal(super::BankEstateProgressionDenial),
+}
+
+impl BankRecoverySafeRetryDenial {
+    pub(super) fn retained(
+        denial: super::BankEstateProgressionDenial,
+        handle: BankCommitRecoveryHandle,
+    ) -> Self {
+        Self::Retained {
+            denial,
+            handle: Box::new(handle),
+        }
+    }
+
+    pub fn denial(&self) -> &super::BankEstateProgressionDenial {
+        match self {
+            Self::Retained { denial, .. } | Self::Terminal(denial) => denial,
+        }
+    }
+
+    pub fn into_parts(
+        self,
+    ) -> (
+        super::BankEstateProgressionDenial,
+        Option<BankCommitRecoveryHandle>,
+    ) {
+        match self {
+            Self::Retained { denial, handle } => (denial, Some(*handle)),
+            Self::Terminal(denial) => (denial, None),
+        }
+    }
 }
 
 impl BankRecoverySafeRetryReceipt {

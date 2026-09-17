@@ -10,6 +10,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryControls,
 };
 
+mod retained;
+
 /// Work and request limits for an already selected product. These controls
 /// cannot select a second basis or change the operation's retained occurrence.
 pub struct WorthQueryProductQueryControls<'request> {
@@ -128,37 +130,9 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        let security = self
-            .application()
-            .product_runtime
-            .security_observation_for(self.product())
-            .map_err(|_| {
-                WorthQueryApplicationQueryAdmissionDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
-                    query.name(),
-                )
-            })?;
-        let (application, _current_security, _) = self.into_parts();
-        let (retained_application, product, application_basis) = retained.into_parts();
-        if !std::ptr::eq(application, retained_application) {
-            return Err(WorthQueryApplicationQueryAdmissionDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
-                query.name(),
-            ));
-        }
-        application.admit_application_query(
-            query,
-            access,
-            parameters,
-            WorthQueryApplicationQueryControls::retained_product_one_shot(
-                security,
-                product,
-                application_basis,
-                controls.maximum_results,
-                controls.maximum_work,
-                controls.request,
-            ),
-        )
+        let (application, controls) =
+            self.retained_query_controls(retained, query.name(), controls)?;
+        application.admit_application_query(query, access, parameters, controls)
     }
 
     pub fn admit_application_query_continuation<

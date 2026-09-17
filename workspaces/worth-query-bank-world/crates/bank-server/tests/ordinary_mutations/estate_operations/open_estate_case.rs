@@ -1,13 +1,14 @@
 #[path = "open_estate_case/fixture.rs"]
 mod fixture;
 
-use bank_domain::estate::{DeathNoticeStatus, EstateCaseStatus, EstateWorkflowStage};
-use bank_server::{
-    queries, BankAuthenticatedPrincipal, BankCommitDenialKind, BankCommitDenialStage,
-    BankCommitReceipt, BankEstateCaseOpeningProjectionDenial, BankEstateProgressionDenial,
-    BankMutationCommitOutcome, BankReadControls,
+use bank_domain::{
+    estate::{DeathNoticeStatus, EstateCaseStatus, EstateWorkflowStage},
+    proposals::BankIdempotencyKey,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
+use bank_server::{
+    queries, BankAuthenticatedPrincipal, BankCommitReceipt, BankEstateCaseOpeningProjectionDenial,
+    BankEstateProgressionDenial, BankMutationCommitOutcome, BankReadControls,
+};
 
 use self::fixture::{case_opening_world, CaseOpeningFixture};
 use crate::support::request_scope;
@@ -20,14 +21,14 @@ fn public_query_progression_opens_the_exact_verified_estate_case() {
         DeathNoticeStatus::Verified,
     );
     let specialist = fixture.authenticate_specialist();
-    let binding = idempotency(11);
+    let key = BankIdempotencyKey::new("open-estate-case-program-entry").unwrap();
     let outcome = fixture
         .world
         .runtime
-        .open_estate_case(
+        .open_estate_case_with_key(
             &specialist,
             fixture.action(fixture.notice),
-            binding,
+            &key,
             &request_scope(),
         )
         .expect("the exact verified notice should open its pending estate case");
@@ -46,23 +47,23 @@ fn public_query_progression_opens_the_exact_verified_estate_case() {
         DeathNoticeStatus::Verified,
     );
 
-    assert_equivalent_retry(&fixture, &specialist, binding, &receipt);
-    assert_intent_drift(&fixture, &specialist);
+    assert_equivalent_retry(&fixture, &specialist, &key, &receipt);
+    assert_intent_drift(&fixture, &specialist, &key);
 }
 
 fn assert_equivalent_retry(
     fixture: &CaseOpeningFixture,
     specialist: &BankAuthenticatedPrincipal,
-    binding: WorthQueryApplicationIdempotencyBinding,
+    key: &BankIdempotencyKey,
     committed: &BankCommitReceipt,
 ) {
     let retry = fixture
         .world
         .runtime
-        .open_estate_case(
+        .open_estate_case_with_key(
             specialist,
             fixture.action(fixture.notice),
-            binding,
+            key,
             &request_scope(),
         )
         .expect("an equivalent authorized retry should inspect Query idempotency");
@@ -73,23 +74,24 @@ fn assert_equivalent_retry(
     assert_zero_canonical_work(recovered.canonical_work());
 }
 
-fn assert_intent_drift(fixture: &CaseOpeningFixture, specialist: &BankAuthenticatedPrincipal) {
-    let drift = fixture
+fn assert_intent_drift(
+    fixture: &CaseOpeningFixture,
+    specialist: &BankAuthenticatedPrincipal,
+    key: &BankIdempotencyKey,
+) {
+    let denial = fixture
         .world
         .runtime
-        .open_estate_case(
+        .open_estate_case_with_key(
             specialist,
             fixture.action(fixture.foreign_notice),
-            WorthQueryApplicationIdempotencyBinding::new([11; 32], [99; 32]),
+            key,
             &request_scope(),
         )
-        .expect("intent drift is a typed commit outcome before poststate projection");
+        .expect_err("intent drift must stop before poststate projection");
     assert!(matches!(
-        drift,
-        BankMutationCommitOutcome::Denied {
-            kind: BankCommitDenialKind::IdempotencyIntentDrift,
-            stage: BankCommitDenialStage::Idempotency,
-        }
+        denial,
+        BankEstateProgressionDenial::IdempotencyIntentDrift
     ));
 }
 
@@ -104,10 +106,10 @@ fn foreign_verified_notice_reaches_projection_but_cannot_open_the_case() {
     let denial = fixture
         .world
         .runtime
-        .open_estate_case(
+        .open_estate_case_with_key(
             &specialist,
             fixture.action(fixture.foreign_notice),
-            idempotency(21),
+            &idempotency(21),
             &request_scope(),
         )
         .expect_err("a real notice from another estate must fail exact projection");
@@ -145,10 +147,10 @@ fn only_a_verified_notice_may_enter_case_opening() {
         let denial = fixture
             .world
             .runtime
-            .open_estate_case(
+            .open_estate_case_with_key(
                 &specialist,
                 fixture.action(fixture.notice),
-                idempotency(31 + ordinal as u8),
+                &idempotency(31 + ordinal as u8),
                 &request_scope(),
             )
             .expect_err("only external verified truth may support case opening");
@@ -188,10 +190,10 @@ fn only_a_pending_case_may_enter_case_opening() {
         let denial = fixture
             .world
             .runtime
-            .open_estate_case(
+            .open_estate_case_with_key(
                 &specialist,
                 fixture.action(fixture.notice),
-                idempotency(41 + ordinal as u8),
+                &idempotency(41 + ordinal as u8),
                 &request_scope(),
             )
             .expect_err("a fresh intent cannot repeat or reverse case opening");
@@ -232,8 +234,8 @@ fn assert_case_posture(
     assert_eq!(overview.death_notice().status(), expected_notice);
 }
 
-fn idempotency(identity: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([identity; 32], [identity + 1; 32])
+fn idempotency(identity: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("open-estate-case-{identity}")).unwrap()
 }
 
 fn assert_zero_canonical_work(phases: bank_server::BankCommitCanonicalWorkPhases) {

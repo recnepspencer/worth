@@ -21,6 +21,7 @@ mod reference;
 mod request_projection;
 mod rule_clause;
 mod scope;
+mod workflow_idempotency;
 
 #[cfg(test)]
 mod request_projection_tests;
@@ -125,3 +126,4 @@ pub use scope::{
     WorthQueryPortableApplicationCapabilityRelationBindingParts,
     WorthQueryPortableApplicationCapabilityValueBindingParts,
 };
+pub use workflow_idempotency::ApplicationCapabilityWorkflowIdempotency;

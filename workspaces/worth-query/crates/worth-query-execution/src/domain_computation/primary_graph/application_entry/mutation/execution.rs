@@ -39,6 +39,7 @@ where
         &self,
         input: &Binding::Input,
         idempotency_key: &Binding::IdempotencyKey,
+        principal_identity: &Binding::PrincipalIdentity,
         admission: WorthQueryAdmittedApplicationOperation<
             Schema,
             Binding::Operation,
@@ -54,11 +55,18 @@ where
     {
         let (handler, installed_ceiling) = self.mutation_handler_for_attempt::<Binding>();
         let request = admission.publication_request();
+        let operation_scope_binding = admission.operation_scope_binding().clone();
         let projected = self
             .mutation_projection
             .project_admitted_operation(&admission, |reader, scope| {
-                let mut decision_reader =
-                    DecisionReader::<Schema, Binding>::new(reader, scope, idempotency_key, request);
+                let mut decision_reader = DecisionReader::<Schema, Binding>::new(
+                    reader,
+                    scope,
+                    principal_identity,
+                    &operation_scope_binding,
+                    idempotency_key,
+                    request,
+                );
                 handler.decide(input, &mut decision_reader)
             })
             .map_err(MutationHandlerExecutionDenial::Projection)?;

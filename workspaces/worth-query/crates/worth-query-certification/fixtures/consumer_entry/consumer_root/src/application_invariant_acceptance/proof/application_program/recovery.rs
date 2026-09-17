@@ -1,13 +1,14 @@
 use std::num::NonZeroUsize;
 
+use worth_query_consumer_values::{PlanarOperation, PlanarVertex};
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationProgramOutputProgress,
-    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationRequestExt,
+    WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationPerformedMutationOutcome,
+    WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
     WorthQueryOutputDemandControls,
 };
-use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation, PlanarVertex};
 use worth_query_topology_entry::{
-    PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarRead, PlanarSourceAdjustment,
+    PlanarEdit, PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarRead,
+    PlanarSourceAdjustment,
 };
 
 use super::super::super::{authentication, installation, seed::length};
@@ -78,7 +79,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .observed_sources()[0]
         .clone();
     request
-        .mutate(PlanarMutation {
+        .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-a".to_owned(),
             operation: PlanarOperation::CreateCycle(vec![
                 PlanarVertex {
@@ -98,10 +99,10 @@ pub(super) fn caller_disposal_before_progress_recovers(
                 },
             ]),
             validator_work: 4_096,
-        })
+        }))
         .expect_source(unrelated_source)
         .idempotency(&10_012)
-        .execute()
+        .execute_in_program(&world.application)
         .expect("an intervening ordinary commit lands on the same branch");
     let recovered_once = request
         .recover_required_outputs::<crate::ConsumerProgram>(
@@ -188,19 +189,20 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         .expect("the published source is readable")
         .observed_sources()[0]
         .clone();
-    request
-        .mutate(PlanarMutation {
+    let changed = request
+        .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-b".to_owned(),
-            operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
-                body_key: "anchor-b".to_owned(),
-                replacement_y: length(5),
-            }]),
-            validator_work: 4_096,
+            replacement_y: length(5),
         })
         .expect_source(changed_source)
         .idempotency(&10_019)
-        .execute()
-        .expect("a distinct operation changes the same source occurrence");
+        .execute_performed(&world.application)
+        .expect("a distinct program source action changes the same occurrence");
+    let WorthQueryApplicationPerformedMutationOutcome::Performed(changed) = changed else {
+        panic!("the distinct source action must publish a fresh revision")
+    };
+    let changed_receipt = changed.receipt().clone();
+    drop(changed);
 
     let denial = request
         .recover_required_outputs::<crate::ConsumerProgram>(
@@ -225,8 +227,25 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         world
             .application
             .prepared_required_output_source_count_for_test(),
+        1,
+        "only the newer source retains prepared custody"
+    );
+    drop(
+        request
+            .recover_required_outputs::<crate::ConsumerProgram>(
+                &world.application,
+                &changed_receipt,
+                PlanarOutputDemand::new("anchor-b"),
+                output_controls(),
+            )
+            .expect("the newer source retains its own exact custody"),
+    );
+    assert_eq!(
+        world
+            .application
+            .prepared_required_output_source_count_for_test(),
         0,
-        "the stale prepared source is retired at the recovery boundary"
+        "both old and new source custody are retired after exact recovery"
     );
 }
 

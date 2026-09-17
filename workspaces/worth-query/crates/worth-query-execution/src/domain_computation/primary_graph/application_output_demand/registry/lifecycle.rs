@@ -132,7 +132,8 @@ impl WorthQueryOutputDemandRegistry {
             if record.interests == 0 {
                 match &record.state {
                     DemandState::Settled(settlement) => {
-                        record.state = DemandState::Completed(settlement.completion());
+                        record.state =
+                            DemandState::Completed(settlement.completion(record.required));
                     }
                     DemandState::Recovering(completion) => {
                         record.state = DemandState::Completed(completion.clone());

@@ -18,10 +18,8 @@ impl UiMountedPresentationAdmission {
         overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
     ) -> UiMountedAppearanceAdmission {
         let requires_complete = self.candidates.requires_complete_appearance_projection();
-        if requires_complete {
-            if self.frame.prepare_appearance_reconstruction().is_err() {
-                return self.deny_appearance_output();
-            }
+        if requires_complete && self.frame.prepare_appearance_reconstruction().is_err() {
+            return self.deny_appearance_output();
         }
         let targets = match self.frame.appearance_motion_targets(overlays) {
             Ok(targets) => targets,

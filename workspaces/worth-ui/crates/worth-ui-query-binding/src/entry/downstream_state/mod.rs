@@ -19,6 +19,8 @@ use crate::{
 pub struct WorthUiInstalledDownstreamQueryState {
     references: WorthUiInstalledReferenceCatalog,
     scalar_projections: BTreeMap<WorthUiQueryViewIdentity, crate::UiScalarProjectionRegistration>,
+    application_scalar_projections:
+        BTreeMap<WorthUiQueryViewIdentity, crate::UiApplicationScalarProjectionRegistration>,
     collection_projections:
         BTreeMap<WorthUiQueryViewIdentity, crate::UiCollectionProjectionRegistration>,
     operation_live: Option<WorthUiOperationLiveRetention>,
@@ -31,6 +33,10 @@ impl WorthUiInstalledDownstreamQueryState {
         scalar_projections: BTreeMap<
             WorthUiQueryViewIdentity,
             crate::UiScalarProjectionRegistration,
+        >,
+        application_scalar_projections: BTreeMap<
+            WorthUiQueryViewIdentity,
+            crate::UiApplicationScalarProjectionRegistration,
         >,
         collection_projections: BTreeMap<
             WorthUiQueryViewIdentity,
@@ -46,6 +52,7 @@ impl WorthUiInstalledDownstreamQueryState {
         Self {
             references,
             scalar_projections,
+            application_scalar_projections,
             collection_projections,
             operation_live,
             settled_snapshot,
@@ -57,6 +64,13 @@ impl WorthUiInstalledDownstreamQueryState {
         identity: &WorthUiQueryViewIdentity,
     ) -> Option<&crate::UiScalarProjectionRegistration> {
         self.scalar_projections.get(identity)
+    }
+
+    pub(super) fn application_scalar_projection_registration(
+        &self,
+        identity: &WorthUiQueryViewIdentity,
+    ) -> Option<&crate::UiApplicationScalarProjectionRegistration> {
+        self.application_scalar_projections.get(identity)
     }
 
     pub(super) fn collection_projection_registration(

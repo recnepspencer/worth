@@ -1,5 +1,7 @@
 #[path = "transport_process_courtroom/credential_lifecycle.rs"]
 mod credential_lifecycle;
+#[path = "transport_process_courtroom/effect_observation.rs"]
+mod effect_observation;
 #[path = "transport_process_courtroom/elevation.rs"]
 mod elevation;
 #[path = "transport_process_courtroom/identity_world.rs"]
@@ -17,12 +19,13 @@ use std::net::SocketAddr;
 
 use bank_http_adapter::{
     BankHttpAccountSummaryOutcome, BankHttpCommitDisposition, BankHttpDenialKind,
-    BankHttpMutationOutcome,
+    BankHttpMutationOutcome, BankHttpPostingPurpose,
 };
 use bank_user_node::{
     BankUserNodeAccountActivityPageOutcome, BankUserNodeAccountSummaryOutcome,
     BankUserNodeDenialKind, BankUserNodeMutationOutcome,
 };
+use effect_observation::{activity_entries, current_balance};
 use world::TransportProcessWorld;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -48,12 +51,7 @@ async fn independently_authenticated_nodes_cross_real_process_and_tcp_boundaries
     .await;
     live::assert_live_stream_lifecycle_and_revocation(&world.client, world.primary_address).await;
     world.authenticate_primary().await;
-    recovery::assert_opaque_recovery_is_owned_by_the_authenticated_specialist(
-        &world.client,
-        world.primary_address,
-        world.peer_address,
-    )
-    .await;
+    recovery::assert_opaque_recovery_is_owned_by_the_authenticated_specialist(&world).await;
     let first = activity_page(&world.client, world.primary_address, "process-page-1").await;
     let token = activity_token(&first).to_owned();
     assert_eq!(
@@ -117,6 +115,8 @@ async fn assert_mutation_response_loss_and_cross_user_denial(
     primary: SocketAddr,
     peer: SocketAddr,
 ) {
+    let balance_before = current_balance(client, primary, "send-balance-before").await;
+    let activity_before = activity_entries(client, primary, "send-activity-before").await;
     let request = serde_json::json!({
         "request_id": "process-send-response-loss",
         "controls": { "deadline_milliseconds": 5_000 },
@@ -134,6 +134,19 @@ async fn assert_mutation_response_loss_and_cross_user_denial(
             .await
             .expect("mutation response should be droppable after headers"),
     );
+    let balance_after = current_balance(client, primary, "send-balance-after").await;
+    let activity_after = activity_entries(client, primary, "send-activity-after").await;
+    assert_eq!(balance_after, balance_before - 25);
+    assert_eq!(activity_after.len(), activity_before.len() + 1);
+    assert_eq!(
+        activity_after
+            .iter()
+            .filter(|entry| entry.purpose == BankHttpPostingPurpose::Transfer
+                && entry.amount_minor == -25)
+            .count(),
+        1,
+        "the lost response must follow exactly one real transfer posting"
+    );
     let replayed = node_mutation(client, primary, &request).await;
     assert!(matches!(
         replayed,
@@ -144,6 +157,14 @@ async fn assert_mutation_response_loss_and_cross_user_denial(
             }
         }
     ));
+    assert_eq!(
+        current_balance(client, primary, "send-balance-retry").await,
+        balance_after
+    );
+    assert_eq!(
+        activity_entries(client, primary, "send-activity-retry").await,
+        activity_after
+    );
     let crossed = node_mutation(client, peer, &request).await;
     assert!(matches!(
         crossed,
@@ -323,10 +344,19 @@ async fn account_summary(
     address: SocketAddr,
     account: &str,
 ) -> BankUserNodeAccountSummaryOutcome {
+    account_summary_with_request_id(client, address, account, "process-summary").await
+}
+
+async fn account_summary_with_request_id(
+    client: &reqwest::Client,
+    address: SocketAddr,
+    account: &str,
+    request_id: &str,
+) -> BankUserNodeAccountSummaryOutcome {
     client
         .post(format!("http://{address}/v1/queries/account-summary"))
         .json(&serde_json::json!({
-            "request_id": "process-summary",
+            "request_id": request_id,
             "controls": {
                 "deadline_milliseconds": 5_000,
                 "maximum_results": 1,

@@ -46,6 +46,7 @@ impl UiObservationTurn<'_> {
         &mut self,
         observation: worth_ui_query_binding::UiProjectionObservation,
     ) -> Result<UiObservationAdmissionReceipt, UiObservationAdmissionDenial> {
+        self.validate_projection_source(&observation)?;
         let retained_bytes = observation.retained_bytes();
         let owner_order = observation.owner_order();
         let progress =
@@ -61,5 +62,23 @@ impl UiObservationTurn<'_> {
                 observation,
             )),
         }))
+    }
+
+    pub(super) fn validate_projection_source(
+        &mut self,
+        observation: &worth_ui_query_binding::UiProjectionObservation,
+    ) -> Result<(), UiObservationAdmissionDenial> {
+        if let worth_ui_query_binding::UiProjectionObservation::ApplicationScalar(scalar) =
+            observation
+        {
+            let registration = self
+                .runtime
+                .query_binding
+                .application_scalar_projection_registration(scalar.projection_identity());
+            if !registration.is_some_and(|registration| registration.admits(scalar.fact())) {
+                return Err(self.reject(UiObservationAdmissionDenial::ForeignQueryProjection));
+            }
+        }
+        Ok(())
     }
 }

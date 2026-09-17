@@ -1,13 +1,7 @@
 //! Bank-owned authority for the approved emergency-access phase.
 
-use std::num::NonZeroUsize;
-
-use bank_domain::schema::BankSchema;
 use worth_query_host::facade::declaration::application_schema::ApplicationScalarValueBinding;
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApprovedElevation, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQuerySelectedProductOperation,
-};
+use worth_query_host::facade::primary_graph::WorthQueryApprovedElevation;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct BankEstateElevationRetentionWork {
@@ -59,28 +53,6 @@ impl BankApprovedEstateElevation {
 
     pub(crate) fn into_query(self) -> WorthQueryApprovedElevation {
         self.query
-    }
-
-    pub(crate) fn select_approval_product<'runtime>(
-        &self,
-        application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
-        maximum_history_entries: NonZeroUsize,
-    ) -> Result<
-        WorthQuerySelectedProductOperation<'runtime, BankSchema>,
-        crate::BankApplicationQueryDenial,
-    > {
-        let publication = self.query.approval_product_publication();
-        let history = application
-            .branches()
-            .history(application.current_world(), maximum_history_entries)
-            .map_err(crate::BankApplicationQueryDenial::from_product_selection)?;
-        let entry = history
-            .entries()
-            .find(|entry| entry.selected_commit() == publication.composite_commit())
-            .ok_or(crate::BankApplicationQueryDenial::HistoricalCommitUnavailable)?;
-        history
-            .select(&entry)
-            .map_err(crate::BankApplicationQueryDenial::from_product_selection)
     }
 
     pub fn requester_differs_from_approver(&self) -> bool {

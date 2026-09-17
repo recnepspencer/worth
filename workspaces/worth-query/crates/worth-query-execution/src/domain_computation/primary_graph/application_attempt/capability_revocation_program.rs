@@ -67,6 +67,8 @@ impl<Schema, Operation, Input, Scope>
                     super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
+            retain_client_observation: false,
+            producer_required_invariants: &[],
             },
         })
     }

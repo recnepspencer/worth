@@ -12,6 +12,20 @@ impl WorthQueryApplicationReadObservation {
         Self { retained }
     }
 
+    pub fn retain_on_branch<Schema>(
+        application: &worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
+    ) -> Result<
+        Self,
+        worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
+    >
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        let selected = application.on_branch(branch).select()?;
+        Ok(Self::new(selected.retain_application_read()))
+    }
+
     pub fn branch_identity(&self) -> &worth_runtime_world::facade::ProductBranchIdentity {
         self.retained.branch_identity()
     }
@@ -20,7 +34,8 @@ impl WorthQueryApplicationReadObservation {
         self.retained.selected_commit()
     }
 
-    pub(super) fn retained_clone(&self) -> Self {
+    /// Retains another read-only lease for this exact product occurrence.
+    pub fn retain(&self) -> Self {
         Self::new(Arc::clone(&self.retained))
     }
 }

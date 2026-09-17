@@ -98,7 +98,7 @@ where
                 && delivery.slots_touched() == 0
                 && counters.failed_deliveries() == 0;
             if preserved && delivery_is_exact_noop {
-                return self.finish_output_readiness_evaluation::<Family>(
+                return self.finish_output_readiness_evaluation(
                     interest,
                     producer_identity,
                     crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputReadiness {
@@ -125,7 +125,7 @@ where
             self.output_demands.finish(interest, &result);
             return result.map(WorthQueryOutputDemandAdvance::Settled);
         }
-        self.finish_output_readiness_evaluation::<Family>(
+        self.finish_output_readiness_evaluation(
             interest,
             producer_identity,
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputReadiness {
@@ -135,15 +135,12 @@ where
         )
     }
 
-    pub(super) fn finish_output_readiness_evaluation<Family>(
+    pub(super) fn finish_output_readiness_evaluation(
         &self,
         interest: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandInterest,
         producer_identity: &str,
         pending: crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputReadiness,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-    {
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let readiness = match self.evaluate_current_output_readiness(
             producer_identity,
             &pending.receipt,

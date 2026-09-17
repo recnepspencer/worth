@@ -1,3 +1,4 @@
+use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::{
     estate::{
         CapabilityGrantId, CapabilityValidity, DelegationLimit, EstateAction,
@@ -6,7 +7,6 @@ use bank_domain::{
     },
     model::{Money, USD},
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
 use super::fixture::{
     delegation_world, delegation_world_with_parent_spec, request_scope, CapabilityFixture,
@@ -103,10 +103,10 @@ fn related_amount_and_validity_bounds_cannot_widen() {
 fn assert_denied(fixture: CapabilityFixture, action: EstateAction, seed: u8) {
     let denial = fixture
         .runtime
-        .delegate_estate_capability(
+        .delegate_estate_capability_with_key(
             &fixture.authenticate(),
             action,
-            WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed + 1; 32]),
+            &BankIdempotencyKey::new(format!("delegation-scope-{seed}")).unwrap(),
             &request_scope(),
         )
         .expect_err("a widened or substituted parent must mint no child authority");

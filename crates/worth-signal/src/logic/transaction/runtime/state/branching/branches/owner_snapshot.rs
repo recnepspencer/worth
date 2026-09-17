@@ -125,8 +125,7 @@ where
         };
         Ok((
             snapshot,
-            SnapshotBranchState::from_branch_state(self)
-                .with_snapshot_ledger_boundary(snapshot_id),
+            SnapshotBranchState::from_branch_state(self).with_snapshot_ledger_boundary(snapshot_id),
         ))
     }
 

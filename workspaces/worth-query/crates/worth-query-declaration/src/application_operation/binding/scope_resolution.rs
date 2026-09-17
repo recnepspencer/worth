@@ -8,6 +8,20 @@ use super::{
     ApplicationMutationScopeBinding,
 };
 
+type MutationResolvedFieldParts<Schema, Binding> = (
+    ApplicationFieldRef<
+        Schema,
+        <Binding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        <Binding as ApplicationMutationScopeBinding<Schema>>::Aspect,
+        <Binding as ApplicationMutationScopeBinding<Schema>>::Field,
+        <Binding as ApplicationMutationScopeBinding<Schema>>::Value,
+        <Binding as ApplicationMutationScopeBinding<Schema>>::Write,
+        EqualityPredicate,
+        <Binding as ApplicationMutationScopeBinding<Schema>>::Unit,
+    >,
+    <Binding as ApplicationMutationScopeBinding<Schema>>::Value,
+);
+
 /// Resolves a declared mutation scope using the current borrowed principal.
 pub trait ApplicationMutationScopeResolution<Schema, PrincipalIdentity>:
     ApplicationMutationScopeBinding<Schema>
@@ -15,19 +29,7 @@ pub trait ApplicationMutationScopeResolution<Schema, PrincipalIdentity>:
     fn into_field_parts(
         self,
         principal_identity: &PrincipalIdentity,
-    ) -> (
-        ApplicationFieldRef<
-            Schema,
-            Self::Scope,
-            Self::Aspect,
-            Self::Field,
-            Self::Value,
-            Self::Write,
-            EqualityPredicate,
-            Self::Unit,
-        >,
-        Self::Value,
-    );
+    ) -> MutationResolvedFieldParts<Schema, Self>;
 }
 
 impl<Schema, Scope, Aspect, Field, Value, Write, Unit, PrincipalIdentity>

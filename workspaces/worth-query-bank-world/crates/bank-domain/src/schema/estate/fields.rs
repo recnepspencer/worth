@@ -31,8 +31,8 @@ worth_query_aspect!(pub DeathNoticeRecord for BankSchema, DeathNotice; identity 
 worth_query_aspect!(pub EstateCaseRecord for BankSchema, EstateCase; identity = AspectIdentity(0x91611005), revision = AspectContractRevision(1),);
 worth_query_aspect!(pub LegalAuthorityRecord for BankSchema, LegalAuthority; identity = AspectIdentity(0x91611006), revision = AspectContractRevision(1),);
 worth_query_aspect!(pub CapabilityGrantRecord for BankSchema, CapabilityGrant; identity = AspectIdentity(0x91611007), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub EmergencyAccessRecord for BankSchema, EmergencyAccess; identity = AspectIdentity(0x91611008), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub MandatoryReviewRecord for BankSchema, MandatoryReview; identity = AspectIdentity(0x91611009), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub EmergencyAccessRecord for BankSchema, EmergencyAccess; identity = AspectIdentity(0x91611008), revision = AspectContractRevision(2),);
+worth_query_aspect!(pub MandatoryReviewRecord for BankSchema, MandatoryReview; identity = AspectIdentity(0x91611009), revision = AspectContractRevision(2),);
 
 worth_query_field!(
     pub BranchIdentityField for BankSchema, Branch, BranchIdentity:
@@ -131,12 +131,20 @@ worth_query_field!(
     EstateMoment => EstateMomentBinding, read_write, equality
 );
 worth_query_field!(
+    pub EmergencyAccessClosedAtField for BankSchema, EmergencyAccess, EmergencyAccessRecord:
+    optional EstateMoment => EstateMomentBinding, read_write, equality
+);
+worth_query_field!(
     pub MandatoryReviewIdentityField for BankSchema, MandatoryReview, MandatoryReviewRecord:
     MandatoryReviewId => MandatoryReviewIdBinding, read_only, equality
 );
 worth_query_field!(
     pub MandatoryReviewStatusField for BankSchema, MandatoryReview, MandatoryReviewRecord:
     MandatoryReviewStatus => MandatoryReviewStatusBinding, read_write, equality
+);
+worth_query_field!(
+    pub MandatoryReviewReviewedAtField for BankSchema, MandatoryReview, MandatoryReviewRecord:
+    optional EstateMoment => EstateMomentBinding, read_write, equality
 );
 worth_query_field!(
     pub MandatoryReviewKindField for BankSchema, MandatoryReview, MandatoryReviewRecord:

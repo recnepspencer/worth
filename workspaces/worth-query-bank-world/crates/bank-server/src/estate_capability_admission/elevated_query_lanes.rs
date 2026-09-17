@@ -1,5 +1,6 @@
-use std::time::Duration;
+use std::{cell::Cell, time::Duration};
 
+use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::{
     estate::{
         CapabilityGrantId, CapabilityGrantStatus, EmergencyAccessId, EstateAction,
@@ -8,7 +9,6 @@ use bank_domain::{
     queries::EstateGovernanceQuery,
     reads::{EstateCapabilityContext, EstateGovernanceContext},
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 use worth_query_host::facade::publication::domain_computation::WorthQueryPublishedApplicationResult;
 
 use super::{
@@ -151,6 +151,93 @@ fn preview_denies_if_exact_support_is_revoked_after_admission() {
     assert_resources_released(&fixture);
 }
 
+#[test]
+fn preview_admission_uses_current_support_after_session_open() {
+    let fixture = lane_world("estate-emergency-preview-current-support");
+    let (requester, approved) = approve(&fixture, 426, 427, 156);
+    let session = fixture.runtime.open_preview(&request_scope()).unwrap();
+    revoke_exact_support(&fixture, &requester, 159);
+    let reached_delivery = Cell::new(false);
+
+    let denial = fixture
+        .runtime
+        .query(queries::estate_emergency_account_details(
+            ESTATE,
+            EmergencyAccessId::new(426).unwrap(),
+        ))
+        .as_principal(&requester)
+        .controls(controls())
+        .admit_preview_with_approved_elevation(&approved, &session, |_admitted| {
+            reached_delivery.set(true);
+            Ok(())
+        })
+        .expect_err("a revoked exact support must fail before preview delivery");
+    assert!(matches!(
+        denial,
+        BankApplicationQueryDenial::CapabilityAdmission(_)
+    ));
+    assert!(!reached_delivery.get());
+    assert_exact_revoked_alternate_active(&fixture, &requester);
+    assert!(session.discard().unwrap().discarded());
+    assert_resources_released(&fixture);
+}
+
+#[test]
+fn historical_admission_uses_current_support_after_approval() {
+    let fixture = lane_world("estate-emergency-history-current-support");
+    let (requester, approved) = approve(&fixture, 446, 447, 176);
+    revoke_exact_support(&fixture, &requester, 179);
+    let reached_delivery = Cell::new(false);
+
+    let denial = fixture
+        .runtime
+        .query(queries::estate_emergency_account_details(
+            ESTATE,
+            EmergencyAccessId::new(446).unwrap(),
+        ))
+        .as_principal(&requester)
+        .controls(controls())
+        .admit_historical_with_approved_elevation(&approved, |_admitted| {
+            reached_delivery.set(true);
+            Ok(())
+        })
+        .expect_err("historical rows must not carry obsolete support authority");
+    assert!(matches!(
+        denial,
+        BankApplicationQueryDenial::CapabilityAdmission(_)
+    ));
+    assert!(!reached_delivery.get());
+    assert_exact_revoked_alternate_active(&fixture, &requester);
+    assert_resources_released(&fixture);
+}
+
+#[test]
+fn elevated_preview_rejects_a_foreign_session() {
+    let source = lane_world("estate-emergency-preview-source");
+    let session = source.runtime.open_preview(&request_scope()).unwrap();
+    let target = lane_world("estate-emergency-preview-target");
+    let (requester, approved) = approve(&target, 436, 437, 166);
+
+    let denial = target
+        .runtime
+        .query(queries::estate_emergency_account_details(
+            ESTATE,
+            EmergencyAccessId::new(436).unwrap(),
+        ))
+        .as_principal(&requester)
+        .controls(controls())
+        .admit_preview_with_approved_elevation(&approved, &session, |_admitted| Ok(()))
+        .expect_err("another runtime's retained product must be refused");
+    assert!(matches!(
+        denial,
+        BankApplicationQueryDenial::ProductSelection(
+            crate::BankProductSelectionDenialKind::ForeignOwner
+        )
+    ));
+    assert!(session.discard().unwrap().discarded());
+    assert_resources_released(&target);
+}
+
 fn lane_world(scenario: &str) -> CapabilityFixture {
     emergency_request_world_with_alternate_bound(
         scenario,
@@ -199,16 +286,16 @@ fn revoke_exact_support(
 ) {
     let outcome = fixture
         .runtime
-        .revoke_estate_capability(
+        .revoke_estate_capability_with_key(
             principal,
             EstateAction::RevokeCapability {
                 estate: ESTATE,
                 grant: GRANT,
             },
-            WorthQueryApplicationIdempotencyBinding::new(
-                [idempotency_seed; 32],
-                [idempotency_seed + 1; 32],
-            ),
+            &BankIdempotencyKey::new(format!(
+                "elevated-query-support-revocation-{idempotency_seed}"
+            ))
+            .unwrap(),
             &request_scope(),
         )
         .expect("the exact support revocation should execute after query admission");

@@ -56,6 +56,10 @@ path = "examples/advanced_product_branching.rs"
 test = true
 harness = false
 
+[[test]]
+name = "program_example_authority"
+path = "tests/program_example_authority.rs"
+
 
 [lints]
 workspace = true

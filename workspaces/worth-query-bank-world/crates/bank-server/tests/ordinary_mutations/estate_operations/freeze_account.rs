@@ -1,12 +1,13 @@
 #[path = "freeze_account/fixture.rs"]
 pub(crate) mod fixture;
 
-use bank_domain::{estate::EstateWorkflowStage, schema::AccountStatus};
-use bank_server::{
-    queries, BankCommitDenialKind, BankCommitDenialStage, BankEstateFreezeProjectionDenial,
-    BankEstateProgressionDenial, BankMutationCommitOutcome, BankReadControls,
+use bank_domain::{
+    estate::EstateWorkflowStage, proposals::BankIdempotencyKey, schema::AccountStatus,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
+use bank_server::{
+    queries, BankEstateFreezeProjectionDenial, BankEstateProgressionDenial,
+    BankMutationCommitOutcome, BankReadControls,
+};
 
 use self::fixture::{exact_freeze_world, foreign_account_freeze_world, FreezeFixture};
 use crate::support::request_scope;
@@ -15,14 +16,14 @@ use crate::support::request_scope;
 fn public_query_progression_freezes_the_exact_estate_account() {
     let fixture = exact_freeze_world("estate-freeze-commit", AccountStatus::Open);
     let specialist = fixture.authenticate_specialist();
-    let binding = idempotency(11);
+    let key = BankIdempotencyKey::new("freeze-estate-account-program-entry").unwrap();
     let outcome = fixture
         .world
         .runtime
-        .freeze_estate_account(
+        .freeze_estate_account_with_key(
             &specialist,
             fixture.action(fixture.estate_account),
-            binding,
+            &key,
             &request_scope(),
         )
         .expect("the exact estate account should reach Query commit");
@@ -40,10 +41,10 @@ fn public_query_progression_freezes_the_exact_estate_account() {
     let retry = fixture
         .world
         .runtime
-        .freeze_estate_account(
+        .freeze_estate_account_with_key(
             &specialist,
             fixture.action(fixture.estate_account),
-            binding,
+            &key,
             &request_scope(),
         )
         .expect("an equivalent authorized retry should inspect Query idempotency");
@@ -62,20 +63,62 @@ fn public_query_progression_freezes_the_exact_estate_account() {
     let drift = fixture
         .world
         .runtime
-        .freeze_estate_account(
+        .freeze_estate_account_with_key(
             &specialist,
-            fixture.action(fixture.estate_account),
-            WorthQueryApplicationIdempotencyBinding::new([11; 32], [99; 32]),
+            fixture.action(fixture.foreign_account),
+            &key,
             &request_scope(),
         )
-        .expect("intent drift is a typed commit outcome rather than a projection error");
-    assert!(matches!(
-        drift,
-        BankMutationCommitOutcome::Denied {
-            kind: BankCommitDenialKind::IdempotencyIntentDrift,
-            stage: BankCommitDenialStage::Idempotency,
-        }
-    ));
+        .expect_err("the same key with a different account must retain typed drift");
+    assert!(
+        matches!(drift, BankEstateProgressionDenial::IdempotencyIntentDrift),
+        "unexpected freeze drift denial: {drift:?}"
+    );
+    assert_eq!(foreign_account_status(&fixture), AccountStatus::Open);
+}
+
+#[test]
+fn estate_preview_keeps_its_exact_account_status_after_a_freeze_commit() {
+    let fixture = exact_freeze_world("estate-preview-before-freeze", AccountStatus::Open);
+    let specialist = fixture.authenticate_specialist();
+    let session = fixture
+        .world
+        .runtime
+        .open_preview(&request_scope())
+        .unwrap();
+    let before = fixture
+        .world
+        .runtime
+        .query(queries::estate_case(fixture.estate))
+        .as_principal(&specialist)
+        .controls(read_controls())
+        .preview(&session)
+        .expect("preview must read the selected open account");
+    assert_eq!(before.rows()[0].account().status(), AccountStatus::Open);
+
+    let committed = fixture
+        .world
+        .runtime
+        .freeze_estate_account_with_key(
+            &specialist,
+            fixture.action(fixture.estate_account),
+            &idempotency(230),
+            &request_scope(),
+        )
+        .expect("the freeze must commit after preview selection");
+    assert!(matches!(committed, BankMutationCommitOutcome::Committed(_)));
+    assert_eq!(estate_account_status(&fixture), AccountStatus::Frozen);
+
+    let retained = fixture
+        .world
+        .runtime
+        .query(queries::estate_case(fixture.estate))
+        .as_principal(&specialist)
+        .controls(read_controls())
+        .preview(&session)
+        .expect("preview must retain the pre-freeze product occurrence");
+    assert_eq!(retained.rows()[0].account().status(), AccountStatus::Open);
+    assert!(session.discard().unwrap().discarded());
 }
 
 #[test]
@@ -85,10 +128,10 @@ fn foreign_grant_account_reaches_projection_but_cannot_receive_effect_authority(
     let denial = fixture
         .world
         .runtime
-        .freeze_estate_account(
+        .freeze_estate_account_with_key(
             &specialist,
             fixture.action(fixture.foreign_account),
-            idempotency(21),
+            &idempotency(21),
             &request_scope(),
         )
         .expect_err("a grant-bound foreign account must fail after graph observation");
@@ -115,10 +158,10 @@ fn non_open_accounts_cannot_begin_a_second_freeze_transition() {
         let denial = fixture
             .world
             .runtime
-            .freeze_estate_account(
+            .freeze_estate_account_with_key(
                 &specialist,
                 fixture.action(fixture.estate_account),
-                idempotency(31 + ordinal as u8),
+                &idempotency(31 + ordinal as u8),
                 &request_scope(),
             )
             .expect_err("only an open account may enter the freeze transition");
@@ -173,8 +216,8 @@ fn read_controls() -> BankReadControls {
     BankReadControls::current(request_scope(), 16, 20_000).unwrap()
 }
 
-fn idempotency(identity: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([identity; 32], [identity + 1; 32])
+fn idempotency(identity: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("freeze-estate-account-{identity}")).unwrap()
 }
 
 fn assert_freeze_canonical_work(phases: bank_server::BankCommitCanonicalWorkPhases) {

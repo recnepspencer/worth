@@ -47,6 +47,8 @@ pub(crate) const REVOKE_CAPABILITY_GRANT: CapabilityGrantId = CapabilityGrantId:
 pub(crate) const APPROVER_DELEGATION_GRANT: CapabilityGrantId = CapabilityGrantId::new(34).unwrap();
 pub(crate) const UNRELATED_GOVERNANCE_GRANT: CapabilityGrantId =
     CapabilityGrantId::new(35).unwrap();
+pub(crate) const APPROVER_REVOKE_CAPABILITY_GRANT: CapabilityGrantId =
+    CapabilityGrantId::new(36).unwrap();
 pub(crate) const REQUESTED_ACCESS: EmergencyAccessId = EmergencyAccessId::new(40).unwrap();
 pub(crate) const CLOSED_ACCESS: EmergencyAccessId = EmergencyAccessId::new(41).unwrap();
 pub(crate) const REQUESTED_REVIEW: MandatoryReviewId = MandatoryReviewId::new(50).unwrap();

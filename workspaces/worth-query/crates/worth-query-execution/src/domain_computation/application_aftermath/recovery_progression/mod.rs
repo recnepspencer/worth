@@ -29,7 +29,10 @@ pub use inspect::{inspect_recovery_handle, WorthQueryRecoveryInspectionView};
 pub use reconcile::{reconcile_recovery_handle, WorthQueryRecoveryReconcileAdmission};
 pub use redispatch::WorthQueryPerformedExternalRedispatch;
 pub use resolve::{resolve_recovery_handle, WorthQueryAdmittedIdempotencyRead};
-pub use safe_retry::{safe_retry_recovery_handle, WorthQueryRecoverySafeRetryAdmission};
+pub use safe_retry::{
+    safe_retry_recovery_handle, WorthQueryRecoverySafeRetryAdmission,
+    WorthQueryRecoverySafeRetryDenial,
+};
 
 #[cfg(test)]
 #[path = "resolve_tests.rs"]

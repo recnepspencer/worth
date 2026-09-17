@@ -1,18 +1,48 @@
 use bank_domain::queries::{
+    EstateCustomerDisclosure, EstateCustomerDisclosureQuery, EstateCustomerDisclosureRequest,
     EstateGovernanceQuery, EstateGovernanceRequest, EstateLegalComplianceQuery,
     EstateLegalComplianceRequest, EstateLegalComplianceResult, EstateMandatoryReviewQuery,
     EstateMandatoryReviewRequest, EstateMandatoryReviewResult,
 };
 use bank_domain::reads::EstateGovernanceContext;
-use worth_query_host::facade::publication::domain_computation::{
-    publish_application_result, WorthQueryPublishedApplicationResult,
+use bank_domain::schema::{
+    ViewEstateAdministrationCapability, ViewEstateIdentityVerificationCapability,
+    ViewEstateLegalComplianceCapability, ViewEstateMandatoryReviewCapability,
+    ViewRestrictedEstateOperation,
 };
+use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
+use worth_query_host::facade::publication::domain_computation::WorthQueryPublishedApplicationResult;
 
 use super::BankReadyQuery;
-use crate::application_query::{
-    execute_estate_governance, execute_estate_legal_compliance, execute_estate_mandatory_review,
-    BankApplicationQueryDenial,
-};
+use crate::application_query::BankApplicationQueryDenial;
+
+impl BankReadyQuery<'_, '_, EstateCustomerDisclosureRequest> {
+    pub fn execute(
+        self,
+    ) -> Result<
+        WorthQueryPublishedApplicationResult<
+            EstateCustomerDisclosureQuery,
+            EstateCustomerDisclosure,
+        >,
+        BankApplicationQueryDenial,
+    > {
+        let capability_input = self.query.capability_request();
+        self.runtime
+            .application_runtime()
+            .request(self.principal.external(), self.controls.request())
+            .query(self.query)
+            .limits(
+                self.controls.maximum_result_count(),
+                self.controls.maximum_work(),
+            )
+            .execute_governed(
+                ViewEstateIdentityVerificationCapability::reference(),
+                ViewRestrictedEstateOperation::reference(),
+                capability_input,
+            )
+            .map_err(BankApplicationQueryDenial::from_request_query)
+    }
+}
 
 impl BankReadyQuery<'_, '_, EstateGovernanceRequest> {
     pub fn execute(
@@ -21,9 +51,21 @@ impl BankReadyQuery<'_, '_, EstateGovernanceRequest> {
         WorthQueryPublishedApplicationResult<EstateGovernanceQuery, EstateGovernanceContext>,
         BankApplicationQueryDenial,
     > {
-        let result =
-            execute_estate_governance(self.runtime, self.principal, self.query, &self.controls)?;
-        Ok(publish_application_result(result.into_admitted_disclosed()))
+        let capability_input = self.query.capability_request();
+        self.runtime
+            .application_runtime()
+            .request(self.principal.external(), self.controls.request())
+            .query(self.query)
+            .limits(
+                self.controls.maximum_result_count(),
+                self.controls.maximum_work(),
+            )
+            .execute_governed(
+                ViewEstateAdministrationCapability::reference(),
+                ViewRestrictedEstateOperation::reference(),
+                capability_input,
+            )
+            .map_err(BankApplicationQueryDenial::from_request_query)
     }
 }
 
@@ -37,13 +79,21 @@ impl BankReadyQuery<'_, '_, EstateLegalComplianceRequest> {
         >,
         BankApplicationQueryDenial,
     > {
-        let result = execute_estate_legal_compliance(
-            self.runtime,
-            self.principal,
-            self.query,
-            &self.controls,
-        )?;
-        Ok(publish_application_result(result.into_admitted_disclosed()))
+        let capability_input = self.query.capability_request();
+        self.runtime
+            .application_runtime()
+            .request(self.principal.external(), self.controls.request())
+            .query(self.query)
+            .limits(
+                self.controls.maximum_result_count(),
+                self.controls.maximum_work(),
+            )
+            .execute_governed(
+                ViewEstateLegalComplianceCapability::reference(),
+                ViewRestrictedEstateOperation::reference(),
+                capability_input,
+            )
+            .map_err(BankApplicationQueryDenial::from_request_query)
     }
 }
 
@@ -57,12 +107,20 @@ impl BankReadyQuery<'_, '_, EstateMandatoryReviewRequest> {
         >,
         BankApplicationQueryDenial,
     > {
-        let result = execute_estate_mandatory_review(
-            self.runtime,
-            self.principal,
-            self.query,
-            &self.controls,
-        )?;
-        Ok(publish_application_result(result.into_admitted_disclosed()))
+        let capability_input = self.query.capability_request();
+        self.runtime
+            .application_runtime()
+            .request(self.principal.external(), self.controls.request())
+            .query(self.query)
+            .limits(
+                self.controls.maximum_result_count(),
+                self.controls.maximum_work(),
+            )
+            .execute_governed(
+                ViewEstateMandatoryReviewCapability::reference(),
+                ViewRestrictedEstateOperation::reference(),
+                capability_input,
+            )
+            .map_err(BankApplicationQueryDenial::from_request_query)
     }
 }

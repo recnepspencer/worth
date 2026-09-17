@@ -26,7 +26,7 @@ pub(super) fn write(
     match value {
         WorthQueryPortableApplicationCapabilityElevationRuleParts::NotApplicable => output.u16(0),
         WorthQueryPortableApplicationCapabilityElevationRuleParts::Governed(value) => {
-            output.u16(1)?;
+            output.u16(2)?;
             write_definition(output, value)
         }
     }
@@ -38,7 +38,7 @@ pub(super) fn decode(
 ) -> Result<WorthQueryPortableApplicationCapabilityElevationRuleParts, Denial> {
     match input.u16()? {
         0 => Ok(WorthQueryPortableApplicationCapabilityElevationRuleParts::NotApplicable),
-        1 => decode_definition(input, budget)
+        2 => decode_definition(input, budget)
             .map(WorthQueryPortableApplicationCapabilityElevationRuleParts::Governed),
         _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
     }
@@ -51,6 +51,7 @@ fn write_definition(
     bindings::write_field(output, &value.identity)?;
     bindings::write_field(output, &value.reason)?;
     bindings::write_field(output, &value.status)?;
+    bindings::write_field(output, &value.closed_at)?;
     for state in value.states.values() {
         bindings::write_value(output, state)?;
     }
@@ -78,6 +79,7 @@ fn decode_definition(
     let identity = bindings::decode_field(input)?;
     let reason = bindings::decode_field(input)?;
     let status = bindings::decode_field(input)?;
+    let closed_at = bindings::decode_field(input)?;
     let states = ApplicationCapabilityElevationStates::new(
         bindings::decode_value(input)?,
         bindings::decode_value(input)?,
@@ -106,6 +108,7 @@ fn decode_definition(
             identity,
             reason,
             status,
+            closed_at,
             states,
             validity,
             maximum_duration,
@@ -204,6 +207,7 @@ fn write_review(
     bindings::write_relation(output, value.scope())?;
     bindings::write_relation(output, value.reviewer())?;
     bindings::write_field(output, value.status())?;
+    bindings::write_field(output, value.reviewed_at())?;
     bindings::write_value(output, value.required())?;
     bindings::write_value(output, value.completed())
 }
@@ -217,7 +221,29 @@ fn decode_review(
         bindings::decode_relation(input)?,
         bindings::decode_relation(input)?,
         bindings::decode_field(input)?,
+        bindings::decode_field(input)?,
         bindings::decode_value(input)?,
         bindings::decode_value(input)?,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn previous_governed_elevation_layout_fails_closed() {
+        let legacy_tag = 1_u16.to_be_bytes();
+        let mut input = BinaryInput::new(&legacy_tag);
+        let mut budget = RecordDecodeAttempt::begin(
+            Default::default(),
+            legacy_tag.len() as u64,
+            crate::limits::WorthQueryPackageArchiveLimits::DEFAULT,
+        )
+        .unwrap();
+        assert_eq!(
+            decode(&mut input, &mut budget).unwrap_err().kind(),
+            Kind::UnsupportedRecordVariant
+        );
+    }
 }

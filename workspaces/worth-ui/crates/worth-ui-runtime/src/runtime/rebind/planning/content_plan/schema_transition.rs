@@ -124,6 +124,12 @@ fn installed_requirement(
             UiProjectionSchemaRequirement::Scalar(registration.requirement().clone())
         })
         .or_else(|| {
+            plan.application_scalar_projection_registration(identity)
+                .map(|registration| {
+                    UiProjectionSchemaRequirement::Scalar(registration.requirement().clone())
+                })
+        })
+        .or_else(|| {
             plan.collection_projection_registration(identity)
                 .map(|registration| {
                     UiProjectionSchemaRequirement::Collection(registration.requirement().clone())

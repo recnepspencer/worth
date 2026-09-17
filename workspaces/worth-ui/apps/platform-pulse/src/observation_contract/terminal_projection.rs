@@ -73,8 +73,6 @@ impl PlatformPulseLifecycleObservationStream {
         let visual_capture = application.visual_capture();
         let visual_overlay = application.visual_overlay();
         let query_watcher = query.watcher();
-        let query_live = query.live();
-        let query_projection = query.projection();
         let outcome =
             PlatformPulseLifecycleObservation::ShutdownCompleted(PlatformPulseShutdownCompleted {
                 watcher_backend: watcher_backend(watcher.backend()),
@@ -87,12 +85,6 @@ impl PlatformPulseLifecycleObservationStream {
                 intent_resources_empty: application.intent_resources_empty(),
                 query_close_complete: application.query_close_complete(),
                 query_owner_terminal: query.owner_terminal(),
-                live_query_source_count: query_live.source_count(),
-                live_query_attempt_count: query_live.attempt_count(),
-                live_query_resource_count: query_live.resource_count(),
-                live_query_consumer_lease_count: query_live.consumer_lease_count(),
-                retained_query_projection_count: query_projection.retained_projection_count(),
-                query_projection_receipt_count: query_projection.projection_receipt_count(),
                 mounted_shutdown_attempt_count: application.mounted_shutdown_attempt_count() as u64,
                 host_session_released: application.host_session_released(),
                 released_surface_count: application.released_surface_count() as u64,

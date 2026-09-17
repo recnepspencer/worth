@@ -1,3 +1,6 @@
+use crate::application_capability::{
+    ApplicationCapabilityMarkerIdentity, ApplicationCapabilityRequest,
+};
 use crate::application_schema::{
     ApplicationAspectMarkerIdentity, ApplicationEntityMarkerIdentity,
     ApplicationFieldMarkerIdentity, ApplicationFieldRef, ApplicationIdentityScalarValueBinding,
@@ -12,6 +15,17 @@ use super::{
     ApplicationMutationScopeContract,
 };
 use crate::application_operation::ApplicationCandidateRequirements;
+
+type MutationScopeFieldRef<Schema, Binding> = ApplicationFieldRef<
+    Schema,
+    <Binding as ApplicationMutationScopeBinding<Schema>>::Scope,
+    <Binding as ApplicationMutationScopeBinding<Schema>>::Aspect,
+    <Binding as ApplicationMutationScopeBinding<Schema>>::Field,
+    <Binding as ApplicationMutationScopeBinding<Schema>>::Value,
+    <Binding as ApplicationMutationScopeBinding<Schema>>::Write,
+    EqualityPredicate,
+    <Binding as ApplicationMutationScopeBinding<Schema>>::Unit,
+>;
 
 /// Complete declaration-time meaning of one application mutation binding.
 pub trait ApplicationMutationBinding<Schema>: Sized + 'static
@@ -47,7 +61,7 @@ where
     type PrincipalBinding: 'static;
     type Mapping: 'static;
     type Principal: 'static;
-    type PrincipalIdentity: 'static;
+    type PrincipalIdentity: Clone + 'static;
     type PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<
         Value = Self::PrincipalIdentity,
     >;
@@ -63,16 +77,7 @@ where
 
     fn input_identity(input: &Self::Input) -> [u8; 32];
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
-        <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Aspect,
-        <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Field,
-        <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Value,
-        <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Write,
-        EqualityPredicate,
-        <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Unit,
-    >;
+    fn scope_field() -> MutationScopeFieldRef<Schema, Self::ScopeBinding>;
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -117,22 +122,38 @@ where
     }
 }
 
+/// Mutation binding whose installed capability owns operation authorization.
+pub trait ApplicationCapabilityMutationBinding<Schema>: ApplicationMutationBinding<Schema>
+where
+    Schema: ApplicationSchema,
+    Self::Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema>,
+    Self::Input: ApplicationCapabilityRequest<
+        Schema,
+        Self::Capability,
+        Scope = <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+    >,
+{
+    type Capability;
+}
+
 /// Domain input whose operation and scope association are owned by an entry binding.
 pub trait ApplicationMutationIntent<Schema>: Sized + 'static
 where
     Schema: ApplicationSchema,
 {
-    type Binding: ApplicationMutationBinding<Schema, Input = Self>;
+    type Binding: ApplicationMutationBinding<Schema>;
 
     fn operation(
         &self,
     ) -> ApplicationOperationRef<
         Schema,
         <Self::Binding as ApplicationMutationBinding<Schema>>::Operation,
-        Self,
+        <Self::Binding as ApplicationMutationBinding<Schema>>::Input,
     > {
         ApplicationOperationRef::from_declaration()
     }
+
+    fn input(&self) -> &<Self::Binding as ApplicationMutationBinding<Schema>>::Input;
 
     fn scope_binding(&self) -> <Self::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding;
 }

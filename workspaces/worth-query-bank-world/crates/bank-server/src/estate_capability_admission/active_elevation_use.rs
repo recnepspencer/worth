@@ -8,9 +8,7 @@ use bank_domain::{
     model::{Money, SignedMoney},
     schema::{DisburseEstateCapability, DisburseEstateOperation},
 };
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationIdempotencyBinding, WorthQueryOperationAuthorizationDenialKind,
-};
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind;
 
 use super::{
     fixture::{
@@ -235,15 +233,17 @@ fn real_approved_elevation_cannot_enter_the_bank_disbursement_operation() {
         denial.kind(),
         WorthQueryOperationAuthorizationDenialKind::ElevationNotApplicable
     );
-    let ordinary = fixture.runtime.disburse_estate(
+    let ordinary = fixture.runtime.disburse_estate_with_key(
         &requester,
         action,
-        WorthQueryApplicationIdempotencyBinding::new([115; 32], [116; 32]),
+        &bank_domain::proposals::BankIdempotencyKey::new("elevated-disbursement-denied").unwrap(),
         &request_scope(),
     );
     assert!(matches!(
         ordinary,
-        Err(crate::BankEstateProgressionDenial::Authorization(_))
+        Err(crate::BankEstateProgressionDenial::ApplicationEntry(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(_)
+        ))
     ));
 }
 

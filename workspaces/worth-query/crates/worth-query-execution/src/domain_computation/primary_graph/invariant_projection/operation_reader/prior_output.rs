@@ -157,7 +157,7 @@ where
             }
             self.consume_admitted_role_work();
             members.push(WorthQueryPriorOutputFamilyMember {
-                identity: self.live_prior_identity::<Entity>(&role, entity)?,
+                identity: self.live_prior_identity::<Entity>(role, entity)?,
                 role: role.to_owned(),
                 published_posture: posture,
                 _binding: PhantomData,

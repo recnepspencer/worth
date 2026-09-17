@@ -55,14 +55,4 @@ impl BankReadControls {
     pub const fn maximum_work(&self) -> NonZeroUsize {
         self.maximum_work
     }
-
-    pub(crate) fn application_query_controls(
-        &self,
-    ) -> worth_query_host::facade::primary_graph::WorthQueryProductQueryControls<'_> {
-        worth_query_host::facade::primary_graph::WorthQueryProductQueryControls::new(
-            self.maximum_results,
-            self.maximum_work,
-            &self.request,
-        )
-    }
 }

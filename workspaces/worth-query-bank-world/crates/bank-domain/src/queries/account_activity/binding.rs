@@ -9,9 +9,10 @@ use crate::{
 };
 
 use super::{
-    AccountActivityQuery, AccountActivityQueryParametersBinding, AccountActivityQueryResultBinding,
-    AccountActivityRequest,
+    AccountActivityLiveCause, AccountActivityQuery, AccountActivityQueryParametersBinding,
+    AccountActivityQueryResultBinding, AccountActivityRequest,
 };
+use crate::schema::Posting;
 
 worth_query_decl::facade::worth_query_structured_value_binding!(
     pub AccountActivityRequestBinding for AccountActivityRequest {
@@ -32,3 +33,10 @@ worth_query_decl::facade::worth_query_query_binding!(
     value AccountActivityRequest::account,
     limits results 1_024, work 100_000
 );
+
+impl worth_query_decl::facade::application_query::ApplicationLiveQueryIntent<BankSchema>
+    for AccountActivityRequest
+{
+    type Target = Posting;
+    type LiveCause = AccountActivityLiveCause;
+}

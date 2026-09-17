@@ -306,6 +306,10 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     pub(in crate::domain_computation::primary_graph::application_attempt) retain_output_demand_observation:
         bool,
+    pub(in crate::domain_computation::primary_graph::application_attempt) retain_client_observation:
+        bool,
+    pub(in crate::domain_computation::primary_graph::application_attempt) producer_required_invariants:
+        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
 }
 
 pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope> {
@@ -372,6 +376,19 @@ impl<Schema, Operation, Input, Scope>
         mut self,
     ) -> Self {
         self.retain_output_demand_observation = true;
+        self
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_client_observation(mut self) -> Self {
+        self.retain_client_observation = true;
+        self
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_producer_required_invariants(
+        mut self,
+        requirements: &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    ) -> Self {
+        self.producer_required_invariants = requirements;
         self
     }
 }

@@ -175,6 +175,7 @@ pub(super) fn reenter_temporal_operation<
 ) -> WorthQueryTemporalReentryAttempt
 where
     Schema: ApplicationSchema,
+    Operation: 'static,
     Input: Clone + Send + Sync + 'static,
     PrincipalIdentity: 'static,
     PrincipalIdentityBinding:

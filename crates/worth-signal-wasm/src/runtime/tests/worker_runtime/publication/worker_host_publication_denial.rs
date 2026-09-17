@@ -201,7 +201,10 @@ fn definition_envelope_publication_marks_the_envelope_public_outputs() {
     assert!(imported.is_web_output_signal("doubleCounter"));
     assert!(!imported.is_web_output_signal("privateTriple"));
     assert_eq!(
-        imported.export_definitions().unwrap().worker_public_output_ids,
+        imported
+            .export_definitions()
+            .unwrap()
+            .worker_public_output_ids,
         vec!["doubleCounter".to_owned()]
     );
 

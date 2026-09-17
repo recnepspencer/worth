@@ -239,7 +239,10 @@ mod tests {
 
         assert!(registry.discard(&second));
         assert!(!registry.discard(&second));
-        assert_eq!(registry.take(&second, "test").err().expect("denied").code, "restoreTokenNotPending");
+        assert_eq!(
+            registry.take(&second, "test").err().expect("denied").code,
+            "restoreTokenNotPending"
+        );
         assert_eq!(registry.pending_count(), 0);
     }
 
@@ -253,9 +256,19 @@ mod tests {
 
         let evicted = registry.take(&first, "test").err().expect("denied");
         assert_eq!(evicted.code, "restoreTokenNotPending");
-        assert!(evicted.message.contains("2 most recent"), "{}", evicted.message);
-        assert!(matches!(registry.take(&second, "test").unwrap(), RestoreArtifact::Marker));
-        assert!(matches!(registry.take(&third, "test").unwrap(), RestoreArtifact::Marker));
+        assert!(
+            evicted.message.contains("2 most recent"),
+            "{}",
+            evicted.message
+        );
+        assert!(matches!(
+            registry.take(&second, "test").unwrap(),
+            RestoreArtifact::Marker
+        ));
+        assert!(matches!(
+            registry.take(&third, "test").unwrap(),
+            RestoreArtifact::Marker
+        ));
     }
 
     #[test]
@@ -269,7 +282,14 @@ mod tests {
         }
         // Prefix mismatch on an issued number is unknown too: the number was
         // never issued under the requested prefix.
-        assert_eq!(registry.take("other:1", "other").err().expect("denied").code, "invalidInput");
+        assert_eq!(
+            registry
+                .take("other:1", "other")
+                .err()
+                .expect("denied")
+                .code,
+            "invalidInput"
+        );
         assert_eq!(registry.pending_count(), 1);
     }
 }

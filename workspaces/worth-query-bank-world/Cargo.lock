@@ -132,6 +132,7 @@ name = "bank-courtroom"
 version = "0.1.0"
 dependencies = [
  "bank-domain",
+ "bank-external-rail",
  "bank-http-adapter",
  "bank-server",
  "bank-user-node",
@@ -182,6 +183,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "bank-domain",
+ "bank-external-rail",
  "bank-server",
  "openidconnect",
  "rand 0.8.7",

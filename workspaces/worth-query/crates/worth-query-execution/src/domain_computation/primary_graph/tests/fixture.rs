@@ -125,6 +125,10 @@ pub(super) use invalid_disclosure_queries::{
 };
 #[path = "fixture/operation_contracts.rs"]
 mod operation_contracts;
+#[path = "fixture/program_required_binding.rs"]
+mod program_required_binding;
+use program_required_binding::{ProgramRequiredHandler, ProgramRequiredMutationBinding};
+pub(super) use program_required_binding::{ProgramRequiredInput, ProgramRequiredOperation};
 #[path = "fixture/schema_types.rs"]
 mod schema_types;
 #[path = "fixture/world_authentication.rs"]
@@ -250,6 +254,9 @@ worth_query_application_schema! {
                 .effect(MutationFreeExternalEffect::reference())
                 .effect(LiveActivityEffect::reference());
             let schema = operation_contracts::install(schema)
+                .application_mutation_binding::<
+                    program_required_binding::ProgramRequiredMutationBinding,
+                >()
                 .policy(AccountAccessPolicy::reference())
                 .ability_policy(
                     ViewAccount::reference(),

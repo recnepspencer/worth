@@ -7,8 +7,9 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use bank_domain::model::AccountId;
-use bank_server::BankAccountActivityLiveOutcome;
-use tokio::sync::{mpsc, oneshot, OwnedSemaphorePermit, Semaphore};
+use bank_server::{BankAccountActivityLiveLease, BankApplicationLiveCloseOutcome};
+use tokio::sync::{mpsc, oneshot, watch, OwnedSemaphorePermit, Semaphore};
+use tokio::task::JoinSet;
 use tokio_stream::Stream;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -16,13 +17,14 @@ use worth_query_host::facade::admission::authenticated_principal::{
 use worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControls;
 
 use super::super::protocol::{
-    BankHttpAccountActivity, BankHttpAccountActivityEvent, BankHttpCredential, BankHttpDenial,
-    BankHttpDenialKind, BankHttpNextAction, BankHttpQueryCapabilityPurpose,
-    BankHttpRequestControls,
+    BankHttpAccountActivityEvent, BankHttpCredential, BankHttpDenial, BankHttpDenialKind,
+    BankHttpNextAction, BankHttpRequestControls,
 };
 use super::authentication::BankHttpApplicationAuthenticator;
 use super::query_denial::query_denial;
-use super::query_publication::describe_query_publication;
+
+mod events;
+use events::{denied, live_event, malformed, send_live_event, send_terminal};
 
 #[cfg(test)]
 mod tests;
@@ -30,6 +32,7 @@ mod tests;
 #[derive(Clone)]
 pub(super) struct BankHttpLiveExecutor {
     sender: mpsc::Sender<OpenAccountActivityStream>,
+    shutdown: watch::Sender<bool>,
     event_capacity: usize,
     active_streams: Arc<Semaphore>,
 }
@@ -92,12 +95,15 @@ impl BankHttpLiveExecutor {
         A: BankHttpApplicationAuthenticator,
     {
         let (sender, receiver) = mpsc::channel(open_queue_capacity);
+        let (shutdown, _) = watch::channel(false);
+        let thread_shutdown = shutdown.clone();
         let thread = std::thread::Builder::new()
             .name("bank-http-live-executor".to_owned())
-            .spawn(move || run_local_executor(application, receiver))?;
+            .spawn(move || run_local_executor(application, receiver, thread_shutdown))?;
         Ok((
             Self {
                 sender,
+                shutdown,
                 event_capacity,
                 active_streams: Arc::new(Semaphore::new(maximum_active_streams)),
             },
@@ -109,6 +115,12 @@ impl BankHttpLiveExecutor {
         &self,
         request: AdmittedAccountActivityStreamRequest,
     ) -> Result<BankHttpLiveEventStream, BankHttpDenial> {
+        if *self.shutdown.borrow() {
+            return Err(BankHttpDenial::new(
+                BankHttpDenialKind::Unavailable,
+                BankHttpNextAction::Retry,
+            ));
+        }
         let active_stream = Arc::clone(&self.active_streams)
             .try_acquire_owned()
             .map_err(|_| {
@@ -133,11 +145,16 @@ impl BankHttpLiveExecutor {
             terminal_closed: false,
         })
     }
+
+    pub(super) fn shutdown_signal(&self) -> watch::Sender<bool> {
+        self.shutdown.clone()
+    }
 }
 
 fn run_local_executor<A>(
     application: Arc<A>,
     receiver: mpsc::Receiver<OpenAccountActivityStream>,
+    shutdown: watch::Sender<bool>,
 ) -> io::Result<()>
 where
     A: BankHttpApplicationAuthenticator,
@@ -146,23 +163,77 @@ where
         .enable_all()
         .build()?;
     let local = tokio::task::LocalSet::new();
-    local.block_on(&runtime, dispatch_streams(application, receiver));
-    Ok(())
+    local.block_on(&runtime, dispatch_streams(application, receiver, shutdown))
 }
 
 async fn dispatch_streams<A>(
     application: Arc<A>,
     mut receiver: mpsc::Receiver<OpenAccountActivityStream>,
-) where
+    shutdown: watch::Sender<bool>,
+) -> io::Result<()>
+where
     A: BankHttpApplicationAuthenticator,
 {
-    while let Some(stream) = receiver.recv().await {
-        let application = Arc::clone(&application);
-        tokio::task::spawn_local(run_stream(application, stream));
+    let mut shutdown_observation = shutdown.subscribe();
+    let mut tasks = JoinSet::new();
+    let mut first_error = None;
+    loop {
+        tokio::select! {
+            biased;
+            changed = shutdown_observation.changed() => {
+                if changed.is_err() || *shutdown_observation.borrow() {
+                    break;
+                }
+            }
+            next = receiver.recv() => {
+                let Some(stream) = next else { break; };
+                tasks.spawn_local(run_stream(
+                    Arc::clone(&application),
+                    stream,
+                    shutdown.subscribe(),
+                ));
+            }
+            completed = tasks.join_next(), if !tasks.is_empty() => {
+                if let Some(result) = completed {
+                    record_stream_result(result, &mut first_error);
+                }
+            }
+        }
+    }
+    shutdown.send_replace(true);
+    receiver.close();
+    while let Ok(mut pending) = receiver.try_recv() {
+        send_terminal(
+            &mut pending.terminal,
+            BankHttpAccountActivityEvent::Closed {
+                request_id: pending.request.request_id,
+            },
+        );
+    }
+    while let Some(result) = tasks.join_next().await {
+        record_stream_result(result, &mut first_error);
+    }
+    first_error.map_or(Ok(()), Err)
+}
+
+fn record_stream_result(
+    result: Result<io::Result<()>, tokio::task::JoinError>,
+    first_error: &mut Option<io::Error>,
+) {
+    if first_error.is_none() {
+        *first_error = match result {
+            Ok(Ok(())) => None,
+            Ok(Err(error)) => Some(error),
+            Err(error) => Some(io::Error::other(error)),
+        };
     }
 }
 
-async fn run_stream<A>(application: Arc<A>, stream: OpenAccountActivityStream)
+async fn run_stream<A>(
+    application: Arc<A>,
+    stream: OpenAccountActivityStream,
+    mut shutdown: watch::Receiver<bool>,
+) -> io::Result<()>
 where
     A: BankHttpApplicationAuthenticator,
 {
@@ -173,13 +244,30 @@ where
         _active_stream,
     } = stream;
     let request_id = request.request_id;
+    if *shutdown.borrow() {
+        send_terminal(
+            &mut terminal,
+            BankHttpAccountActivityEvent::Closed { request_id },
+        );
+        return Ok(());
+    }
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(request.deadline, cancellation.token());
-    let principal = match application.authenticate(request.credential, &scope).await {
+    let principal = match tokio::select! {
+        biased;
+        _ = shutdown.changed() => {
+            send_terminal(
+                &mut terminal,
+                BankHttpAccountActivityEvent::Closed { request_id },
+            );
+            return Ok(());
+        }
+        result = application.authenticate(request.credential, &scope) => result,
+    } {
         Ok(principal) => principal,
         Err(denial) => {
             send_terminal(&mut terminal, denied(request_id, denial));
-            return;
+            return Ok(());
         }
     };
     let controls = match WorthQueryApplicationLiveControls::bounded(
@@ -191,7 +279,7 @@ where
         Ok(controls) => controls,
         Err(_) => {
             send_terminal(&mut terminal, malformed(request_id));
-            return;
+            return Ok(());
         }
     };
     let mut lease = match application
@@ -203,7 +291,7 @@ where
         Ok(lease) => lease,
         Err(denial) => {
             send_terminal(&mut terminal, denied(request_id, query_denial(denial)));
-            return;
+            return Ok(());
         }
     };
     if events
@@ -213,8 +301,7 @@ where
         .is_err()
     {
         cancellation.cancel();
-        let _ = lease.close();
-        return;
+        return close_live_lease(lease);
     }
     let mut poll = tokio::time::interval(Duration::from_millis(20));
     let authentication_expiry =
@@ -222,13 +309,22 @@ where
     tokio::pin!(authentication_expiry);
     loop {
         tokio::select! {
+            biased;
+            _ = shutdown.changed() => {
+                cancellation.cancel();
+                let closed = close_live_lease(lease);
+                send_terminal(
+                    &mut terminal,
+                    BankHttpAccountActivityEvent::Closed { request_id },
+                );
+                return closed;
+            }
             _ = events.closed() => {
                 cancellation.cancel();
-                let _ = lease.close();
-                return;
+                return close_live_lease(lease);
             }
             _ = &mut authentication_expiry => {
-                let _ = lease.close();
+                let closed = close_live_lease(lease);
                 send_terminal(
                     &mut terminal,
                     denied(
@@ -239,7 +335,7 @@ where
                         ),
                     ),
                 );
-                return;
+                return closed;
             }
             _ = poll.tick() => {
                 let delivery_scope = WorthQueryRequestScope::new(
@@ -252,8 +348,7 @@ where
                 ) {
                     if !send_live_event(&events, &mut terminal, event, &request_id) {
                         cancellation.cancel();
-                        let _ = lease.close();
-                        return;
+                        return close_live_lease(lease);
                     }
                 }
             }
@@ -261,110 +356,11 @@ where
     }
 }
 
-fn send_live_event(
-    events: &mpsc::Sender<BankHttpAccountActivityEvent>,
-    terminal: &mut Option<oneshot::Sender<BankHttpAccountActivityEvent>>,
-    event: BankHttpAccountActivityEvent,
-    request_id: &str,
-) -> bool {
-    if is_terminal(&event) {
-        send_terminal(terminal, event);
-        return false;
-    }
-    match events.try_send(event) {
-        Ok(()) => true,
-        Err(mpsc::error::TrySendError::Full(_)) => {
-            send_terminal(
-                terminal,
-                BankHttpAccountActivityEvent::Overflow {
-                    request_id: request_id.to_owned(),
-                    missed_commit_batches: 1,
-                },
-            );
-            false
-        }
-        Err(mpsc::error::TrySendError::Closed(_)) => false,
-    }
-}
-
-fn live_event(
-    request_id: &str,
-    outcome: BankAccountActivityLiveOutcome,
-) -> Option<BankHttpAccountActivityEvent> {
-    let request_id = request_id.to_owned();
-    match outcome {
-        BankAccountActivityLiveOutcome::Delivered(update) => {
-            Some(BankHttpAccountActivityEvent::Update {
-                request_id,
-                activity: BankHttpAccountActivity::from(update.result()),
-                publication: describe_query_publication(
-                    update.receipt(),
-                    BankHttpQueryCapabilityPurpose::AccountActivityReview,
-                ),
-            })
-        }
-        BankAccountActivityLiveOutcome::Pending => None,
-        BankAccountActivityLiveOutcome::Overflow(overflow) => {
-            Some(BankHttpAccountActivityEvent::Overflow {
-                request_id,
-                missed_commit_batches: overflow.missed_commit_batches(),
-            })
-        }
-        BankAccountActivityLiveOutcome::AuthorizationDenied(_)
-        | BankAccountActivityLiveOutcome::ProjectionDenied(_)
-        | BankAccountActivityLiveOutcome::CauseDenied(_) => Some(denied(
-            request_id,
-            BankHttpDenial::new(
-                BankHttpDenialKind::PermissionDenied,
-                BankHttpNextAction::None,
-            ),
+fn close_live_lease(lease: BankAccountActivityLiveLease<'_>) -> io::Result<()> {
+    match lease.close() {
+        BankApplicationLiveCloseOutcome::Completed => Ok(()),
+        BankApplicationLiveCloseOutcome::Unavailable => Err(io::Error::other(
+            "Bank account activity live lease did not close",
         )),
-        BankAccountActivityLiveOutcome::StalePrincipal
-        | BankAccountActivityLiveOutcome::StaleScope => Some(denied(
-            request_id,
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
-        )),
-        BankAccountActivityLiveOutcome::Cancelled => {
-            Some(BankHttpAccountActivityEvent::Cancelled { request_id })
-        }
-        BankAccountActivityLiveOutcome::DeadlineExceeded => {
-            Some(BankHttpAccountActivityEvent::DeadlineExceeded { request_id })
-        }
-        BankAccountActivityLiveOutcome::Closed => {
-            Some(BankHttpAccountActivityEvent::Closed { request_id })
-        }
-        BankAccountActivityLiveOutcome::Unavailable => {
-            Some(BankHttpAccountActivityEvent::Unavailable { request_id })
-        }
-    }
-}
-
-const fn is_terminal(event: &BankHttpAccountActivityEvent) -> bool {
-    !matches!(
-        event,
-        BankHttpAccountActivityEvent::Opened { .. } | BankHttpAccountActivityEvent::Update { .. }
-    )
-}
-
-fn denied(request_id: String, denial: BankHttpDenial) -> BankHttpAccountActivityEvent {
-    BankHttpAccountActivityEvent::Denied { request_id, denial }
-}
-
-fn malformed(request_id: String) -> BankHttpAccountActivityEvent {
-    denied(
-        request_id,
-        BankHttpDenial::new(
-            BankHttpDenialKind::MalformedRequest,
-            BankHttpNextAction::CorrectRequest,
-        ),
-    )
-}
-
-fn send_terminal(
-    terminal: &mut Option<oneshot::Sender<BankHttpAccountActivityEvent>>,
-    event: BankHttpAccountActivityEvent,
-) {
-    if let Some(terminal) = terminal.take() {
-        let _ = terminal.send(event);
     }
 }

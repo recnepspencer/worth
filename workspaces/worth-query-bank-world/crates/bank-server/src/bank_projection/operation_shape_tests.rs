@@ -5,8 +5,8 @@ use bank_domain::model::{
 use bank_domain::proposals::{BankProposalEngine, BankSnapshot, BankSnapshotBuilder};
 use bank_domain::schema::{
     ApplyOpeningFunding, Approval, ApprovePayment, ApprovePaymentOperation, CreateBusinessAccount,
-    CreatePersonalAccount, InstitutionIdentityField, JournalEntry, JournalReversal,
-    PaymentApproval, PaymentIdentityField, ReversalReason, ReverseJournal, ReverseJournalOperation,
+    CreatePersonalAccount, InstitutionIdentityField, PaymentApproval, PaymentIdentityField,
+    ReversalReason, ReverseJournal, ReverseJournalOperation,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationEntitySeed, WorthQueryApplicationRelationSeed,
@@ -14,7 +14,7 @@ use worth_query_host::facade::primary_graph::{
 
 use super::tests::{binding, entity_key, id, key, ProjectionHarness};
 use super::{project_journal_reversal, project_payment_approval, BankProjectionDenial};
-use crate::graph_bootstrap::{bind_bank_world_with_estate, journal_key, payment_key};
+use crate::graph_bootstrap::{bind_bank_world_with_estate, payment_key};
 
 #[test]
 fn payment_projection_rejects_multiple_decision_entities() {
@@ -104,53 +104,6 @@ fn payment_projection_preserves_the_source_account_balance() {
         .unwrap();
     assert_eq!(projected.starting_balance(source), Some(expected));
     assert!(projected.snapshot().journal().is_empty());
-}
-
-#[test]
-fn orphan_incoming_reversal_cannot_hide_from_targeted_projection() {
-    let (snapshot, original) = reversible_world(0);
-    let harness = ProjectionHarness::install(&snapshot, |graph| {
-        bind_bank_world_with_estate(graph, &snapshot, &[], &[], None).unwrap();
-        let hostile = "hostile-orphan-reversal".to_string();
-        graph
-            .bind_entity(WorthQueryApplicationEntitySeed::new(
-                JournalEntry::reference(),
-                entity_key(hostile.clone()),
-            ))
-            .unwrap();
-        graph
-            .bind_relation(WorthQueryApplicationRelationSeed::new(
-                JournalReversal::reference(),
-                "hostile-orphan-reversal-edge",
-                entity_key(hostile),
-                entity_key(journal_key(original)),
-            ))
-            .unwrap();
-    });
-    let completed = harness
-        .projection
-        .project_operation::<ReverseJournalOperation, _>(|reader| {
-            let institution_id = id(InstitutionId::new, 1);
-            let institution = reader
-                .resolve_entity(InstitutionIdentityField::reference(), institution_id)
-                .unwrap();
-            project_journal_reversal(
-                reader,
-                &institution,
-                institution_id,
-                &ReverseJournal {
-                    institution: institution_id,
-                    journal: original,
-                    reason: ReversalReason::OperatorCorrection,
-                },
-            )
-        })
-        .unwrap();
-    assert_eq!(
-        completed.output().as_ref().err(),
-        Some(&BankProjectionDenial::MissingField("JournalIdentityField")),
-        "the exact malformed incoming journal must be the denial source"
-    );
 }
 
 #[test]

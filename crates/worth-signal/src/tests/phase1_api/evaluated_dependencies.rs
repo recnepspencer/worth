@@ -73,7 +73,13 @@ fn calls_for(calls: &CallLog, node: NodeId) -> u64 {
 }
 
 fn state(world: &World, node: NodeId) -> NodeState {
-    world.runtime.observe().graph().graph().get_state(node).unwrap()
+    world
+        .runtime
+        .observe()
+        .graph()
+        .graph()
+        .get_state(node)
+        .unwrap()
 }
 
 fn read(world: &mut World, node: NodeId) {
@@ -226,8 +232,16 @@ fn evaluated_dependencies_inside_a_transaction_survive_commit_clean() {
     );
     shrink_reads_to_left(&world);
     read(&mut world, node);
-    assert_eq!(calls_for(&world.calls, node), 2, "commit kept the evaluated value");
+    assert_eq!(
+        calls_for(&world.calls, node),
+        2,
+        "commit kept the evaluated value"
+    );
     commit_change(&mut world, right);
     read(&mut world, node);
-    assert_eq!(calls_for(&world.calls, node), 2, "the removed edge is gone after commit");
+    assert_eq!(
+        calls_for(&world.calls, node),
+        2,
+        "the removed edge is gone after commit"
+    );
 }

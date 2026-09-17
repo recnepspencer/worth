@@ -1,15 +1,18 @@
 use bank_domain::{
     estate::{CapabilityGrantId, CapabilityGrantStatus, EstateAction},
+    proposals::BankIdempotencyKey,
     schema::{
-        BankSchema, CapabilityEstate, CapabilityGrantIdentityField, CapabilityGrantStatusField,
-        EstateCase, RevokeEstateCapability, RevokeEstateCapabilityOperation,
+        BankPrincipalBinding, BankSchema, CapabilityEstate, CapabilityGrantIdentityField,
+        CapabilityGrantStatusField, EstateCase, RevokeEstateCapability,
+        RevokeEstateCapabilityOperation,
     },
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
+    application_entry::WorthQueryApplicationCapabilityRevocationDenial,
     declaration::application_schema::TypedMutationPreconditions,
     primary_graph::{
-        WorthQueryAdmittedApplicationOperation, WorthQueryApplicationIdempotencyBinding,
+        WorthQueryAdmittedApplicationOperation,
         WorthQueryApplicationOperationInvariantProjectionReader,
         WorthQueryCapabilityRevocationProgram, WorthQueryEntityResolutionDenial,
         WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantEntityIdentity,
@@ -18,7 +21,10 @@ use worth_query_host::facade::{
 };
 
 use super::BankEstateProgressionDenial;
-use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
+use crate::{
+    BankAuthenticatedPrincipal, BankCommitDenialKind, BankCommitDenialStage, BankIdentityRuntime,
+    BankMutationCommitOutcome,
+};
 
 type AdmittedCapabilityRevocation = WorthQueryAdmittedApplicationOperation<
     BankSchema,
@@ -66,27 +72,43 @@ impl std::fmt::Display for BankCapabilityRevocationProjectionDenial {
 impl std::error::Error for BankCapabilityRevocationProjectionDenial {}
 
 impl BankIdentityRuntime {
-    pub fn revoke_estate_capability(
+    pub fn revoke_estate_capability_with_key(
         &self,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
+        key: &BankIdempotencyKey,
         request: &WorthQueryRequestScope,
     ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
         let grant = revocation_target_grant(action)?;
-        let admission = self.admit_capability_revocation(principal, action, request)?;
-        if let Some(outcome) =
-            super::super::idempotency::resolve_admitted_idempotency(self, &admission, idempotency)?
+        match self
+            .request(principal, request)
+            .execute_capability_revocation_in_program(
+                self.application_program(),
+                BankPrincipalBinding::reference(),
+                RevokeEstateCapability::reference(),
+                RevokeEstateCapabilityOperation::reference(),
+                action,
+                key,
+                TypedMutationPreconditions::<
+                    BankSchema,
+                    RevokeEstateCapabilityOperation,
+                    EstateCase,
+                >::default(),
+                |admission| self.materialize_capability_revocation(admission, grant),
+            )
         {
-            return Ok(outcome);
+            Ok(outcome) => Ok(outcome.into()),
+            Err(WorthQueryApplicationCapabilityRevocationDenial::IdempotencyIntentDrift) => {
+                Ok(BankMutationCommitOutcome::Denied {
+                    kind: BankCommitDenialKind::IdempotencyIntentDrift,
+                    stage: BankCommitDenialStage::Idempotency,
+                })
+            }
+            Err(denial) => Err(map_revocation_denial(denial)),
         }
-        let program = self.materialize_capability_revocation(admission, grant)?;
-        Ok(self
-            .application_runtime()
-            .compare_and_commit_capability_revocation(program, idempotency)
-            .into())
     }
 
+    #[cfg(test)]
     fn admit_capability_revocation(
         &self,
         principal: &BankAuthenticatedPrincipal,
@@ -210,5 +232,37 @@ impl From<WorthQueryInvariantProjectionTraversalDenial>
         Self::Traversal(crate::BankInvariantProjectionTraversalDenial::from_query(
             denial.kind(),
         ))
+    }
+}
+
+fn map_revocation_denial(
+    denial: WorthQueryApplicationCapabilityRevocationDenial<BankEstateProgressionDenial>,
+) -> BankEstateProgressionDenial {
+    use WorthQueryApplicationCapabilityRevocationDenial as Query;
+    match denial {
+        Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(denial),
+        Query::ProgramMismatch => BankEstateProgressionDenial::ProgramMismatch,
+        Query::PrincipalBindingInstallation(denial) => {
+            BankEstateProgressionDenial::PrincipalBindingInstallation(denial)
+        }
+        Query::CapabilityInstallation(denial) => {
+            BankEstateProgressionDenial::from_capability_installation(denial)
+        }
+        Query::OperationInstallation(denial) => {
+            BankEstateProgressionDenial::from_operation_installation(denial)
+        }
+        Query::ProductSelection(denial) => {
+            BankEstateProgressionDenial::from_product_selection(denial)
+        }
+        Query::PrincipalResolution(denial) => {
+            BankEstateProgressionDenial::PrincipalResolution(denial)
+        }
+        Query::PrincipalIdentityEncoding(denial) => {
+            BankEstateProgressionDenial::PrincipalIdentityEncoding(denial)
+        }
+        Query::Authorization(denial) => BankEstateProgressionDenial::from_authorization(denial),
+        Query::Idempotency(denial) => BankEstateProgressionDenial::from_idempotency(denial),
+        Query::IdempotencyIntentDrift => BankEstateProgressionDenial::IdempotencyIntentDrift,
+        Query::Preparation(denial) => denial,
     }
 }

@@ -11,6 +11,7 @@ macro_rules! worth_query_mutation_binding {
             key_identity $key_identity:path, input_identity $input_identity:path,
         decision $Decision:ty, denial $DenialBinding:path,
         handler identity $handler_identity:literal,
+        $(program $program_requirement:ident,)?
         outputs $Output:ty,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
@@ -28,6 +29,7 @@ macro_rules! worth_query_mutation_binding {
             idempotency $IdempotencyKey, identity $idempotency_identity,
                 key_identity $key_identity, input_identity $input_identity,
             decision $Decision, denial $DenialBinding, handler identity $handler_identity,
+            program $($program_requirement)?,
             outputs $Output,
             principal $PrincipalBinding, mapping $Mapping, principal_entity $Principal,
             principal_identity $PrincipalIdentity, identity_binding $PrincipalIdentityBinding,
@@ -44,6 +46,10 @@ macro_rules! worth_query_mutation_binding {
 
         impl $crate::facade::application_operation::ApplicationMutationIntent<$Schema> for $Input {
             type Binding = $Binding;
+
+            fn input(&self) -> &Self {
+                self
+            }
 
             fn scope_binding(
                 &self,
@@ -65,6 +71,7 @@ macro_rules! worth_query_mutation_binding {
             key_identity $key_identity:path, input_identity $input_identity:path,
         decision $Decision:ty, denial $DenialBinding:path,
         handler identity $handler_identity:literal,
+        $(program $program_requirement:ident,)?
         outputs $Output:ty,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
@@ -81,6 +88,7 @@ macro_rules! worth_query_mutation_binding {
             idempotency $IdempotencyKey, identity $idempotency_identity,
                 key_identity $key_identity, input_identity $input_identity,
             decision $Decision, denial $DenialBinding, handler identity $handler_identity,
+            program $($program_requirement)?,
             outputs $Output,
             principal $PrincipalBinding, mapping $Mapping, principal_entity $Principal,
             principal_identity $PrincipalIdentity, identity_binding $PrincipalIdentityBinding,
@@ -98,6 +106,10 @@ macro_rules! worth_query_mutation_binding {
         impl $crate::facade::application_operation::ApplicationMutationIntent<$Schema> for $Input {
             type Binding = $Binding;
 
+            fn input(&self) -> &Self {
+                self
+            }
+
             fn scope_binding(
                 &self,
             ) -> <$Binding as $crate::facade::application_operation::ApplicationMutationBinding<$Schema>>::ScopeBinding {
@@ -114,6 +126,7 @@ macro_rules! worth_query_mutation_binding {
         idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
             key_identity $key_identity:path, input_identity $input_identity:path,
         decision $Decision:ty, denial $DenialBinding:path, handler identity $handler_identity:literal,
+        program $($program_requirement:ident)?,
         outputs $Output:ty,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
         principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
@@ -151,6 +164,8 @@ macro_rules! worth_query_mutation_binding {
             const IDENTITY: &'static str = $identity;
             const HANDLER_IDENTITY: &'static str = $handler_identity;
             const IDEMPOTENCY_IDENTITY: &'static str = $idempotency_identity;
+            const REQUIRES_APPLICATION_PROGRAM: bool =
+                $crate::worth_query_mutation_binding!(@program_requirement $($program_requirement)?);
             const CANDIDATES: $crate::facade::application_operation::ApplicationCandidateRequirements =
                 $crate::facade::application_operation::ApplicationCandidateRequirements::fixed_shape(
                     $crate::facade::application_operation::ApplicationCandidateCardinalityCeiling::fixed(
@@ -190,4 +205,6 @@ macro_rules! worth_query_mutation_binding {
             }
         }
     };
+    (@program_requirement required) => { true };
+    (@program_requirement) => { false };
 }

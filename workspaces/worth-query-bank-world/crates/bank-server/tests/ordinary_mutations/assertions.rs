@@ -1,41 +1,38 @@
-use bank_server::{BankCommitReceipt, BankMutationOutcome, BankMutationStatus};
-use worth_query_host::facade::publication::application_aftermath::WorthQueryPublishedApplicationCommitKind;
-use worth_query_host::facade::publication::domain_computation::WorthQueryPublishedApplicationCommitAttemptReleasePosture;
+use bank_domain::schema::BankSchema;
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+use worth_query_host::facade::declaration::application_operation::{
+    ApplicationMutationBinding, ApplicationMutationIntent,
+};
 
-pub(super) fn assert_committed(outcome: BankMutationOutcome) {
-    let BankMutationStatus::Committed(receipt) = outcome.status() else {
-        panic!("unexpected mutation outcome: {outcome:?}");
+pub(super) fn assert_program_committed<Input>(
+    outcome: bank_server::BankProgramMutationExecution<impl std::fmt::Debug>,
+    emits: bool,
+) where
+    Input: ApplicationMutationIntent<BankSchema>,
+{
+    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) = outcome else {
+        panic!("unexpected program mutation outcome: {outcome:?}");
     };
-    assert_fresh_publication(receipt);
-    assert!(outcome.metadata().projection_work().is_some());
-}
-
-pub(super) fn assert_emitting_commit(outcome: BankMutationOutcome) {
-    let BankMutationStatus::Committed(receipt) = outcome.status() else {
-        panic!("unexpected mutation outcome: {outcome:?}");
-    };
-    assert!(receipt.emitted_effect_count() > 0);
-    assert_fresh_publication(receipt);
-    assert!(outcome.metadata().provider_work_units() > 0);
-}
-
-pub(super) fn assert_fresh_publication(receipt: &BankCommitReceipt) {
-    let publication = receipt.publication().inspect();
-    assert_eq!(
-        publication.kind(),
-        WorthQueryPublishedApplicationCommitKind::Executed
-    );
-    let work = publication
+    if emits {
+        assert!(receipt.emitted_effect_count() > 0);
+    }
+    let work = receipt
         .mutation_work()
-        .expect("a fresh commit publication retains actual mutation work");
+        .expect("a fresh program commit retains actual mutation work");
     assert!(work.decision_fact_count() > 0);
     assert!(work.proposed_fact_count() > 0);
     assert!(work.relational_invariant_execution_count() > 0);
-    assert_eq!(
-        publication.attempt_release(),
-        WorthQueryPublishedApplicationCommitAttemptReleasePosture::Released
+    let declared =
+        <<Input as ApplicationMutationIntent<BankSchema>>::Binding as ApplicationMutationBinding<
+            BankSchema,
+        >>::CANDIDATES
+            .resources()
+            .maximum_validator_work();
+    let declared =
+        u64::try_from(declared).expect("the binding ceiling should fit the work counter");
+    assert!(
+        work.invariant_work_units() <= declared,
+        "observed validator work {} exceeded the binding ceiling {declared}",
+        work.invariant_work_units()
     );
-    assert_eq!(publication.publication_canonical_entries(), 0);
-    assert_eq!(publication.publication_sha256_compression_blocks(), 0);
-    assert_eq!(publication.publication_identity_text_materializations(), 0);
 }

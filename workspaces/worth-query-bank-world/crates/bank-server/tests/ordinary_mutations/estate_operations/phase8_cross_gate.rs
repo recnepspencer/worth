@@ -7,9 +7,9 @@ use crate::support::request_scope;
 use bank_domain::schema::{DisburseEstateOperation, NotifyDeathEstateOperation};
 use bank_external_rail::test_control::FaultScript;
 use bank_server::{
-    BankCommitReceipt, BankEstateProgressionDenial, BankIdentityRuntime, BankRecoveryDenialKind,
-    BankRecoveryDurability, BankRecoveryIdempotencyResolution, BankRecoveryInspection,
-    BankRecoveryPosture, BankRecoverySupportTruth,
+    BankCommitReceipt, BankEstateProgressionDenial, BankIdentityRuntime, BankRecoveryClaimStatus,
+    BankRecoveryDenialKind, BankRecoveryDurability, BankRecoveryIdempotencyResolution,
+    BankRecoveryInspection, BankRecoveryPosture, BankRecoverySupportTruth,
 };
 use worth_query_host::facade::domain::{
     PublishedAftermathPosture, WorthQueryInstalledAftermathContract,
@@ -79,6 +79,15 @@ fn assert_unresolved_recovery(
         }
         other => panic!("expected unresolved posture denial, got {other:?}"),
     }
+    assert_eq!(
+        world
+            .fixture
+            .world
+            .runtime
+            .commit_recovery_claim_status(receipt),
+        Ok(BankRecoveryClaimStatus::Consumed),
+        "a resolved-but-unconfirmed rail effect must not report completed recovery"
+    );
     assert_eq!(world.estate_account_revision(), revision_before);
 }
 

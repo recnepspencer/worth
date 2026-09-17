@@ -34,6 +34,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         crate::domain_computation::primary_graph::provider::WorthQueryApplicationPublicationRecoveryReservation,
     >,
     retain_output_demand_observation: bool,
+    retain_client_observation: bool,
+    producer_required_invariants:
+        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPublishedApplicationCausality {
@@ -121,6 +124,13 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.validator_work_admission
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn producer_required_invariants(
+        &self,
+    ) -> &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement]
+    {
+        self.producer_required_invariants
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn preimage_demand(
         &self,
     ) -> Option<&worth_query_installation::facade::InstalledPreImageDemand> {
@@ -152,7 +162,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     pub(in crate::domain_computation::primary_graph) fn reserve_successor_observations(
         &mut self,
         provider: &WorthQueryPrimaryGraphProvider,
-    ) -> Result<(bool, bool), &'static str> {
+    ) -> Result<(bool, bool, bool), &'static str> {
         assert!(self.live_delivery_reservation.is_none());
         assert!(self.publication_recovery_reservation.is_none());
         let publication_recovery = provider.reserve_application_publication_recovery(
@@ -164,9 +174,10 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         )?;
         let live = reservation.requires_successor_observation();
         let demand = self.retain_output_demand_observation;
+        let client = self.retain_client_observation;
         self.live_delivery_reservation = Some(reservation);
         self.publication_recovery_reservation = Some(publication_recovery);
-        Ok((live, demand))
+        Ok((live, demand, client))
     }
 
     pub(in crate::domain_computation::primary_graph) fn take_publication_recovery_reservation(
@@ -262,6 +273,8 @@ impl WorthQueryPrimaryGraphProvider {
             conditional_definition,
             validator_work_admission,
             retain_output_demand_observation,
+            retain_client_observation,
+            producer_required_invariants,
         } = registration;
         let emitted_effect_count = u64::try_from(effects.emissions().len())
             .map_err(|_| "application emission count exceeds provider representation")?;
@@ -305,6 +318,8 @@ impl WorthQueryPrimaryGraphProvider {
                 live_delivery_reservation: None,
                 publication_recovery_reservation: None,
                 retain_output_demand_observation,
+                retain_client_observation,
+                producer_required_invariants,
             },
             requests,
             dispatch_outbox: dispatch_outbox_record,

@@ -120,60 +120,32 @@ pub(crate) fn projection_runtime_builder(
     source: SharedSourceState,
     bridge: std::sync::Arc<std::sync::OnceLock<worth_runtime_bridge::facade::RuntimeBridge>>,
 ) -> Result<runtime::WorthQueryRuntimeBuilder, WorthUiScalarProjectionInstallationError> {
-    let builder = runtime::WorthQueryRuntime::builder(product_world_resources())
-        .domain_package(crate::worth_ui_domain_package())
-        .map_err(|error| WorthUiScalarProjectionInstallationError::DomainPackage(Box::new(error)))?
-        .domain_package(crate::presentation_async::worth_ui_presentation_async_domain_package())
-        .map_err(|error| {
-            WorthUiScalarProjectionInstallationError::DomainPackage(Box::new(error))
-        })?;
+    let builder = runtime::WorthQueryRuntime::builder(
+        crate::query_runtime_resources::ui_product_world_resources(),
+    )
+    .domain_package(crate::worth_ui_domain_package())
+    .map_err(|error| WorthUiScalarProjectionInstallationError::DomainPackage(Box::new(error)))?;
     let builder = crate::install_worth_ui_operation_executors(builder)
         .aspect_contracts(crate::worth_ui_native_aspect_contracts())
-        .map_err(|error| {
-            WorthUiScalarProjectionInstallationError::AspectContract(Box::new(error))
-        })?;
-    let builder = crate::presentation_async::install_worth_ui_presentation_async_runtime(builder)
-        .map_err(|error| {
-        WorthUiScalarProjectionInstallationError::AspectContract(Box::new(error))
-    })?;
+        .map_err(|error| WorthUiScalarProjectionInstallationError::AspectContract(Box::new(error)))?
+        .conditional_execution_resources(status_query_conditional_resources());
     let builder = configure_product_projection_backend(builder, bridge, source);
     Ok(projection_consumer_support(builder))
 }
 
-fn product_world_resources() -> runtime::WorthQueryProductWorldResources {
-    runtime::WorthQueryProductWorldResources::install(
-        runtime::RuntimeWorldBudgetInstallation {
-            branches: runtime::RuntimeWorldBranchBudgetInstallation {
-                live_product_branches: 128,
-            },
-            history: runtime::RuntimeWorldHistoryBudgetInstallation {
-                retained_composite_commits: 1_024,
-                history_metadata_bytes: 16 * 1024 * 1024,
-            },
-            observations: runtime::RuntimeWorldObservationBudgetInstallation {
-                active_observations: 512,
-            },
-            publication: runtime::RuntimeWorldPublicationBudgetInstallation {
-                active_publication_attempts: 128,
-            },
-            recovery: runtime::RuntimeWorldRecoveryBudgetInstallation {
-                retained_product_unpublished_records: 128,
-                retained_partial_metadata_bytes: 16 * 1024 * 1024,
-            },
-            retention: runtime::RuntimeWorldRetentionBudgetInstallation {
-                unique_exact_component_pins: 1_024,
-                in_flight_pin_acquisition_reservations: 256,
-            },
-            custody: runtime::RuntimeWorldCustodyBudgetInstallation {
-                owner_created_component_custody_records: 256,
-            },
+fn status_query_conditional_resources() -> runtime::WorthQueryConditionalExecutionResources {
+    runtime::WorthQueryConditionalExecutionResources::new(
+        runtime::WorthQueryConditionalEvaluationCacheBudget::bounded(1, 12 * 1024)
+            .expect("the status query has a positive cache budget"),
+        worth_signal::facade::runtime::SignalConditionalEvaluationBudget {
+            maximum_retained_slots: 1,
+            maximum_retained_bytes: 4 * 1024 * 1024,
+            maximum_attempt_visits: 4 * 1024,
         },
-        runtime::WorthQueryProductWorldClock::start(),
     )
-    .expect("the UI Product World resources are valid")
 }
 
-fn projection_consumer_support(
+pub(crate) fn projection_consumer_support(
     builder: runtime::WorthQueryRuntimeBuilder,
 ) -> runtime::WorthQueryRuntimeBuilder {
     use domain::{

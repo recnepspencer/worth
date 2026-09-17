@@ -26,6 +26,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     validator_work_admission:
         super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     retain_output_demand_observation: bool,
+    retain_client_observation: bool,
+    producer_required_invariants:
+        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
 }
 
 /// Proves that the effect owner consumed a completed provider attempt before
@@ -71,6 +74,8 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         conditional_definition,
         validator_work_admission,
         retain_output_demand_observation,
+        retain_client_observation,
+        producer_required_invariants,
     } = prepared;
     let affinity = match staged.bind_application_attempt(attempt_basis) {
         Ok(affinity) => affinity,
@@ -102,6 +107,8 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             conditional_definition,
             validator_work_admission,
             retain_output_demand_observation,
+            retain_client_observation,
+            producer_required_invariants,
         },
     );
     match dispatch_outbox {

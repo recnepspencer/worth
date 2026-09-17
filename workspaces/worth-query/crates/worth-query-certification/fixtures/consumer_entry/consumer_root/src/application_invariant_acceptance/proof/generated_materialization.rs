@@ -1,64 +1,105 @@
-use worth_query_consumer_values::{PlanarOperation, PlanarVertex};
+use std::num::NonZeroUsize;
+
+use worth_query_consumer_values::PlanarVertex;
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
     application_entry::{
-        WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestQueryDenial,
+        WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
+        WorthQueryApplicationRequestQueryDenial, WorthQueryOutputDemandControls,
     },
     primary_graph::{
-        WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
         WorthQueryGeneratedOutputReconstructionDenial, WorthQueryPrimaryGraphApplicationRuntime,
         WorthQueryPrincipalResolutionDenialKind,
     },
 };
 use worth_query_topology_entry::{
-    AlternatePlanarOutputProducer, Body, BodyKey, InitialPlanarProducer, Length, PlanarMutation,
-    PlanarMutationBinding, PlanarRead, PlanarSuccessor, PositionX, PositionY,
+    AlternatePlanarOutputProducer, Body, PlanarFinalOutputProducer, PlanarOutputToFinalConnection,
+    PlanarRead, PlanarSourceAdjustment, PlanarSuccessor, PositionY,
 };
 
-use super::{length, mutate, Request};
+use super::{length, output_correspondence::observed_source, ProgramApplication, Request};
 use crate::ConsumerSchema;
 
+mod expected;
+mod manifest;
 mod successor;
 
+use expected::{read, role, vertices};
+use manifest::{claim_entity, write_fields};
+
 pub(super) fn typed_reconstruction_preserves_query_authority(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<ConsumerSchema>,
+    application: &ProgramApplication,
     foreign: &WorthQueryPrimaryGraphApplicationRuntime<ConsumerSchema>,
     request: &Request<'_>,
     scope: &WorthQueryRequestScope,
 ) {
-    let vertices = vertices();
-    let outcome = mutate(
-        request,
-        PlanarMutation {
-            scope_key: "anchor-a".to_owned(),
-            operation: PlanarOperation::CreateCycle(vertices.clone()),
-            validator_work: 4_096,
-        },
-        980,
-    );
-    let WorthQueryApplicationMutationOutcome::Committed { receipt, .. } = outcome else {
-        panic!("the reconstruction source cycle must publish: {outcome:?}")
+    let outcome = request
+        .mutate(PlanarSourceAdjustment {
+            scope_key: "anchor-b".to_owned(),
+            replacement_y: length(2),
+        })
+        .expect_source(observed_source(request, "anchor-b"))
+        .idempotency(&980)
+        .execute_performed(application)
+        .expect("the source adjustment reaches publication");
+    let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
+        panic!("the reconstruction source adjustment must publish")
     };
-    let branch = receipt.product_branch();
+    let branch = performed.receipt().product_branch();
+    let mut performed = performed
+        .start_required_outputs(
+            request,
+            WorthQueryOutputDemandControls::new(
+                NonZeroUsize::new(4_096).unwrap(),
+                NonZeroUsize::new(8_192).unwrap(),
+            ),
+        )
+        .unwrap_or_else(|failure| {
+            panic!("the declared output graph starts: {:?}", failure.denial())
+        });
+    loop {
+        match performed
+            .required_output_mut()
+            .advance(request)
+            .expect("the generated output graph settles")
+        {
+            WorthQueryApplicationProgramOutputProgress::Pending => {}
+            WorthQueryApplicationProgramOutputProgress::Settled(settlement) => {
+                assert_eq!(
+                    settlement
+                        .outputs_for::<ConsumerSchema, PlanarOutputToFinalConnection>()
+                        .count(),
+                    1,
+                    "the program must publish its generated final output"
+                );
+                break;
+            }
+        }
+    }
+    drop(performed);
+    let vertices = vertices();
+    for vertex in &vertices {
+        assert_eq!(read(request, &vertex.body_key).y, vertex.y);
+    }
     let stale_source = request
         .query(PlanarRead {
-            body_key: "anchor-a".to_owned(),
+            body_key: "anchor-b".to_owned(),
         })
         .execute()
         .expect("the producer source query is admitted")
         .observed_sources()[0]
         .clone();
-    successor::publish_unrelated(request, branch);
+    successor::publish_unrelated(request, application, branch);
     let retained_result = request
         .query(PlanarRead {
-            body_key: "anchor-a".to_owned(),
+            body_key: "anchor-b".to_owned(),
         })
         .execute()
         .expect("the producer source query is admitted");
     let source = retained_result.observed_sources()[0].clone();
     let wrong_source = request
         .query(PlanarRead {
-            body_key: "anchor-b".to_owned(),
+            body_key: "anchor-a".to_owned(),
         })
         .execute()
         .expect("the unrelated producer source query is admitted")
@@ -70,7 +111,7 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         .on_branch(branch)
         .select()
         .expect("the Query-issued output occurrence remains selectable")
-        .suspend_current_generated_output::<InitialPlanarProducer<ConsumerSchema>>(
+        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(
             scope,
             wrong_source,
         )
@@ -85,7 +126,7 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         .on_branch(branch)
         .select()
         .expect("the Query-issued output occurrence remains selectable")
-        .suspend_current_generated_output::<InitialPlanarProducer<ConsumerSchema>>(scope, source)
+        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(scope, source)
     {
         Err(worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionFailure::ProductUnpublished(recovery)) => recovery,
         Err(failure) => panic!(
@@ -97,7 +138,7 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
     assert_eq!(recovery.product_branch(), branch);
     assert_eq!(read(request, &vertices[0].body_key), retained);
     let recovery = match foreign
-        .continue_generated_output_suspension_recovery::<InitialPlanarProducer<ConsumerSchema>>(
+        .continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(
             recovery, scope,
         ) {
         Ok(_) => panic!("a foreign Query runtime must not settle suspension custody"),
@@ -110,7 +151,7 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         }
     };
     let suspended = application
-        .continue_generated_output_suspension_recovery::<InitialPlanarProducer<ConsumerSchema>>(
+        .continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(
             recovery, scope,
         )
         .unwrap_or_else(|failure| {
@@ -178,7 +219,9 @@ fn foreign_runtime_rejection(
     foreign: &WorthQueryPrimaryGraphApplicationRuntime<ConsumerSchema>,
     suspended: worth_query_host::facade::primary_graph::WorthQuerySuspendedGeneratedOutput,
 ) -> worth_query_host::facade::primary_graph::WorthQuerySuspendedGeneratedOutput {
-    match foreign.reconstruct_generated_output::<InitialPlanarProducer<ConsumerSchema>>(suspended) {
+    match foreign
+        .reconstruct_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(suspended)
+    {
         Ok(_) => panic!("foreign runtime authority must not reconstruct Query custody"),
         Err(failure) => {
             assert_eq!(
@@ -214,7 +257,7 @@ fn incomplete_manifest_rejection(
     vertices: &[PlanarVertex],
 ) -> worth_query_host::facade::primary_graph::WorthQuerySuspendedGeneratedOutput {
     let mut reconstruction = match application
-        .reconstruct_generated_output::<InitialPlanarProducer<ConsumerSchema>>(suspended)
+        .reconstruct_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(suspended)
     {
         Ok(reconstruction) => reconstruction,
         Err(failure) => panic!(
@@ -222,7 +265,7 @@ fn incomplete_manifest_rejection(
             failure.denial()
         ),
     };
-    let first = claim_entity(&mut reconstruction, &vertices[0]);
+    let first = claim_entity(&mut reconstruction, &vertices[0], 0);
     write_fields(&mut reconstruction, &first, &vertices[0]);
     let failure = match reconstruction.finish() {
         Ok(_) => panic!("an incomplete custody manifest must not finish"),
@@ -241,12 +284,13 @@ fn claim_denials_preserve_session(
     vertices: &[PlanarVertex],
 ) -> worth_query_host::facade::primary_graph::WorthQuerySuspendedGeneratedOutput {
     let mut reconstruction = application
-        .reconstruct_generated_output::<InitialPlanarProducer<ConsumerSchema>>(suspended)
+        .reconstruct_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(suspended)
         .unwrap_or_else(|_| panic!("the owning producer restarts reconstruction"));
     let entities = vertices
         .iter()
-        .map(|vertex| {
-            let entity = claim_entity(&mut reconstruction, vertex);
+        .enumerate()
+        .map(|(index, vertex)| {
+            let entity = claim_entity(&mut reconstruction, vertex, index);
             write_fields(&mut reconstruction, &entity, vertex);
             entity
         })
@@ -257,7 +301,7 @@ fn claim_denials_preserve_session(
             .expect_err("a denied duplicate field must not replace the admitted value"),
         WorthQueryGeneratedOutputReconstructionDenial::DuplicateField
     );
-    let duplicate = match reconstruction.entity(role(&vertices[0]), Body::reference()) {
+    let duplicate = match reconstruction.entity(role(&vertices[0], 0), Body::reference()) {
         Ok(_) => panic!("one output identity may be claimed only once"),
         Err(denial) => denial,
     };
@@ -289,15 +333,16 @@ fn complete(
     vertices: &[PlanarVertex],
 ) -> worth_query_host::facade::primary_graph::WorthQueryCompletedGeneratedOutputReconstruction<
     ConsumerSchema,
-    InitialPlanarProducer<ConsumerSchema>,
+    PlanarFinalOutputProducer<ConsumerSchema>,
 > {
     let mut reconstruction = application
-        .reconstruct_generated_output::<InitialPlanarProducer<ConsumerSchema>>(suspended)
+        .reconstruct_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(suspended)
         .unwrap_or_else(|_| panic!("the owning producer completes reconstruction"));
     let entities = vertices
         .iter()
-        .map(|vertex| {
-            let entity = claim_entity(&mut reconstruction, vertex);
+        .enumerate()
+        .map(|(index, vertex)| {
+            let entity = claim_entity(&mut reconstruction, vertex, index);
             write_fields(&mut reconstruction, &entity, vertex);
             entity
         })
@@ -314,77 +359,4 @@ fn complete(
     reconstruction
         .finish()
         .unwrap_or_else(|_| panic!("every suspended record was reconstructed exactly once"))
-}
-
-fn claim_entity(
-    reconstruction: &mut worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputReconstruction<
-        '_,
-        ConsumerSchema,
-        InitialPlanarProducer<ConsumerSchema>,
-    >,
-    vertex: &PlanarVertex,
-) -> worth_query_host::facade::primary_graph::WorthQueryGeneratedEntity<ConsumerSchema, Body> {
-    reconstruction
-        .entity(role(vertex), Body::reference())
-        .expect("the typed role resolves its retained platform identity")
-}
-
-fn write_fields(
-    reconstruction: &mut worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputReconstruction<
-        '_,
-        ConsumerSchema,
-        InitialPlanarProducer<ConsumerSchema>,
-    >,
-    entity: &worth_query_host::facade::primary_graph::WorthQueryGeneratedEntity<
-        ConsumerSchema,
-        Body,
-    >,
-    vertex: &PlanarVertex,
-) {
-    reconstruction
-        .field(entity, BodyKey::reference(), vertex.body_key.clone())
-        .expect("the typed body key encodes through Query");
-    reconstruction
-        .field(entity, PositionX::reference(), vertex.x)
-        .expect("the typed x coordinate encodes through Query");
-    reconstruction
-        .field(entity, PositionY::reference(), vertex.y)
-        .expect("the typed y coordinate encodes through Query");
-    reconstruction
-        .field(entity, Length::reference(), length(1))
-        .expect("the typed length encodes through Query");
-}
-
-fn role(
-    vertex: &PlanarVertex,
-) -> WorthQueryApplicationOutputRole<
-    PlanarMutationBinding<ConsumerSchema>,
-    Body,
-    WorthQueryCreateOutput,
-> {
-    WorthQueryApplicationOutputRole::try_new(format!("created.{}", vertex.body_key))
-        .expect("fixture keys form valid source-derived output roles")
-}
-
-fn read(request: &Request<'_>, key: &str) -> worth_query_topology_entry::PlanarReadResult {
-    let result = request
-        .query(PlanarRead {
-            body_key: key.to_owned(),
-        })
-        .execute()
-        .unwrap_or_else(|denial| panic!("the generated body is readable: {denial:?}"));
-    assert_eq!(result.rows().len(), 1);
-    result.rows()[0].clone()
-}
-
-fn vertices() -> Vec<PlanarVertex> {
-    [(201, 201), (210, 201), (201, 210)]
-        .into_iter()
-        .enumerate()
-        .map(|(index, (x, y))| PlanarVertex {
-            body_key: format!("rehydrated-{index}"),
-            x: length(x),
-            y: length(y),
-        })
-        .collect()
 }

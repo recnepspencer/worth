@@ -4,6 +4,12 @@ use std::collections::BTreeSet;
 mod installation;
 pub(crate) mod product_world_resources;
 
+#[cfg(test)]
+pub(crate) fn bank_application_limits(
+) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+    installation::bank_application_limits()
+}
+
 use bank_domain::estate::BankEstateWorld;
 use bank_domain::model::BankPrincipalId;
 use bank_domain::proposals::BankSnapshot;
@@ -18,6 +24,7 @@ use worth_query_host::facade::admission::authenticated_principal::{
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
 };
+use worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_host::facade::declaration::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationStructuredValueBinding,
 };
@@ -28,6 +35,8 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationInvariantProjectionAuthority, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode, WorthQueryRuntimeTimeSource,
 };
+
+use crate::application_definition::BankApplication;
 
 use crate::error::{
     BankAuthenticationBoundaryBuildError, BankIdentityRuntimeBuildError,
@@ -54,7 +63,7 @@ impl BankAuthenticationConfiguration {
 }
 
 pub struct BankIdentityRuntime {
-    runtime: WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
+    runtime: WorthQueryProgramApplicationRuntime<BankSchema, BankApplication>,
     binding: WorthQueryInstalledPrincipalBinding<
         BankSchema,
         BankPrincipalBinding,
@@ -67,6 +76,12 @@ pub struct BankIdentityRuntime {
 }
 
 impl BankIdentityRuntime {
+    pub const fn application_program(
+        &self,
+    ) -> &WorthQueryProgramApplicationRuntime<BankSchema, BankApplication> {
+        &self.runtime
+    }
+
     pub fn request<'application, 'principal, 'scope>(
         &'application self,
         principal: &'principal BankAuthenticatedPrincipal,
@@ -188,7 +203,7 @@ impl BankIdentityRuntime {
     pub(crate) const fn application_runtime(
         &self,
     ) -> &WorthQueryPrimaryGraphApplicationRuntime<BankSchema> {
-        &self.runtime
+        self.runtime.runtime()
     }
 
     /// Installed aftermath from the live bank schema — integration tests only.

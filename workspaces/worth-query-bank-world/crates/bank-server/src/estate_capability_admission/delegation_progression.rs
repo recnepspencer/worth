@@ -4,9 +4,9 @@ use bank_domain::estate::{
     EstateCapabilityScope, EstateMoment, EstateWorkflowStage, RestrictedBankField,
 };
 use bank_domain::model::BankPrincipalId;
+use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::queries::EstateGovernanceQuery;
 use bank_domain::reads::{EstateCapabilityContext, EstateGovernanceContext};
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 use worth_query_host::facade::publication::domain_computation::WorthQueryPublishedApplicationResult;
 
 use super::fixture::{
@@ -29,16 +29,19 @@ const MISSING_PARENT_CHILD: CapabilityGrantId = CapabilityGrantId::new(308).unwr
 type GovernanceResult =
     WorthQueryPublishedApplicationResult<EstateGovernanceQuery, EstateGovernanceContext>;
 
+#[path = "delegation_progression/replay_and_identity.rs"]
+mod replay_and_identity;
+
 #[test]
 fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently() {
     let fixture = delegation_world("capability-delegation");
     let principal = fixture.authenticate();
     let action = delegated_action(DelegationLimit::generations(1));
-    let idempotency = WorthQueryApplicationIdempotencyBinding::new([91; 32], [92; 32]);
+    let idempotency = idempotency(91);
 
     let first = fixture
         .runtime
-        .delegate_estate_capability(&principal, action, idempotency, &request_scope())
+        .delegate_estate_capability_with_key(&principal, action, &idempotency, &request_scope())
         .expect("Query must activate the exact narrowed child");
     let BankMutationCommitOutcome::Committed(receipt) = &first else {
         panic!("unexpected delegation outcome: {first:?}");
@@ -54,7 +57,7 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
 
     let retry = fixture
         .runtime
-        .delegate_estate_capability(&principal, action, idempotency, &request_scope())
+        .delegate_estate_capability_with_key(&principal, action, &idempotency, &request_scope())
         .expect("the exact delegation retry must recover the first commit");
     assert!(matches!(
         retry,
@@ -63,10 +66,10 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
 
     let drift = fixture
         .runtime
-        .delegate_estate_capability(
+        .delegate_estate_capability_with_key(
             &principal,
             delegated_action_for(DRIFTED_CHILD, DelegationLimit::generations(1)),
-            idempotency,
+            &idempotency,
             &request_scope(),
         )
         .expect("proposal drift is a typed commit outcome");
@@ -104,10 +107,10 @@ fn equal_or_wider_delegation_limit_is_denied_before_child_creation() {
     let principal = fixture.authenticate();
     let denial = fixture
         .runtime
-        .delegate_estate_capability(
+        .delegate_estate_capability_with_key(
             &principal,
             delegated_action(DelegationLimit::generations(2)),
-            WorthQueryApplicationIdempotencyBinding::new([93; 32], [94; 32]),
+            &idempotency(93),
             &request_scope(),
         )
         .expect_err("a child must strictly reduce its downstream delegation limit");
@@ -150,17 +153,29 @@ fn revoking_the_exact_root_immediately_cuts_active_children_and_grandchildren() 
 
     let revoked = fixture
         .runtime
-        .revoke_estate_capability(
+        .revoke_estate_capability_with_key(
             &specialist,
             EstateAction::RevokeCapability {
                 estate: ESTATE,
                 grant: GRANT,
             },
-            idempotency(105),
+            &idempotency(105),
             &request_scope(),
         )
         .expect("the exact active root must revoke through the public Bank command");
     assert_committed(revoked);
+
+    let replay = delegate(
+        &fixture,
+        &specialist,
+        delegated_action(DelegationLimit::generations(1)),
+        idempotency(101),
+    )
+    .expect("the exact committed child should replay after its parent is revoked");
+    assert!(matches!(
+        replay,
+        BankMutationCommitOutcome::AlreadyCommitted(_)
+    ));
 
     assert_governance_denied(&fixture, &specialist);
     assert_governance_denied(&fixture, &approver);
@@ -297,11 +312,14 @@ fn delegate(
     fixture: &CapabilityFixture,
     principal: &BankAuthenticatedPrincipal,
     action: EstateAction,
-    idempotency: WorthQueryApplicationIdempotencyBinding,
+    idempotency: BankIdempotencyKey,
 ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-    fixture
-        .runtime
-        .delegate_estate_capability(principal, action, idempotency, &request_scope())
+    fixture.runtime.delegate_estate_capability_with_key(
+        principal,
+        action,
+        &idempotency,
+        &request_scope(),
+    )
 }
 
 fn governance_readback(
@@ -359,6 +377,6 @@ fn assert_committed(outcome: BankMutationCommitOutcome) {
     );
 }
 
-fn idempotency(seed: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed + 1; 32])
+fn idempotency(seed: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("delegation-progression-{seed}")).unwrap()
 }

@@ -71,7 +71,8 @@ impl WorthQueryOutputDemandSettlement {
     }
 
     pub(in crate::domain_computation::primary_graph) fn completion(
-        &self,
+        self: &Arc<Self>,
+        retain_exact: bool,
     ) -> super::registry::WorthQueryCompletedOutputDemand {
         super::registry::WorthQueryCompletedOutputDemand {
             receipt: self.receipt.clone(),
@@ -80,6 +81,7 @@ impl WorthQueryOutputDemandSettlement {
                 .as_ref()
                 .expect("a settled output retains readiness completion")
                 .clone(),
+            retained: retain_exact.then(|| Arc::clone(self)),
         }
     }
 

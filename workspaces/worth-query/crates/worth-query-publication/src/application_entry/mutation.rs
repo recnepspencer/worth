@@ -7,6 +7,7 @@ pub(in crate::application_entry) mod program_output_continuation;
 mod program_output_settlement;
 mod program_output_work;
 mod request;
+mod retained;
 
 pub use outcome::WorthQueryApplicationMutationOutcome;
 pub use performed::{
@@ -23,3 +24,4 @@ pub use request::{
     WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
     WorthQueryMutationSourcePrepared,
 };
+pub use retained::WorthQueryApplicationRetainedMutationOutcome;

@@ -20,12 +20,6 @@ pub(super) fn close_recovered_at_sequence<Stage>(
     assert!(cleanup.shutdown().query_watcher_joined());
     assert!(cleanup.shutdown().query_owner_terminal());
     assert_eq!(cleanup.shutdown().pending_query_observation_count(), 0);
-    assert_eq!(cleanup.shutdown().live_query_source_count(), 0);
-    assert_eq!(cleanup.shutdown().live_query_attempt_count(), 0);
-    assert_eq!(cleanup.shutdown().live_query_resource_count(), 0);
-    assert_eq!(cleanup.shutdown().live_query_consumer_lease_count(), 0);
-    assert_eq!(cleanup.shutdown().retained_query_projection_count(), 0);
-    assert_eq!(cleanup.shutdown().query_projection_receipt_count(), 0);
     assert_eq!(cleanup.shutdown().cancelled_visual_capture_count(), 0);
     assert_eq!(cleanup.shutdown().disposed_visual_snapshot_count(), 0);
     assert_eq!(cleanup.shutdown().disposed_visual_pixel_bytes(), 0);

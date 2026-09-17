@@ -18,6 +18,7 @@ pub use contribution::TopologyConfiguration;
 pub use final_output::*;
 mod mutation;
 mod mutation_identity;
+mod planar_edit;
 mod planar_invariant;
 mod planar_output_read;
 mod planar_read;
@@ -32,6 +33,7 @@ pub use vertex_replacement::*;
 
 pub use handler::*;
 pub use mutation::*;
+pub use planar_edit::*;
 pub use planar_invariant::*;
 pub use planar_output_read::*;
 pub use planar_read::*;
@@ -122,6 +124,23 @@ worth_query_application_contribution! {
                 .operation_link(MutatePlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
                 .operation_unlink(MutatePlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
                 .application_mutation_binding::<PlanarMutationBinding<Schema>>()
+                .operation(EditPlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
+                .operation_decision_fact_budget(EditPlanar::reference::<Schema>(), 64)
+                .operation_projection_work_budget(EditPlanar::reference::<Schema>(), 256)
+                .operation_read_entity(EditPlanar::reference::<Schema>(), Body::reference::<Schema>())
+                .operation_read_field(EditPlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
+                .operation_read_field(EditPlanar::reference::<Schema>(), PositionX::reference::<Schema>())
+                .operation_read_field(EditPlanar::reference::<Schema>(), PositionY::reference::<Schema>())
+                .operation_read_field(EditPlanar::reference::<Schema>(), Length::reference::<Schema>())
+                .operation_read_relation(EditPlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
+                .operation_create(EditPlanar::reference::<Schema>(), Body::reference::<Schema>())
+                .operation_write(EditPlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
+                .operation_write(EditPlanar::reference::<Schema>(), PositionX::reference::<Schema>())
+                .operation_write(EditPlanar::reference::<Schema>(), PositionY::reference::<Schema>())
+                .operation_write(EditPlanar::reference::<Schema>(), Length::reference::<Schema>())
+                .operation_link(EditPlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
+                .operation_unlink(EditPlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
+                .application_mutation_binding::<PlanarEditBinding<Schema>>()
                 .application_query(planar_query_definition::<Schema>())
                 .application_query_binding::<PlanarReadBinding<Schema>>()
                 .application_query(planar_output_query_definition::<Schema>())

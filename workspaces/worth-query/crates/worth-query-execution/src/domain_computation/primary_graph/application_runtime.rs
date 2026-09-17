@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
@@ -25,6 +26,7 @@ use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRe
 ))]
 mod certification_controls;
 mod certification_cost;
+mod conditional_cleanup;
 mod external_dispatch_attempt;
 pub use certification_cost::{
     WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
@@ -41,7 +43,6 @@ pub(in crate::domain_computation::primary_graph) use operation_control::WorthQue
 pub(in crate::domain_computation) use external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
 
 /// Purpose-scoped application runtime published from one typed primary graph.
-///
 /// Publishing consumes the raw execution root and its installation authority.
 /// The resulting value exposes principal admission and installed-handler
 /// candidate construction, but no provider-session, commit, publication,
@@ -128,6 +129,8 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) next_application_mutation_partition: AtomicU32,
     pub(super) output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
     pub(super) program_required_bindings: std::collections::BTreeSet<std::any::TypeId>,
+    pub(super) program_required_operations: std::collections::BTreeSet<std::any::TypeId>,
+    pub(super) installed_program_action_operations: Option<std::collections::BTreeSet<TypeId>>,
     pub(super) installed_conditionals:
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
 }
@@ -140,8 +143,13 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             Schema,
         >,
     {
-        self.program_required_bindings
-            .contains(&std::any::TypeId::of::<Binding>())
+        self.installed_program_action_operations.is_some()
+            || self
+                .program_required_bindings
+                .contains(&std::any::TypeId::of::<Binding>())
+            || self
+                .program_required_operations
+                .contains(&std::any::TypeId::of::<Binding::Operation>())
     }
 
     pub(super) fn issue_application_mutation_partition(
@@ -211,6 +219,32 @@ where
         )
     }
 
+    /// Begins conditional publication with one host-installed trusted-time
+    /// mechanism fixed for the lifetime of the resulting runtime.
+    pub fn conditional_application_runtime_installation_with_authorization_time_source(
+        self,
+        runtime: WorthQueryExecutionRuntime,
+        authority: WorthQueryExecutionInstallationAuthority,
+        installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
+        conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
+        source: impl WorthQueryRuntimeTimeSource,
+    ) -> Result<
+        super::conditional_operation::WorthQueryConditionalApplicationRuntimeInstallation<Schema>,
+        super::conditional_operation::WorthQueryConditionalRuntimeInstallationDenial,
+    > {
+        super::conditional_operation::WorthQueryConditionalApplicationRuntimeInstallation::new(
+            installation::ApplicationRuntimePublication {
+                bootstrap: self,
+                runtime,
+                authority,
+                installed_schema,
+                authorization_clock: WorthQueryRuntimeClock::from_source(source),
+                fault_port: super::provider::fault_port::production_fault_port(),
+                conditional_evaluation_budget,
+            },
+        )
+    }
+
     /// Publishes one application runtime with a host-installed trusted-time
     /// mechanism.
     ///
@@ -274,29 +308,6 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     #[cfg(test)]
     pub(crate) fn fix_authentication_time(&mut self, now: std::time::Instant) {
         self.authentication_clock = WorthQueryAuthenticationClock::fixed(now);
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn release_conditional_runtime_resources(
-        &mut self,
-    ) {
-        self.bridge
-            .conditional_lifecycle()
-            .close_conditional_resources();
-        *self
-            .conditional_operations
-            .get_mut()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = Default::default();
-        self.primary_provider.replace_conditional_commit_routes(
-            std::iter::empty(),
-            false,
-            std::iter::empty(),
-        );
-    }
-}
-
-impl<Schema> Drop for WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    fn drop(&mut self) {
-        self.release_conditional_runtime_resources();
     }
 }
 

@@ -4,9 +4,9 @@ use std::marker::PhantomData;
 use crate::application_schema::ApplicationSchema;
 
 use super::{
-    ApplicationConnectionDeclaration, ApplicationFeatureDeclaration, ApplicationOutputGraphShape,
-    ApplicationProgramFeaturesShape, ApplicationProgramIdentity, ApplicationProgramRuleDeclaration,
-    ApplicationProgramRulesShape,
+    ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
+    ApplicationProgramActionsShape, ApplicationProgramFeaturesShape, ApplicationProgramIdentity,
+    ApplicationProgramOutputShape, ApplicationProgramRuleDeclaration, ApplicationProgramRulesShape,
 };
 
 /// Complete authored static program definition.
@@ -17,10 +17,12 @@ where
     /// Exact root contribution tuple whose generated slots implement this
     /// program. Installation must consume this tuple before exposing a root.
     type Contributions;
+    /// Complete feature-owned action inventory for this program.
+    type Actions: ApplicationProgramActionsShape<Schema>;
     /// Complete feature inventory and each feature's authored input ports.
     type Features: ApplicationProgramFeaturesShape<Schema>;
     /// Complete transitive output topology used by the installed executor.
-    type OutputGraph: super::ApplicationOutputGraphShape<Schema>;
+    type OutputGraph: ApplicationProgramOutputShape<Schema>;
     /// Complete scoped invariant inventory owned by this composition.
     type Rules: ApplicationProgramRulesShape<Schema>;
     const IDENTITY: ApplicationProgramIdentity;
@@ -72,6 +74,7 @@ where
 pub enum ApplicationProgramValidationDenialKind {
     InvalidIdentity,
     DuplicateFeature,
+    DuplicateAction,
     DuplicateConnection,
     DanglingFeature,
     MissingRequiredInput,
@@ -112,6 +115,7 @@ impl std::error::Error for ApplicationProgramValidationDenial {}
 pub struct ValidatedApplicationProgram<Schema, Program> {
     identity: ApplicationProgramIdentity,
     features: Box<[ApplicationFeatureDeclaration]>,
+    actions: Box<[ApplicationActionDeclaration]>,
     connections: Box<[ApplicationConnectionDeclaration]>,
     rules: Box<[ApplicationProgramRuleDeclaration]>,
     marker: PhantomData<fn() -> (Schema, Program)>,
@@ -123,6 +127,9 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
     }
     pub fn features(&self) -> &[ApplicationFeatureDeclaration] {
         &self.features
+    }
+    pub fn actions(&self) -> &[ApplicationActionDeclaration] {
+        &self.actions
     }
     pub fn connections(&self) -> &[ApplicationConnectionDeclaration] {
         &self.connections
@@ -161,6 +168,29 @@ where
                     format!("{}.{}", feature.identity(), input.identity()),
                 ));
             }
+        }
+    }
+    let actions = Program::Actions::actions();
+    let mut action_ids = BTreeSet::new();
+    for action in &actions {
+        require_identity(action.composition_instance())?;
+        require_identity(action.feature())?;
+        require_identity(action.binding())?;
+        if !feature_ids.contains(&(action.composition_instance(), action.feature())) {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::DanglingFeature,
+                action.feature(),
+            ));
+        }
+        if !action_ids.insert((
+            action.composition_instance(),
+            action.feature(),
+            action.action_type(),
+        )) {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::DuplicateAction,
+                action.binding(),
+            ));
         }
     }
     let mut rule_ids = BTreeSet::new();
@@ -271,6 +301,7 @@ where
     Ok(ValidatedApplicationProgram {
         identity: Program::IDENTITY.clone(),
         features: features.into_boxed_slice(),
+        actions: actions.into_boxed_slice(),
         connections: connections.into_boxed_slice(),
         rules: rules.into_boxed_slice(),
         marker: PhantomData,

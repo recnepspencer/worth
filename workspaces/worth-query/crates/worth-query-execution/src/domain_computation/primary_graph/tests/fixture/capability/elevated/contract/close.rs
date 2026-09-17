@@ -15,14 +15,14 @@ use worth_query_declaration::facade::{
 };
 
 use super::super::{
-    CapabilityConflictingBeneficiary, CapabilityElevationApprover, CapabilityElevationGrant,
-    CapabilityElevationIdentity, CapabilityElevationNotAfter, CapabilityElevationNotBefore,
-    CapabilityElevationReason, CapabilityElevationRequester, CapabilityElevationResource,
-    CapabilityElevationReview, CapabilityElevationSlot, CapabilityElevationStatusField,
-    CapabilityGrant, CapabilityGrantor, CapabilityResource, CapabilityReviewIdentity,
-    CapabilityReviewKindField, CapabilityReviewResource, CapabilityReviewStatusField,
-    CapabilityReviewer, CloseElevationInput, RevokeCapabilityElevationOperation,
-    RevokeElevationCapability,
+    CapabilityConflictingBeneficiary, CapabilityElevationApprover, CapabilityElevationClosedAt,
+    CapabilityElevationGrant, CapabilityElevationIdentity, CapabilityElevationNotAfter,
+    CapabilityElevationNotBefore, CapabilityElevationReason, CapabilityElevationRequester,
+    CapabilityElevationResource, CapabilityElevationReview, CapabilityElevationSlot,
+    CapabilityElevationStatusField, CapabilityGrant, CapabilityGrantor, CapabilityResource,
+    CapabilityReviewIdentity, CapabilityReviewKindField, CapabilityReviewResource,
+    CapabilityReviewStatusField, CapabilityReviewer, CloseElevationInput,
+    RevokeCapabilityElevationOperation, RevokeElevationCapability,
 };
 use super::{command_constraints, command_propagation, command_target, delegation};
 use crate::domain_computation::primary_graph::tests::fixture::{
@@ -34,13 +34,14 @@ pub(super) fn install(
 ) -> ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema> {
     let operation = RevokeCapabilityElevationOperation::reference();
     schema
-        .operation_decision_fact_budget(operation, 15)
+        .operation_decision_fact_budget(operation, 16)
         .operation_projection_work_budget(operation, 96)
         .operation_read_field(operation, CapabilityElevationIdentity::reference())
         .operation_read_field(operation, CapabilityElevationReason::reference())
         .operation_read_field(operation, CapabilityElevationStatusField::reference())
         .operation_read_field(operation, CapabilityElevationNotBefore::reference())
         .operation_read_field(operation, CapabilityElevationNotAfter::reference())
+        .operation_read_field(operation, CapabilityElevationClosedAt::reference())
         .operation_read_field(operation, CapabilityReviewIdentity::reference())
         .operation_read_field(operation, CapabilityReviewKindField::reference())
         .operation_read_field(operation, CapabilityReviewStatusField::reference())
@@ -52,6 +53,7 @@ pub(super) fn install(
         .operation_read_relation(operation, CapabilityReviewResource::reference())
         .operation_read_relation(operation, CapabilityReviewer::reference())
         .operation_write(operation, CapabilityElevationStatusField::reference())
+        .operation_write(operation, CapabilityElevationClosedAt::reference())
         .capability(contract())
 }
 

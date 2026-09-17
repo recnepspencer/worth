@@ -17,6 +17,7 @@ use super::super::{
     fields::*,
     governance::{AccountActivityEffect, DistinctApproverPolicy, UsdCurrency},
     operations::*,
+    posting_integrity::posting_integrity_invariant,
     precondition_manifest::install_payment_preconditions,
     program_manifest::{install_money_programs, install_payment_program},
     relations::*,
@@ -35,9 +36,13 @@ worth_query_application_contribution! {
                 .operation(without_external_effect_or_aftermath(
                     ApplyOpeningFundingOperation::reference(),
                 ))
+                .application_mutation_binding::<ApplyOpeningFundingMutationBinding>()
                 .operation(without_external_effect_or_aftermath(DepositOperation::reference()))
+                .application_mutation_binding::<DepositMutationBinding>()
                 .operation(without_external_effect_or_aftermath(WithdrawOperation::reference()))
+                .application_mutation_binding::<WithdrawMutationBinding>()
                 .operation(without_external_effect_or_aftermath(SendMoneyOperation::reference()))
+                .application_mutation_binding::<SendMoneyMutationBinding>()
                 .operation(without_external_effect_or_aftermath(
                     InitiateBusinessPaymentOperation::reference(),
                 ))
@@ -49,15 +54,20 @@ worth_query_application_contribution! {
                 ))
                 .operation(without_external_effect_or_aftermath(
                     ReverseJournalOperation::reference(),
-                ));
+                ))
+                .application_mutation_binding::<ReverseJournalMutationBinding>();
             let schema = install_money_programs(schema);
             let schema = install_payment_program(schema);
             let schema = install_payment_preconditions(schema);
             let schema = install_payment_decision_reads(schema)
+                .invariant(posting_integrity_invariant())
                 .policy(DistinctApproverPolicy::reference())
                 .unit(UsdCurrency::reference())
                 .effect(AccountActivityEffect::reference())
                 .application_query(crate::queries::payment_detail_definition())
+                .application_mutation_binding::<InitiateBusinessPaymentMutationBinding>()
+                .application_mutation_binding::<ApprovePaymentMutationBinding>()
+                .application_mutation_binding::<RejectPaymentMutationBinding>()
                 .application_query_binding::<crate::queries::PaymentDetailQueryBinding>()
                 .application_query(crate::queries::pending_payments_definition())
                 .application_query_binding::<crate::queries::PendingPaymentsQueryBinding>();

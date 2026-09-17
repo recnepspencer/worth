@@ -31,7 +31,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use tokio::net::TcpListener;
-use tokio::sync::oneshot;
+use tokio::sync::{oneshot, watch};
 use tokio::task::JoinHandle;
 
 use crate::AuthentikBankIdentity;
@@ -45,6 +45,7 @@ use routes::BankHttpRouteState;
 pub struct BankHttpServer {
     local_address: SocketAddr,
     shutdown: Option<oneshot::Sender<()>>,
+    live_shutdown: watch::Sender<bool>,
     server_task: Option<JoinHandle<io::Result<()>>>,
     dispatcher_task: Option<JoinHandle<()>>,
     continuation_task: Option<JoinHandle<()>>,
@@ -94,36 +95,59 @@ impl BankHttpServer {
     }
 
     pub async fn shutdown(mut self) -> io::Result<()> {
+        self.live_shutdown.send_replace(true);
         if let Some(shutdown) = self.shutdown.take() {
             let _ = shutdown.send(());
         }
-        let server_result = match self.server_task.take() {
-            Some(task) => task.await.map_err(io::Error::other)?,
-            None => Ok(()),
-        };
-        if let Some(task) = self.dispatcher_task.take() {
-            task.await.map_err(io::Error::other)?;
+        let mut first_error = None;
+        if let Some(task) = self.server_task.take() {
+            retain_first_error(
+                &mut first_error,
+                task.await
+                    .map_err(io::Error::other)
+                    .and_then(|result| result),
+            );
         }
-        if let Some(task) = self.continuation_task.take() {
-            task.await.map_err(io::Error::other)?;
-        }
-        if let Some(task) = self.recovery_task.take() {
-            task.await.map_err(io::Error::other)?;
-        }
-        if let Some(task) = self.elevation_task.take() {
-            task.await.map_err(io::Error::other)?;
+        for task in [
+            self.dispatcher_task.take(),
+            self.continuation_task.take(),
+            self.recovery_task.take(),
+            self.elevation_task.take(),
+        ]
+        .into_iter()
+        .flatten()
+        {
+            retain_first_error(&mut first_error, task.await.map_err(io::Error::other));
         }
         if let Some(thread) = self.live_thread.take() {
-            thread
-                .join()
-                .map_err(|_| io::Error::other("Bank HTTP live executor panicked"))??;
+            retain_first_error(
+                &mut first_error,
+                tokio::task::spawn_blocking(move || {
+                    thread
+                        .join()
+                        .map_err(|_| io::Error::other("Bank HTTP live executor panicked"))
+                        .and_then(|result| result)
+                })
+                .await
+                .map_err(io::Error::other)
+                .and_then(|result| result),
+            );
         }
-        server_result
+        first_error.map_or(Ok(()), Err)
+    }
+}
+
+fn retain_first_error(first: &mut Option<io::Error>, result: io::Result<()>) {
+    if let Err(error) = result {
+        if first.is_none() {
+            *first = Some(error);
+        }
     }
 }
 
 impl Drop for BankHttpServer {
     fn drop(&mut self) {
+        self.live_shutdown.send_replace(true);
         if let Some(shutdown) = self.shutdown.take() {
             let _ = shutdown.send(());
         }
@@ -196,6 +220,7 @@ where
         configuration.stream_queue_capacity().get(),
         configuration.maximum_live_streams().get(),
     )?;
+    let live_shutdown = live.shutdown_signal();
     let state = BankHttpRouteState::new(
         queue,
         live,
@@ -216,6 +241,7 @@ where
     Ok(BankHttpServer {
         local_address,
         shutdown: Some(shutdown),
+        live_shutdown,
         server_task: Some(server_task),
         dispatcher_task: Some(dispatcher_task),
         continuation_task: Some(continuation_task),

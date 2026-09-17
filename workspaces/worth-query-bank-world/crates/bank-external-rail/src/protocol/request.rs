@@ -35,6 +35,8 @@ pub enum RailRequest {
     /// Exactly-once evidence for safe-retry (R8.70): re-dispatch of an already
     /// completed effect must leave this count unchanged.
     InquireAdmissionCount,
+    /// Ask how many dispatch frames actually reached this process, including duplicates.
+    InquireDispatchContactCount,
     /// Ask how many domain effects the rail physically completed.
     InquireCompletedEffectCount,
     /// Ask which completed domain notice exists for one correlation.

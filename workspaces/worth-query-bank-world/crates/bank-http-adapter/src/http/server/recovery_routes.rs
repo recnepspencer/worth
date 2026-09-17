@@ -10,7 +10,7 @@ use bank_domain::proposals::BankIdempotencyKey;
 use super::super::protocol::{
     BankHttpDenial, BankHttpDenialKind, BankHttpEstateNotificationOutcome,
     BankHttpEstateNotificationRequest, BankHttpNextAction, BankHttpRecoveryInspectionOutcome,
-    BankHttpRecoveryRequest,
+    BankHttpRecoveryRequest, BankHttpRecoverySafeRetryOutcome,
 };
 use super::recovery_executor::{
     AdmittedBankHttpNotificationRequest, AdmittedBankHttpRecoveryRequest,
@@ -49,6 +49,23 @@ pub(super) async fn inspect(
         }
     };
     inspection_response(state.recovery.inspect(admitted).await)
+}
+
+pub(super) async fn safe_retry(
+    State(state): State<BankHttpRouteState>,
+    request: Result<Json<BankHttpRecoveryRequest>, JsonRejection>,
+) -> (StatusCode, Json<BankHttpRecoverySafeRetryOutcome>) {
+    let request = match request {
+        Ok(Json(request)) => request,
+        Err(_) => return safe_retry_response(safe_retry_denied(None, malformed())),
+    };
+    let admitted = match admit_recovery(request, state.maximum_deadline) {
+        Ok(admitted) => admitted,
+        Err((request_id, denial)) => {
+            return safe_retry_response(safe_retry_denied(request_id, denial));
+        }
+    };
+    safe_retry_response(state.recovery.safe_retry(admitted).await)
 }
 
 fn admit_notification(
@@ -123,6 +140,13 @@ fn inspection_denied(
     BankHttpRecoveryInspectionOutcome::Denied { request_id, denial }
 }
 
+fn safe_retry_denied(
+    request_id: Option<String>,
+    denial: BankHttpDenial,
+) -> BankHttpRecoverySafeRetryOutcome {
+    BankHttpRecoverySafeRetryOutcome::Denied { request_id, denial }
+}
+
 fn notification_response(
     outcome: BankHttpEstateNotificationOutcome,
 ) -> (StatusCode, Json<BankHttpEstateNotificationOutcome>) {
@@ -139,6 +163,16 @@ fn inspection_response(
     let status = match &outcome {
         BankHttpRecoveryInspectionOutcome::Inspected { .. } => StatusCode::OK,
         BankHttpRecoveryInspectionOutcome::Denied { denial, .. } => response_status(denial.kind),
+    };
+    (status, Json(outcome))
+}
+
+fn safe_retry_response(
+    outcome: BankHttpRecoverySafeRetryOutcome,
+) -> (StatusCode, Json<BankHttpRecoverySafeRetryOutcome>) {
+    let status = match &outcome {
+        BankHttpRecoverySafeRetryOutcome::Applied { .. } => StatusCode::OK,
+        BankHttpRecoverySafeRetryOutcome::Denied { denial, .. } => response_status(denial.kind),
     };
     (status, Json(outcome))
 }

@@ -2,7 +2,7 @@ use bank_http_adapter::{
     BankHttpAccountActivityPageOutcome, BankHttpAccountSummaryOutcome,
     BankHttpEstateDisbursementOutcome, BankHttpEstateNotificationOutcome, BankHttpMutationControls,
     BankHttpMutationOperation, BankHttpMutationOutcome, BankHttpRecoveryInspectionOutcome,
-    BankHttpRequestControls,
+    BankHttpRecoverySafeRetryOutcome, BankHttpRequestControls,
 };
 use serde::{Deserialize, Serialize};
 
@@ -168,6 +168,17 @@ pub enum BankUserNodeEstateNotificationOutcome {
 pub enum BankUserNodeRecoveryInspectionOutcome {
     Forwarded {
         response: BankHttpRecoveryInspectionOutcome,
+    },
+    Denied {
+        denial: BankUserNodeDenial,
+    },
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "node_outcome", rename_all = "snake_case")]
+pub enum BankUserNodeRecoverySafeRetryOutcome {
+    Forwarded {
+        response: BankHttpRecoverySafeRetryOutcome,
     },
     Denied {
         denial: BankUserNodeDenial,

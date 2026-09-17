@@ -4,13 +4,12 @@ use worth_query_topology_entry::{PlanarRead, PlanarSourceAdjustment};
 use super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
 
-pub(super) mod lifecycle;
 mod custody;
 mod dependent_recovery;
-mod owner_demand_boundary;
+pub(super) mod lifecycle;
 mod program_contract;
-mod recovery;
 mod readiness_recovery;
+mod recovery;
 mod settlement;
 
 pub(super) fn performed_source_settles_required_output(
@@ -54,7 +53,8 @@ pub(super) fn lifecycle_proofs(
     readiness_recovery::preserved_noop_output_completes_readiness_without_a_signal_successor(
         foreign,
     );
-    owner_demand_boundary::raw_owner_guards(foreign);
+    readiness_recovery::program_demand_closes_and_rejects_a_foreign_request(foreign);
+    readiness_recovery::denied_program_producer_releases_the_shared_claim(foreign);
 }
 
 pub(super) fn foreign_program_is_denied_before_publication(

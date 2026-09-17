@@ -3,6 +3,7 @@ use worth_query_admission::facade::authenticated_principal::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
+use super::super::WorthQueryProducerCommitAuthority;
 use super::disclosure::validate_disclosure;
 use super::{
     FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
@@ -26,6 +27,53 @@ where
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
         disclosure: WorthQueryApplicationOutputDemandDisclosure<FamilySourceQuery<Schema, Family>>,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>: 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        self.advance_output_demand_with_commit_authority(
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            disclosure,
+            WorthQueryProducerCommitAuthority::Ordinary,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn advance_program_output_demand<Family>(
+        &self,
+        demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+        disclosure: WorthQueryApplicationOutputDemandDisclosure<FamilySourceQuery<Schema, Family>>,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>: 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        self.advance_output_demand_with_commit_authority(
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            disclosure,
+            WorthQueryProducerCommitAuthority::ProgramOutput,
+        )
+    }
+
+    fn advance_output_demand_with_commit_authority<Family>(
+        &self,
+        demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+        disclosure: WorthQueryApplicationOutputDemandDisclosure<FamilySourceQuery<Schema, Family>>,
+        commit_authority: WorthQueryProducerCommitAuthority,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -75,7 +123,7 @@ where
             demand,
             principal,
             request_scope,
-            delivery_branch.clone(),
+            delivery_branch,
             disclosure,
         )?;
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
@@ -107,10 +155,15 @@ where
             }
             Admission::Pending => return Ok(WorthQueryOutputDemandAdvance::Pending),
             Admission::Recover(completion) => {
-                let result = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_commit(
-                    self,
-                    completion.receipt,
-                    completion.readiness,
+                let result = completion.retained.map_or_else(
+                    || {
+                        crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_commit(
+                            self,
+                            completion.receipt,
+                            completion.readiness,
+                        )
+                    },
+                    Ok,
                 );
                 self.output_demands.finish_recovery(interest, &result);
                 return result.map(WorthQueryOutputDemandAdvance::Settled);
@@ -129,7 +182,7 @@ where
                 );
             }
             Admission::EvaluateReadiness(pending) => {
-                return self.finish_output_readiness_evaluation::<Family>(
+                return self.finish_output_readiness_evaluation(
                     interest,
                     &demand.selected.identity,
                     pending,
@@ -150,7 +203,7 @@ where
             self,
             principal,
             request_scope,
-            delivery_branch.clone(),
+            delivery_branch,
             &demand.source,
         ) {
             self.output_demands.relinquish_execution(interest);
@@ -163,6 +216,7 @@ where
             delivery_branch,
             &demand.source,
             &demand.observed_source,
+            commit_authority,
         );
         let mut receipt = match result {
             Ok(receipt) => receipt,

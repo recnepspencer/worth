@@ -5,6 +5,7 @@ mod close;
 mod conditional_definition;
 mod context;
 mod generated_materialization;
+pub(in crate::domain_computation::primary_graph) use generated_materialization::admit_required_invariants;
 mod history;
 mod operation;
 mod query;

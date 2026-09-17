@@ -56,4 +56,9 @@ pub(super) fn install_grants(
             SPECIALIST,
             GrantSpec::revoke_capability(),
         ))
+        .with_grant(grant(
+            APPROVER_REVOKE_CAPABILITY_GRANT,
+            APPROVER,
+            GrantSpec::revoke_capability(),
+        ))
 }
