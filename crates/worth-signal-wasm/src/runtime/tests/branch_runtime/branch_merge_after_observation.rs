@@ -48,7 +48,10 @@ fn runtime_with_published_doubled_output() -> RuntimeCore {
             },
         )
         .unwrap();
-    assert_eq!(runtime.read_value(OUTPUT).unwrap(), SignalValue::Number(18.0));
+    assert_eq!(
+        runtime.read_value(OUTPUT).unwrap(),
+        SignalValue::Number(18.0)
+    );
     runtime
 }
 
@@ -108,17 +111,25 @@ fn merging_from_the_active_child_carries_its_truth_into_the_parent() {
     let feature_branch = runtime.create_branch("fp".to_owned()).unwrap().id.0;
     runtime.switch_branch(feature_branch).unwrap();
     set_count(&mut runtime, 17.0);
-    assert_eq!(runtime.read_value(OUTPUT).unwrap(), SignalValue::Number(34.0));
+    assert_eq!(
+        runtime.read_value(OUTPUT).unwrap(),
+        SignalValue::Number(34.0)
+    );
 
-    let result = runtime
-        .merge_branches(feature_branch, main_branch)
-        .unwrap();
+    let result = runtime.merge_branches(feature_branch, main_branch).unwrap();
 
     assert_eq!(runtime.current_branch().id.0, feature_branch);
     assert!(
-        result.records.iter().any(|record| record.action == "Adopted"),
+        result
+            .records
+            .iter()
+            .any(|record| record.action == "Adopted"),
         "merge must adopt the child's edit: {:?}",
-        result.records.iter().map(|record| (record.source_node.clone(), record.action.clone())).collect::<Vec<_>>()
+        result
+            .records
+            .iter()
+            .map(|record| (record.source_node.clone(), record.action.clone()))
+            .collect::<Vec<_>>()
     );
     assert_parent_reads_merged_truth(&mut runtime, main_branch);
 }
@@ -134,17 +145,25 @@ fn observing_branches_between_the_edit_and_the_merge_does_not_change_what_merges
     observe_like_the_worker_first_root(&mut runtime);
     set_count(&mut runtime, 17.0);
     observe_like_the_worker_first_root(&mut runtime);
-    assert_eq!(runtime.read_value(OUTPUT).unwrap(), SignalValue::Number(34.0));
+    assert_eq!(
+        runtime.read_value(OUTPUT).unwrap(),
+        SignalValue::Number(34.0)
+    );
     observe_like_the_worker_first_root(&mut runtime);
 
-    let result = runtime
-        .merge_branches(feature_branch, main_branch)
-        .unwrap();
+    let result = runtime.merge_branches(feature_branch, main_branch).unwrap();
 
     assert!(
-        result.records.iter().any(|record| record.action == "Adopted"),
+        result
+            .records
+            .iter()
+            .any(|record| record.action == "Adopted"),
         "observation must not empty the merge's source slice: {:?}",
-        result.records.iter().map(|record| (record.source_node.clone(), record.action.clone())).collect::<Vec<_>>()
+        result
+            .records
+            .iter()
+            .map(|record| (record.source_node.clone(), record.action.clone()))
+            .collect::<Vec<_>>()
     );
     observe_like_the_worker_first_root(&mut runtime);
     assert_parent_reads_merged_truth(&mut runtime, main_branch);
@@ -157,10 +176,11 @@ fn merged_parent_recomputes_the_published_output_without_reading_the_computed_fi
     let feature_branch = runtime.create_branch("fp".to_owned()).unwrap().id.0;
     runtime.switch_branch(feature_branch).unwrap();
     set_count(&mut runtime, 17.0);
-    assert_eq!(runtime.read_value(OUTPUT).unwrap(), SignalValue::Number(34.0));
-    runtime
-        .merge_branches(feature_branch, main_branch)
-        .unwrap();
+    assert_eq!(
+        runtime.read_value(OUTPUT).unwrap(),
+        SignalValue::Number(34.0)
+    );
+    runtime.merge_branches(feature_branch, main_branch).unwrap();
 
     runtime.switch_branch(main_branch).unwrap();
     assert_eq!(
@@ -174,5 +194,8 @@ fn merged_parent_recomputes_the_published_output_without_reading_the_computed_fi
         "the published output must recompute through the intermediate computed"
     );
     set_count(&mut runtime, 21.0);
-    assert_eq!(runtime.read_value(OUTPUT).unwrap(), SignalValue::Number(42.0));
+    assert_eq!(
+        runtime.read_value(OUTPUT).unwrap(),
+        SignalValue::Number(42.0)
+    );
 }

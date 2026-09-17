@@ -1,6 +1,6 @@
 mod branch_lifecycle_switching;
-mod branch_merge_after_observation;
 mod branch_merge_active_branch;
+mod branch_merge_after_observation;
 mod branch_merge_history_surface;
 mod branch_merge_recipe_materialization;
 mod branch_merge_source_edit_reconciliation;

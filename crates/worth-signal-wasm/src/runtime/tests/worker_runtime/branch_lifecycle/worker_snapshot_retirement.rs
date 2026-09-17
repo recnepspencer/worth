@@ -359,7 +359,10 @@ fn effect_closeout_rejects_an_unrelated_live_branch_as_the_canonical_target() {
     let coordinator_id = fixture.coordinator.branch.id.0;
     let mut request = closeout_request(
         &fixture,
-        fixture.shell.worker_branch_basis(fixture.main.id.0).unwrap(),
+        fixture
+            .shell
+            .worker_branch_basis(fixture.main.id.0)
+            .unwrap(),
     );
     request.canonical_transaction.branch_id = coordinator_id;
     request.canonical_transaction.expected_basis =
@@ -390,7 +393,10 @@ fn effect_closeout_without_dependency_retirement_settles_into_the_effect_parent(
     // ancestor: the root behind it is not where this effect's work belongs.
     let mut request = closeout_request(
         &fixture,
-        fixture.shell.worker_branch_basis(fixture.main.id.0).unwrap(),
+        fixture
+            .shell
+            .worker_branch_basis(fixture.main.id.0)
+            .unwrap(),
     );
     request.dependency_basis_retirement = None;
     let denial = fixture
@@ -413,7 +419,10 @@ fn effect_closeout_without_dependency_retirement_settles_into_the_effect_parent(
         .expect("target denial must preserve effect snapshot authority");
     fixture
         .shell
-        .restore_branch_snapshot(fixture.dependency.branch.id.0, fixture.dependency_snapshot.clone())
+        .restore_branch_snapshot(
+            fixture.dependency.branch.id.0,
+            fixture.dependency_snapshot.clone(),
+        )
         .expect("target denial must preserve dependency snapshot authority");
 
     let dependency_id = fixture.dependency.branch.id.0;

@@ -27,9 +27,7 @@ pub(crate) fn record_semantic_execution(
     let retention_budget = installed_policy.retention_budget();
     let profile = installed_policy.tier();
     let has_pending_change = graph.diagnostics_state().has_pending_change_input();
-    let extends_transaction_flow = graph
-        .diagnostics_state()
-        .extends_open_transaction_flow();
+    let extends_transaction_flow = graph.diagnostics_state().extends_open_transaction_flow();
     let noop_execution =
         !extends_transaction_flow && !has_pending_change && report.tasks_executed == 0;
     let performed_now = graph.invalidation_performed_counters();

@@ -112,12 +112,12 @@ pub use crate::logic::invalidation::mark_dirty_batch;
 pub use crate::logic::transaction::DefinedComputation as RecipeInstance;
 pub use crate::logic::transaction::DefinedKeyedComputation as KeyedRecipeInstance;
 pub use crate::logic::transaction::EvaluationSummary as RunSummary;
+pub use crate::logic::transaction::ObservedDemandSummary;
 pub use crate::logic::transaction::RuntimeExecutionRequest as RuntimeRunRequest;
 pub use crate::logic::transaction::RuntimeHistory as History;
 #[cfg(test)]
 pub use crate::logic::transaction::SignalRuntimeConfig;
 pub use crate::logic::transaction::SignalRuntimeConfig as RuntimeConfig;
-pub use crate::logic::transaction::ObservedDemandSummary;
 pub use crate::logic::transaction::TransactionExecutionRequest as TransactionRunRequest;
 #[cfg(test)]
 pub use crate::logic::transaction::{

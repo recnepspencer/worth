@@ -62,7 +62,13 @@ fn recorded_state() -> DiagnosticsState {
     });
     state.attach_event_epochs_to_latest_flow(vec![epoch]);
     state.record_observation(Default::default());
-    state.note_change_input(node, ASPECT_A, &[], Some("pending causality".repeat(64)), Default::default());
+    state.note_change_input(
+        node,
+        ASPECT_A,
+        &[],
+        Some("pending causality".repeat(64)),
+        Default::default(),
+    );
     state
 }
 

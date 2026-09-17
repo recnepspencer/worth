@@ -245,9 +245,8 @@ impl InvalidationSummary {
         now: crate::data::telemetry::SignalInvalidationRealizedCounters,
     ) -> Self {
         use crate::data::telemetry::InvalidationPerformedCounter as Counter;
-        let delta = |counter: Counter| {
-            now.value(counter).saturating_sub(baseline.value(counter)) as u32
-        };
+        let delta =
+            |counter: Counter| now.value(counter).saturating_sub(baseline.value(counter)) as u32;
         self.invalidated_direct_subscribers = delta(Counter::DirectSettlementsProduced);
         self.narrowed_frontier_width = delta(Counter::ReadyItemsEnqueued);
         self

@@ -234,7 +234,9 @@ fn snapshot_capture_keeps_pending_source_mutations_merge_visible() {
         .with_kernel_defaults()
         .build();
     let main = runtime.observe().current_branch();
-    let feature = runtime.create_branch("feature-snapshot-observation").unwrap();
+    let feature = runtime
+        .create_branch("feature-snapshot-observation")
+        .unwrap();
     let mut runtime_ctx = ();
 
     runtime.switch_branch(feature.clone()).unwrap();

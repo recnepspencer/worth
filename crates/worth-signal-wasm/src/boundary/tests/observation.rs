@@ -21,7 +21,9 @@ fn watched_on_demand_computed_is_delivered_by_the_committing_transaction() {
 
     set_signal_value(&signals, "count", 4.0);
 
-    let notices_locked = notices.lock().expect("computed watch notices mutex poisoned");
+    let notices_locked = notices
+        .lock()
+        .expect("computed watch notices mutex poisoned");
     assert_eq!(notices_locked.len(), 1);
     assert_eq!(notices_locked[0].signal_id, "double");
     assert!(notices_locked[0].recomputed);
@@ -35,7 +37,10 @@ fn watched_on_demand_computed_is_delivered_by_the_committing_transaction() {
     // Same value again: recomputed but not meaningfully changed, so silent.
     set_signal_value(&signals, "count", 4.0);
     assert_eq!(
-        notices.lock().expect("computed watch notices mutex poisoned").len(),
+        notices
+            .lock()
+            .expect("computed watch notices mutex poisoned")
+            .len(),
         1
     );
 }
