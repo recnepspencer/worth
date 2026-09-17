@@ -13,7 +13,8 @@ use worth_query_host::facade::{
             ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureLeaf,
             ApplicationFeatureList, ApplicationFeatureRef, ApplicationNoOutputGraph,
             ApplicationOperationActionRef, ApplicationProgramAuthoring,
-            ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationRuleLeaf,
+            ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
+            ApplicationRuleLeaf,
         },
         application_query::ApplicationQueryParameterSet,
         application_schema::ApplicationSchemaComposition,
@@ -61,7 +62,7 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for TemporalInstallationPr
         ApplicationFeatureRef<TemporalHostSchema, TemporalInstallationFeature>,
         ApplicationFeatureLeaf,
     >;
-    type OutputGraph = ApplicationNoOutputGraph;
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = ApplicationRuleLeaf;
 
     const IDENTITY: ApplicationProgramIdentity =

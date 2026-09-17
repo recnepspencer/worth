@@ -1,8 +1,8 @@
 use crate::application_schema::ApplicationSchema;
 
 use super::{
-    ApplicationConnectionDeclaration, ApplicationConnectionShape, ApplicationOutputChildrenShape,
-    ApplicationOutputGraph,
+    ApplicationConnectionDeclaration, ApplicationConnectionShape, ApplicationDiscoveredOutputGraph,
+    ApplicationOutputChildrenShape, ApplicationOutputGraph,
 };
 
 /// Explicit posture for an application program with no managed required-output
@@ -45,8 +45,33 @@ impl<RootConnection, Dependents> sealed::ProgramOutputShape
 {
 }
 
+impl<RootConnection, Dependents> sealed::ProgramOutputShape
+    for ApplicationDiscoveredOutputGraph<RootConnection, Dependents>
+{
+}
+
 impl<Schema, RootConnection, Dependents> ApplicationProgramOutputShape<Schema>
     for ApplicationOutputGraph<RootConnection, Dependents>
+where
+    Schema: ApplicationSchema,
+    RootConnection: ApplicationConnectionShape<Schema>,
+    Dependents: ApplicationOutputChildrenShape<Schema, RootConnection::TargetFeature>,
+{
+    fn connections() -> Vec<ApplicationConnectionDeclaration> {
+        let mut connections = vec![RootConnection::declaration()];
+        Dependents::append_connections(&mut connections);
+        connections
+    }
+
+    fn connection_types() -> Vec<std::any::TypeId> {
+        let mut connections = vec![std::any::TypeId::of::<RootConnection>()];
+        Dependents::append_connection_types(&mut connections);
+        connections
+    }
+}
+
+impl<Schema, RootConnection, Dependents> ApplicationProgramOutputShape<Schema>
+    for ApplicationDiscoveredOutputGraph<RootConnection, Dependents>
 where
     Schema: ApplicationSchema,
     RootConnection: ApplicationConnectionShape<Schema>,

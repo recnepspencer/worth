@@ -40,18 +40,29 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
 struct RecordedOutput {
     correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     source_identity: Option<[u8; 32]>,
+    producer_dependency_identity: Option<[u8; 32]>,
+    idempotency_key_identity: [u8; 32],
     observed_source_facts: Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
 }
 
 pub(super) struct WorthQueryExactRecordedOutput {
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(super) source_identity: [u8; 32],
+    pub(super) producer_dependency_identity: Option<[u8; 32]>,
+    pub(super) idempotency_key_identity: [u8; 32],
     pub(super) runtime_authority: u64,
     pub(super) schema: ApplicationSchemaBindingIdentity,
     pub(super) scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     pub(super) observed_source_facts:
         Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
+}
+
+#[derive(Clone, Copy)]
+pub(super) struct WorthQueryProducerLineageHead {
+    pub(super) occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    pub(super) dependency_identity: Option<[u8; 32]>,
+    pub(super) idempotency_key_identity: [u8; 32],
 }
 
 #[derive(Clone, Copy)]
@@ -106,6 +117,8 @@ impl WorthQueryApplicationOutputLineage {
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
         source_identity: [u8; 32],
+        producer_dependency_identity: Option<[u8; 32]>,
+        idempotency_key_identity: [u8; 32],
         observed_source_facts: Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
     ) {
         let source = SemanticSource {
@@ -125,6 +138,8 @@ impl WorthQueryApplicationOutputLineage {
                 RecordedOutput {
                     correspondence,
                     source_identity: Some(source_identity),
+                    producer_dependency_identity,
+                    idempotency_key_identity,
                     observed_source_facts,
                 },
             );
@@ -189,6 +204,10 @@ impl WorthQueryApplicationOutputLineage {
                 RecordedOutput {
                     correspondence: evidence.retain_output_correspondence(),
                     source_identity: evidence.idempotency().source_identity(),
+                    producer_dependency_identity: evidence
+                        .idempotency()
+                        .producer_dependency_identity(),
+                    idempotency_key_identity: *evidence.idempotency().key_identity(),
                     observed_source_facts: evidence.retain_observed_source_facts(),
                 },
             );

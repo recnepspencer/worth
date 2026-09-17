@@ -290,6 +290,7 @@ impl<Schema, Operation, Input, Scope>
             retain_output_demand_observation: false,
             retain_client_observation: false,
             producer_required_invariants: &[],
+            output_currentness_facts: None,
         })
     }
 

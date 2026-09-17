@@ -8,6 +8,7 @@ mod instance;
 mod output_graph;
 mod output_posture;
 mod program;
+mod program_outputs;
 mod rule;
 
 pub use action::{
@@ -31,15 +32,18 @@ pub use feature::{
 pub use identity::ApplicationProgramIdentity;
 pub use instance::{ApplicationCompositionInstance, ApplicationRootComposition};
 pub use output_graph::{
-    ApplicationConnectionShape, ApplicationOutputChildrenShape, ApplicationOutputEdge,
-    ApplicationOutputEdgeShape, ApplicationOutputEdgesShape, ApplicationOutputGraph,
-    ApplicationOutputGraphShape, ApplicationOutputLeaf, ApplicationProgramRootConnection,
-    ApplicationProgramRootConnectionRef, ApplicationProgramRootEdges,
+    ApplicationConnectionShape, ApplicationDiscoveredOutputGraph, ApplicationDiscoveredOutputRoot,
+    ApplicationOutputChildrenShape, ApplicationOutputEdge, ApplicationOutputEdgeShape,
+    ApplicationOutputEdgesShape, ApplicationOutputGraph, ApplicationOutputGraphShape,
+    ApplicationOutputLeaf, ApplicationRequiredOutputRoot,
 };
 pub use output_posture::{ApplicationNoOutputGraph, ApplicationProgramOutputShape};
 pub use program::{
     ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramValidationDenial,
     ApplicationProgramValidationDenialKind, ValidatedApplicationProgram,
+};
+pub use program_outputs::{
+    ApplicationProgramOutputRootsShape, ApplicationProgramOutputs, ApplicationProgramOutputsShape,
 };
 pub use rule::{
     ApplicationCommitBoundary, ApplicationLocalRuleInstanceRef, ApplicationLocalRuleRef,

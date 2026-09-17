@@ -12,6 +12,7 @@ use super::{
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod program_outputs;
+pub use program_outputs::WorthQueryProgramOutputCurrentnessDenial;
 
 /// Borrowed ordinary-request context. Construction selects no World state and
 /// resolves no application principal.
@@ -30,14 +31,6 @@ pub struct WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope
     observation: std::sync::Arc<
         worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
     >,
-}
-
-#[derive(Debug)]
-pub enum WorthQueryApplicationHistorySelectionDenial {
-    ProductSelection(
-        worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
-    ),
-    CommitUnavailable,
 }
 
 pub trait WorthQueryApplicationRequestExt<Schema>
@@ -145,76 +138,16 @@ where
         }
     }
 
-    /// Selects a commit from this branch's bounded history. The receipt only
-    /// identifies the commit: history availability and fresh read admission
-    /// still decide whether the query may run. This does not mint the opt-in
-    /// performed-publication lease.
-    pub fn at_commit(
-        &self,
-        commit: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
-        maximum_history_work: std::num::NonZeroUsize,
-    ) -> Result<
-        WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>,
-        WorthQueryApplicationHistorySelectionDenial,
-    > {
-        self.at_selected_commit(
-            commit.committed_product_publication().composite_commit(),
-            maximum_history_work,
-        )
-    }
-
-    /// Retains the approval-commit truth of an issued elevation. Authorization
-    /// still occurs against the current product when the query is admitted.
-    pub fn at_approved_elevation(
-        &self,
-        approved: &worth_query_execution::facade::primary_graph::WorthQueryApprovedElevation,
-        maximum_history_work: std::num::NonZeroUsize,
-    ) -> Result<
-        WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>,
-        WorthQueryApplicationHistorySelectionDenial,
-    > {
-        self.at_selected_commit(
-            approved.approval_product_publication().composite_commit(),
-            maximum_history_work,
-        )
-    }
-
-    fn at_selected_commit(
-        &self,
-        selected_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
-        maximum_history_work: std::num::NonZeroUsize,
-    ) -> Result<
-        WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>,
-        WorthQueryApplicationHistorySelectionDenial,
-    > {
-        let history = self
-            .application
-            .branches()
-            .history(self.branch, maximum_history_work)
-            .map_err(WorthQueryApplicationHistorySelectionDenial::ProductSelection)?;
-        let entry = history
-            .entries()
-            .find(|entry| entry.selected_commit() == selected_commit)
-            .ok_or(WorthQueryApplicationHistorySelectionDenial::CommitUnavailable)?;
-        let selected = history
-            .select(&entry)
-            .map_err(WorthQueryApplicationHistorySelectionDenial::ProductSelection)?;
-        Ok(WorthQueryApplicationRetainedRequest {
-            application: self.application,
-            principal: self.principal,
-            scope: self.scope,
-            branch: self.branch,
-            observation: selected.retain_application_read(),
-        })
-    }
-
     pub fn retain_read(
         &self,
     ) -> Result<
         super::WorthQueryApplicationReadObservation,
         worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
     > {
-        super::WorthQueryApplicationReadObservation::retain_on_branch(self.application, self.branch)
+        let selected = self.application.on_branch(self.branch).select()?;
+        Ok(super::WorthQueryApplicationReadObservation::new(
+            selected.retain_application_read(),
+        ))
     }
 }
 

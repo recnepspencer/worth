@@ -11,7 +11,7 @@ use super::super::super::{
 use super::super::aftermath_resolution::resolve_exact_committed_aftermath;
 use super::super::elevation_currentness::WorthQueryElevationCommitCurrentness;
 use super::super::outcome::commit_outcome_from_authorization_denial;
-use super::super::provider_denial::denied;
+use super::super::provider_denial::{denied, denied_with_detail};
 use crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality;
 use crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization;
 use crate::domain_computation::primary_graph::application_attempt::{
@@ -113,6 +113,7 @@ struct WorthQueryProviderAttemptPreparation {
     retain_client_observation: bool,
     producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    output_currentness_facts: Option<std::sync::Arc<[WorthQueryApplicationObservedFact]>>,
 }
 
 struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
@@ -153,6 +154,7 @@ where
         retain_output_demand_observation,
         retain_client_observation,
         producer_required_invariants,
+        output_currentness_facts,
     } = program;
     let mut admission = read_set.admission;
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());
@@ -190,6 +192,7 @@ where
                 retain_output_demand_observation,
                 retain_client_observation,
                 producer_required_invariants,
+                output_currentness_facts,
             },
             idempotency,
             aftermath_causality,
@@ -248,6 +251,7 @@ fn prepare_application_provider_attempt(
         preparation.retain_output_demand_observation,
         preparation.retain_client_observation,
         preparation.producer_required_invariants,
+        preparation.output_currentness_facts,
     )
     .map_err(|_| ())
 }
@@ -280,7 +284,7 @@ fn take_commit_authorization<Schema, Operation, Input, Scope>(
 ) -> Result<WorthQueryProviderCommitAuthorization, WorthQueryApplicationCommitOutcome> {
     admission
         .take_authorization_dependencies(application.authorization.bridge())
-        .map_err(|_| denied(DenialStage::DecisionReadSet))
+        .map_err(|denial| denied_with_detail(DenialStage::DecisionReadSet, denial.to_string()))
 }
 
 fn bind_commit_idempotency<Schema, Operation, Input, Scope>(

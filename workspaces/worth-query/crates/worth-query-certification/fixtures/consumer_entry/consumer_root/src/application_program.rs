@@ -1,14 +1,13 @@
 use worth_query_decl::facade::application_program::{
-    ApplicationActionLeaf, ApplicationActionList, ApplicationActionRef, ApplicationCommitBoundary,
-    ApplicationCompositionInstance, ApplicationConditionalOperationActionRef,
-    ApplicationConnectionIdentity, ApplicationConnectionInstanceRef, ApplicationConnectionRef,
-    ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureInputList,
-    ApplicationFeatureInstanceRef, ApplicationFeatureLeaf, ApplicationFeatureList,
-    ApplicationFeatureRef, ApplicationInputPort, ApplicationLocalRuleRef,
-    ApplicationOccurrenceConnectionBinding, ApplicationOutputEdge, ApplicationOutputGraph,
-    ApplicationOutputLeaf, ApplicationProgramAuthoring, ApplicationProgramDefinition,
-    ApplicationProgramIdentity, ApplicationRootComposition, ApplicationRuleAt, ApplicationRuleLeaf,
-    ApplicationRuleList, ApplicationSharedRuleRef,
+    ApplicationCommitBoundary, ApplicationCompositionInstance, ApplicationConnectionIdentity,
+    ApplicationConnectionInstanceRef, ApplicationConnectionRef, ApplicationFeature,
+    ApplicationFeatureInputLeaf, ApplicationFeatureInputList, ApplicationFeatureInstanceRef,
+    ApplicationFeatureLeaf, ApplicationFeatureList, ApplicationFeatureRef, ApplicationInputPort,
+    ApplicationLocalRuleRef, ApplicationOccurrenceConnectionBinding, ApplicationOutputEdge,
+    ApplicationOutputGraph, ApplicationOutputLeaf, ApplicationProgramAuthoring,
+    ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
+    ApplicationRootComposition, ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList,
+    ApplicationSharedRuleRef,
 };
 use worth_query_parameter_entry::{ParameterFeature, PositiveParameterCount};
 use worth_query_topology_entry::{
@@ -25,10 +24,13 @@ use worth_query_topology_entry::{
 
 use crate::ConsumerSchema;
 
-mod validation_denials;
-pub use validation_denials::{
-    duplicate_feature_is_denied, missing_required_input_is_denied, undeclared_input_is_denied,
-    unexported_cross_instance_is_denied,
+mod features;
+mod roots;
+use features::ConsumerFeatures;
+pub use roots::{
+    ConsumerDiscoveredProgramRoot, ConsumerProgramRoot, ConsumerRequiredSharedRoot,
+    ConsumerSecondaryProgramRoot, ConsumerTruncatedProgramRoot, ConsumerUndeclaredProgramRoot,
+    DiscoveredPlanarRoot, RequiredSharedPlanarRoot, SecondaryPlanarRoot,
 };
 
 pub struct ConsumerProgram;
@@ -164,7 +166,8 @@ impl ApplicationProgramDefinition<ConsumerSchema> for MissingRequiredInputProgra
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Actions = ApplicationActionLeaf;
     type Features = MissingRequiredInputFeatures;
-    type OutputGraph = ApplicationOutputGraph<PlanarConnection, ApplicationOutputLeaf>;
+    type Outputs =
+        ApplicationProgramOutputs<ApplicationOutputGraph<PlanarConnection, ApplicationOutputLeaf>>;
     type Rules = MissingRequiredInputRules;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.missing-required-input.v1");
@@ -185,7 +188,8 @@ impl ApplicationProgramDefinition<ConsumerSchema> for DuplicateFeatureProgram {
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Actions = ApplicationActionLeaf;
     type Features = DuplicateFeatureFeatures;
-    type OutputGraph = ApplicationOutputGraph<PlanarConnection, ApplicationOutputLeaf>;
+    type Outputs =
+        ApplicationProgramOutputs<ApplicationOutputGraph<PlanarConnection, ApplicationOutputLeaf>>;
     type Rules = MissingRequiredInputRules;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.duplicate-feature.v1");
@@ -212,7 +216,9 @@ impl ApplicationProgramDefinition<ConsumerSchema> for UndeclaredInputProgram {
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Actions = ApplicationActionLeaf;
     type Features = UndeclaredInputFeatures;
-    type OutputGraph = ApplicationOutputGraph<UndeclaredInputConnection, ApplicationOutputLeaf>;
+    type Outputs = ApplicationProgramOutputs<
+        ApplicationOutputGraph<UndeclaredInputConnection, ApplicationOutputLeaf>,
+    >;
     type Rules = MissingRequiredInputRules;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.certification.undeclared-input.v1");
@@ -248,9 +254,11 @@ impl ApplicationProgramDefinition<ConsumerSchema> for UnexportedCrossInstancePro
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Actions = ApplicationActionLeaf;
     type Features = UnexportedCrossInstanceFeatures;
-    type OutputGraph = ApplicationOutputGraph<
-        PlanarConnection,
-        ApplicationOutputEdge<UnexportedCrossInstanceConnection, ApplicationOutputLeaf>,
+    type Outputs = ApplicationProgramOutputs<
+        ApplicationOutputGraph<
+            PlanarConnection,
+            ApplicationOutputEdge<UnexportedCrossInstanceConnection, ApplicationOutputLeaf>,
+        >,
     >;
     type Rules = MissingRequiredInputRules;
     const IDENTITY: ApplicationProgramIdentity =
@@ -271,69 +279,6 @@ type ConsumerRules = ApplicationRuleList<
     >,
 >;
 
-type ConsumerActions = ApplicationActionList<
-    ApplicationActionRef<ConsumerSchema, PlanarSourceFeature, PlanarEditBinding<ConsumerSchema>>,
-    ApplicationActionList<
-        ApplicationActionRef<
-            ConsumerSchema,
-            PlanarSourceFeature,
-            PriorCycleAdjustmentBinding<ConsumerSchema>,
-        >,
-        ApplicationActionList<
-            ApplicationActionRef<
-                ConsumerSchema,
-                PlanarSourceFeature,
-                VertexReplacementBinding<ConsumerSchema>,
-            >,
-            ApplicationActionList<
-                ApplicationConditionalOperationActionRef<
-                    ConsumerSchema,
-                    PlanarOutputFeature,
-                    MutatePlanar,
-                >,
-                ApplicationActionList<
-                    ApplicationConditionalOperationActionRef<
-                        ConsumerSchema,
-                        PlanarFinalOutputFeature,
-                        PublishFinalPlanarOutput,
-                    >,
-                    ApplicationActionList<
-                        ApplicationConditionalOperationActionRef<
-                            ConsumerSchema,
-                            PlanarAlternateFinalOutputFeature,
-                            PublishAlternatePlanarOutput,
-                        >,
-                        ApplicationActionLeaf,
-                    >,
-                >,
-            >,
-        >,
-    >,
->;
-
-type ConsumerFeatures = ApplicationFeatureList<
-    ApplicationFeatureRef<ConsumerSchema, PlanarSourceFeature>,
-    ApplicationFeatureList<
-        ApplicationFeatureRef<ConsumerSchema, PlanarOutputFeature>,
-        ApplicationFeatureList<
-            ApplicationFeatureRef<ConsumerSchema, PlanarFinalOutputFeature>,
-            ApplicationFeatureList<
-                ApplicationFeatureRef<ConsumerSchema, PlanarAlternateFinalOutputFeature>,
-                ApplicationFeatureList<
-                    ApplicationFeatureRef<ConsumerSchema, PlanarSummaryFeature>,
-                    ApplicationFeatureList<
-                        ApplicationFeatureRef<ConsumerSchema, PlanarAlternateSummaryFeature>,
-                        ApplicationFeatureList<
-                            ApplicationFeatureRef<ConsumerSchema, ParameterFeature>,
-                            ApplicationFeatureLeaf,
-                        >,
-                    >,
-                >,
-            >,
-        >,
-    >,
->;
-
 type PlanarSummaryConnection = ApplicationConnectionRef<
     ConsumerSchema,
     PlanarFinalOutputFeature,
@@ -347,22 +292,16 @@ impl ApplicationProgramDefinition<ConsumerSchema> for ConsumerProgram {
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Actions = ConsumerActions;
     type Features = ConsumerFeatures;
-    type OutputGraph = ApplicationOutputGraph<
-        PlanarConnection,
+    type Outputs = ApplicationProgramOutputs<(
+        ConsumerProgramRoot,
         (
-            ApplicationOutputEdge<
-                PlanarDependentConnection,
-                ApplicationOutputEdge<PlanarSummaryConnection, ApplicationOutputLeaf>,
-            >,
-            ApplicationOutputEdge<
-                PlanarAlternateDependentConnection,
-                ApplicationOutputEdge<PlanarAlternateSummaryConnection, ApplicationOutputLeaf>,
-            >,
+            ConsumerSecondaryProgramRoot,
+            (ConsumerDiscoveredProgramRoot, ConsumerRequiredSharedRoot),
         ),
-    >;
+    )>;
     type Rules = ConsumerRules;
     const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("worth.query.certification.consumer-program.v1");
+        ApplicationProgramIdentity::new("worth.query.certification.consumer-program.v2");
 }
 
 impl ApplicationProgramDefinition<ConsumerSchema> for OmittedInstalledRuleProgram {

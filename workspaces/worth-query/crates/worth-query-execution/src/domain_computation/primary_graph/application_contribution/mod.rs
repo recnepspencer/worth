@@ -26,8 +26,9 @@ pub use producer::{
     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
     WorthQueryInstalledApplicationProducerRegistry, WorthQueryOutputDemandAdvance,
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
+    WorthQueryOutputDemandRecoveryPosture, WorthQueryProducerApplicability,
+    WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+    WorthQuerySelectedApplicationProducer,
 };
 pub use setup::WorthQueryApplicationContributionSetup;

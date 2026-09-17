@@ -15,9 +15,11 @@ type FamilySourceValue<Schema, Family> =
 type FamilySourceQuery<Schema, Family> =
     <FamilySource<Schema, Family> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query;
 
+mod bridge_denial;
+mod checkpoint_delivery;
 mod disclosure;
 mod progression;
-mod readiness_delivery;
+mod readiness;
 mod scheduling_progression;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -26,6 +28,7 @@ pub enum WorthQueryOutputDemandDenialKind {
     MissingApplicableProducer,
     AmbiguousApplicableProducer,
     ProducerUnavailable,
+    ProductSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
     SchedulingRejected,
     SchedulingDeferred,
     PublicationStale,
@@ -43,10 +46,18 @@ pub enum WorthQueryOutputDemandDenialKind {
     DuplicatePerformedSource,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryOutputDemandRecoveryPosture {
+    Retryable,
+    Terminal,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryOutputDemandDenial {
     kind: WorthQueryOutputDemandDenialKind,
     subject: String,
+    pub(in crate::domain_computation::primary_graph) recovery_posture:
+        WorthQueryOutputDemandRecoveryPosture,
 }
 
 impl WorthQueryOutputDemandDenial {
@@ -58,6 +69,10 @@ impl WorthQueryOutputDemandDenial {
         &self.subject
     }
 
+    pub const fn recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
+        self.recovery_posture
+    }
+
     pub(in crate::domain_computation::primary_graph) fn new(
         kind: WorthQueryOutputDemandDenialKind,
         subject: impl Into<String>,
@@ -65,6 +80,59 @@ impl WorthQueryOutputDemandDenial {
         Self {
             kind,
             subject: subject.into(),
+            recovery_posture: kind.default_recovery_posture(),
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn product_selection(
+        denial: crate::basis::WorthQueryProductBranchAdmissionDenial,
+        subject: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            WorthQueryOutputDemandDenialKind::ProductSelection(denial),
+            subject,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_recovery_posture(
+        mut self,
+        recovery_posture: WorthQueryOutputDemandRecoveryPosture,
+    ) -> Self {
+        self.recovery_posture = recovery_posture;
+        self
+    }
+}
+
+impl WorthQueryOutputDemandDenialKind {
+    const fn default_recovery_posture(self) -> WorthQueryOutputDemandRecoveryPosture {
+        use WorthQueryOutputDemandRecoveryPosture::{Retryable, Terminal};
+        match self {
+            Self::ProductSelection(denial) => {
+                if denial.is_transient() {
+                    Retryable
+                } else {
+                    Terminal
+                }
+            }
+            Self::SchedulingDeferred => Retryable,
+            Self::ForeignSource
+            | Self::MissingApplicableProducer
+            | Self::AmbiguousApplicableProducer
+            | Self::ProducerUnavailable
+            | Self::SchedulingRejected
+            | Self::PublicationStale
+            | Self::NoEffect
+            | Self::Superseded
+            | Self::Cancelled
+            | Self::TimedOut
+            | Self::WorkBudgetExceeded
+            | Self::RetentionBudgetExceeded
+            | Self::PublicationCapacityExceeded
+            | Self::ForeignDemand
+            | Self::ForeignSettlement
+            | Self::RetainedBasisUnavailable
+            | Self::Closed
+            | Self::DuplicatePerformedSource => Terminal,
         }
     }
 }
@@ -98,6 +166,9 @@ where
     selected: WorthQuerySelectedApplicationProducer,
     source: FamilySourceValue<Schema, Family>,
     observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
+    currentness_work_limit: std::num::NonZeroUsize,
+    maximum_retained_bytes: usize,
+    admission_kind: super::super::super::application_output_demand::DemandAdmissionKind,
     interest:
         Option<super::super::super::application_output_demand::WorthQueryOutputDemandInterest>,
 }
@@ -242,7 +313,7 @@ where
             .source_posture_for_any_output_binding(
                 self.runtime.authority_identity().as_u64(),
                 &self.installed_schema.binding_identity(),
-                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.footprint.root),
+                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root()),
                 observation.lifecycle_incarnation(),
                 observation.reference_generation().get(),
                 &output_bindings,

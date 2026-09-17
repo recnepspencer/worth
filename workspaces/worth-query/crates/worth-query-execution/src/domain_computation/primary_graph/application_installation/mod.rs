@@ -8,9 +8,8 @@ pub use limits::WorthQueryInMemoryApplicationLimits;
 pub use program::{
     in_memory_program, in_memory_program_with_authorization_time_source,
     WorthQueryAdmittedProgramOperation, WorthQueryAdmittedProgramOutput,
-    WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance,
-    WorthQueryProgramOutputInstallation, WorthQueryProgramRootDemand,
-    WorthQuerySettledProgramOutput,
+    WorthQueryApplicationProgramRoots, WorthQueryProgramApplicationRuntime,
+    WorthQueryProgramOutputAdvance, WorthQueryProgramRootDemand, WorthQuerySettledProgramOutput,
 };
 
 use super::application_contribution::{
@@ -29,6 +28,29 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationSchema, WorthQueryPortableDomainIdentity,
     WorthQueryPortableDomainPackage,
 };
+
+/// Installs contribution-owned schema meaning without an application program.
+pub fn in_memory<Schema>(
+    declaration: ApplicationSchemaDeclaration<Schema>,
+    configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+    limits: WorthQueryInMemoryApplicationLimits,
+    initial_state: impl FnOnce(
+        &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+        &WorthQueryInstalledApplicationSchema<Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
+) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
+where
+    Schema: ApplicationSchemaComposition,
+    Schema::Contributions: WorthQueryApplicationContributionTuple<Schema>,
+{
+    in_memory_with_contributions::<Schema, Schema::Contributions>(
+        declaration,
+        configuration,
+        limits,
+        initial_state,
+        None,
+    )
+}
 
 pub(super) fn in_memory_with_contributions<Schema, Contributions>(
     declaration: ApplicationSchemaDeclaration<Schema>,

@@ -1,10 +1,9 @@
 use std::num::NonZeroUsize;
 
-use worth_query_consumer_values::{PlanarOperation, PlanarVertex};
+use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation, PlanarVertex};
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationPerformedMutationOutcome,
-    WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
-    WorthQueryOutputDemandControls,
+    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
+    WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
 };
 use worth_query_topology_entry::{
     PlanarEdit, PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarRead,
@@ -13,6 +12,13 @@ use worth_query_topology_entry::{
 
 use super::super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
+
+mod settlement;
+mod snapshot_pressure;
+mod supersession;
+pub(super) use settlement::settle_recovered;
+pub(super) use snapshot_pressure::snapshot_pressure_preserves_recoverable_source;
+pub(super) use supersession::superseded_completion_is_terminal;
 
 pub(super) fn caller_disposal_before_progress_recovers(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
@@ -37,26 +43,64 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .observed_sources()[0]
         .clone();
     let controls = output_controls();
+    let intent = PlanarSourceAdjustment {
+        scope_key: "anchor-b".to_owned(),
+        replacement_y: length(2),
+    };
     let outcome = request
-        .mutate(PlanarSourceAdjustment {
-            scope_key: "anchor-b".to_owned(),
-            replacement_y: length(2),
-        })
-        .expect_source(source)
+        .mutate(intent.clone())
+        .expect_source(source.clone())
         .idempotency(&10_002)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
         .expect("source publication admits its required output");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source publication must be fresh")
     };
     let source_receipt = performed.receipt().clone();
     drop(performed);
+    let replay = request
+        .mutate(intent)
+        .expect_source(source)
+        .idempotency(&10_002)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .expect("the retry reaches the committed source");
+    let WorthQueryApplicationPerformedMutationOutcome::NotPerformed(replay) = replay else {
+        panic!("the source retry must not perform twice")
+    };
+    let replay_receipt = replay
+        .receipt()
+        .expect("an idempotent retry retains its committed receipt");
+    assert_eq!(
+        replay_receipt.commit_reference(),
+        source_receipt.commit_reference()
+    );
     assert_eq!(
         world
             .application
             .prepared_required_output_source_count_for_test(),
         1,
         "caller disposal preserves the exact source carrier"
+    );
+    let truncated_recovery = request
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerTruncatedProgramRoot>(
+            &world.application,
+            replay_receipt,
+            PlanarOutputDemand::new("anchor-b"),
+            output_controls(),
+        );
+    let Err(denial) = truncated_recovery else {
+        panic!("a truncated root cannot adopt retained source custody")
+    };
+    assert!(matches!(
+        denial,
+        worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::UndeclaredOutputRoot
+    ));
+    assert_eq!(
+        world
+            .application
+            .prepared_required_output_source_count_for_test(),
+        1,
+        "root admission denial preserves usable retained custody"
     );
     let ordinary = request
         .demand(PlanarOutputDemand::new("anchor-b"))
@@ -105,9 +149,9 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .execute_in_program(&world.application)
         .expect("an intervening ordinary commit lands on the same branch");
     let recovered_once = request
-        .recover_required_outputs::<crate::ConsumerProgram>(
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
-            &source_receipt,
+            replay_receipt,
             PlanarOutputDemand::new("anchor-b"),
             controls,
         )
@@ -121,7 +165,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
     );
     drop(recovered_once);
     let mut recovered = request
-        .recover_required_outputs::<crate::ConsumerProgram>(
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
             PlanarOutputDemand::new("anchor-b"),
@@ -142,6 +186,19 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .execute()
         .expect("the recovered transitive result remains readable");
     assert_eq!(row.rows()[0].value, length(4));
+    let completed = request
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            &source_receipt,
+            PlanarOutputDemand::new("anchor-b"),
+            controls,
+        )
+        .err()
+        .expect("settled output cannot be recovered as pending custody");
+    assert_eq!(
+        completed.recovery_posture(),
+        worth_query_host::facade::application_entry::WorthQueryRequiredOutputRecoveryPosture::Terminal,
+    );
     drop(ordinary);
 }
 
@@ -174,7 +231,7 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         })
         .expect_source(source)
         .idempotency(&10_018)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
         .expect("the source publication prepares its installed program");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source publication must be fresh")
@@ -205,7 +262,7 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
     drop(changed);
 
     let denial = request
-        .recover_required_outputs::<crate::ConsumerProgram>(
+        .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
             PlanarOutputDemand::new("anchor-b"),
@@ -213,6 +270,10 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         )
         .err()
         .expect("a newer source revision cannot consume older prepared custody");
+    assert_eq!(
+        denial.recovery_posture(),
+        worth_query_host::facade::application_entry::WorthQueryRequiredOutputRecoveryPosture::Terminal,
+    );
     let worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
         worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
     ) = denial
@@ -281,7 +342,7 @@ pub(super) fn resource_denial_preserves_source_and_delivery(
         })
         .expect_source(source)
         .idempotency(&10_003)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
         .expect("the source operation reaches its installed program");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source publication must succeed before derived admission")
@@ -290,6 +351,10 @@ pub(super) fn resource_denial_preserves_source_and_delivery(
         .start_required_outputs(&request, denied_controls)
         .err()
         .expect("insufficient derived resources deny required-output start");
+    assert_eq!(
+        failure.denial().recovery_posture(),
+        worth_query_host::facade::application_entry::WorthQueryRequiredOutputRecoveryPosture::Retryable,
+    );
     let worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
         worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
     ) = failure.denial()
@@ -337,31 +402,4 @@ fn output_controls() -> WorthQueryOutputDemandControls {
         NonZeroUsize::new(4_096).unwrap(),
         NonZeroUsize::new(8_192).unwrap(),
     )
-}
-
-pub(super) fn settle_recovered<'application>(
-    request: &'application worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
-        'application,
-        '_,
-        '_,
-        ConsumerSchema,
-    >,
-    body_key: &str,
-    controls: WorthQueryOutputDemandControls,
-) -> worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandSettlement<
-    <worth_query_topology_entry::PlanarReadBinding<ConsumerSchema> as worth_query_decl::facade::application_query::ApplicationQueryBinding<ConsumerSchema>>::Query,
->{
-    let mut recovered = request
-        .demand(PlanarOutputDemand::new(body_key))
-        .controls(controls)
-        .start()
-        .expect("owner custody is recoverable through the public demand entry");
-    loop {
-        match recovered.advance(request).unwrap_or_else(|denial| {
-            panic!("the recovered {body_key} required output advances: {denial:?}")
-        }) {
-            WorthQueryApplicationOutputDemandProgress::Pending => {}
-            WorthQueryApplicationOutputDemandProgress::Settled(settled) => return settled,
-        }
-    }
 }

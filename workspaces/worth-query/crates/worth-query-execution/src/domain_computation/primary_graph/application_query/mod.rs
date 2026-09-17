@@ -67,6 +67,7 @@ pub use live::{
     WorthQueryApplicationLiveOpenDenialKind, WorthQueryApplicationLiveOutcome,
     WorthQueryApplicationLiveOverflow, WorthQueryApplicationLiveUpdate,
 };
+pub(in crate::domain_computation::primary_graph) use observed_source::WorthQueryObservedSourceEpoch;
 pub use observed_source::{
     WorthQueryObservedSource, WorthQuerySourceExpectationDenial,
     WorthQuerySourceExpectationDenialKind,

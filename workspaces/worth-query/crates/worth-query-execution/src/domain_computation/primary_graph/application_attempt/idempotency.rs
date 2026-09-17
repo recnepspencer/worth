@@ -23,6 +23,7 @@ pub struct WorthQueryApplicationIdempotencyBinding {
     key_identity: [u8; 32],
     intent_identity: [u8; 32],
     source_identity: Option<[u8; 32]>,
+    producer_dependency_identity: Option<[u8; 32]>,
     operation_identity: Option<[u8; 32]>,
     operation_scope_identity: Option<WorthQueryIdempotencyScopeIdentity>,
     precondition_identity: Option<[u8; 32]>,
@@ -37,6 +38,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity,
             intent_identity,
             source_identity: None,
+            producer_dependency_identity: None,
             operation_identity: None,
             operation_scope_identity: None,
             precondition_identity: None,
@@ -58,6 +60,12 @@ impl WorthQueryApplicationIdempotencyBinding {
         &self,
     ) -> Option<[u8; 32]> {
         self.source_identity
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn producer_dependency_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.producer_dependency_identity
     }
 
     pub(in crate::domain_computation::primary_graph) fn key_text(self) -> String {
@@ -88,6 +96,14 @@ impl WorthQueryApplicationIdempotencyBinding {
         self
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn bind_producer_dependency(
+        mut self,
+        dependency_identity: &[u8; 32],
+    ) -> Self {
+        self.producer_dependency_identity = Some(*dependency_identity);
+        self
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn bind_operation(
         self,
         operation_identity: &[u8; 32],
@@ -96,6 +112,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
             source_identity: self.source_identity,
+            producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: Some(*operation_identity),
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: self.precondition_identity,
@@ -115,6 +132,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
             source_identity: self.source_identity,
+            producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: Some(WorthQueryIdempotencyScopeIdentity {
                 runtime_authority: binding.runtime_authority(),
@@ -148,6 +166,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
             source_identity: self.source_identity,
+            producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: match precondition_identity {
@@ -168,6 +187,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
             source_identity: self.source_identity,
+            producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: self.precondition_identity,
@@ -188,6 +208,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
             source_identity: self.source_identity,
+            producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: self.precondition_identity,
@@ -208,6 +229,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
             source_identity: self.source_identity,
+            producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: self.precondition_identity,

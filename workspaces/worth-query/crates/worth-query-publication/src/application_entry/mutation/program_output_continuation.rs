@@ -86,8 +86,8 @@ where
         _parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
             SourceQuery<Schema, ParentDemand>,
         >,
-        parent_basis: &crate::application_entry::WorthQueryApplicationReadObservation,
         parent_authority: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
@@ -136,8 +136,8 @@ where
         _parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
             SourceQuery<Schema, ParentDemand>,
         >,
-        _: &crate::application_entry::WorthQueryApplicationReadObservation,
         _: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        _: &crate::application_entry::WorthQueryApplicationReadObservation,
         _: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
         _: WorthQueryOutputDemandControls,
     ) -> Result<
@@ -172,6 +172,7 @@ where
     outputs: Vec<ProgramOutputRecord>,
     work: ProgramOutputTraversalWork,
     controls: WorthQueryOutputDemandControls,
+    basis: crate::application_entry::WorthQueryApplicationReadObservation,
     marker: std::marker::PhantomData<fn() -> Children>,
 }
 
@@ -235,11 +236,11 @@ where
     fn start(
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,
-        _parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
+        parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
             SourceQuery<Schema, ParentDemand>,
         >,
-        parent_basis: &crate::application_entry::WorthQueryApplicationReadObservation,
         parent_authority: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
+        minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
@@ -248,7 +249,14 @@ where
     > {
         let discovery = Binding::<Schema, Connection>::discovery_from_root(parent_demand)
             .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?;
-        let retained = request.at(parent_basis);
+        let basis = if parent_settlement.observation().selected_commit().ordinal()
+            >= minimum_observation.selected_commit().ordinal()
+        {
+            parent_settlement.observation()
+        } else {
+            minimum_observation
+        };
+        let retained = request.at(basis);
         let result = retained
             .query(discovery)
             .execute()
@@ -269,7 +277,8 @@ where
                     .start_dependent::<Program, ParentDemand, Connection>(
                         application,
                         parent_authority,
-                        parent_basis,
+                        basis,
+                        minimum_observation,
                     )
                     .map_err(WorthQueryRequiredOutputPreparationDenial::Demand)?;
                 Ok(EdgeNode {
@@ -285,6 +294,7 @@ where
             outputs: Vec::new(),
             work,
             controls,
+            basis: basis.retained_clone(),
             marker: std::marker::PhantomData,
         }))
     }
@@ -335,14 +345,13 @@ where
                     WorthQueryApplicationProgramDemandProgress::Settled {
                         settlement,
                         authority,
-                        basis,
                     } => {
                         node.continuation = Some(Children::start(
                             self.application,
                             &node.demand,
                             &settlement,
-                            &basis,
                             &authority,
+                            &self.basis,
                             request,
                             self.controls,
                         )?);

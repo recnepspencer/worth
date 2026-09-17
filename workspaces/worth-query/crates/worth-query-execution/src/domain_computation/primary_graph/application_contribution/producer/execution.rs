@@ -19,9 +19,8 @@ use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::{
     HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationNoEffectCause,
-    WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationNoEffectCause, WorthQueryObservedSource,
+    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
 };
 
 use super::demand::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
@@ -59,6 +58,7 @@ pub(super) trait InstalledProducerExecutor<Schema>: Send + Sync {
         branch: WorthQueryProductBranch,
         source: &dyn Any,
         observed_source: &dyn Any,
+        successor_of: Option<[u8; 32]>,
         commit_authority: WorthQueryProducerCommitAuthority,
     ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial>;
 
@@ -173,6 +173,7 @@ where
         branch: WorthQueryProductBranch,
         source: &dyn Any,
         observed_source: &dyn Any,
+        successor_of: Option<[u8; 32]>,
         commit_authority: WorthQueryProducerCommitAuthority,
     ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial> {
         let source = source
@@ -199,6 +200,7 @@ where
             self.provider.as_ref(),
             source,
             observed_source.clone(),
+            successor_of,
             commit_authority,
         )
     }
@@ -212,6 +214,7 @@ fn execute_typed<Schema, Binding>(
     provider: &Binding::Provider,
     source: &SourceValue<Schema, Binding>,
     observed_source: WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
+    successor_of: Option<[u8; 32]>,
     commit_authority: WorthQueryProducerCommitAuthority,
 ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial>
 where
@@ -263,27 +266,6 @@ where
             observed_source,
         )
         .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let idempotency = WorthQueryApplicationIdempotencyBinding::new(
-        Operation::<Schema, Binding>::idempotency_key_identity(&key),
-        Operation::<Schema, Binding>::input_identity(&input),
-    )
-    .bind_source(Some(&source_identity));
-    match runtime
-        .resolve_admitted_application_idempotency(&admission, idempotency)
-        .map_err(|error| failed(Binding::IDENTITY, error))?
-        .into_resolution()
-    {
-        WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-            return Ok(receipt)
-        }
-        WorthQueryApplicationIdempotencyResolution::IntentDrift => {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                Binding::IDENTITY,
-            ))
-        }
-        WorthQueryApplicationIdempotencyResolution::Unseen => {}
-    }
     let completed = match runtime
         .execute_mutation_handler::<Operation<Schema, Binding>>(
             &input,
@@ -317,7 +299,25 @@ where
             ))
         }
     };
-    let (program, _) = completed.into_parts();
+    let (mut program, _) = completed.into_parts(); // Retries bind the complete typed dependency set.
+    let (key_identity, dependency_identity) = program
+        .producer_idempotency_identities::<Operation<Schema, Binding>>(
+            runtime,
+            Operation::<Schema, Binding>::idempotency_key_identity(&key),
+            successor_of,
+        )
+        .map_err(|()| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+                Binding::IDENTITY,
+            )
+        })?;
+    let idempotency = WorthQueryApplicationIdempotencyBinding::new(
+        key_identity,
+        Operation::<Schema, Binding>::input_identity(&input),
+    )
+    .bind_source(Some(&source_identity))
+    .bind_producer_dependency(&dependency_identity);
     let program = program
         .with_output_demand_observation()
         .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);
@@ -358,6 +358,15 @@ where
         {
             Err(denial(
                 WorthQueryOutputDemandDenialKind::PublicationStale,
+                Binding::IDENTITY,
+            ))
+        }
+        WorthQueryApplicationCommitOutcome::Denied(commit_denial)
+            if commit_denial.kind()
+                == WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift =>
+        {
+            Err(denial(
+                WorthQueryOutputDemandDenialKind::ProducerUnavailable,
                 Binding::IDENTITY,
             ))
         }

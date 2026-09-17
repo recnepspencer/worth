@@ -48,7 +48,9 @@ pub(crate) fn run(
     application_program::performed_source_settles_required_output(foreign);
     application_program::caller_disposal_before_progress_recovers(foreign);
     application_program::resource_denial_preserves_source_and_delivery(foreign);
-    application_program::foreign_program_is_denied_before_publication(foreign);
+    application_program::root_selection::foreign_program_is_denied_before_publication(foreign);
+    application_program::root_selection::undeclared_root_is_denied_before_publication(foreign);
+    application_program::root_selection::truncated_root_is_denied_before_publication(foreign);
     application_program::ordinary_source_publication_cannot_bypass_program(foreign);
     application_program::lifecycle_proofs(foreign);
     resource_profile::candidate_bytes_beyond_host_limit_are_denied(foreign);

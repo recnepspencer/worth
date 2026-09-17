@@ -41,18 +41,22 @@ pub use mandatory_review::{
     WorthQueryApplicationMandatoryReviewDenial, WorthQueryApplicationMandatoryReviewFailure,
 };
 pub use mutation::{
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequest,
-    WorthQueryApplicationMutationRequestWithIdempotency,
+    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryApplicationMutationOutcome,
+    WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
+    WorthQueryApplicationRetainedMutationOutcome,
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputHandle,
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
-    WorthQueryApplicationProgramWork, WorthQueryApplicationRetainedMutationOutcome,
-    WorthQueryMutationSourcePrepared, WorthQueryPerformedApplicationMutation,
+    WorthQueryApplicationProgramWork, WorthQueryDiscoveredOutputStartFailure,
+    WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
+    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryMutationSourcePrepared,
+    WorthQueryPerformedApplicationMutation, WorthQueryPerformedDiscoveredApplicationMutation,
     WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
-    WorthQueryRequiredOutputStartFailure, WorthQueryStartedRequiredOutputs,
+    WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputStartFailure,
+    WorthQueryStartedDiscoveredOutputs, WorthQueryStartedRequiredOutputs,
 };
 pub use query::WorthQueryApplicationQueryRequest;
 pub use request::{
-    WorthQueryApplicationHistorySelectionDenial, WorthQueryApplicationRequest,
-    WorthQueryApplicationRequestExt, WorthQueryApplicationRetainedRequest,
+    WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
+    WorthQueryApplicationRetainedRequest, WorthQueryProgramOutputCurrentnessDenial,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;

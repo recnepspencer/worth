@@ -10,61 +10,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 
-fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnation {
-    let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
-    let product = world
-        .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
-        .expect("the fixture's default product occurrence is live");
-    product.observation().lifecycle_incarnation()
-}
+mod recovery_posture;
+mod semantic_epoch;
+mod source_custody;
 
-fn key(producer: &str, revision: u64, tail: u8) -> WorthQueryOutputDemandKey {
-    let mut source = [0_u8; 32];
-    source[..16].fill(7);
-    source[16..24].copy_from_slice(&revision.to_be_bytes());
-    source[24..].fill(tail);
-    WorthQueryOutputDemandKey::new(producer.to_owned(), source)
-}
-
-fn record(
-    occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    state: DemandState,
-    interests: usize,
-) -> DemandRecord {
-    DemandRecord {
-        interests,
-        required: false,
-        product_occurrence: occurrence,
-        source_scope: None,
-        source_commit: None,
-        state,
-        performed_source: None,
-        performed_source_accepted: false,
-        wake: Arc::new(DemandWake {
-            generation: Mutex::new(0),
-            changed: Condvar::new(),
-        }),
-    }
-}
-
-fn interest(
-    registry: &WorthQueryOutputDemandRegistry,
-    key: WorthQueryOutputDemandKey,
-    wake: Arc<DemandWake>,
-) -> WorthQueryOutputDemandInterest {
-    WorthQueryOutputDemandInterest {
-        key,
-        notifications: WorthQueryOutputDemandNotifications {
-            wake: Arc::clone(&wake),
-        },
-        owner: registry.clone(),
-    }
-}
+mod support;
+use support::*;
 
 #[test]
 fn stale_successor_is_denied_without_mutating_newer_or_unrelated_records() {
@@ -144,7 +95,7 @@ fn scheduling_failure_is_terminal_and_last_interest_releases_the_record() {
         "producer stopped before scheduling",
     );
 
-    registry.finish_scheduling(&demand_interest, None, &Err(denial));
+    registry.finish_scheduling(&demand_interest, None, &mut Err(denial));
 
     assert!(matches!(
         &registry.state.lock().unwrap().records[&demand_key].state,
@@ -183,7 +134,7 @@ fn required_failure_is_released_with_its_last_interest() {
         "required producer stopped before scheduling",
     );
 
-    registry.finish_scheduling(&demand_interest, None, &Err(denial));
+    registry.finish_scheduling(&demand_interest, None, &mut Err(denial));
     drop(demand_interest);
 
     assert!(
@@ -195,43 +146,6 @@ fn required_failure_is_released_with_its_last_interest() {
             .contains_key(&demand_key),
         "a failed required attempt is not a permanent owner obligation"
     );
-}
-
-#[test]
-fn retryable_publication_stale_keeps_required_scheduled_obligation() {
-    let registry = WorthQueryOutputDemandRegistry::default();
-    let occurrence = occurrence();
-    let demand_key = key("required", 6, 1);
-    let wake = Arc::new(DemandWake {
-        generation: Mutex::new(0),
-        changed: Condvar::new(),
-    });
-    registry.state.lock().unwrap().records.insert(
-        demand_key.clone(),
-        DemandRecord {
-            required: true,
-            wake: Arc::clone(&wake),
-            ..record(occurrence, DemandState::Running, 1)
-        },
-    );
-    let demand_interest = interest(&registry, demand_key.clone(), wake);
-    let denial = WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::PublicationStale,
-        "a sibling advanced the product head",
-    );
-
-    registry.finish_execution_failure(&demand_interest, &denial);
-    assert!(matches!(
-        registry.state.lock().unwrap().records[&demand_key].state,
-        DemandState::Scheduled
-    ));
-    drop(demand_interest);
-
-    let state = registry.state.lock().unwrap();
-    let retained = &state.records[&demand_key];
-    assert_eq!(retained.interests, 0);
-    assert!(retained.required);
-    assert!(matches!(retained.state, DemandState::Scheduled));
 }
 
 #[test]
@@ -256,7 +170,7 @@ fn retiring_occurrence_closes_live_work_and_completion_cannot_resurrect_it() {
     registry.finish_scheduling(
         &demand_interest,
         None,
-        &Ok(WorthQueryOutputSchedulingResult::Scheduled),
+        &mut Ok(WorthQueryOutputSchedulingResult::Scheduled),
     );
 
     assert!(matches!(
@@ -303,12 +217,12 @@ fn deferred_scheduling_returns_to_admitted_while_no_effect_is_terminal() {
     registry.finish_scheduling(
         &deferred,
         None,
-        &Ok(WorthQueryOutputSchedulingResult::Deferred),
+        &mut Ok(WorthQueryOutputSchedulingResult::Deferred),
     );
     registry.finish_scheduling(
         &terminal,
         None,
-        &Ok(WorthQueryOutputSchedulingResult::NoEffect(no_effect_denial)),
+        &mut Ok(WorthQueryOutputSchedulingResult::NoEffect(no_effect_denial)),
     );
 
     let state = registry.state.lock().unwrap();
@@ -338,7 +252,10 @@ fn retiring_occurrence_removes_unheld_cached_work_and_marks_preparation_closed()
     let state = registry.state.lock().unwrap();
     assert!(!state.records.contains_key(&scheduled));
     assert!(state.source_preparations[&occurrence].retired);
-    assert!(state.prepared_sources.is_empty());
+    assert!(state
+        .source_custody
+        .values()
+        .all(|custody| custody.prepared_count() == 0));
     drop(state);
     drop(preparation);
     assert!(registry
@@ -370,7 +287,7 @@ fn denied_executor_releases_the_shared_claim_for_its_peer() {
 
     assert!(matches!(
         registry.begin(&denied),
-        super::WorthQueryOutputDemandAdvanceAdmission::Execute
+        super::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
     ));
     assert!(matches!(
         registry.begin(&peer),
@@ -379,6 +296,6 @@ fn denied_executor_releases_the_shared_claim_for_its_peer() {
     registry.relinquish_execution(&denied);
     assert!(matches!(
         registry.begin(&peer),
-        super::WorthQueryOutputDemandAdvanceAdmission::Execute
+        super::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
     ));
 }

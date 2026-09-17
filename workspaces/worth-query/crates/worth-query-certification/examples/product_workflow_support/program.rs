@@ -4,7 +4,8 @@ use worth_query_host::facade::declaration::application_program::{
     ApplicationFeatureLeaf, ApplicationFeatureList, ApplicationFeatureRef, ApplicationLocalRuleRef,
     ApplicationNoOutputGraph, ApplicationOperationActionRef, ApplicationProgramAuthoring,
     ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationRuleAt,
-    ApplicationRuleLeaf, ApplicationRuleList, ValidatedApplicationProgram,
+    ApplicationProgramOutputs, ApplicationRuleLeaf, ApplicationRuleList,
+    ValidatedApplicationProgram,
 };
 
 use super::schema::{
@@ -52,7 +53,7 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for TemporalExampleProgram
         ApplicationFeatureRef<TemporalHostSchema, TemporalExampleFeature>,
         ApplicationFeatureLeaf,
     >;
-    type OutputGraph = ApplicationNoOutputGraph;
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = ApplicationRuleList<
         ApplicationRuleAt<
             ApplicationLocalRuleRef<TemporalHostSchema, TemporalExampleFeature, TemporalIntegrity>,

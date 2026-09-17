@@ -201,6 +201,40 @@ where
         )
     }
 
+    pub(super) fn execute_with_commit(
+        self,
+        retain_output_demand_observation: bool,
+        commit: impl FnOnce(
+            &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+            WorthQueryApplicationEffectProgram<
+                Schema,
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Input,
+                <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+            >,
+            WorthQueryApplicationIdempotencyBinding,
+        ) -> WorthQueryApplicationCommitOutcome,
+    ) -> Result<
+        WorthQueryApplicationMutationOutcome<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
+        >,
+        WorthQueryApplicationRequestMutationDenial,
+    > {
+        if !retain_output_demand_observation
+            && self
+                .request
+                .application
+                .requires_application_program::<Intent::Binding>()
+        {
+            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
+        }
+        self.execute_with_preparation_and_commit(
+            super::authorization::prepare,
+            commit,
+        )
+    }
+
     fn resolve_idempotency(
         &self,
         admission: &WorthQueryAdmittedApplicationOperation<

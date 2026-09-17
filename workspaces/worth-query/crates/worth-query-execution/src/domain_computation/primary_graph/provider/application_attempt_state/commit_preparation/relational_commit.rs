@@ -33,7 +33,7 @@ pub(super) fn commit_owner_validated(
         prepared,
         WorthQueryCommitProgressionMint::witness(),
     )?;
-    let evidence = evidence_seal::seal(&committed);
+    let evidence = evidence_seal::seal(provider, &committed);
     provider.graph.with_runtime_mut_unwind_isolated(|runtime| {
         committed
             .publish_and_encode(provider, runtime, evidence)

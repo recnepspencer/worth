@@ -49,8 +49,8 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for ConflictingConditional
         ApplicationFeatureRef<TemporalHostSchema, ConflictingConditionalClientFeature>,
         <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Features,
     >;
-    type OutputGraph =
-        <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::OutputGraph;
+    type Outputs =
+        <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Outputs;
     type Rules =
         <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Rules;
 
@@ -81,8 +81,8 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for MissingConditionalActi
     >;
     type Features =
         <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Features;
-    type OutputGraph =
-        <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::OutputGraph;
+    type Outputs =
+        <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Outputs;
     type Rules =
         <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Rules;
 

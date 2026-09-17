@@ -101,7 +101,8 @@ pub(super) fn map_world_denial(
     denial: RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>,
 ) -> WorthQueryProductBranchAdmissionDenial {
     match denial {
-        RuntimeWorldServiceDenial::OwnerUnavailable(_) => {
+        RuntimeWorldServiceDenial::OwnerUnavailable(_)
+        | RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable) => {
             WorthQueryProductBranchAdmissionDenial::OwnerUnavailable
         }
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::ForeignOwner) => {
@@ -110,8 +111,29 @@ pub(super) fn map_world_denial(
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::RetiredBranch) => {
             WorthQueryProductBranchAdmissionDenial::RetiredBranch
         }
-        RuntimeWorldServiceDenial::Denied(_) => {
-            WorthQueryProductBranchAdmissionDenial::ObservationRejected
+        RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect,
+        ) => WorthQueryProductBranchAdmissionDenial::ObservationCancelled,
+        RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
+        ) => WorthQueryProductBranchAdmissionDenial::ObservationDeadlineExceeded,
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::CapacityExhausted) => {
+            WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted
         }
+        RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldBranchAdmissionDenial::CustodyCapacityExhausted,
+        ) => WorthQueryProductBranchAdmissionDenial::CustodyCapacityExhausted,
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::IdentityExhausted) => {
+            WorthQueryProductBranchAdmissionDenial::ObservationIdentityExhausted
+        }
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::StaleSourceHead) => {
+            WorthQueryProductBranchAdmissionDenial::ObservationStaleSourceHead
+        }
+        RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldBranchAdmissionDenial::DuplicateName
+            | RuntimeWorldBranchAdmissionDenial::PlansOmitted
+            | RuntimeWorldBranchAdmissionDenial::ForkSourceChanged
+            | RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable,
+        ) => WorthQueryProductBranchAdmissionDenial::ObservationRejected,
     }
 }

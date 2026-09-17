@@ -3,7 +3,7 @@ mod program_interest;
 mod request;
 mod settlement;
 
-pub(crate) use program_interest::{
+pub(in crate::application_entry) use program_interest::{
     WorthQueryApplicationProgramDemandHandle, WorthQueryApplicationProgramDemandProgress,
 };
 

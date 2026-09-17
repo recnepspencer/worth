@@ -39,49 +39,60 @@ impl WorthQueryProviderAuthorizationDecisionFacts {
         self,
         installed_read_scopes: Vec<WorthQueryOperationGraphReadScope>,
         application: Vec<WorthQueryApplicationObservedFact>,
-    ) -> Result<WorthQueryProviderDecisionFactBinding, ()> {
+    ) -> Result<WorthQueryProviderDecisionFactBinding, &'static str> {
         if installed_read_scopes.len() > application.len() {
-            return Err(());
+            return Err("installed read scopes exceed retained application facts");
         }
-        let application_count = application.len();
         let installed_count = installed_read_scopes.len();
         let retained_authorization_fact_count = 1usize.saturating_add(self.decisions.len());
         let mut application = application;
         let source_facts = application.split_off(installed_count);
-        let facts = installed_read_scopes
+        let mut facts = installed_read_scopes
             .into_iter()
             .zip(application)
             .map(|(read_scope, fact)| {
                 WorthQueryPrimaryGraphApplicationDecisionFact::application(read_scope, fact)
             })
-            .chain(
-                source_facts
-                    .into_iter()
-                    .map(WorthQueryPrimaryGraphApplicationDecisionFact::observed_source),
-            )
-            .chain(std::iter::once(
-                WorthQueryPrimaryGraphApplicationDecisionFact::principal(self.principal),
-            ))
-            .chain(
-                self.decisions
-                    .into_iter()
-                    .enumerate()
-                    .map(|(ordinal, observation)| {
-                        WorthQueryPrimaryGraphApplicationDecisionFact::authorization(
-                            ordinal,
-                            observation,
-                        )
-                    }),
-            )
             .collect::<Vec<_>>();
-        let requests = bind_requests(&facts, application_count)?;
+        let mut fact_indices = facts
+            .iter()
+            .enumerate()
+            .map(|(index, fact)| (fact.locator_identity(), index))
+            .collect::<BTreeMap<_, _>>();
+        if fact_indices.len() != facts.len() {
+            return Err("application decision facts contain duplicate structural locators");
+        }
+        for source in source_facts {
+            let locator = source.locator_identity();
+            if let Some(index) = fact_indices.get(&locator).copied() {
+                facts[index] = facts[index].clone().retain_observed_source_role(source)?;
+            } else {
+                fact_indices.insert(locator, facts.len());
+                facts.push(WorthQueryPrimaryGraphApplicationDecisionFact::observed_source(source));
+            }
+        }
+        facts.push(WorthQueryPrimaryGraphApplicationDecisionFact::principal(
+            self.principal,
+        ));
+        facts.extend(
+            self.decisions
+                .into_iter()
+                .enumerate()
+                .map(|(ordinal, observation)| {
+                    WorthQueryPrimaryGraphApplicationDecisionFact::authorization(
+                        ordinal,
+                        observation,
+                    )
+                }),
+        );
+        let requests = bind_requests(&facts)?;
         let decision_fact_count = facts.len();
         let facts = facts
             .into_iter()
             .map(|fact| (fact.locator_identity(), fact))
             .collect::<BTreeMap<_, _>>();
         if facts.len() != decision_fact_count {
-            return Err(());
+            return Err("decision facts contain duplicate structural locators");
         }
         Ok(WorthQueryProviderDecisionFactBinding {
             facts,
@@ -131,21 +142,20 @@ impl WorthQueryProviderDecisionFactBinding {
 
 fn bind_requests(
     facts: &[WorthQueryPrimaryGraphApplicationDecisionFact],
-    application_count: usize,
-) -> Result<Vec<WorthQueryDecisionFactRequest>, ()> {
+) -> Result<Vec<WorthQueryDecisionFactRequest>, &'static str> {
     facts
         .iter()
-        .enumerate()
-        .map(|(index, fact)| {
-            let family = if index < application_count {
+        .map(|fact| {
+            let family = if fact.is_application_decision() {
                 APPLICATION_DECISION_FACT_FAMILY
             } else {
                 APPLICATION_AUTHORIZATION_FACT_FAMILY
             };
             WorthQueryDecisionFactLocator::structural_proof(fact.locator_identity())
-                .map_err(|_| ())
+                .map_err(|_| "decision fact locator is invalid")
                 .and_then(|locator| {
-                    WorthQueryDecisionFactRequest::new(family, locator).map_err(|_| ())
+                    WorthQueryDecisionFactRequest::new(family, locator)
+                        .map_err(|_| "decision fact request is invalid")
                 })
         })
         .collect()

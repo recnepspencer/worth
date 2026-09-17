@@ -3,8 +3,9 @@ use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationPerformedMutationOutcome,
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
-    WorthQueryOutputDemandControls,
+    WorthQueryOutputDemandControls, WorthQueryProgramOutputCurrentnessDenial,
 };
+use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind;
 use worth_query_topology_entry::{PlanarOutputRead, PlanarRead, PlanarSourceAdjustment};
 
 use super::super::super::{authentication, installation, seed::length};
@@ -54,6 +55,25 @@ pub(super) fn supersession_retires_pending_predecessor(
         .execute()
         .expect("the successor output remains exactly readable");
     assert_eq!(exact.rows()[0].value, length(7));
+    let previous_basis = request.retain_read().unwrap();
+    request
+        .at(&previous_basis)
+        .require_current_program_output(&settled, NonZeroUsize::new(4_096).unwrap())
+        .expect("settled output is current at its retained product basis");
+    let _changed_source = perform(&request, &world.application, "anchor-a", 6, 10_111);
+    let current_basis = request.retain_read().unwrap();
+    assert!(matches!(
+        request.at(&current_basis).require_current_program_output(
+            &settled,
+            NonZeroUsize::new(4_096).unwrap(),
+        ),
+        Err(WorthQueryProgramOutputCurrentnessDenial::Output(denial))
+            if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
+    ));
+    request
+        .at(&previous_basis)
+        .require_current_program_output(&settled, NonZeroUsize::new(4_096).unwrap())
+        .expect("a later source edit cannot rewrite a retained prior basis");
 }
 
 pub(super) fn duplicate_retry_does_not_schedule_again(
@@ -79,7 +99,7 @@ pub(super) fn duplicate_retry_does_not_schedule_again(
         .mutate(intent.clone())
         .expect_source(source.clone())
         .idempotency(&10_008)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
         .unwrap();
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the first source operation must perform")
@@ -91,7 +111,7 @@ pub(super) fn duplicate_retry_does_not_schedule_again(
         .mutate(intent)
         .expect_source(source)
         .idempotency(&10_008)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
         .unwrap();
     assert!(matches!(
         duplicate,
@@ -151,6 +171,12 @@ pub(super) fn two_forks_preserve_predecessor_output(
         read_at(&right_request, &right_settled, "anchor-c"),
         length(6)
     );
+    assert!(matches!(
+        left_request
+            .at(right_settled.observation())
+            .require_current_program_output(&right_settled, NonZeroUsize::new(4_096).unwrap()),
+        Err(WorthQueryProgramOutputCurrentnessDenial::ForeignBranch)
+    ));
     assert_eq!(
         root_request
             .query(PlanarRead {
@@ -230,6 +256,7 @@ type Prepared<'a> =
         ConsumerSchema,
         PlanarSourceAdjustment,
         crate::ConsumerProgram,
+        crate::ConsumerProgramRoot,
     >;
 
 type Started<'a> = worth_query_host::facade::application_entry::WorthQueryStartedRequiredOutputs<
@@ -237,6 +264,7 @@ type Started<'a> = worth_query_host::facade::application_entry::WorthQueryStarte
     ConsumerSchema,
     PlanarSourceAdjustment,
     crate::ConsumerProgram,
+    crate::ConsumerProgramRoot,
 >;
 
 pub(super) fn perform<'a>(
@@ -263,7 +291,7 @@ fn prepare<'a>(
         })
         .expect_source(observed(request, key))
         .idempotency(&command)
-        .execute_performed(application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(application)
         .expect("the source operation reaches its installed program");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source operation must perform")

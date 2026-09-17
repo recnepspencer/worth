@@ -16,8 +16,8 @@ pub(in crate::domain_computation::authorization) use capability_admission::{
 };
 
 use worth_query_installation::facade::{
-    ApplicationSchemaBindingIdentity, WorthQueryCanonicalWorkPhases,
-    WorthQueryCompiledApplicationOperationContracts,
+    ApplicationSchemaBindingIdentity, WorthQueryCanonicalWorkEvidence,
+    WorthQueryCanonicalWorkPhases, WorthQueryCompiledApplicationOperationContracts,
 };
 
 use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
@@ -125,6 +125,17 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     source_facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
     _marker: PhantomData<fn(Input) -> (Schema, Operation, Scope)>,
+}
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
+{
+    pub(in crate::domain_computation) fn retain_execution_canonical_work(
+        &mut self,
+        work: WorthQueryCanonicalWorkEvidence,
+    ) {
+        self.canonical_work = self.canonical_work.with_execution_work(work);
+    }
 }
 
 pub(in crate::domain_computation::authorization::operation_progression) fn transition_conventional_operation<

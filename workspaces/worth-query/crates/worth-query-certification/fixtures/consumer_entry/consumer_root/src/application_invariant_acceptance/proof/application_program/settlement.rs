@@ -67,7 +67,7 @@ pub(super) fn performed_source_settles_required_output(
         })
         .expect_source(source)
         .idempotency(&10_001)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
         .expect("the source edit reaches publication");
     let performed = match outcome {
         WorthQueryApplicationPerformedMutationOutcome::Performed(performed) => performed,
@@ -223,6 +223,22 @@ pub(super) fn performed_source_settles_required_output(
         latest_commit,
         "the aggregate selects the exact newest commit across every settled graph output"
     );
+    let current_basis = request
+        .retain_read()
+        .expect("current product basis remains readable");
+    request
+        .at(&current_basis)
+        .require_current_program_output(&original_settlement, NonZeroUsize::new(4_096).unwrap())
+        .expect("every transitive output retains current Query source lineage");
+    assert!(matches!(
+        request.at(&current_basis).require_current_program_output(
+            &original_settlement,
+            NonZeroUsize::new(1).unwrap(),
+        ),
+        Err(worth_query_host::facade::application_entry::WorthQueryProgramOutputCurrentnessDenial::Output(denial))
+            if denial.kind()
+                == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+    ));
     assert_eq!(
         request
             .at(original_settlement.observation())

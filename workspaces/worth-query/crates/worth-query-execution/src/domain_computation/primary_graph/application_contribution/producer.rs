@@ -10,7 +10,8 @@ use worth_query_installation::facade::ApplicationSchema;
 mod demand;
 pub use demand::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQuerySelectedApplicationProducer,
+    WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
+    WorthQuerySelectedApplicationProducer,
 };
 mod execution;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
