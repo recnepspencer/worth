@@ -64,6 +64,7 @@ where
             let source_identity =
                 super::super::observed_source::source_identity::derive_source_identity(
                     plan.query.identity().as_bytes(),
+                    plan.parameters.identity().bytes(),
                     &footprint,
                     &selection,
                 );
@@ -71,6 +72,7 @@ where
                 runtime_authority: plan.runtime_authority.as_u64(),
                 schema_binding: plan.query.binding_identity().clone(),
                 query_identity: plan.query.identity().clone(),
+                parameter_binding_identity: *plan.parameters.identity(),
                 query_identifier: plan.query.name().to_owned(),
                 branch: basis_identity.branch_id().clone(),
                 selection,

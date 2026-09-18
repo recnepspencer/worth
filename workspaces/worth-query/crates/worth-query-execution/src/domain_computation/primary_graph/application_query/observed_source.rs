@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use worth_foundational::facade::{AspectContractRevision, AspectKey};
+use worth_foundational::facade::{AspectContractRevision, AspectKey, CanonicalDigestId};
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledApplicationQueryIdentity,
 };
@@ -112,6 +112,7 @@ pub struct WorthQueryObservedSource<Query> {
     pub(in crate::domain_computation) runtime_authority: u64,
     pub(in crate::domain_computation) schema_binding: ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation) query_identity: WorthQueryInstalledApplicationQueryIdentity,
+    pub(in crate::domain_computation) parameter_binding_identity: CanonicalDigestId,
     pub(in crate::domain_computation) query_identifier: String,
     pub(in crate::domain_computation) branch: BranchId,
     pub(in crate::domain_computation) selection: WorthQueryApplicationBasisSelectionIdentity,
@@ -135,6 +136,7 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
             runtime_authority: self.runtime_authority,
             schema_binding: self.schema_binding.clone(),
             query_identity: self.query_identity.clone(),
+            parameter_binding_identity: self.parameter_binding_identity,
             query_identifier: self.query_identifier.clone(),
             branch: self.branch.clone(),
             selection: self.selection.clone(),
@@ -193,6 +195,7 @@ impl<Query> WorthQueryObservedSource<Query> {
     ) -> Option<source_identity::WorthQueryObservedSourceEpoch> {
         source_identity::WorthQueryObservedSourceEpoch::from_observation(
             self.query_identity.as_bytes(),
+            self.parameter_binding_identity.bytes(),
             &self.footprint,
             &self.selection,
             self.source_identity,

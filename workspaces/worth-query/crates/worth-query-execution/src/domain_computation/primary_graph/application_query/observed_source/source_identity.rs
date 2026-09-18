@@ -6,6 +6,7 @@ use super::WorthQueryObservedSourceFootprint;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceEpoch {
     query: [u8; 32],
+    parameters: [u8; 32],
     root: worth_relational::facade::identity::EntityId,
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     observation_generation: u64,
@@ -15,6 +16,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSource
 impl WorthQueryObservedSourceEpoch {
     pub(in crate::domain_computation::primary_graph) const fn new(
         query: [u8; 32],
+        parameters: [u8; 32],
         root: worth_relational::facade::identity::EntityId,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         observation_generation: u64,
@@ -22,6 +24,7 @@ impl WorthQueryObservedSourceEpoch {
     ) -> Self {
         Self {
             query,
+            parameters,
             root,
             occurrence,
             observation_generation,
@@ -31,6 +34,7 @@ impl WorthQueryObservedSourceEpoch {
 
     pub(super) fn from_observation(
         query: &[u8; 32],
+        parameters: &[u8; 32],
         footprint: &WorthQueryObservedSourceFootprint,
         selection: &WorthQueryApplicationBasisSelectionIdentity,
         identity: [u8; 32],
@@ -40,6 +44,7 @@ impl WorthQueryObservedSourceEpoch {
         };
         Some(Self::new(
             *query,
+            *parameters,
             footprint.root,
             product.lifecycle_incarnation(),
             product.reference_generation().get(),
@@ -51,7 +56,10 @@ impl WorthQueryObservedSourceEpoch {
         &self,
         other: &Self,
     ) -> bool {
-        self.query == other.query && self.root == other.root && self.occurrence == other.occurrence
+        self.query == other.query
+            && self.parameters == other.parameters
+            && self.root == other.root
+            && self.occurrence == other.occurrence
     }
 
     pub(in crate::domain_computation::primary_graph) fn same_semantic_source(
@@ -82,12 +90,14 @@ impl WorthQueryObservedSourceEpoch {
 
 pub(in crate::domain_computation::primary_graph) fn derive_source_identity(
     query: &[u8; 32],
+    parameters: &[u8; 32],
     footprint: &WorthQueryObservedSourceFootprint,
     selection: &WorthQueryApplicationBasisSelectionIdentity,
 ) -> [u8; 32] {
     let mut digest = Sha256::new();
     digest.update(b"worth-query:observed-source:v3");
     digest.update(query);
+    digest.update(parameters);
     match selection {
         WorthQueryApplicationBasisSelectionIdentity::Relational => digest.update([0]),
         WorthQueryApplicationBasisSelectionIdentity::Product(product) => {
@@ -170,7 +180,8 @@ mod tests {
         let mut next = footprint(root, vec![dominant.clone(), prior]);
         let selection = product_selection();
         let query = [7; 32];
-        let prior_identity = derive_source_identity(&query, &next, &selection);
+        let parameters = [8; 32];
+        let prior_identity = derive_source_identity(&query, &parameters, &next, &selection);
         let prior_maximum = next
             .aspects
             .iter()
@@ -190,7 +201,7 @@ mod tests {
         );
         assert_ne!(
             prior_identity,
-            derive_source_identity(&query, &next, &selection)
+            derive_source_identity(&query, &parameters, &next, &selection)
         );
         let mut equivalent = next.clone();
         equivalent.aspects.reverse();
@@ -198,8 +209,28 @@ mod tests {
             .aspects
             .sort_by(|left, right| (left.entity, &left.aspect).cmp(&(right.entity, &right.aspect)));
         assert_eq!(
-            derive_source_identity(&query, &next, &selection),
-            derive_source_identity(&query, &equivalent, &selection)
+            derive_source_identity(&query, &parameters, &next, &selection),
+            derive_source_identity(&query, &parameters, &equivalent, &selection)
+        );
+    }
+
+    #[test]
+    fn parameter_partitions_are_distinct_source_occurrences() {
+        let root = EntityId::new(PartitionId::main(), 1, 1);
+        let selection = product_selection();
+        let footprint = footprint(root, vec![aspect(root, "shared", 1)]);
+        let lower = WorthQueryObservedSourceEpoch::from_observation(
+            &[7; 32], &[1; 32], &footprint, &selection, [3; 32],
+        )
+        .unwrap();
+        let upper = WorthQueryObservedSourceEpoch::from_observation(
+            &[7; 32], &[2; 32], &footprint, &selection, [4; 32],
+        )
+        .unwrap();
+        assert!(!lower.same_occurrence(&upper));
+        assert_ne!(
+            derive_source_identity(&[7; 32], &[1; 32], &footprint, &selection),
+            derive_source_identity(&[7; 32], &[2; 32], &footprint, &selection),
         );
     }
 

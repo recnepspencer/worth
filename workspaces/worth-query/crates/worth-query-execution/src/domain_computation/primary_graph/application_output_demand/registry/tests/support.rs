@@ -51,6 +51,7 @@ pub(super) fn key_with_query_identity(
         producer.to_owned(),
         crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch::new(
             query,
+            [query_identity.wrapping_add(1); 32],
             root,
             occurrence(),
             observation_generation,
