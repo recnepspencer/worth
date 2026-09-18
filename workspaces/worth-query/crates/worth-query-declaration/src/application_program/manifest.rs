@@ -110,11 +110,10 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
         }
         for action in self.actions() {
             records.push(format!(
-                "action|{}|{}|{}|input={}|conditional={}|required-output={}|\
+                "action|{}|{}|input={}|conditional={}|required-output={}|\
                  authority=binding:{}|invariant={}|observation={}|locality={}|change={}|effect={}",
                 action.composition_instance(),
                 action.feature(),
-                action.binding(),
                 action.operation_input_identity().as_str(),
                 action.conditional_only(),
                 action.required_output_source(),

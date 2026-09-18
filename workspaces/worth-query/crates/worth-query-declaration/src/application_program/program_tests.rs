@@ -15,6 +15,7 @@ use crate::application_schema::{
 
 mod locality;
 mod managed_computation;
+mod manifest;
 
 struct TestSchema;
 struct FlatFeature;
@@ -154,8 +155,6 @@ impl ApplicationExternalInputProvider<TestSchema, Operation> for TestExternalPro
 }
 
 struct FlatProgram;
-struct ExpandedFlatProgram;
-struct ReorderedConnectedProgram;
 
 impl ApplicationProgramDefinition<TestSchema> for FlatProgram {
     type Contributions = ();
@@ -167,20 +166,6 @@ impl ApplicationProgramDefinition<TestSchema> for FlatProgram {
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![ApplicationFeatureSpec::root::<TestSchema, FlatFeature>()
             .conditional_operation::<Operation>()
-            .finish()]
-    }
-}
-
-impl ApplicationProgramDefinition<TestSchema> for ExpandedFlatProgram {
-    type Contributions = ();
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = ApplicationRuleLeaf;
-    const IDENTITY: ApplicationProgramIdentity = FlatProgram::IDENTITY;
-
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![ApplicationFeatureSpec::root::<TestSchema, FlatFeature>()
-            .conditional_operation::<Operation>()
-            .provides::<Export>()
             .finish()]
     }
 }
@@ -221,23 +206,6 @@ impl ApplicationProgramDefinition<TestSchema> for ConnectedProgram {
                 .provides::<Export>()
                 .finish(),
             ApplicationFeatureSpec::root::<TestSchema, ConsumerFeature>().finish(),
-        ]
-    }
-}
-
-impl ApplicationProgramDefinition<TestSchema> for ReorderedConnectedProgram {
-    type Contributions = ();
-    type Outputs =
-        ApplicationProgramOutputs<ApplicationOutputGraph<FlatConnection, ApplicationOutputLeaf>>;
-    type Rules = ApplicationRuleLeaf;
-    const IDENTITY: ApplicationProgramIdentity = ConnectedProgram::IDENTITY;
-
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<TestSchema, ConsumerFeature>().finish(),
-            ApplicationFeatureSpec::root::<TestSchema, FlatFeature>()
-                .provides::<Export>()
-                .finish(),
         ]
     }
 }
@@ -406,43 +374,4 @@ fn external_input_contract_distinguishes_changed_removed_and_invalid_selections(
         .validate_revision(&"material", captured.revision()),
         Err(TestExternalDenial::Invalid)
     );
-}
-
-#[test]
-fn normalized_manifest_is_order_independent_and_diagnostic_only() {
-    let authored = ApplicationProgramAuthoring::<TestSchema, ConnectedProgram>::begin()
-        .validated_program()
-        .unwrap();
-    let reordered = ApplicationProgramAuthoring::<TestSchema, ReorderedConnectedProgram>::begin()
-        .validated_program()
-        .unwrap();
-
-    assert_eq!(
-        authored.normalized_manifest(),
-        reordered.normalized_manifest()
-    );
-    assert!(authored
-        .normalized_manifest()
-        .records()
-        .iter()
-        .all(|record| !record.contains("TypeId")));
-}
-
-#[test]
-fn compatible_port_addition_preserves_program_identity_and_existing_manifest_records() {
-    let original = ApplicationProgramAuthoring::<TestSchema, FlatProgram>::begin()
-        .validated_program()
-        .unwrap()
-        .normalized_manifest();
-    let expanded = ApplicationProgramAuthoring::<TestSchema, ExpandedFlatProgram>::begin()
-        .validated_program()
-        .unwrap()
-        .normalized_manifest();
-
-    assert_eq!(original.program_identity(), expanded.program_identity());
-    assert!(original
-        .records()
-        .iter()
-        .all(|record| expanded.records().contains(record)));
-    assert!(expanded.records().len() > original.records().len());
 }

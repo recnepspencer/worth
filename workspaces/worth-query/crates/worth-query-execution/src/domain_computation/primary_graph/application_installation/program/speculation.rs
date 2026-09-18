@@ -48,6 +48,7 @@ impl WorthQueryApplicationPreviewRequest {
 pub enum WorthQueryApplicationPreviewReadmissionDenial {
     StaleSource,
     ForeignObservation,
+    ForeignRuntime,
     MissingSourceBasis,
     SourceUnavailable,
     AdmissionRejected,
@@ -56,6 +57,7 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
 
 pub struct WorthQueryApplicationPreviewSession {
     handle: BridgeSpeculativeSessionHandle,
+    runtime_authority: u64,
     source_commit: CompositeCommitIdentity,
 }
 
@@ -72,10 +74,19 @@ impl WorthQueryApplicationPreviewSession {
         Schema: ApplicationSchema,
         Program: ApplicationProgramDefinition<Schema>,
     {
-        let current = runtime
-            .on_branch(runtime.current_world())
-            .select()
-            .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::SourceUnavailable)?;
+        if runtime.runtime().runtime.authority_identity().as_u64() != self.runtime_authority {
+            self.discard()
+                .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
+            return Err(WorthQueryApplicationPreviewReadmissionDenial::ForeignRuntime);
+        }
+        let current = match runtime.on_branch(runtime.current_world()).select() {
+            Ok(current) => current,
+            Err(_) => {
+                self.discard()
+                    .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
+                return Err(WorthQueryApplicationPreviewReadmissionDenial::SourceUnavailable);
+            }
+        };
         if current.product().selected_commit() != &self.source_commit {
             self.discard()
                 .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
@@ -172,6 +183,7 @@ where
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::AdmissionRejected)?;
         Ok(WorthQueryApplicationPreviewSession {
             handle,
+            runtime_authority: self.runtime().runtime.authority_identity().as_u64(),
             source_commit: observation.selected_commit().clone(),
         })
     }
