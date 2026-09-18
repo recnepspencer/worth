@@ -114,5 +114,39 @@ fn validate_feature(
             ));
         }
     }
+    let artifact_types = feature
+        .derived_artifacts()
+        .iter()
+        .map(|artifact| artifact.artifact_type())
+        .collect::<BTreeSet<_>>();
+    let mut computation_ids = BTreeSet::new();
+    for computation in feature.managed_computations() {
+        require_identity(computation.identity())?;
+        require_identity(computation.input())?;
+        require_identity(computation.output_artifact())?;
+        require_identity(computation.partition())?;
+        require_identity(computation.reuse())?;
+        require_identity(computation.stopped())?;
+        require_identity(computation.ordering())?;
+        if !computation_ids.insert(computation.identity()) {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::DuplicateManagedComputation,
+                format!("{}.{}", feature.identity(), computation.identity()),
+            ));
+        }
+        if !artifact_types.contains(&computation.output_artifact_type()) {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::MissingManagedComputationArtifact,
+                format!("{}.{}", feature.identity(), computation.output_artifact()),
+            ));
+        }
+        let resources = computation.resources();
+        if resources.maximum_work() == 0 || resources.maximum_retained_bytes() == 0 {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::InvalidManagedComputationResources,
+                computation.identity(),
+            ));
+        }
+    }
     Ok(())
 }

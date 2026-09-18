@@ -13,7 +13,8 @@ use crate::application_program::{
     ApplicationActionDeclaration, ApplicationChangeShape, ApplicationCompositionInstance,
     ApplicationDerivedArtifact, ApplicationDerivedArtifactDeclaration,
     ApplicationEvaluatedRequirementRule, ApplicationExternalInputProvider,
-    ApplicationLocalityScope, ApplicationRepeatedOptionalMemberCorrespondence,
+    ApplicationLocalityScope, ApplicationManagedComputation,
+    ApplicationManagedComputationDeclaration, ApplicationRepeatedOptionalMemberCorrespondence,
     ApplicationRootComposition,
 };
 
@@ -77,6 +78,7 @@ pub struct ApplicationFeatureSpecBuilder<Schema, Instance, Feature> {
     actions: Vec<ApplicationActionDeclaration>,
     outputs: Vec<ApplicationFeatureOutputDeclaration>,
     derived_artifacts: Vec<ApplicationDerivedArtifactDeclaration>,
+    managed_computations: Vec<ApplicationManagedComputationDeclaration>,
     marker: PhantomData<fn() -> (Schema, Instance, Feature)>,
 }
 
@@ -92,6 +94,7 @@ where
             actions: Vec::new(),
             outputs: Vec::new(),
             derived_artifacts: Vec::new(),
+            managed_computations: Vec::new(),
             marker: PhantomData,
         }
     }
@@ -309,9 +312,24 @@ where
         self
     }
 
+    pub fn managed_computation<Computation>(mut self) -> Self
+    where
+        Computation: ApplicationManagedComputation<Schema, Feature>,
+    {
+        self.managed_computations
+            .push(ApplicationManagedComputationDeclaration::of::<
+                Schema,
+                Feature,
+                Computation,
+            >());
+        self
+    }
+
     pub fn finish(mut self) -> ApplicationFeatureSpec {
         self.feature.set_outputs(self.outputs);
         self.feature.set_derived_artifacts(self.derived_artifacts);
+        self.feature
+            .set_managed_computations(self.managed_computations);
         ApplicationFeatureSpec {
             feature: self.feature,
             actions: self.actions.into_boxed_slice(),

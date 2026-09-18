@@ -326,6 +326,10 @@ where
     )?;
     let installed = install_application_program(program, runtime.installed_schema())
         .map_err(WorthQueryInMemoryApplicationDenial::Program)?;
+    runtime
+        .mutation_handlers
+        .validate_managed_computations(installed.features())
+        .map_err(WorthQueryInMemoryApplicationDenial::Contributions)?;
     conditional::validate_conditional_actions(
         installed.actions(),
         runtime.installed_conditionals.operation_types(),

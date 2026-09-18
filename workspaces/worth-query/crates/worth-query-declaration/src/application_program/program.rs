@@ -97,6 +97,9 @@ pub enum ApplicationProgramValidationDenialKind {
     DuplicateRule,
     IncompleteActionChangeContract,
     UngovernedDerivedOutput,
+    DuplicateManagedComputation,
+    MissingManagedComputationArtifact,
+    InvalidManagedComputationResources,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

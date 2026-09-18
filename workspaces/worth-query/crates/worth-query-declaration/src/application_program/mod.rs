@@ -11,6 +11,7 @@ mod feature;
 mod identity;
 mod instance;
 mod locality;
+mod managed_computation;
 mod output_graph;
 mod output_posture;
 mod program;
@@ -52,6 +53,12 @@ pub use identity::ApplicationProgramIdentity;
 pub use instance::{ApplicationCompositionInstance, ApplicationRootComposition};
 pub use locality::{
     ApplicationLocalityDeclaration, ApplicationLocalityGranule, ApplicationLocalityScope,
+};
+pub use managed_computation::{
+    ApplicationComputationExecution, ApplicationComputationInput, ApplicationComputationPartition,
+    ApplicationComputationResourceCeiling, ApplicationComputationReuse,
+    ApplicationComputationStopped, ApplicationManagedComputation,
+    ApplicationManagedComputationDeclaration,
 };
 pub use output_graph::{
     ApplicationConnectionShape, ApplicationDiscoveredOutputGraph, ApplicationDiscoveredOutputRoot,

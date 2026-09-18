@@ -14,6 +14,7 @@ use crate::application_schema::{
 };
 
 mod locality;
+mod managed_computation;
 
 struct TestSchema;
 struct FlatFeature;
