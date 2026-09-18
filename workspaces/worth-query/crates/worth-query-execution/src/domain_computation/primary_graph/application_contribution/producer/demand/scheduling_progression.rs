@@ -33,14 +33,7 @@ where
                     format!("{}: Signal route was not installed", selected.identity),
                 )
             })?;
-        let selected_branch = match performed_source {
-            Some(source) => self
-                .product_runtime
-                .lease_from_observation(source.observation.clone())
-                .and_then(|product| self.on_product(product)),
-            None => self.on_branch(branch).select(),
-        };
-        let selected_branch = match selected_branch {
+        let selected_branch = match self.on_branch(branch).select() {
             Ok(selected) => selected,
             Err(error) if error.is_transient() => {
                 return Ok(WorthQueryOutputSchedulingResult::Deferred)
@@ -52,6 +45,18 @@ where
                 ))
             }
         };
+        if performed_source.is_some_and(|source| {
+            selected_branch
+                .product()
+                .observation()
+                .lifecycle_incarnation()
+                != source.observation.lifecycle_incarnation()
+        }) {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "performed source and current scheduling branch belong to different occurrences",
+            ));
+        }
         let truth = crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis::from_selected(selected_branch);
         if performed_source.is_some_and(|source| {
             let publication = source.receipt.committed_product_publication();
