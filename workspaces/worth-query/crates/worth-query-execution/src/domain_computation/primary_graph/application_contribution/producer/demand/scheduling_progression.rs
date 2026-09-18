@@ -85,8 +85,14 @@ where
                     format!("{}: Signal attempt identity exhausted", selected.identity),
                 )
             })?;
+        let mut identity = sha2::Sha256::new();
+        use sha2::Digest;
+        identity.update(b"worth-query:output-schedule:v1");
+        identity.update(observed_source.query_identity.as_bytes());
+        identity.update(observed_source.parameter_binding_identity.bytes());
+        let identity = identity.finalize();
         let mut identity_bytes = [0_u8; 8];
-        identity_bytes.copy_from_slice(&observed_source.query_identity.as_bytes()[..8]);
+        identity_bytes.copy_from_slice(&identity[..8]);
         let query_identity = u64::from_le_bytes(identity_bytes);
         let bridge = self.bridge.conditional();
         let decision = match schedule_output_producer(
