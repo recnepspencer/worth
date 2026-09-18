@@ -369,7 +369,7 @@ where
         {
             Err(denial(
                 WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                Binding::IDENTITY,
+                format!("{}: {commit_denial:?}", Binding::IDENTITY),
             ))
         }
         outcome => Err(failed(Binding::IDENTITY, outcome)),
