@@ -10,6 +10,28 @@ use super::super::effect_program::WorthQueryApplicationOptionalFieldWrite;
 use super::super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::*;
 
+fn dependency_identity(
+    declared_key: [u8; 32],
+    facts: &[WorthQueryApplicationObservedFact],
+) -> Result<
+    (
+        [u8; 32],
+        worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
+    ),
+    (),
+> {
+    super::dependency_identity(declared_key, facts, 4 * 1_024 * 1_024)
+}
+
+#[test]
+fn producer_dependency_identity_rejects_an_insufficient_host_byte_budget() {
+    let fact = WorthQueryApplicationObservedFact::SourceEntity {
+        entity_id: EntityId::new(PartitionId::main(), 41, 1),
+    };
+    assert!(super::dependency_identity([9; 32], &[fact.clone()], 1).is_err());
+    assert!(super::dependency_identity([9; 32], &[fact], 4 * 1_024).is_ok());
+}
+
 #[test]
 fn producer_identity_changes_with_any_completed_dependency() {
     let entity_id = EntityId::new(PartitionId::main(), 17, 2);

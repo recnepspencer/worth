@@ -23,7 +23,15 @@ impl<Schema, Operation, Input, Scope>
         OutputBinding: 'static,
     {
         let dependency_facts = normalized_output_facts(&self.read_set.facts, &self.effects);
-        let (dependency, work) = dependency_identity(declared_key, &dependency_facts)?;
+        let maximum_dependency_bytes = usize::try_from(
+            runtime
+                .runtime
+                .application_candidate_resource_profile()
+                .maximum_producer_dependency_bytes(),
+        )
+        .map_err(|_| ())?;
+        let (dependency, work) =
+            dependency_identity(declared_key, &dependency_facts, maximum_dependency_bytes)?;
         self.output_currentness_facts = Some(
             dependency_facts
                 .into_iter()

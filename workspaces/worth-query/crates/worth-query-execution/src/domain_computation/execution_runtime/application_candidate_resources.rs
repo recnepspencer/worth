@@ -8,6 +8,7 @@ pub struct WorthQueryApplicationCandidateResourceProfile {
     maximum_retained_representation_bytes: NonZeroU64,
     maximum_validator_work: NonZeroU64,
     maximum_operation_width: NonZeroU64,
+    maximum_producer_dependency_bytes: NonZeroU64,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -16,6 +17,7 @@ pub enum WorthQueryApplicationCandidateResourceProfileDenial {
     ZeroRetainedRepresentationBytes,
     ZeroValidatorWork,
     ZeroOperationWidth,
+    ZeroProducerDependencyBytes,
 }
 
 impl WorthQueryApplicationCandidateResourceProfile {
@@ -35,7 +37,20 @@ impl WorthQueryApplicationCandidateResourceProfile {
                 .ok_or(Denial::ZeroValidatorWork)?,
             maximum_operation_width: NonZeroU64::new(4_096)
                 .expect("the default operation width ceiling is nonzero"),
+            maximum_producer_dependency_bytes: NonZeroU64::new(4 * 1_024 * 1_024)
+                .expect("the default producer dependency ceiling is nonzero"),
         })
+    }
+
+    pub fn with_maximum_producer_dependency_bytes(
+        mut self,
+        maximum_producer_dependency_bytes: u64,
+    ) -> Result<Self, WorthQueryApplicationCandidateResourceProfileDenial> {
+        self.maximum_producer_dependency_bytes = NonZeroU64::new(maximum_producer_dependency_bytes)
+            .ok_or(
+                WorthQueryApplicationCandidateResourceProfileDenial::ZeroProducerDependencyBytes,
+            )?;
+        Ok(self)
     }
 
     pub fn with_maximum_operation_width(
@@ -62,6 +77,10 @@ impl WorthQueryApplicationCandidateResourceProfile {
     pub const fn maximum_operation_width(self) -> u64 {
         self.maximum_operation_width.get()
     }
+
+    pub const fn maximum_producer_dependency_bytes(self) -> u64 {
+        self.maximum_producer_dependency_bytes.get()
+    }
 }
 
 #[cfg(test)]
@@ -80,6 +99,24 @@ mod tests {
                 .unwrap()
                 .with_maximum_operation_width(0),
             Err(WorthQueryApplicationCandidateResourceProfileDenial::ZeroOperationWidth)
+        );
+    }
+
+    #[test]
+    fn producer_dependency_bytes_require_explicit_nonzero_host_capacity() {
+        let profile = WorthQueryApplicationCandidateResourceProfile::bounded(8, 16, 32)
+            .unwrap()
+            .with_maximum_producer_dependency_bytes(16 * 1_024 * 1_024)
+            .unwrap();
+        assert_eq!(
+            profile.maximum_producer_dependency_bytes(),
+            16 * 1_024 * 1_024
+        );
+        assert_eq!(
+            WorthQueryApplicationCandidateResourceProfile::bounded(8, 16, 32)
+                .unwrap()
+                .with_maximum_producer_dependency_bytes(0),
+            Err(WorthQueryApplicationCandidateResourceProfileDenial::ZeroProducerDependencyBytes)
         );
     }
 }

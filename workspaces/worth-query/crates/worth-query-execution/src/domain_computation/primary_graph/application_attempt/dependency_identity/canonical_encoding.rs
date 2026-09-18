@@ -13,11 +13,12 @@ const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.application-producer-dependencies");
 const RULE_VERSION: &str = "worth-query-application-producer-dependencies-v1";
 const LINEAGE_RULE_VERSION: &str = "worth-query-application-producer-lineage-v1";
-const MAXIMUM_CANONICAL_BYTES: usize = 4 * 1_024 * 1_024;
+const MAXIMUM_LINEAGE_CANONICAL_BYTES: usize = 4 * 1_024 * 1_024;
 
 pub(super) fn dependency_identity(
     declared_key: [u8; 32],
     facts: &[WorthQueryApplicationObservedFact],
+    maximum_canonical_bytes: usize,
 ) -> Result<([u8; 32], WorthQueryCanonicalWorkEvidence), ()> {
     let mut entries = Vec::new();
     push(
@@ -42,7 +43,7 @@ pub(super) fn dependency_identity(
         );
         append_fact(&mut entries, &prefix, fact);
     }
-    derive_identity(RULE_VERSION, entries)
+    derive_identity(RULE_VERSION, entries, maximum_canonical_bytes)
 }
 
 pub(super) fn lineage_identity(
@@ -64,17 +65,22 @@ pub(super) fn lineage_identity(
             CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(identity))
         }),
     );
-    derive_identity(LINEAGE_RULE_VERSION, entries)
+    derive_identity(
+        LINEAGE_RULE_VERSION,
+        entries,
+        MAXIMUM_LINEAGE_CANONICAL_BYTES,
+    )
 }
 
 fn derive_identity(
     rule_version: &str,
     entries: Vec<CanonicalBasisEntry>,
+    maximum_canonical_bytes: usize,
 ) -> Result<([u8; 32], WorthQueryCanonicalWorkEvidence), ()> {
     let version = CanonicalizationRuleVersion::new(rule_version).ok_or(())?;
     let maximum_entries = u32::try_from(entries.len()).map_err(|_| ())?;
     let budget =
-        CanonicalDigestWorkBudget::new(maximum_entries, MAXIMUM_CANONICAL_BYTES).ok_or(())?;
+        CanonicalDigestWorkBudget::new(maximum_entries, maximum_canonical_bytes).ok_or(())?;
     let basis = prepare_canonical_basis_sequence(version, DOMAIN, entries)
         .into_result()
         .map_err(|_| ())?;
