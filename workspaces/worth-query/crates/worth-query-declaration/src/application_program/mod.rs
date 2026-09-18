@@ -13,6 +13,7 @@ mod identity;
 mod instance;
 mod locality;
 mod managed_computation;
+mod manifest;
 mod output_graph;
 mod output_posture;
 mod program;
@@ -67,6 +68,7 @@ pub use managed_computation::{
     ApplicationComputationStopped, ApplicationManagedComputation,
     ApplicationManagedComputationDeclaration,
 };
+pub use manifest::ApplicationProgramManifest;
 pub use output_graph::{
     ApplicationConnectionShape, ApplicationDiscoveredOutputGraph, ApplicationDiscoveredOutputRoot,
     ApplicationOutputChildrenShape, ApplicationOutputEdge, ApplicationOutputEdgeShape,
