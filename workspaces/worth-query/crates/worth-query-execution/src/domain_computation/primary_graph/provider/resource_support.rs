@@ -83,15 +83,17 @@ fn component_support(
         WorthQueryExecutionAllocatorFamily::new(APPLICATION_EXECUTION_ALLOCATOR_FAMILY)
             .expect("static allocator family is canonical"),
         WorthQueryExecutionResourceEnvelope::new(
-            WorthQuerySemanticScaleRequest::bounded(4_096)
-                .with(
-                    WorthQuerySemanticScaleAxis::CandidateItems,
-                    candidate_resources.maximum_items(),
-                )
-                .with(
-                    WorthQuerySemanticScaleAxis::WorkItems,
-                    candidate_resources.maximum_validator_work(),
-                ),
+            WorthQuerySemanticScaleRequest::bounded(
+                candidate_resources.maximum_operation_model_size(),
+            )
+            .with(
+                WorthQuerySemanticScaleAxis::CandidateItems,
+                candidate_resources.maximum_items(),
+            )
+            .with(
+                WorthQuerySemanticScaleAxis::WorkItems,
+                candidate_resources.maximum_validator_work(),
+            ),
             WorthQueryResourceLimitRequest::bounded(4_096)
                 .with(
                     WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
