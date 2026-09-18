@@ -6,6 +6,14 @@ mod output_postcondition;
 use canonical_encoding::{dependency_identity, lineage_identity};
 use output_postcondition::{is_output_currentness_fact, normalized_output_facts};
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerIdentityDenial {
+    DependencyByteCapacityUnsupported,
+    DependencyCanonicalizationRejected,
+    MissingSourcePartition,
+    LineageCanonicalizationRejected,
+}
+
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {
@@ -18,7 +26,7 @@ impl<Schema, Operation, Input, Scope>
         >,
         declared_key: [u8; 32],
         successor_of: Option<[u8; 32]>,
-    ) -> Result<([u8; 32], [u8; 32]), ()>
+    ) -> Result<([u8; 32], [u8; 32]), WorthQueryProducerIdentityDenial>
     where
         OutputBinding: 'static,
     {
@@ -29,9 +37,12 @@ impl<Schema, Operation, Input, Scope>
                 .application_candidate_resource_profile()
                 .maximum_producer_dependency_bytes(),
         )
-        .map_err(|_| ())?;
+        .map_err(|_| WorthQueryProducerIdentityDenial::DependencyByteCapacityUnsupported)?;
         let (dependency, work) =
-            dependency_identity(declared_key, &dependency_facts, maximum_dependency_bytes)?;
+            dependency_identity(declared_key, &dependency_facts, maximum_dependency_bytes)
+                .map_err(|_| {
+                    WorthQueryProducerIdentityDenial::DependencyCanonicalizationRejected
+                })?;
         self.output_currentness_facts = Some(
             dependency_facts
                 .into_iter()
@@ -54,7 +65,7 @@ impl<Schema, Operation, Input, Scope>
                 self.read_set
                     .admission
                     .source_partition_identity()
-                    .ok_or(())?,
+                    .ok_or(WorthQueryProducerIdentityDenial::MissingSourcePartition)?,
             );
         let force_successor = successor_of.is_some_and(|stale_key| {
             head.is_some_and(|head| head.idempotency_key_identity == stale_key)
@@ -76,7 +87,8 @@ impl<Schema, Operation, Input, Scope>
         let prior_head = head
             .map(|head| head.idempotency_key_identity)
             .or(successor_of);
-        let (key, work) = lineage_identity(dependency, prior_head)?;
+        let (key, work) = lineage_identity(dependency, prior_head)
+            .map_err(|_| WorthQueryProducerIdentityDenial::LineageCanonicalizationRejected)?;
         self.read_set
             .admission
             .retain_execution_canonical_work(work);

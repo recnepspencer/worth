@@ -307,10 +307,10 @@ where
             Operation::<Schema, Binding>::idempotency_key_identity(&key),
             successor_of,
         )
-        .map_err(|()| {
+        .map_err(|identity_denial| {
             denial(
                 WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                Binding::IDENTITY,
+                format!("{}: {identity_denial:?}", Binding::IDENTITY),
             )
         })?;
     let idempotency = WorthQueryApplicationIdempotencyBinding::new(
