@@ -27,6 +27,7 @@ mod demand;
 mod derived_artifact;
 mod output_source;
 mod specialized_action;
+mod speculation;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationContributionTuple, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
@@ -36,6 +37,10 @@ pub use demand::{
     WorthQuerySettledProgramOutput,
 };
 pub use specialized_action::WorthQueryAdmittedProgramOperation;
+pub use speculation::{
+    WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
+    WorthQueryApplicationPreviewSession, WorthQueryReadmittedApplicationPreview,
+};
 
 type RootConnectionRef<Schema, Root> =
     <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;

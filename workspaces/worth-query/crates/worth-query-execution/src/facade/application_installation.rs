@@ -2,7 +2,10 @@
 pub use crate::domain_computation::primary_graph::application_installation::{
     in_memory, in_memory_program, in_memory_program_with_authorization_time_source,
     WorthQueryAdmittedProgramOperation, WorthQueryAdmittedProgramOutput,
-    WorthQueryApplicationProgramRoots, WorthQueryInMemoryApplicationDenial,
-    WorthQueryInMemoryApplicationLimits, WorthQueryProgramApplicationRuntime,
-    WorthQueryProgramOutputAdvance, WorthQueryProgramRootDemand, WorthQuerySettledProgramOutput,
+    WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
+    WorthQueryApplicationPreviewSession, WorthQueryApplicationProgramRoots,
+    WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
+    WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance,
+    WorthQueryProgramRootDemand, WorthQueryReadmittedApplicationPreview,
+    WorthQuerySettledProgramOutput,
 };
