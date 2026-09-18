@@ -2,12 +2,15 @@
 
 mod action;
 mod action_correspondence;
+mod change_shape;
 mod connection;
+mod derived_artifact;
 mod evaluated_requirement;
 mod external_input;
 mod feature;
 mod identity;
 mod instance;
+mod locality;
 mod output_graph;
 mod output_posture;
 mod program;
@@ -21,10 +24,17 @@ pub use action::{ApplicationActionCorrespondenceDeclaration, ApplicationActionDe
 pub use action_correspondence::{
     ApplicationOptionalMemberEdit, ApplicationRepeatedOptionalMemberCorrespondence,
 };
+pub use change_shape::{
+    ApplicationChangePosture, ApplicationChangeShape, ApplicationChangeShapeDeclaration,
+};
 pub use connection::{
     ApplicationConnectionDeclaration, ApplicationConnectionIdentity,
     ApplicationConnectionInstanceRef, ApplicationConnectionRef,
     ApplicationOccurrenceConnectionBinding,
+};
+pub use derived_artifact::{
+    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationDerivedArtifact,
+    ApplicationDerivedArtifactDeclaration,
 };
 pub use evaluated_requirement::{
     ApplicationEvaluatedRequirement, ApplicationEvaluatedRequirementRule,
@@ -39,6 +49,9 @@ pub use feature::{
 };
 pub use identity::ApplicationProgramIdentity;
 pub use instance::{ApplicationCompositionInstance, ApplicationRootComposition};
+pub use locality::{
+    ApplicationLocalityDeclaration, ApplicationLocalityGranule, ApplicationLocalityScope,
+};
 pub use output_graph::{
     ApplicationConnectionShape, ApplicationDiscoveredOutputGraph, ApplicationDiscoveredOutputRoot,
     ApplicationOutputChildrenShape, ApplicationOutputEdge, ApplicationOutputEdgeShape,

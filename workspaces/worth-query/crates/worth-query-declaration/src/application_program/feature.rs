@@ -70,6 +70,7 @@ pub struct ApplicationFeatureDeclaration {
     minor: u16,
     inputs: Box<[ApplicationFeatureInputDeclaration]>,
     outputs: Box<[ApplicationFeatureOutputDeclaration]>,
+    derived_artifacts: Box<[super::ApplicationDerivedArtifactDeclaration]>,
 }
 
 impl ApplicationFeatureDeclaration {
@@ -87,6 +88,7 @@ impl ApplicationFeatureDeclaration {
             minor,
             inputs: inputs.into_boxed_slice(),
             outputs: Box::new([]),
+            derived_artifacts: Box::new([]),
         }
     }
 
@@ -123,6 +125,17 @@ impl ApplicationFeatureDeclaration {
 
     pub(super) fn set_outputs(&mut self, outputs: Vec<ApplicationFeatureOutputDeclaration>) {
         self.outputs = outputs.into_boxed_slice();
+    }
+
+    pub fn derived_artifacts(&self) -> &[super::ApplicationDerivedArtifactDeclaration] {
+        &self.derived_artifacts
+    }
+
+    pub(super) fn set_derived_artifacts(
+        &mut self,
+        artifacts: Vec<super::ApplicationDerivedArtifactDeclaration>,
+    ) {
+        self.derived_artifacts = artifacts.into_boxed_slice();
     }
 }
 

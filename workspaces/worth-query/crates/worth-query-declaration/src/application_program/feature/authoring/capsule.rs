@@ -10,9 +10,11 @@ use crate::application_program::action::{
     ApplicationConditionalOperationActionInstanceRef, ApplicationOperationActionRef,
 };
 use crate::application_program::{
-    ApplicationActionDeclaration, ApplicationCompositionInstance,
+    ApplicationActionDeclaration, ApplicationChangeShape, ApplicationCompositionInstance,
+    ApplicationDerivedArtifact, ApplicationDerivedArtifactDeclaration,
     ApplicationEvaluatedRequirementRule, ApplicationExternalInputProvider,
-    ApplicationRepeatedOptionalMemberCorrespondence, ApplicationRootComposition,
+    ApplicationLocalityScope, ApplicationRepeatedOptionalMemberCorrespondence,
+    ApplicationRootComposition,
 };
 
 use super::super::{
@@ -74,6 +76,7 @@ pub struct ApplicationFeatureSpecBuilder<Schema, Instance, Feature> {
     feature: ApplicationFeatureDeclaration,
     actions: Vec<ApplicationActionDeclaration>,
     outputs: Vec<ApplicationFeatureOutputDeclaration>,
+    derived_artifacts: Vec<ApplicationDerivedArtifactDeclaration>,
     marker: PhantomData<fn() -> (Schema, Instance, Feature)>,
 }
 
@@ -88,6 +91,7 @@ where
             feature: ApplicationFeatureInstanceRef::<Schema, Instance, Feature>::declaration(),
             actions: Vec::new(),
             outputs: Vec::new(),
+            derived_artifacts: Vec::new(),
             marker: PhantomData,
         }
     }
@@ -137,6 +141,35 @@ where
     {
         let mut action =
             ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.mark_required_output_source();
+        self.actions.push(action);
+        self
+    }
+
+    pub fn mutation_with_locality_and_change<Binding, Scope, Shape>(mut self) -> Self
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Scope: ApplicationLocalityScope,
+        Shape: ApplicationChangeShape,
+    {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.attach_locality_and_change::<Scope, Shape>();
+        self.actions.push(action);
+        self
+    }
+
+    pub fn required_output_mutation_with_locality_and_change<Binding, Scope, Shape>(
+        mut self,
+    ) -> Self
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Scope: ApplicationLocalityScope,
+        Shape: ApplicationChangeShape,
+    {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.attach_locality_and_change::<Scope, Shape>();
         action.mark_required_output_source();
         self.actions.push(action);
         self
@@ -242,8 +275,20 @@ where
         self
     }
 
+    pub fn derived_artifact<Artifact>(mut self) -> Self
+    where
+        Artifact: ApplicationDerivedArtifact<Schema, Feature>,
+    {
+        let artifact = ApplicationDerivedArtifactDeclaration::of::<Schema, Feature, Artifact>();
+        self.outputs
+            .push(ApplicationFeatureOutputDeclaration::new(artifact.output()));
+        self.derived_artifacts.push(artifact);
+        self
+    }
+
     pub fn finish(mut self) -> ApplicationFeatureSpec {
         self.feature.set_outputs(self.outputs);
+        self.feature.set_derived_artifacts(self.derived_artifacts);
         ApplicationFeatureSpec {
             feature: self.feature,
             actions: self.actions.into_boxed_slice(),

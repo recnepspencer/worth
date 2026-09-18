@@ -9,7 +9,9 @@ use super::{
     ApplicationProgramRuleDeclaration, ApplicationProgramRulesShape,
 };
 
+mod definition_validation;
 mod dependency_graph;
+use definition_validation::validate_features_and_actions;
 use dependency_graph::require_acyclic_connections;
 
 /// Complete authored static program definition.
@@ -83,11 +85,14 @@ pub enum ApplicationProgramValidationDenialKind {
     MissingRequiredInput,
     DuplicateInputBinding,
     DuplicateOutput,
+    DuplicateDerivedArtifact,
     UndeclaredOutput,
+    UndeclaredArtifactOutput,
     UndeclaredInput,
     UnexportedCrossInstanceConnection,
     CyclicConnection,
     DuplicateRule,
+    IncompleteActionChangeContract,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -161,59 +166,7 @@ where
         features.push(feature);
         actions.extend(spec_actions);
     }
-    let mut feature_ids = BTreeSet::new();
-    for feature in &features {
-        require_identity(feature.composition_instance())?;
-        require_identity(feature.identity())?;
-        if !feature_ids.insert((feature.composition_instance(), feature.identity())) {
-            return Err(denial(
-                ApplicationProgramValidationDenialKind::DuplicateFeature,
-                feature.identity(),
-            ));
-        }
-        let mut input_ids = BTreeSet::new();
-        for input in feature.inputs() {
-            require_identity(input.identity())?;
-            if !input_ids.insert(input.identity()) {
-                return Err(denial(
-                    ApplicationProgramValidationDenialKind::DuplicateInputBinding,
-                    format!("{}.{}", feature.identity(), input.identity()),
-                ));
-            }
-        }
-        let mut output_ids = BTreeSet::new();
-        for output in feature.outputs() {
-            require_identity(output.identity())?;
-            if !output_ids.insert(output.identity()) {
-                return Err(denial(
-                    ApplicationProgramValidationDenialKind::DuplicateOutput,
-                    format!("{}.{}", feature.identity(), output.identity()),
-                ));
-            }
-        }
-    }
-    let mut action_ids = BTreeSet::new();
-    for action in &actions {
-        require_identity(action.composition_instance())?;
-        require_identity(action.feature())?;
-        require_identity(action.binding())?;
-        if !feature_ids.contains(&(action.composition_instance(), action.feature())) {
-            return Err(denial(
-                ApplicationProgramValidationDenialKind::DanglingFeature,
-                action.feature(),
-            ));
-        }
-        if !action_ids.insert((
-            action.composition_instance(),
-            action.feature(),
-            action.action_type(),
-        )) {
-            return Err(denial(
-                ApplicationProgramValidationDenialKind::DuplicateAction,
-                action.binding(),
-            ));
-        }
-    }
+    let feature_ids = validate_features_and_actions(&features, &actions)?;
     let mut rule_ids = BTreeSet::new();
     for rule in &rules {
         require_identity(rule.composition_instance())?;

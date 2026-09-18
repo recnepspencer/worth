@@ -7,7 +7,11 @@ use crate::application_schema::{
 };
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
-use super::{ApplicationCompositionInstance, ApplicationFeature, ApplicationRootComposition};
+use super::{
+    ApplicationChangeShape, ApplicationChangeShapeDeclaration, ApplicationCompositionInstance,
+    ApplicationFeature, ApplicationLocalityDeclaration, ApplicationLocalityScope,
+    ApplicationRootComposition,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ApplicationActionCorrespondenceDeclaration {
@@ -96,6 +100,8 @@ pub struct ApplicationActionDeclaration {
     correspondence: Option<ApplicationActionCorrespondenceDeclaration>,
     evaluated_requirement: Option<ApplicationActionEvaluatedRequirementDeclaration>,
     external_input: Option<ApplicationActionExternalInputDeclaration>,
+    locality: Option<ApplicationLocalityDeclaration>,
+    change_shape: Option<ApplicationChangeShapeDeclaration>,
 }
 
 impl ApplicationActionDeclaration {
@@ -153,6 +159,14 @@ impl ApplicationActionDeclaration {
         self.external_input.as_ref()
     }
 
+    pub const fn locality(&self) -> Option<&ApplicationLocalityDeclaration> {
+        self.locality.as_ref()
+    }
+
+    pub const fn change_shape(&self) -> Option<&ApplicationChangeShapeDeclaration> {
+        self.change_shape.as_ref()
+    }
+
     pub(crate) fn attach_correspondence<Correspondence: 'static>(
         &mut self,
         identity: &'static str,
@@ -179,6 +193,15 @@ impl ApplicationActionDeclaration {
             identity,
             provider_type: TypeId::of::<Provider>(),
         });
+    }
+
+    pub(crate) fn attach_locality_and_change<Scope, Shape>(&mut self)
+    where
+        Scope: ApplicationLocalityScope,
+        Shape: ApplicationChangeShape,
+    {
+        self.locality = Some(ApplicationLocalityDeclaration::of::<Scope>());
+        self.change_shape = Some(ApplicationChangeShapeDeclaration::of::<Shape>());
     }
 }
 
@@ -223,6 +246,8 @@ where
             correspondence: None,
             evaluated_requirement: None,
             external_input: None,
+            locality: None,
+            change_shape: None,
         }
     }
 }
@@ -256,6 +281,8 @@ where
             correspondence: None,
             evaluated_requirement: None,
             external_input: None,
+            locality: None,
+            change_shape: None,
         }
     }
 }
