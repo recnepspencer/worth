@@ -284,7 +284,6 @@ where
             runtime_authority: self.runtime.authority_identity().as_u64(),
             schema_binding: self.installed_schema.binding_identity(),
             selected,
-            source,
             observed_source,
             currentness_work_limit,
             maximum_retained_bytes,

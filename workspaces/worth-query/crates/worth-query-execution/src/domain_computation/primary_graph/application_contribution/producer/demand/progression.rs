@@ -245,7 +245,7 @@ where
             principal,
             request_scope,
             delivery_branch,
-            &demand.source,
+            &disclosed_value,
         ) {
             self.output_demands.relinquish_execution(interest);
             return Err(denial);
@@ -255,8 +255,8 @@ where
             principal,
             request_scope,
             delivery_branch,
-            &demand.source,
-            &demand.observed_source,
+            &disclosed_value,
+            &disclosed_source,
             successor_of,
             commit_authority,
         );

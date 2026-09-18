@@ -164,7 +164,6 @@ where
     runtime_authority: u64,
     schema_binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     selected: WorthQuerySelectedApplicationProducer,
-    source: FamilySourceValue<Schema, Family>,
     observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
     currentness_work_limit: std::num::NonZeroUsize,
     maximum_retained_bytes: usize,
