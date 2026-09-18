@@ -203,6 +203,24 @@ domain calculations remain producer-owned. Query owns the installed contract,
 bounded admission, lifecycle custody, and typed denial when requested work does
 not satisfy that contract.
 
+Managed computations extend this contract without moving domain policy into
+Query. A contribution declares each computation's input, output artifact,
+partition, ordering, reuse posture, stopped outcome, and resource ceilings, then
+installs one owner for that exact declaration. Installation rejects missing,
+foreign, duplicate, or type-mismatched owners. Execution evidence can be minted
+only by the active `DecisionReader`; it borrows the real request scope and checks
+deadline, cancellation, retained bytes, and performed work. There is no
+unscoped or test-only execution path. The domain owner prepares, computes, and
+completes its value, while Query owns admission and resource enforcement.
+
+A derived collection declaration identifies contributor and grouping meaning;
+it does not grant mutable collection authority. Product runtimes own their
+incremental collection state and expose consumer-facing rows read-only. A
+product may mark a row complete only from current accepted contributor evidence
+observed through one retained request observation. Missing or noncurrent inputs
+remain pending. Incremental refresh must preserve exact contributor lineage,
+and reconstruction from the same admitted facts must produce the same rows.
+
 Installation enters through `application_installation::in_memory_program` with
 the validated program, configuration, limits, and initial state. It returns a
 `WorthQueryProgramApplicationRuntime<Schema, Program>`. Program-owned actions
