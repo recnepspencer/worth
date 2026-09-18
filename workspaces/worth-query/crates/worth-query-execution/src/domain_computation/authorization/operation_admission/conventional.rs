@@ -253,6 +253,7 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         governed_input_identity: None,
         authorization_basis: WorthQueryOperationAuthorizationBasis::Conventional,
         graph_work: preparation.graph_work,
+        source_partition_identity: None,
         source_facts: Vec::new(),
         _marker: PhantomData,
     }

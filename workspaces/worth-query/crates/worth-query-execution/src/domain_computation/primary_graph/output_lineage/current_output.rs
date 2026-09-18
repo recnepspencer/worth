@@ -3,8 +3,9 @@ use std::any::TypeId;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::{
-    ProductCoordinate, SemanticSource, WorthQueryApplicationOutputLineage,
-    WorthQueryOutputSourcePosture, WorthQueryProducerLineageHead,
+    latest_output_in_partition, ProductCoordinate, SemanticSource,
+    WorthQueryApplicationOutputLineage, WorthQueryOutputSourcePosture,
+    WorthQueryProducerLineageHead,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
@@ -13,6 +14,7 @@ impl WorthQueryApplicationOutputLineage {
         &self,
         scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
+        source_partition_identity: [u8; 32],
     ) -> Option<WorthQueryProducerLineageHead> {
         let source = SemanticSource {
             runtime_authority: scope.runtime_authority(),
@@ -28,7 +30,13 @@ impl WorthQueryApplicationOutputLineage {
         loop {
             if let Some(recorded) = versions
                 .get(&coordinate.occurrence)
-                .and_then(|history| history.range(..=coordinate.generation).next_back())
+                .and_then(|history| {
+                    latest_output_in_partition(
+                        history,
+                        coordinate.generation,
+                        source_partition_identity,
+                    )
+                })
                 .map(|(_, recorded)| recorded)
             {
                 return Some(WorthQueryProducerLineageHead {

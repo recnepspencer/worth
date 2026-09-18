@@ -23,6 +23,7 @@ pub struct WorthQueryApplicationIdempotencyBinding {
     key_identity: [u8; 32],
     intent_identity: [u8; 32],
     source_identity: Option<[u8; 32]>,
+    source_partition_identity: Option<[u8; 32]>,
     producer_dependency_identity: Option<[u8; 32]>,
     operation_identity: Option<[u8; 32]>,
     operation_scope_identity: Option<WorthQueryIdempotencyScopeIdentity>,
@@ -38,6 +39,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity,
             intent_identity,
             source_identity: None,
+            source_partition_identity: None,
             producer_dependency_identity: None,
             operation_identity: None,
             operation_scope_identity: None,
@@ -60,6 +62,12 @@ impl WorthQueryApplicationIdempotencyBinding {
         &self,
     ) -> Option<[u8; 32]> {
         self.source_identity
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn source_partition_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.source_partition_identity
     }
 
     pub(in crate::domain_computation::primary_graph) const fn producer_dependency_identity(
@@ -96,6 +104,14 @@ impl WorthQueryApplicationIdempotencyBinding {
         self
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn bind_source_partition(
+        mut self,
+        partition_identity: &[u8; 32],
+    ) -> Self {
+        self.source_partition_identity = Some(*partition_identity);
+        self
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn bind_producer_dependency(
         mut self,
         dependency_identity: &[u8; 32],
@@ -112,6 +128,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
             source_identity: self.source_identity,
+            source_partition_identity: self.source_partition_identity,
             producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: Some(*operation_identity),
             operation_scope_identity: self.operation_scope_identity,
@@ -132,6 +149,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
             source_identity: self.source_identity,
+            source_partition_identity: self.source_partition_identity,
             producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: Some(WorthQueryIdempotencyScopeIdentity {
@@ -166,6 +184,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
             source_identity: self.source_identity,
+            source_partition_identity: self.source_partition_identity,
             producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
@@ -187,6 +206,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
             source_identity: self.source_identity,
+            source_partition_identity: self.source_partition_identity,
             producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
@@ -208,6 +228,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
             source_identity: self.source_identity,
+            source_partition_identity: self.source_partition_identity,
             producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
@@ -229,6 +250,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
             source_identity: self.source_identity,
+            source_partition_identity: self.source_partition_identity,
             producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,

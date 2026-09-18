@@ -220,6 +220,15 @@ where
         let generation = self.reader.selected_product_generation.ok_or_else(|| {
             WorthQueryPriorOutputDenial::new(WorthQueryPriorOutputDenialKind::Unavailable, subject)
         })?;
+        let partition = self
+            .reader
+            .selected_source_partition_identity
+            .ok_or_else(|| {
+                WorthQueryPriorOutputDenial::new(
+                    WorthQueryPriorOutputDenialKind::Unavailable,
+                    subject,
+                )
+            })?;
         self.require_role_budget(1, subject)?;
         let selection = self
             .reader
@@ -230,6 +239,7 @@ where
                 &scope,
                 occurrence,
                 generation,
+                partition,
                 self.reader.work_budget.remaining().saturating_sub(1),
             )
             .map_err(|_| {

@@ -282,6 +282,7 @@ where
                         &observation,
                         correspondence,
                         producer.source_identity,
+                        producer.source_partition_identity,
                         producer.producer_dependency_identity,
                         producer.idempotency_key_identity,
                         producer.observed_source_facts,

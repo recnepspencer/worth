@@ -43,6 +43,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) selected_product_occurrence:
         Option<worth_runtime_world::facade::ProductBranchIncarnation>,
     pub(super) selected_product_generation: Option<u64>,
+    pub(super) selected_source_partition_identity: Option<[u8; 32]>,
     pub(super) prior_output_bindings:
         HashMap<std::any::TypeId, Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
     pub(super) current_output_families: HashMap<
@@ -140,6 +141,7 @@ where
                     output_lineage: Arc::clone(&self.graph.output_lineage),
                     selected_product_occurrence: None,
                     selected_product_generation: None,
+                    selected_source_partition_identity: None,
                     prior_output_bindings: HashMap::new(),
                     current_output_families: HashMap::new(),
                     dependent_source_facts: BTreeMap::new(),

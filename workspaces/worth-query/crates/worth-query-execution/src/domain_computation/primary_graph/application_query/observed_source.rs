@@ -149,6 +149,16 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
+    pub(in crate::domain_computation) fn partition_identity(&self) -> [u8; 32] {
+        use sha2::Digest;
+
+        let mut digest = sha2::Sha256::new();
+        digest.update(b"worth-query:observed-source-partition:v1");
+        digest.update(self.query_identity.as_bytes());
+        digest.update(self.parameter_binding_identity.bytes());
+        digest.finalize().into()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn selected_product_commit(
         &self,
     ) -> Option<&worth_runtime_world::facade::CompositeCommitIdentity> {
@@ -386,6 +396,7 @@ where
                 )
             })?;
         let idempotency_identity = source.idempotency_identity();
+        let partition_identity = source.partition_identity();
         let facts = source.validate_and_into_facts(
             self.runtime.authority_identity().as_u64(),
             &self.installed_schema.binding_identity(),
@@ -396,6 +407,7 @@ where
             expected_query_identity,
             &graph.layout,
         )?;
+        admission.bind_source_partition(partition_identity);
         admission.bind_source_facts(facts);
         Ok(idempotency_identity)
     }

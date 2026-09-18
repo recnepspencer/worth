@@ -3,6 +3,8 @@
 mod current_output;
 mod qualification;
 mod retention;
+#[cfg(test)]
+mod tests;
 
 use std::any::TypeId;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -40,6 +42,7 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
 struct RecordedOutput {
     correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     source_identity: Option<[u8; 32]>,
+    source_partition_identity: Option<[u8; 32]>,
     producer_dependency_identity: Option<[u8; 32]>,
     idempotency_key_identity: [u8; 32],
     observed_source_facts: Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
@@ -48,6 +51,7 @@ struct RecordedOutput {
 pub(super) struct WorthQueryExactRecordedOutput {
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(super) source_identity: [u8; 32],
+    pub(super) source_partition_identity: [u8; 32],
     pub(super) producer_dependency_identity: Option<[u8; 32]>,
     pub(super) idempotency_key_identity: [u8; 32],
     pub(super) runtime_authority: u64,
@@ -117,6 +121,7 @@ impl WorthQueryApplicationOutputLineage {
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
         source_identity: [u8; 32],
+        source_partition_identity: [u8; 32],
         producer_dependency_identity: Option<[u8; 32]>,
         idempotency_key_identity: [u8; 32],
         observed_source_facts: Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
@@ -138,6 +143,7 @@ impl WorthQueryApplicationOutputLineage {
                 RecordedOutput {
                     correspondence,
                     source_identity: Some(source_identity),
+                    source_partition_identity: Some(source_partition_identity),
                     producer_dependency_identity,
                     idempotency_key_identity,
                     observed_source_facts,
@@ -204,6 +210,7 @@ impl WorthQueryApplicationOutputLineage {
                 RecordedOutput {
                     correspondence: evidence.retain_output_correspondence(),
                     source_identity: evidence.idempotency().source_identity(),
+                    source_partition_identity: evidence.idempotency().source_partition_identity(),
                     producer_dependency_identity: evidence
                         .idempotency()
                         .producer_dependency_identity(),
@@ -288,6 +295,7 @@ impl WorthQueryApplicationOutputLineage {
         scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
+        source_partition_identity: [u8; 32],
         maximum_source_lookups: usize,
     ) -> Result<WorthQueryPriorOutputBindingResolution, ()> {
         let source = SemanticSource {
@@ -314,7 +322,13 @@ impl WorthQueryApplicationOutputLineage {
             }
             if let Some(correspondence) = versions
                 .get(&coordinate.occurrence)
-                .and_then(|history| history.range(..=coordinate.generation).next_back())
+                .and_then(|history| {
+                    latest_output_in_partition(
+                        history,
+                        coordinate.generation,
+                        source_partition_identity,
+                    )
+                })
                 .map(|(_, recorded)| recorded.correspondence.clone())
             {
                 return Ok(WorthQueryPriorOutputBindingResolution {
@@ -331,6 +345,17 @@ impl WorthQueryApplicationOutputLineage {
             coordinate = parent;
         }
     }
+}
+
+fn latest_output_in_partition(
+    history: &BTreeMap<u64, RecordedOutput>,
+    maximum_generation: u64,
+    source_partition_identity: [u8; 32],
+) -> Option<(&u64, &RecordedOutput)> {
+    history
+        .range(..=maximum_generation)
+        .rev()
+        .find(|(_, recorded)| recorded.source_partition_identity == Some(source_partition_identity))
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

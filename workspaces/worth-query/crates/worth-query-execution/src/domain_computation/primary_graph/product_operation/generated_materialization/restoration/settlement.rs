@@ -41,6 +41,7 @@ impl PublishedRestorationSettlement {
                 &observation,
                 retry.correspondence,
                 retry.producer.source_identity,
+                retry.producer.source_partition_identity,
                 retry.producer.producer_dependency_identity,
                 retry.producer.idempotency_key_identity,
                 retry.producer.observed_source_facts,

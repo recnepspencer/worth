@@ -43,6 +43,10 @@ impl<Schema, Operation, Input, Scope>
             .producer_head::<OutputBinding>(
                 self.read_set.admission.operation_scope_binding(),
                 self.read_set.lease.product().observation(),
+                self.read_set
+                    .admission
+                    .source_partition_identity()
+                    .ok_or(())?,
             );
         let force_successor = successor_of.is_some_and(|stale_key| {
             head.is_some_and(|head| head.idempotency_key_identity == stale_key)

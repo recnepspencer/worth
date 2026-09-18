@@ -32,6 +32,7 @@ impl WorthQueryApplicationOutputLineage {
         Some(WorthQueryExactRecordedOutput {
             correspondence: Arc::clone(&recorded.correspondence),
             source_identity,
+            source_partition_identity: recorded.source_partition_identity?,
             producer_dependency_identity: recorded.producer_dependency_identity,
             idempotency_key_identity: recorded.idempotency_key_identity,
             runtime_authority: source.runtime_authority,

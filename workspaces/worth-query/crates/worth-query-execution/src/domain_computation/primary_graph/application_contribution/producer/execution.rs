@@ -260,6 +260,7 @@ where
             request_scope,
         )
         .map_err(|error| failed(Binding::IDENTITY, error))?;
+    let source_partition_identity = observed_source.partition_identity();
     let source_identity = runtime
         .bind_application_source_expectation::<Operation<Schema, Binding>, _>(
             &mut admission,
@@ -317,6 +318,7 @@ where
         Operation::<Schema, Binding>::input_identity(&input),
     )
     .bind_source(Some(&source_identity))
+    .bind_source_partition(&source_partition_identity)
     .bind_producer_dependency(&dependency_identity);
     let program = program
         .with_output_demand_observation()

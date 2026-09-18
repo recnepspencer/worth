@@ -201,6 +201,8 @@ where
                         Some(product.observation().lifecycle_incarnation());
                     reader.selected_product_generation =
                         Some(product.observation().reference_generation().get());
+                    reader.selected_source_partition_identity =
+                        admission.source_partition_identity();
                     let mut decision_facts = BTreeSet::new();
                     let mut operation_reader =
                         WorthQueryApplicationOperationInvariantProjectionReader {

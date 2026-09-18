@@ -260,6 +260,16 @@ impl<Schema, Operation, Input, Scope>
         self.source_facts = facts;
     }
 
+    pub(in crate::domain_computation) fn bind_source_partition(&mut self, identity: [u8; 32]) {
+        self.source_partition_identity = Some(identity);
+    }
+
+    pub(in crate::domain_computation) const fn source_partition_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.source_partition_identity
+    }
+
     pub(in crate::domain_computation) fn take_source_facts(
         &mut self,
     ) -> Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact> {
