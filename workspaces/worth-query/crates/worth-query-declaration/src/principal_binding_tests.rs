@@ -102,11 +102,11 @@ worth_query_field!(
 #[test]
 fn generic_schema_fields_can_declare_optional_values() {
     assert_eq!(
-        GenericAccount::reference::<IdentitySchema>().entity(),
+        GenericAccount::reference::<IdentitySchema>().name(),
         "GenericAccount"
     );
     assert_eq!(
-        GenericAccountFacts::reference::<IdentitySchema>().aspect(),
+        GenericAccountFacts::reference::<IdentitySchema>().name(),
         "GenericAccountFacts"
     );
     let reference = GenericAccountNote::reference::<IdentitySchema>();
