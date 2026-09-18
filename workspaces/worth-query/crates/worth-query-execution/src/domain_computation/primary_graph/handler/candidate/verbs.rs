@@ -6,7 +6,7 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
     DeclaredApplicationFieldValue, OperationCreates, OperationDeletes, OperationLinks,
-    OperationWrites, WritableCapability,
+    OperationWrites, OptionalApplicationFieldValue, WritableCapability,
 };
 
 use super::CandidateWriter;
@@ -70,6 +70,22 @@ where
         Unit: ApplicationFieldUnit,
     {
         self.candidate.write_field(target, field, value)
+    }
+
+    /// Writes or clears one optional field using the same observed target and
+    /// candidate reservation as every other handler-authored effect.
+    pub fn write_optional_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        value: Option<Value>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
+    where
+        Field: OperationWrites<Binding::Operation> + OptionalApplicationFieldValue<Value = Value>,
+        Write: WritableCapability,
+        Unit: ApplicationFieldUnit,
+    {
+        self.candidate.write_optional_field(target, field, value)
     }
 
     pub fn link<Relation, From, To>(
