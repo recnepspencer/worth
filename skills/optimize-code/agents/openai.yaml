@@ -1,0 +1,4 @@
+interface:
+  display_name: "Optimize Code"
+  short_description: "Plan deletion, consolidation, and scalable improvements"
+  default_prompt: "Use $optimize-code to produce a concrete optimization plan for the requested code."
