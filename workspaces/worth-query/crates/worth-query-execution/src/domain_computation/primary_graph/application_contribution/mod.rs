@@ -11,9 +11,11 @@ pub use composition::{
 };
 pub use computation::{
     WorthQueryCompletedManagedComputation, WorthQueryInstalledManagedComputation,
-    WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationDenial,
-    WorthQueryManagedComputationOwner, WorthQueryManagedComputationPrepared,
-    WorthQueryManagedComputationResourceDenial, WorthQueryPreparedManagedComputation,
+    WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationCheckpointDenial,
+    WorthQueryManagedComputationDenial, WorthQueryManagedComputationExecution,
+    WorthQueryManagedComputationInterruption, WorthQueryManagedComputationOwner,
+    WorthQueryManagedComputationPrepared, WorthQueryManagedComputationResourceDenial,
+    WorthQueryPreparedManagedComputation,
 };
 pub use conditional::{
     WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,

@@ -53,6 +53,14 @@ pub(in crate::domain_computation::primary_graph) struct InstalledMutationHandler
     _schema: PhantomData<fn() -> Schema>,
 }
 
+#[derive(Clone, Copy)]
+struct ManagedComputationExpectation {
+    identity: &'static str,
+    feature_type: TypeId,
+    computation_type: TypeId,
+    output_artifact_type: TypeId,
+}
+
 impl<Schema> Default for PendingMutationHandlerRegistry<Schema> {
     fn default() -> Self {
         Self {
@@ -239,33 +247,51 @@ impl<Schema> InstalledMutationHandlerRegistry<Schema> {
         let declared = features
             .iter()
             .flat_map(|feature| feature.managed_computations())
-            .map(|computation| (computation.computation_type(), computation))
-            .collect::<BTreeMap<_, _>>();
-        for (computation_type, computation) in &declared {
-            let owner = self.computations.get(computation_type).ok_or_else(|| {
-                denial(
-                    DenialKind::MissingManagedComputationOwner,
-                    computation.identity(),
+            .map(|computation| {
+                (
+                    computation.computation_type(),
+                    ManagedComputationExpectation {
+                        identity: computation.identity(),
+                        feature_type: computation.feature_type(),
+                        computation_type: computation.computation_type(),
+                        output_artifact_type: computation.output_artifact_type(),
+                    },
                 )
-            })?;
-            if owner.computation_type != *computation_type
-                || owner.feature_type != computation.feature_type()
-                || owner.output_artifact_type != computation.output_artifact_type()
-            {
-                return Err(denial(
-                    DenialKind::ManagedComputationOwnerMeaningMismatch,
-                    computation.identity(),
-                ));
-            }
-        }
-        if self.computations.len() != declared.len() {
+            })
+            .collect::<BTreeMap<_, _>>();
+        validate_managed_computation_inventory(&self.computations, &declared)
+    }
+}
+
+fn validate_managed_computation_inventory(
+    installed: &BTreeMap<TypeId, InstalledManagedComputationOwner>,
+    declared: &BTreeMap<TypeId, ManagedComputationExpectation>,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    for (computation_type, computation) in declared {
+        let owner = installed.get(computation_type).ok_or_else(|| {
+            denial(
+                DenialKind::MissingManagedComputationOwner,
+                computation.identity,
+            )
+        })?;
+        if computation.computation_type != *computation_type
+            || owner.computation_type != *computation_type
+            || owner.feature_type != computation.feature_type
+            || owner.output_artifact_type != computation.output_artifact_type
+        {
             return Err(denial(
-                DenialKind::ForeignManagedComputationOwner,
-                "managed computation owner inventory",
+                DenialKind::ManagedComputationOwnerMeaningMismatch,
+                computation.identity,
             ));
         }
-        Ok(())
     }
+    if installed.len() != declared.len() {
+        return Err(denial(
+            DenialKind::ForeignManagedComputationOwner,
+            "managed computation owner inventory",
+        ));
+    }
+    Ok(())
 }
 
 impl<Schema> InstalledMutationHandlerRegistry<Schema>
@@ -318,3 +344,7 @@ fn denial(
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     WorthQueryPrimaryGraphInstallationDenial::new(kind, subject)
 }
+
+#[cfg(test)]
+#[path = "registry_tests.rs"]
+mod tests;
