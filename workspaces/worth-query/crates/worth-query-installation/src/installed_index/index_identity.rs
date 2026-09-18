@@ -19,6 +19,9 @@ use worth_foundational::facade::{
 
 const DOMAIN: CanonicalBasisDomain = CanonicalBasisDomain::Future("worth-query.installed-index");
 const RULE_VERSION: &str = "worth-query-installed-index-v3";
+// Across all installed packages, this identity retains compact installed names
+// and slot-level semantics. It does not embed application-schema meaning, so it
+// has its own smaller bound.
 const INDEX_BUDGET: CanonicalDigestWorkBudget =
     match CanonicalDigestWorkBudget::new(32_768, 4 * 1_024 * 1_024) {
         Some(budget) => budget,

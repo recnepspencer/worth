@@ -4,15 +4,12 @@ use worth_foundational::facade::{
 
 use super::WorthQueryPortableDomainPackage;
 use crate::canonical_digest_derivation::InstallationCanonicalIdentityBasis;
-use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
+use crate::canonical_work::{
+    WorthQueryCanonicalWorkEvidence, INSTALLATION_MAXIMUM_CANONICAL_BYTES,
+};
 
-// A complete installed application package includes schema, operations, queries,
-// invariants, producer contracts, and readiness graphs. Keep this finite while
-// admitting the measured House composition that first crossed the former 4 MiB
-// ceiling through ordinary typed declarations.
-const PACKAGE_MAXIMUM_CANONICAL_BYTES: usize = 8 * 1_024 * 1_024;
 const PACKAGE_BUDGET: CanonicalDigestWorkBudget =
-    match CanonicalDigestWorkBudget::new(32_768, PACKAGE_MAXIMUM_CANONICAL_BYTES) {
+    match CanonicalDigestWorkBudget::new(32_768, INSTALLATION_MAXIMUM_CANONICAL_BYTES) {
         Some(budget) => budget,
         None => panic!("fixed package canonical-work budget is valid"),
     };
@@ -83,7 +80,7 @@ pub(super) fn canonical_identity_with_maximum_bytes(
 > {
     let budget = CanonicalDigestWorkBudget::new(
         PACKAGE_BUDGET.maximum_entry_count(),
-        maximum_canonical_bytes.min(PACKAGE_MAXIMUM_CANONICAL_BYTES),
+        maximum_canonical_bytes.min(INSTALLATION_MAXIMUM_CANONICAL_BYTES),
     )
     .ok_or(CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
         maximum: 0,
@@ -157,46 +154,46 @@ mod tests {
     fn package_identity_admits_exact_byte_ceiling_and_denies_one_byte_more() {
         let baseline = package_with_semantics(0);
         let (_, work) =
-            canonical_identity_with_maximum_bytes(&baseline, PACKAGE_MAXIMUM_CANONICAL_BYTES)
+            canonical_identity_with_maximum_bytes(&baseline, INSTALLATION_MAXIMUM_CANONICAL_BYTES)
                 .unwrap();
-        let mut filler = PACKAGE_MAXIMUM_CANONICAL_BYTES - work.canonical_encoded_bytes();
+        let mut filler = INSTALLATION_MAXIMUM_CANONICAL_BYTES - work.canonical_encoded_bytes();
         let exact_work = loop {
             match canonical_identity_with_maximum_bytes(
                 &package_with_semantics(filler),
-                PACKAGE_MAXIMUM_CANONICAL_BYTES,
+                INSTALLATION_MAXIMUM_CANONICAL_BYTES,
             ) {
                 Ok((_, work))
-                    if work.canonical_encoded_bytes() == PACKAGE_MAXIMUM_CANONICAL_BYTES =>
+                    if work.canonical_encoded_bytes() == INSTALLATION_MAXIMUM_CANONICAL_BYTES =>
                 {
                     break work
                 }
                 Ok((_, work)) => {
-                    filler += PACKAGE_MAXIMUM_CANONICAL_BYTES - work.canonical_encoded_bytes();
+                    filler += INSTALLATION_MAXIMUM_CANONICAL_BYTES - work.canonical_encoded_bytes();
                 }
                 Err(CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
                     attempted,
                     ..
                 }) => {
-                    filler -= attempted - PACKAGE_MAXIMUM_CANONICAL_BYTES;
+                    filler -= attempted - INSTALLATION_MAXIMUM_CANONICAL_BYTES;
                 }
                 Err(denial) => panic!("unexpected exact-boundary denial: {denial:?}"),
             }
         };
         assert_eq!(
             exact_work.canonical_encoded_bytes(),
-            PACKAGE_MAXIMUM_CANONICAL_BYTES
+            INSTALLATION_MAXIMUM_CANONICAL_BYTES
         );
 
         let denial = canonical_identity_with_maximum_bytes(
             &package_with_semantics(filler + 1),
-            PACKAGE_MAXIMUM_CANONICAL_BYTES,
+            INSTALLATION_MAXIMUM_CANONICAL_BYTES,
         )
         .unwrap_err();
         assert_eq!(
             denial,
             CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
-                maximum: PACKAGE_MAXIMUM_CANONICAL_BYTES,
-                attempted: PACKAGE_MAXIMUM_CANONICAL_BYTES + 1,
+                maximum: INSTALLATION_MAXIMUM_CANONICAL_BYTES,
+                attempted: INSTALLATION_MAXIMUM_CANONICAL_BYTES + 1,
             }
         );
     }
@@ -207,7 +204,7 @@ mod tests {
         let (old_identity, _) =
             canonical_identity_with_maximum_bytes(&fixture, 4 * 1_024 * 1_024).unwrap();
         let (new_identity, _) =
-            canonical_identity_with_maximum_bytes(&fixture, PACKAGE_MAXIMUM_CANONICAL_BYTES)
+            canonical_identity_with_maximum_bytes(&fixture, INSTALLATION_MAXIMUM_CANONICAL_BYTES)
                 .unwrap();
         assert_eq!(old_identity, new_identity);
     }
