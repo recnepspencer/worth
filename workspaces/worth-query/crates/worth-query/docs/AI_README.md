@@ -170,6 +170,15 @@ values, revision, and provenance, then requires revision validation before the
 captured input becomes admitted. Captured historical values remain readable,
 but neither capture nor matching descriptive data grants mutation authority.
 
+Feature membership can use `worth_query_feature_spec!` to remove repetitive
+builder plumbing while still producing the canonical `ApplicationFeatureSpec`.
+The macro supports root and composition-instance capsules, typed ports,
+mutations, conditional operations, derived artifacts and collections, and
+managed computations. It creates no registry or installation lane. See
+[Feature Capsule Authoring](./authoring/feature-capsule-authoring.md) for the
+complete authoring boundary, typed denial expectations, normalized-manifest
+inspection, and compiled production examples.
+
 ### Governed derived artifacts
 
 An application program selects its derived-artifact posture through

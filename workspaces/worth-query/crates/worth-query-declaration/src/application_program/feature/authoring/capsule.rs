@@ -115,18 +115,6 @@ where
         self
     }
 
-    pub fn mutation_with_requirement<Binding, Rule>(mut self) -> Self
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Rule: ApplicationEvaluatedRequirementRule<Schema, Binding::Operation>,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.attach_evaluated_requirement::<Rule>(Rule::IDENTITY);
-        self.actions.push(action);
-        self
-    }
-
     pub fn mutation_with_requirement_and_external_input<Binding, Rule, Provider>(mut self) -> Self
     where
         Binding: ApplicationMutationBinding<Schema>,
@@ -141,17 +129,6 @@ where
         self
     }
 
-    pub fn required_output_mutation<Binding>(mut self) -> Self
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.mark_required_output_source();
-        self.actions.push(action);
-        self
-    }
-
     pub fn mutation_with_locality_and_change<Binding, Scope, Shape>(mut self) -> Self
     where
         Binding: ApplicationMutationBinding<Schema>,
@@ -161,22 +138,6 @@ where
         let mut action =
             ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
         action.attach_locality_and_change::<Scope, Shape>();
-        self.actions.push(action);
-        self
-    }
-
-    pub fn required_output_mutation_with_locality_and_change<Binding, Scope, Shape>(
-        mut self,
-    ) -> Self
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Scope: ApplicationLocalityScope,
-        Shape: ApplicationChangeShape,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.attach_locality_and_change::<Scope, Shape>();
-        action.mark_required_output_source();
         self.actions.push(action);
         self
     }
@@ -205,19 +166,6 @@ where
             ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
         action.attach_correspondence::<Correspondence>(Correspondence::IDENTITY);
         action.attach_external_input::<Provider>(Provider::IDENTITY);
-        self.actions.push(action);
-        self
-    }
-
-    pub fn repeated_optional_member_output<Binding, Correspondence>(mut self) -> Self
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Correspondence: ApplicationRepeatedOptionalMemberCorrespondence<Schema, Binding>,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.attach_correspondence::<Correspondence>(Correspondence::IDENTITY);
-        action.mark_required_output_source();
         self.actions.push(action);
         self
     }
@@ -256,22 +204,6 @@ where
                 Feature,
                 Operation,
             >::declaration());
-        self
-    }
-
-    pub fn conditional_operation_with_requirement<Operation, Rule>(mut self) -> Self
-    where
-        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-        Rule: ApplicationEvaluatedRequirementRule<Schema, Operation>,
-    {
-        let mut action = ApplicationConditionalOperationActionInstanceRef::<
-            Schema,
-            Instance,
-            Feature,
-            Operation,
-        >::declaration();
-        action.attach_evaluated_requirement::<Rule>(Rule::IDENTITY);
-        self.actions.push(action);
         self
     }
 
