@@ -45,6 +45,10 @@ where
                 "dependent output parent belongs to another installed application",
             ));
         }
+        self.validate_derived_artifact_demand::<Connection, ConnectionDemand<Schema, Connection>>(
+            maximum_work,
+            maximum_retained_bytes,
+        )?;
         let selected_source = source
             .observed_sources()
             .first()

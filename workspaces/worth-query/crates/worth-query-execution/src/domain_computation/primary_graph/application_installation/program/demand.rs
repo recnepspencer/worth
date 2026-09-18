@@ -140,6 +140,7 @@ where
                 "selected output root is not installed for this program",
             ));
         }
+        self.validate_root_artifact_demand::<Root>(maximum_work, maximum_retained_bytes)?;
         self.runtime
             .admit_required_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
@@ -291,6 +292,7 @@ where
                 "selected output root is not installed for this program",
             ));
         }
+        self.validate_root_artifact_demand::<Root>(maximum_work, maximum_retained_bytes)?;
         self.runtime.validate_recovered_output_root_kind(
             source_receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(std::any::TypeId::of::<Root>()),
@@ -336,6 +338,7 @@ where
                 "selected output root is not installed for this program",
             ));
         }
+        self.validate_root_artifact_demand::<Root>(maximum_work, maximum_retained_bytes)?;
         self.runtime
             .admit_performed_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,

@@ -9,9 +9,13 @@ use worth_query_host::facade::{
     application_installation::{self, WorthQueryInMemoryApplicationLimits},
     declaration::{
         application_program::{
-            ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureSpec,
-            ApplicationNoOutputGraph, ApplicationProgramAuthoring, ApplicationProgramDefinition,
-            ApplicationProgramIdentity, ApplicationProgramOutputs, ApplicationRuleLeaf,
+            ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
+            ApplicationArtifactRetention, ApplicationArtifactSuccession,
+            ApplicationDerivedArtifact, ApplicationFeature, ApplicationFeatureInputLeaf,
+            ApplicationFeatureSpec, ApplicationLocalityGranule, ApplicationLocalityScope,
+            ApplicationNoOutputGraph, ApplicationOutputPort, ApplicationProgramAuthoring,
+            ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
+            ApplicationRootComposition, ApplicationRuleLeaf,
         },
         application_query::ApplicationQueryParameterSet,
         application_schema::ApplicationSchemaComposition,
@@ -32,10 +36,45 @@ use super::world::{
 
 struct TemporalInstallationProgram;
 struct TemporalInstallationFeature;
+struct TemporalArtifactOutput;
+struct TemporalArtifactLocality;
+struct TemporalArtifact;
 
 impl ApplicationFeature<TemporalHostSchema> for TemporalInstallationFeature {
     type Inputs = ApplicationFeatureInputLeaf;
     const IDENTITY: &'static str = "worth.query.host.temporal-installation-feature.v1";
+}
+
+impl ApplicationOutputPort<TemporalHostSchema, TemporalInstallationFeature>
+    for TemporalArtifactOutput
+{
+    type Value = IntentQueryResultBinding;
+    const IDENTITY: &'static str = "worth.query.host.temporal-artifact-output.v1";
+}
+
+impl ApplicationLocalityScope for TemporalArtifactLocality {
+    const IDENTITY: &'static str = "worth.query.host.temporal-artifact-locality.v1";
+    const GRANULE: ApplicationLocalityGranule = ApplicationLocalityGranule::Partition;
+}
+
+impl ApplicationDerivedArtifact<TemporalHostSchema, TemporalInstallationFeature>
+    for TemporalArtifact
+{
+    type Output = TemporalArtifactOutput;
+    type Locality = TemporalArtifactLocality;
+    const IDENTITY: &'static str = "worth.query.host.temporal-artifact.v1";
+    const RETENTION: ApplicationArtifactRetention = ApplicationArtifactRetention::Disposable;
+    const SUCCESSION: ApplicationArtifactSuccession = ApplicationArtifactSuccession::Recompute;
+    const REQUIRED: bool = false;
+    const PRODUCER_FAMILY: &'static str = "worth.query.host.temporal-producer.v1";
+    const DEPENDENCIES: &'static [ApplicationArtifactDependency] =
+        &[ApplicationArtifactDependency::new(
+            "worth.query.host.temporal-intent.v1",
+        )];
+    const REUSE_RULE: &'static str = "worth.query.host.temporal-same-basis.v1";
+    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
+        ApplicationArtifactResourceCeiling::new(64, 1_024);
+    const STOPPED_OUTCOME: &'static str = "worth.query.host.temporal-artifact-stopped.v1";
 }
 
 impl ApplicationProgramDefinition<TemporalHostSchema> for TemporalInstallationProgram {
@@ -49,6 +88,7 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for TemporalInstallationPr
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<TemporalHostSchema, TemporalInstallationFeature>()
+                .derived_artifact::<TemporalArtifact>()
                 .conditional_operation::<ExecuteTemporal>()
                 .operation::<AmendTemporal>()
                 .finish(),
@@ -234,6 +274,14 @@ pub(super) fn publishes_delivers_and_executes() {
         },
     )
     .expect("the contribution-composed temporal application must install");
+    assert!(application
+        .installed_program()
+        .derived_artifact::<
+            ApplicationRootComposition,
+            TemporalInstallationFeature,
+            TemporalArtifact,
+        >()
+        .is_some());
     let installed = application
         .conditional::<TemporalConditional>()
         .expect("the installed conditional handle must remain typed and reachable");

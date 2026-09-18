@@ -24,6 +24,7 @@ use super::{
 
 mod conditional;
 mod demand;
+mod derived_artifact;
 mod output_source;
 mod specialized_action;
 use crate::domain_computation::primary_graph::{

@@ -2,17 +2,21 @@ use std::collections::BTreeSet;
 use std::marker::PhantomData;
 
 mod correspondence;
+mod derived_artifact;
 mod evaluated_requirement;
 mod external_input;
+mod scoped_action;
 pub use correspondence::{
     WorthQueryCorrespondedAction, WorthQueryInstalledRepeatedOptionalMember,
     WorthQueryRepeatedOptionalMemberState,
 };
+pub use derived_artifact::{WorthQueryInstalledDerivedArtifact, WorthQueryProgramArtifactPosture};
 pub use evaluated_requirement::WorthQueryInstalledEvaluatedRequirement;
 pub use external_input::{
     WorthQueryAdmittedExternalInput, WorthQueryCapturedExternalInput,
     WorthQueryInstalledExternalInputProvider,
 };
+pub use scoped_action::WorthQueryInstalledScopedAction;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,

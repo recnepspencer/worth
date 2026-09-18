@@ -13,6 +13,8 @@ use crate::application_schema::{
     ApplicationSchemaDeclarationDenial, ApplicationStructuredValueBinding,
 };
 
+mod locality;
+
 struct TestSchema;
 struct FlatFeature;
 struct Input;

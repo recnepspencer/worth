@@ -33,6 +33,7 @@ pub use connection::{
     ApplicationOccurrenceConnectionBinding,
 };
 pub use derived_artifact::{
+    ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
     ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationDerivedArtifact,
     ApplicationDerivedArtifactDeclaration,
 };

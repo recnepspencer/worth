@@ -88,6 +88,12 @@ fn validate_feature(
     for artifact in feature.derived_artifacts() {
         require_identity(artifact.identity())?;
         require_identity(artifact.locality().identity())?;
+        require_identity(artifact.producer_family())?;
+        require_identity(artifact.reuse_rule())?;
+        require_identity(artifact.stopped_outcome())?;
+        for dependency in artifact.dependencies() {
+            require_identity(dependency.identity())?;
+        }
         if !artifact_ids.insert(artifact.identity()) {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::DuplicateDerivedArtifact,
