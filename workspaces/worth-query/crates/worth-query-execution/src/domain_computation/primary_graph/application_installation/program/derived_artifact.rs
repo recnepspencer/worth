@@ -1,6 +1,7 @@
 use worth_query_declaration::facade::{
+    application_operation::ApplicationMutationBinding,
     application_program::{
-        ApplicationConnectionShape, ApplicationDerivedArtifactDeclaration,
+        ApplicationConnectionShape, ApplicationDerivedArtifactDeclaration, ApplicationFeature,
         ApplicationOutputGraphShape, ApplicationProgramDefinition,
     },
     application_schema::ApplicationSchema,
@@ -8,8 +9,9 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryProgramArtifactPosture;
 
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOutputDemand, WorthQueryApplicationRequiredOutputConnection,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryProducerOutputFamily,
+    WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationOutputDemand,
+    WorthQueryApplicationRequiredOutputConnection, WorthQueryOutputDemandDenial,
+    WorthQueryOutputDemandDenialKind, WorthQueryProducerOutputFamily,
 };
 
 use super::WorthQueryProgramApplicationRuntime;
@@ -18,6 +20,9 @@ type RootConnection<Schema, Root> = <Root as ApplicationOutputGraphShape<Schema>
 type RootDemand<Schema, Root> = <<RootConnection<Schema, Root> as ApplicationConnectionShape<
     Schema,
 >>::Binding as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand;
+type DiscoveredRootDemand<Schema, Root> = <<RootConnection<Schema, Root> as ApplicationConnectionShape<
+    Schema,
+>>::Binding as WorthQueryApplicationDiscoveredOutputConnection<Schema>>::Demand;
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where
@@ -38,6 +43,63 @@ where
             RootConnection<Schema, Root>,
             RootDemand<Schema, Root>,
         >(maximum_work, maximum_retained_bytes)
+    }
+
+    /// Proves that the concrete performed operation is an authored cause of
+    /// the root artifact it is about to publish.
+    pub fn validate_program_root_artifact_source<Root, Binding>(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+    ) -> Result<(), WorthQueryOutputDemandDenial>
+    where
+        Root: ApplicationOutputGraphShape<Schema>,
+        <RootConnection<Schema, Root> as ApplicationConnectionShape<Schema>>::Binding:
+            WorthQueryApplicationRequiredOutputConnection<Schema>,
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        let artifact = self.validate_root_artifact_demand::<Root>(0, 0)?;
+        Self::validate_artifact_source::<RootConnection<Schema, Root>, Binding>(artifact)
+    }
+
+    /// Discovered roots retain the same concrete source-to-artifact contract
+    /// as direct required roots.
+    pub fn validate_program_discovered_root_artifact_source<Root, Binding>(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+    ) -> Result<(), WorthQueryOutputDemandDenial>
+    where
+        Root: ApplicationOutputGraphShape<Schema>,
+        <RootConnection<Schema, Root> as ApplicationConnectionShape<Schema>>::Binding:
+            WorthQueryApplicationDiscoveredOutputConnection<Schema>,
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        let artifact = self.validate_derived_artifact_demand::<
+            RootConnection<Schema, Root>,
+            DiscoveredRootDemand<Schema, Root>,
+        >(0, 0)?;
+        Self::validate_artifact_source::<RootConnection<Schema, Root>, Binding>(artifact)
+    }
+
+    fn validate_artifact_source<Connection, Binding>(
+        artifact: Option<ApplicationDerivedArtifactDeclaration>,
+    ) -> Result<(), WorthQueryOutputDemandDenial>
+    where
+        Connection: ApplicationConnectionShape<Schema>,
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        let Some(artifact) = artifact else {
+            return Ok(());
+        };
+        let source_feature = <Connection::SourceFeature as ApplicationFeature<Schema>>::IDENTITY;
+        if artifact.dependencies().iter().any(|dependency| {
+            dependency.identity() == Binding::IDENTITY || dependency.identity() == source_feature
+        }) {
+            return Ok(());
+        }
+        Err(WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::ForeignDemand,
+            "the performed source operation is not a declared dependency of the root artifact",
+        ))
     }
 
     pub(super) fn validate_derived_artifact_demand<Connection, Demand>(

@@ -53,6 +53,28 @@ where
             retained_source,
             mut source_bound,
         } = self;
+        if let Err(denial) = application
+            .validate_program_root_artifact_source::<Root, Intent::Binding>(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+            )
+        {
+            return Err(WorthQueryRequiredOutputStartFailure {
+                performed: Self {
+                    receipt,
+                    result,
+                    application,
+                    demand,
+                    prepared,
+                    retained_source,
+                    source_bound,
+                },
+                denial: WorthQueryRequiredOutputPreparationDenial::Demand(
+                    crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(
+                        denial,
+                    ),
+                ),
+            });
+        }
         let retained_source =
             crate::application_entry::WorthQueryApplicationReadObservation::new(retained_source);
         let source_result = match request
