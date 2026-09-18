@@ -1,6 +1,7 @@
 use worth_query_declaration::facade::{
     application_program::{
-        ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
+        ApplicationConnectionShape, ApplicationDerivedArtifactDeclaration,
+        ApplicationOutputGraphShape, ApplicationProgramDefinition,
     },
     application_schema::ApplicationSchema,
 };
@@ -27,7 +28,7 @@ where
         &self,
         maximum_work: usize,
         maximum_retained_bytes: usize,
-    ) -> Result<(), WorthQueryOutputDemandDenial>
+    ) -> Result<Option<ApplicationDerivedArtifactDeclaration>, WorthQueryOutputDemandDenial>
     where
         Root: ApplicationOutputGraphShape<Schema>,
         <RootConnection<Schema, Root> as ApplicationConnectionShape<Schema>>::Binding:
@@ -43,7 +44,7 @@ where
         &self,
         maximum_work: usize,
         maximum_retained_bytes: usize,
-    ) -> Result<(), WorthQueryOutputDemandDenial>
+    ) -> Result<Option<ApplicationDerivedArtifactDeclaration>, WorthQueryOutputDemandDenial>
     where
         Connection: ApplicationConnectionShape<Schema>,
         Demand: WorthQueryApplicationOutputDemand<Schema>,
@@ -56,28 +57,29 @@ where
             std::any::TypeId::of::<Connection::TargetFeature>(),
             producer_family,
         ) {
-            WorthQueryProgramArtifactPosture::Legacy => Ok(()),
+            WorthQueryProgramArtifactPosture::Legacy => Ok(None),
             WorthQueryProgramArtifactPosture::Undeclared => Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "the target feature has no derived artifact for the selected producer family",
             )),
-            WorthQueryProgramArtifactPosture::Installed(ceiling)
-                if maximum_work > ceiling.maximum_work() =>
+            WorthQueryProgramArtifactPosture::Installed(artifact)
+                if maximum_work > artifact.resource_ceiling().maximum_work() =>
             {
                 Err(WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    "the requested work budget exceeds the installed artifact ceiling",
+                    artifact.stopped_outcome(),
                 ))
             }
-            WorthQueryProgramArtifactPosture::Installed(ceiling)
-                if maximum_retained_bytes > ceiling.maximum_retained_bytes() =>
+            WorthQueryProgramArtifactPosture::Installed(artifact)
+                if maximum_retained_bytes
+                    > artifact.resource_ceiling().maximum_retained_bytes() =>
             {
                 Err(WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                    "the requested retention budget exceeds the installed artifact ceiling",
+                    artifact.stopped_outcome(),
                 ))
             }
-            WorthQueryProgramArtifactPosture::Installed(_) => Ok(()),
+            WorthQueryProgramArtifactPosture::Installed(artifact) => Ok(Some(artifact)),
         }
     }
 }

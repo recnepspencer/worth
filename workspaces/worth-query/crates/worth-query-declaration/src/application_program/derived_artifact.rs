@@ -83,6 +83,7 @@ where
 pub struct ApplicationDerivedArtifactDeclaration {
     identity: &'static str,
     artifact_type: TypeId,
+    feature: &'static str,
     feature_type: TypeId,
     output: &'static str,
     output_type: TypeId,
@@ -107,6 +108,7 @@ impl ApplicationDerivedArtifactDeclaration {
         Self {
             identity: Artifact::IDENTITY,
             artifact_type: TypeId::of::<Artifact>(),
+            feature: Feature::IDENTITY,
             feature_type: TypeId::of::<Feature>(),
             output: Artifact::Output::IDENTITY,
             output_type: TypeId::of::<Artifact::Output>(),
@@ -130,6 +132,9 @@ impl ApplicationDerivedArtifactDeclaration {
     }
     pub const fn feature_type(&self) -> TypeId {
         self.feature_type
+    }
+    pub const fn feature(&self) -> &'static str {
+        self.feature
     }
     pub const fn output(&self) -> &'static str {
         self.output

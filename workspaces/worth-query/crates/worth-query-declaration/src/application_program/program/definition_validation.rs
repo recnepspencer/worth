@@ -85,6 +85,7 @@ fn validate_feature(
         }
     }
     let mut artifact_ids = BTreeSet::new();
+    let mut artifact_producers = BTreeSet::new();
     for artifact in feature.derived_artifacts() {
         require_identity(artifact.identity())?;
         require_identity(artifact.locality().identity())?;
@@ -98,6 +99,12 @@ fn validate_feature(
             return Err(denial(
                 ApplicationProgramValidationDenialKind::DuplicateDerivedArtifact,
                 format!("{}.{}", feature.identity(), artifact.identity()),
+            ));
+        }
+        if !artifact_producers.insert(artifact.producer_family()) {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::AmbiguousDerivedArtifactProducer,
+                format!("{}.{}", feature.identity(), artifact.producer_family()),
             ));
         }
         if !output_ids.contains(artifact.output()) {

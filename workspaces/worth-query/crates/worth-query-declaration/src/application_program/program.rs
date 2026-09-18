@@ -86,6 +86,7 @@ pub enum ApplicationProgramValidationDenialKind {
     DuplicateInputBinding,
     DuplicateOutput,
     DuplicateDerivedArtifact,
+    AmbiguousDerivedArtifactProducer,
     UndeclaredOutput,
     UndeclaredArtifactOutput,
     UndeclaredInput,

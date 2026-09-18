@@ -123,6 +123,10 @@ where
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
         self.require_discovered_root::<Root>()?;
+        let artifact = self.validate_derived_artifact_demand::<
+            <Root as ApplicationOutputGraphShape<Schema>>::RootConnection,
+            WorthQueryDiscoveredProgramRootDemand<Schema, Root>,
+        >(maximum_work, maximum_retained_bytes)?;
         self.runtime
             .admit_performed_output_demand::<Family<Schema, Root>>(
                 source,
@@ -133,6 +137,7 @@ where
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
                 target_feature: std::any::TypeId::of::<<<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<Schema>>::TargetFeature>(),
+                artifact,
                 marker: std::marker::PhantomData,
             })
     }
@@ -161,6 +166,10 @@ where
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
         self.require_discovered_root::<Root>()?;
+        let artifact = self.validate_derived_artifact_demand::<
+            <Root as ApplicationOutputGraphShape<Schema>>::RootConnection,
+            WorthQueryDiscoveredProgramRootDemand<Schema, Root>,
+        >(maximum_work, maximum_retained_bytes)?;
         self.runtime.validate_recovered_output_root_kind(
             source_receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(std::any::TypeId::of::<Root>()),
@@ -175,6 +184,7 @@ where
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
                 target_feature: std::any::TypeId::of::<<<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<Schema>>::TargetFeature>(),
+                artifact,
                 marker: std::marker::PhantomData,
             })
     }

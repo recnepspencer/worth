@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use worth_query_declaration::facade::{
     application_program::{
         ApplicationArtifactResourceCeiling, ApplicationCompositionInstance,
-        ApplicationDerivedArtifact, ApplicationFeature,
+        ApplicationDerivedArtifact, ApplicationDerivedArtifactDeclaration, ApplicationFeature,
     },
     application_schema::ApplicationSchema,
 };
@@ -13,7 +13,7 @@ use super::WorthQueryInstalledApplicationProgram;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProgramArtifactPosture {
     Legacy,
-    Installed(ApplicationArtifactResourceCeiling),
+    Installed(ApplicationDerivedArtifactDeclaration),
     Undeclared,
 }
 
@@ -82,9 +82,8 @@ where
             .derived_artifacts()
             .iter()
             .find(|artifact| artifact.producer_family() == producer_family)
-            .map(|artifact| {
-                WorthQueryProgramArtifactPosture::Installed(artifact.resource_ceiling())
-            })
+            .copied()
+            .map(WorthQueryProgramArtifactPosture::Installed)
             .unwrap_or(WorthQueryProgramArtifactPosture::Undeclared)
     }
 }
