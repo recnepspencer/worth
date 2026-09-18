@@ -216,6 +216,29 @@ where
         self
     }
 
+    pub fn repeated_optional_member_output_with_locality_and_change<
+        Binding,
+        Correspondence,
+        Scope,
+        Shape,
+    >(
+        mut self,
+    ) -> Self
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Correspondence: ApplicationRepeatedOptionalMemberCorrespondence<Schema, Binding>,
+        Scope: ApplicationLocalityScope,
+        Shape: ApplicationChangeShape,
+    {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.attach_correspondence::<Correspondence>(Correspondence::IDENTITY);
+        action.attach_locality_and_change::<Scope, Shape>();
+        action.mark_required_output_source();
+        self.actions.push(action);
+        self
+    }
+
     pub fn conditional_operation<Operation>(mut self) -> Self
     where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
