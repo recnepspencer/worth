@@ -170,6 +170,39 @@ values, revision, and provenance, then requires revision validation before the
 captured input becomes admitted. Captured historical values remain readable,
 but neither capture nor matching descriptive data grants mutation authority.
 
+### Governed derived artifacts
+
+An application program selects its derived-artifact posture through
+`ApplicationProgramDefinition::DERIVED_ARTIFACT_GOVERNANCE`.
+`Compatible` admits a program that has not declared artifact meaning.
+`Required` makes that meaning complete: every connected output target declares
+at least one derived artifact, so an ungoverned target is denied during program
+validation instead of becoming legacy work at execution time.
+
+An artifact declaration binds its producer family, succession posture,
+locality, retention, resource ceiling, stopped outcome, and exact dependencies
+as one installed contract. Root dependencies name the actions that can actually
+source the artifact. Dependent artifacts name the direct parent artifact or
+feature whose settlement they consume. An action that sources a governed root
+also carries the corresponding locality and change shape. Query rejects a
+demand whose family, occurrence, change, source evidence, resource use, or
+parent settlement does not match that installed meaning.
+
+These declarations are substantive evidence rather than completion markers.
+Preparation uses the installed artifact contract, and settlement consumes the
+admitted demand and exact source basis produced from it. Recompute,
+replacement, and reconstruction remain distinct installed meanings. A no-work
+or reuse outcome follows from validated dependency and retention evidence; a
+caller cannot invent one by reproducing identifiers or reusing another
+artifact's settlement.
+
+Use `Compatible` only while intentionally adopting governance. Once a program
+selects `Required`, keep every connected target and sourcing action complete;
+do not switch back to `Compatible` to admit a new path. Artifact payloads and
+domain calculations remain producer-owned. Query owns the installed contract,
+bounded admission, lifecycle custody, and typed denial when requested work does
+not satisfy that contract.
+
 Installation enters through `application_installation::in_memory_program` with
 the validated program, configuration, limits, and initial state. It returns a
 `WorthQueryProgramApplicationRuntime<Schema, Program>`. Program-owned actions
