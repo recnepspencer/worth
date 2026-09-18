@@ -221,6 +221,25 @@ observed through one retained request observation. Missing or noncurrent inputs
 remain pending. Incremental refresh must preserve exact contributor lineage,
 and reconstruction from the same admitted facts must produce the same rows.
 
+### Speculative application work
+
+An application preview begins from a Query-issued retained read observation. The
+preview session keeps that exact Bridge source basis live, carries no mutation or
+publication authority, and must be readmitted against the current program runtime
+before the application performs its real mutation. Source or runtime drift denies
+readmission. Explicit discard, replacement, session close, and abandoned session
+drop all terminate the speculative Bridge work; only the separate admitted
+mutation can publish product truth.
+
+### Normalized program manifests
+
+`ValidatedApplicationProgram::normalized_manifest()` derives a deterministic,
+sorted diagnostic description from already-validated program meaning. It includes
+feature and port identities, actions and their typed attachments, connections,
+rules, derived artifacts, collections, and managed computations. The manifest is
+owned strings only: it contains no native type identity, installed handle, or
+execution authority, and it never participates in validation or installation.
+
 Installation enters through `application_installation::in_memory_program` with
 the validated program, configuration, limits, and initial state. It returns a
 `WorthQueryProgramApplicationRuntime<Schema, Program>`. Program-owned actions

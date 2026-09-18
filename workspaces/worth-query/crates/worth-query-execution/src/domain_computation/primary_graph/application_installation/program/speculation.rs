@@ -16,31 +16,13 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservati
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationPreviewRequest {
     identity: String,
-    preview_artifact_count: usize,
-    destroyable_artifact_count: usize,
-    retained_non_authoritative_artifact_count: usize,
 }
 
 impl WorthQueryApplicationPreviewRequest {
     pub fn new(identity: impl Into<String>) -> Self {
         Self {
             identity: identity.into(),
-            preview_artifact_count: 1,
-            destroyable_artifact_count: 1,
-            retained_non_authoritative_artifact_count: 0,
         }
-    }
-
-    pub fn with_artifact_counts(
-        mut self,
-        preview: usize,
-        destroyable: usize,
-        retained_non_authoritative: usize,
-    ) -> Self {
-        self.preview_artifact_count = preview;
-        self.destroyable_artifact_count = destroyable;
-        self.retained_non_authoritative_artifact_count = retained_non_authoritative;
-        self
     }
 }
 
@@ -49,25 +31,27 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
     StaleSource,
     ForeignObservation,
     ForeignRuntime,
-    MissingSourceBasis,
     SourceUnavailable,
     AdmissionRejected,
     CleanupRejected,
 }
 
 pub struct WorthQueryApplicationPreviewSession {
-    handle: BridgeSpeculativeSessionHandle,
+    handle: Option<BridgeSpeculativeSessionHandle>,
+    source:
+        Option<std::sync::Arc<worth_relational::facade::bridge::RelationalBridgeObservationLease>>,
     runtime_authority: u64,
     source_commit: CompositeCommitIdentity,
 }
 
 pub struct WorthQueryReadmittedApplicationPreview {
-    handle: BridgeSpeculativeSessionHandle,
+    handle: Option<BridgeSpeculativeSessionHandle>,
+    _source: std::sync::Arc<worth_relational::facade::bridge::RelationalBridgeObservationLease>,
 }
 
 impl WorthQueryApplicationPreviewSession {
     pub fn readmit<Schema, Program>(
-        self,
+        mut self,
         runtime: &WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<WorthQueryReadmittedApplicationPreview, WorthQueryApplicationPreviewReadmissionDenial>
     where
@@ -75,56 +59,91 @@ impl WorthQueryApplicationPreviewSession {
         Program: ApplicationProgramDefinition<Schema>,
     {
         if runtime.runtime().runtime.authority_identity().as_u64() != self.runtime_authority {
-            self.discard()
+            self.discard_active()
                 .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
             return Err(WorthQueryApplicationPreviewReadmissionDenial::ForeignRuntime);
         }
         let current = match runtime.on_branch(runtime.current_world()).select() {
             Ok(current) => current,
             Err(_) => {
-                self.discard()
+                self.discard_active()
                     .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
                 return Err(WorthQueryApplicationPreviewReadmissionDenial::SourceUnavailable);
             }
         };
         if current.product().selected_commit() != &self.source_commit {
-            self.discard()
+            self.discard_active()
                 .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
             return Err(WorthQueryApplicationPreviewReadmissionDenial::StaleSource);
         }
         Ok(WorthQueryReadmittedApplicationPreview {
-            handle: self.handle,
+            handle: self.handle.take(),
+            _source: self
+                .source
+                .take()
+                .expect("an active preview session retains its exact source basis"),
         })
     }
 
-    pub fn discard(self) -> Result<(), worth_runtime_bridge::facade::BridgeSpeculationError> {
-        self.handle
-            .discard(vec![BridgePreviewResidueClass::TemporaryDiagnosticsResidue])
-            .map(|_| ())
+    pub fn discard(mut self) -> Result<(), worth_runtime_bridge::facade::BridgeSpeculationError> {
+        self.discard_active()
     }
 
-    pub fn liveness_observer(
-        &self,
-    ) -> worth_runtime_bridge::facade::BridgePreviewSessionLivenessObserver {
-        self.handle.liveness_observer()
+    fn discard_active(
+        &mut self,
+    ) -> Result<(), worth_runtime_bridge::facade::BridgeSpeculationError> {
+        discard_handle(
+            self.handle
+                .take()
+                .expect("an active preview session owns its bridge handle"),
+        )
     }
 }
 
 impl WorthQueryReadmittedApplicationPreview {
     pub fn promote(
-        self,
+        mut self,
     ) -> Result<
         BridgeSpeculativePromotionOutcome,
         worth_runtime_bridge::facade::BridgeSpeculationError,
     > {
-        self.handle.promote()
+        self.handle
+            .take()
+            .expect("a readmitted preview owns its bridge handle")
+            .promote()
     }
 
-    pub fn discard(self) -> Result<(), worth_runtime_bridge::facade::BridgeSpeculationError> {
-        self.handle
-            .discard(vec![BridgePreviewResidueClass::TemporaryDiagnosticsResidue])
-            .map(|_| ())
+    pub fn discard(mut self) -> Result<(), worth_runtime_bridge::facade::BridgeSpeculationError> {
+        discard_handle(
+            self.handle
+                .take()
+                .expect("a readmitted preview owns its bridge handle"),
+        )
     }
+}
+
+impl Drop for WorthQueryApplicationPreviewSession {
+    fn drop(&mut self) {
+        if let Some(handle) = self.handle.take() {
+            let _ = discard_handle(handle);
+        }
+    }
+}
+
+impl Drop for WorthQueryReadmittedApplicationPreview {
+    fn drop(&mut self) {
+        if let Some(handle) = self.handle.take() {
+            let _ = discard_handle(handle);
+        }
+    }
+}
+
+fn discard_handle(
+    handle: BridgeSpeculativeSessionHandle,
+) -> Result<(), worth_runtime_bridge::facade::BridgeSpeculationError> {
+    handle
+        .discard(vec![BridgePreviewResidueClass::TemporaryDiagnosticsResidue])
+        .map(|_| ())
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
@@ -138,12 +157,16 @@ where
         request: WorthQueryApplicationPreviewRequest,
     ) -> Result<WorthQueryApplicationPreviewSession, WorthQueryApplicationPreviewReadmissionDenial>
     {
-        self.select_application_read_observation(observation)
-            .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignObservation)?;
-        let snapshot = observation
-            .bridge_snapshot_identity()
-            .cloned()
-            .ok_or(WorthQueryApplicationPreviewReadmissionDenial::MissingSourceBasis)?;
+        let selected = self
+            .select_application_read_observation(observation)
+            .map_err(|denial| match denial {
+                crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignOwner => {
+                    WorthQueryApplicationPreviewReadmissionDenial::ForeignObservation
+                }
+                _ => WorthQueryApplicationPreviewReadmissionDenial::SourceUnavailable,
+            })?;
+        let source = selected.product().bridge_source();
+        let snapshot = source.snapshot_identity().clone();
         let identity = request.identity;
         let declaration = BridgePreviewSessionDeclaration::new(
             BridgePreviewSessionDeclarationIdentity::from_stable_name(format!(
@@ -176,13 +199,14 @@ where
             .speculate(BridgeSpeculativeSessionRequest::new(
                 BridgePreviewSessionIdentity::from_stable_name(format!("{identity}:session")),
                 declaration,
-                request.preview_artifact_count,
-                request.destroyable_artifact_count,
-                request.retained_non_authoritative_artifact_count,
+                1,
+                1,
+                0,
             ))
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::AdmissionRejected)?;
         Ok(WorthQueryApplicationPreviewSession {
-            handle,
+            handle: Some(handle),
+            source: Some(source),
             runtime_authority: self.runtime().runtime.authority_identity().as_u64(),
             source_commit: observation.selected_commit().clone(),
         })
