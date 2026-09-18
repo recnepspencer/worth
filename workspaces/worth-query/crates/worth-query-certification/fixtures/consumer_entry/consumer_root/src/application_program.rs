@@ -22,14 +22,16 @@ use worth_query_topology_entry::{
 };
 
 use crate::ConsumerSchema;
-
+pub(crate) mod correspondence;
+pub(crate) mod external_input;
+mod omitted_program_binding;
 mod roots;
+pub(crate) use omitted_program_binding::validated_omitted_program_binding;
 pub use roots::{
     ConsumerDiscoveredProgramRoot, ConsumerProgramRoot, ConsumerRequiredSharedRoot,
     ConsumerSecondaryProgramRoot, ConsumerTruncatedProgramRoot, ConsumerUndeclaredProgramRoot,
     DiscoveredPlanarRoot, RequiredSharedPlanarRoot, SecondaryPlanarRoot,
 };
-
 pub struct ConsumerProgram;
 pub struct OmittedInstalledRuleProgram;
 pub struct RequiredSourceAsActionProgram;
@@ -42,38 +44,31 @@ struct MissingRequiredFeature;
 struct UndeclaredTargetFeature;
 struct UnconnectedPlanarInput;
 struct UndeclaredConnection;
-
 impl ApplicationCompositionInstance for NestedPlanarInstance {
     const PATH: &'static str = "certification.nested";
 }
-
 impl ApplicationFeature<ConsumerSchema> for MissingRequiredFeature {
     type Inputs = ApplicationFeatureInputList<UnconnectedPlanarInput, ApplicationFeatureInputLeaf>;
     const IDENTITY: &'static str = "missing-required-feature";
 }
-
 impl ApplicationFeature<ConsumerSchema> for UndeclaredTargetFeature {
     type Inputs = ApplicationFeatureInputLeaf;
     const IDENTITY: &'static str = "undeclared-target-feature";
 }
-
 impl ApplicationInputPort<ConsumerSchema, MissingRequiredFeature> for UnconnectedPlanarInput {
     type Value = worth_query_topology_entry::PlanarReadResultBinding;
 
     const IDENTITY: &'static str = "unconnected-required";
     const REQUIRED: bool = true;
 }
-
 impl ApplicationInputPort<ConsumerSchema, UndeclaredTargetFeature> for UnconnectedPlanarInput {
     type Value = worth_query_topology_entry::PlanarReadResultBinding;
     const IDENTITY: &'static str = "unconnected-required";
     const REQUIRED: bool = true;
 }
-
 impl ApplicationConnectionIdentity for UndeclaredConnection {
     const IDENTITY: &'static str = "undeclared-input-connection";
 }
-
 impl
     ApplicationOccurrenceConnectionBinding<
         ConsumerSchema,
@@ -82,7 +77,6 @@ impl
     > for UndeclaredConnection
 {
 }
-
 type PlanarConnection = ApplicationConnectionRef<
     ConsumerSchema,
     PlanarSourceFeature,
@@ -158,7 +152,9 @@ impl ApplicationProgramDefinition<ConsumerSchema> for MissingRequiredInputProgra
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
-            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>().finish(),
+            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
+                .provides::<PlanarBodyOutput>()
+                .finish(),
             ApplicationFeatureSpec::root::<ConsumerSchema, PlanarOutputFeature>().finish(),
             ApplicationFeatureSpec::root::<ConsumerSchema, MissingRequiredFeature>().finish(),
         ]
@@ -175,8 +171,12 @@ impl ApplicationProgramDefinition<ConsumerSchema> for DuplicateFeatureProgram {
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
-            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>().finish(),
-            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>().finish(),
+            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
+                .provides::<PlanarBodyOutput>()
+                .finish(),
+            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
+                .provides::<PlanarBodyOutput>()
+                .finish(),
             ApplicationFeatureSpec::root::<ConsumerSchema, PlanarOutputFeature>().finish(),
         ]
     }
@@ -202,7 +202,9 @@ impl ApplicationProgramDefinition<ConsumerSchema> for UndeclaredInputProgram {
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
-            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>().finish(),
+            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
+                .provides::<PlanarBodyOutput>()
+                .finish(),
             ApplicationFeatureSpec::root::<ConsumerSchema, UndeclaredTargetFeature>().finish(),
         ]
     }
@@ -233,8 +235,12 @@ impl ApplicationProgramDefinition<ConsumerSchema> for UnexportedCrossInstancePro
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
-            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>().finish(),
-            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarOutputFeature>().finish(),
+            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
+                .provides::<PlanarBodyOutput>()
+                .finish(),
+            ApplicationFeatureSpec::root::<ConsumerSchema, PlanarOutputFeature>()
+                .provides::<PlanarDerivedBodyOutput>()
+                .finish(),
             ApplicationFeatureSpec::at::<
                 ConsumerSchema,
                 NestedPlanarInstance,
@@ -271,53 +277,69 @@ type PlanarSummaryConnection = ApplicationConnectionRef<
 fn consumer_feature_specs() -> Vec<ApplicationFeatureSpec> {
     vec![
         ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
-            .mutation::<PlanarEditBinding<ConsumerSchema>>()
+            .provides::<PlanarBodyOutput>()
+            .repeated_optional_member_with_external_input::<
+                PlanarEditBinding<ConsumerSchema>,
+                correspondence::OptionalAdjustmentCorrespondence,
+                external_input::NeutralExternalProvider,
+            >()
             .mutation::<PriorCycleAdjustmentBinding<ConsumerSchema>>()
             .mutation::<VertexReplacementBinding<ConsumerSchema>>()
             .finish(),
         ApplicationFeatureSpec::root::<ConsumerSchema, PlanarOutputFeature>()
+            .provides::<PlanarDerivedBodyOutput>()
             .conditional_operation::<MutatePlanar>()
             .finish(),
         ApplicationFeatureSpec::root::<ConsumerSchema, PlanarFinalOutputFeature>()
+            .provides::<PlanarFinalBodyOutput>()
             .conditional_operation::<PublishFinalPlanarOutput>()
             .finish(),
         ApplicationFeatureSpec::root::<ConsumerSchema, PlanarAlternateFinalOutputFeature>()
+            .provides::<PlanarAlternateFinalBodyOutput>()
             .conditional_operation::<PublishAlternatePlanarOutput>()
             .finish(),
         ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSummaryFeature>().finish(),
         ApplicationFeatureSpec::root::<ConsumerSchema, PlanarAlternateSummaryFeature>().finish(),
         ApplicationFeatureSpec::root::<ConsumerSchema, ParameterFeature>().finish(),
         ApplicationFeatureSpec::at::<ConsumerSchema, SecondaryPlanarRoot, PlanarSourceFeature>()
+            .provides::<PlanarBodyOutput>()
             .finish(),
         ApplicationFeatureSpec::at::<ConsumerSchema, SecondaryPlanarRoot, PlanarOutputFeature>()
+            .provides::<PlanarDerivedBodyOutput>()
             .finish(),
         ApplicationFeatureSpec::at::<ConsumerSchema, DiscoveredPlanarRoot, PlanarSourceFeature>()
+            .provides::<PlanarBodyOutput>()
             .finish(),
         ApplicationFeatureSpec::at::<ConsumerSchema, DiscoveredPlanarRoot, PlanarOutputFeature>()
+            .provides::<PlanarDerivedBodyOutput>()
             .finish(),
         ApplicationFeatureSpec::at::<
             ConsumerSchema,
             DiscoveredPlanarRoot,
             PlanarFinalOutputFeature,
         >()
+        .provides::<PlanarFinalBodyOutput>()
         .finish(),
         ApplicationFeatureSpec::at::<
             ConsumerSchema,
             RequiredSharedPlanarRoot,
             PlanarSourceFeature,
         >()
+        .provides::<PlanarBodyOutput>()
         .finish(),
         ApplicationFeatureSpec::at::<
             ConsumerSchema,
             RequiredSharedPlanarRoot,
             PlanarOutputFeature,
         >()
+        .provides::<PlanarDerivedBodyOutput>()
         .finish(),
         ApplicationFeatureSpec::at::<
             ConsumerSchema,
             RequiredSharedPlanarRoot,
             PlanarFinalOutputFeature,
         >()
+        .provides::<PlanarFinalBodyOutput>()
         .finish(),
     ]
 }
@@ -371,6 +393,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for RequiredSourceAsActionProg
         specs.remove(source);
         specs.push(
             ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
+                .provides::<PlanarBodyOutput>()
                 .mutation::<PlanarEditBinding<ConsumerSchema>>()
                 .mutation::<PriorCycleAdjustmentBinding<ConsumerSchema>>()
                 .mutation::<VertexReplacementBinding<ConsumerSchema>>()

@@ -12,6 +12,7 @@ use product_workflow_support::schema::{
 };
 use product_workflow_support::{principal, read_input, AmendTemporalIntent, ExampleApplication};
 use worth_query_host::facade::{
+    application_discovery::WorthQueryApplicationCallablePosture,
     application_entry::{
         WorthQueryApplicationRequestExt, WorthQueryApplicationRequestMutationDenial,
     },
@@ -95,6 +96,29 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
     let predecessor = read_input(&application, branch, &principal, &scope);
     let intent = amendment("must-not-publish", 2);
     let idempotency_key = 0x71_u64;
+    let callable = application
+        .runtime
+        .discovery()
+        .mutations()
+        .find(|description| {
+            description.declaration().binding_identity().as_str() == AmendTemporalBinding::IDENTITY
+        })
+        .expect("the installed mutation is discoverable");
+    assert_eq!(
+        callable.availability(),
+        WorthQueryApplicationCallablePosture::InstalledRequestBinding
+    );
+    application
+        .runtime
+        .request(&principal, &scope)
+        .mutate(intent.clone())
+        .assess_current_authorization()
+        .expect("fresh current authorization is observable without execution authority");
+    assert_eq!(
+        read_input(&application, branch, &principal, &scope),
+        predecessor,
+        "callability and authorization observations cannot execute the action"
+    );
     let denial = application
         .runtime
         .request(&principal, &scope)

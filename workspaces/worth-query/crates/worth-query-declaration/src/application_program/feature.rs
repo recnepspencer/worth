@@ -69,6 +69,7 @@ pub struct ApplicationFeatureDeclaration {
     major: u16,
     minor: u16,
     inputs: Box<[ApplicationFeatureInputDeclaration]>,
+    outputs: Box<[ApplicationFeatureOutputDeclaration]>,
 }
 
 impl ApplicationFeatureDeclaration {
@@ -85,6 +86,7 @@ impl ApplicationFeatureDeclaration {
             major,
             minor,
             inputs: inputs.into_boxed_slice(),
+            outputs: Box::new([]),
         }
     }
 
@@ -114,6 +116,14 @@ impl ApplicationFeatureDeclaration {
             .filter(|input| input.required())
             .map(ApplicationFeatureInputDeclaration::identity)
     }
+
+    pub fn outputs(&self) -> &[ApplicationFeatureOutputDeclaration] {
+        &self.outputs
+    }
+
+    pub(super) fn set_outputs(&mut self, outputs: Vec<ApplicationFeatureOutputDeclaration>) {
+        self.outputs = outputs.into_boxed_slice();
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -133,6 +143,21 @@ impl ApplicationFeatureInputDeclaration {
 
     pub const fn required(&self) -> bool {
         self.required
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationFeatureOutputDeclaration {
+    identity: &'static str,
+}
+
+impl ApplicationFeatureOutputDeclaration {
+    pub(super) const fn new(identity: &'static str) -> Self {
+        Self { identity }
+    }
+
+    pub const fn identity(&self) -> &'static str {
+        self.identity
     }
 }
 

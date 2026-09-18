@@ -1,5 +1,6 @@
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationRequiredOutputConnection,
+    WorthQueryApplicationRequiredOutputSource,
 };
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
@@ -351,6 +352,18 @@ where
         .extend(program_action_bindings);
     let mut output_source_bindings = std::collections::BTreeSet::new();
     Program::Outputs::append_required_bindings(&mut output_source_bindings);
+    output_source_bindings.extend(installed.actions().iter().filter_map(|action| {
+        action
+            .required_output_source()
+            .then(|| action.mutation_binding_type())
+            .flatten()
+    }));
+    worth_query_installation::facade::require_complete_program_binding_membership(
+        &installed,
+        runtime.installed_schema(),
+        &output_source_bindings,
+    )
+    .map_err(WorthQueryInMemoryApplicationDenial::Program)?;
     runtime
         .program_required_bindings
         .extend(output_source_bindings.iter().copied());

@@ -36,8 +36,10 @@ pub(super) fn performed_source_settles_required_output(
         worth_query_decl::facade::application_program::ApplicationProgramValidationDenialKind::UnexportedCrossInstanceConnection,
     );
     installation::assert_program_cannot_omit_an_installed_rule();
+    installation::assert_program_cannot_omit_a_required_binding();
     installation::assert_required_output_source_cannot_be_an_action();
     let world = installation::install(foreign);
+    installation::assert_repeated_optional_member_correspondence(&world);
     let installed_program = world.application.installed_program();
     program_contract::assert_installed(installed_program.connections(), installed_program.rules());
     let scope = authentication::request_scope();

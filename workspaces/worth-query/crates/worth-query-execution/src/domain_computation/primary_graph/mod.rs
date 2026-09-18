@@ -31,8 +31,8 @@ pub use application_output_demand::{
 pub use application_program::{
     WorthQueryApplicationDependentOutputConnection,
     WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationRequiredOutputConnection,
-    WorthQueryPreparedRequiredOutputSource, WorthQueryRequiredOutputConnectionDenial,
-    WorthQueryRequiredOutputSourcePreparationFailure,
+    WorthQueryApplicationRequiredOutputSource, WorthQueryPreparedRequiredOutputSource,
+    WorthQueryRequiredOutputConnectionDenial, WorthQueryRequiredOutputSourcePreparationFailure,
 };
 mod application_branch;
 pub(crate) mod application_discovery;

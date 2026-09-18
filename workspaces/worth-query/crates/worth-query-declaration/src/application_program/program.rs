@@ -9,6 +9,9 @@ use super::{
     ApplicationProgramRuleDeclaration, ApplicationProgramRulesShape,
 };
 
+mod dependency_graph;
+use dependency_graph::require_acyclic_connections;
+
 /// Complete authored static program definition.
 pub trait ApplicationProgramDefinition<Schema>: Sized + 'static
 where
@@ -79,8 +82,11 @@ pub enum ApplicationProgramValidationDenialKind {
     DanglingFeature,
     MissingRequiredInput,
     DuplicateInputBinding,
+    DuplicateOutput,
+    UndeclaredOutput,
     UndeclaredInput,
     UnexportedCrossInstanceConnection,
+    CyclicConnection,
     DuplicateRule,
 }
 
@@ -175,6 +181,16 @@ where
                 ));
             }
         }
+        let mut output_ids = BTreeSet::new();
+        for output in feature.outputs() {
+            require_identity(output.identity())?;
+            if !output_ids.insert(output.identity()) {
+                return Err(denial(
+                    ApplicationProgramValidationDenialKind::DuplicateOutput,
+                    format!("{}.{}", feature.identity(), output.identity()),
+                ));
+            }
+        }
     }
     let mut action_ids = BTreeSet::new();
     for action in &actions {
@@ -253,6 +269,27 @@ where
                 connection.identity(),
             ));
         }
+        let source = features
+            .iter()
+            .find(|feature| {
+                feature.composition_instance() == connection.source_instance()
+                    && feature.identity() == connection.source_feature()
+            })
+            .expect("the source feature was proven present");
+        if !source
+            .outputs()
+            .iter()
+            .any(|output| output.identity() == connection.source_port())
+        {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::UndeclaredOutput,
+                format!(
+                    "{}.{}",
+                    connection.source_feature(),
+                    connection.source_port()
+                ),
+            ));
+        }
         if connection.source_instance() != connection.target_instance()
             && !connection.exports_across_instances()
         {
@@ -292,6 +329,7 @@ where
             ));
         }
     }
+    require_acyclic_connections(&features, &connections)?;
     for feature in &features {
         for input in feature.required_inputs() {
             if !bound_inputs.contains(&(feature.composition_instance(), feature.identity(), input))

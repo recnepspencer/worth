@@ -7,8 +7,9 @@ where
     Intent: ApplicationMutationIntent<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-    RootConnection<Schema, Root>:
-        WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
+    RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Intent::Binding:
+        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
     Root::Dependents:
         crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
             'application,

@@ -9,6 +9,53 @@ use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::{ApplicationCompositionInstance, ApplicationFeature, ApplicationRootComposition};
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationActionCorrespondenceDeclaration {
+    identity: &'static str,
+    correspondence_type: TypeId,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationActionEvaluatedRequirementDeclaration {
+    identity: &'static str,
+    rule_type: TypeId,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationActionExternalInputDeclaration {
+    identity: &'static str,
+    provider_type: TypeId,
+}
+
+impl ApplicationActionExternalInputDeclaration {
+    pub const fn identity(&self) -> &'static str {
+        self.identity
+    }
+    pub const fn provider_type(&self) -> TypeId {
+        self.provider_type
+    }
+}
+
+impl ApplicationActionEvaluatedRequirementDeclaration {
+    pub const fn identity(&self) -> &'static str {
+        self.identity
+    }
+
+    pub const fn rule_type(&self) -> TypeId {
+        self.rule_type
+    }
+}
+
+impl ApplicationActionCorrespondenceDeclaration {
+    pub const fn identity(&self) -> &'static str {
+        self.identity
+    }
+
+    pub const fn correspondence_type(&self) -> TypeId {
+        self.correspondence_type
+    }
+}
+
 /// One program-owned mutation binding attached to an explicit nested instance.
 pub(crate) struct ApplicationActionInstanceRef<Schema, Instance, Feature, Binding> {
     marker: PhantomData<fn() -> (Schema, Instance, Feature, Binding)>,
@@ -45,6 +92,10 @@ pub struct ApplicationActionDeclaration {
     operation_input_type: TypeId,
     operation_input_identity: WorthQueryPortableTypeIdentity,
     conditional_only: bool,
+    required_output_source: bool,
+    correspondence: Option<ApplicationActionCorrespondenceDeclaration>,
+    evaluated_requirement: Option<ApplicationActionEvaluatedRequirementDeclaration>,
+    external_input: Option<ApplicationActionExternalInputDeclaration>,
 }
 
 impl ApplicationActionDeclaration {
@@ -82,6 +133,52 @@ impl ApplicationActionDeclaration {
 
     pub const fn conditional_only(&self) -> bool {
         self.conditional_only
+    }
+
+    pub const fn required_output_source(&self) -> bool {
+        self.required_output_source
+    }
+
+    pub const fn correspondence(&self) -> Option<&ApplicationActionCorrespondenceDeclaration> {
+        self.correspondence.as_ref()
+    }
+
+    pub const fn evaluated_requirement(
+        &self,
+    ) -> Option<&ApplicationActionEvaluatedRequirementDeclaration> {
+        self.evaluated_requirement.as_ref()
+    }
+
+    pub const fn external_input(&self) -> Option<&ApplicationActionExternalInputDeclaration> {
+        self.external_input.as_ref()
+    }
+
+    pub(crate) fn attach_correspondence<Correspondence: 'static>(
+        &mut self,
+        identity: &'static str,
+    ) {
+        self.correspondence = Some(ApplicationActionCorrespondenceDeclaration {
+            identity,
+            correspondence_type: TypeId::of::<Correspondence>(),
+        });
+    }
+
+    pub(crate) fn mark_required_output_source(&mut self) {
+        self.required_output_source = true;
+    }
+
+    pub(crate) fn attach_evaluated_requirement<Rule: 'static>(&mut self, identity: &'static str) {
+        self.evaluated_requirement = Some(ApplicationActionEvaluatedRequirementDeclaration {
+            identity,
+            rule_type: TypeId::of::<Rule>(),
+        });
+    }
+
+    pub(crate) fn attach_external_input<Provider: 'static>(&mut self, identity: &'static str) {
+        self.external_input = Some(ApplicationActionExternalInputDeclaration {
+            identity,
+            provider_type: TypeId::of::<Provider>(),
+        });
     }
 }
 
@@ -122,6 +219,10 @@ where
             operation_input_identity:
                 <Binding::InputBinding as ApplicationStructuredValueBinding>::IDENTITY,
             conditional_only: false,
+            required_output_source: false,
+            correspondence: None,
+            evaluated_requirement: None,
+            external_input: None,
         }
     }
 }
@@ -151,6 +252,10 @@ where
             >(),
             operation_input_identity: Operation::InputBinding::IDENTITY,
             conditional_only: false,
+            required_output_source: false,
+            correspondence: None,
+            evaluated_requirement: None,
+            external_input: None,
         }
     }
 }

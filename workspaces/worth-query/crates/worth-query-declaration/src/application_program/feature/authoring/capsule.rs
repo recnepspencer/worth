@@ -10,12 +10,14 @@ use crate::application_program::action::{
     ApplicationConditionalOperationActionInstanceRef, ApplicationOperationActionRef,
 };
 use crate::application_program::{
-    ApplicationActionDeclaration, ApplicationCompositionInstance, ApplicationRootComposition,
+    ApplicationActionDeclaration, ApplicationCompositionInstance,
+    ApplicationEvaluatedRequirementRule, ApplicationExternalInputProvider,
+    ApplicationRepeatedOptionalMemberCorrespondence, ApplicationRootComposition,
 };
 
 use super::super::{
     ApplicationFeature, ApplicationFeatureDeclaration, ApplicationFeatureInstanceRef,
-    ApplicationFeatureShape,
+    ApplicationFeatureOutputDeclaration, ApplicationFeatureShape, ApplicationOutputPort,
 };
 
 /// One feature-owned contribution to the canonical application program.
@@ -71,6 +73,7 @@ impl ApplicationFeatureSpec {
 pub struct ApplicationFeatureSpecBuilder<Schema, Instance, Feature> {
     feature: ApplicationFeatureDeclaration,
     actions: Vec<ApplicationActionDeclaration>,
+    outputs: Vec<ApplicationFeatureOutputDeclaration>,
     marker: PhantomData<fn() -> (Schema, Instance, Feature)>,
 }
 
@@ -84,6 +87,7 @@ where
         Self {
             feature: ApplicationFeatureInstanceRef::<Schema, Instance, Feature>::declaration(),
             actions: Vec::new(),
+            outputs: Vec::new(),
             marker: PhantomData,
         }
     }
@@ -101,6 +105,84 @@ where
         self
     }
 
+    pub fn mutation_with_requirement<Binding, Rule>(mut self) -> Self
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Rule: ApplicationEvaluatedRequirementRule<Schema, Binding::Operation>,
+    {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.attach_evaluated_requirement::<Rule>(Rule::IDENTITY);
+        self.actions.push(action);
+        self
+    }
+
+    pub fn mutation_with_requirement_and_external_input<Binding, Rule, Provider>(mut self) -> Self
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Rule: ApplicationEvaluatedRequirementRule<Schema, Binding::Operation>,
+        Provider: ApplicationExternalInputProvider<Schema, Binding::Operation>,
+    {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.attach_evaluated_requirement::<Rule>(Rule::IDENTITY);
+        action.attach_external_input::<Provider>(Provider::IDENTITY);
+        self.actions.push(action);
+        self
+    }
+
+    pub fn required_output_mutation<Binding>(mut self) -> Self
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.mark_required_output_source();
+        self.actions.push(action);
+        self
+    }
+
+    pub fn repeated_optional_member<Binding, Correspondence>(mut self) -> Self
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Correspondence: ApplicationRepeatedOptionalMemberCorrespondence<Schema, Binding>,
+    {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.attach_correspondence::<Correspondence>(Correspondence::IDENTITY);
+        self.actions.push(action);
+        self
+    }
+
+    pub fn repeated_optional_member_with_external_input<Binding, Correspondence, Provider>(
+        mut self,
+    ) -> Self
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Correspondence: ApplicationRepeatedOptionalMemberCorrespondence<Schema, Binding>,
+        Provider: ApplicationExternalInputProvider<Schema, Binding::Operation>,
+    {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.attach_correspondence::<Correspondence>(Correspondence::IDENTITY);
+        action.attach_external_input::<Provider>(Provider::IDENTITY);
+        self.actions.push(action);
+        self
+    }
+
+    pub fn repeated_optional_member_output<Binding, Correspondence>(mut self) -> Self
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Correspondence: ApplicationRepeatedOptionalMemberCorrespondence<Schema, Binding>,
+    {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.attach_correspondence::<Correspondence>(Correspondence::IDENTITY);
+        action.mark_required_output_source();
+        self.actions.push(action);
+        self
+    }
+
     pub fn conditional_operation<Operation>(mut self) -> Self
     where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
@@ -115,7 +197,53 @@ where
         self
     }
 
-    pub fn finish(self) -> ApplicationFeatureSpec {
+    pub fn conditional_operation_with_requirement<Operation, Rule>(mut self) -> Self
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Rule: ApplicationEvaluatedRequirementRule<Schema, Operation>,
+    {
+        let mut action = ApplicationConditionalOperationActionInstanceRef::<
+            Schema,
+            Instance,
+            Feature,
+            Operation,
+        >::declaration();
+        action.attach_evaluated_requirement::<Rule>(Rule::IDENTITY);
+        self.actions.push(action);
+        self
+    }
+
+    pub fn conditional_operation_with_requirement_and_external_input<Operation, Rule, Provider>(
+        mut self,
+    ) -> Self
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Rule: ApplicationEvaluatedRequirementRule<Schema, Operation>,
+        Provider: ApplicationExternalInputProvider<Schema, Operation>,
+    {
+        let mut action = ApplicationConditionalOperationActionInstanceRef::<
+            Schema,
+            Instance,
+            Feature,
+            Operation,
+        >::declaration();
+        action.attach_evaluated_requirement::<Rule>(Rule::IDENTITY);
+        action.attach_external_input::<Provider>(Provider::IDENTITY);
+        self.actions.push(action);
+        self
+    }
+
+    pub fn provides<Port>(mut self) -> Self
+    where
+        Port: ApplicationOutputPort<Schema, Feature>,
+    {
+        self.outputs
+            .push(ApplicationFeatureOutputDeclaration::new(Port::IDENTITY));
+        self
+    }
+
+    pub fn finish(mut self) -> ApplicationFeatureSpec {
+        self.feature.set_outputs(self.outputs);
         ApplicationFeatureSpec {
             feature: self.feature,
             actions: self.actions.into_boxed_slice(),
