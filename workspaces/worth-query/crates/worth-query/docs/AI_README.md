@@ -138,12 +138,13 @@ aspect revisions. Filtered result relations are not continuation targets.
 
 `ApplicationProgramDefinition<Schema>` is the canonical static application
 root. It owns one stable program identity and the complete typed inventories of
-contributions, feature instances, actions, output-graph connections, and scoped
-rules. Calling `ApplicationProgramAuthoring::<Schema, Program>::begin()` and
-then `.validated_program()` validates that meaning before installation.
-Invalid or duplicate identities, dangling features, missing required inputs,
-duplicate bindings, and unexported cross-instance connections are typed
-denials; they are not deferred to the first request.
+contributions, feature instances, declared feature outputs, actions,
+output-graph connections, and scoped rules. Calling
+`ApplicationProgramAuthoring::<Schema, Program>::begin()` and then
+`.validated_program()` validates that meaning before installation. Invalid or
+duplicate identities, dangling features, missing required inputs, undeclared
+outputs, duplicate bindings, cyclic dependencies, and unexported cross-instance
+connections are typed denials; they are not deferred to the first request.
 
 Features declare semantic ownership and typed ports. Composition-instance
 identity distinguishes multiple installations of one reusable feature meaning.
@@ -153,6 +154,21 @@ also typed: each child edge must leave its parent feature, and
 `ApplicationOutputLeaf` explicitly terminates a branch. Declaration order,
 registration ordinal, strings, and runtime traversal do not create these
 relationships.
+
+An authored action may also attach one typed repeated-row correspondence, one
+evaluated requirement, one external-input provider, and required-output-source
+posture. These are parts of the installed action contract, not parallel product
+registries. `repeated_optional_member` derives exact target and initial member
+state from a row, preserves `Unchanged` versus `Set` versus `Clear`, and carries
+the required source observation into the generated action. UI controls and
+presentation remain consumer-owned.
+
+`evaluated_requirement` returns the same typed rule evaluation used for input
+guidance and submission enforcement; a consumer must not maintain a second
+callability predicate. `external_input_provider` resolves a typed selection into
+values, revision, and provenance, then requires revision validation before the
+captured input becomes admitted. Captured historical values remain readable,
+but neither capture nor matching descriptive data grants mutation authority.
 
 Installation enters through `application_installation::in_memory_program` with
 the validated program, configuration, limits, and initial state. It returns a
@@ -299,8 +315,10 @@ calls `request.start_program_outputs(&application, demand, controls)`. Both
 return `WorthQueryApplicationProgramOutputHandle`. `settle(&fresh_request)`
 performs at most the admitted `maximum_work` advances and returns `Pending` when
 that bound is exhausted. `advance(&fresh_request)` remains available to hosts
-that wait on owner notifications between individual advances. Settlement of the
-root and every discovered dependent edge returns one
+that wait on owner notifications between individual advances. Ordinary
+synchronous consumers call `settle`; they do not hard-code an advance count or
+rediscover the dependent graph. Settlement of the root and every discovered
+dependent edge returns one
 `WorthQueryApplicationProgramOutputSettlement`. The settlement exposes the root,
 the latest exact observation, measured program work, and typed
 `outputs_for::<Schema, Connection>()` or instance-qualified dependent outputs.
@@ -1432,8 +1450,10 @@ typed action intent + exact installed program
 
 Source publication and complete derived settlement are distinct facts. A root
 that published before a child failed remains published; recovery resumes from
-owner custody. Only the complete settlement proves the declared transitive
-output graph settled.
+owner custody. The caller drives the managed handle with bounded `settle` calls
+and fresh requests; it does not issue a replacement demand through a suspended
+branch. Only the complete settlement proves the declared transitive output graph
+settled.
 
 ### Emergency access
 
@@ -1567,6 +1587,8 @@ Do not:
 - execute a program-owned action through the weaker ordinary mutation entry;
 - settle only the root producer when the installed program declares dependent
   required outputs;
+- hard-code an ordinary output-advance loop, rediscover output dependencies, or
+  replace retained recovery custody with a fresh demand;
 - use `take_settled_root()` as evidence that the complete output graph settled;
 - rediscover a dependent output from a current or consumer-retained view when
   Query carries the exact parent traversal basis and owner settlement;
