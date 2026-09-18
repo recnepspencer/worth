@@ -200,7 +200,7 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
             CascadeDeletePolicy::CascadeDeleteRelations,
             PublicationConfig {
                 coherent_publication_required: true,
-                max_patch_records_per_commit: 8192,
+                max_patch_records_per_commit: 32_768,
                 max_published_snapshot_handles: 64,
                 max_active_snapshot_handles: 4_096,
                 max_transaction_overlay_bytes: 67_108_864,

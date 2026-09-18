@@ -99,13 +99,14 @@ mod tests {
     }
 
     #[test]
-    fn geometry_profile_admits_one_coherent_frame_assembly() {
+    fn geometry_profile_admits_a_coherent_frame_publication_batch() {
         let config = RelationalRuntimeConfig::resolved(
             RelationalRuntimeProfile::GeometryKernel,
             RelationalConfigOverride::default(),
         );
 
         assert!(config.publication.policy.max_transaction_footprint_loci >= 85_389);
+        assert!(config.publication.policy.max_patch_records_per_commit >= 16_707);
         assert!(
             config
                 .execution
