@@ -35,7 +35,7 @@ pub use connection::{
 pub use derived_artifact::{
     ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
     ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationDerivedArtifact,
-    ApplicationDerivedArtifactDeclaration,
+    ApplicationDerivedArtifactDeclaration, ApplicationDerivedArtifactGovernance,
 };
 pub use evaluated_requirement::{
     ApplicationEvaluatedRequirement, ApplicationEvaluatedRequirementRule,

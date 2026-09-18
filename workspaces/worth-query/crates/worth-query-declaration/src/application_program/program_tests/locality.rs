@@ -2,7 +2,8 @@ use super::*;
 use crate::application_program::{
     ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
     ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationDerivedArtifact,
-    ApplicationLocalityGranule, ApplicationLocalityScope, ApplicationProgramValidationDenialKind,
+    ApplicationDerivedArtifactGovernance, ApplicationLocalityGranule, ApplicationLocalityScope,
+    ApplicationProgramValidationDenialKind,
 };
 
 struct TestLocality;
@@ -112,5 +113,37 @@ fn one_feature_cannot_install_two_artifacts_for_one_producer_family() {
     assert_eq!(
         denial.kind(),
         ApplicationProgramValidationDenialKind::AmbiguousDerivedArtifactProducer
+    );
+}
+
+#[test]
+fn governed_program_denies_a_connected_target_without_an_artifact() {
+    struct Program;
+    impl ApplicationProgramDefinition<TestSchema> for Program {
+        type Contributions = ();
+        type Outputs = <ConnectedProgram as ApplicationProgramDefinition<TestSchema>>::Outputs;
+        type Rules = ApplicationRuleLeaf;
+        const IDENTITY: ApplicationProgramIdentity =
+            ApplicationProgramIdentity::new("worth.query.tests.governed-artifact-program.v1");
+        const DERIVED_ARTIFACT_GOVERNANCE: ApplicationDerivedArtifactGovernance =
+            ApplicationDerivedArtifactGovernance::Required;
+
+        fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+            ConnectedProgram::feature_specs()
+        }
+    }
+
+    let denial =
+        match ApplicationProgramAuthoring::<TestSchema, Program>::begin().validated_program() {
+            Err(denial) => denial,
+            Ok(_) => panic!("governed programs must declare each connected target artifact"),
+        };
+    assert_eq!(
+        denial.kind(),
+        ApplicationProgramValidationDenialKind::UngovernedDerivedOutput
+    );
+    assert_eq!(
+        denial.subject(),
+        "root.worth.query.tests.consumer-feature.v1"
     );
 }

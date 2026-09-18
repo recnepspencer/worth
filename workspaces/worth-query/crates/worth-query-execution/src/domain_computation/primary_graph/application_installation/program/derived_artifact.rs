@@ -1,6 +1,7 @@
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
     application_program::{
+        ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationChangePosture,
         ApplicationConnectionShape, ApplicationDerivedArtifactDeclaration, ApplicationFeature,
         ApplicationOutputGraphShape, ApplicationProgramDefinition,
     },
@@ -58,7 +59,7 @@ where
         Binding: ApplicationMutationBinding<Schema>,
     {
         let artifact = self.validate_root_artifact_demand::<Root>(0, 0)?;
-        Self::validate_artifact_source::<RootConnection<Schema, Root>, Binding>(artifact)
+        self.validate_artifact_source::<RootConnection<Schema, Root>, Binding>(artifact)
     }
 
     /// Discovered roots retain the same concrete source-to-artifact contract
@@ -77,10 +78,11 @@ where
             RootConnection<Schema, Root>,
             DiscoveredRootDemand<Schema, Root>,
         >(0, 0)?;
-        Self::validate_artifact_source::<RootConnection<Schema, Root>, Binding>(artifact)
+        self.validate_artifact_source::<RootConnection<Schema, Root>, Binding>(artifact)
     }
 
     fn validate_artifact_source<Connection, Binding>(
+        &self,
         artifact: Option<ApplicationDerivedArtifactDeclaration>,
     ) -> Result<(), WorthQueryOutputDemandDenial>
     where
@@ -90,6 +92,49 @@ where
         let Some(artifact) = artifact else {
             return Ok(());
         };
+        let action = self
+            .program
+            .action_for_mutation::<Binding>()
+            .ok_or_else(|| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ForeignDemand,
+                    "the performed source operation is not an installed program action",
+                )
+            })?;
+        let locality = action.locality().ok_or_else(|| {
+            WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "the performed source action has no locality for its governed artifact",
+            )
+        })?;
+        if locality.scope_type() != artifact.locality().scope_type()
+            || locality.granule() != artifact.locality().granule()
+        {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "the performed source action locality contradicts its governed artifact",
+            ));
+        }
+        let change = action.change_shape().ok_or_else(|| {
+            WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "the performed source action has no change shape for its governed artifact",
+            )
+        })?;
+        if !succession_accepts(artifact.succession(), change.posture()) {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "the performed source action change contradicts artifact succession",
+            ));
+        }
+        if artifact.retention() != ApplicationArtifactRetention::Retained
+            && artifact.succession() == ApplicationArtifactSuccession::PreserveWhenEquivalent
+        {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "a disposable or reconstructive artifact cannot preserve prior storage",
+            ));
+        }
         let source_feature = <Connection::SourceFeature as ApplicationFeature<Schema>>::IDENTITY;
         if artifact.dependencies().iter().any(|dependency| {
             dependency.identity() == Binding::IDENTITY || dependency.identity() == source_feature
@@ -142,6 +187,29 @@ where
                 ))
             }
             WorthQueryProgramArtifactPosture::Installed(artifact) => Ok(Some(artifact)),
+        }
+    }
+}
+
+fn succession_accepts(
+    succession: ApplicationArtifactSuccession,
+    posture: ApplicationChangePosture,
+) -> bool {
+    match succession {
+        ApplicationArtifactSuccession::PreserveWhenEquivalent => {
+            posture == ApplicationChangePosture::Preserve
+        }
+        ApplicationArtifactSuccession::Replace => matches!(
+            posture,
+            ApplicationChangePosture::Replace
+                | ApplicationChangePosture::CreateDelete
+                | ApplicationChangePosture::Split
+                | ApplicationChangePosture::Merge
+                | ApplicationChangePosture::Rewire
+                | ApplicationChangePosture::Reparent
+        ),
+        ApplicationArtifactSuccession::Recompute => {
+            posture == ApplicationChangePosture::Reconstruct
         }
     }
 }

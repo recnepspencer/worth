@@ -4,6 +4,7 @@ use worth_query_declaration::facade::{
     application_program::{
         ApplicationArtifactResourceCeiling, ApplicationCompositionInstance,
         ApplicationDerivedArtifact, ApplicationDerivedArtifactDeclaration, ApplicationFeature,
+        ApplicationProgramDefinition,
     },
     application_schema::ApplicationSchema,
 };
@@ -34,6 +35,7 @@ impl<Schema, Instance, Feature, Artifact>
 impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program>
 where
     Schema: ApplicationSchema,
+    Program: ApplicationProgramDefinition<Schema>,
 {
     pub fn derived_artifact<Instance, Feature, Artifact>(
         &self,
@@ -67,16 +69,18 @@ where
         producer_family: &str,
     ) -> WorthQueryProgramArtifactPosture {
         let Some(feature) = self.features.iter().find(|feature| {
-            feature.composition_instance() == instance
-                && feature
-                    .derived_artifacts()
-                    .iter()
-                    .any(|artifact| artifact.feature_type() == feature_type)
+            feature.composition_instance() == instance && feature.feature_type() == feature_type
         }) else {
-            return WorthQueryProgramArtifactPosture::Legacy;
+            return match Program::DERIVED_ARTIFACT_GOVERNANCE {
+                worth_query_declaration::facade::application_program::ApplicationDerivedArtifactGovernance::Compatible => WorthQueryProgramArtifactPosture::Legacy,
+                worth_query_declaration::facade::application_program::ApplicationDerivedArtifactGovernance::Required => WorthQueryProgramArtifactPosture::Undeclared,
+            };
         };
         if feature.derived_artifacts().is_empty() {
-            return WorthQueryProgramArtifactPosture::Legacy;
+            return match Program::DERIVED_ARTIFACT_GOVERNANCE {
+                worth_query_declaration::facade::application_program::ApplicationDerivedArtifactGovernance::Compatible => WorthQueryProgramArtifactPosture::Legacy,
+                worth_query_declaration::facade::application_program::ApplicationDerivedArtifactGovernance::Required => WorthQueryProgramArtifactPosture::Undeclared,
+            };
         }
         feature
             .derived_artifacts()

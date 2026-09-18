@@ -17,6 +17,19 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program>
 where
     Schema: ApplicationSchema,
 {
+    #[doc(hidden)]
+    pub fn action_for_mutation<Binding>(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_program::ApplicationActionDeclaration>
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        let binding = std::any::TypeId::of::<Binding>();
+        self.actions
+            .iter()
+            .find(|action| action.mutation_binding_type() == Some(binding))
+    }
+
     pub fn scoped_action<Binding, Scope, Shape>(
         &self,
     ) -> Option<WorthQueryInstalledScopedAction<Schema, Binding, Scope, Shape>>

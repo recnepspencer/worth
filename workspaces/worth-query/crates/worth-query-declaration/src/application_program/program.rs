@@ -27,6 +27,8 @@ where
     /// Complete scoped invariant inventory owned by this composition.
     type Rules: ApplicationProgramRulesShape<Schema>;
     const IDENTITY: ApplicationProgramIdentity;
+    const DERIVED_ARTIFACT_GOVERNANCE: super::ApplicationDerivedArtifactGovernance =
+        super::ApplicationDerivedArtifactGovernance::Compatible;
 
     /// Complete feature inventory with every action attached to its owning
     /// feature occurrence.
@@ -94,6 +96,7 @@ pub enum ApplicationProgramValidationDenialKind {
     CyclicConnection,
     DuplicateRule,
     IncompleteActionChangeContract,
+    UngovernedDerivedOutput,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -259,6 +262,19 @@ where
                     && feature.identity() == connection.target_feature()
             })
             .expect("the target feature was proven present");
+        if Program::DERIVED_ARTIFACT_GOVERNANCE
+            == super::ApplicationDerivedArtifactGovernance::Required
+            && target.derived_artifacts().is_empty()
+        {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::UngovernedDerivedOutput,
+                format!(
+                    "{}.{}",
+                    connection.target_instance(),
+                    connection.target_feature()
+                ),
+            ));
+        }
         if !target.inputs().iter().any(|input| {
             input.identity() == connection.target_port()
                 && input.required() == connection.target_required()

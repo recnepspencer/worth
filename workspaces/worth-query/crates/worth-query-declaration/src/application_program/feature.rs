@@ -66,6 +66,7 @@ impl<Schema, Feature, Port> Default for ApplicationPortRef<Schema, Feature, Port
 pub struct ApplicationFeatureDeclaration {
     composition_instance: &'static str,
     identity: &'static str,
+    feature_type: std::any::TypeId,
     major: u16,
     minor: u16,
     inputs: Box<[ApplicationFeatureInputDeclaration]>,
@@ -77,6 +78,7 @@ impl ApplicationFeatureDeclaration {
     pub(super) fn new(
         composition_instance: &'static str,
         identity: &'static str,
+        feature_type: std::any::TypeId,
         major: u16,
         minor: u16,
         inputs: Vec<ApplicationFeatureInputDeclaration>,
@@ -84,6 +86,7 @@ impl ApplicationFeatureDeclaration {
         Self {
             composition_instance,
             identity,
+            feature_type,
             major,
             minor,
             inputs: inputs.into_boxed_slice(),
@@ -98,6 +101,10 @@ impl ApplicationFeatureDeclaration {
 
     pub const fn identity(&self) -> &'static str {
         self.identity
+    }
+
+    pub const fn feature_type(&self) -> std::any::TypeId {
+        self.feature_type
     }
 
     pub const fn major(&self) -> u16 {
@@ -226,6 +233,7 @@ where
         ApplicationFeatureDeclaration::new(
             Instance::PATH,
             Feature::IDENTITY,
+            std::any::TypeId::of::<Feature>(),
             Feature::MAJOR,
             Feature::MINOR,
             inputs,

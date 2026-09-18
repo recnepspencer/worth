@@ -18,6 +18,13 @@ pub enum ApplicationArtifactSuccession {
     Recompute,
 }
 
+/// Whether an application program has completed the cutover to governed derived outputs.
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum ApplicationDerivedArtifactGovernance {
+    Compatible,
+    Required,
+}
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationArtifactDependency {
     identity: &'static str,
