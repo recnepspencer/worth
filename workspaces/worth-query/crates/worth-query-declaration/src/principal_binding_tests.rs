@@ -1,4 +1,7 @@
 use crate::facade::application_schema::{
+    ApplicationFieldPresence, ApplicationSchema, DeclaredApplicationFieldValue,
+};
+use crate::facade::application_schema::{
     ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationPrincipalBindingRequirements,
     ApplicationPrincipalIdentityRequirement, ApplicationPrincipalMappingIdentityRequirement,
     ApplicationPrincipalMappingStatusRequirement, ApplicationPrincipalTargetRequirement,
@@ -83,6 +86,36 @@ worth_query_principal_binding!(
         principal_identity: PrincipalIdentityField
     }
 );
+
+pub(crate) trait GenericSchemaBinding: ApplicationSchema {}
+impl GenericSchemaBinding for IdentitySchema {}
+worth_query_entity!(pub(crate) GenericAccount for Schema: GenericSchemaBinding);
+worth_query_aspect!(
+    pub(crate) GenericAccountFacts for Schema: GenericSchemaBinding, GenericAccount;
+    identity = AspectIdentity(0x9161_102f), revision = AspectContractRevision(1),
+);
+worth_query_field!(
+    pub(crate) GenericAccountNote for Schema: GenericSchemaBinding, GenericAccount, GenericAccountFacts:
+    optional String => StringApplicationValueBinding, read_write, equality
+);
+
+#[test]
+fn generic_schema_fields_can_declare_optional_values() {
+    assert_eq!(
+        GenericAccount::reference::<IdentitySchema>().entity(),
+        "GenericAccount"
+    );
+    assert_eq!(
+        GenericAccountFacts::reference::<IdentitySchema>().aspect(),
+        "GenericAccountFacts"
+    );
+    let reference = GenericAccountNote::reference::<IdentitySchema>();
+    assert_eq!(reference.field(), "GenericAccountNote");
+    assert_eq!(
+        <GenericAccountNote as DeclaredApplicationFieldValue>::PRESENCE,
+        ApplicationFieldPresence::Optional
+    );
+}
 
 #[test]
 fn typed_principal_binding_enters_canonical_schema_members() {
