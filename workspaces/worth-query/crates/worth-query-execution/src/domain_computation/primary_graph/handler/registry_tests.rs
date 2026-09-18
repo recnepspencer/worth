@@ -46,4 +46,22 @@ fn declared_managed_computation_requires_its_exact_owner_inventory() {
     )]);
     validate_managed_computation_inventory(&exact, &declared)
         .expect("the exact declared owner inventory validates");
+
+    let foreign = BTreeMap::from([
+        (
+            TypeId::of::<Computation>(),
+            exact[&TypeId::of::<Computation>()],
+        ),
+        (
+            TypeId::of::<OtherFeature>(),
+            InstalledManagedComputationOwner {
+                feature_type: TypeId::of::<OtherFeature>(),
+                computation_type: TypeId::of::<OtherFeature>(),
+                output_artifact_type: TypeId::of::<Artifact>(),
+            },
+        ),
+    ]);
+    let denial = validate_managed_computation_inventory(&foreign, &declared)
+        .expect_err("an undeclared owner must be denied");
+    assert_eq!(denial.kind(), DenialKind::ForeignManagedComputationOwner);
 }

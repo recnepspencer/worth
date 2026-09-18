@@ -1,3 +1,7 @@
+use std::time::{Duration, Instant};
+use worth_query_admission::facade::authenticated_principal::{
+    WorthQueryCancellationSource, WorthQueryRequestScope,
+};
 use worth_query_declaration::facade::{
     application_program::{
         ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
@@ -109,7 +113,7 @@ impl ApplicationManagedComputation<Schema, Feature> for Computation {
 struct Prepared(u64);
 impl WorthQueryManagedComputationPrepared for Prepared {
     fn retained_bytes(&self) -> usize {
-        std::mem::size_of::<Self>()
+        self.0 as usize
     }
 }
 struct Owner;
@@ -138,12 +142,17 @@ impl WorthQueryManagedComputationOwner<Schema, Feature, Computation> for Owner {
 
 #[test]
 fn installed_owner_enforces_prepare_compute_complete_and_work_ceiling() {
+    let cancellation = WorthQueryCancellationSource::new();
+    let request = WorthQueryRequestScope::new(
+        Instant::now() + Duration::from_secs(60),
+        cancellation.token(),
+    );
     let installed =
         WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, Owner>::new(Owner);
     let output = installed
         .prepare(&2)
         .expect("preparation fits")
-        .compute(WorthQueryManagedComputationExecution::uninterrupted())
+        .compute(WorthQueryManagedComputationExecution::new(&request))
         .expect("computation fits")
         .complete()
         .expect("completion succeeds");
@@ -151,7 +160,7 @@ fn installed_owner_enforces_prepare_compute_complete_and_work_ceiling() {
     let denial = match installed
         .prepare(&5)
         .expect("preparation fits")
-        .compute(WorthQueryManagedComputationExecution::uninterrupted())
+        .compute(WorthQueryManagedComputationExecution::new(&request))
     {
         Err(denial) => denial,
         Ok(_) => panic!("work above the declared ceiling must be denied"),
@@ -160,6 +169,63 @@ fn installed_owner_enforces_prepare_compute_complete_and_work_ceiling() {
         denial,
         WorthQueryManagedComputationDenial::Resource(
             WorthQueryManagedComputationResourceDenial::WorkExhausted
+        )
+    );
+}
+
+#[test]
+fn installed_owner_enforces_retention_and_real_request_interruption() {
+    let installed =
+        WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, Owner>::new(Owner);
+    let denial = match installed.prepare(&65) {
+        Err(denial) => denial,
+        Ok(_) => panic!("retention above the ceiling is denied"),
+    };
+    assert_eq!(
+        denial,
+        WorthQueryManagedComputationDenial::Resource(
+            WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted
+        )
+    );
+
+    let cancellation = WorthQueryCancellationSource::new();
+    let cancelled = WorthQueryRequestScope::new(
+        Instant::now() + Duration::from_secs(60),
+        cancellation.token(),
+    );
+    cancellation.cancel();
+    let denial = match installed
+        .prepare(&1)
+        .unwrap()
+        .compute(WorthQueryManagedComputationExecution::new(&cancelled))
+    {
+        Err(denial) => denial,
+        Ok(_) => panic!("cancelled execution is denied at its checkpoint"),
+    };
+    assert_eq!(
+        denial,
+        WorthQueryManagedComputationDenial::Interrupted(
+            WorthQueryManagedComputationInterruption::Cancelled
+        )
+    );
+
+    let deadline_source = WorthQueryCancellationSource::new();
+    let expired = WorthQueryRequestScope::new(
+        Instant::now() - Duration::from_secs(1),
+        deadline_source.token(),
+    );
+    let denial = match installed
+        .prepare(&1)
+        .unwrap()
+        .compute(WorthQueryManagedComputationExecution::new(&expired))
+    {
+        Err(denial) => denial,
+        Ok(_) => panic!("expired execution is denied at its checkpoint"),
+    };
+    assert_eq!(
+        denial,
+        WorthQueryManagedComputationDenial::Interrupted(
+            WorthQueryManagedComputationInterruption::DeadlineExceeded
         )
     );
 }

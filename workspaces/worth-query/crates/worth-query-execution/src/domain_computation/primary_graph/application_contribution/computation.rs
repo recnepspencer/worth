@@ -79,31 +79,22 @@ impl<Stopped> From<WorthQueryManagedComputationCheckpointDenial>
 }
 
 pub struct WorthQueryManagedComputationExecution<'request> {
-    request: Option<
+    request:
         &'request worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    >,
 }
 
 impl<'request> WorthQueryManagedComputationExecution<'request> {
     pub(in crate::domain_computation::primary_graph) const fn new(
         request: &'request worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Self {
-        Self {
-            request: Some(request),
-        }
-    }
-
-    #[cfg(test)]
-    const fn uninterrupted() -> Self {
-        Self { request: None }
+        Self { request }
     }
 }
 
 pub struct WorthQueryManagedComputationCheckpoint<'request> {
     remaining_work: usize,
-    request: Option<
+    request:
         &'request worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    >,
 }
 
 impl WorthQueryManagedComputationCheckpoint<'_> {
@@ -111,7 +102,7 @@ impl WorthQueryManagedComputationCheckpoint<'_> {
         &mut self,
         work: usize,
     ) -> Result<(), WorthQueryManagedComputationCheckpointDenial> {
-        if let Some(interruption) = self.request.and_then(|request| request.interruption()) {
+        if let Some(interruption) = self.request.interruption() {
             let interruption = match interruption {
                 worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled => {
                     WorthQueryManagedComputationInterruption::Cancelled
