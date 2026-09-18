@@ -5,6 +5,7 @@ mod action_correspondence;
 mod change_shape;
 mod connection;
 mod derived_artifact;
+mod derived_collection;
 mod evaluated_requirement;
 mod external_input;
 mod feature;
@@ -37,6 +38,12 @@ pub use derived_artifact::{
     ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
     ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationDerivedArtifact,
     ApplicationDerivedArtifactDeclaration, ApplicationDerivedArtifactGovernance,
+};
+pub use derived_collection::{
+    ApplicationCollectionContributor, ApplicationCollectionGrouping,
+    ApplicationCollectionIncompletePosture, ApplicationCollectionLineage,
+    ApplicationCollectionMeasures, ApplicationDerivedCollection,
+    ApplicationDerivedCollectionDeclaration,
 };
 pub use evaluated_requirement::{
     ApplicationEvaluatedRequirement, ApplicationEvaluatedRequirementRule,

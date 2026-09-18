@@ -148,5 +148,21 @@ fn validate_feature(
             ));
         }
     }
+    let mut collection_ids = BTreeSet::new();
+    for collection in feature.derived_collections() {
+        require_identity(collection.identity())?;
+        require_identity(collection.contributor())?;
+        require_identity(collection.grouping())?;
+        require_identity(collection.measures())?;
+        require_identity(collection.lineage())?;
+        require_identity(collection.applicability())?;
+        require_identity(collection.incremental_update())?;
+        if !collection_ids.insert(collection.identity()) {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::DuplicateDerivedCollection,
+                format!("{}.{}", feature.identity(), collection.identity()),
+            ));
+        }
+    }
     Ok(())
 }

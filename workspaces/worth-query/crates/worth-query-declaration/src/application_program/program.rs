@@ -100,6 +100,7 @@ pub enum ApplicationProgramValidationDenialKind {
     DuplicateManagedComputation,
     MissingManagedComputationArtifact,
     InvalidManagedComputationResources,
+    DuplicateDerivedCollection,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

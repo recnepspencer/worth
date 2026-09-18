@@ -12,6 +12,7 @@ use crate::application_program::action::{
 use crate::application_program::{
     ApplicationActionDeclaration, ApplicationChangeShape, ApplicationCompositionInstance,
     ApplicationDerivedArtifact, ApplicationDerivedArtifactDeclaration,
+    ApplicationDerivedCollection, ApplicationDerivedCollectionDeclaration,
     ApplicationEvaluatedRequirementRule, ApplicationExternalInputProvider,
     ApplicationLocalityScope, ApplicationManagedComputation,
     ApplicationManagedComputationDeclaration, ApplicationRepeatedOptionalMemberCorrespondence,
@@ -78,6 +79,7 @@ pub struct ApplicationFeatureSpecBuilder<Schema, Instance, Feature> {
     actions: Vec<ApplicationActionDeclaration>,
     outputs: Vec<ApplicationFeatureOutputDeclaration>,
     derived_artifacts: Vec<ApplicationDerivedArtifactDeclaration>,
+    derived_collections: Vec<ApplicationDerivedCollectionDeclaration>,
     managed_computations: Vec<ApplicationManagedComputationDeclaration>,
     marker: PhantomData<fn() -> (Schema, Instance, Feature)>,
 }
@@ -94,6 +96,7 @@ where
             actions: Vec::new(),
             outputs: Vec::new(),
             derived_artifacts: Vec::new(),
+            derived_collections: Vec::new(),
             managed_computations: Vec::new(),
             marker: PhantomData,
         }
@@ -325,9 +328,24 @@ where
         self
     }
 
+    pub fn derived_collection<Collection>(mut self) -> Self
+    where
+        Collection: ApplicationDerivedCollection<Schema, Feature>,
+    {
+        self.derived_collections
+            .push(ApplicationDerivedCollectionDeclaration::of::<
+                Schema,
+                Feature,
+                Collection,
+            >());
+        self
+    }
+
     pub fn finish(mut self) -> ApplicationFeatureSpec {
         self.feature.set_outputs(self.outputs);
         self.feature.set_derived_artifacts(self.derived_artifacts);
+        self.feature
+            .set_derived_collections(self.derived_collections);
         self.feature
             .set_managed_computations(self.managed_computations);
         ApplicationFeatureSpec {

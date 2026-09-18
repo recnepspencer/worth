@@ -72,6 +72,7 @@ pub struct ApplicationFeatureDeclaration {
     inputs: Box<[ApplicationFeatureInputDeclaration]>,
     outputs: Box<[ApplicationFeatureOutputDeclaration]>,
     derived_artifacts: Box<[super::ApplicationDerivedArtifactDeclaration]>,
+    derived_collections: Box<[super::ApplicationDerivedCollectionDeclaration]>,
     managed_computations: Box<[super::ApplicationManagedComputationDeclaration]>,
 }
 
@@ -93,6 +94,7 @@ impl ApplicationFeatureDeclaration {
             inputs: inputs.into_boxed_slice(),
             outputs: Box::new([]),
             derived_artifacts: Box::new([]),
+            derived_collections: Box::new([]),
             managed_computations: Box::new([]),
         }
     }
@@ -145,6 +147,17 @@ impl ApplicationFeatureDeclaration {
         artifacts: Vec<super::ApplicationDerivedArtifactDeclaration>,
     ) {
         self.derived_artifacts = artifacts.into_boxed_slice();
+    }
+
+    pub fn derived_collections(&self) -> &[super::ApplicationDerivedCollectionDeclaration] {
+        &self.derived_collections
+    }
+
+    pub(super) fn set_derived_collections(
+        &mut self,
+        collections: Vec<super::ApplicationDerivedCollectionDeclaration>,
+    ) {
+        self.derived_collections = collections.into_boxed_slice();
     }
 
     pub fn managed_computations(&self) -> &[super::ApplicationManagedComputationDeclaration] {

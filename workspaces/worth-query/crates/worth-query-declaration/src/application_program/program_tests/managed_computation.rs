@@ -1,11 +1,13 @@
 use super::*;
 use crate::application_program::{
     ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationComputationExecution,
+    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationCollectionContributor,
+    ApplicationCollectionGrouping, ApplicationCollectionIncompletePosture,
+    ApplicationCollectionLineage, ApplicationCollectionMeasures, ApplicationComputationExecution,
     ApplicationComputationInput, ApplicationComputationPartition,
     ApplicationComputationResourceCeiling, ApplicationComputationReuse,
-    ApplicationComputationStopped, ApplicationDerivedArtifact, ApplicationLocalityGranule,
-    ApplicationLocalityScope, ApplicationManagedComputation,
+    ApplicationComputationStopped, ApplicationDerivedArtifact, ApplicationDerivedCollection,
+    ApplicationLocalityGranule, ApplicationLocalityScope, ApplicationManagedComputation,
     ApplicationProgramValidationDenialKind,
 };
 
@@ -64,6 +66,35 @@ impl ApplicationManagedComputation<TestSchema, FlatFeature> for Computation {
         ApplicationComputationResourceCeiling::new(16, 8_192);
 }
 
+struct Contributor;
+impl ApplicationCollectionContributor for Contributor {
+    const IDENTITY: &'static str = "worth.query.tests.collection-contributor.v1";
+}
+struct Grouping;
+impl ApplicationCollectionGrouping for Grouping {
+    const IDENTITY: &'static str = "worth.query.tests.collection-grouping.v1";
+}
+struct Measures;
+impl ApplicationCollectionMeasures for Measures {
+    const IDENTITY: &'static str = "worth.query.tests.collection-measures.v1";
+}
+struct Lineage;
+impl ApplicationCollectionLineage for Lineage {
+    const IDENTITY: &'static str = "worth.query.tests.collection-lineage.v1";
+}
+struct Collection;
+impl ApplicationDerivedCollection<TestSchema, FlatFeature> for Collection {
+    type Contributor = Contributor;
+    type Grouping = Grouping;
+    type Measures = Measures;
+    type Lineage = Lineage;
+    const IDENTITY: &'static str = "worth.query.tests.derived-collection.v1";
+    const APPLICABILITY: &'static str = "worth.query.tests.collection-applicability.v1";
+    const INCOMPLETE: ApplicationCollectionIncompletePosture =
+        ApplicationCollectionIncompletePosture::RetainPending;
+    const INCREMENTAL_UPDATE: &'static str = "worth.query.tests.collection-exact-delta.v1";
+}
+
 struct Program;
 impl ApplicationProgramDefinition<TestSchema> for Program {
     type Contributions = ();
@@ -75,8 +106,26 @@ impl ApplicationProgramDefinition<TestSchema> for Program {
         vec![ApplicationFeatureSpec::root::<TestSchema, FlatFeature>()
             .derived_artifact::<Artifact>()
             .managed_computation::<Computation>()
+            .derived_collection::<Collection>()
             .finish()]
     }
+}
+
+#[test]
+fn derived_collection_retains_typed_grouping_measure_and_lineage_meaning() {
+    let program = ApplicationProgramAuthoring::<TestSchema, Program>::begin()
+        .validated_program()
+        .expect("derived collection validates");
+    let collection = &program.features()[0].derived_collections()[0];
+    assert_eq!(collection.identity(), Collection::IDENTITY);
+    assert_eq!(collection.contributor(), Contributor::IDENTITY);
+    assert_eq!(collection.grouping(), Grouping::IDENTITY);
+    assert_eq!(collection.measures(), Measures::IDENTITY);
+    assert_eq!(collection.lineage(), Lineage::IDENTITY);
+    assert_eq!(
+        collection.incomplete(),
+        ApplicationCollectionIncompletePosture::RetainPending
+    );
 }
 
 #[test]
