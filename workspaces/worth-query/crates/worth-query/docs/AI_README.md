@@ -296,9 +296,11 @@ graph. A performed mutation calls
 `performed.start_required_outputs(&request, controls)`; a caller that must
 settle the installed graph from an admitted source, including reconstruction,
 calls `request.start_program_outputs(&application, demand, controls)`. Both
-return `WorthQueryApplicationProgramOutputHandle`. Repeated
-`advance(&fresh_request)` yields `Pending` until the root and every discovered
-dependent edge have settled, then returns one
+return `WorthQueryApplicationProgramOutputHandle`. `settle(&fresh_request)`
+performs at most the admitted `maximum_work` advances and returns `Pending` when
+that bound is exhausted. `advance(&fresh_request)` remains available to hosts
+that wait on owner notifications between individual advances. Settlement of the
+root and every discovered dependent edge returns one
 `WorthQueryApplicationProgramOutputSettlement`. The settlement exposes the root,
 the latest exact observation, measured program work, and typed
 `outputs_for::<Schema, Connection>()` or instance-qualified dependent outputs.

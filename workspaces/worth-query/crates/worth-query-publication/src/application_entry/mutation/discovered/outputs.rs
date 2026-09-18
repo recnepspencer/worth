@@ -171,6 +171,25 @@ where
             .collect()
     }
 
+    pub fn settle(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
+    ) -> Result<
+        WorthQueryDiscoveredProgramOutputProgress<Query<Schema, Root>, Demand<Schema, Root>>,
+        WorthQueryRequiredOutputPreparationDenial,
+    > {
+        for _ in 0..self.controls.maximum_work().get() {
+            let progress = self.advance(request)?;
+            if matches!(
+                progress,
+                WorthQueryDiscoveredProgramOutputProgress::Settled(_)
+            ) {
+                return Ok(progress);
+            }
+        }
+        Ok(WorthQueryDiscoveredProgramOutputProgress::Pending)
+    }
+
     pub fn advance(
         &mut self,
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
