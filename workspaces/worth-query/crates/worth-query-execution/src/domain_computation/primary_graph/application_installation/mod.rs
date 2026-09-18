@@ -2,9 +2,11 @@
 
 mod denial;
 mod limits;
+mod profile;
 mod program;
 pub use denial::WorthQueryInMemoryApplicationDenial;
 pub use limits::WorthQueryInMemoryApplicationLimits;
+pub use profile::WorthQueryInMemoryApplicationProfile;
 pub use program::{
     in_memory_program, in_memory_program_with_authorization_time_source,
     WorthQueryAdmittedProgramOperation, WorthQueryAdmittedProgramOutput,
@@ -102,8 +104,17 @@ where
     .map_err(Denial::Contributions)?;
     let (invariants, handlers, producers, conditionals) =
         configured.into_parts().map_err(Denial::Contributions)?;
+    let relational_runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+        .profile(limits.profile.relational_profile())
+        .build();
     let mut graph = authority
-        .prepare_primary_graph_with_invariants(&runtime, &installed, limits.world, invariants)
+        .prepare_primary_graph_with_relational_runtime_and_invariants(
+            &runtime,
+            &installed,
+            relational_runtime,
+            limits.world,
+            invariants,
+        )
         .map_err(Denial::Graph)?;
     graph.mutation_handlers = handlers;
     initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
