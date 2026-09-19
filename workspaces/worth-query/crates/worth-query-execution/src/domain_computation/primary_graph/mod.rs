@@ -84,6 +84,8 @@ pub use product_operation::{
     WorthQueryApplicationProductBranchCloseDenial, WorthQueryApplicationProductBranches,
     WorthQueryAppliedProductTransaction, WorthQueryBranchAdoptionActivationDenial,
     WorthQueryBranchAdoptionPreparationDenial, WorthQueryBranchAdoptionPublicationOutcome,
+    WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,
+    WorthQueryBranchAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,
     WorthQueryCompletedGeneratedOutputReconstruction,
     WorthQueryConditionalDefinitionPublicationDenial,
     WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryGeneratedEntity,

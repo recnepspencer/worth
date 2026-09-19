@@ -57,10 +57,14 @@ pub use mutation::{
 };
 pub use programs::{
     WorthQueryApplicationProgramAdoptionPreparationDenial,
+    WorthQueryApplicationProgramAdoptionRecoveryFailure,
     WorthQueryApplicationProgramAdoptionRequest,
     WorthQueryApplicationProgramAdoptionRequestWithRequirements,
     WorthQueryApplicationProgramsRequest, WorthQueryBranchAdoptionPublicationOutcome,
+    WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,
+    WorthQueryBranchAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,
     WorthQueryPerformedBranchAdoption, WorthQueryPreparedBranchAdoption,
+    WorthQueryUnpublishedBranchAdoption,
 };
 pub use query::WorthQueryApplicationQueryRequest;
 pub use request::{

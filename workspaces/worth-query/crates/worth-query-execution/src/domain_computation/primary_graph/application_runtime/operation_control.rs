@@ -96,6 +96,35 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             .expect("the installed World remains inspectable")
     }
 
+    /// Runs one certification action while every Query owner-cleanup slot is reserved.
+    #[doc(hidden)]
+    pub fn with_owner_cleanup_capacity_exhausted_for_test<Output>(
+        &self,
+        work: impl FnOnce() -> Output,
+    ) -> Output {
+        let available = self
+            .product_runtime
+            .owner_cleanup
+            .available_capacity_for_test();
+        let mut held = Vec::with_capacity(available);
+        for _ in 0..available {
+            held.push(
+                self.product_runtime
+                    .reserve_owner_cleanup_for_application()
+                    .expect("reported cleanup capacity must remain reservable"),
+            );
+        }
+        assert!(
+            self.product_runtime
+                .reserve_owner_cleanup_for_application()
+                .is_err(),
+            "the bounded cleanup owner must be exhausted before certification work"
+        );
+        let output = work();
+        drop(held);
+        output
+    }
+
     /// Counts branches installed in Query's bounded activation index.
     #[doc(hidden)]
     pub fn indexed_product_branch_count_for_test(&self) -> usize {

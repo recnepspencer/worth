@@ -18,6 +18,26 @@ pub struct WorthQueryApplicationProgramsRequest<'application, 'principal, 'scope
     pub(super) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
 }
 
+pub enum WorthQueryApplicationProgramAdoptionRecoveryFailure {
+    ProductSelection {
+        denial:
+            worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
+        recovery: worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionRecovery,
+    },
+    Recovery(worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionRecoveryFailure),
+}
+
+impl WorthQueryApplicationProgramAdoptionRecoveryFailure {
+    pub fn into_recovery(
+        self,
+    ) -> worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionRecovery {
+        match self {
+            Self::ProductSelection { recovery, .. } => recovery,
+            Self::Recovery(failure) => failure.into_recovery(),
+        }
+    }
+}
+
 pub struct WorthQueryApplicationProgramAdoptionRequest<
     'application,
     'principal,
@@ -77,6 +97,44 @@ where
             programs: self,
             target,
         }
+    }
+
+    /// Continues only domain custody returned by an unpublished adoption.
+    /// A descriptive World handle cannot reach this effectful entry.
+    ///
+    /// ```compile_fail,E0308
+    /// use worth_query_installation::facade::ApplicationSchema;
+    /// use worth_query_publication::facade::application_entry::WorthQueryApplicationProgramsRequest;
+    /// use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
+    ///
+    /// fn raw_handle_cannot_resume<Schema: ApplicationSchema>(
+    ///     programs: WorthQueryApplicationProgramsRequest<'_, '_, '_, Schema>,
+    ///     raw: ProductUnpublishedRecoveryHandle,
+    /// ) {
+    ///     let _ = programs.recover(raw);
+    /// }
+    /// ```
+    pub fn recover(
+        self,
+        recovery: worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionRecovery,
+    ) -> Result<
+        worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionRecoveryOutcome,
+        WorthQueryApplicationProgramAdoptionRecoveryFailure,
+    > {
+        let selected = match self.application.on_branch(self.branch).select() {
+            Ok(selected) => selected,
+            Err(denial) => {
+                return Err(
+                    WorthQueryApplicationProgramAdoptionRecoveryFailure::ProductSelection {
+                        denial,
+                        recovery,
+                    },
+                )
+            }
+        };
+        selected
+            .recover_branch_adoption(recovery, self.scope)
+            .map_err(WorthQueryApplicationProgramAdoptionRecoveryFailure::Recovery)
     }
 }
 

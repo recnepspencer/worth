@@ -49,7 +49,9 @@ pub use generated_materialization::{
 pub use history::{WorthQueryProductHistory, WorthQueryProductHistoryEntry};
 pub use program_adoption::{
     WorthQueryBranchAdoptionActivationDenial, WorthQueryBranchAdoptionPreparationDenial,
-    WorthQueryBranchAdoptionPublicationOutcome, WorthQueryPerformedBranchAdoption,
+    WorthQueryBranchAdoptionPublicationOutcome, WorthQueryBranchAdoptionRecovery,
+    WorthQueryBranchAdoptionRecoveryDenial, WorthQueryBranchAdoptionRecoveryFailure,
+    WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryPerformedBranchAdoption,
     WorthQueryPreparedBranchAdoption, WorthQueryUnpublishedBranchAdoption,
 };
 pub use query::WorthQueryProductQueryControls;

@@ -94,6 +94,48 @@ fn a_maximum_of_zero_refuses_before_examining_anything() {
 }
 
 #[test]
+fn current_kind_read_refuses_before_materializing_an_unadmitted_record() {
+    let runtime = runtime_with_test_schema();
+    create_entity(&runtime, "part");
+
+    runtime.performance_access().reset_counters();
+    let refused = runtime
+        .read_truth()
+        .bounded_visible_entities_of_kind(ENTITY_KIND, runtime.current_version_id(), 1)
+        .expect_err("one unit pays for the slot but not its record");
+    let counters = runtime.performance_access().counters();
+
+    assert_eq!(refused.entity_slots_examined(), 1);
+    assert_eq!(refused.entity_records_reserved(), 0);
+    assert_eq!(
+        counters.visible_authoritative_entity_records_materialized, 0,
+        "a record denied by the work bound must not clone authoritative state"
+    );
+}
+
+#[test]
+fn historical_kind_read_refuses_before_materializing_an_unadmitted_record() {
+    let runtime = runtime_with_test_schema();
+    create_entity(&runtime, "early");
+    let historical_version = runtime.current_version_id();
+    create_entity(&runtime, "late");
+
+    runtime.performance_access().reset_counters();
+    let refused = runtime
+        .read_truth()
+        .bounded_visible_entities_of_kind(ENTITY_KIND, historical_version, 1)
+        .expect_err("one unit pays for the historical slot but not its record");
+    let counters = runtime.performance_access().counters();
+
+    assert_eq!(refused.entity_slots_examined(), 1);
+    assert_eq!(refused.entity_records_reserved(), 0);
+    assert_eq!(
+        counters.visible_authoritative_entity_records_materialized, 0,
+        "a historical record denied by the work bound must not clone authoritative state"
+    );
+}
+
+#[test]
 fn the_unbounded_kind_read_answers_exactly_as_the_bounded_one() {
     let runtime = runtime_with_test_schema();
     for ordinal in 0..6 {

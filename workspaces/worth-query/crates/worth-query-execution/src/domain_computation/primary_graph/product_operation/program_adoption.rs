@@ -11,8 +11,14 @@
 //! custody progression; this slice provides a fail-closed requirements
 //! freshness fence and does not claim idempotent replay.
 
+mod custody;
 mod preparation;
 mod publication;
+
+pub use custody::{
+    WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,
+    WorthQueryBranchAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,
+};
 
 pub use preparation::{
     WorthQueryBranchAdoptionActivationDenial, WorthQueryBranchAdoptionPreparationDenial,

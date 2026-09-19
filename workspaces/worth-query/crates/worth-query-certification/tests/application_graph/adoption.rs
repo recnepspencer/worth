@@ -2,8 +2,12 @@
 
 #[path = "adoption/branch_adoption.rs"]
 mod branch_adoption;
+#[path = "adoption/branch_adoption_recovery.rs"]
+mod branch_adoption_recovery;
 #[path = "adoption/branch_divergence.rs"]
 mod branch_divergence;
+#[path = "adoption/recovery_terminals.rs"]
+mod recovery_terminals;
 #[path = "adoption/roster_admission.rs"]
 mod roster_admission;
 #[path = "adoption/signal_fork_inheritance.rs"]

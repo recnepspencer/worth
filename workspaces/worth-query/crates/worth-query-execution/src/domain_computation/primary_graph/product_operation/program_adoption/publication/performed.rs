@@ -11,7 +11,7 @@ pub struct WorthQueryPerformedBranchAdoption {
 }
 
 impl WorthQueryPerformedBranchAdoption {
-    pub(super) fn new(
+    pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn new(
         publication: ConsumedCompositePublication,
         source: ApplicationProgramRevision,
         target: ApplicationProgramRevision,
@@ -43,5 +43,9 @@ impl WorthQueryPerformedBranchAdoption {
 
     pub fn product_commit(&self) -> &CompositeCommitIdentity {
         self.publication.commit().identity()
+    }
+
+    pub fn relational_owner_contacts(&self) -> u64 {
+        self.publication.cost_counters().relational_owner_contacts()
     }
 }

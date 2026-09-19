@@ -106,6 +106,11 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             .map_err(map_relational_preparation_denial)
     })?;
     let successor_observation_requested = false;
+    let recovery = selected.product().publication_binding().recovery();
+    let disposition = selected
+        .application()
+        .primary_provider
+        .unpublished_idempotency_disposition();
     let publication = selected
         .product()
         .publication_binding()
@@ -118,6 +123,8 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         selected_entity_count,
         selection_work_units,
         publication,
+        recovery,
+        disposition,
     })
 }
 

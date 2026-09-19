@@ -96,6 +96,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationUnresolvedCommitEvidence, WorthQueryApprovedElevation,
     WorthQueryAuthenticatedPrincipal, WorthQueryBranchAdoptionActivationDenial,
     WorthQueryBranchAdoptionPreparationDenial, WorthQueryBranchAdoptionPublicationOutcome,
+    WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,
+    WorthQueryBranchAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,
     WorthQueryBridgeGranularDeliveryCounters, WorthQueryCapabilityRevocationProgram,
     WorthQueryCommittedProductPublication, WorthQueryCompleteApplicationReadSet,
     WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryCompletedInvariantProjection,
@@ -195,5 +197,6 @@ pub use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
 pub use worth_runtime_world::facade::{
     ProductUnpublishedNextAction, ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
     RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPage,
+    RuntimeWorldSettledRelationalAdoptionDenial,
 };
 pub use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;

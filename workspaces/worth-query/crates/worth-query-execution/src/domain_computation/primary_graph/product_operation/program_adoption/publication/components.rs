@@ -16,6 +16,8 @@ impl WorthQueryPreparedBranchAdoption {
             target,
             selected_entity_count,
             publication,
+            recovery,
+            disposition,
             ..
         } = self;
         match publication.execute() {
@@ -34,7 +36,14 @@ impl WorthQueryPreparedBranchAdoption {
             }
             RuntimeWorldPublicationOutcome::ProductUnpublished(unpublished) => {
                 WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(
-                    WorthQueryUnpublishedBranchAdoption::new(unpublished),
+                    WorthQueryUnpublishedBranchAdoption::new(
+                        source,
+                        target,
+                        selected_entity_count,
+                        unpublished,
+                        recovery,
+                        disposition,
+                    ),
                 )
             }
         }

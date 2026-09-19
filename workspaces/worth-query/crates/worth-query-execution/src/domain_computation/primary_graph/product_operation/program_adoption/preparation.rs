@@ -77,6 +77,9 @@ pub struct WorthQueryPreparedBranchAdoption {
     pub(super) selected_entity_count: usize,
     pub(super) selection_work_units: usize,
     pub(super) publication: crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication,
+    pub(super) recovery: worth_runtime_world::facade::RuntimeWorldRecoveryPort,
+    pub(super) disposition:
+        crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
 }
 
 impl WorthQueryPreparedBranchAdoption {

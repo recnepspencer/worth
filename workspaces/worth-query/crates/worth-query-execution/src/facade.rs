@@ -38,7 +38,7 @@ pub mod runtime {
     };
     pub use worth_runtime_world::facade::{
         CompositeComponentChangePosture, CompositeSignalPublicationIdentity, NoEffectCause,
-        RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,
+        ProductUnpublishedCause, RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,
         RuntimeWorldBudgetInstallation, RuntimeWorldBudgets, RuntimeWorldCancellationSource,
         RuntimeWorldCancellationToken, RuntimeWorldCustodyBudgetInstallation,
         RuntimeWorldHistoryBudgetInstallation, RuntimeWorldObservationBudgetInstallation,

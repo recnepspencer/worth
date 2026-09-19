@@ -1,3 +1,6 @@
 pub use worth_query_execution::facade::primary_graph::{
-    WorthQueryBranchAdoptionPublicationOutcome, WorthQueryPerformedBranchAdoption,
+    WorthQueryBranchAdoptionPublicationOutcome, WorthQueryBranchAdoptionRecovery,
+    WorthQueryBranchAdoptionRecoveryDenial, WorthQueryBranchAdoptionRecoveryFailure,
+    WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryPerformedBranchAdoption,
+    WorthQueryUnpublishedBranchAdoption,
 };

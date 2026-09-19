@@ -82,14 +82,18 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 if !slot_kind_matches_current(&partition.entity_arena, slot, kind_id) {
                     continue;
                 }
-                if let Some(record) = materialize_current_authoritative_entity_record(
-                    registry,
-                    partition,
-                    partition_id,
-                    slot,
-                ) {
-                    scan.reserve(record)?;
-                }
+                scan.reserve_with(|| {
+                    self.runtime.services.instrumentation.count(|counters| {
+                        counters.visible_authoritative_entity_records_materialized += 1;
+                    });
+                    materialize_current_authoritative_entity_record(
+                        registry,
+                        partition,
+                        partition_id,
+                        slot,
+                    )
+                    .expect("a matching live entity slot must materialize")
+                })?;
             }
         } else {
             for slot in partition.entity_arena.occupied_slots() {
@@ -106,15 +110,19 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 ) {
                     continue;
                 }
-                if let Some(record) = materialize_authoritative_entity_record_at_version(
-                    registry,
-                    partition,
-                    partition_id,
-                    slot,
-                    version_id,
-                ) {
-                    scan.reserve(record)?;
-                }
+                scan.reserve_with(|| {
+                    self.runtime.services.instrumentation.count(|counters| {
+                        counters.visible_authoritative_entity_records_materialized += 1;
+                    });
+                    materialize_authoritative_entity_record_at_version(
+                        registry,
+                        partition,
+                        partition_id,
+                        slot,
+                        version_id,
+                    )
+                    .expect("a matching historical entity slot must materialize")
+                })?;
             }
         }
         Ok(())
@@ -145,12 +153,12 @@ impl EntityKindScan {
         Ok(())
     }
 
-    fn reserve(
+    fn reserve_with(
         &mut self,
-        record: EntityReadRecord,
+        materialize: impl FnOnce() -> EntityReadRecord,
     ) -> Result<(), EntityKindTruthReadLimitExceeded> {
         self.spend()?;
-        self.records.push(record);
+        self.records.push(materialize());
         Ok(())
     }
 
