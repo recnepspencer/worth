@@ -127,8 +127,15 @@ pub(super) use invalid_disclosure_queries::{
 mod operation_contracts;
 #[path = "fixture/program_required_binding.rs"]
 mod program_required_binding;
-use program_required_binding::{ProgramRequiredHandler, ProgramRequiredMutationBinding};
-pub(super) use program_required_binding::{ProgramRequiredInput, ProgramRequiredOperation};
+use program_required_binding::ProgramRequiredHandler;
+pub(super) use program_required_binding::{
+    ProgramRequiredInput, ProgramRequiredMutationBinding, ProgramRequiredOperation,
+};
+#[path = "fixture/program_roster.rs"]
+mod program_roster;
+pub(super) use program_roster::{
+    installed_program_support, rostered_program_revision, unadmitted_program_revision,
+};
 #[path = "fixture/schema_types.rs"]
 mod schema_types;
 #[path = "fixture/world_authentication.rs"]

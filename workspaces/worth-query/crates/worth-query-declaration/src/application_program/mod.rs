@@ -7,6 +7,7 @@ mod connection;
 mod derived_artifact;
 mod derived_collection;
 mod evaluated_requirement;
+mod evolution;
 mod external_input;
 mod feature;
 mod identity;
@@ -50,6 +51,8 @@ pub use evaluated_requirement::{
     ApplicationEvaluatedRequirement, ApplicationEvaluatedRequirementRule,
     ApplicationRequirementSubmissionDenial,
 };
+pub use evolution::ApplicationProgramRevision;
+pub(in crate::application_program) use evolution::ApplicationProgramRevisionBudgetDenial;
 pub use external_input::{ApplicationExternalInputProvider, ApplicationExternalInputResolution};
 pub use feature::{
     ApplicationFeature, ApplicationFeatureDeclaration, ApplicationFeatureInputDeclaration,

@@ -60,6 +60,10 @@ harness = false
 name = "program_example_authority"
 path = "tests/program_example_authority.rs"
 
+[[test]]
+name = "application_graph"
+path = "tests/application_graph.rs"
+
 
 [lints]
 workspace = true

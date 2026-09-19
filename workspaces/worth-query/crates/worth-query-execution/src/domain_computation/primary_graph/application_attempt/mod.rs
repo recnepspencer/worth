@@ -60,6 +60,7 @@ pub use compare_and_commit::{
 };
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
+    WorthQueryProgramActivationUnresolved,
 };
 pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub use denial::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};

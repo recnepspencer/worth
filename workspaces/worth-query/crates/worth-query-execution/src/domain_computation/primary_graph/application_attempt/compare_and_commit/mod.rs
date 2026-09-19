@@ -8,6 +8,7 @@ mod committed_publication;
 pub use commit_deferred::{
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
 };
+pub(in crate::domain_computation::primary_graph) use commit_outcome::WorthQueryProgramActivationUnresolved;
 pub use commit_outcome::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,

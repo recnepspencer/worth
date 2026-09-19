@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
+mod program_activation_work_reserve;
 mod schema_resolver;
 pub use schema_resolver::WorthQueryApplicationInvariantSchemaResolver;
 
@@ -18,7 +19,31 @@ use super::{
 
 use super::application_invariant::{
     ErasedApplicationInvariantRule, WorthQueryApplicationInvariantRule,
+    WorthQueryProgramRuleSelection,
 };
+use super::program_occurrence::WorthQueryProgramActivationCell;
+
+/// What a program-hosted installation carries into invariant lowering so every
+/// lowered adapter is born knowing which rostered programs declare its rule.
+///
+/// The roster is admitted before the graph is lowered and never changes, so no
+/// post-hoc table exists to disagree with it.
+pub(super) struct WorthQueryInvariantProgramBasis<Schema> {
+    pub(super) roster:
+        std::sync::Arc<worth_query_installation::facade::WorthQueryProgramSupportRoster<Schema>>,
+    pub(super) activation: WorthQueryProgramActivationCell,
+}
+
+impl<Schema> WorthQueryInvariantProgramBasis<Schema> {
+    pub(super) const fn admitted(
+        roster: std::sync::Arc<
+            worth_query_installation::facade::WorthQueryProgramSupportRoster<Schema>,
+        >,
+        activation: WorthQueryProgramActivationCell,
+    ) -> Self {
+        Self { roster, activation }
+    }
+}
 
 type Factory<Schema> = Box<
     dyn for<'resolver> FnOnce(
@@ -35,6 +60,7 @@ pub struct WorthQueryApplicationInvariantFactories<Schema> {
         worth_query_installation::facade::WorthQueryInstalledApplicationInvariantDescriptor,
     >,
     factories: BTreeMap<(String, ApplicationInvariantExecutionPoint), Factory<Schema>>,
+    program_basis: Option<WorthQueryInvariantProgramBasis<Schema>>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -60,8 +86,15 @@ where
             binding_identity: schema.binding_identity(),
             expected,
             factories: BTreeMap::new(),
+            program_basis: None,
             _schema: PhantomData,
         }
+    }
+
+    /// Binds the admitted support roster this installation lowers under, so a
+    /// rule only decides candidates running under a program that declares it.
+    pub(super) fn select_by_program(&mut self, basis: WorthQueryInvariantProgramBasis<Schema>) {
+        self.program_basis = Some(basis);
     }
 
     pub fn bind<Invariant, Rule: WorthQueryApplicationInvariantRule<Schema>>(
@@ -139,9 +172,27 @@ where
                     detail,
                 )
             })?;
-            let descriptor = lower_descriptor(&installed, layout)?;
+            let descriptor = lower_descriptor(&installed, layout, self.program_basis.is_some())?;
+            let program_selection = self
+                .program_basis
+                .as_ref()
+                .map(|basis| {
+                    WorthQueryProgramRuleSelection::for_installed_rule(
+                        &installed,
+                        &basis.roster,
+                        basis.activation.clone(),
+                        layout.program_activation(),
+                    )
+                })
+                .transpose()
+                .map_err(|detail| {
+                    denial(
+                        WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryRejected,
+                        detail,
+                    )
+                })?;
             let registration = rule
-                .into_registration(descriptor, self.binding_identity.clone())
+                .into_registration(descriptor, self.binding_identity.clone(), program_selection)
                 .map_err(|detail| {
                     denial(
                         WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryRejected,
@@ -163,6 +214,7 @@ where
 fn lower_access_contract(
     installed: &worth_query_installation::facade::WorthQueryInstalledApplicationInvariantDescriptor,
     layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
+    reads_program_activation: bool,
 ) -> Result<
     worth_relational::facade::runtime::CustomInvariantAccessContract,
     WorthQueryPrimaryGraphInstallationDenial,
@@ -174,6 +226,11 @@ fn lower_access_contract(
         affected_entity_kinds: Vec::new(),
         affected_relation_kinds: Vec::new(),
     };
+    if reads_program_activation {
+        contract
+            .read_entity_kinds
+            .push(layout.program_activation().entity_kind);
+    }
     for target in installed.read_closure() {
         match target {
             ApplicationInvariantScopeTarget::Entity(name) => contract.read_entity_kinds.push(
@@ -200,6 +257,7 @@ fn lower_access_contract(
 fn lower_descriptor(
     installed: &worth_query_installation::facade::WorthQueryInstalledApplicationInvariantDescriptor,
     layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
+    reads_program_activation: bool,
 ) -> Result<
     worth_relational::facade::runtime::CustomInvariantDescriptor,
     WorthQueryPrimaryGraphInstallationDenial,
@@ -232,12 +290,16 @@ fn lower_descriptor(
         },
         display_name: installed.identifier().into(),
         operational: CustomInvariantOperationalMetadata {
-            maximum_work_units: installed.maximum_work_units(),
+            maximum_work_units: program_activation_work_reserve::lowered_work_budget(
+                installed.maximum_work_units(),
+                installed.identifier(),
+                reads_program_activation,
+            )?,
             execution_point,
             groups: InvariantGroupSet::from_mask(installed_group_mask(installed.required_groups())),
             cost_class: installed_cost(installed.cost_posture()),
             failure_effect: installed_enforcement(installed.enforcement()),
-            access: lower_access_contract(installed, layout)?,
+            access: lower_access_contract(installed, layout, reads_program_activation)?,
         },
     })
 }

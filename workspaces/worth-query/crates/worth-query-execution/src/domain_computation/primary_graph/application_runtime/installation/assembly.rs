@@ -108,7 +108,7 @@ where
         output_demands: Default::default(),
         program_required_bindings,
         program_required_operations,
-        installed_program_action_operations: None,
+        program_support: None,
         installed_conditionals: Default::default(),
     })
 }

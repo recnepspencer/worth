@@ -69,6 +69,7 @@ impl WorthQueryApplicationStaleAttempt {
 }
 
 mod denial;
+pub(in crate::domain_computation::primary_graph) use denial::WorthQueryProgramActivationUnresolved;
 pub use denial::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitDenialStage,

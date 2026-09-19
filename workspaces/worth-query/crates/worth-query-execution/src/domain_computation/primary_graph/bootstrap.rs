@@ -28,10 +28,13 @@ use super::{
 };
 
 mod binding_denial;
+mod program_activation_seeding;
 mod publication;
 mod publication_target;
 use binding_denial::map_binding_denial_kind;
 mod truth_partition;
+use program_activation_seeding::commit_initial_program_activation;
+pub(super) use program_activation_seeding::WorthQueryProgramActivationSeed;
 pub use publication::WorthQueryPrimaryGraphPublication;
 
 pub(super) struct WorthQueryPrincipalBootstrapRow {
@@ -62,6 +65,9 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     pub(super) entity_rows: Vec<super::typed_bootstrap::WorthQueryTypedEntityBootstrapRow>,
     pub(super) relation_rows: Vec<super::typed_bootstrap::WorthQueryTypedRelationBootstrapRow>,
     pub(super) mutation_handlers: super::handler::PendingMutationHandlerRegistry<Schema>,
+    /// The initial program this installation activates, seeded before any
+    /// ordinary bootstrap row so those rows are validated under its rules.
+    pub(super) program_activation_seed: Option<WorthQueryProgramActivationSeed>,
     invariant_installation_receipt:
         worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt,
     expected_invariant_inventory_digest: [u8; 32],
@@ -184,6 +190,7 @@ impl WorthQueryExecutionInstallationAuthority {
             entity_rows: Vec::new(),
             relation_rows: Vec::new(),
             mutation_handlers: Default::default(),
+            program_activation_seed: None,
             invariant_installation_receipt,
             expected_invariant_inventory_digest,
             _schema: PhantomData,
@@ -326,6 +333,9 @@ where
             .collect::<BTreeSet<_>>()
             .len();
         let index_ids = self.graph.integration_handle().primary_index_ids.to_vec();
+        if let Some(seed) = self.program_activation_seed {
+            commit_initial_program_activation(&self.graph, seed)?;
+        }
         let commit_id =
             commit_bootstrap_rows(&self.graph, self.rows, self.entity_rows, self.relation_rows)?;
         build_identity_indexes(&self.graph, commit_id, &index_ids)?;

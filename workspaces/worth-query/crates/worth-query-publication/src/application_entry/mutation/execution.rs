@@ -2,8 +2,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationCapabilityMutationBinding, ApplicationMutationBinding, ApplicationMutationIntent,
     ApplicationMutationScopeBinding, ApplicationMutationScopeResolution,
 };
-use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
-use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_execution::facade::primary_graph::{
     HandlerResult, MutationHandlerExecutionDenial, WorthQueryAdmittedApplicationOperation,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
@@ -62,9 +61,9 @@ where
     }
 
     /// Executes one action through the exact installed program that owns it.
-    pub fn execute_in_program<Program>(
+    pub fn execute_in_program<Owner>(
         self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &'application Owner,
     ) -> Result<
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -73,7 +72,7 @@ where
         WorthQueryApplicationRequestMutationDenial,
     >
     where
-        Program: ApplicationProgramDefinition<Schema>,
+        Owner: WorthQueryProgramOwner<Schema>,
     {
         if !std::ptr::eq(application.runtime(), self.request.application) {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
@@ -91,9 +90,9 @@ where
     }
 
     /// Executes one capability-owned action through its exact installed program.
-    pub fn execute_capability_in_program<Program>(
+    pub fn execute_capability_in_program<Owner>(
         self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &'application Owner,
     ) -> Result<
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -102,7 +101,7 @@ where
         WorthQueryApplicationRequestMutationDenial,
     >
     where
-        Program: ApplicationProgramDefinition<Schema>,
+        Owner: WorthQueryProgramOwner<Schema>,
         Intent::Binding: ApplicationCapabilityMutationBinding<Schema>,
         <Intent::Binding as ApplicationMutationBinding<Schema>>::Input:
             worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<

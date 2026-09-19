@@ -4,6 +4,7 @@ use worth_relational::facade::runtime::{
     CustomInvariantScopePlanner, CustomInvariantVerdict,
 };
 
+use super::program_selection::{WorthQueryProgramRuleSelection, WorthQueryProgramRuleStanding};
 use super::WorthQueryApplicationInvariantRule;
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaBindingIdentity,
@@ -18,6 +19,7 @@ where
         self: Box<Self>,
         descriptor: CustomInvariantDescriptor,
         binding_identity: ApplicationSchemaBindingIdentity,
+        program_selection: Option<WorthQueryProgramRuleSelection>,
     ) -> Result<CustomInvariantRegistration, String>;
 }
 
@@ -30,11 +32,13 @@ where
         self: Box<Self>,
         descriptor: CustomInvariantDescriptor,
         binding_identity: ApplicationSchemaBindingIdentity,
+        program_selection: Option<WorthQueryProgramRuleSelection>,
     ) -> Result<CustomInvariantRegistration, String> {
         CustomInvariantRegistration::new(InstalledApplicationInvariantRule {
             rule: *self,
             descriptor,
             binding_identity,
+            program_selection,
             _schema: std::marker::PhantomData,
         })
         .map_err(|denial| format!("{denial:?}"))
@@ -45,6 +49,7 @@ struct InstalledApplicationInvariantRule<Schema, Rule> {
     rule: Rule,
     descriptor: CustomInvariantDescriptor,
     binding_identity: ApplicationSchemaBindingIdentity,
+    program_selection: Option<WorthQueryProgramRuleSelection>,
     _schema: std::marker::PhantomData<fn() -> Schema>,
 }
 
@@ -84,6 +89,11 @@ where
         context: &CustomInvariantExecutionContext<'_>,
         scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
+        if let Some(selection) = &self.program_selection {
+            if selection.standing(context)? == WorthQueryProgramRuleStanding::Silent {
+                return Ok(CustomInvariantVerdict::Pass);
+            }
+        }
         let context = super::WorthQueryApplicationInvariantContext::new(
             context,
             self.binding_identity.clone(),

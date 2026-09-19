@@ -14,6 +14,7 @@ pub(in crate::domain_computation::primary_graph) mod live_delivery_support;
 mod product_branch_creation_recovery;
 mod product_managed_admission_affinity;
 mod product_publication_cancellation;
+mod program_support_admission;
 pub(in crate::domain_computation) mod recoverable_commit_support;
 mod successful_resolution;
 mod typed_bootstrap;

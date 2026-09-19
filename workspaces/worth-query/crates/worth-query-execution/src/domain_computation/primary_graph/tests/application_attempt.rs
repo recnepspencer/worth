@@ -4,8 +4,8 @@ mod product_races;
 use std::time::Duration;
 
 use super::fixture::{
-    installed_authorization_world, live_scope, AccountStatus, ProgramRequiredInput,
-    ProgramRequiredOperation, TouchAccountOperation,
+    installed_authorization_world, installed_program_support, live_scope, AccountStatus,
+    ProgramRequiredInput, ProgramRequiredOperation, TouchAccountOperation,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
@@ -44,6 +44,8 @@ mod preimage_retention;
 mod producer_invariant_publication;
 #[path = "application_attempt/program_fixture.rs"]
 mod program_fixture;
+#[path = "application_attempt/program_occurrence_gate.rs"]
+mod program_occurrence_gate;
 #[path = "application_attempt/provider_terminal_evidence.rs"]
 mod provider_terminal_evidence;
 #[path = "application_attempt/retry_outbox_rebind.rs"]
@@ -282,10 +284,9 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
         .application
         .program_required_operations
         .contains(&std::any::TypeId::of::<TouchAccountOperation>()));
-    world.application.installed_program_action_operations =
-        Some(std::collections::BTreeSet::from([std::any::TypeId::of::<
-            ProgramRequiredOperation,
-        >()]));
+    world.application.program_support = Some(installed_program_support(
+        &world.application.installed_schema,
+    ));
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);

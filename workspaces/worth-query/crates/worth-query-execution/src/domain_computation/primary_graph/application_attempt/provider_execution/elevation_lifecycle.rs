@@ -26,7 +26,7 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if self.installed_program_action_operations.is_some()
+        if self.has_installed_application_program()
             || self
                 .program_required_operations
                 .contains(&std::any::TypeId::of::<Operation>())
@@ -88,7 +88,7 @@ where
         self.compare_and_commit_elevation_approval_for_program(
             program,
             idempotency,
-            self.installed_program_action_operations.is_none()
+            !self.has_installed_application_program()
                 && !self
                     .program_required_operations
                     .contains(&std::any::TypeId::of::<Operation>()),
@@ -159,7 +159,7 @@ where
         self.compare_and_commit_elevation_close_for_program(
             program,
             idempotency,
-            self.installed_program_action_operations.is_none()
+            !self.has_installed_application_program()
                 && !self
                     .program_required_operations
                     .contains(&std::any::TypeId::of::<Operation>()),
@@ -228,7 +228,7 @@ where
         self.compare_and_commit_mandatory_review_for_program(
             program,
             idempotency,
-            self.installed_program_action_operations.is_none()
+            !self.has_installed_application_program()
                 && !self
                     .program_required_operations
                     .contains(&std::any::TypeId::of::<Operation>()),

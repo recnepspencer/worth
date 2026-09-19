@@ -11,11 +11,43 @@ pub enum ApplicationArtifactRetention {
     Reconstructive,
 }
 
+impl ApplicationArtifactRetention {
+    /// Names this retention posture in the durable canonical manifest record
+    /// that the program revision digests.
+    ///
+    /// The token is decided here rather than derived from the Rust variant
+    /// spelling, so renaming a variant is a compile-time-visible decision
+    /// instead of a silent change of every program's content identity.
+    pub const fn canonical_token(self) -> &'static str {
+        match self {
+            Self::Retained => "Retained",
+            Self::Disposable => "Disposable",
+            Self::Reconstructive => "Reconstructive",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationArtifactSuccession {
     PreserveWhenEquivalent,
     Replace,
     Recompute,
+}
+
+impl ApplicationArtifactSuccession {
+    /// Names this succession posture in the durable canonical manifest record
+    /// that the program revision digests.
+    ///
+    /// The token is decided here rather than derived from the Rust variant
+    /// spelling, so renaming a variant is a compile-time-visible decision
+    /// instead of a silent change of every program's content identity.
+    pub const fn canonical_token(self) -> &'static str {
+        match self {
+            Self::PreserveWhenEquivalent => "PreserveWhenEquivalent",
+            Self::Replace => "Replace",
+            Self::Recompute => "Recompute",
+        }
+    }
 }
 
 /// Whether an application program has completed the cutover to governed derived outputs.

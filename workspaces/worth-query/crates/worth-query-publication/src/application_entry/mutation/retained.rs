@@ -5,8 +5,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
     ApplicationMutationScopeResolution,
 };
-use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
-use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
@@ -88,9 +87,9 @@ where
         })
     }
 
-    pub fn execute_retained_in_program<Program>(
+    pub fn execute_retained_in_program<Owner>(
         self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &'application Owner,
     ) -> Result<
         WorthQueryApplicationRetainedMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -99,7 +98,7 @@ where
         WorthQueryApplicationRequestMutationDenial,
     >
     where
-        Program: ApplicationProgramDefinition<Schema>,
+        Owner: WorthQueryProgramOwner<Schema>,
     {
         if !std::ptr::eq(application.runtime(), self.request.application) {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);

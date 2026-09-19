@@ -16,7 +16,9 @@ mod application_layout_lowering;
 mod capability_grant_join;
 mod continuation_ordering;
 mod installation_primitives;
+mod platform_entity_lowering;
 mod principal_binding;
+mod program_activation;
 mod provider_aftermath_causality;
 mod provider_dispatch_outbox;
 mod provider_idempotency;
@@ -33,15 +35,12 @@ pub(super) use installation_primitives::{
     contract_space_exhausted, invalid_member, kind_space_exhausted, planned_field_locator,
     relational_schema_denial, required_kind, valid_aspect_key, valid_field_key,
 };
+use platform_entity_lowering::lower_platform_entities;
 use principal_binding::lower_principal_bindings;
 pub(in crate::domain_computation) use principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
-pub(super) use provider_aftermath_causality::{
-    lower_provider_aftermath_causality, WorthQueryAftermathCausalityLayout,
-};
-use provider_dispatch_outbox::lower_provider_dispatch_outbox;
-use provider_idempotency::lower_provider_idempotency;
+pub(in crate::domain_computation::primary_graph) use program_activation::WorthQueryProgramActivationLayout;
+pub(super) use provider_aftermath_causality::WorthQueryAftermathCausalityLayout;
 pub(super) use provider_idempotency::WorthQueryProviderIdempotencyLayout;
-use provider_identity_allocator::allocate_provider_aspect_identities;
 use registry_lowering::{
     lower_application_contract_bindings, lower_kind_ids, next_provider_kind_id, register_entity,
     register_relation, relational_schema_basis,
@@ -63,6 +62,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     provider_idempotency: WorthQueryProviderIdempotencyLayout,
     provider_dispatch_outbox: WorthQueryDispatchOutboxLayout,
     provider_aftermath_causality: WorthQueryAftermathCausalityLayout,
+    program_activation: WorthQueryProgramActivationLayout,
 }
 
 #[derive(Clone, Debug)]
@@ -135,39 +135,12 @@ impl WorthQueryPrimaryGraphLayout {
             entity_kinds.values().copied(),
             relation_kinds.values().copied(),
         )?;
-        let provider_identities = allocate_provider_aspect_identities(native_contracts)?;
-        let (registry, provider_idempotency) = lower_provider_idempotency(
+        let (registry, platform_entities) = lower_platform_entities(
             registry,
             &schema_id,
             schema_version_id,
+            native_contracts,
             provider_kind,
-            provider_identities[0],
-        )?;
-        let dispatch_outbox_kind = KindId(
-            provider_kind
-                .0
-                .checked_add(1)
-                .ok_or_else(kind_space_exhausted)?,
-        );
-        let (registry, provider_dispatch_outbox) = lower_provider_dispatch_outbox(
-            registry,
-            &schema_id,
-            schema_version_id,
-            dispatch_outbox_kind,
-            provider_identities[1],
-        )?;
-        let aftermath_causality_kind = KindId(
-            dispatch_outbox_kind
-                .0
-                .checked_add(1)
-                .ok_or_else(kind_space_exhausted)?,
-        );
-        let (registry, provider_aftermath_causality) = lower_provider_aftermath_causality(
-            registry,
-            &schema_id,
-            schema_version_id,
-            aftermath_causality_kind,
-            provider_identities[2],
         )?;
         let principal_bindings = lower_principal_bindings(schema, &entity_kinds, &relation_kinds)?;
         let relation_layouts = lower_relation_layouts(schema, &entity_kinds, &relation_kinds)?;
@@ -201,9 +174,10 @@ impl WorthQueryPrimaryGraphLayout {
                 projection_field_keys,
                 continuation_orderings,
                 capability_grant_joins,
-                provider_idempotency,
-                provider_dispatch_outbox,
-                provider_aftermath_causality,
+                provider_idempotency: platform_entities.provider_idempotency,
+                provider_dispatch_outbox: platform_entities.provider_dispatch_outbox,
+                provider_aftermath_causality: platform_entities.provider_aftermath_causality,
+                program_activation: platform_entities.program_activation,
             },
             registry,
         ))
@@ -383,5 +357,11 @@ impl WorthQueryPrimaryGraphLayout {
         &mut self,
     ) -> &mut WorthQueryAftermathCausalityLayout {
         &mut self.provider_aftermath_causality
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn program_activation(
+        &self,
+    ) -> &WorthQueryProgramActivationLayout {
+        &self.program_activation
     }
 }

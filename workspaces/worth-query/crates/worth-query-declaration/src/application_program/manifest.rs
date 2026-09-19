@@ -1,4 +1,7 @@
-use super::ValidatedApplicationProgram;
+use super::{
+    ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
+    ApplicationProgramRuleDeclaration, ValidatedApplicationProgram,
+};
 
 /// Canonically ordered, read-only description of a validated program.
 ///
@@ -22,8 +25,29 @@ impl ApplicationProgramManifest {
 
 impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
     pub fn normalized_manifest(&self) -> ApplicationProgramManifest {
+        ApplicationProgramManifest::normalize(
+            self.identity().as_str(),
+            self.features(),
+            self.actions(),
+            self.connections(),
+            self.rules(),
+        )
+    }
+}
+
+impl ApplicationProgramManifest {
+    /// Normalizes the declared parts of one validated program. Validation mints
+    /// the canonical revision from exactly these records, so the manifest and
+    /// the revision can never describe different meaning.
+    pub(super) fn normalize(
+        program_identity: &str,
+        features: &[ApplicationFeatureDeclaration],
+        actions: &[ApplicationActionDeclaration],
+        connections: &[ApplicationConnectionDeclaration],
+        rules: &[ApplicationProgramRuleDeclaration],
+    ) -> Self {
         let mut records = Vec::new();
-        for feature in self.features() {
+        for feature in features {
             let owner = feature.composition_instance();
             records.push(format!(
                 "feature|{owner}|{}|version={}.{}",
@@ -56,15 +80,15 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
                 let resources = artifact.resource_ceiling();
                 records.push(format!(
                     "artifact|{owner}|{}|{}|output={}|locality={}:\
-                     {:?}|retention={:?}|reconstruction={:?}|required={}|\
+                     {}|retention={}|reconstruction={}|required={}|\
                      producer={}|dependencies={}|reuse={}|work={}|bytes={}|stopped={}",
                     feature.identity(),
                     artifact.identity(),
                     artifact.output(),
                     artifact.locality().identity(),
-                    artifact.locality().granule(),
-                    artifact.retention(),
-                    artifact.succession(),
+                    artifact.locality().granule().canonical_token(),
+                    artifact.retention().canonical_token(),
+                    artifact.succession().canonical_token(),
                     artifact.required(),
                     artifact.producer_family(),
                     dependencies.join(","),
@@ -77,7 +101,7 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
             for collection in feature.derived_collections() {
                 records.push(format!(
                     "collection|{owner}|{}|{}|contributor={}|grouping={}|measures={}|\
-                     lineage={}|applicability={}|incomplete={:?}|incremental={}",
+                     lineage={}|applicability={}|incomplete={}|incremental={}",
                     feature.identity(),
                     collection.identity(),
                     collection.contributor(),
@@ -85,7 +109,7 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
                     collection.measures(),
                     collection.lineage(),
                     collection.applicability(),
-                    collection.incomplete(),
+                    collection.incomplete().canonical_token(),
                     collection.incremental_update()
                 ));
             }
@@ -93,7 +117,7 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
                 let resources = computation.resources();
                 records.push(format!(
                     "computation|{owner}|{}|{}|input={}|output={}|partition={}|reuse={}|\
-                     stopped={}|execution={:?}|ordering={}|work={}|bytes={}",
+                     stopped={}|execution={}|ordering={}|work={}|bytes={}",
                     feature.identity(),
                     computation.identity(),
                     computation.input(),
@@ -101,14 +125,14 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
                     computation.partition(),
                     computation.reuse(),
                     computation.stopped(),
-                    computation.execution(),
+                    computation.execution().canonical_token(),
                     computation.ordering(),
                     resources.maximum_work(),
                     resources.maximum_retained_bytes()
                 ));
             }
         }
-        for action in self.actions() {
+        for action in actions {
             records.push(format!(
                 "action|{}|{}|input={}|conditional={}|required-output={}|\
                  authority=binding:{}|invariant={}|observation={}|locality={}|change={}|effect={}",
@@ -131,7 +155,7 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
                     .map_or("", |attachment| attachment.identity())
             ));
         }
-        records.extend(self.connections().iter().map(|connection| {
+        records.extend(connections.iter().map(|connection| {
             format!(
                 "connection|{}|{}:{}:{}|{}:{}:{}|required={}|exported={}",
                 connection.identity(),
@@ -145,20 +169,20 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
                 connection.exports_across_instances()
             )
         }));
-        records.extend(self.rules().iter().map(|rule| {
+        records.extend(rules.iter().map(|rule| {
             format!(
-                "invariant|{}|{}|version={}.{}|point={:?}|owner={}",
+                "invariant|{}|{}|version={}.{}|point={}|owner={}",
                 rule.composition_instance(),
                 rule.identity(),
                 rule.major(),
                 rule.minor(),
-                rule.execution_point(),
+                rule.execution_point().canonical_token(),
                 rule.local_owner().unwrap_or("")
             )
         }));
         records.sort_unstable();
-        ApplicationProgramManifest {
-            program_identity: self.identity().as_str().to_owned(),
+        Self {
+            program_identity: program_identity.to_owned(),
             records: records.into_boxed_slice(),
         }
     }

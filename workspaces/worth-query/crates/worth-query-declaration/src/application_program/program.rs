@@ -5,8 +5,10 @@ use crate::application_schema::ApplicationSchema;
 
 use super::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
-    ApplicationFeatureSpec, ApplicationProgramIdentity, ApplicationProgramOutputsShape,
-    ApplicationProgramRuleDeclaration, ApplicationProgramRulesShape,
+    ApplicationFeatureSpec, ApplicationProgramIdentity, ApplicationProgramManifest,
+    ApplicationProgramOutputsShape, ApplicationProgramRevision,
+    ApplicationProgramRevisionBudgetDenial, ApplicationProgramRuleDeclaration,
+    ApplicationProgramRulesShape,
 };
 
 mod definition_validation;
@@ -101,6 +103,7 @@ pub enum ApplicationProgramValidationDenialKind {
     MissingManagedComputationArtifact,
     InvalidManagedComputationResources,
     DuplicateDerivedCollection,
+    CanonicalRevisionBudgetExceeded,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -133,6 +136,7 @@ impl std::error::Error for ApplicationProgramValidationDenial {}
 /// Validated immutable program meaning consumed by installation.
 pub struct ValidatedApplicationProgram<Schema, Program> {
     identity: ApplicationProgramIdentity,
+    revision: ApplicationProgramRevision,
     features: Box<[ApplicationFeatureDeclaration]>,
     actions: Box<[ApplicationActionDeclaration]>,
     connections: Box<[ApplicationConnectionDeclaration]>,
@@ -143,6 +147,10 @@ pub struct ValidatedApplicationProgram<Schema, Program> {
 impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
     pub fn identity(&self) -> &ApplicationProgramIdentity {
         &self.identity
+    }
+    /// Canonical content identity minted when this meaning was validated.
+    pub fn revision(&self) -> &ApplicationProgramRevision {
+        &self.revision
     }
     pub fn features(&self) -> &[ApplicationFeatureDeclaration] {
         &self.features
@@ -315,12 +323,27 @@ where
             }
         }
     }
+    let identity = Program::IDENTITY.clone();
+    let features = features.into_boxed_slice();
+    let actions = actions.into_boxed_slice();
+    let connections = connections.into_boxed_slice();
+    let rules = rules.into_boxed_slice();
+    let manifest = ApplicationProgramManifest::normalize(
+        identity.as_str(),
+        &features,
+        &actions,
+        &connections,
+        &rules,
+    );
+    let revision = ApplicationProgramRevision::mint(&manifest)
+        .map_err(|budget| deny_canonical_revision_budget(&identity, budget))?;
     Ok(ValidatedApplicationProgram {
-        identity: Program::IDENTITY.clone(),
-        features: features.into_boxed_slice(),
-        actions: actions.into_boxed_slice(),
-        connections: connections.into_boxed_slice(),
-        rules: rules.into_boxed_slice(),
+        identity,
+        revision,
+        features,
+        actions,
+        connections,
+        rules,
         marker: PhantomData,
     })
 }
@@ -337,6 +360,18 @@ fn require_identity(identity: &str) -> Result<(), ApplicationProgramValidationDe
     } else {
         Ok(())
     }
+}
+
+/// Names an exceeded canonical revision budget as program validation meaning,
+/// so a program too large to identify is denied rather than silently hashed.
+pub(in crate::application_program) fn deny_canonical_revision_budget(
+    identity: &ApplicationProgramIdentity,
+    budget: ApplicationProgramRevisionBudgetDenial,
+) -> ApplicationProgramValidationDenial {
+    denial(
+        ApplicationProgramValidationDenialKind::CanonicalRevisionBudgetExceeded,
+        format!("{}: {budget}", identity.as_str()),
+    )
 }
 
 fn denial(

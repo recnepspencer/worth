@@ -133,14 +133,26 @@ where
         >,
         Source::Input: Clone + Send + Sync + 'static,
     {
+        let Some(presented) = self.presented_program() else {
+            return Ok((
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required(),
+                ),
+                None,
+            ));
+        };
         let source_preparation = self
             .runtime
             .output_demands
             .begin_source_preparation(program.product_branch().occurrence());
         match self
             .runtime
-            .compare_and_commit_application_for_required_output_source(program, idempotency)
-        {
+            .compare_and_commit_application_for_required_output_source(
+                &presented,
+                std::any::TypeId::of::<Source>(),
+                program,
+                idempotency,
+            ) {
             crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Committed(
                 mut receipt,
             ) => {
