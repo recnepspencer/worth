@@ -29,6 +29,7 @@ use crate::WorthUiScalarProjectionSourceRecord;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthUiStatusUpdateDenial {
     StaleRevision,
+    RevisionMismatch,
 }
 
 worth_query_structured_value_binding!(pub WorthUiStatusUpdateInputBinding for WorthUiScalarProjectionSourceRecord {

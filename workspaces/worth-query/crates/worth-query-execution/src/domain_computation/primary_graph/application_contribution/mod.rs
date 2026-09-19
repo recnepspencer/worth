@@ -1,4 +1,5 @@
 mod composition;
+mod computation;
 mod conditional;
 mod contracts;
 mod producer;
@@ -7,6 +8,14 @@ mod setup;
 pub use composition::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionTuple,
     WorthQueryConfiguredApplicationContributions,
+};
+pub use computation::{
+    WorthQueryCompletedManagedComputation, WorthQueryInstalledManagedComputation,
+    WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationCheckpointDenial,
+    WorthQueryManagedComputationDenial, WorthQueryManagedComputationExecution,
+    WorthQueryManagedComputationInterruption, WorthQueryManagedComputationOwner,
+    WorthQueryManagedComputationPrepared, WorthQueryManagedComputationResourceDenial,
+    WorthQueryPreparedManagedComputation,
 };
 pub use conditional::{
     WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,

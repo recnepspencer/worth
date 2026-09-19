@@ -37,6 +37,7 @@ pub(crate) struct UiSelectionRuntimeState {
 }
 
 impl UiSelectionRuntimeState {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn new_session_restore_candidate() -> Self {
         Self::new_session_restore_candidate_with_policy(
             crate::declaration::UiSelectionPolicy::single(),
@@ -135,6 +136,7 @@ impl UiSelectionRuntimeState {
         self.owners.get(&owner).map(|record| &record.selected)
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn selection_keys_visited(&self) -> u64 {
         self.candidates_visited
     }

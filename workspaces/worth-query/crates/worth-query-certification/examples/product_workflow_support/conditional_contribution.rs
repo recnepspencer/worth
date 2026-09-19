@@ -139,6 +139,9 @@ impl WorthQueryApplicationContribution<TemporalHostSchema> for TemporalHostContr
             ApplicationInvariantExecutionPoint::CommitBoundary,
             integrity::resolve_rule,
         )?;
+        setup.handler::<super::application_entry::AmendTemporalBinding, _>(
+            super::application_entry::AmendTemporalHandler,
+        )?;
         setup.conditional::<TemporalConditional>(configuration)
     }
 }

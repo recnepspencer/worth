@@ -1,16 +1,8 @@
-error[E0624]: method `restore_snapshot` is private
+error[E0599]: no method named `restore_snapshot` found for mutable reference `&mut SignalRuntime<(), (), (), ()>` in the current scope
  --> tests/ui/branch_reference/legacy_restore_is_private.rs:7:21
   |
-7 |       let _ = runtime.restore_snapshot(snapshot);
-  |                       ^^^^^^^^^^^^^^^^ private method
-  |
- ::: src/logic/transaction/runtime/state/branching/snapshotting.rs
-  |
-  | /     pub(crate) fn restore_snapshot(
-  | |         &mut self,
-  | |         snapshot: &SignalSnapshotV1,
-  | |     ) -> Result<(), SignalError> {
-  | |________________________________- private method defined here
+7 |     let _ = runtime.restore_snapshot(snapshot);
+  |                     ^^^^^^^^^^^^^^^^ method not found in `&mut SignalRuntime<(), (), (), ()>`
 
 error[E0624]: method `restore_branch_snapshot` is private
  --> tests/ui/branch_reference/legacy_restore_is_private.rs:8:21

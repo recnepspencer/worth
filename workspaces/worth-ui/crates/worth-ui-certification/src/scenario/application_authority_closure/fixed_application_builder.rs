@@ -225,6 +225,16 @@ impl FixedCertificationApplicationBuilder {
         Ok(Self::from_parts(builder, self.activation))
     }
 
+    pub fn register_application_scalar_projection(
+        self,
+        registration: worth_ui::facade::query_binding::UiApplicationScalarProjectionRegistration,
+    ) -> Result<Self, worth_ui::facade::query_binding::WorthUiProjectionRegistrationError> {
+        let builder = self
+            .builder
+            .register_application_scalar_projection(registration)?;
+        Ok(Self::from_parts(builder, self.activation))
+    }
+
     pub fn register_collection_projection(
         self,
         registration: worth_ui::facade::query_binding::UiCollectionProjectionRegistration,

@@ -377,7 +377,24 @@ where
     /// Closes ordinary live delivery without closing the authoritative graph.
     /// Later commits retain their compact idempotency causality but no longer
     /// enter this runtime's delivery ring.
-    pub fn close_live_delivery(&self) {
-        self.primary_provider.live_delivery.close();
+    pub fn close_live_delivery(&self) -> WorthQueryApplicationLiveDeliveryCloseReceipt {
+        WorthQueryApplicationLiveDeliveryCloseReceipt {
+            remaining_live_consumers: self.primary_provider.live_delivery.close(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WorthQueryApplicationLiveDeliveryCloseReceipt {
+    remaining_live_consumers: usize,
+}
+
+impl WorthQueryApplicationLiveDeliveryCloseReceipt {
+    pub const fn remaining_live_consumers(self) -> usize {
+        self.remaining_live_consumers
+    }
+
+    pub const fn owner_terminal(self) -> bool {
+        self.remaining_live_consumers == 0
     }
 }

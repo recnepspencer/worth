@@ -46,7 +46,6 @@ fn publish_scoped_delta(
         .prepare_direct_cause_publication(prepared, projection, false, &mut work)
         .unwrap();
     graph.publish_direct_output_causes(prepared).unwrap();
-    graph.cause_sets.publish_output_commit(delta);
     ordinal
 }
 

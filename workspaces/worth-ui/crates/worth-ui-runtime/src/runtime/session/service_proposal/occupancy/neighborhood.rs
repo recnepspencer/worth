@@ -31,10 +31,12 @@ impl UiServiceProposalOccupancyNeighborhoodIndex {
         }
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(super) const fn foreign_neighborhoods_examined(&self) -> u64 {
         self.foreign_neighborhoods_examined
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(super) fn neighborhood_count(&self) -> usize {
         self.neighborhoods.len()
     }

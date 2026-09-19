@@ -53,6 +53,7 @@ pub(in crate::runtime) enum UiServiceRequestOrigin {
     #[cfg(test)]
     Rebind,
     ServiceContinuation,
+    #[cfg(any(test, feature = "certification-support"))]
     RuntimePolicy,
     #[cfg(test)]
     Teardown,

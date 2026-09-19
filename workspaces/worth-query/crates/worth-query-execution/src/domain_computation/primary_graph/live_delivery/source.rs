@@ -362,11 +362,17 @@ impl WorthQueryLiveDeliverySource {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn close(&self) {
-        self.state
+    pub(in crate::domain_computation::primary_graph) fn close(&self) -> usize {
+        let mut state = self
+            .state
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .closed = true;
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.closed = true;
+        state
+            .partitions
+            .values()
+            .map(|partition| partition.subscriber_count)
+            .sum()
     }
 
     #[cfg(feature = "test-world-operation-control")]

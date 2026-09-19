@@ -53,7 +53,7 @@ const BOUNDARIES: &[DirtyEvidenceBoundary] = &[
     DirtyEvidenceBoundary {
         owner: "graph storage transitions",
         source: include_str!("../../../../data/graph/storage/entries/transitions.rs"),
-        required_symbols: &["dirty_aspects", "merge_dirty_partition_scopes"],
+        required_symbols: &["transition_node_dirty", "transition_node_clean"],
     },
     DirtyEvidenceBoundary {
         owner: "graph invalidation authority",

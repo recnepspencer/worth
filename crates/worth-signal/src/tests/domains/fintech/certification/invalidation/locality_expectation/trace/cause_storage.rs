@@ -47,14 +47,5 @@ impl ExpectedTrace {
             .checked_add(1)
             .expect("expected cause-set generation overflow");
         self.free_cause_slots.push(index);
-        let occupied = self.pending_cause_slots.len();
-        if self.cause_slot_generations.len().saturating_sub(occupied) > occupied {
-            self.cause_store_generation = self.cause_store_generation.wrapping_add(1);
-            self.cause_slot_generations = vec![self.cause_store_generation; occupied];
-            self.free_cause_slots.clear();
-            for (index, slot) in self.pending_cause_slots.values_mut().enumerate() {
-                *slot = (index as u32, u64::from(self.cause_store_generation));
-            }
-        }
     }
 }

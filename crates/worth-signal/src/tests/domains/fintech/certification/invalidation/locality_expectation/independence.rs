@@ -18,7 +18,7 @@ const PURE_WORLD_OWNERS: &[&str] = &[
     "positions",
 ];
 const ORACLE_CLOSURE_DIGEST: &str =
-    "018dc4e4f89343579508d764682f2cec62d177cccabb45a4b2c6b1563c26b9ba";
+    "609c208becd1af0d08db662890e7922081d1d62a97bdeda44869f2457740f052";
 const PURE_WORLD_CLOSURE_DIGEST: &str =
     "655b53ad30ce7fdd902848e766041deb9771a40e04b85abc3bdcd511507f02e9";
 

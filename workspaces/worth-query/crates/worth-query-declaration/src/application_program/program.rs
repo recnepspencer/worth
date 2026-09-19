@@ -5,10 +5,14 @@ use crate::application_schema::ApplicationSchema;
 
 use super::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
-    ApplicationProgramActionsShape, ApplicationProgramFeaturesShape, ApplicationProgramIdentity,
-    ApplicationProgramOutputsShape, ApplicationProgramRuleDeclaration,
-    ApplicationProgramRulesShape,
+    ApplicationFeatureSpec, ApplicationProgramIdentity, ApplicationProgramOutputsShape,
+    ApplicationProgramRuleDeclaration, ApplicationProgramRulesShape,
 };
+
+mod definition_validation;
+mod dependency_graph;
+use definition_validation::validate_features_and_actions;
+use dependency_graph::require_acyclic_connections;
 
 /// Complete authored static program definition.
 pub trait ApplicationProgramDefinition<Schema>: Sized + 'static
@@ -18,15 +22,17 @@ where
     /// Exact root contribution tuple whose generated slots implement this
     /// program. Installation must consume this tuple before exposing a root.
     type Contributions;
-    /// Complete feature-owned action inventory for this program.
-    type Actions: ApplicationProgramActionsShape<Schema>;
-    /// Complete feature inventory and each feature's authored input ports.
-    type Features: ApplicationProgramFeaturesShape<Schema>;
     /// Complete transitive output topology used by the installed executor.
     type Outputs: super::ApplicationProgramOutputsShape<Schema>;
     /// Complete scoped invariant inventory owned by this composition.
     type Rules: ApplicationProgramRulesShape<Schema>;
     const IDENTITY: ApplicationProgramIdentity;
+    const DERIVED_ARTIFACT_GOVERNANCE: super::ApplicationDerivedArtifactGovernance =
+        super::ApplicationDerivedArtifactGovernance::Compatible;
+
+    /// Complete feature inventory with every action attached to its owning
+    /// feature occurrence.
+    fn feature_specs() -> Vec<ApplicationFeatureSpec>;
 }
 
 /// Phase 1 authoring progression. Validation is unavailable until its typed
@@ -80,9 +86,21 @@ pub enum ApplicationProgramValidationDenialKind {
     DanglingFeature,
     MissingRequiredInput,
     DuplicateInputBinding,
+    DuplicateOutput,
+    DuplicateDerivedArtifact,
+    AmbiguousDerivedArtifactProducer,
+    UndeclaredOutput,
+    UndeclaredArtifactOutput,
     UndeclaredInput,
     UnexportedCrossInstanceConnection,
+    CyclicConnection,
     DuplicateRule,
+    IncompleteActionChangeContract,
+    UngovernedDerivedOutput,
+    DuplicateManagedComputation,
+    MissingManagedComputationArtifact,
+    InvalidManagedComputationResources,
+    DuplicateDerivedCollection,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -149,51 +167,14 @@ where
     Program: ApplicationProgramDefinition<Schema>,
 {
     require_identity(Program::IDENTITY.as_str())?;
-    let features = Program::Features::features();
-    let mut feature_ids = BTreeSet::new();
-    for feature in &features {
-        require_identity(feature.composition_instance())?;
-        require_identity(feature.identity())?;
-        if !feature_ids.insert((feature.composition_instance(), feature.identity())) {
-            return Err(denial(
-                ApplicationProgramValidationDenialKind::DuplicateFeature,
-                feature.identity(),
-            ));
-        }
-        let mut input_ids = BTreeSet::new();
-        for input in feature.inputs() {
-            require_identity(input.identity())?;
-            if !input_ids.insert(input.identity()) {
-                return Err(denial(
-                    ApplicationProgramValidationDenialKind::DuplicateInputBinding,
-                    format!("{}.{}", feature.identity(), input.identity()),
-                ));
-            }
-        }
+    let mut features = Vec::new();
+    let mut actions = Vec::new();
+    for spec in Program::feature_specs() {
+        let (feature, spec_actions) = spec.into_parts();
+        features.push(feature);
+        actions.extend(spec_actions);
     }
-    let actions = Program::Actions::actions();
-    let mut action_ids = BTreeSet::new();
-    for action in &actions {
-        require_identity(action.composition_instance())?;
-        require_identity(action.feature())?;
-        require_identity(action.binding())?;
-        if !feature_ids.contains(&(action.composition_instance(), action.feature())) {
-            return Err(denial(
-                ApplicationProgramValidationDenialKind::DanglingFeature,
-                action.feature(),
-            ));
-        }
-        if !action_ids.insert((
-            action.composition_instance(),
-            action.feature(),
-            action.action_type(),
-        )) {
-            return Err(denial(
-                ApplicationProgramValidationDenialKind::DuplicateAction,
-                action.binding(),
-            ));
-        }
-    }
+    let feature_ids = validate_features_and_actions(&features, &actions)?;
     let mut rule_ids = BTreeSet::new();
     for rule in &rules {
         require_identity(rule.composition_instance())?;
@@ -249,6 +230,27 @@ where
                 connection.identity(),
             ));
         }
+        let source = features
+            .iter()
+            .find(|feature| {
+                feature.composition_instance() == connection.source_instance()
+                    && feature.identity() == connection.source_feature()
+            })
+            .expect("the source feature was proven present");
+        if !source
+            .outputs()
+            .iter()
+            .any(|output| output.identity() == connection.source_port())
+        {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::UndeclaredOutput,
+                format!(
+                    "{}.{}",
+                    connection.source_feature(),
+                    connection.source_port()
+                ),
+            ));
+        }
         if connection.source_instance() != connection.target_instance()
             && !connection.exports_across_instances()
         {
@@ -264,6 +266,19 @@ where
                     && feature.identity() == connection.target_feature()
             })
             .expect("the target feature was proven present");
+        if Program::DERIVED_ARTIFACT_GOVERNANCE
+            == super::ApplicationDerivedArtifactGovernance::Required
+            && target.derived_artifacts().is_empty()
+        {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::UngovernedDerivedOutput,
+                format!(
+                    "{}.{}",
+                    connection.target_instance(),
+                    connection.target_feature()
+                ),
+            ));
+        }
         if !target.inputs().iter().any(|input| {
             input.identity() == connection.target_port()
                 && input.required() == connection.target_required()
@@ -288,6 +303,7 @@ where
             ));
         }
     }
+    require_acyclic_connections(&features, &connections)?;
     for feature in &features {
         for input in feature.required_inputs() {
             if !bound_inputs.contains(&(feature.composition_instance(), feature.identity(), input))

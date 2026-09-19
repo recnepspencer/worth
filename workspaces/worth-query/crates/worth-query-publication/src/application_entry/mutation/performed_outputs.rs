@@ -174,6 +174,29 @@ where
         )
     }
 
+    pub fn settle(
+        &mut self,
+        request: &crate::application_entry::WorthQueryApplicationRequest<
+            'application,
+            '_,
+            '_,
+            Schema,
+        >,
+    ) -> Result<
+        WorthQueryApplicationProgramOutputProgress<
+            Query<Schema, RootDemand<Schema, Root>>,
+        >,
+        crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
+    > {
+        for _ in 0..self.controls.maximum_work().get() {
+            let progress = self.advance(request)?;
+            if matches!(progress, WorthQueryApplicationProgramOutputProgress::Settled(_)) {
+                return Ok(progress);
+            }
+        }
+        Ok(WorthQueryApplicationProgramOutputProgress::Pending)
+    }
+
     pub fn advance(
         &mut self,
         request: &crate::application_entry::WorthQueryApplicationRequest<

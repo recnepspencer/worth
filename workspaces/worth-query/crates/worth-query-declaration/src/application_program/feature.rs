@@ -2,6 +2,10 @@ use std::marker::PhantomData;
 
 use crate::application_schema::{ApplicationSchema, ApplicationStructuredValueBinding};
 
+mod authoring;
+
+pub use authoring::{ApplicationFeatureSpec, ApplicationFeatureSpecBuilder};
+
 /// One semantic feature participating in an application program.
 pub trait ApplicationFeature<Schema>: Sized + 'static
 where
@@ -62,15 +66,21 @@ impl<Schema, Feature, Port> Default for ApplicationPortRef<Schema, Feature, Port
 pub struct ApplicationFeatureDeclaration {
     composition_instance: &'static str,
     identity: &'static str,
+    feature_type: std::any::TypeId,
     major: u16,
     minor: u16,
     inputs: Box<[ApplicationFeatureInputDeclaration]>,
+    outputs: Box<[ApplicationFeatureOutputDeclaration]>,
+    derived_artifacts: Box<[super::ApplicationDerivedArtifactDeclaration]>,
+    derived_collections: Box<[super::ApplicationDerivedCollectionDeclaration]>,
+    managed_computations: Box<[super::ApplicationManagedComputationDeclaration]>,
 }
 
 impl ApplicationFeatureDeclaration {
     pub(super) fn new(
         composition_instance: &'static str,
         identity: &'static str,
+        feature_type: std::any::TypeId,
         major: u16,
         minor: u16,
         inputs: Vec<ApplicationFeatureInputDeclaration>,
@@ -78,9 +88,14 @@ impl ApplicationFeatureDeclaration {
         Self {
             composition_instance,
             identity,
+            feature_type,
             major,
             minor,
             inputs: inputs.into_boxed_slice(),
+            outputs: Box::new([]),
+            derived_artifacts: Box::new([]),
+            derived_collections: Box::new([]),
+            managed_computations: Box::new([]),
         }
     }
 
@@ -90,6 +105,10 @@ impl ApplicationFeatureDeclaration {
 
     pub const fn identity(&self) -> &'static str {
         self.identity
+    }
+
+    pub const fn feature_type(&self) -> std::any::TypeId {
+        self.feature_type
     }
 
     pub const fn major(&self) -> u16 {
@@ -109,6 +128,47 @@ impl ApplicationFeatureDeclaration {
             .iter()
             .filter(|input| input.required())
             .map(ApplicationFeatureInputDeclaration::identity)
+    }
+
+    pub fn outputs(&self) -> &[ApplicationFeatureOutputDeclaration] {
+        &self.outputs
+    }
+
+    pub(super) fn set_outputs(&mut self, outputs: Vec<ApplicationFeatureOutputDeclaration>) {
+        self.outputs = outputs.into_boxed_slice();
+    }
+
+    pub fn derived_artifacts(&self) -> &[super::ApplicationDerivedArtifactDeclaration] {
+        &self.derived_artifacts
+    }
+
+    pub(super) fn set_derived_artifacts(
+        &mut self,
+        artifacts: Vec<super::ApplicationDerivedArtifactDeclaration>,
+    ) {
+        self.derived_artifacts = artifacts.into_boxed_slice();
+    }
+
+    pub fn derived_collections(&self) -> &[super::ApplicationDerivedCollectionDeclaration] {
+        &self.derived_collections
+    }
+
+    pub(super) fn set_derived_collections(
+        &mut self,
+        collections: Vec<super::ApplicationDerivedCollectionDeclaration>,
+    ) {
+        self.derived_collections = collections.into_boxed_slice();
+    }
+
+    pub fn managed_computations(&self) -> &[super::ApplicationManagedComputationDeclaration] {
+        &self.managed_computations
+    }
+
+    pub(super) fn set_managed_computations(
+        &mut self,
+        computations: Vec<super::ApplicationManagedComputationDeclaration>,
+    ) {
+        self.managed_computations = computations.into_boxed_slice();
     }
 }
 
@@ -132,13 +192,23 @@ impl ApplicationFeatureInputDeclaration {
     }
 }
 
-/// One feature whose input-port inventory is owned by the feature declaration.
-pub struct ApplicationFeatureRef<Schema, Feature> {
-    marker: PhantomData<fn() -> (Schema, Feature)>,
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationFeatureOutputDeclaration {
+    identity: &'static str,
+}
+
+impl ApplicationFeatureOutputDeclaration {
+    pub(super) const fn new(identity: &'static str) -> Self {
+        Self { identity }
+    }
+
+    pub const fn identity(&self) -> &'static str {
+        self.identity
+    }
 }
 
 /// One semantic feature installed at an explicit composition-instance path.
-pub struct ApplicationFeatureInstanceRef<Schema, Instance, Feature> {
+pub(crate) struct ApplicationFeatureInstanceRef<Schema, Instance, Feature> {
     marker: PhantomData<fn() -> (Schema, Instance, Feature)>,
 }
 
@@ -149,20 +219,13 @@ pub struct ApplicationFeatureInputList<Port, Tail> {
 
 pub struct ApplicationFeatureInputLeaf;
 
-/// One feature followed by the remaining features in a program.
-pub struct ApplicationFeatureList<Head, Tail> {
-    marker: PhantomData<fn() -> (Head, Tail)>,
-}
-
-pub struct ApplicationFeatureLeaf;
-
 mod sealed {
     pub trait FeatureShape {}
     pub trait FeatureInputsShape {}
-    pub trait ProgramFeaturesShape {}
 }
 
-pub trait ApplicationFeatureShape<Schema>: sealed::FeatureShape + Sized + 'static
+pub(crate) trait ApplicationFeatureShape<Schema>:
+    sealed::FeatureShape + Sized + 'static
 where
     Schema: ApplicationSchema,
 {
@@ -178,37 +241,9 @@ where
     fn append_inputs(inputs: &mut Vec<ApplicationFeatureInputDeclaration>);
 }
 
-pub trait ApplicationProgramFeaturesShape<Schema>:
-    sealed::ProgramFeaturesShape + Sized + 'static
-where
-    Schema: ApplicationSchema,
-{
-    fn features() -> Vec<ApplicationFeatureDeclaration>;
-}
-
-impl<Schema, Feature> sealed::FeatureShape for ApplicationFeatureRef<Schema, Feature> {}
-
 impl<Schema, Instance, Feature> sealed::FeatureShape
     for ApplicationFeatureInstanceRef<Schema, Instance, Feature>
 {
-}
-
-impl<Schema, Feature> ApplicationFeatureShape<Schema> for ApplicationFeatureRef<Schema, Feature>
-where
-    Schema: ApplicationSchema + 'static,
-    Feature: ApplicationFeature<Schema>,
-{
-    fn declaration() -> ApplicationFeatureDeclaration {
-        let mut inputs = Vec::new();
-        Feature::Inputs::append_inputs(&mut inputs);
-        ApplicationFeatureDeclaration::new(
-            <super::ApplicationRootComposition as super::ApplicationCompositionInstance>::PATH,
-            Feature::IDENTITY,
-            Feature::MAJOR,
-            Feature::MINOR,
-            inputs,
-        )
-    }
 }
 
 impl<Schema, Instance, Feature> ApplicationFeatureShape<Schema>
@@ -224,6 +259,7 @@ where
         ApplicationFeatureDeclaration::new(
             Instance::PATH,
             Feature::IDENTITY,
+            std::any::TypeId::of::<Feature>(),
             Feature::MAJOR,
             Feature::MINOR,
             inputs,
@@ -257,32 +293,5 @@ where
             Port::REQUIRED,
         ));
         Tail::append_inputs(inputs);
-    }
-}
-
-impl sealed::ProgramFeaturesShape for ApplicationFeatureLeaf {}
-
-impl<Schema> ApplicationProgramFeaturesShape<Schema> for ApplicationFeatureLeaf
-where
-    Schema: ApplicationSchema,
-{
-    fn features() -> Vec<ApplicationFeatureDeclaration> {
-        Vec::new()
-    }
-}
-
-impl<Head, Tail> sealed::ProgramFeaturesShape for ApplicationFeatureList<Head, Tail> {}
-
-impl<Schema, Head, Tail> ApplicationProgramFeaturesShape<Schema>
-    for ApplicationFeatureList<Head, Tail>
-where
-    Schema: ApplicationSchema,
-    Head: ApplicationFeatureShape<Schema>,
-    Tail: ApplicationProgramFeaturesShape<Schema>,
-{
-    fn features() -> Vec<ApplicationFeatureDeclaration> {
-        let mut features = vec![Head::declaration()];
-        features.extend(Tail::features());
-        features
     }
 }

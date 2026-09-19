@@ -72,7 +72,7 @@ fn four_method_port_matrix_moves_populated_owner_state_with_exact_cost() {
     );
     assert_eq!(
         after.branch_registry_lookups(),
-        before.branch_registry_lookups() + 5
+        before.branch_registry_lookups() + 6
     );
     assert_eq!(
         after.branch_registry_reservations(),

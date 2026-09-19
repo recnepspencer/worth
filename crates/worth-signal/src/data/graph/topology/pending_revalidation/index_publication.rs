@@ -27,6 +27,33 @@ impl PreparedPendingRevalidationResolution {
 }
 
 impl PreparedPendingRevalidationIndex {
+    pub(in crate::data::graph) fn for_replacement(
+        graph: &SignalGraph,
+        consumer: NodeId,
+        previous: &[NodeId],
+        current: &[NodeId],
+    ) -> Self {
+        let mut buckets = BTreeMap::new();
+        for &producer in previous.iter().chain(current) {
+            if buckets.contains_key(&producer) {
+                continue;
+            }
+            let mut waiters = graph
+                .topology
+                .pending_revalidation_waiters
+                .get(&producer)
+                .cloned()
+                .unwrap_or_default();
+            if current.contains(&producer) {
+                waiters.insert(consumer);
+            } else {
+                waiters.remove(&consumer);
+            }
+            buckets.insert(producer, waiters);
+        }
+        Self { buckets }
+    }
+
     /// Storage work is admitted by the enclosing output packet before any write.
     pub(crate) fn publish(self, graph: &mut SignalGraph) {
         for (producer, waiters) in self.buckets {

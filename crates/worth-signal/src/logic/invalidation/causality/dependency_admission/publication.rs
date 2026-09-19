@@ -87,15 +87,8 @@ impl SignalGraph {
         waiter_preparation_work::map_insert(work, 0)
             .map_err(PendingRevalidationPreparationDenial::into_signal_error)?;
         let mut projections = BTreeMap::from([(admission.producer, producer)]);
-        waiter_preparation_work::reserve(
-            work,
-            admission
-                .replacements
-                .len()
-                .checked_mul(std::mem::size_of::<super::PreparedConsumerCauseSet>())
-                .filter(|bytes| *bytes <= isize::MAX as usize),
-        )
-        .map_err(PendingRevalidationPreparationDenial::into_signal_error)?;
+        waiter_preparation_work::reserve(work, Some(admission.replacements.len()))
+            .map_err(PendingRevalidationPreparationDenial::into_signal_error)?;
         let mut replacements = Vec::with_capacity(admission.replacements.len());
         for replacement in admission.replacements {
             work.visit()

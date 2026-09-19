@@ -122,13 +122,11 @@ impl PlatformPulseApplicationRuntime {
                         return;
                     }
                 }
-                Ok(crate::query_source::PlatformPulseQueryActionOutcome::Indeterminate {
-                    detail,
-                }) => {
+                Ok(crate::query_source::PlatformPulseQueryActionOutcome::Indeterminate(cause)) => {
                     let report = PlatformPulseQueryActionObservation::indeterminate(
                         reference,
                         action_input_revision,
-                        detail,
+                        cause.to_string(),
                     );
                     if !request.settle_indeterminate() {
                         self.fail_intent_settlement(

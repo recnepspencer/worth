@@ -39,6 +39,28 @@ impl WorthQueryApplicationReadObservation {
         Self::new(Arc::clone(&self.retained))
     }
 
+    /// Begins non-authoritative preview custody from this exact retained
+    /// occurrence. The returned session carries no publication authority.
+    pub fn begin_preview<Schema, Program>(
+        &self,
+        application: &worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<
+            Schema,
+            Program,
+        >,
+        request: worth_query_execution::facade::application_installation::WorthQueryApplicationPreviewRequest,
+    ) -> Result<
+        worth_query_execution::facade::application_installation::WorthQueryApplicationPreviewSession,
+        worth_query_execution::facade::application_installation::WorthQueryApplicationPreviewReadmissionDenial,
+    >
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<
+            Schema,
+        >,
+    {
+        application.begin_preview(&self.retained, request)
+    }
+
     pub(super) fn retained_clone(&self) -> Self {
         Self::new(Arc::clone(&self.retained))
     }

@@ -68,25 +68,6 @@ use `background use linear_gradient token(...)`. Hover may select a separate
 solid-color slot, but one slot cannot claim both kinds. Foreground and Backdrop
 backgrounds do not accept gradients.
 
-## DSL Authoring
-
-The DSL lowers to the same sealed role and attachment meaning. This excerpt is
-compiled as part of the real Pulse source journey:
-
-<!-- compiled-example:appearance-role-dsl -->
-```text
-appearance role platform.pulse.appearance.query_card
-    applies_to platform.pulse.component.query_card {
-  background use token(theme.platform_pulse.raised_surface)
-  border use token(theme.platform_pulse.border.query_card)
-  radius use token(theme.platform_pulse.radius.query_card)
-}
-
-component platform.pulse.component.query_card {
-  appearance { role platform.pulse.appearance.query_card }
-}
-```
-
 Unknown roles, duplicate or overlapping partition cells, incomplete partitions,
 wrong-kind slot values, missing slots, incompatible successor definitions, and
 wrong-component attachments are typed denials. Invalid source edits retain the

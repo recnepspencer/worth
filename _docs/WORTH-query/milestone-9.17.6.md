@@ -122,6 +122,14 @@ The oracle states required subjects from the independent authored requirement mo
 not by enumerating whatever assessment outputs currently exist. Inspect actual
 publication results, source versions and product output; log text alone cannot prove it.
 
+Collect one required signature as soon as its declared subject is ready, before the
+control-flow point that consumes it. Advance, navigate Back and reach that point again:
+unchanged compatible evidence remains available. Edit one covered subject in a
+multi-subject proposal and invalidate only its affected coverage; an unrelated edit
+preserves the independent evidence. A new transition occurrence alone does not stale
+evidence. Fresh authentication is bound to the exact signing intent and its declared
+age/reuse policy; stale or differently purposed authentication cannot sign.
+
 ### Definitions, forks and program changes
 
 Start instance I on definition A in branch X. Publish definition B on X. New instance J
@@ -317,6 +325,14 @@ inputs to transition admission.
 | Bounded back edge | Explicit retry/revision reason, attempt bound and retained state | A new transition occurrence; cannot reuse changed intent under an old key |
 | Terminal | Declared complete, rejected, cancelled or recovery-pending posture | Exact result and remaining owner custody, not discarded resources |
 
+Subject assignment, evidence collection and evidence consumption are separate facts.
+Evidence may be collected before its consuming control-flow point once the declared
+subject and dependencies are ready. Navigation or a new transition occurrence does
+not itself revise that subject or invalidate compatible evidence; only a changed
+covered dependency, contract, policy or explicit expiry does. Multi-subject proposals
+track coverage per subject and dependency scope rather than treating the proposal as
+one all-or-nothing evidence key.
+
 Every executable path has declared typed successors for relevant results. Values
 from one conditional arm are unavailable in another unless a typed join supplies
 them. Validation rejects reads of unproduced results, conflicting node identities,
@@ -389,12 +405,29 @@ separate assessments to settle without requiring identical latest World heads.
 Equal values are insufficient after native ABA. Required coverage is computed
 from the authored inventory/applicability, not supplied by the evidence rows.
 
-Approval binds instance identity/incarnation, definition revision, proposal revision,
-operation meaning, subjects/scope, required evidence and source footprint, approver,
-purpose, expiry and policy. Approve/reject are declared operations; caller booleans,
-role strings or edited database status fields cannot create an admitted approval.
+Approval binds instance identity/incarnation, definition revision, proposal identity,
+declared covered subject/dependency revisions, operation meaning, required evidence and
+source footprint, approver, purpose, expiry and policy. A policy that approves the
+whole proposal explicitly includes its complete revision in that coverage; narrower
+independent reviews do not acquire that coupling accidentally. Approve/reject are
+declared operations; caller booleans, role strings or edited database status fields
+cannot create an admitted approval.
 The application step checks current authority/revocation and complete evidence again
 at its owner handoff. A currently valid approval cannot override failed hard integrity.
+
+Evidence collection is admitted when its declared subject is ready; it need not wait
+for the workflow cursor to stand at the consuming node. Collection records assignment,
+subject/dependency coverage and evidence fact separately from later consumption.
+Back/navigation and creation of a later transition occurrence preserve compatible
+evidence because neither fact alone revises the subject. A multi-subject proposal
+records coverage per subject and dependency scope so a relevant edit invalidates the
+changed subject without discarding independent reviews or preserving approval for the
+changed part.
+
+Fresh-authentication evidence binds the exact signing intent, subject coverage,
+principal and declared maximum age/reuse policy. Authentication for another intent,
+an expired challenge or reuse beyond policy cannot authorize the signature even when
+the same principal and proposal are visible.
 
 Changing a proposal, consumed source, required inventory, applicable rule or semantic
 operation contract invalidates affected evidence. Unrelated branch/source edits do
@@ -660,6 +693,8 @@ semantic equivalence on this endpoint.
 Ship real authoring and instance command surfaces immediately. The first proof includes
 assessment rejection then retry, wrong-source approval, duplicate wake, denied apply,
 successful exact output and cleanup. No graph builder-only checkpoint.
+Collect one approval/evidence item before its consuming node and prove its exact signing
+intent, age and reuse policy are enforced at collection and consumption.
 The next phase trusts runtime-authored meaning producing actual admitted effects.
 
 ### Phase 2: Control flow, coverage and effect custody
@@ -669,6 +704,12 @@ Close the separate-assessment/ABA/new-required-subject sequence. Bind Bank's app
 payment definition to its existing operations and performed-publication-gated outbound
 effect contracts without introducing the new inbox. Exercise owner-unpublished,
 dispatch-pending and indeterminate existing postures through their current custody.
+
+Advance and navigate Back without revising the evidence subject, then consume the
+still-compatible early evidence. In one multi-subject proposal, change a reviewed
+subject and preserve an independent review for an unrelated subject while invalidating
+only the affected coverage. Prove a new transition occurrence alone does not invalidate
+evidence and stale or differently purposed authentication cannot sign.
 
 Complete authority revocation at waits, effect ceiling denial and resource admission.
 Remove any new client-authored workflow loops or manual receipt routing. Existing
@@ -752,6 +793,12 @@ canonical owner handoff. Enforce the same typed publication return path used by
 static graph features. Different live occurrences may share Rust types, so owner
 affinity tests remain necessary.
 
+Evidence acceptance distinguishes assignment, collection and consumption; proves
+early collection, Back/navigation preservation, transition-occurrence neutrality,
+per-subject selective invalidation and exact fresh-authentication intent/age/reuse.
+An implementation that keys validity only by current node, whole proposal revision or
+latest transition cannot pass.
+
 Bounds cover definition nodes/edges/bytes, validation visits, admitted step work,
 queued wakes, in-flight operations, retained evidence, history references, back-edge
 iterations and total deadline. Final-phase inbound bounds cover envelope bytes,
@@ -797,7 +844,9 @@ ledger, test-for-test system or new generic runtime is an acceptance substitute.
 Extend Query's existing ordinary-application-front-door guide with typed dynamic
 definitions, primitive builder/macro/component/command authoring equivalence, explicit
 control flow, publication/start, required evidence, approval, A/B revisions and
-instance actions. Its examples show CAD model graphs as workflow values rather than
+instance actions. Evidence examples cover early collection, per-subject coverage,
+Back/navigation, selective invalidation and signing-intent authentication policy.
+They show CAD model graphs as workflow values rather than
 one workflow node per geometric primitive. Host/decl READMEs link to compiled examples;
 AI_README locates definition/component expansion, publication preparation, compiled
 definition projection, per-transition admission, managed execution, branch adoption,

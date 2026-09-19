@@ -71,6 +71,40 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
     );
 }
 
+pub(super) fn assert_program_cannot_omit_a_required_binding() {
+    let configuration = (
+        TopologyConfiguration {
+            setup_calls: Arc::new(AtomicUsize::new(0)),
+            invariant_calls: Arc::new(AtomicUsize::new(0)),
+            invariant_probe: Arc::new(AtomicUsize::new(0)),
+            producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+        },
+        Arc::new(AtomicUsize::new(0)),
+    );
+    let limits = WorthQueryInMemoryApplicationLimits::new(
+        resources::world_resources(),
+        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
+        runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
+        primary_graph::SignalConditionalEvaluationBudget::development(),
+    );
+    let result = installation::in_memory_program(
+        crate::application_program::validated_omitted_program_binding(),
+        ConsumerSchema::declaration().expect("the contributed declaration is valid"),
+        configuration,
+        limits,
+        |_, _| Ok(()),
+    );
+    let denial = match result {
+        Err(installation::WorthQueryInMemoryApplicationDenial::Program(denial)) => denial,
+        Err(other) => panic!("expected omitted-binding denial, received {other}"),
+        Ok(_) => panic!("a program that omits a required installed binding was accepted"),
+    };
+    assert_eq!(
+        denial.subject(),
+        "undeclared program binding: worth.query.certification.planar-source-adjustment.v1"
+    );
+}
+
 pub(super) fn assert_required_output_source_cannot_be_an_action() {
     use worth_query_host::facade::declaration::application_program::ApplicationProgramAuthoring;
 
@@ -123,6 +157,107 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
         Err(other) => panic!("expected required-source action denial, received {other}"),
         Ok(_) => panic!("required output source was admitted as an ordinary action"),
     }
+}
+
+pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWorld) {
+    use crate::application_program::correspondence::{
+        OptionalAdjustmentCorrespondence, OptionalAdjustmentRow,
+    };
+    use worth_query_consumer_values::{PlanarOperation, PositiveLength};
+    use worth_query_host::facade::declaration::application_program::ApplicationOptionalMemberEdit;
+    use worth_query_topology_entry::{EditPlanar, PlanarEditBinding};
+
+    let correspondence = world
+        .application
+        .installed_program()
+        .repeated_optional_member::<
+            PlanarEditBinding<ConsumerSchema>,
+            OptionalAdjustmentCorrespondence,
+        >()
+        .expect("the program installs its declared row correspondence");
+    let first = correspondence.initialize(
+        &OptionalAdjustmentRow {
+            body_key: "row-a".to_owned(),
+            replacement_y: Some(PositiveLength::new(2).unwrap()),
+        },
+        "source-a".to_owned(),
+    );
+    assert_eq!(first.target(), "row-a");
+    assert_eq!(first.initial_member().map(PositiveLength::get), Some(2));
+    assert!(first
+        .apply(ApplicationOptionalMemberEdit::Unchanged)
+        .is_none());
+
+    let set = first
+        .apply(ApplicationOptionalMemberEdit::Set(
+            PositiveLength::new(3).unwrap(),
+        ))
+        .expect("an edit generates an action");
+    assert_eq!(set.required_source(), "source-a");
+    assert_eq!(set.input().scope_key, "row-a");
+    let PlanarOperation::Adjust(adjustments) = &set.input().operation else {
+        panic!("the correspondence generated the wrong operation")
+    };
+    assert_eq!(adjustments[0].body_key, "row-a");
+    assert_eq!(PositiveLength::get(&adjustments[0].replacement_y), 3);
+
+    let clear = first
+        .apply(ApplicationOptionalMemberEdit::Clear)
+        .expect("an explicit clear generates an action");
+    let PlanarOperation::Adjust(adjustments) = &clear.input().operation else {
+        panic!("the correspondence generated the wrong clear operation")
+    };
+    assert!(adjustments.is_empty());
+
+    let second = correspondence.initialize(
+        &OptionalAdjustmentRow {
+            body_key: "row-b".to_owned(),
+            replacement_y: None,
+        },
+        "source-b".to_owned(),
+    );
+    assert_eq!(second.target(), "row-b");
+    assert_eq!(second.initial_member(), None);
+    assert_eq!(second.required_source(), "source-b");
+
+    let external = world
+        .application
+        .installed_program()
+        .external_input_provider::<
+            EditPlanar,
+            crate::application_program::external_input::NeutralExternalProvider,
+        >()
+        .expect("the neutral external provider slot is installed on the action");
+    let provider = crate::application_program::external_input::NeutralExternalProvider::new(7);
+    let changed = external.resolve(&provider, "material").unwrap();
+    assert_eq!(changed.resolution().provenance(), &"neutral-catalog");
+    provider.change(8);
+    assert_eq!(
+        changed.admit(&provider).err(),
+        Some(crate::application_program::external_input::NeutralExternalDenial::Changed)
+    );
+    let removed = external.resolve(&provider, "material").unwrap();
+    provider.remove();
+    assert_eq!(
+        removed.admit(&provider).err(),
+        Some(crate::application_program::external_input::NeutralExternalDenial::Removed)
+    );
+    provider.change(9);
+    let invalid = external.resolve(&provider, "material").unwrap();
+    provider.invalidate();
+    assert_eq!(
+        invalid.admit(&provider).err(),
+        Some(crate::application_program::external_input::NeutralExternalDenial::Invalid)
+    );
+    provider.change(10);
+    let admitted = external
+        .resolve(&provider, "material")
+        .unwrap()
+        .admit(&provider)
+        .unwrap()
+        .into_resolution();
+    assert_eq!(admitted.values(), &10);
+    assert_eq!(admitted.revision(), &10);
 }
 
 pub(super) fn install_with_candidate_bytes(

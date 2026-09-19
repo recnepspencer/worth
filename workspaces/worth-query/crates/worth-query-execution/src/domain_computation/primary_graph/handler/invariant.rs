@@ -123,4 +123,12 @@ where
             Err(HandlerInterruption::from(interruption))
         })
     }
+
+    pub fn managed_computation_execution(
+        &self,
+    ) -> crate::domain_computation::primary_graph::WorthQueryManagedComputationExecution<'_> {
+        crate::domain_computation::primary_graph::WorthQueryManagedComputationExecution::new(
+            self.request,
+        )
+    }
 }

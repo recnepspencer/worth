@@ -16,7 +16,7 @@ use worth_query_execution::facade::application_installation::WorthQueryProgramAp
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationProjection, WorthQueryApplicationRequiredOutputConnection,
-    WorthQueryPreparedRequiredOutputSource,
+    WorthQueryApplicationRequiredOutputSource, WorthQueryPreparedRequiredOutputSource,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -49,8 +49,9 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-    RootConnection<Schema, Root>:
-        WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
+    RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Intent::Binding:
+        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     Performed(WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program, Root>),
     /// The source publication committed before required-output custody could
@@ -76,8 +77,9 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-    RootConnection<Schema, Root>:
-        WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
+    RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Intent::Binding:
+        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     receipt: WorthQueryApplicationCommitReceipt,
     result: MutationResult<Schema, Intent>,
@@ -98,8 +100,9 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-    RootConnection<Schema, Root>:
-        WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
+    RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Intent::Binding:
+        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     /// Exact committed source evidence required to re-enter owner-held output custody.
     pub const fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
@@ -115,8 +118,9 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-    RootConnection<Schema, Root>:
-        WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
+    RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Intent::Binding:
+        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     receipt: WorthQueryApplicationCommitReceipt,
     result: MutationResult<Schema, Intent>,
@@ -136,8 +140,9 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-    RootConnection<Schema, Root>:
-        WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
+    RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Intent::Binding:
+        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     pub const fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.receipt
@@ -166,8 +171,9 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-    RootConnection<Schema, Root>:
-        WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
+    RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Intent::Binding:
+        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     performed: WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program, Root>,
     denial: WorthQueryRequiredOutputPreparationDenial,
@@ -181,8 +187,9 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-    RootConnection<Schema, Root>:
-        WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
+    RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Intent::Binding:
+        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     pub const fn denial(&self) -> &WorthQueryRequiredOutputPreparationDenial {
         &self.denial
@@ -243,8 +250,9 @@ where
         Program: ApplicationProgramDefinition<Schema>,
         Program::Outputs: ApplicationProgramOutputsShape<Schema>,
         Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-        RootConnection<Schema, Root>:
-            WorthQueryApplicationRequiredOutputConnection<Schema, Source = Intent::Binding>,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Intent::Binding:
+        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
         <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
             ApplicationQueryIntent<Schema, Binding = DemandSource<Schema, Root>>,
         <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ScopeBinding:
@@ -271,11 +279,11 @@ where
         if !application.contains_output_root::<Root>() {
             return Err(WorthQueryPerformedMutationExecutionDenial::UndeclaredOutputRoot);
         }
-        let demand =
-            <RootConnection<Schema, Root> as WorthQueryApplicationRequiredOutputConnection<
-                Schema,
-            >>::demand_from_source(self.request.intent.input())
-            .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
+        let demand = <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
+            Schema,
+            RootConnection<Schema, Root>,
+        >>::demand_from_source(self.request.intent.input())
+        .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
         let preparation_failure = std::cell::RefCell::new(None);
         let prepared_source = std::cell::RefCell::new(None);
         let outcome = self

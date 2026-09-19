@@ -34,20 +34,7 @@ pub use worth_ui_runtime::facade::query_binding::{
     WorthUiQueryViewIdentityError, WorthUiQueryViewLifecycle, WorthUiQueryViewRegistration,
     WorthUiQueryViewShape, WorthUiRecord, WorthUiScalarProjectionActionEvidence,
     WorthUiScalarProjectionActionPreconditionDenial, WorthUiScalarProjectionSourceRecord,
-    WorthUiStatusActionExecution, WorthUiStatusActionOutcome, WorthUiStatusActionRequest,
-    WorthUiStatusSourceOwner,
-};
-
-#[cfg(any(test, feature = "certification-support"))]
-pub use worth_ui_runtime::facade::query_binding::{
-    WorthUiQueryHostInstallationRequest, WorthUiScalarProjectionActionAdvance,
-    WorthUiScalarProjectionActionDenied, WorthUiScalarProjectionActionExecution,
-    WorthUiScalarProjectionActionIndeterminate, WorthUiScalarProjectionActionInstallation,
-    WorthUiScalarProjectionActionLiveOwner, WorthUiScalarProjectionActionOutcome,
-    WorthUiScalarProjectionActionPublicationCompletion, WorthUiScalarProjectionActionRequest,
-    WorthUiScalarProjectionAdvance, WorthUiScalarProjectionAdvanceError,
-    WorthUiScalarProjectionHostCompletion, WorthUiScalarProjectionHostPlan,
-    WorthUiScalarProjectionInstallation, WorthUiScalarProjectionInstallationError,
-    WorthUiScalarProjectionLiveOwner, WorthUiScalarProjectionPublicationCompletion,
-    WorthUiScalarProjectionSourceCloseError, WorthUiScalarProjectionSourceCloseReceipt,
+    WorthUiStatusActionExecution, WorthUiStatusActionMutationOutcome, WorthUiStatusActionOutcome,
+    WorthUiStatusActionRequest, WorthUiStatusLiveDeliveryStop, WorthUiStatusMutationOutcome,
+    WorthUiStatusOwnerError, WorthUiStatusSourceOwner,
 };

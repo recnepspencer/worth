@@ -151,8 +151,8 @@ const OPERATIONAL_BOUNDARIES: &[ExactBoundarySymbol] = &[
     ),
     boundary!(
         "direct cause packet validation",
-        "logic/invalidation/causality/dependency_admission.rs",
-        "../../../../logic/invalidation/causality/dependency_admission.rs",
+        "logic/invalidation/causality/dependency_admission/publication.rs",
+        "../../../../logic/invalidation/causality/dependency_admission/publication.rs",
         "validate_packet",
         1
     ),

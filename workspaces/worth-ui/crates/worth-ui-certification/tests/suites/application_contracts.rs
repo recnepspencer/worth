@@ -116,8 +116,6 @@ mod phase7_denial_preservation;
 mod phase7_hot_frame_source_exclusion;
 #[path = "../application_contracts/phase7_public_mounted_allocation.rs"]
 mod phase7_public_mounted_allocation;
-#[path = "../application_contracts/projection_adoption/mod.rs"]
-mod projection_adoption;
 #[path = "../application_contracts/projection_authority/mod.rs"]
 mod projection_authority;
 #[path = "../application_contracts/projection_compatibility/mod.rs"]

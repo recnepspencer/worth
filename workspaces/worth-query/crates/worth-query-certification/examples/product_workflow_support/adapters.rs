@@ -1,6 +1,5 @@
 mod clock;
 mod predicate;
-mod transport;
 
 use std::future::Future;
 use std::pin::pin;
@@ -18,8 +17,7 @@ use super::schema::{
 };
 
 pub use clock::{ClockController, ClockSource, ExampleClock};
-pub use predicate::{Predicate, ReplacementPredicate};
-pub use transport::CompletingExternalTransport;
+pub use predicate::Predicate;
 
 pub struct IntentProjector;
 

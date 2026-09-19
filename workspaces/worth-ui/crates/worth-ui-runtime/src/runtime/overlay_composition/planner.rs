@@ -81,12 +81,15 @@ pub(crate) struct UiOverlayPlanCounters {
 }
 
 impl UiOverlayPlanCounters {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn portal_stack_rows_read(self) -> usize {
         self.portal_stack_rows_read
     }
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn portal_binding_entries_read(self) -> usize {
         self.portal_binding_entries_read
     }
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn backdrop_declarations_selected(self) -> usize {
         self.backdrop_declarations_selected
     }
@@ -94,6 +97,7 @@ impl UiOverlayPlanCounters {
     pub(crate) const fn overlay_relation_edges_visited(self) -> usize {
         self.overlay_relation_edges_visited
     }
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn backdrop_mechanics_changed(self) -> usize {
         self.backdrop_mechanics_changed
     }
@@ -201,9 +205,11 @@ impl UiPreparedOverlayComposition {
     pub(crate) fn snapshot(&self) -> &UiOverlayStackSnapshot {
         &self.snapshot
     }
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn reservation(&self) -> UiOverlayReservation {
         self.reservation
     }
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn counters(&self) -> UiOverlayPlanCounters {
         self.counters
     }

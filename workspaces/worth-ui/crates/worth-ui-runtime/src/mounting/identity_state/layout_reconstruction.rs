@@ -5,6 +5,7 @@ impl UiMountedIdentityState {
         self.peak_qualified_layouts
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn require_current_layout_reconstruction(
         &mut self,
     ) -> Result<usize, crate::mounting::UiMountedProjectionDenial> {

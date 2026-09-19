@@ -5,9 +5,6 @@ use std::sync::{Arc, Mutex};
 
 use worth_signal::facade::branch::AdmittedSignalBranchSnapshot;
 use worth_signal::facade::history::RuntimeSnapshot;
-use worth_signal::facade::runtime::{
-    ObservationListener, ObservationNotice, ObservationReadContext,
-};
 use worth_signal::facade::{DependencyEdge, NodeId, SignalGraph, SignalRuntime as NativeRuntime};
 
 use crate::boundary::errors::WorthSignalJsError;
@@ -30,6 +27,7 @@ mod keyed_runtime;
 mod merge;
 mod merge_caller_restoration;
 mod merge_state;
+mod observation_listeners;
 mod runtime_async_lifecycle_certification;
 mod signals;
 mod snapshots;
@@ -50,6 +48,7 @@ mod worker_placement_declaration_candidates;
 use self::aspects::resolve_selected_aspects;
 pub(crate) use self::envelopes::ExactRuntimeRestoreArtifact;
 use self::evaluation::canonicalize_callback_reads;
+use self::observation_listeners::{WasmEffectListener, WasmWatchListener};
 pub(crate) use self::state::SharedStore;
 use self::state::{
     dispose_callback_recipe_token, BranchRuntimeState, CallbackDiagnosticState, CatalogEntry,
@@ -69,7 +68,6 @@ pub(crate) use self::worker_callback_reattachment_import::RuntimeEnvelopeCallbac
 pub(crate) use self::worker_main_thread_hosted_callbacks::{
     MainThreadHostedCallbackAdmission, MainThreadHostedCallbackClosedInput,
 };
-use crate::runtime::web_callbacks::ObservationCallbackToken;
 
 const DEFAULT_ASPECT: worth_signal::facade::Aspect = worth_signal::facade::Aspect::new(0);
 
@@ -375,39 +373,4 @@ impl RuntimeCore {
 
 pub fn new_shared_core(policy: RuntimePolicySpec) -> Result<SharedCore, WorthSignalJsError> {
     Ok(Rc::new(RefCell::new(RuntimeCore::new(policy)?)))
-}
-
-struct WasmWatchListener {
-    callback_scope_id: u64,
-    callback_token: ObservationCallbackToken,
-    signal_id: String,
-}
-
-impl ObservationListener<(), (), (), SharedStore, ()> for WasmWatchListener {
-    fn on_observation(
-        &self,
-        ctx: ObservationReadContext<'_, (), (), (), SharedStore, ()>,
-        notice: &ObservationNotice<'_>,
-    ) {
-        web_callbacks::invoke_watch(
-            self.callback_scope_id,
-            self.callback_token,
-            web_callbacks::notice_from_runtime(&self.signal_id, ctx, notice),
-        );
-    }
-}
-
-struct WasmEffectListener {
-    callback_scope_id: u64,
-    callback_token: ObservationCallbackToken,
-}
-
-impl ObservationListener<(), (), (), SharedStore, ()> for WasmEffectListener {
-    fn on_observation(
-        &self,
-        _ctx: ObservationReadContext<'_, (), (), (), SharedStore, ()>,
-        _notice: &ObservationNotice<'_>,
-    ) {
-        web_callbacks::invoke_effect(self.callback_scope_id, self.callback_token);
-    }
 }

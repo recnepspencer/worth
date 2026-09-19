@@ -28,6 +28,11 @@ enum PreparedTopologyNodeUpdate {
     Retained(PreparedRetainedNodeEdit<()>),
 }
 
+enum PreparedTopologyWaiterUpdate {
+    Direct(crate::data::graph::PreparedPendingRevalidationIndex),
+    Retained(crate::data::graph::PreparedRetainedPendingRevalidationIndex),
+}
+
 impl SignalGraph {
     pub(super) fn set_dependency_edges_sorted_with_delta(
         &mut self,
@@ -81,6 +86,7 @@ impl SignalGraph {
                 .checked_add(1)
                 .ok_or_else(|| SignalError::internal("dependency revision overflow"))?,
         );
+        let current_waiters = producers.clone();
         let pending = PendingDependencyRevalidation::structural(revision, producers);
         let current = self.pending_cause_set_id(node)?;
         self.cause_sets.admit_release_work(current, work)?;
@@ -88,6 +94,13 @@ impl SignalGraph {
         let maximum = self
             .installed_runtime_policy()
             .conditional_evaluation_budget();
+        let waiter_update = crate::data::graph::PreparedPendingRevalidationIndex::for_replacement(
+            self,
+            node,
+            &previous,
+            &current_waiters,
+        );
+        let waiter_update = prepare_waiter_update(self, waiter_update, maximum, work)?;
         let insertion = self.topology.dependency_edges.prepare_insertion(edges);
         let update = TopologyNodeUpdate {
             dependencies: insertion.id(),
@@ -102,16 +115,34 @@ impl SignalGraph {
         insertion.publish();
         prepared.publish(&mut self.arena, node);
         reverse.publish(self);
-        // Borrowed node payload cannot survive mutation of the waiter index.
-        let current = self
-            .node_pending_revalidation(node)?
-            .expect("installed structural projection")
-            .unresolved_producers()
-            .to_vec();
-        self.replace_pending_revalidation_waiters(node, &previous, &current);
+        waiter_update.publish(self);
         self.record_branch_mutation_dependencies(node, delta);
         self.record_graph_storage_pressure();
         Ok(())
+    }
+}
+
+fn prepare_waiter_update(
+    graph: &mut SignalGraph,
+    update: crate::data::graph::PreparedPendingRevalidationIndex,
+    maximum: crate::runtime_policy::SignalConditionalEvaluationBudget,
+    work: &mut EvaluationWork<'_>,
+) -> Result<PreparedTopologyWaiterUpdate, SignalError> {
+    let Some(ledger) = graph.arena.retained_node_ledger.clone() else {
+        return Ok(PreparedTopologyWaiterUpdate::Direct(update));
+    };
+    let maximum_visits = maximum.maximum_attempt_visits;
+    let maximum = usize::try_from(maximum.maximum_retained_bytes)
+        .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
+    let maximum = Charge::capacity::<u8>(maximum).map_err(map_node_edit_accounting)?;
+    let prepare = |graph: &mut SignalGraph, work: &mut Work| {
+        update
+            .prepare_retained(graph, &ledger, maximum, work)
+            .map(PreparedTopologyWaiterUpdate::Retained)
+    };
+    match work {
+        EvaluationWork::Conditional(work) => prepare(graph, work),
+        EvaluationWork::Ordinary => prepare(graph, &mut Work::new(maximum_visits)),
     }
 }
 
@@ -176,6 +207,15 @@ impl PreparedTopologyNodeUpdate {
                     unreachable!("exclusive topology node preparation")
                 }
             },
+        }
+    }
+}
+
+impl PreparedTopologyWaiterUpdate {
+    fn publish(self, graph: &mut SignalGraph) {
+        match self {
+            Self::Direct(update) => update.publish(graph),
+            Self::Retained(update) => update.install(graph),
         }
     }
 }

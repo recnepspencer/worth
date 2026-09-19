@@ -33,6 +33,8 @@ pub(in crate::runtime) use compiler::{
 pub(in crate::runtime) use coordination::{
     UiDeclaredFocusSelectionAction, UiFocusRevealRequirement, UiSelectionInvocationCause,
 };
+#[cfg(any(test, feature = "certification-support"))]
+pub(in crate::runtime) use occupancy::UiServiceProposalOccupancyWorkCounters;
 #[cfg(test)]
 pub(in crate::runtime) use occupancy::{
     UiServiceProposalConflictDisposition, UiServiceProposalConflictPolicy,
@@ -40,7 +42,6 @@ pub(in crate::runtime) use occupancy::{
 pub(in crate::runtime) use occupancy::{
     UiServiceProposalDisplacement, UiServiceProposalOccupancyDenial,
     UiServiceProposalOccupancyLease, UiServiceProposalOccupancyScopeIdentity,
-    UiServiceProposalOccupancyWorkCounters,
 };
 pub(in crate::runtime) use participation::{
     UiServiceFamilyParticipation, UiServiceFamilyParticipationDenial,

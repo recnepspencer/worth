@@ -14,15 +14,20 @@ pub use application_contribution::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
     WorthQueryApplicationContributionSetup, WorthQueryApplicationContributionTuple,
     WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
-    WorthQueryApplicationProducerProvider, WorthQueryConfiguredApplicationContributions,
+    WorthQueryApplicationProducerProvider, WorthQueryCompletedManagedComputation,
+    WorthQueryConfiguredApplicationContributions,
     WorthQueryInstalledApplicationConditionalRegistry,
-    WorthQueryInstalledApplicationProducerRegistry, WorthQueryOutputDemandAdvance,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    WorthQueryInstalledApplicationProducerRegistry, WorthQueryInstalledManagedComputation,
+    WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationCheckpointDenial,
+    WorthQueryManagedComputationDenial, WorthQueryManagedComputationExecution,
+    WorthQueryManagedComputationInterruption, WorthQueryManagedComputationOwner,
+    WorthQueryManagedComputationPrepared, WorthQueryManagedComputationResourceDenial,
+    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadinessContractBuilder,
-    WorthQueryOutputReadinessContractDenial, WorthQueryProducerApplicability,
-    WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-    WorthQuerySelectedApplicationProducer,
+    WorthQueryOutputReadinessContractDenial, WorthQueryPreparedManagedComputation,
+    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
 };
 pub use application_output_demand::{
     WorthQueryOutputDemandNotifications, WorthQueryOutputDemandSettlement,
@@ -31,8 +36,8 @@ pub use application_output_demand::{
 pub use application_program::{
     WorthQueryApplicationDependentOutputConnection,
     WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationRequiredOutputConnection,
-    WorthQueryPreparedRequiredOutputSource, WorthQueryRequiredOutputConnectionDenial,
-    WorthQueryRequiredOutputSourcePreparationFailure,
+    WorthQueryApplicationRequiredOutputSource, WorthQueryPreparedRequiredOutputSource,
+    WorthQueryRequiredOutputConnectionDenial, WorthQueryRequiredOutputSourcePreparationFailure,
 };
 mod application_branch;
 pub(crate) mod application_discovery;
@@ -231,7 +236,8 @@ pub use application_runtime::{
     WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
     WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
     WorthQueryCertificationWorldHistory,
-    WorthQueryCertificationWorldRetention, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryCertificationWorldRetention, WorthQueryApplicationLiveDeliveryCloseReceipt,
+    WorthQueryPrimaryGraphApplicationRuntime,
 };
 pub use authenticated_principal::{
     WorthQueryApplicationPrincipalIdentity, WorthQueryAuthenticatedPrincipal,

@@ -1,4 +1,5 @@
 impl super::UiPortalRuntimeState {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn commit_published(
         &mut self,
         transition: super::super::UiPreparedPortalServiceTransition,

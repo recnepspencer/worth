@@ -107,6 +107,20 @@ where
     ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial>;
 }
 
+/// One mutation binding admitted as a source for an installed required-output
+/// connection. Multiple operations owned by one feature may implement this for
+/// the same connection without duplicating the feature port.
+pub trait WorthQueryApplicationRequiredOutputSource<Schema, Connection>:
+    ApplicationMutationBinding<Schema>
+where
+    Schema: ApplicationSchema,
+    Connection: WorthQueryApplicationRequiredOutputConnection<Schema>,
+{
+    fn demand_from_source(
+        source: &Self::Input,
+    ) -> Result<Connection::Demand, WorthQueryRequiredOutputConnectionDenial>;
+}
+
 /// A performed source whose required root demands are resolved by one typed
 /// query at that source publication's retained observation.
 pub trait WorthQueryApplicationDiscoveredOutputConnection<Schema>: Sized + 'static

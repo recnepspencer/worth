@@ -39,6 +39,8 @@ mod application_aftermath;
 mod application_capability;
 mod application_operation;
 mod application_program;
+#[macro_use]
+mod feature_spec_macro;
 mod application_query;
 #[macro_use]
 mod application_contribution_macro;
@@ -100,6 +102,8 @@ mod binding_contract_tests;
 mod canonical_identity_tests;
 #[cfg(test)]
 mod canonicalization_normalization_tests;
+#[cfg(test)]
+mod feature_spec_macro_tests;
 #[cfg(test)]
 mod principal_binding_tests;
 #[cfg(test)]

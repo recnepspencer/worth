@@ -7,9 +7,9 @@ use worth_query_host::facade::{
     declaration::authentication::WorthQueryExternalPrincipalIdentity,
     declaration::{
         application_program::{
-            ApplicationActionLeaf, ApplicationActionList, ApplicationNoOutputGraph,
-            ApplicationOperationActionRef, ApplicationProgramAuthoring,
-            ApplicationProgramDefinition, ApplicationProgramIdentity,
+            ApplicationFeature, ApplicationFeatureSpec, ApplicationNoOutputGraph,
+            ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramIdentity,
+            ApplicationProgramOutputs,
         },
         application_schema::ApplicationOperationMarkerIdentity,
     },
@@ -18,7 +18,7 @@ use worth_query_host::facade::{
 };
 
 use super::super::{
-    composition::{BankEstateFeature, BankFeatures, BankRules},
+    composition::{bank_feature_specs, BankEstateFeature, BankRules},
     providers::{BankAccountsProvider, BankEstateProvider, BankPaymentsProvider},
 };
 use crate::{BankIdentityRuntime, BankPrincipalSeed};
@@ -38,16 +38,25 @@ impl ApplicationProgramDefinition<BankSchema> for ForgedBankApplication {
         BankPaymentsProvider,
         BankEstateProvider,
     );
-    type Actions = ApplicationActionList<
-        ApplicationOperationActionRef<BankSchema, BankEstateFeature, ForgedRequestOperation>,
-        ApplicationActionLeaf,
-    >;
-    type Features = BankFeatures;
-    type OutputGraph = ApplicationNoOutputGraph;
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = BankRules;
 
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.bank.forged-request-test.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        let mut specs = bank_feature_specs();
+        specs.retain(|spec| {
+            spec.feature().identity()
+                != <BankEstateFeature as ApplicationFeature<BankSchema>>::IDENTITY
+        });
+        specs.push(
+            ApplicationFeatureSpec::root::<BankSchema, BankEstateFeature>()
+                .operation::<ForgedRequestOperation>()
+                .finish(),
+        );
+        specs
+    }
 }
 
 #[test]

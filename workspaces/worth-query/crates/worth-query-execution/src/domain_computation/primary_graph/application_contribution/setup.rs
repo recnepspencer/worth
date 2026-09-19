@@ -65,6 +65,26 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
             .register::<Binding>(self.contribution.identity().as_str(), configuration)
     }
 
+    pub fn computation<Feature, Computation, Owner>(
+        &mut self,
+        owner: Owner,
+    ) -> Result<
+        super::WorthQueryInstalledManagedComputation<Schema, Feature, Computation, Owner>,
+        WorthQueryPrimaryGraphInstallationDenial,
+    >
+    where
+        Feature: worth_query_declaration::facade::application_program::ApplicationFeature<Schema>,
+        Computation:
+            worth_query_declaration::facade::application_program::ApplicationManagedComputation<
+                Schema,
+                Feature,
+            >,
+        Owner: super::WorthQueryManagedComputationOwner<Schema, Feature, Computation>,
+    {
+        self.handlers
+            .install_computation::<Feature, Computation, Owner>(owner)
+    }
+
     pub fn producer<Binding>(
         &mut self,
         provider: Binding::Provider,

@@ -136,6 +136,7 @@ impl UiMountedMechanicSource {
         self.semantic_text.qualified_layout(identity)
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(super) fn require_qualified_layout_reconstruction(
         &mut self,
     ) -> Result<usize, super::super::UiMountedProjectionDenial> {

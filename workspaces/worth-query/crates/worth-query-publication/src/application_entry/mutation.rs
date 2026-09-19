@@ -1,4 +1,5 @@
 mod authorization;
+mod authorization_assessment;
 mod discovered;
 mod execution;
 mod outcome;
@@ -10,6 +11,7 @@ mod program_output_work;
 mod request;
 mod retained;
 
+pub use authorization_assessment::WorthQueryCurrentAuthorizationAssessment;
 pub use discovered::{
     WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryDiscoveredOutputStartFailure,
     WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,

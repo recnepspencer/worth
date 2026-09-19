@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use worth_ui::facade::query_binding::{
-    UiApplicationScalarProjectionRegistration, WorthUiStatusSourceOwner,
+    UiApplicationScalarProjectionRegistration, WorthUiStatusOwnerError, WorthUiStatusSourceOwner,
 };
 
 use super::PlatformPulseQueryLifecycle;
@@ -22,7 +22,7 @@ impl InstalledPlatformPulseQuery {
 
 #[derive(Debug)]
 pub(crate) enum PlatformPulseQueryInstallationDenial {
-    Application(String),
+    Application(WorthUiStatusOwnerError),
     Watch(PlatformPulseExternalValueWatchDenial),
 }
 

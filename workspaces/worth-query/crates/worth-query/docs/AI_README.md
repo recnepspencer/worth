@@ -138,12 +138,13 @@ aspect revisions. Filtered result relations are not continuation targets.
 
 `ApplicationProgramDefinition<Schema>` is the canonical static application
 root. It owns one stable program identity and the complete typed inventories of
-contributions, feature instances, actions, output-graph connections, and scoped
-rules. Calling `ApplicationProgramAuthoring::<Schema, Program>::begin()` and
-then `.validated_program()` validates that meaning before installation.
-Invalid or duplicate identities, dangling features, missing required inputs,
-duplicate bindings, and unexported cross-instance connections are typed
-denials; they are not deferred to the first request.
+contributions, feature instances, declared feature outputs, actions,
+output-graph connections, and scoped rules. Calling
+`ApplicationProgramAuthoring::<Schema, Program>::begin()` and then
+`.validated_program()` validates that meaning before installation. Invalid or
+duplicate identities, dangling features, missing required inputs, undeclared
+outputs, duplicate bindings, cyclic dependencies, and unexported cross-instance
+connections are typed denials; they are not deferred to the first request.
 
 Features declare semantic ownership and typed ports. Composition-instance
 identity distinguishes multiple installations of one reusable feature meaning.
@@ -153,6 +154,100 @@ also typed: each child edge must leave its parent feature, and
 `ApplicationOutputLeaf` explicitly terminates a branch. Declaration order,
 registration ordinal, strings, and runtime traversal do not create these
 relationships.
+
+An authored action may also attach one typed repeated-row correspondence, one
+evaluated requirement, one external-input provider, and required-output-source
+posture. These are parts of the installed action contract, not parallel product
+registries. `repeated_optional_member` derives exact target and initial member
+state from a row, preserves `Unchanged` versus `Set` versus `Clear`, and carries
+the required source observation into the generated action. UI controls and
+presentation remain consumer-owned.
+
+`evaluated_requirement` returns the same typed rule evaluation used for input
+guidance and submission enforcement; a consumer must not maintain a second
+callability predicate. `external_input_provider` resolves a typed selection into
+values, revision, and provenance, then requires revision validation before the
+captured input becomes admitted. Captured historical values remain readable,
+but neither capture nor matching descriptive data grants mutation authority.
+
+Feature membership can use `worth_query_feature_spec!` to remove repetitive
+builder plumbing while still producing the canonical `ApplicationFeatureSpec`.
+The macro supports root and composition-instance capsules, typed ports,
+mutations, conditional operations, derived artifacts and collections, and
+managed computations. It creates no registry or installation lane. See
+[Feature Capsule Authoring](./authoring/feature-capsule-authoring.md) for the
+complete authoring boundary, typed denial expectations, normalized-manifest
+inspection, and compiled production examples.
+
+### Governed derived artifacts
+
+An application program selects its derived-artifact posture through
+`ApplicationProgramDefinition::DERIVED_ARTIFACT_GOVERNANCE`.
+`Compatible` admits a program that has not declared artifact meaning.
+`Required` makes that meaning complete: every connected output target declares
+at least one derived artifact, so an ungoverned target is denied during program
+validation instead of becoming legacy work at execution time.
+
+An artifact declaration binds its producer family, succession posture,
+locality, retention, resource ceiling, stopped outcome, and exact dependencies
+as one installed contract. Root dependencies name the actions that can actually
+source the artifact. Dependent artifacts name the direct parent artifact or
+feature whose settlement they consume. An action that sources a governed root
+also carries the corresponding locality and change shape. Query rejects a
+demand whose family, occurrence, change, source evidence, resource use, or
+parent settlement does not match that installed meaning.
+
+These declarations are substantive evidence rather than completion markers.
+Preparation uses the installed artifact contract, and settlement consumes the
+admitted demand and exact source basis produced from it. Recompute,
+replacement, and reconstruction remain distinct installed meanings. A no-work
+or reuse outcome follows from validated dependency and retention evidence; a
+caller cannot invent one by reproducing identifiers or reusing another
+artifact's settlement.
+
+Use `Compatible` only while intentionally adopting governance. Once a program
+selects `Required`, keep every connected target and sourcing action complete;
+do not switch back to `Compatible` to admit a new path. Artifact payloads and
+domain calculations remain producer-owned. Query owns the installed contract,
+bounded admission, lifecycle custody, and typed denial when requested work does
+not satisfy that contract.
+
+Managed computations extend this contract without moving domain policy into
+Query. A contribution declares each computation's input, output artifact,
+partition, ordering, reuse posture, stopped outcome, and resource ceilings, then
+installs one owner for that exact declaration. Installation rejects missing,
+foreign, duplicate, or type-mismatched owners. Execution evidence can be minted
+only by the active `DecisionReader`; it borrows the real request scope and checks
+deadline, cancellation, retained bytes, and performed work. There is no
+unscoped or test-only execution path. The domain owner prepares, computes, and
+completes its value, while Query owns admission and resource enforcement.
+
+A derived collection declaration identifies contributor and grouping meaning;
+it does not grant mutable collection authority. Product runtimes own their
+incremental collection state and expose consumer-facing rows read-only. A
+product may mark a row complete only from current accepted contributor evidence
+observed through one retained request observation. Missing or noncurrent inputs
+remain pending. Incremental refresh must preserve exact contributor lineage,
+and reconstruction from the same admitted facts must produce the same rows.
+
+### Speculative application work
+
+An application preview begins from a Query-issued retained read observation. The
+preview session keeps that exact Bridge source basis live, carries no mutation or
+publication authority, and must be readmitted against the current program runtime
+before the application performs its real mutation. Source or runtime drift denies
+readmission. Explicit discard, replacement, session close, and abandoned session
+drop all terminate the speculative Bridge work; only the separate admitted
+mutation can publish product truth.
+
+### Normalized program manifests
+
+`ValidatedApplicationProgram::normalized_manifest()` derives a deterministic,
+sorted diagnostic description from already-validated program meaning. It includes
+feature and port identities, actions and their typed attachments, connections,
+rules, derived artifacts, collections, and managed computations. The manifest is
+owned strings only: it contains no native type identity, installed handle, or
+execution authority, and it never participates in validation or installation.
 
 Installation enters through `application_installation::in_memory_program` with
 the validated program, configuration, limits, and initial state. It returns a
@@ -296,9 +391,13 @@ graph. A performed mutation calls
 `performed.start_required_outputs(&request, controls)`; a caller that must
 settle the installed graph from an admitted source, including reconstruction,
 calls `request.start_program_outputs(&application, demand, controls)`. Both
-return `WorthQueryApplicationProgramOutputHandle`. Repeated
-`advance(&fresh_request)` yields `Pending` until the root and every discovered
-dependent edge have settled, then returns one
+return `WorthQueryApplicationProgramOutputHandle`. `settle(&fresh_request)`
+performs at most the admitted `maximum_work` advances and returns `Pending` when
+that bound is exhausted. `advance(&fresh_request)` remains available to hosts
+that wait on owner notifications between individual advances. Ordinary
+synchronous consumers call `settle`; they do not hard-code an advance count or
+rediscover the dependent graph. Settlement of the root and every discovered
+dependent edge returns one
 `WorthQueryApplicationProgramOutputSettlement`. The settlement exposes the root,
 the latest exact observation, measured program work, and typed
 `outputs_for::<Schema, Connection>()` or instance-qualified dependent outputs.
@@ -1430,8 +1529,10 @@ typed action intent + exact installed program
 
 Source publication and complete derived settlement are distinct facts. A root
 that published before a child failed remains published; recovery resumes from
-owner custody. Only the complete settlement proves the declared transitive
-output graph settled.
+owner custody. The caller drives the managed handle with bounded `settle` calls
+and fresh requests; it does not issue a replacement demand through a suspended
+branch. Only the complete settlement proves the declared transitive output graph
+settled.
 
 ### Emergency access
 
@@ -1565,6 +1666,8 @@ Do not:
 - execute a program-owned action through the weaker ordinary mutation entry;
 - settle only the root producer when the installed program declares dependent
   required outputs;
+- hard-code an ordinary output-advance loop, rediscover output dependencies, or
+  replace retained recovery custody with a fresh demand;
 - use `take_settled_root()` as evidence that the complete output graph settled;
 - rediscover a dependent output from a current or consumer-retained view when
   Query carries the exact parent traversal basis and owner settlement;

@@ -1,7 +1,6 @@
 mod external_value;
 mod installation;
-#[path = "lifecycle_application.rs"]
-mod lifecycle;
+mod lifecycle_application;
 
 pub(crate) use external_value::{
     PlatformPulseExternalValueEvent, PlatformPulseExternalValueWatch,
@@ -13,7 +12,7 @@ pub(crate) use installation::{
     install, install_native_presentation_async, InstalledPlatformPulseQuery,
     PlatformPulseQueryInstallationDenial,
 };
-pub(crate) use lifecycle::{
+pub(crate) use lifecycle_application::{
     PlatformPulseQueryActionOutcome, PlatformPulseQueryLifecycle,
     PlatformPulseQueryLifecycleDenial, PlatformPulseQueryShutdownReceipt,
 };

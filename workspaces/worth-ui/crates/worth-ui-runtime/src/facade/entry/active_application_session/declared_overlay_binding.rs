@@ -1,6 +1,7 @@
 use super::WorthUiActiveApplicationSession;
 
 impl WorthUiActiveApplicationSession {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn declared_region_layout_inputs(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
@@ -36,6 +37,7 @@ impl WorthUiActiveApplicationSession {
             .into_boxed_slice()
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn create_declared_semantic_surface_named(
         &mut self,
         authored_name: &str,

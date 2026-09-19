@@ -125,6 +125,21 @@ where
         WorthQueryStartedDiscoveredOutputs<'application, Schema, Intent, Program, Root>,
         WorthQueryDiscoveredOutputStartFailure<'application, Schema, Intent, Program, Root>,
     > {
+        if let Err(denial) = self
+            .application
+            .validate_program_discovered_root_artifact_source::<Root, Intent::Binding>(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+            )
+        {
+            return Err(WorthQueryDiscoveredOutputStartFailure {
+                performed: self,
+                denial: WorthQueryRequiredOutputPreparationDenial::Demand(
+                    crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(
+                        denial,
+                    ),
+                ),
+            });
+        }
         let retained =
             WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(&self.retained_source));
         let required_output = match super::resolve::start_discovered_roots::<Schema, Program, Root>(

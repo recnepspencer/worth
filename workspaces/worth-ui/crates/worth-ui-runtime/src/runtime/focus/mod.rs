@@ -54,7 +54,9 @@ pub(crate) use receipt::UiFocusOutcome;
 pub(crate) use receipt::UiFocusReconciliationReceipt;
 pub(crate) use receipt::UiFocusTransitionReceipt;
 pub(crate) use request::UiFocusCause;
-pub(in crate::runtime) use request::{UiFocusRequest, UiFocusTraversalDirection};
+#[cfg(any(test, feature = "certification-support"))]
+pub(in crate::runtime) use request::UiFocusRequest;
+pub(in crate::runtime) use request::UiFocusTraversalDirection;
 pub(in crate::runtime) use restoration::UiFocusRestorationToken;
 pub(in crate::runtime) use routing::UiFocusPlan;
 pub(crate) use routing::UiFocusRoutingDenial;

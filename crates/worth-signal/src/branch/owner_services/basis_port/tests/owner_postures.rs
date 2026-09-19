@@ -7,10 +7,9 @@ use worth_proof::TransitionOutcome;
 
 use crate::branch::{
     ManagedSignalBranchReferenceAdmissionDenial, SignalBranchBasisObservationDenial,
-    SignalBranchBasisReadmissionDenial, SignalBranchRetainedReadmissionDenial,
-    SignalBranchRetentionReleaseDenial, SignalBranchRetentionReleaseOutcome,
-    SignalBranchRetentionTerminalOutcome, SignalBranchRetirementReason,
-    SignalOwnerLifecycleObservation,
+    SignalBranchRetainedReadmissionDenial, SignalBranchRetentionReleaseDenial,
+    SignalBranchRetentionReleaseOutcome, SignalBranchRetentionTerminalOutcome,
+    SignalBranchRetirementReason, SignalOwnerLifecycleObservation,
 };
 
 use super::world::{
@@ -20,9 +19,9 @@ use super::world::{
 const PROGRESS_BOUND: Duration = Duration::from_secs(2);
 
 #[test]
-fn retired_quarantined_closing_and_gone_postures_remain_exact() {
+fn retired_rolled_back_closing_and_gone_postures_remain_exact() {
     retired_reference_is_terminal();
-    quarantined_cell_is_not_flattened_to_unknown();
+    rolled_back_caller_panic_preserves_the_live_cell();
     closing_owner_denies_new_basis_work();
     gone_owner_is_stably_unavailable();
 }
@@ -60,7 +59,7 @@ fn retired_reference_is_terminal() {
     ));
 }
 
-fn quarantined_cell_is_not_flattened_to_unknown() {
+fn rolled_back_caller_panic_preserves_the_live_cell() {
     let world = basis_port_world();
     let reference = issue_reference(&world.port, &world.basis_b);
     let owner = world
@@ -84,13 +83,11 @@ fn quarantined_cell_is_not_flattened_to_unknown() {
     drop(admission);
     let before = owner.retention_ledger_observation();
 
-    assert!(matches!(
-        world
-            .port
-            .readmit_exact(&reference, world.basis_b.descriptor()),
-        Err(SignalBranchBasisReadmissionDenial::QuarantinedBranch { branch_id })
-            if branch_id == world.branch_b.id
-    ));
+    let readmission = world
+        .port
+        .readmit_exact(&reference, world.basis_b.descriptor())
+        .expect("successful rollback keeps the exact cell admissible");
+    assert_eq!(readmission.observation(), world.basis_b.observation());
     assert_retention_cleanup_with_identity_advance(
         &before,
         &owner.retention_ledger_observation(),

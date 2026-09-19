@@ -8,6 +8,7 @@ impl UiMountedSemanticMechanicSource {
         self.by_layout.len()
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn require_layout_reconstruction(
         &mut self,
     ) -> Result<usize, UiMountedProjectionDenial> {
@@ -62,6 +63,7 @@ impl UiMountedSemanticMechanicSource {
 }
 
 impl UiMountedSemanticMechanicRows {
+    #[cfg(any(test, feature = "certification-support"))]
     fn require_layout_reconstruction(&mut self) -> Result<usize, UiMountedProjectionDenial> {
         self.update_layout_state(UiMountedQualifiedSemanticText::require_layout_reconstruction)
     }

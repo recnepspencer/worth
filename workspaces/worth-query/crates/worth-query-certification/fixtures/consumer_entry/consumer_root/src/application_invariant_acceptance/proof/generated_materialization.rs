@@ -57,25 +57,20 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         .unwrap_or_else(|failure| {
             panic!("the declared output graph starts: {:?}", failure.denial())
         });
-    loop {
-        match performed
-            .required_output_mut()
-            .advance(request)
-            .expect("the generated output graph settles")
-        {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
-            WorthQueryApplicationProgramOutputProgress::Settled(settlement) => {
-                assert_eq!(
-                    settlement
-                        .outputs_for::<ConsumerSchema, PlanarOutputToFinalConnection>()
-                        .count(),
-                    1,
-                    "the program must publish its generated final output"
-                );
-                break;
-            }
-        }
-    }
+    let WorthQueryApplicationProgramOutputProgress::Settled(settlement) = performed
+        .required_output_mut()
+        .settle(request)
+        .expect("the generated output graph settles within its admitted work bound")
+    else {
+        panic!("the generated output graph exceeded its admitted work bound");
+    };
+    assert_eq!(
+        settlement
+            .outputs_for::<ConsumerSchema, PlanarOutputToFinalConnection>()
+            .count(),
+        1,
+        "the program must publish its generated final output"
+    );
     drop(performed);
     let vertices = vertices();
     for vertex in &vertices {

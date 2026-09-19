@@ -111,6 +111,7 @@ impl UiPortalExitRetentionCoordinator {
         }
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(in crate::facade::entry) fn pending_track_is_coordinated(&self) -> bool {
         self.pending
             .as_ref()

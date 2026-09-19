@@ -43,20 +43,7 @@ pub use worth_ui_query_binding::{
     WorthUiSettledSnapshotSourceOrder, WorthUiSnapshotConsumerExecutionOutcome,
     WorthUiSnapshotConsumerPreparationDenial, WorthUiSnapshotProjectionConsumptionOutcome,
     WorthUiSnapshotProjectionPublicationOutcome, WorthUiSnapshotProjectionSettlementOutcome,
-    WorthUiStatusActionExecution, WorthUiStatusActionOutcome, WorthUiStatusActionRequest,
-    WorthUiStatusSourceOwner,
-};
-
-#[cfg(any(test, feature = "certification-support"))]
-pub use worth_ui_query_binding::{
-    WorthUiQueryHostInstallationRequest, WorthUiScalarProjectionActionAdvance,
-    WorthUiScalarProjectionActionDenied, WorthUiScalarProjectionActionExecution,
-    WorthUiScalarProjectionActionIndeterminate, WorthUiScalarProjectionActionInstallation,
-    WorthUiScalarProjectionActionLiveOwner, WorthUiScalarProjectionActionOutcome,
-    WorthUiScalarProjectionActionPublicationCompletion, WorthUiScalarProjectionActionRequest,
-    WorthUiScalarProjectionAdvance, WorthUiScalarProjectionAdvanceError,
-    WorthUiScalarProjectionHostCompletion, WorthUiScalarProjectionHostPlan,
-    WorthUiScalarProjectionInstallation, WorthUiScalarProjectionInstallationError,
-    WorthUiScalarProjectionLiveOwner, WorthUiScalarProjectionPublicationCompletion,
-    WorthUiScalarProjectionSourceCloseError, WorthUiScalarProjectionSourceCloseReceipt,
+    WorthUiStatusActionExecution, WorthUiStatusActionMutationOutcome, WorthUiStatusActionOutcome,
+    WorthUiStatusActionRequest, WorthUiStatusLiveDeliveryStop, WorthUiStatusMutationOutcome,
+    WorthUiStatusOwnerError, WorthUiStatusSourceOwner,
 };

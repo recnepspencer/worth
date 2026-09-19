@@ -23,6 +23,7 @@ pub(crate) struct UiScrollOwnerRegistration {
 }
 
 impl UiScrollOwnerIdentity {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn region(
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         region: crate::graph::UiGraphNodeIdentity,
@@ -92,6 +93,7 @@ impl UiScrollOwnerIncarnation {
         }
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn as_u64(self) -> u64 {
         self.0
     }
