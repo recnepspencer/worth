@@ -10,6 +10,43 @@ fn initial_schema_transition_preserves_retention_identity_exhaustion() {
         RelationalInitialSchemaInstallationDenialKind::RetentionIdentityExhausted,
     );
 }
+
+#[test]
+fn recovered_initial_schema_readmission_requires_full_schema_identity() {
+    let source_registry = crate::tests::support::test_schema_registry();
+    let mut foreign_registry = source_registry.clone();
+    foreign_registry
+        .entity_kinds
+        .values_mut()
+        .next()
+        .expect("test schema has one entity kind")
+        .kind_name = "foreign-kind-with-same-cardinality".to_owned();
+    let mut source = crate::facade::runtime::RelationalRuntimeApi::builder()
+        .schema_registry(source_registry)
+        .build();
+    let source_receipt = source
+        .prepare_initial_schema_installation()
+        .unwrap()
+        .install(RelationalSchemaRegistry::new())
+        .unwrap();
+    let mut foreign = crate::facade::runtime::RelationalRuntimeApi::builder()
+        .schema_registry(foreign_registry)
+        .build();
+    foreign
+        .prepare_initial_schema_installation()
+        .unwrap()
+        .install(RelationalSchemaRegistry::new())
+        .unwrap();
+
+    let denial = foreign
+        .readmit_recovered_initial_schema_installation(source_receipt)
+        .expect_err("matching kind counts cannot substitute foreign schema authority");
+
+    assert_eq!(
+        denial.kind(),
+        RelationalInitialSchemaInstallationDenialKind::RecoveredAuthorityMismatch
+    );
+}
 #[test]
 fn retained_publication_port_rejects_candidate_from_before_empty_invariant_seal() {
     use crate::tests::support::{batch_create, runtime_with_test_schema, test_owner_main_basis};

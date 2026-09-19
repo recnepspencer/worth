@@ -10,6 +10,25 @@ use super::runtime_rebuild::rebuild_runtime_from_plan;
 use super::DurabilityRecoveryAuthority;
 
 impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
+    pub fn restore_native_checkpoint(
+        &mut self,
+        checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
+    ) -> Result<RuntimeRecoveryOutcome, DurabilityError> {
+        let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
+        let checkpoint =
+            crate::durability::log::native_file_codec::decode_checkpoint(checkpoint.bytes())?
+                .checkpoint;
+        let plan = crate::durability::access::native_checkpoint_recovery_plan(
+            self.runtime,
+            checkpoint,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        );
+        let outcome = self.recover(plan)?;
+        self.runtime
+            .restore_initial_schema_authority_after_recovery(initial_schema_authority);
+        Ok(outcome)
+    }
+
     pub fn recover(
         &mut self,
         plan: RecoveryPlan,

@@ -10,6 +10,7 @@ pub struct WorthQueryPrimaryGraphPublication {
     pub(super) application_equality_index_count: usize,
     pub(super) policy_entity_count: usize,
     pub(super) policy_relation_count: usize,
+    pub(super) bootstrap_commit_id: worth_relational::facade::history::CommitId,
 }
 
 impl WorthQueryPrimaryGraphPublication {
@@ -35,5 +36,11 @@ impl WorthQueryPrimaryGraphPublication {
 
     pub const fn policy_relation_count(&self) -> usize {
         self.policy_relation_count
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn bootstrap_commit_id(
+        &self,
+    ) -> worth_relational::facade::history::CommitId {
+        self.bootstrap_commit_id
     }
 }

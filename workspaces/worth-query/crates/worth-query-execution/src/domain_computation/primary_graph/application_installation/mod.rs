@@ -8,13 +8,13 @@ pub use denial::WorthQueryInMemoryApplicationDenial;
 pub use limits::WorthQueryInMemoryApplicationLimits;
 pub use profile::WorthQueryInMemoryApplicationProfile;
 pub use program::{
-    in_memory_program, in_memory_program_with_authorization_time_source,
-    WorthQueryAdmittedProgramOperation, WorthQueryAdmittedProgramOutput,
-    WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
-    WorthQueryApplicationPreviewSession, WorthQueryApplicationProgramRoots,
-    WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance,
-    WorthQueryProgramRootDemand, WorthQueryReadmittedApplicationPreview,
-    WorthQuerySettledProgramOutput,
+    in_memory_program, in_memory_program_from_checkpoint,
+    in_memory_program_with_authorization_time_source, WorthQueryAdmittedProgramOperation,
+    WorthQueryAdmittedProgramOutput, WorthQueryApplicationPreviewReadmissionDenial,
+    WorthQueryApplicationPreviewRequest, WorthQueryApplicationPreviewSession,
+    WorthQueryApplicationProgramRoots, WorthQueryProgramApplicationRuntime,
+    WorthQueryProgramOutputAdvance, WorthQueryProgramRootDemand,
+    WorthQueryReadmittedApplicationPreview, WorthQuerySettledProgramOutput,
 };
 
 use super::application_contribution::{
@@ -54,6 +54,7 @@ where
         limits,
         initial_state,
         None,
+        None,
     )
 }
 
@@ -68,6 +69,7 @@ pub(super) fn in_memory_with_contributions<Schema, Contributions>(
     authorization_time_source: Option<
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
+    checkpoint: Option<super::WorthQueryApplicationCheckpoint>,
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -110,17 +112,39 @@ where
     let relational_runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .profile(limits.profile.relational_profile())
         .build();
-    let mut graph = authority
-        .prepare_primary_graph_with_relational_runtime_and_invariants(
+    let decoded_checkpoint = checkpoint
+        .as_ref()
+        .map(super::WorthQueryApplicationCheckpoint::decode)
+        .transpose()
+        .map_err(|detail| {
+            Denial::Graph(WorthQueryPrimaryGraphInstallationDenial::new(
+                super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                detail,
+            ))
+        })?;
+    let restoring = decoded_checkpoint.is_some();
+    let mut graph = match decoded_checkpoint.as_ref() {
+        Some(checkpoint) => authority.prepare_primary_graph_from_native_checkpoint_with_invariants(
             &runtime,
             &installed,
             relational_runtime,
             limits.world,
             invariants,
-        )
-        .map_err(Denial::Graph)?;
+            checkpoint,
+        ),
+        None => authority.prepare_primary_graph_with_relational_runtime_and_invariants(
+            &runtime,
+            &installed,
+            relational_runtime,
+            limits.world,
+            invariants,
+        ),
+    }
+    .map_err(Denial::Graph)?;
     graph.mutation_handlers = handlers;
-    initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
+    if !restoring {
+        initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
+    }
     let (mut application, installed_conditionals) =
         if conditionals.is_empty() && producers.is_empty() {
             let application = match authorization_time_source {

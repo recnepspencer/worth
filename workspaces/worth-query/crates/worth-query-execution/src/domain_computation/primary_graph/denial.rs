@@ -63,6 +63,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     InvariantFactoryMeaningMismatch,
     InvariantFactoryRejected,
     InvariantInstallationReceiptMismatch,
+    CheckpointRecoveryRejected,
     MissingProducerBinding,
     DuplicateProducerBinding,
     DuplicateProducerOperationBinding,

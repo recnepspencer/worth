@@ -381,3 +381,9 @@ pub(super) fn zero_route_installation_is_denied() {
 #[path = "contribution_installation/source_change.rs"]
 mod source_change;
 use source_change::change_input;
+#[path = "contribution_installation/checkpoint.rs"]
+mod checkpoint;
+pub(super) use checkpoint::{
+    application_checkpoint_denies_corrupt_incompatible_and_forged_bytes,
+    application_checkpoint_restores_fresh_editable_authority,
+};

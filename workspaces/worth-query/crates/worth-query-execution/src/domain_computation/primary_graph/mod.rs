@@ -4,7 +4,9 @@ pub use crate::domain_computation::{
     WorthQueryProductUnpublishedRecovery,
 };
 mod application_attempt;
+mod application_checkpoint;
 mod application_contribution;
+pub use application_checkpoint::WorthQueryApplicationCheckpoint;
 mod application_output_demand;
 mod application_program;
 pub use application_contribution::{

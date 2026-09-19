@@ -123,14 +123,15 @@ fn required_relation<'a>(
 }
 
 impl super::WorthQueryPrimaryGraphLayout {
-    pub(in crate::domain_computation::primary_graph) fn register_capability_grant_joins(
+    pub(in crate::domain_computation::primary_graph) fn register_capability_grant_joins<E>(
         &mut self,
-        mut register: impl FnMut(DerivedIndexDefinition) -> DerivedIndexId,
-    ) {
+        mut register: impl FnMut(DerivedIndexDefinition) -> Result<DerivedIndexId, E>,
+    ) -> Result<(), E> {
         for (ordinal, join) in self.capability_grant_joins.values_mut().enumerate() {
-            let index_id = register(join.definition(ordinal));
+            let index_id = register(join.definition(ordinal))?;
             join.bind_index(index_id);
         }
+        Ok(())
     }
 
     pub(in crate::domain_computation) fn capability_grant_join_index_id(

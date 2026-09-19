@@ -22,6 +22,7 @@ use super::{
     WorthQueryInMemoryApplicationLimits,
 };
 
+mod checkpoint;
 mod conditional;
 mod demand;
 mod derived_artifact;
@@ -32,6 +33,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationContributionTuple, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
 };
+pub use checkpoint::in_memory_program_from_checkpoint;
 pub use demand::{
     WorthQueryAdmittedProgramOutput, WorthQueryProgramOutputAdvance, WorthQueryProgramRootDemand,
     WorthQuerySettledProgramOutput,
@@ -269,6 +271,7 @@ where
         limits,
         initial_state,
         None,
+        None,
     )
 }
 
@@ -299,6 +302,7 @@ where
         limits,
         initial_state,
         Some(Box::new(source)),
+        None,
     )
 }
 
@@ -314,6 +318,7 @@ fn in_memory_program_with_optional_authorization_time_source<Schema, Program>(
     authorization_time_source: Option<
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
+    checkpoint: Option<super::super::WorthQueryApplicationCheckpoint>,
 ) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -328,6 +333,7 @@ where
         limits,
         initial_state,
         authorization_time_source,
+        checkpoint,
     )?;
     let installed = install_application_program(program, runtime.installed_schema())
         .map_err(WorthQueryInMemoryApplicationDenial::Program)?;
