@@ -9,7 +9,7 @@ publish results, or create a second registry.
 The compact form and the builder form produce the same canonical spec:
 
 ```rust
-use worth_query_declaration::worth_query_feature_spec;
+use worth_query_decl::facade::worth_query_feature_spec;
 
 let capsule = worth_query_feature_spec!(
     root(ProductSchema, PricingFeature);
