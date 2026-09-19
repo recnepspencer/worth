@@ -51,6 +51,18 @@ impl MutationOutcome {
         outcome
     }
 
+    /// A record brought back under judgement without being changed.
+    ///
+    /// Nothing happened to the record, so the outcome carries no change and no
+    /// event: the demand's whole effect is that the slot is now touched and the
+    /// rules that govern its kind will run.
+    pub(crate) const fn record_revalidated() -> Self {
+        Self {
+            changes: Vec::new(),
+            events: Vec::new(),
+        }
+    }
+
     pub(crate) fn entity_deleted(entity_id: EntityId) -> Self {
         let mut outcome = Self::with_capacity(0, 1);
         outcome.record_event(MutationEvent::EntityDeleted { entity_id });

@@ -6,6 +6,11 @@ use crate::transactions::data::{
     MaterializationMutationIntent, MutationIntent, RecordRef, RelationMutationIntent,
 };
 
+use super::footprint_client_keys::{
+    collect_created_entity_raw_key, collect_created_relation_raw_keys, normalize_read_locus,
+    normalize_write_locus,
+};
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum RelationalTransactionReadLocus {
     Existing(RecordRef),
@@ -137,6 +142,7 @@ impl RelationalTransactionFootprint {
                         (intent.entity_id, Some(intent.replacement.kind_id))
                     }
                     EntityMutationIntent::Delete(intent) => (intent.entity_id, None),
+                    EntityMutationIntent::Revalidate(intent) => (intent.entity_id, None),
                 };
                 self.record_read(RelationalTransactionReadLocus::Existing(RecordRef::Entity(
                     record,
@@ -297,104 +303,5 @@ impl RelationalTransactionFootprint {
             .into_iter()
             .map(|write| normalize_write_locus(write, interner, policy))
             .collect();
-    }
-}
-
-fn collect_created_entity_raw_key(created: &CreatedEntityRef, raw_values: &mut BTreeSet<String>) {
-    if let Some(raw) = created.client_key.as_raw_str() {
-        raw_values.insert(raw.to_owned());
-    }
-}
-
-fn collect_created_relation_raw_keys(
-    created: &CreatedRelationRef,
-    raw_values: &mut BTreeSet<String>,
-) {
-    if let Some(raw) = created.client_key.as_raw_str() {
-        raw_values.insert(raw.to_owned());
-    }
-    collect_entity_reference_raw_key(&created.source, raw_values);
-    collect_entity_reference_raw_key(&created.target, raw_values);
-}
-
-fn collect_entity_reference_raw_key(
-    reference: &EntityReference,
-    raw_values: &mut BTreeSet<String>,
-) {
-    if let EntityReference::Created(created) = reference {
-        collect_created_entity_raw_key(created, raw_values);
-    }
-}
-
-fn normalize_read_locus(
-    read: RelationalTransactionReadLocus,
-    interner: &mut crate::symbols::data::StringInterner,
-    policy: crate::symbols::data::ClientKeySymbolPolicy,
-) -> RelationalTransactionReadLocus {
-    match read {
-        RelationalTransactionReadLocus::CreatedEntity(created) => {
-            RelationalTransactionReadLocus::CreatedEntity(normalize_created_entity(
-                created, interner, policy,
-            ))
-        }
-        RelationalTransactionReadLocus::CreatedRelation(created) => {
-            RelationalTransactionReadLocus::CreatedRelation(normalize_created_relation(
-                created, interner, policy,
-            ))
-        }
-        other => other,
-    }
-}
-
-fn normalize_write_locus(
-    write: RelationalTransactionWriteLocus,
-    interner: &mut crate::symbols::data::StringInterner,
-    policy: crate::symbols::data::ClientKeySymbolPolicy,
-) -> RelationalTransactionWriteLocus {
-    match write {
-        RelationalTransactionWriteLocus::CreatedEntity(created) => {
-            RelationalTransactionWriteLocus::CreatedEntity(normalize_created_entity(
-                created, interner, policy,
-            ))
-        }
-        RelationalTransactionWriteLocus::CreatedRelation(created) => {
-            RelationalTransactionWriteLocus::CreatedRelation(normalize_created_relation(
-                created, interner, policy,
-            ))
-        }
-        other => other,
-    }
-}
-
-fn normalize_created_entity(
-    mut created: CreatedEntityRef,
-    interner: &mut crate::symbols::data::StringInterner,
-    policy: crate::symbols::data::ClientKeySymbolPolicy,
-) -> CreatedEntityRef {
-    created.client_key = created.client_key.normalize_with(interner, policy);
-    created
-}
-
-fn normalize_created_relation(
-    mut created: CreatedRelationRef,
-    interner: &mut crate::symbols::data::StringInterner,
-    policy: crate::symbols::data::ClientKeySymbolPolicy,
-) -> CreatedRelationRef {
-    created.client_key = created.client_key.normalize_with(interner, policy);
-    created.source = normalize_entity_reference(created.source, interner, policy);
-    created.target = normalize_entity_reference(created.target, interner, policy);
-    created
-}
-
-fn normalize_entity_reference(
-    reference: EntityReference,
-    interner: &mut crate::symbols::data::StringInterner,
-    policy: crate::symbols::data::ClientKeySymbolPolicy,
-) -> EntityReference {
-    match reference {
-        EntityReference::Created(created) => {
-            EntityReference::Created(normalize_created_entity(created, interner, policy))
-        }
-        existing => existing,
     }
 }

@@ -15,6 +15,7 @@ mod materialization;
 pub(crate) mod record_aspect_patch;
 mod relation_endpoint_candidate;
 mod replace_entity;
+mod revalidate_entity;
 mod update_entity_fields;
 mod update_relation_endpoints;
 

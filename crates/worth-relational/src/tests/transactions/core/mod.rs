@@ -45,6 +45,7 @@ mod publication_trace_diagnostics;
 mod relation_integrity;
 mod relation_updates;
 mod retention_backpressure;
+mod revalidation_demand;
 mod runtime_contracts;
 mod same_commit_relation_endpoints;
 mod snapshot_and_retention;

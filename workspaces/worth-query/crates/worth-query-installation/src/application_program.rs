@@ -1,12 +1,20 @@
 use std::collections::BTreeSet;
 use std::marker::PhantomData;
 
+mod adoption;
 mod correspondence;
 mod derived_artifact;
 mod evaluated_requirement;
 mod external_input;
 mod scoped_action;
 mod support;
+
+#[cfg(test)]
+mod program_support_fixture;
+pub use adoption::{
+    WorthQueryProgramAddedRule, WorthQueryProgramAdoptionRequirements,
+    WorthQueryProgramAdoptionRequirementsDenial,
+};
 pub use correspondence::{
     WorthQueryCorrespondedAction, WorthQueryInstalledRepeatedOptionalMember,
     WorthQueryRepeatedOptionalMemberState,

@@ -36,6 +36,21 @@ pub struct UpdateEntityFieldsIntent {
     pub fields: AspectFieldPatch,
 }
 
+/// A demand that one unchanged record be judged again under the rules this
+/// candidate proposes.
+///
+/// Rules run only over what a candidate touches, and a candidate that changes
+/// the meaning rules are read under changes nothing about the records that
+/// meaning now governs. Without a way to say so, such a candidate would publish
+/// with the new meaning and the existing records never judged by it. This
+/// intent says exactly that and nothing more: the record is not rewritten, its
+/// stored state and version are left alone, and it carries no change and no
+/// event downstream.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RevalidateEntityIntent {
+    pub entity_id: crate::identity::data::EntityId,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReplaceEntityIntent {
     pub entity_id: crate::identity::data::EntityId,
@@ -101,6 +116,7 @@ pub enum EntityMutationIntent {
     ApplyAspectPatch(ApplyEntityAspectPatchIntent),
     Replace(ReplaceEntityIntent),
     Delete(DeleteEntityIntent),
+    Revalidate(RevalidateEntityIntent),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -195,7 +211,7 @@ impl EntityMutationIntent {
                 intent.aspect_patch.owned_allocation_capacity_bytes() as u64
             }
             Self::Replace(intent) => entity_spec_bytes(&intent.replacement),
-            Self::Delete(_) => 0,
+            Self::Delete(_) | Self::Revalidate(_) => 0,
         }
     }
 }

@@ -9,9 +9,12 @@ use super::{
 };
 use crate::commit_strategies::data::{PersistentArtifactName, StrategyOutputSchemaName};
 use crate::facade::transactions::{CreateIntent, MutationIntent, WorkerIntentBatch};
-use crate::identity::data::{KindId, PartitionId};
+use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::{AspectFieldPatch, EntitySpec};
+use crate::transactions::data::{
+    AspectFieldPatch, DeleteEntityIntent, EntityMutationIntent, EntitySpec, RevalidateEntityIntent,
+    UpdateEntityFieldsIntent,
+};
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, InternedString};
 
 fn artifact() -> CanonicalStrategyOutputArtifact {
@@ -82,5 +85,64 @@ fn mutation_program_digest_drift_is_detectable_with_typed_fixture() {
     assert_ne!(
         forged.digest(),
         compute_mutation_program_digest(forged.worker_batches())
+    );
+}
+
+/// The one record every intent in the discrimination court below names.
+fn shared_record() -> EntityId {
+    EntityId::new(PartitionId(1), 7, 1)
+}
+
+fn program_over_shared_record(
+    label: &str,
+    intent: EntityMutationIntent,
+) -> StrategyMutationProgram {
+    StrategyMutationProgram::new(vec![
+        WorkerIntentBatch::new(label).push(MutationIntent::Entity(intent))
+    ])
+}
+
+#[test]
+fn the_program_digest_separates_opposite_intents_over_one_record() {
+    let record = shared_record();
+    let revalidate = program_over_shared_record(
+        "revalidate",
+        EntityMutationIntent::Revalidate(RevalidateEntityIntent { entity_id: record }),
+    );
+    let delete = program_over_shared_record(
+        "delete",
+        EntityMutationIntent::Delete(DeleteEntityIntent { entity_id: record }),
+    );
+    let update = program_over_shared_record(
+        "update",
+        EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+            entity_id: record,
+            fields: AspectFieldPatch::default(),
+        }),
+    );
+
+    // A demand, a deletion and a rewrite of one record carry the same entity id
+    // and nothing else, so the term tag is the only thing in the canonical bytes
+    // that tells them apart. Two commits of opposite meaning sharing a program
+    // digest would make replay reproduce the wrong one.
+    assert_ne!(
+        revalidate.digest(),
+        delete.digest(),
+        "a demand leaves the record alive and a deletion removes it; one digest cannot stand for both"
+    );
+    assert_ne!(
+        revalidate.digest(),
+        update.digest(),
+        "a demand authors nothing and a rewrite authors fields; one digest cannot stand for both"
+    );
+    assert_ne!(
+        delete.digest(),
+        update.digest(),
+        "a deletion and a rewrite of one record must remain distinguishable"
+    );
+    assert_eq!(
+        revalidate.digest(),
+        compute_mutation_program_digest(revalidate.worker_batches()),
+        "the demand's program must carry the digest its own canonical bytes produce"
     );
 }

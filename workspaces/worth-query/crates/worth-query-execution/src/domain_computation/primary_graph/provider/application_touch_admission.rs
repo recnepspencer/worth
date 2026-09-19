@@ -40,6 +40,14 @@ impl WorthQueryInstalledTouchAdmissionEvidence {
     }
 }
 
+/// One thing a candidate authored, in the form the installed touch contract
+/// can be compared against.
+///
+/// Every variant here is an authoring act, because that is all a touch
+/// contract can declare. A candidate touch that authors nothing — a
+/// revalidation demand — resolves to no variant at all, and on a kind this
+/// application governs it is refused: an operation cannot put its own records
+/// in front of rules under a contract that never admitted the effect.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum ResolvedApplicationTouch {
     CreateEntity(KindId),
@@ -200,6 +208,10 @@ fn validated_application_touch(
             *kind,
             ResolvedApplicationTouch::UnlinkRelation(*kind),
         ),
+        ValidatedMutationTouch::RevalidateEntity { kind } => (!layout
+            .is_application_entity_kind(*kind))
+        .then_some(None)
+        .ok_or(()),
         ValidatedMutationTouch::UnrepresentableEntityMutation { kind } => (!layout
             .is_application_entity_kind(*kind))
         .then_some(None)

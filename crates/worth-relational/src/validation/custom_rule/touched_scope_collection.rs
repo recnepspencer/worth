@@ -201,6 +201,15 @@ pub(crate) fn collect_touched_structural_set(
                         access,
                     );
                 }
+                MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
+                    include_affected_entity(
+                        &mut visible_entities,
+                        spec.entity_id,
+                        state_view,
+                        before_image_view,
+                        access,
+                    );
+                }
                 MutationIntent::Entity(EntityMutationIntent::Replace(spec)) => {
                     include_affected_entity(
                         &mut visible_entities,

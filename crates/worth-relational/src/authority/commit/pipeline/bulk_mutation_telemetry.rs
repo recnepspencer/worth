@@ -99,7 +99,8 @@ impl BulkMutationTelemetryAccumulator {
                 );
             }
             MutationIntent::Entity(EntityMutationIntent::UpdateFields(_))
-            | MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(_)) => {
+            | MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(_))
+            | MutationIntent::Entity(EntityMutationIntent::Revalidate(_)) => {
                 self.entity_target_count += 1;
             }
             MutationIntent::Entity(EntityMutationIntent::Replace(_)) => {

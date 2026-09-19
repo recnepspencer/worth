@@ -42,20 +42,29 @@ pub(crate) fn inspect_staging_surface(
                     }
                 }
                 MutationIntent::Entity(entity_intent) => {
-                    intent_counts.entity_mutation_count += 1;
                     contains_lineage_affecting_intents |=
                         matches!(entity_intent, EntityMutationIntent::Replace(_));
                     match entity_intent {
                         EntityMutationIntent::UpdateFields(intent) => {
+                            intent_counts.entity_mutation_count += 1;
                             touched_records.insert(RecordRef::Entity(intent.entity_id));
                         }
                         EntityMutationIntent::ApplyAspectPatch(intent) => {
+                            intent_counts.entity_mutation_count += 1;
                             touched_records.insert(RecordRef::Entity(intent.entity_id));
                         }
                         EntityMutationIntent::Replace(intent) => {
+                            intent_counts.entity_mutation_count += 1;
                             touched_records.insert(RecordRef::Entity(intent.entity_id));
                         }
                         EntityMutationIntent::Delete(intent) => {
+                            intent_counts.entity_mutation_count += 1;
+                            touched_records.insert(RecordRef::Entity(intent.entity_id));
+                        }
+                        // The record is touched but not mutated, so it belongs in
+                        // the touched set and in its own count.
+                        EntityMutationIntent::Revalidate(intent) => {
+                            intent_counts.entity_revalidation_count += 1;
                             touched_records.insert(RecordRef::Entity(intent.entity_id));
                         }
                     }

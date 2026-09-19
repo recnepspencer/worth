@@ -6,14 +6,23 @@
 //! point-reading the branch program activation record at the attempt's exact
 //! snapshot, before any effect is bound.
 //!
-//! The observation is not yet carried into the attempt's decision read set.
+//! The observation is not carried into the attempt's decision read set.
 //! Decision-read-set admission validates every retained fact against the
 //! families the operation's installed graph contract declares, and the platform
 //! activation kind belongs to none of them, so a fact appended here is refused
 //! for every program-hosted commit. Recording the read therefore needs a
 //! declared platform read family on the graph-work contract, which is owned by
-//! the installation surface rather than by this gate. Until that exists, an
-//! activation that changes between this read and commit is not recomparing.
+//! the installation surface rather than by this gate.
+//!
+//! A late activation change is nonetheless fenced, by the product head the
+//! attempt already carries. The snapshot read here is the one the attempt's
+//! lease acquired at its product observation's own Relational basis, and the
+//! publication the attempt ends in expects that same selected occurrence as the
+//! product head. Activation is an ordinary branch entity, so changing it is
+//! itself a published commit on that branch, and any such commit moves the head
+//! World compares. The attempt is then refused `StaleExpectedProductHead`
+//! before it can perform. What is missing is diagnostic, not authoritative: the
+//! refusal names a moved head rather than the program that moved under it.
 
 use worth_foundational::facade::AspectValue;
 use worth_query_installation::facade::WorthQueryProgramSupportEntry;

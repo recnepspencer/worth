@@ -45,6 +45,7 @@ pub(crate) fn validate_branch_locality(
                     EntityMutationIntent::ApplyAspectPatch(spec) => spec.entity_id,
                     EntityMutationIntent::Replace(spec) => spec.entity_id,
                     EntityMutationIntent::Delete(spec) => spec.entity_id,
+                    EntityMutationIntent::Revalidate(spec) => spec.entity_id,
                 };
                 if !entity_exists_in_state(state, entity_id) {
                     return Err(CommitConflict::new(ConflictClass::StaleTarget {

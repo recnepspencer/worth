@@ -16,8 +16,6 @@ mod admission_tests;
 mod compatibility_tests;
 #[cfg(test)]
 mod installation_denial_tests;
-#[cfg(test)]
-mod program_support_fixture;
 
 pub use admission::{WorthQueryProgramSupportAdmission, WorthQueryProgramSupportDenial};
 pub use compatibility::WorthQueryProgramRuleKey;

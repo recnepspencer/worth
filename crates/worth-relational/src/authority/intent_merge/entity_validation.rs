@@ -37,6 +37,9 @@ pub(super) fn validate_entity_intent(
         MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => {
             validate_existing_entity_intent(state, schema_source, spec.entity_id, intent)
         }
+        MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
+            validate_existing_entity_intent(state, schema_source, spec.entity_id, intent)
+        }
         MutationIntent::Create(CreateIntent::Relation(_))
         | MutationIntent::Create(CreateIntent::RelationAspects(_))
         | MutationIntent::Create(CreateIntent::BulkRelations(_))
@@ -69,6 +72,7 @@ fn validate_existing_entity_intent(
         MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(_)) => Ok(()),
         MutationIntent::Create(_)
         | MutationIntent::Entity(EntityMutationIntent::Delete(_))
+        | MutationIntent::Entity(EntityMutationIntent::Revalidate(_))
         | MutationIntent::Relation(_)
         | MutationIntent::Materialization(_) => Ok(()),
     }

@@ -3,13 +3,13 @@ use std::collections::BTreeSet;
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
 use worth_query_declaration::facade::application_schema::ApplicationInvariantExecutionPoint;
 
+use super::super::program_support_fixture::{
+    installed_support_schema, validated, AuditProgram, BoundedProgram, RaisedRuleProgram,
+    SupportSchema, AUDIT_RULE, BOUNDED_RULE,
+};
 use super::compatibility::{
     declared_rule_keys, first_rule_outside_catalog, first_unowned_installed_rule,
     installed_rule_keys, WorthQueryProgramRuleKey,
-};
-use super::program_support_fixture::{
-    installed_support_schema, validated, AuditProgram, BoundedProgram, RaisedRuleProgram,
-    SupportSchema, AUDIT_RULE, BOUNDED_RULE,
 };
 
 fn declared_by<Program>() -> BTreeSet<WorthQueryProgramRuleKey>

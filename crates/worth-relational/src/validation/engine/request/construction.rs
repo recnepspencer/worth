@@ -52,11 +52,7 @@ impl<'state> InvariantExecutionRequest<'state> {
         );
         let consumed_groups = profile.consumed_groups();
         let applicable_groups = plan_contract
-            .map(|contract| {
-                contract
-                    .may_invalidate_groups()
-                    .intersection(consumed_groups)
-            })
+            .map(|contract| contract.selected_groups().intersection(consumed_groups))
             .unwrap_or(consumed_groups);
         let relation_scope_requirements = relation_scope_requirements_for(runtime, profile);
         let (relation_integrity_scopes, preparation_violation): (

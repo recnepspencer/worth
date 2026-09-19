@@ -14,8 +14,9 @@ pub use projection::{
     RelationRecordProjection, RelationalAdjacencyDirection, VisibilityProjectionView,
 };
 pub use reader::{
-    AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead, BoundedFrontierAdjacencyTruthRead,
-    BoundedFrontierFieldEqualityTruthRead, FrontierAdjacencyTruthReadLimitExceeded,
+    AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead, BoundedEntityKindTruthRead,
+    BoundedFrontierAdjacencyTruthRead, BoundedFrontierFieldEqualityTruthRead,
+    EntityKindTruthReadLimitExceeded, FrontierAdjacencyTruthReadLimitExceeded,
     FrontierFieldEqualityTruthReadLimitExceeded, VisibilityReadContext,
 };
 

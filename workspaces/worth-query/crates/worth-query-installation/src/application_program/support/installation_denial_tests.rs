@@ -2,7 +2,7 @@
 //! every caller has always read, and the structured reason that must survive
 //! the crossing.
 
-use super::program_support_fixture::{
+use super::super::program_support_fixture::{
     installed_support_schema, validated, BoundedProgram, CompleteProgram, FeaturelessProgram,
     RaisedRuleProgram, UninstalledActionProgram, AUDIT_RULE, BOUNDED_RULE, UNKNOWN_OPERATION,
 };

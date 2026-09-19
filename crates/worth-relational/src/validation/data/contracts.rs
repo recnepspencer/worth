@@ -7,9 +7,20 @@ use crate::transactions::data::{
 use super::groups::{InvariantGroup, InvariantGroupSet};
 use super::rules::InvariantRule;
 
+/// What one plan's intents ask of the invariant engine.
+///
+/// Two questions are kept apart because they have different consequences. What
+/// a plan **may invalidate** is an effect claim: topology inference, the
+/// touched-partition walk, the working-state clone and the public commit
+/// summary all read it, so overstating it makes a commit pay for and report
+/// damage it never did. What a plan **must have rejudged** is only a selection
+/// statement: it asks that a group's rules look at this plan, without claiming
+/// the plan breaks anything in that group. A revalidation demand is exactly the
+/// second and none of the first, so the two cannot share one field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct InvariantPlanContract {
     may_invalidate: InvariantGroupSet,
+    must_rejudge: InvariantGroupSet,
 }
 
 impl InvariantPlanContract {
@@ -22,25 +33,44 @@ impl InvariantPlanContract {
     }
 
     pub fn is_empty(self) -> bool {
-        self.may_invalidate.is_empty()
+        self.may_invalidate.is_empty() && self.must_rejudge.is_empty()
     }
 
+    /// The groups this plan may actually damage.
+    ///
+    /// This is the effect claim, so it never includes a group a plan merely
+    /// asked to be rejudged under. Callers that size work from it — topology
+    /// inference, the clone, the public summary — stay honest by construction.
     pub fn may_invalidate_groups(self) -> InvariantGroupSet {
         self.may_invalidate
     }
 
+    /// The groups whose rules this plan selects: what it may damage, plus what
+    /// it asked to be judged by regardless. Selection widens; effects do not.
+    pub fn selected_groups(self) -> InvariantGroupSet {
+        self.may_invalidate.union(self.must_rejudge)
+    }
+
     pub fn intersects_consumed_groups(self, consumed_groups: InvariantGroupSet) -> bool {
-        self.is_empty() || self.may_invalidate.intersects(consumed_groups)
+        self.is_empty() || self.selected_groups().intersects(consumed_groups)
     }
 
     pub(crate) fn applies_to_rule(self, rule: &InvariantRule) -> bool {
         if self.is_empty() {
             return true;
         }
-        self.may_invalidate.intersects(rule.groups())
+        self.selected_groups().intersects(rule.groups())
     }
 
     fn observe_intent(&mut self, intent: &MutationIntent) {
+        // A revalidation demand asks every rule that governs this record to
+        // judge it again and damages nothing. Anything narrower than `all()`
+        // would silently drop exactly the rule the demand was raised for, and
+        // anything on the invalidation channel would bill the commit for
+        // damage it never did.
+        if let MutationIntent::Entity(EntityMutationIntent::Revalidate(_)) = intent {
+            self.must_rejudge = InvariantGroupSet::all();
+        }
         let groups = match intent {
             MutationIntent::Create(CreateIntent::Entity(_))
             | MutationIntent::Create(CreateIntent::EntityAspects(_))
@@ -56,6 +86,7 @@ impl InvariantPlanContract {
                 InvariantGroupSet::of(InvariantGroup::IdentityCoherence)
                     .union(InvariantGroupSet::of(InvariantGroup::SchemaCompliance))
             }
+
             MutationIntent::Entity(EntityMutationIntent::Replace(_)) => {
                 InvariantGroupSet::of(InvariantGroup::AdjacencyIntegrity)
                     .union(InvariantGroupSet::of(InvariantGroup::IdentityCoherence))
@@ -106,6 +137,12 @@ impl InvariantPlanContract {
                     .union(InvariantGroupSet::of(InvariantGroup::VersionVisibility))
             }
             MutationIntent::Materialization(_) => InvariantGroupSet::all(),
+            // The demand handled above. It damages nothing, so it contributes
+            // nothing to the effect claim; its selection widening already went
+            // to `must_rejudge`.
+            MutationIntent::Entity(EntityMutationIntent::Revalidate(_)) => {
+                InvariantGroupSet::empty()
+            }
         };
         self.may_invalidate = self.may_invalidate.union(groups);
     }

@@ -25,18 +25,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
     ) -> Vec<EntityReadRecord> {
-        let state = self.runtime.storage_access().current_edition();
-        let mut records = Vec::new();
-        for partition_id in state.partition_ids() {
-            records.extend(self.visible_entities_of_kind_in_partition_from_state(
-                &state,
-                partition_id,
-                kind_id,
-                version_id,
-            ));
-        }
-        debug_assert!(authoritative_entity_records_are_canonical(&records));
-        records
+        self.bounded_visible_entities_of_kind(kind_id, version_id, usize::MAX)
+            .expect("an unbounded kind scan cannot exhaust usize::MAX work")
+            .into_records()
     }
 
     pub fn visible_entities_of_kind_in_partition(
@@ -120,7 +111,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     }
 }
 
-fn authoritative_entity_records_are_canonical(records: &[EntityReadRecord]) -> bool {
+pub(super) fn authoritative_entity_records_are_canonical(records: &[EntityReadRecord]) -> bool {
     records.windows(2).all(|window| {
         let left = &window[0];
         let right = &window[1];

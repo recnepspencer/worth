@@ -5,10 +5,17 @@ use crate::transactions::data::{RecordRef, SavepointId, TransactionId};
 
 use super::{InspectionAccessPath, InspectionAvailability, InspectionOrigin};
 
+/// How many staged intents of each kind one transaction is carrying.
+///
+/// A revalidation demand is counted apart from the mutations because it is not
+/// one: it brings an unchanged record back under judgement and authors nothing.
+/// Folding it into `entity_mutation_count` would tell a caller reading this
+/// surface that records are about to change when none are.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct TransactionIntentCounts {
     pub create_count: u64,
     pub entity_mutation_count: u64,
+    pub entity_revalidation_count: u64,
     pub relation_mutation_count: u64,
 }
 

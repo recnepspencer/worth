@@ -1,4 +1,4 @@
-use super::program_support_fixture::{
+use super::super::program_support_fixture::{
     installed_support_schema, validated, AuditProgram, BoundedProgram, CompleteProgram,
     FeaturelessProgram, RaisedRuleProgram, UninstalledActionProgram, AUDIT_RULE, BOUNDED_RULE,
     UNKNOWN_OPERATION,
