@@ -45,6 +45,23 @@ where
                 "dependent output parent belongs to another installed application",
             ));
         }
+        let artifact = self
+            .validate_derived_artifact_demand::<Connection, ConnectionDemand<Schema, Connection>>(
+                maximum_work,
+                maximum_retained_bytes,
+            )?;
+        if let (Some(child), Some(parent_artifact)) = (artifact, parent.artifact) {
+            let consumes_parent = child.dependencies().iter().any(|dependency| {
+                dependency.identity() == parent_artifact.identity()
+                    || dependency.identity() == parent_artifact.feature()
+            });
+            if !consumes_parent {
+                return Err(WorthQueryOutputDemandDenial::new(
+                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                    "the dependent artifact does not consume its settled parent artifact",
+                ));
+            }
+        }
         let selected_source = source
             .observed_sources()
             .first()
@@ -96,6 +113,7 @@ where
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
                 target_feature: std::any::TypeId::of::<Connection::TargetFeature>(),
+                artifact,
                 marker: std::marker::PhantomData,
             })
     }

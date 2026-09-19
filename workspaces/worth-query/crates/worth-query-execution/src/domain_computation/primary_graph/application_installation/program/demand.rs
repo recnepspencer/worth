@@ -12,6 +12,7 @@ use worth_query_declaration::facade::application_schema::{
 use super::WorthQueryProgramApplicationRuntime;
 mod dependent;
 mod discovered_roots;
+mod handle;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationDependentOutputConnection,
     WorthQueryApplicationOutputDemand, WorthQueryApplicationOutputDemandSource,
@@ -40,6 +41,8 @@ type ConnectionDemand<Schema, Connection> =
     <ConnectionBinding<Schema, Connection> as WorthQueryApplicationDependentOutputConnection<
         Schema,
     >>::Demand;
+type Artifact =
+    worth_query_declaration::facade::application_program::ApplicationDerivedArtifactDeclaration;
 
 /// Program-affine admission for one required output at any graph depth.
 pub struct WorthQueryAdmittedProgramOutput<Schema, Program, Demand>
@@ -50,6 +53,7 @@ where
 {
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
     target_feature: std::any::TypeId,
+    artifact: Option<Artifact>,
     marker: std::marker::PhantomData<fn() -> Program>,
 }
 
@@ -62,6 +66,7 @@ where
 {
     retained: std::sync::Arc<WorthQueryOutputDemandSettlement>,
     target_feature: std::any::TypeId,
+    artifact: Option<Artifact>,
     marker: std::marker::PhantomData<fn() -> (Schema, Program, Demand)>,
 }
 
@@ -73,42 +78,6 @@ where
 {
     Pending,
     Settled(WorthQuerySettledProgramOutput<Schema, Program, Demand>),
-}
-
-impl<Schema, Program, Demand> WorthQueryAdmittedProgramOutput<Schema, Program, Demand>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-    Demand: WorthQueryApplicationOutputDemand<Schema>,
-{
-    pub fn observed_source(
-        &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryObservedSource<
-        SourceQuery<Schema, Demand>,
-    > {
-        self.admitted.observed_source()
-    }
-
-    pub fn notifications(
-        &self,
-    ) -> Result<WorthQueryOutputDemandNotifications, WorthQueryOutputDemandDenial> {
-        self.admitted.notifications()
-    }
-
-    pub fn close(&mut self) {
-        self.admitted.close();
-    }
-}
-
-impl<Schema, Program, Demand> WorthQuerySettledProgramOutput<Schema, Program, Demand>
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-    Demand: WorthQueryApplicationOutputDemand<Schema>,
-{
-    pub fn retained(&self) -> std::sync::Arc<WorthQueryOutputDemandSettlement> {
-        std::sync::Arc::clone(&self.retained)
-    }
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
@@ -140,6 +109,8 @@ where
                 "selected output root is not installed for this program",
             ));
         }
+        let artifact =
+            self.validate_root_artifact_demand::<Root>(maximum_work, maximum_retained_bytes)?;
         self.runtime
             .admit_required_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
@@ -149,6 +120,7 @@ where
                 target_feature: std::any::TypeId::of::<
                     <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature,
                 >(),
+                artifact,
                 marker: std::marker::PhantomData,
             })
     }
@@ -291,6 +263,8 @@ where
                 "selected output root is not installed for this program",
             ));
         }
+        let artifact =
+            self.validate_root_artifact_demand::<Root>(maximum_work, maximum_retained_bytes)?;
         self.runtime.validate_recovered_output_root_kind(
             source_receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(std::any::TypeId::of::<Root>()),
@@ -307,6 +281,7 @@ where
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
                 target_feature: std::any::TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
+                artifact,
                 marker: std::marker::PhantomData,
             })
     }
@@ -336,6 +311,8 @@ where
                 "selected output root is not installed for this program",
             ));
         }
+        let artifact =
+            self.validate_root_artifact_demand::<Root>(maximum_work, maximum_retained_bytes)?;
         self.runtime
             .admit_performed_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
@@ -343,6 +320,7 @@ where
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
                 target_feature: std::any::TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
+                artifact,
                 marker: std::marker::PhantomData,
             })
     }
@@ -384,6 +362,7 @@ where
                     WorthQueryProgramOutputAdvance::Settled(WorthQuerySettledProgramOutput {
                         retained,
                         target_feature: demand.target_feature,
+                        artifact: demand.artifact,
                         marker: std::marker::PhantomData,
                     })
                 }

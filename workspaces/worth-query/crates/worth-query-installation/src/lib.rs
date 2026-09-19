@@ -170,8 +170,13 @@ pub mod facade {
         WorthQueryPrincipalBindingInstallationDenialKind,
     };
     pub use crate::application_program::{
-        install_application_program, WorthQueryApplicationProgramInstallationDenial,
-        WorthQueryInstalledApplicationProgram,
+        install_application_program, require_complete_program_binding_membership,
+        WorthQueryAdmittedExternalInput, WorthQueryApplicationProgramInstallationDenial,
+        WorthQueryCapturedExternalInput, WorthQueryCorrespondedAction,
+        WorthQueryInstalledApplicationProgram, WorthQueryInstalledDerivedArtifact,
+        WorthQueryInstalledEvaluatedRequirement, WorthQueryInstalledExternalInputProvider,
+        WorthQueryInstalledRepeatedOptionalMember, WorthQueryInstalledScopedAction,
+        WorthQueryProgramArtifactPosture, WorthQueryRepeatedOptionalMemberState,
     };
     pub use crate::application_query::{
         prepare_canonical_read_graph_planning_basis, WorthQueryApplicationCanonicalArtifact,

@@ -34,20 +34,38 @@ where
     handler: Arc<dyn OperationHandler<Schema, Binding>>,
 }
 
+#[derive(Clone, Copy)]
+pub(in crate::domain_computation::primary_graph) struct InstalledManagedComputationOwner {
+    pub feature_type: TypeId,
+    pub computation_type: TypeId,
+    pub output_artifact_type: TypeId,
+}
+
 pub(in crate::domain_computation::primary_graph) struct PendingMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
+    computations: BTreeMap<TypeId, InstalledManagedComputationOwner>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct InstalledMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
+    computations: BTreeMap<TypeId, InstalledManagedComputationOwner>,
     _schema: PhantomData<fn() -> Schema>,
+}
+
+#[derive(Clone, Copy)]
+struct ManagedComputationExpectation {
+    identity: &'static str,
+    feature_type: TypeId,
+    computation_type: TypeId,
+    output_artifact_type: TypeId,
 }
 
 impl<Schema> Default for PendingMutationHandlerRegistry<Schema> {
     fn default() -> Self {
         Self {
             entries: BTreeMap::new(),
+            computations: BTreeMap::new(),
             _schema: PhantomData,
         }
     }
@@ -75,6 +93,57 @@ impl<Schema> PendingMutationHandlerRegistry<Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub(in crate::domain_computation::primary_graph) fn install_computation<
+        Feature,
+        Computation,
+        Owner,
+    >(
+        &mut self,
+        owner: Owner,
+    ) -> Result<
+        super::super::application_contribution::WorthQueryInstalledManagedComputation<
+            Schema,
+            Feature,
+            Computation,
+            Owner,
+        >,
+        WorthQueryPrimaryGraphInstallationDenial,
+    >
+    where
+        Feature: worth_query_declaration::facade::application_program::ApplicationFeature<Schema>,
+        Computation:
+            worth_query_declaration::facade::application_program::ApplicationManagedComputation<
+                Schema,
+                Feature,
+            >,
+        Owner: super::super::application_contribution::WorthQueryManagedComputationOwner<
+            Schema,
+            Feature,
+            Computation,
+        >,
+    {
+        let computation_type = TypeId::of::<Computation>();
+        if self.computations.contains_key(&computation_type) {
+            return Err(denial(
+                DenialKind::DuplicateManagedComputationOwner,
+                Computation::IDENTITY,
+            ));
+        }
+        self.computations.insert(
+            computation_type,
+            InstalledManagedComputationOwner {
+                feature_type: TypeId::of::<Feature>(),
+                computation_type,
+                output_artifact_type: TypeId::of::<Computation::Output>(),
+            },
+        );
+        Ok(
+            super::super::application_contribution::WorthQueryInstalledManagedComputation::new(
+                owner,
+            ),
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph) fn register<Binding, Handler>(
         &mut self,
         binding_identity: &ApplicationSchemaBindingIdentity,
@@ -164,9 +233,65 @@ where
         }
         Ok(InstalledMutationHandlerRegistry {
             entries: self.entries.clone(),
+            computations: self.computations.clone(),
             _schema: PhantomData,
         })
     }
+}
+
+impl<Schema> InstalledMutationHandlerRegistry<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn validate_managed_computations(
+        &self,
+        features: &[worth_query_declaration::facade::application_program::ApplicationFeatureDeclaration],
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        let declared = features
+            .iter()
+            .flat_map(|feature| feature.managed_computations())
+            .map(|computation| {
+                (
+                    computation.computation_type(),
+                    ManagedComputationExpectation {
+                        identity: computation.identity(),
+                        feature_type: computation.feature_type(),
+                        computation_type: computation.computation_type(),
+                        output_artifact_type: computation.output_artifact_type(),
+                    },
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        validate_managed_computation_inventory(&self.computations, &declared)
+    }
+}
+
+fn validate_managed_computation_inventory(
+    installed: &BTreeMap<TypeId, InstalledManagedComputationOwner>,
+    declared: &BTreeMap<TypeId, ManagedComputationExpectation>,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    for (computation_type, computation) in declared {
+        let owner = installed.get(computation_type).ok_or_else(|| {
+            denial(
+                DenialKind::MissingManagedComputationOwner,
+                computation.identity,
+            )
+        })?;
+        if computation.computation_type != *computation_type
+            || owner.computation_type != *computation_type
+            || owner.feature_type != computation.feature_type
+            || owner.output_artifact_type != computation.output_artifact_type
+        {
+            return Err(denial(
+                DenialKind::ManagedComputationOwnerMeaningMismatch,
+                computation.identity,
+            ));
+        }
+    }
+    if installed.len() != declared.len() {
+        return Err(denial(
+            DenialKind::ForeignManagedComputationOwner,
+            "managed computation owner inventory",
+        ));
+    }
+    Ok(())
 }
 
 impl<Schema> InstalledMutationHandlerRegistry<Schema>
@@ -219,3 +344,7 @@ fn denial(
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     WorthQueryPrimaryGraphInstallationDenial::new(kind, subject)
 }
+
+#[cfg(test)]
+#[path = "registry_tests.rs"]
+mod tests;

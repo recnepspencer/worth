@@ -1,10 +1,9 @@
 use worth_query_host::facade::declaration::application_program::{
-    ApplicationActionLeaf, ApplicationActionList, ApplicationActionRef, ApplicationCommitBoundary,
-    ApplicationConditionalOperationActionRef, ApplicationFeature, ApplicationFeatureInputLeaf,
-    ApplicationFeatureLeaf, ApplicationFeatureList, ApplicationFeatureRef, ApplicationLocalRuleRef,
-    ApplicationNoOutputGraph, ApplicationOperationActionRef, ApplicationProgramAuthoring,
-    ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
-    ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList, ValidatedApplicationProgram,
+    ApplicationCommitBoundary, ApplicationFeature, ApplicationFeatureInputLeaf,
+    ApplicationFeatureSpec, ApplicationLocalRuleRef, ApplicationNoOutputGraph,
+    ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramIdentity,
+    ApplicationProgramOutputs, ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList,
+    ValidatedApplicationProgram,
 };
 
 use super::application_entry::AmendTemporalBinding;
@@ -24,28 +23,6 @@ impl ApplicationFeature<TemporalHostSchema> for TemporalExampleFeature {
 
 impl ApplicationProgramDefinition<TemporalHostSchema> for TemporalExampleProgram {
     type Contributions = (TemporalHostContribution,);
-    type Actions = ApplicationActionList<
-        ApplicationActionRef<TemporalHostSchema, TemporalExampleFeature, AmendTemporalBinding>,
-        ApplicationActionList<
-            ApplicationConditionalOperationActionRef<
-                TemporalHostSchema,
-                TemporalExampleFeature,
-                ExecuteTemporal,
-            >,
-            ApplicationActionList<
-                ApplicationOperationActionRef<
-                    TemporalHostSchema,
-                    TemporalExampleFeature,
-                    RevokeTemporalPrincipal,
-                >,
-                ApplicationActionLeaf,
-            >,
-        >,
-    >;
-    type Features = ApplicationFeatureList<
-        ApplicationFeatureRef<TemporalHostSchema, TemporalExampleFeature>,
-        ApplicationFeatureLeaf,
-    >;
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = ApplicationRuleList<
         ApplicationRuleAt<
@@ -57,6 +34,16 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for TemporalExampleProgram
 
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.example.temporal-program.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        vec![
+            ApplicationFeatureSpec::root::<TemporalHostSchema, TemporalExampleFeature>()
+                .mutation::<AmendTemporalBinding>()
+                .conditional_operation::<ExecuteTemporal>()
+                .operation::<RevokeTemporalPrincipal>()
+                .finish(),
+        ]
+    }
 }
 
 pub fn validated_program() -> ValidatedApplicationProgram<TemporalHostSchema, TemporalExampleProgram>

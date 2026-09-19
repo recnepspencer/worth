@@ -34,8 +34,8 @@ where
             Schema,
         >,
         Root: ApplicationOutputGraphShape<Schema>,
-        RootConnection<Schema, Root>:
-            WorthQueryApplicationRequiredOutputConnection<Schema, Source = Source>,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+        Source: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
         Source::Input: Clone + Send + Sync + 'static,
     {
         self.compare_and_commit_output_source::<Source>(

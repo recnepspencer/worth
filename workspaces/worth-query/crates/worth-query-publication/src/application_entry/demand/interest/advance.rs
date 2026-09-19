@@ -16,6 +16,25 @@ where
     SourceValue<Schema, Demand>:
         WorthQueryApplicationProjection<Schema, SourceQuery<Schema, Demand>> + Clone,
 {
+    pub fn settle(
+        &mut self,
+        fresh_request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<
+        WorthQueryApplicationOutputDemandProgress<SourceQuery<Schema, Demand>>,
+        WorthQueryApplicationOutputDemandDenial,
+    > {
+        for _ in 0..self.controls.maximum_work().get() {
+            let progress = self.advance(fresh_request)?;
+            if matches!(
+                progress,
+                WorthQueryApplicationOutputDemandProgress::Settled(_)
+            ) {
+                return Ok(progress);
+            }
+        }
+        Ok(WorthQueryApplicationOutputDemandProgress::Pending)
+    }
+
     pub fn advance(
         &mut self,
         fresh_request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,

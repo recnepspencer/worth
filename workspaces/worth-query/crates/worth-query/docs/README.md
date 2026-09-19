@@ -138,6 +138,7 @@ public journeys.
 
 ## Authoring (feature docs)
 
+- [Feature Capsule Authoring](./authoring/feature-capsule-authoring.md)
 - [Collections, ordering, aggregates, and cursors](./authoring/collections-cursors-ordering-and-aggregations.md)
 - [Graph Composition Authoring](./authoring/graph-composition-authoring.md)
 - [Graph Read Access Planning](./authoring/graph-read-access-planning.md)

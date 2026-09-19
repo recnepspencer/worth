@@ -73,6 +73,10 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     DuplicateConditionalBinding,
     MissingApplicableProducer,
     AmbiguousApplicableProducer,
+    MissingManagedComputationOwner,
+    DuplicateManagedComputationOwner,
+    ForeignManagedComputationOwner,
+    ManagedComputationOwnerMeaningMismatch,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

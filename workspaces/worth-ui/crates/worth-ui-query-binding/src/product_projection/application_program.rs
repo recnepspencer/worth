@@ -1,10 +1,9 @@
 use worth_query_host::facade::declaration::application_program::{
-    ApplicationActionLeaf, ApplicationActionList, ApplicationActionRef, ApplicationCommitBoundary,
-    ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureLeaf,
-    ApplicationFeatureList, ApplicationFeatureRef, ApplicationLocalRuleRef,
-    ApplicationNoOutputGraph, ApplicationProgramAuthoring, ApplicationProgramDefinition,
-    ApplicationProgramIdentity, ApplicationProgramOutputs, ApplicationRuleAt, ApplicationRuleLeaf,
-    ApplicationRuleList, ValidatedApplicationProgram,
+    ApplicationCommitBoundary, ApplicationFeature, ApplicationFeatureInputLeaf,
+    ApplicationFeatureSpec, ApplicationLocalRuleRef, ApplicationNoOutputGraph,
+    ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramIdentity,
+    ApplicationProgramOutputs, ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList,
+    ValidatedApplicationProgram,
 };
 
 use crate::declaration::{
@@ -23,25 +22,6 @@ impl ApplicationFeature<WorthUiApplicationSchema> for WorthUiStatusFeature {
 
 impl ApplicationProgramDefinition<WorthUiApplicationSchema> for WorthUiStatusProgram {
     type Contributions = (WorthUiRecordContribution,);
-    type Actions = ApplicationActionList<
-        ApplicationActionRef<
-            WorthUiApplicationSchema,
-            WorthUiStatusFeature,
-            WorthUiStatusUpdateBinding,
-        >,
-        ApplicationActionList<
-            ApplicationActionRef<
-                WorthUiApplicationSchema,
-                WorthUiStatusFeature,
-                WorthUiStatusActionBinding,
-            >,
-            ApplicationActionLeaf,
-        >,
-    >;
-    type Features = ApplicationFeatureList<
-        ApplicationFeatureRef<WorthUiApplicationSchema, WorthUiStatusFeature>,
-        ApplicationFeatureLeaf,
-    >;
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = ApplicationRuleList<
         ApplicationRuleAt<
@@ -57,6 +37,15 @@ impl ApplicationProgramDefinition<WorthUiApplicationSchema> for WorthUiStatusPro
 
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.ui.status-program.v2");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        vec![
+            ApplicationFeatureSpec::root::<WorthUiApplicationSchema, WorthUiStatusFeature>()
+                .mutation::<WorthUiStatusUpdateBinding>()
+                .mutation::<WorthUiStatusActionBinding>()
+                .finish(),
+        ]
+    }
 }
 
 pub(super) fn validated_status_program() -> Result<

@@ -7,38 +7,83 @@ use crate::application_schema::{
 };
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
-use super::{ApplicationCompositionInstance, ApplicationFeature, ApplicationRootComposition};
+use super::{
+    ApplicationChangeShape, ApplicationChangeShapeDeclaration, ApplicationCompositionInstance,
+    ApplicationFeature, ApplicationLocalityDeclaration, ApplicationLocalityScope,
+    ApplicationRootComposition,
+};
 
-/// One program-owned mutation binding attached to a concrete feature instance.
-pub struct ApplicationActionRef<Schema, Feature, Binding> {
-    marker: PhantomData<fn() -> (Schema, Feature, Binding)>,
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationActionCorrespondenceDeclaration {
+    identity: &'static str,
+    correspondence_type: TypeId,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationActionEvaluatedRequirementDeclaration {
+    identity: &'static str,
+    rule_type: TypeId,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationActionExternalInputDeclaration {
+    identity: &'static str,
+    provider_type: TypeId,
+}
+
+impl ApplicationActionExternalInputDeclaration {
+    pub const fn identity(&self) -> &'static str {
+        self.identity
+    }
+    pub const fn provider_type(&self) -> TypeId {
+        self.provider_type
+    }
+}
+
+impl ApplicationActionEvaluatedRequirementDeclaration {
+    pub const fn identity(&self) -> &'static str {
+        self.identity
+    }
+
+    pub const fn rule_type(&self) -> TypeId {
+        self.rule_type
+    }
+}
+
+impl ApplicationActionCorrespondenceDeclaration {
+    pub const fn identity(&self) -> &'static str {
+        self.identity
+    }
+
+    pub const fn correspondence_type(&self) -> TypeId {
+        self.correspondence_type
+    }
 }
 
 /// One program-owned mutation binding attached to an explicit nested instance.
-pub struct ApplicationActionInstanceRef<Schema, Instance, Feature, Binding> {
+pub(crate) struct ApplicationActionInstanceRef<Schema, Instance, Feature, Binding> {
     marker: PhantomData<fn() -> (Schema, Instance, Feature, Binding)>,
 }
 
 /// One program-owned specialized operation whose effects are issued by Query.
-pub struct ApplicationOperationActionRef<Schema, Feature, Operation> {
+pub(crate) struct ApplicationOperationActionRef<Schema, Feature, Operation> {
     marker: PhantomData<fn() -> (Schema, Feature, Operation)>,
 }
 
 /// A program operation issued only by its installed conditional owner.
-pub struct ApplicationConditionalOperationActionRef<Schema, Feature, Operation> {
+pub(crate) struct ApplicationConditionalOperationActionRef<Schema, Feature, Operation> {
     marker: PhantomData<fn() -> (Schema, Feature, Operation)>,
 }
 
 /// Conditional operation owned by a feature in a named composition instance.
-pub struct ApplicationConditionalOperationActionInstanceRef<Schema, Instance, Feature, Operation> {
+pub(crate) struct ApplicationConditionalOperationActionInstanceRef<
+    Schema,
+    Instance,
+    Feature,
+    Operation,
+> {
     marker: PhantomData<fn() -> (Schema, Instance, Feature, Operation)>,
 }
-
-pub struct ApplicationActionList<Head, Tail> {
-    marker: PhantomData<fn() -> (Head, Tail)>,
-}
-
-pub struct ApplicationActionLeaf;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ApplicationActionDeclaration {
@@ -51,6 +96,12 @@ pub struct ApplicationActionDeclaration {
     operation_input_type: TypeId,
     operation_input_identity: WorthQueryPortableTypeIdentity,
     conditional_only: bool,
+    required_output_source: bool,
+    correspondence: Option<ApplicationActionCorrespondenceDeclaration>,
+    evaluated_requirement: Option<ApplicationActionEvaluatedRequirementDeclaration>,
+    external_input: Option<ApplicationActionExternalInputDeclaration>,
+    locality: Option<ApplicationLocalityDeclaration>,
+    change_shape: Option<ApplicationChangeShapeDeclaration>,
 }
 
 impl ApplicationActionDeclaration {
@@ -89,53 +140,81 @@ impl ApplicationActionDeclaration {
     pub const fn conditional_only(&self) -> bool {
         self.conditional_only
     }
+
+    pub const fn required_output_source(&self) -> bool {
+        self.required_output_source
+    }
+
+    pub const fn correspondence(&self) -> Option<&ApplicationActionCorrespondenceDeclaration> {
+        self.correspondence.as_ref()
+    }
+
+    pub const fn evaluated_requirement(
+        &self,
+    ) -> Option<&ApplicationActionEvaluatedRequirementDeclaration> {
+        self.evaluated_requirement.as_ref()
+    }
+
+    pub const fn external_input(&self) -> Option<&ApplicationActionExternalInputDeclaration> {
+        self.external_input.as_ref()
+    }
+
+    pub const fn locality(&self) -> Option<&ApplicationLocalityDeclaration> {
+        self.locality.as_ref()
+    }
+
+    pub const fn change_shape(&self) -> Option<&ApplicationChangeShapeDeclaration> {
+        self.change_shape.as_ref()
+    }
+
+    pub(crate) fn attach_correspondence<Correspondence: 'static>(
+        &mut self,
+        identity: &'static str,
+    ) {
+        self.correspondence = Some(ApplicationActionCorrespondenceDeclaration {
+            identity,
+            correspondence_type: TypeId::of::<Correspondence>(),
+        });
+    }
+
+    pub(crate) fn mark_required_output_source(&mut self) {
+        self.required_output_source = true;
+    }
+
+    pub(crate) fn attach_evaluated_requirement<Rule: 'static>(&mut self, identity: &'static str) {
+        self.evaluated_requirement = Some(ApplicationActionEvaluatedRequirementDeclaration {
+            identity,
+            rule_type: TypeId::of::<Rule>(),
+        });
+    }
+
+    pub(crate) fn attach_external_input<Provider: 'static>(&mut self, identity: &'static str) {
+        self.external_input = Some(ApplicationActionExternalInputDeclaration {
+            identity,
+            provider_type: TypeId::of::<Provider>(),
+        });
+    }
+
+    pub(crate) fn attach_locality_and_change<Scope, Shape>(&mut self)
+    where
+        Scope: ApplicationLocalityScope,
+        Shape: ApplicationChangeShape,
+    {
+        self.locality = Some(ApplicationLocalityDeclaration::of::<Scope>());
+        self.change_shape = Some(ApplicationChangeShapeDeclaration::of::<Shape>());
+    }
 }
 
 mod sealed {
     pub trait ActionShape {}
-    pub trait ActionsShape {}
 }
 
-pub trait ApplicationActionShape<Schema>: sealed::ActionShape + Sized + 'static
+pub(crate) trait ApplicationActionShape<Schema>:
+    sealed::ActionShape + Sized + 'static
 where
     Schema: ApplicationSchema,
 {
     fn declaration() -> ApplicationActionDeclaration;
-}
-
-pub trait ApplicationProgramActionsShape<Schema>: sealed::ActionsShape + Sized + 'static
-where
-    Schema: ApplicationSchema,
-{
-    fn actions() -> Vec<ApplicationActionDeclaration>;
-}
-
-impl<Schema, Feature, Binding> sealed::ActionShape
-    for ApplicationActionRef<Schema, Feature, Binding>
-{
-}
-
-impl<Schema, Feature, Binding> ApplicationActionShape<Schema>
-    for ApplicationActionRef<Schema, Feature, Binding>
-where
-    Schema: ApplicationSchema,
-    Feature: ApplicationFeature<Schema>,
-    Binding: ApplicationMutationBinding<Schema>,
-{
-    fn declaration() -> ApplicationActionDeclaration {
-        ApplicationActionDeclaration {
-            composition_instance: ApplicationRootComposition::PATH,
-            feature: Feature::IDENTITY,
-            binding: Binding::IDENTITY,
-            action_type: TypeId::of::<Binding>(),
-            mutation_binding_type: Some(TypeId::of::<Binding>()),
-            operation_type: TypeId::of::<Binding::Operation>(),
-            operation_input_type: TypeId::of::<Binding::Input>(),
-            operation_input_identity:
-                <Binding::InputBinding as ApplicationStructuredValueBinding>::IDENTITY,
-            conditional_only: false,
-        }
-    }
 }
 
 impl<Schema, Instance, Feature, Binding> sealed::ActionShape
@@ -163,6 +242,12 @@ where
             operation_input_identity:
                 <Binding::InputBinding as ApplicationStructuredValueBinding>::IDENTITY,
             conditional_only: false,
+            required_output_source: false,
+            correspondence: None,
+            evaluated_requirement: None,
+            external_input: None,
+            locality: None,
+            change_shape: None,
         }
     }
 }
@@ -192,6 +277,12 @@ where
             >(),
             operation_input_identity: Operation::InputBinding::IDENTITY,
             conditional_only: false,
+            required_output_source: false,
+            correspondence: None,
+            evaluated_requirement: None,
+            external_input: None,
+            locality: None,
+            change_shape: None,
         }
     }
 }
@@ -233,32 +324,5 @@ where
             ApplicationConditionalOperationActionRef::<Schema, Feature, Operation>::declaration();
         action.composition_instance = Instance::PATH;
         action
-    }
-}
-
-impl sealed::ActionsShape for ApplicationActionLeaf {}
-
-impl<Schema> ApplicationProgramActionsShape<Schema> for ApplicationActionLeaf
-where
-    Schema: ApplicationSchema,
-{
-    fn actions() -> Vec<ApplicationActionDeclaration> {
-        Vec::new()
-    }
-}
-
-impl<Head, Tail> sealed::ActionsShape for ApplicationActionList<Head, Tail> {}
-
-impl<Schema, Head, Tail> ApplicationProgramActionsShape<Schema>
-    for ApplicationActionList<Head, Tail>
-where
-    Schema: ApplicationSchema,
-    Head: ApplicationActionShape<Schema>,
-    Tail: ApplicationProgramActionsShape<Schema>,
-{
-    fn actions() -> Vec<ApplicationActionDeclaration> {
-        let mut actions = vec![Head::declaration()];
-        actions.extend(Tail::actions());
-        actions
     }
 }

@@ -12,16 +12,15 @@ use product_workflow_support::schema::{
 };
 use product_workflow_support::{principal, read_input, AmendTemporalIntent, ExampleApplication};
 use worth_query_host::facade::{
+    application_discovery::WorthQueryApplicationCallablePosture,
     application_entry::{
         WorthQueryApplicationRequestExt, WorthQueryApplicationRequestMutationDenial,
     },
     application_installation::{self, WorthQueryInMemoryApplicationDenial},
     declaration::application_operation::ApplicationMutationBinding,
     declaration::application_program::{
-        ApplicationActionLeaf, ApplicationActionList, ApplicationActionRef, ApplicationFeature,
-        ApplicationFeatureInputLeaf, ApplicationFeatureList, ApplicationFeatureRef,
-        ApplicationOperationActionRef, ApplicationProgramAuthoring, ApplicationProgramDefinition,
-        ApplicationProgramIdentity,
+        ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureSpec,
+        ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramIdentity,
     },
     primary_graph::{
         HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
@@ -43,18 +42,6 @@ impl ApplicationFeature<TemporalHostSchema> for ConflictingConditionalClientFeat
 impl ApplicationProgramDefinition<TemporalHostSchema> for ConflictingConditionalClientProgram {
     type Contributions =
         <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Contributions;
-    type Actions = ApplicationActionList<
-        ApplicationOperationActionRef<
-            TemporalHostSchema,
-            ConflictingConditionalClientFeature,
-            ExecuteTemporal,
-        >,
-        <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Actions,
-    >;
-    type Features = ApplicationFeatureList<
-        ApplicationFeatureRef<TemporalHostSchema, ConflictingConditionalClientFeature>,
-        <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Features,
-    >;
     type Outputs =
         <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Outputs;
     type Rules =
@@ -62,24 +49,21 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for ConflictingConditional
 
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.example.conflicting-conditional-client.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        let mut specs = TemporalExampleProgram::feature_specs();
+        specs.push(
+            ApplicationFeatureSpec::root::<TemporalHostSchema, ConflictingConditionalClientFeature>()
+                .operation::<ExecuteTemporal>()
+                .finish(),
+        );
+        specs
+    }
 }
 
 impl ApplicationProgramDefinition<TemporalHostSchema> for MissingConditionalActionProgram {
     type Contributions =
         <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Contributions;
-    type Actions = ApplicationActionList<
-        ApplicationActionRef<TemporalHostSchema, TemporalExampleFeature, AmendTemporalBinding>,
-        ApplicationActionList<
-            ApplicationOperationActionRef<
-                TemporalHostSchema,
-                TemporalExampleFeature,
-                RevokeTemporalPrincipal,
-            >,
-            ApplicationActionLeaf,
-        >,
-    >;
-    type Features =
-        <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Features;
     type Outputs =
         <TemporalExampleProgram as ApplicationProgramDefinition<TemporalHostSchema>>::Outputs;
     type Rules =
@@ -87,6 +71,15 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for MissingConditionalActi
 
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.example.missing-conditional-action.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        vec![
+            ApplicationFeatureSpec::root::<TemporalHostSchema, TemporalExampleFeature>()
+                .mutation::<AmendTemporalBinding>()
+                .operation::<RevokeTemporalPrincipal>()
+                .finish(),
+        ]
+    }
 }
 
 #[test]
@@ -103,6 +96,29 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
     let predecessor = read_input(&application, branch, &principal, &scope);
     let intent = amendment("must-not-publish", 2);
     let idempotency_key = 0x71_u64;
+    let callable = application
+        .runtime
+        .discovery()
+        .mutations()
+        .find(|description| {
+            description.declaration().binding_identity().as_str() == AmendTemporalBinding::IDENTITY
+        })
+        .expect("the installed mutation is discoverable");
+    assert_eq!(
+        callable.availability(),
+        WorthQueryApplicationCallablePosture::InstalledRequestBinding
+    );
+    application
+        .runtime
+        .request(&principal, &scope)
+        .mutate(intent.clone())
+        .assess_current_authorization()
+        .expect("fresh current authorization is observable without execution authority");
+    assert_eq!(
+        read_input(&application, branch, &principal, &scope),
+        predecessor,
+        "callability and authorization observations cannot execute the action"
+    );
     let denial = application
         .runtime
         .request(&principal, &scope)

@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_host::facade::primary_graph::WorthQueryApplicationRequiredOutputSource;
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationRequiredOutputConnection<Schema>
     for PlanarSourceToOutputConnection
@@ -20,6 +21,19 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationRequiredOutputConnectio
     }
 }
 
+impl<Schema: TopologySchemaBinding>
+    WorthQueryApplicationRequiredOutputSource<Schema, PlanarSourceToOutputConnection>
+    for PlanarSourceAdjustmentBinding<Schema>
+{
+    fn demand_from_source(
+        source: &PlanarSourceAdjustment,
+    ) -> Result<PlanarOutputDemand, WorthQueryRequiredOutputConnectionDenial> {
+        <PlanarSourceToOutputConnection as WorthQueryApplicationRequiredOutputConnection<
+            Schema,
+        >>::demand_from_source(source)
+    }
+}
+
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationRequiredOutputConnection<Schema>
     for PlanarSourceToRemoteOutputConnection
 {
@@ -37,6 +51,19 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationRequiredOutputConnectio
             ));
         }
         Ok(PlanarOutputDemand::new("remote-b"))
+    }
+}
+
+impl<Schema: TopologySchemaBinding>
+    WorthQueryApplicationRequiredOutputSource<Schema, PlanarSourceToRemoteOutputConnection>
+    for PlanarSourceAdjustmentBinding<Schema>
+{
+    fn demand_from_source(
+        source: &PlanarSourceAdjustment,
+    ) -> Result<PlanarOutputDemand, WorthQueryRequiredOutputConnectionDenial> {
+        <PlanarSourceToRemoteOutputConnection as WorthQueryApplicationRequiredOutputConnection<
+            Schema,
+        >>::demand_from_source(source)
     }
 }
 

@@ -266,6 +266,7 @@ exports = [
     "WorthQueryApplicationReadObservation",
     "WorthQueryApplicationRelationSeed",
     "WorthQueryApplicationRequiredOutputConnection",
+    "WorthQueryApplicationRequiredOutputSource",
     "WorthQueryApplicationResultBufferEvidence",
     "WorthQueryApplicationResultBufferObservation",
     "WorthQueryApplicationResultBufferObserver",

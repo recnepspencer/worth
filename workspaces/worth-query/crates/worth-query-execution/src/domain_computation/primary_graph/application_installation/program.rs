@@ -1,5 +1,6 @@
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationRequiredOutputConnection,
+    WorthQueryApplicationRequiredOutputSource,
 };
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
@@ -23,8 +24,10 @@ use super::{
 
 mod conditional;
 mod demand;
+mod derived_artifact;
 mod output_source;
 mod specialized_action;
+mod speculation;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationContributionTuple, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
@@ -34,6 +37,10 @@ pub use demand::{
     WorthQuerySettledProgramOutput,
 };
 pub use specialized_action::WorthQueryAdmittedProgramOperation;
+pub use speculation::{
+    WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
+    WorthQueryApplicationPreviewSession, WorthQueryReadmittedApplicationPreview,
+};
 
 type RootConnectionRef<Schema, Root> =
     <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;
@@ -324,6 +331,10 @@ where
     )?;
     let installed = install_application_program(program, runtime.installed_schema())
         .map_err(WorthQueryInMemoryApplicationDenial::Program)?;
+    runtime
+        .mutation_handlers
+        .validate_managed_computations(installed.features())
+        .map_err(WorthQueryInMemoryApplicationDenial::Contributions)?;
     conditional::validate_conditional_actions(
         installed.actions(),
         runtime.installed_conditionals.operation_types(),
@@ -351,6 +362,18 @@ where
         .extend(program_action_bindings);
     let mut output_source_bindings = std::collections::BTreeSet::new();
     Program::Outputs::append_required_bindings(&mut output_source_bindings);
+    output_source_bindings.extend(installed.actions().iter().filter_map(|action| {
+        action
+            .required_output_source()
+            .then(|| action.mutation_binding_type())
+            .flatten()
+    }));
+    worth_query_installation::facade::require_complete_program_binding_membership(
+        &installed,
+        runtime.installed_schema(),
+        &output_source_bindings,
+    )
+    .map_err(WorthQueryInMemoryApplicationDenial::Program)?;
     runtime
         .program_required_bindings
         .extend(output_source_bindings.iter().copied());
